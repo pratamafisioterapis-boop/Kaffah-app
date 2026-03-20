@@ -226,7 +226,7 @@ const OwnerBookingCalendar = () => {
 >
   <CalendarIcon className="mr-2 h-4 w-4 text-slate-500 shrink-0" />
 
-  <span className="truncate w-full">
+  <span className="text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
     {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
   </span>
 </Button>
