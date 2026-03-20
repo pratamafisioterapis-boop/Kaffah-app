@@ -173,7 +173,7 @@ const AdminAppointmentBooking = () => {
     <div className="w-full max-w-full px-3 sm:px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 sticky top-2 sm:top-4 z-20">
+<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden">
   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
     {/* LEFT SIDE */}
@@ -187,7 +187,7 @@ const AdminAppointmentBooking = () => {
     </div>
 
     {/* RIGHT SIDE */}
-    <div className="flex items-center gap-3 ml-auto">
+    <div className="flex items-center gap-3 ml-auto w-full md:w-auto min-w-0 overflow-hidden">
 
       {/* Refresh */}
       <Button
@@ -200,47 +200,54 @@ const AdminAppointmentBooking = () => {
       </Button>
 
       {/* Date Controller */}
-      <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded-lg border border-slate-200">
+      <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
-        <Button
-          variant="ghost"
-         ame="flex-1 min-w-0 justify-center font-medium"
->
-  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-  <span className="truncate">
-    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-  </span>
-</Button> size="icon"
-          onClick={() => setDate(addDays(date, -1))}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
+  {/* tombol kiri */}
+  <Button
+    variant="ghost"
+    size="icon"
+    className="shrink-0"
+    onClick={() => setDate(addDays(date, -1))}
+  >
+    <ChevronLeft className="w-4 h-4" />
+  </Button>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-  variant="ghost"
-  classN
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => d && setDate(d)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+  {/* tanggal */}
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="ghost"
+        className="flex-1 min-w-0 max-w-full overflow-hidden justify-start text-left font-medium"
+      >
+        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setDate(addDays(date, 1))}
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+        <span className="truncate w-full">
+          {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+        </span>
+      </Button>
+    </PopoverTrigger>
 
-      </div>
+    <PopoverContent className="w-auto p-0" align="end">
+      <Calendar
+        mode="single"
+        selected={date}
+        onSelect={(d) => d && setDate(d)}
+        initialFocus
+      />
+    </PopoverContent>
+  </Popover>
+
+  {/* tombol kanan */}
+  <Button
+    variant="ghost"
+    size="icon"
+    className="shrink-0"
+    onClick={() => setDate(addDays(date, 1))}
+  >
+    <ChevronRight className="w-4 h-4" />
+  </Button>
+
+</div>
     </div>
   </div>
 </div>

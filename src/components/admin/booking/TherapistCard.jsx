@@ -112,6 +112,7 @@ const TherapistCard = ({
               <Button
   variant="outline"
   size="icon"
+  className="shrink-0"
   className={cn(
   "h-9 w-9 rounded-full transition-all duration-300",
   "bg-white text-slate-800 border border-white shadow-xl",
