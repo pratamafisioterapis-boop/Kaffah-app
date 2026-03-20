@@ -49,7 +49,7 @@ const AdminAppointmentBooking = () => {
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-
+const formattedDate = format(date, "EEE, dd MMM yy", { locale: idLocale });
   useEffect(() => {
     loadInitialData();
   }, [user, userDetails]);
@@ -217,13 +217,13 @@ const AdminAppointmentBooking = () => {
     <PopoverTrigger asChild>
       <Button
         variant="ghost"
-        className="flex-1 min-w-0 max-w-full overflow-hidden justify-start text-left font-medium"
+        className="flex-1 min-w-0 justify-center text-center"
       >
         <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
 
-        <span className="text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
-          {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-        </span>
+        <span className="text-sm font-medium whitespace-nowrap">
+  {formattedDate}
+</span>
       </Button>
     </PopoverTrigger>
 
