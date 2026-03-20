@@ -12,7 +12,14 @@ const PWAInstallPrompt = () => {
   const { user } = useAuth();
 
     useEffect(() => {
-  if (!user) return; // ❗ stop total kalau belum login
+  if (!user) return;
+
+  // ❗ cek apakah sudah install (PWA mode)
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) return; // ❗ kalau sudah install, jangan tampilkan
 
   const handleBeforeInstallPrompt = (e) => {
     e.preventDefault();
