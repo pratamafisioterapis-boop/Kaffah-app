@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO, isValid } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Dialog, 
   DialogContent, 
@@ -67,7 +68,7 @@ const fetchBookedSlots = async (date) => {
 
   const times = data.map(a => {
     const d = new Date(a.appointment_date);
-    return d.toISOString().slice(11,16);
+    return format(d, 'HH:mm');
   });
 
   setBookedSlots(times);
@@ -83,7 +84,7 @@ useEffect(() => {
   if (!isRescheduleMode || !newDate) return;
 
   fetchAvailableSlots(newDate);
-
+fetchBookedSlots(newDate);
   const channel = supabase
     .channel('appointments-realtime')
     .on(
@@ -326,9 +327,16 @@ useEffect(() => {
         toast({ variant: "destructive", title: "Tanggal belum dipilih" });
         return;
       }
+      if (!selectedTime) {
+  toast({ 
+    variant: "destructive", 
+    title: "Pilih jam terlebih dahulu" 
+  });
+  return;
+}
 
       try {
-        const timeToUse = selectedTime || startTime;
+        const timeToUse = selectedTime;
 const newDateTime = new Date(newDate + "T" + timeToUse).toISOString();
 
 // 🔴 VALIDASI: cek apakah slot sudah dipakai
