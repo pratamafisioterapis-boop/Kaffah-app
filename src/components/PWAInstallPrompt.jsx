@@ -14,10 +14,12 @@ const PWAInstallPrompt = () => {
   useEffect(() => {
     // 1. Listen for PWA install prompt
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstall(true);
-    };
+  if (!user) return; // ❗ hanya jika sudah login
+
+  e.preventDefault();
+  setDeferredPrompt(e);
+  setShowInstall(true);
+};
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
