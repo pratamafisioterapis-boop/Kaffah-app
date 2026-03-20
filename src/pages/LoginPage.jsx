@@ -98,7 +98,16 @@ const LoginPage = () => {
              navigate(from, { replace: true });
              return;
         }
+const isPWA =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true ||
+  document.referrer.includes('android-app://');
 
+// ❗ hanya untuk PWA → override ke appointment
+if (isPWA) {
+  navigate('/admin/appointment-booking', { replace: true });
+  return;
+}
         // Standard role-based redirect
         switch (role) {
           case 'owner':
@@ -135,6 +144,17 @@ const LoginPage = () => {
     
     return () => { mounted = false; };
   }, [user, authLoading, navigate, signOut, location.state]);
+  useEffect(() => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
+
+  // ❗ kalau PWA + sudah login → langsung skip login
+  if (isPWA && user && !authLoading) {
+    navigate('/admin/appointment-booking', { replace: true });
+  }
+}, [user, authLoading, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
