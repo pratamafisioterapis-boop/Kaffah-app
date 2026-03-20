@@ -26,6 +26,7 @@ const [newDate, setNewDate] = useState("");
 const [availableSlots, setAvailableSlots] = useState([]);
 const [selectedTime, setSelectedTime] = useState("");
 const [bookedSlots, setBookedSlots] = useState([]);
+const [selectedTherapist, setSelectedTherapist] = useState(appointment?.therapist_id);
 const fetchAvailableSlots = async (date) => {
   if (!date) return;
   if (!appointment?.therapist_id) return;
@@ -200,39 +201,68 @@ fetchBookedSlots(newDate);
         </Badge>
       </div>
 {isRescheduleMode && (
-  <div className="space-y-2">
-    <label className="text-sm font-medium">Pilih Tanggal Baru</label>
-    <Input
-      type="date"
-      value={newDate}
-      onChange={(e) => setNewDate(e.target.value)}
-    />
-  </div>
-)}
-{isRescheduleMode && availableSlots.length > 0 && (
-  <div className="space-y-2">
-    <label className="text-sm font-medium">Pilih Jam</label>
-    <div className="grid grid-cols-3 gap-2">
-      {availableSlots.map((slot, i) => {
-  const isBooked = bookedSlots.includes(slot.time);
+  <div className="bg-slate-50 p-4 rounded-xl border space-y-4">
 
-  return (
-    <Button
-      key={i}
-      variant={selectedTime === slot.time ? "default" : "outline"}
-      onClick={() => !isBooked && setSelectedTime(slot.time)}
-      disabled={isBooked}
-      className={`text-xs ${
-        isBooked 
-          ? "opacity-40 cursor-not-allowed line-through" 
-          : ""
-      }`}
-    >
-      {slot.time}
-    </Button>
-  );
-})}
+    {/* TERAPIS */}
+    <div className="space-y-1">
+      <label className="text-xs font-semibold text-slate-500">TERAPIS</label>
+      <select
+        value={selectedTherapist}
+        onChange={(e) => {
+          setSelectedTherapist(e.target.value);
+          setSelectedTime("");
+        }}
+        className="w-full border rounded-xl px-3 py-2 text-sm bg-white"
+      >
+        <option value={appointment.therapist_id}>
+          {appointment.therapist?.name}
+        </option>
+      </select>
     </div>
+
+    {/* TANGGAL */}
+    <div className="space-y-1">
+      <label className="text-xs font-semibold text-slate-500">TANGGAL</label>
+      <Input
+        type="date"
+        value={newDate}
+        onChange={(e) => setNewDate(e.target.value)}
+        className="rounded-xl border-slate-200 focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    {/* SLOT */}
+    {availableSlots.length > 0 && (
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-slate-500">JAM TERSEDIA</label>
+
+        <div className="flex flex-wrap gap-2 mt-1">
+          {availableSlots.map((slot, i) => {
+            const isBooked = bookedSlots.includes(slot.time);
+
+            return (
+              <Button
+                key={i}
+                variant="outline"
+                onClick={() => !isBooked && setSelectedTime(slot.time)}
+                disabled={isBooked}
+                className={`
+                  text-xs px-4 py-2 rounded-full border transition-all
+                  ${selectedTime === slot.time ? "bg-blue-600 text-white" : ""}
+                  ${isBooked 
+                    ? "opacity-30 line-through" 
+                    : "hover:scale-105 hover:shadow-sm"
+                  }
+                `}
+              >
+                {slot.time}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
   </div>
 )}
       <div className="space-y-4">
