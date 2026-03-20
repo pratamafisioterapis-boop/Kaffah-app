@@ -11,28 +11,21 @@ const PWAInstallPrompt = () => {
   const [showNotifRequest, setShowNotifRequest] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    // 1. Listen for PWA install prompt
-    const handleBeforeInstallPrompt = (e) => {
-  if (!user) return; // ❗ hanya jika sudah login
+    useEffect(() => {
+  if (!user) return; // ❗ stop total kalau belum login
 
-  e.preventDefault();
-  setDeferredPrompt(e);
-  setShowInstall(true);
-};
+  const handleBeforeInstallPrompt = (e) => {
+    e.preventDefault();
+    setDeferredPrompt(e);
+    setShowInstall(true);
+  };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // 2. Check for Notification permissions if user is logged in
-    // Notifikasi dinonaktifkan sementara
-// if (user && 'Notification' in window && Notification.permission === 'default') {
-//   setShowNotifRequest(true);
-// }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, [user]);
+  return () => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  };
+}, [user]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
