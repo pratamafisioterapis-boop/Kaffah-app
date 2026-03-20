@@ -149,7 +149,7 @@ const TherapistCard = ({
 
     <div className="flex flex-col">
       <div className="flex items-center gap-2">
-        <CardTitle className="text-xl font-semibold text-white leading-tight">
+        <CardTitle className="text-base sm:text-lg font-semibold text-white leading-tight break-words">
           {therapist.name || 'Unnamed Therapist'}
         </CardTitle>
 
@@ -187,7 +187,7 @@ const TherapistCard = ({
               <span className="text-[10px] text-slate-400 font-medium">{isLeave ? 0 : availableSlots.length} available</span>
             </div>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {availableSlots.length > 0 ? (
                 availableSlots.map((slot, index) => {
                   const rawTime = slot.slot_start_time || "00:00";
@@ -209,7 +209,7 @@ const TherapistCard = ({
                       key={`${slot.id || index}`}
                       onClick={() => onSlotClick(slot, therapist)}
                       className={cn(
-                        "group relative px-4 py-2 rounded-full text-sm font-semibold",
+  "w-full text-center px-3 py-2 rounded-full text-xs sm:text-sm font-semibold",
 
                         // 🔥 BASE PREMIUM
                         "bg-emerald-500/90 text-white backdrop-blur",

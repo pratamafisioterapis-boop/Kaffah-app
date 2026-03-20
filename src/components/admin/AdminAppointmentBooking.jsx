@@ -213,12 +213,14 @@ const AdminAppointmentBooking = () => {
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
-              className="min-w-[220px] justify-center font-medium"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-              {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-            </Button>
+  variant="ghost"
+  className="w-full max-w-[220px] justify-center font-medium"
+>
+  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
+  <span className="truncate">
+    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+  </span>
+</Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="end">
             <Calendar
