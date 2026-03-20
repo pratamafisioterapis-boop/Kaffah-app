@@ -45,9 +45,19 @@ try {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered:', registration);
-      })
+      .then(async (registration) => {
+  console.log('SW registered:', registration);
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: 'ISI_NANTI_VAPID_PUBLIC_KEY'
+  });
+
+  console.log('Push Subscription:', JSON.stringify(subscription));
+})
       .catch((error) => {
         console.log('SW registration failed:', error);
       });
