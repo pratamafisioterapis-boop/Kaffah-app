@@ -170,10 +170,10 @@ const AdminAppointmentBooking = () => {
   };
 
   return (
-    <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+    <div className="w-full max-w-full px-3 sm:px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 sticky top-4 z-20">
+<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 sticky top-2 sm:top-4 z-20">
   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
     {/* LEFT SIDE */}
@@ -258,7 +258,7 @@ const AdminAppointmentBooking = () => {
           <p className="text-slate-400">Memuat jadwal...</p>
         </div>
       ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {therapists.map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
             const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);

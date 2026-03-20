@@ -399,7 +399,7 @@ const DashboardLayout = ({ children, navItems = [], role, userName }) => {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 font-sans">
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div key="mobile-sidebar-container" className="fixed inset-0 z-40 lg:hidden">
@@ -429,7 +429,7 @@ const DashboardLayout = ({ children, navItems = [], role, userName }) => {
         {renderSidebarContent()}
       </aside>
 
-      <main className="flex-1 flex flex-col lg:ml-[280px] min-h-screen transition-all duration-300 pt-[80px]">
+      <main className="flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 pt-[80px] px-2 sm:px-0">
         <header className={cn(
           "sticky top-4 z-50 mx-4 sm:mx-8 px-4 sm:px-6 py-3 flex justify-between items-center rounded-2xl transition-all duration-300",
           scrolled 
@@ -567,7 +567,7 @@ const DashboardLayout = ({ children, navItems = [], role, userName }) => {
           </div>
         </header>
         
-        <div className="p-4 sm:p-8 pt-20 max-w-[1600px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-4 sm:p-8 pt-20 w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
            {children}
         </div>
       </main>

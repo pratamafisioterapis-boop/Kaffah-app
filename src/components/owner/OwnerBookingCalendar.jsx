@@ -188,7 +188,7 @@ const OwnerBookingCalendar = () => {
   };
 
   return (
-    <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+    <div className="w-full max-w-full px-3 sm:px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
       <div className="flex items-center gap-4 mt-4 mb-4">
         <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600" onClick={() => navigate('/owner')}>
            <ArrowLeft className="w-4 h-4" />
@@ -196,7 +196,7 @@ const OwnerBookingCalendar = () => {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-2 sm:top-4 z-20">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
           <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
@@ -248,7 +248,7 @@ const OwnerBookingCalendar = () => {
             <p className="text-slate-400">Loading schedules...</p>
          </div>
       ) : (
-       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+       <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {therapists.map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
             const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);
@@ -272,7 +272,7 @@ const OwnerBookingCalendar = () => {
       )}
 
       <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="sm:max-w-md overflow-hidden bg-white p-6">
+        <DialogContent className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto bg-white p-4 sm:p-6">
           <DialogHeader className="mb-4">
              <DialogTitle>
                 {activeModal?.type === 'slot' && 'Booking Slot'}

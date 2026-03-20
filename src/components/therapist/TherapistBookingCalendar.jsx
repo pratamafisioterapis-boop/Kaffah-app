@@ -204,7 +204,7 @@ const TherapistBookingCalendar = ({ therapist }) => {
 
       {/* Global Modal Container */}
       <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="sm:max-w-md overflow-hidden bg-white p-6">
+        <DialogContent className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto bg-white p-4 sm:p-6">
           <DialogHeader className="mb-4">
              <DialogTitle>
                 {activeModal?.type === 'slot' && 'Booking Slot'}
