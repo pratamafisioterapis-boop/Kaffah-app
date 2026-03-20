@@ -221,7 +221,7 @@ const formattedDate = format(date, "EEE, dd MMM yy", { locale: idLocale });
       >
         <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
 
-        <span className="text-sm font-medium whitespace-nowrap">
+        <span className="text-xs font-semibold tracking-tight whitespace-nowrap text-slate-700">
   {formattedDate}
 </span>
       </Button>
