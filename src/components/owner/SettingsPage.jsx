@@ -1,0 +1,995 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle, 
+  Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
+  Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
+  FileText, Upload, X, Tag, FolderTree
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { Switch } from "@/components/ui/switch";
+import { 
+  getPatientInfoOptions, 
+  createPatientInfoOption, 
+  updatePatientInfoOption, 
+  deletePatientInfoOption,
+  getOperationalOptions, 
+  createOperationalOption, 
+  updateOperationalOption, 
+  deleteOperationalOption
+} from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+// Import Managers
+import AdminManager from '@/components/owner/AdminManager';
+import AccountingCategoryManager from '@/components/owner/AccountingCategoryManager';
+import MediaAssetManager from '@/components/owner/MediaAssetManager';
+import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
+import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
+import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
+
+// --- Dedicated Discount Type Manager ---
+const DiscountTypeManager = () => {
+  const { toast } = useToast();
+  // State Initialization as requested
+  const [discountTypes, setDiscountTypes] = useState([]);
+  const [discountTypeForm, setDiscountTypeForm] = useState({ label: '' });
+  const [editingDiscountType, setEditingDiscountType] = useState(null);
+  const [showDiscountTypeModal, setShowDiscountTypeModal] = useState(false);
+  
+  const [loading, setLoading] = useState(true);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchDiscountTypes();
+  }, []);
+
+  const fetchDiscountTypes = async () => {
+    setLoading(true);
+    console.log("🔄 Fetching discount types...");
+    try {
+      const { data, error } = await supabase
+        .from('operational_options')
+        .select('id, category, label, is_active, created_at')
+        .eq('category', 'discount_type')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      console.log(`✅ Fetched ${data?.length || 0} discount types`);
+      setDiscountTypes(data || []);
+    } catch (error) {
+      console.error("❌ Error fetching discount types:", error);
+      toast({ variant: "destructive", title: "Error", description: "Gagal memuat jenis diskon." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDiscountType = async () => {
+    const labelTrimmed = discountTypeForm.label.trim();
+    if (!labelTrimmed) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama label tidak boleh kosong." });
+      return;
+    }
+
+    setIsProcessing(true);
+    console.log(`💾 Saving discount type: "${labelTrimmed}"...`);
+
+    const payload = {
+      category: 'discount_type',
+      label: labelTrimmed,
+      is_active: true
+    };
+
+    try {
+      if (editingDiscountType) {
+        // UPDATE
+        console.log("🔄 Operation: UPDATE", editingDiscountType.id);
+        console.log("📦 Payload:", payload);
+        
+        const { data, error } = await supabase
+          .from('operational_options')
+          .update(payload)
+          .eq('id', editingDiscountType.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        console.log("✅ Update success:", data);
+        toast({ title: "Berhasil", description: "Jenis diskon diperbarui." });
+        setDiscountTypes(prev => prev.map(item => item.id === editingDiscountType.id ? data : item));
+      } else {
+        // INSERT
+        console.log("🔄 Operation: INSERT");
+        console.log("📦 Payload:", payload);
+        
+        const { data, error } = await supabase
+          .from('operational_options')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        console.log("✅ Insert success:", data);
+        toast({ title: "Berhasil", description: "Jenis diskon ditambahkan." });
+        setDiscountTypes(prev => [...prev, data]);
+      }
+      setShowDiscountTypeModal(false);
+      setDiscountTypeForm({ label: '' });
+      setEditingDiscountType(null);
+    } catch (error) {
+      console.error("❌ Save failed:", error);
+      toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteDiscountType = async () => {
+    if (!editingDiscountType) return;
+    
+    setIsProcessing(true);
+    console.log("🗑️ Deleting discount type:", editingDiscountType.id);
+
+    try {
+      const { error } = await supabase
+        .from('operational_options')
+        .delete()
+        .eq('id', editingDiscountType.id);
+
+      if (error) throw error;
+
+      console.log("✅ Delete success");
+      toast({ title: "Terhapus", description: "Jenis diskon dihapus." });
+      setDiscountTypes(prev => prev.filter(item => item.id !== editingDiscountType.id));
+      setIsDeleteOpen(false);
+      setEditingDiscountType(null);
+    } catch (error) {
+      console.error("❌ Delete failed:", error);
+      toast({ variant: "destructive", title: "Gagal Menghapus", description: error.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const openAdd = () => {
+    setEditingDiscountType(null);
+    setDiscountTypeForm({ label: '' });
+    setShowDiscountTypeModal(true);
+  };
+
+  const openEdit = (item) => {
+    setEditingDiscountType(item);
+    setDiscountTypeForm({ label: item.label });
+    setShowDiscountTypeModal(true);
+  };
+
+  const openDelete = (item) => {
+    setEditingDiscountType(item);
+    setIsDeleteOpen(true);
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Jenis Diskon</h2>
+          <p className="text-sm text-slate-500">Kelola label diskon (Misal: Promo Merdeka, Diskon Teman).</p>
+        </div>
+        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Baru
+        </Button>
+      </div>
+
+      <div className="p-6">
+        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
+          ) : discountTypes.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <p>Belum ada opsi diskon yang tersedia.</p>
+              <Button variant="link" onClick={openAdd} className="text-blue-600 mt-2">Tambahkan opsi pertama</Button>
+            </div>
+          ) : (
+            discountTypes.map((opt) => (
+              <motion.div
+                key={opt.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
+                </div>
+                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(opt)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => openDelete(opt)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      <Dialog open={showDiscountTypeModal} onOpenChange={setShowDiscountTypeModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader><DialogTitle>{editingDiscountType ? 'Edit' : 'Tambah'} Jenis Diskon</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Nama Label Diskon</label>
+              <Input 
+                value={discountTypeForm.label} 
+                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, label: e.target.value })} 
+                placeholder="Contoh: Promo Agustusan"
+                autoFocus 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDiscountTypeModal(false)}>Batal</Button>
+            <Button onClick={handleSaveDiscountType} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+              {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Modal */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Konfirmasi Hapus
+            </DialogTitle>
+            <DialogDescription>
+              Hapus opsi "{editingDiscountType?.label}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Batal</Button>
+            <Button onClick={handleDeleteDiscountType} disabled={isProcessing} className="bg-red-600 hover:bg-red-700">
+              {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+// --- Generic Option Manager for other tabs ---
+const OptionManager = ({ title, category, description, isLegacy = false }) => {
+  const { toast } = useToast();
+  const [options, setOptions] = useState([]);
+  const [expandedIds, setExpandedIds] = useState([]);
+  const toggleExpand = (id) => {
+  setExpandedIds(prev =>
+    prev.includes(id)
+      ? prev.filter(item => item !== id)
+      : [...prev, id]
+  );
+};
+    const [loading, setLoading] = useState(true);
+  const [parentOptions, setParentOptions] = useState([]);
+  
+  // Dialog States
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isPasteOpen, setIsPasteOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Selection State
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [formData, setFormData] = useState({ 
+    label: '',
+    session_count: '',
+    validity_days: ''
+  });
+  const [pasteContent, setPasteContent] = useState("");
+
+  const isPackageType = category === 'tipe_paket';
+
+  useEffect(() => {
+    fetchOptions();
+  }, [category]);
+  useEffect(() => {
+  if (category === 'diagnosa') {
+    fetchParentServices();
+  }
+}, [category]);
+
+  const fetchOptions = async () => {
+    setLoading(true);
+    let result;
+    if (isLegacy) {
+      result = await getPatientInfoOptions();
+    } else {
+      result = await getOperationalOptions(category);
+    }
+    
+    if (result.data) {
+      setOptions(result.data);
+    } else {
+      toast({ variant: "destructive", title: "Error Fetching Data", description: result.error?.message });
+    }
+    setLoading(false);
+  };
+  const fetchParentServices = async () => {
+  const result = await getOperationalOptions('service');
+  
+  if (result.data) {
+    setParentOptions(result.data);
+  } else {
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Gagal memuat daftar Service."
+    });
+  }
+};
+
+  const openAddDialog = () => {
+    setFormData({ label: '', session_count: '', validity_days: '' });
+    setIsAddOpen(true);
+  };
+
+  const openEditDialog = (option) => {
+    setSelectedOption(option);
+    setFormData({ 
+      label: option.label,
+      session_count: option.session_count || '',
+      validity_days: option.validity_days || ''
+    });
+    setIsEditOpen(true);
+  };
+
+  const openDeleteDialog = (option) => {
+    setSelectedOption(option);
+    setIsDeleteOpen(true);
+  };
+
+  const handleSave = async (isEdit = false) => {
+    if (!formData.label.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validasi Gagal",
+        description: "Nama opsi tidak boleh kosong."
+      });
+      return;
+    }
+
+    if (category === 'diagnosa' && !formData.parent_id) {
+      toast({
+        variant: "destructive",
+        title: "Validasi Gagal",
+        description: "Parent Service wajib dipilih."
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    let result;
+    const extraData = {
+      ...(isPackageType && {
+        session_count: parseInt(formData.session_count),
+        validity_days: parseInt(formData.validity_days)
+      }),
+
+      ...(category === 'diagnosa' && {
+        parent_id: formData.parent_id || null
+      })
+    };
+
+    try {
+      if (isEdit) {
+        if (isLegacy) {
+          result = await updatePatientInfoOption(selectedOption.id, formData.label.trim());
+        } else {
+          result = await updateOperationalOption(selectedOption.id, formData.label.trim(), extraData);
+        }
+      } else {
+        if (isLegacy) {
+          result = await createPatientInfoOption(formData.label.trim());
+        } else {
+          result = await createOperationalOption(category, formData.label.trim(), extraData);
+        }
+      }
+
+      if (result.error) throw result.error;
+
+      toast({ title: isEdit ? "Berhasil Diperbarui" : "Berhasil Ditambahkan", description: `Opsi "${formData.label}" telah disimpan.` });
+
+      if (isEdit) {
+        setOptions(options.map(opt => opt.id === selectedOption.id ? result.data : opt));
+        setIsEditOpen(false);
+      } else {
+        setOptions([...options, result.data]);
+        setIsAddOpen(false);
+      }
+      setFormData({ label: '', session_count: '', validity_days: '' });
+
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message || "Terjadi kesalahan sistem." });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOption) return;
+    setIsProcessing(true);
+    let result;
+    try {
+      if (isLegacy) {
+        result = await deletePatientInfoOption(selectedOption.id);
+      } else {
+        result = await deleteOperationalOption(selectedOption.id);
+      }
+
+      if (result.error) throw result.error;
+
+      toast({ title: "Terhapus", description: "Opsi telah dihapus dari sistem." });
+      setOptions(options.filter(opt => opt.id !== selectedOption.id));
+      setIsDeleteOpen(false);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal Menghapus", description: "Mungkin opsi ini sedang digunakan pada data lain." });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkPaste = async () => {
+    if (!pasteContent.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "Konten paste kosong." });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const lines = pasteContent.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      const uniqueLines = [...new Set(lines)];
+      const existingLabels = options.map(o => o.label.toLowerCase());
+      const newItems = uniqueLines.filter(l => !existingLabels.includes(l.toLowerCase()));
+
+      if (newItems.length === 0) {
+        toast({ title: "Info", description: "Semua item sudah ada atau duplikat." });
+        setIsProcessing(false);
+        return;
+      }
+
+      const promises = newItems.map(label => {
+         if (isLegacy) return createPatientInfoOption(label);
+         return createOperationalOption(category, label, {});
+      });
+
+      await Promise.all(promises);
+      await fetchOptions();
+      
+      toast({ title: "Berhasil", description: `${newItems.length} item berhasil ditambahkan.` });
+      setPasteContent("");
+      setIsPasteOpen(false);
+
+    } catch (err) {
+      toast({ variant: "destructive", title: "Gagal", description: "Gagal memproses data." });
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+          <p className="text-sm text-slate-500">{description}</p>
+        </div>
+        <div className="flex gap-2">
+          {!isPackageType && (
+            <Button variant="outline" onClick={() => setIsPasteOpen(true)} className="text-slate-600 hover:text-blue-600">
+              <ClipboardPaste className="w-4 h-4 mr-2" />
+              Paste Banyak
+            </Button>
+          )}
+          <Button onClick={openAddDialog} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Baru
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
+          ) : options.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <p>Belum ada opsi yang tersedia.</p>
+              <Button variant="link" onClick={openAddDialog} className="text-blue-600 mt-2">Tambahkan opsi pertama</Button>
+            </div>
+          ) : category === 'diagnosa' ? (
+
+  parentOptions.map((service) => {
+    const diagnosaList = options.filter(
+      (opt) => opt.parent_id === service.id
+    );
+
+    if (diagnosaList.length === 0) return null;
+
+    const isExpanded = expandedIds.includes(service.id);
+
+    return (
+      <div key={service.id} className="border rounded-lg overflow-hidden">
+
+        {/* HEADER SERVICE */}
+        <div
+          onClick={() => toggleExpand(service.id)}
+          className="flex justify-between items-center p-4 bg-slate-100 cursor-pointer hover:bg-slate-200 transition"
+        >
+          <span className="font-semibold text-slate-800">
+            {service.label}
+          </span>
+          <span className="text-sm text-slate-500">
+            {isExpanded ? '▲' : '▼'}
+          </span>
+        </div>
+
+        {/* LIST DIAGNOSA */}
+        {isExpanded && (
+          <div className="divide-y">
+            {diagnosaList.map((opt) => (
+              <motion.div
+                key={opt.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between p-3 bg-white hover:bg-slate-50"
+              >
+                <span className="text-slate-700 ml-4">
+                  {opt.label}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(opt)}
+                    className="h-8 w-8 text-slate-500 hover:text-blue-600"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openDeleteDialog(opt)}
+                    className="h-8 w-8 text-slate-500 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  })
+
+) : (
+
+  options.map((opt) => (
+    <motion.div
+      key={opt.id}
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+    >
+      <div className="flex flex-col">
+        <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
+        {isPackageType && opt.session_count && (
+          <span className="text-xs text-slate-500 ml-2 mt-1 flex items-center gap-2">
+            <Package className="w-3 h-3" />
+            {opt.session_count} Sesi &bull; {opt.validity_days} Hari Aktif
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openEditDialog(opt)}
+          className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+        >
+          <Edit2 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openDeleteDialog(opt)}
+          className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </motion.div>
+  ))
+
+          )}
+        </div>
+      </div>
+      
+     {/* Add Dialog */}
+<Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+  <DialogContent className="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Tambah {title}</DialogTitle>
+    </DialogHeader>
+
+    <div className="grid gap-4 py-4">
+      {/* Nama Label */}
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-slate-700">
+          Nama Label
+        </label>
+        <input
+          value={formData.label}
+          onChange={(e) =>
+            setFormData({ ...formData, label: e.target.value })
+          }
+          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoFocus
+        />
+      </div>
+
+      {/* Parent Service - HANYA UNTUK DIAGNOSA */}
+      {category === 'diagnosa' && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">
+            Parent Service <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.parent_id || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, parent_id: e.target.value })
+            }
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Pilih Service</option>
+            {parentOptions.map((srv) => (
+              <option key={srv.id} value={srv.id}>
+                {srv.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Package Fields */}
+      {isPackageType && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Jumlah Sesi
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.session_count}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  session_count: e.target.value,
+                })
+              }
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Masa Aktif (Hari)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.validity_days}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  validity_days: e.target.value,
+                })
+              }
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+        Batal
+      </Button>
+      <Button
+        onClick={() => handleSave(false)}
+        disabled={isProcessing}
+        className="bg-blue-600 hover:bg-blue-700"
+      >
+        Simpan
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+     {/* Edit Dialog */}
+<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+  <DialogContent className="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Edit {title}</DialogTitle>
+    </DialogHeader>
+
+    <div className="grid gap-4 py-4">
+      {/* Nama Label */}
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-slate-700">
+          Nama Label
+        </label>
+        <input
+          value={formData.label}
+          onChange={(e) =>
+            setFormData({ ...formData, label: e.target.value })
+          }
+          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Parent Service - HANYA UNTUK DIAGNOSA */}
+      {category === 'diagnosa' && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">
+            Parent Service <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.parent_id || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, parent_id: e.target.value })
+            }
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Pilih Service</option>
+            {parentOptions.map((srv) => (
+              <option key={srv.id} value={srv.id}>
+                {srv.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Package Fields */}
+      {isPackageType && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Jumlah Sesi
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.session_count}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  session_count: e.target.value,
+                })
+              }
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Masa Aktif (Hari)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.validity_days}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  validity_days: e.target.value,
+                })
+              }
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+        Batal
+      </Button>
+      <Button
+        onClick={() => handleSave(true)}
+        disabled={isProcessing}
+        className="bg-blue-600 hover:bg-blue-700"
+      >
+        Perbarui
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Konfirmasi Hapus
+            </DialogTitle>
+            <DialogDescription>
+              Hapus opsi "{selectedOption?.label}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Batal</Button>
+            <Button onClick={handleDelete} disabled={isProcessing} className="bg-red-600 hover:bg-red-700">Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Paste Dialog */}
+      <Dialog open={isPasteOpen} onOpenChange={setIsPasteOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Paste Banyak Item</DialogTitle>
+            <DialogDescription>
+              Paste daftar item (satu per baris). Sistem akan otomatis melewati duplikat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+             <Textarea 
+               value={pasteContent} 
+               onChange={(e) => setPasteContent(e.target.value)} 
+               rows={10}
+               placeholder={`Contoh:\nDiagnosa A\nDiagnosa B\nDiagnosa C`}
+               className="font-mono text-sm"
+             />
+             <p className="text-xs text-slate-500">
+               *Item yang sudah ada di database tidak akan ditambahkan lagi.
+             </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasteOpen(false)}>Batal</Button>
+            <Button onClick={handleBulkPaste} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Proses Paste
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const SettingsPage = () => {
+  const [reloadGallery, setReloadGallery] = useState(0);
+
+  const handleUploadSuccess = () => {
+    setReloadGallery(prev => prev + 1);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-6 space-y-8 animate-in fade-in zoom-in duration-300">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+          <Settings className="w-8 h-8 text-slate-700" />
+          Pengaturan Sistem
+        </h1>
+        <p className="text-slate-500 mt-2">Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi.</p>
+      </div>
+
+      <Tabs defaultValue="admin" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 bg-slate-100 p-1 rounded-xl h-auto gap-1">
+          <TabsTrigger value="admin" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <Users className="w-3 h-3" /> Admin & Staff
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <MessageCircle className="w-3 h-3" /> WhatsApp
+          </TabsTrigger>
+          <TabsTrigger value="accounting_cats" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <BookOpen className="w-3 h-3" /> Akunting
+          </TabsTrigger>
+          <TabsTrigger value="media_assets" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <ImageIcon className="w-3 h-3" /> Media
+          </TabsTrigger>
+          
+          <TabsTrigger value="diagnosis_service" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <FolderTree className="w-3 h-3" /> Diagnosa & Layanan
+          </TabsTrigger>
+
+          <TabsTrigger value="source" className="data-[state=active]:bg-white rounded-lg py-2">Sumber</TabsTrigger>
+          <TabsTrigger value="type" className="data-[state=active]:bg-white rounded-lg py-2">Tipe Pasien</TabsTrigger>
+          <TabsTrigger value="package" className="data-[state=active]:bg-white rounded-lg py-2">Tipe Paket</TabsTrigger>
+          <TabsTrigger value="payment" className="data-[state=active]:bg-white rounded-lg py-2">Pembayaran</TabsTrigger>
+          {/* Discount Type tab */}
+          <TabsTrigger value="discount" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
+             <Tag className="w-3 h-3" /> Jenis Diskon
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="mt-6">
+            <TabsContent value="admin">
+              <AdminManager />
+            </TabsContent>
+
+            <TabsContent value="whatsapp_settings">
+              <WhatsAppSettings />
+            </TabsContent>
+
+            <TabsContent value="accounting_cats">
+              <AccountingCategoryManager />
+            </TabsContent>
+
+            <TabsContent value="media_assets" className="space-y-6">
+              <MediaAssetManager onUploadSuccess={handleUploadSuccess} />
+              <MediaAssetGallery key={reloadGallery} />
+            </TabsContent>
+
+            <TabsContent value="diagnosis_service">
+              <DiagnosisServiceManager />
+            </TabsContent>
+
+            <TabsContent value="source">
+              <OptionManager title="Sumber Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />
+            </TabsContent>
+            <TabsContent value="type">
+              <OptionManager title="Kategori Tipe Pasien" description="Kategori pasien (Normal, Homecare, dll)." category="patient_type" />
+            </TabsContent>
+            <TabsContent value="package">
+              <OptionManager title="Tipe Paket" description="Jenis paket perawatan." category="tipe_paket" />
+            </TabsContent>
+            <TabsContent value="payment">
+              <OptionManager title="Metode Pembayaran" description="Opsi pembayaran." category="payment_method" />
+            </TabsContent>
+            <TabsContent value="discount">
+              <DiscountTypeManager />
+            </TabsContent>
+        </div>
+      </Tabs>
+    </div>
+  );
+};
+
+export default SettingsPage;

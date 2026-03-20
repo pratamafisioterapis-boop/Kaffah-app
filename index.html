@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1e3a5f" />
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Kaffah Physio" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    
+    <title>Kaffah Physiotherapy</title>
+    
+    <!-- Critical CSS to prevent FOUC -->
+    <style>
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; }
+      #root { min-height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Fallback if JS fails completely -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; color: #333;">
+        <h1>JavaScript Required</h1>
+        <p>We're sorry, but this application requires JavaScript to be enabled.</p>
+      </div>
+    </noscript>
+  </body>
+</html>

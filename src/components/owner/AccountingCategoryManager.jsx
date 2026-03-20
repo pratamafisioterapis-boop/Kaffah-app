@@ -1,0 +1,295 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, Edit2, Trash2, Loader2, ChevronRight, ChevronDown, Folder
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from "@/components/ui/dialog";
+import {
+  getAccountingCategories, createAccountingCategory, updateAccountingCategory, deleteAccountingCategory,
+  getAccountingSubcategories, createAccountingSubcategory, updateAccountingSubcategory, deleteAccountingSubcategory
+} from '@/lib/api';
+
+const AccountingCategoryManager = () => {
+  const { toast } = useToast();
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  // Dialog States
+  const [isCatDialogOpen, setIsCatDialogOpen] = useState(false);
+  const [isSubCatDialogOpen, setIsSubCatDialogOpen] = useState(false);
+  const [isDeleteCatOpen, setIsDeleteCatOpen] = useState(false);
+  const [isDeleteSubCatOpen, setIsDeleteSubCatOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Selection/Form Data
+  const [selectedCat, setSelectedCat] = useState(null);
+  const [selectedSubCat, setSelectedSubCat] = useState(null);
+  const [catForm, setCatForm] = useState({ name: '' });
+  const [subCatForm, setSubCatForm] = useState({ categoryId: '', name: '' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [catRes, subRes] = await Promise.all([
+      getAccountingCategories(),
+      getAccountingSubcategories()
+    ]);
+
+    if (catRes.data) setCategories(catRes.data);
+    if (subRes.data) setSubcategories(subRes.data);
+    setLoading(false);
+  };
+
+  const toggleExpand = (catId) => {
+    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  // --- Category Handlers ---
+  const handleOpenAddCat = () => {
+    setSelectedCat(null);
+    setCatForm({ name: '' });
+    setIsCatDialogOpen(true);
+  };
+
+  const handleOpenEditCat = (cat) => {
+    setSelectedCat(cat);
+    setCatForm({ name: cat.category_name });
+    setIsCatDialogOpen(true);
+  };
+
+  const handleSaveCat = async () => {
+    if (!catForm.name.trim()) return toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama kategori harus diisi." });
+    
+    setIsProcessing(true);
+    let result;
+    if (selectedCat) {
+       result = await updateAccountingCategory(selectedCat.id, catForm.name);
+    } else {
+       result = await createAccountingCategory(catForm.name);
+    }
+
+    if (!result.error) {
+      toast({ title: "Berhasil", description: selectedCat ? "Kategori diperbarui." : "Kategori ditambahkan." });
+      fetchData();
+      setIsCatDialogOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Gagal", description: result.error.message });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleDeleteCat = async () => {
+    setIsProcessing(true);
+    const result = await deleteAccountingCategory(selectedCat.id);
+    if (!result.error) {
+      toast({ title: "Terhapus", description: "Kategori dan sub-kategori terkait telah dihapus." });
+      fetchData();
+      setIsDeleteCatOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Gagal", description: result.error.message });
+    }
+    setIsProcessing(false);
+  };
+
+  // --- Subcategory Handlers ---
+  const handleOpenAddSubCat = (catId) => {
+    setSelectedSubCat(null);
+    setSubCatForm({ categoryId: catId, name: '' });
+    setIsSubCatDialogOpen(true);
+  };
+
+  const handleOpenEditSubCat = (sub) => {
+    setSelectedSubCat(sub);
+    setSubCatForm({ categoryId: sub.category_id, name: sub.subcategory_name });
+    setIsSubCatDialogOpen(true);
+  };
+
+  const handleSaveSubCat = async () => {
+    if (!subCatForm.name.trim()) return toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama sub-kategori harus diisi." });
+
+    setIsProcessing(true);
+    let result;
+    if (selectedSubCat) {
+      result = await updateAccountingSubcategory(selectedSubCat.id, subCatForm.name);
+    } else {
+      result = await createAccountingSubcategory(subCatForm.categoryId, subCatForm.name);
+    }
+
+    if (!result.error) {
+      toast({ title: "Berhasil", description: selectedSubCat ? "Sub-kategori diperbarui." : "Sub-kategori ditambahkan." });
+      fetchData();
+      setIsSubCatDialogOpen(false);
+      // Auto expand parent
+      if (!selectedSubCat) {
+        setExpandedCategories(prev => ({ ...prev, [subCatForm.categoryId]: true }));
+      }
+    } else {
+      toast({ variant: "destructive", title: "Gagal", description: result.error.message });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleDeleteSubCat = async () => {
+    setIsProcessing(true);
+    const result = await deleteAccountingSubcategory(selectedSubCat.id);
+    if (!result.error) {
+      toast({ title: "Terhapus", description: "Sub-kategori telah dihapus." });
+      fetchData();
+      setIsDeleteSubCatOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Gagal", description: result.error.message });
+    }
+    setIsProcessing(false);
+  };
+
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Manajemen Kategori Akuntansi</h2>
+          <p className="text-sm text-slate-500">Atur kategori pemasukan dan pengeluaran.</p>
+        </div>
+        <Button onClick={handleOpenAddCat} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" /> Kategori Baru
+        </Button>
+      </div>
+
+      <div className="p-6">
+        {loading ? (
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-300" /></div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12 text-slate-400">Belum ada kategori.</div>
+        ) : (
+          <div className="space-y-3">
+            {categories.map(cat => {
+              const catSubs = subcategories.filter(sub => sub.category_id === cat.id);
+              const isExpanded = expandedCategories[cat.id];
+
+              return (
+                <div key={cat.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => toggleExpand(cat.id)}>
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                      <span className="font-medium text-slate-700">{cat.category_name}</span>
+                      <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">{catSubs.length} Sub</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenAddSubCat(cat.id)} className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                        <Plus className="w-3 h-3 mr-1" /> Sub
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditCat(cat)} className="h-8 w-8 text-slate-500">
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setSelectedCat(cat); setIsDeleteCatOpen(true); }} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className="bg-white p-2 space-y-1 border-t border-slate-100">
+                      {catSubs.length === 0 ? (
+                        <p className="text-xs text-slate-400 pl-9 py-2 italic">Belum ada sub-kategori.</p>
+                      ) : (
+                        catSubs.map(sub => (
+                          <div key={sub.id} className="flex items-center justify-between pl-9 pr-2 py-2 rounded hover:bg-slate-50 group">
+                            <div className="flex items-center gap-2">
+                              <Folder className="w-3.5 h-3.5 text-slate-300" />
+                              <span className="text-sm text-slate-600">{sub.subcategory_name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-blue-600">
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setSelectedSubCat(sub); setIsDeleteSubCatOpen(true); }} className="h-6 w-6 text-slate-400 hover:text-red-600">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* --- DIALOGS --- */}
+
+      {/* Category Dialog */}
+      <Dialog open={isCatDialogOpen} onOpenChange={setIsCatDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader><DialogTitle>{selectedCat ? 'Edit Kategori' : 'Tambah Kategori'}</DialogTitle></DialogHeader>
+          <div className="py-4">
+             <label className="text-sm font-medium mb-2 block">Nama Kategori</label>
+             <Input value={catForm.name} onChange={(e) => setCatForm({...catForm, name: e.target.value})} placeholder="Contoh: Operasional" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCatDialogOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveCat} disabled={isProcessing}>{isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subcategory Dialog */}
+      <Dialog open={isSubCatDialogOpen} onOpenChange={setIsSubCatDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader><DialogTitle>{selectedSubCat ? 'Edit Sub-Kategori' : 'Tambah Sub-Kategori'}</DialogTitle></DialogHeader>
+          <div className="py-4">
+             <label className="text-sm font-medium mb-2 block">Nama Sub-Kategori</label>
+             <Input value={subCatForm.name} onChange={(e) => setSubCatForm({...subCatForm, name: e.target.value})} placeholder="Contoh: Listrik" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSubCatDialogOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveSubCat} disabled={isProcessing}>{isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Confirmation */}
+      <Dialog open={isDeleteCatOpen} onOpenChange={setIsDeleteCatOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Hapus Kategori?</DialogTitle>
+            <DialogDescription>
+              Tindakan ini juga akan menghapus semua sub-kategori di dalamnya. Data keuangan yang sudah tersimpan tidak akan hilang, tapi referensi kategorinya mungkin terputus.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteCatOpen(false)}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteCat} disabled={isProcessing}>{isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Subcategory Confirmation */}
+      <Dialog open={isDeleteSubCatOpen} onOpenChange={setIsDeleteSubCatOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Hapus Sub-Kategori?</DialogTitle>
+            <DialogDescription>Anda yakin ingin menghapus sub-kategori ini?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteSubCatOpen(false)}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteSubCat} disabled={isProcessing}>{isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AccountingCategoryManager;

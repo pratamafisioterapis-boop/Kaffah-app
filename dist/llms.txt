@@ -1,0 +1,8 @@
+## Pages
+- [Admin Dashboard - Kaffah System Care](/admindashboard): Admin dashboard for Kaffah System Care
+- [Dashboard Overview | Kaffah Physiotherapy](/dashboard): Comprehensive overview of operational performance for Kaffah Physiotherapy.
+- [Kaffah Physiotherapy - Solusi Fisioterapi Profesional & Terpercaya](/landing): Klinik fisioterapi profesional dengan pendekatan evidence-based untuk pemulihan cedera, pasca operasi, saraf kejepit, dan stroke. Booking online sekarang.
+- [Login - Kaffah Support System](/login): Secure Login to Kaffah Physiotherapy System
+- [Owner Dashboard - Kaffah System Care](/ownerdashboard): Owner dashboard for Kaffah System Care
+- [Tarif Layanan - Kaffah Physiotherapy](/pricing): Daftar tarif dan paket fisioterapi Kaffah Physiotherapy. Transparan, terjangkau, dan profesional. Pilih paket yang sesuai kebutuhan pemulihan Anda.
+- [Therapist Dashboard - Kaffah System Care](/therapistdashboard): Therapist dashboard
