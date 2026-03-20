@@ -1,7 +1,8 @@
 {
   "short_name": "Kaffah Support",
   "name": "Kaffah Support System",
-  "start_url": "/?source=pwa",
+  "start_url": "/login",
+  "id":"/login",
 "scope": "/",
   "display": "standalone",
   "theme_color": "#0f172a",
