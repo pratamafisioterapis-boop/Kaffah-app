@@ -68,7 +68,8 @@ const { error } = await supabase
   ]);
 
 if (error) {
-  alert('ERROR SAVE: ' + error.message);
+  alert('ERROR SAVE: ' + JSON.stringify(error));
+  console.error(error);
 } else {
   alert('Subscription saved!');
 }
