@@ -214,7 +214,7 @@ const AdminAppointmentBooking = () => {
           <PopoverTrigger asChild>
             <Button
   variant="ghost"
-  className="w-full max-w-[220px] justify-center font-medium"
+  className="flex-1 min-w-0 justify-center font-medium"
 >
   <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
   <span className="truncate">
