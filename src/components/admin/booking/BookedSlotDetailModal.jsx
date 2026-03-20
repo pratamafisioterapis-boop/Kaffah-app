@@ -341,22 +341,16 @@ fetchBookedSlots(newDate);
       try {
         const timeToUse = selectedTime;
 const newDateTime = new Date(newDate + "T" + timeToUse).toISOString();
+if (error) {
+  if (error.message?.includes('conflict') || error.code === '23505') {
+    toast({
+      variant: "destructive",
+      title: "Slot sudah terisi"
+    });
+    return;
+  }
 
-// 🔴 VALIDASI: cek apakah slot sudah dipakai
-const { data: existing } = await supabase
-  .from('appointments')
-  .select('id')
-  .eq('therapist_id', appointment.therapist_id)
-  .eq('appointment_date', newDateTime)
-  .neq('id', appointment.id)
-  .maybeSingle();
-
-if (existing) {
-  toast({ 
-    variant: "destructive", 
-    title: "Slot sudah terisi" 
-  });
-  return;
+  throw error;
 }
         const { error } = await updateAppointment(appointment.id, {
           appointment_date: newDateTime,
