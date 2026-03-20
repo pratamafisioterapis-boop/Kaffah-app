@@ -52,9 +52,11 @@ if ('serviceWorker' in navigator) {
   if (permission !== 'granted') return;
 
   const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: 'ISI_NANTI_VAPID_PUBLIC_KEY'
-  });
+  userVisibleOnly: true,
+  applicationServerKey: 'ISI_NANTI_VAPID_PUBLIC_KEY'
+});
+
+alert('SUBSCRIBE BERHASIL');
 
   console.log('Push Subscription:', JSON.stringify(subscription));
 
