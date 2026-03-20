@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { AppointmentStateProvider } from '@/contexts/AppointmentStateContext';
-
+import { supabase } from '@/lib/customSupabaseClient';
 // Global Error Handler for non-React errors (e.g., syntax errors, script failures)
 window.onerror = function(message, source, lineno, colno, error) {
   console.error("GLOBAL ERROR CAUGHT:", message, source, lineno, colno, error);
@@ -57,6 +57,21 @@ if ('serviceWorker' in navigator) {
   });
 
   console.log('Push Subscription:', JSON.stringify(subscription));
+
+const { error } = await supabase
+  .from('push_subscriptions')
+  .insert([
+    {
+      subscription: subscription,
+      created_at: new Date().toISOString()
+    }
+  ]);
+
+if (error) {
+  alert('ERROR SAVE: ' + error.message);
+} else {
+  alert('Subscription saved!');
+}
 })
       .catch((error) => {
         console.log('SW registration failed:', error);
