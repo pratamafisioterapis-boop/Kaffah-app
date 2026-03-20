@@ -28,6 +28,8 @@ const AppointmentDetailModal = ({
   const { deleteAppointment } = useAppointmentState();
   
   const [loading, setLoading] = useState(false);
+  const [isRescheduleMode, setIsRescheduleMode] = useState(false);
+  const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const [originalData, setOriginalData] = useState(null);
@@ -164,12 +166,15 @@ const AppointmentDetailModal = ({
   }, [formData.appointment_date, formData.appointment_time, originalData, appointment]);
 
   const handleSubmit = async () => {
-    if (!formData.patient_id && !appointment?.guest_name && !appointment?.id) {
-         // Allow updates without re-validating patient_id if it was existing
-         // But new appointments MUST have a patient
-         toast({ variant: "destructive", title: "Missing Information", description: "Please select a patient." });
-         return;
-    }
+  if (isRescheduleMode) {
+    setShowRescheduleConfirm(true);
+    return;
+  }
+
+  if (!formData.patient_id && !appointment?.guest_name && !appointment?.id) {
+    toast({ variant: "destructive", title: "Missing Information", description: "Please select a patient." });
+    return;
+  }
     
     if (!formData.appointment_time) {
         toast({ variant: "destructive", title: "Time Required", description: "Please select an appointment time." });
@@ -204,7 +209,34 @@ const AppointmentDetailModal = ({
       setLoading(false);
     }
   };
+const handleConfirmReschedule = async () => {
+  setShowRescheduleConfirm(false);
 
+  setLoading(true);
+  try {
+    const fullDateTime = new Date(`${formData.appointment_date}T${formData.appointment_time}`).toISOString();
+
+    const payload = {
+      patient_id: formData.patient_id || null,
+      therapist_id: formData.therapist_id || null,
+      appointment_date: fullDateTime,
+      duration_minutes: parseInt(formData.duration_minutes),
+      status: 'rescheduled',
+      notes: formData.notes
+    };
+
+    await updateAppointment(appointment.id, payload);
+
+    toast({ title: "Rescheduled", description: "Appointment berhasil di-reschedule." });
+
+    if (onSuccess) onSuccess();
+    onClose();
+  } catch (error) {
+    toast({ variant: "destructive", title: "Error", description: "Gagal reschedule." });
+  } finally {
+    setLoading(false);
+  }
+};
   const handleConfirmDelete = async () => {
     if (!appointment?.id) return;
     setLoading(true);
@@ -237,7 +269,23 @@ const AppointmentDetailModal = ({
                 {appointment?.status === 'completed' && <Badge variant="secondary" className="bg-green-100 text-green-800"><Check className="w-3 h-3 mr-1"/>Completed</Badge>}
             </DialogTitle>
           </DialogHeader>
-          
+          {isRescheduleMode && (
+  <div className="bg-orange-50 border border-orange-200 text-orange-800 px-3 py-2 rounded-md flex justify-between items-center text-sm">
+    <span>⚠️ Reschedule Mode Active</span>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => {
+        setIsRescheduleMode(false);
+        setFormData(originalData); // balik ke data awal
+      }}
+      className="text-orange-700 hover:text-orange-900"
+      type="button"
+    >
+      Keluar
+    </Button>
+  </div>
+)}
           <div className="grid gap-4 py-4">
             {!formData.patient_id && appointment?.guest_name && (
                 <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-sm">
@@ -266,7 +314,7 @@ const AppointmentDetailModal = ({
     value={formData.therapist_id} 
     onChange={(val) => setFormData(prev => ({ ...prev, therapist_id: val, appointment_time: '' }))} 
     placeholder="Select Therapist..." 
-    disabled={!canEditTherapist}
+    disabled={!canEditTherapist && !isRescheduleMode}
     autoFocus={false}
 />
               </div>
@@ -282,7 +330,7 @@ const AppointmentDetailModal = ({
                     type="date" 
                     value={formData.appointment_date} 
                     onChange={(e) => setFormData(prev => ({ ...prev, appointment_date: e.target.value, appointment_time: '' }))} 
-                    disabled={!canEditDateTime || isCompleted}
+                    disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted}
                     autoFocus={false}
                 />
               </div>
@@ -295,8 +343,7 @@ const AppointmentDetailModal = ({
                 <Select 
                     value={formData.appointment_time} 
                     onValueChange={(val) => setFormData(prev => ({ ...prev, appointment_time: val }))} 
-                    disabled={!canEditDateTime || isCompleted || !formData.appointment_date || !formData.therapist_id}
-                >
+disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.appointment_date || !formData.therapist_id}                >
                   <SelectTrigger>
                     <SelectValue placeholder={loadingSlots ? "Loading..." : "Select Time"} />
                   </SelectTrigger>
@@ -349,14 +396,57 @@ const AppointmentDetailModal = ({
           </div>
 
           <DialogFooter className="flex justify-between sm:justify-between items-center w-full">
-            {appointment?.id && canDelete ? (
-              <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)} disabled={loading} type="button"><Trash2 className="w-4 h-4 mr-2" /> Delete</Button>
-            ) : (<div />)}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose} disabled={loading} type="button">Cancel</Button>
-              <Button onClick={handleSubmit} disabled={loading}>{loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save</Button>
-            </div>
-          </DialogFooter>
+  <div className="flex gap-2">
+    {appointment?.id && canDelete && (
+      <Button 
+        variant="destructive" 
+        size="sm" 
+        onClick={() => setShowDeleteConfirm(true)} 
+        disabled={loading} 
+        type="button"
+      >
+        <Trash2 className="w-4 h-4 mr-2" /> Delete
+      </Button>
+    )}
+
+    {appointment?.id && (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setFormData(prev => ({ ...prev, status: 'cancelled' }))}
+    disabled={loading || formData.status === 'cancelled'}
+    type="button"
+  >
+    Cancelled
+  </Button>
+)}
+
+{appointment?.id && (
+  <Button
+    variant="secondary"
+    size="sm"
+    onClick={() => {
+  setIsRescheduleMode(true);
+  setFormData(prev => ({ ...prev, status: 'rescheduled' }));
+}}
+    disabled={loading}
+    type="button"
+  >
+    Reschedule
+  </Button>
+)}
+</div>
+
+  <div className="flex gap-2">
+    <Button variant="outline" onClick={onClose} disabled={loading} type="button">
+      Close
+    </Button>
+    <Button onClick={handleSubmit} disabled={loading}>
+      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+      Save
+    </Button>
+  </div>
+</DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -369,6 +459,27 @@ const AppointmentDetailModal = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={showRescheduleConfirm} onOpenChange={setShowRescheduleConfirm}>
+  <DialogContent className="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Confirm Reschedule</DialogTitle>
+      <DialogDescription>
+        Yakin ingin merubah jadwal ini?
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button 
+        variant="outline" 
+        onClick={() => setShowRescheduleConfirm(false)}
+      >
+        Batal
+      </Button>
+      <Button onClick={handleConfirmReschedule}>
+        Ya, Reschedule
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </>
   );
 };
