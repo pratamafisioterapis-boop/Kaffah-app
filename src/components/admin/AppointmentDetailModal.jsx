@@ -31,7 +31,6 @@ const AppointmentDetailModal = ({
   const [isRescheduleMode, setIsRescheduleMode] = useState(false);
   const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
   const [originalData, setOriginalData] = useState(null);
   const [formData, setFormData] = useState({
     patient_id: '',
