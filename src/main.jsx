@@ -53,3 +53,9 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+// Request Notification Permission
+if ('Notification' in window) {
+  Notification.requestPermission().then(permission => {
+    console.log('Notification permission:', permission);
+  });
+}

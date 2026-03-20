@@ -214,7 +214,12 @@ const OwnerBookingCalendar = () => {
             </Button>
             
             <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
-            <Button variant="ghost" size="icon" className="shrink-0"> onClick={() => setDate(addDays(date, -1))}>
+            <Button 
+  variant="ghost" 
+  size="icon" 
+  className="shrink-0"
+  onClick={() => setDate(addDays(date, -1))}
+>
                 <ChevronLeft className="w-4 h-4" />
             </Button>
             

@@ -112,18 +112,17 @@ const TherapistCard = ({
               <Button
   variant="outline"
   size="icon"
-  className="shrink-0"
   className={cn(
-  "h-9 w-9 rounded-full transition-all duration-300",
-  "bg-white text-slate-800 border border-white shadow-xl",
-  "hover:bg-slate-100 hover:text-black",
-  "hover:scale-105 active:scale-95",
-  "relative z-30",
-    
+    "h-9 w-9 rounded-full transition-all duration-300",
+    "bg-white text-slate-800 border border-white shadow-xl",
+    "hover:bg-slate-100 hover:text-black",
+    "hover:scale-105 active:scale-95",
+    "relative z-30",
+
     // NORMAL
     "border-slate-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50",
 
-    // 🔥 HIGHLIGHT kalau tidak ada jadwal / full
+    // 🔥 HIGHLIGHT
     (isFullBooked || isNoSchedule) && 
     "border-blue-500 text-blue-600 bg-blue-50 shadow-md ring-2 ring-blue-200 animate-pulse"
   )}
