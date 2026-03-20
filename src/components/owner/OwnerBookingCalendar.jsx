@@ -213,7 +213,7 @@ const OwnerBookingCalendar = () => {
                 <RefreshCw className="h-4 w-4" />
             </Button>
             
-            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
+<div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded-lg border border-slate-200">
             <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, -1))}>
                 <ChevronLeft className="w-4 h-4" />
             </Button>
