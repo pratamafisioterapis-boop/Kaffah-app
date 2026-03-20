@@ -28,6 +28,7 @@ const [selectedTime, setSelectedTime] = useState("");
 const [bookedSlots, setBookedSlots] = useState([]);
 const fetchAvailableSlots = async (date) => {
   if (!date) return;
+  if (!appointment?.therapist_id) return;
 
   const { data, error } = await supabase.rpc(
     'get_available_slots_with_status_by_date',
@@ -53,6 +54,7 @@ const fetchAvailableSlots = async (date) => {
 };
 const fetchBookedSlots = async (date) => {
   if (!date) return;
+  if (!appointment?.therapist_id) return;
 
   const start = date + "T00:00:00";
   const end = date + "T23:59:59";
@@ -82,6 +84,7 @@ useEffect(() => {
 }, [newDate]);
 useEffect(() => {
   if (!isRescheduleMode || !newDate) return;
+  if (!appointment?.therapist_id) return;
 
   fetchAvailableSlots(newDate);
 fetchBookedSlots(newDate);
