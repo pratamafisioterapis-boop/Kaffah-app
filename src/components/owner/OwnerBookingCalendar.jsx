@@ -188,7 +188,7 @@ const OwnerBookingCalendar = () => {
   };
 
   return (
-    <div className="w-full max-w-full px-3 sm:px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+    <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
       <div className="flex items-center gap-4 mt-4 mb-4">
         <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600" onClick={() => navigate('/owner')}>
            <ArrowLeft className="w-4 h-4" />
@@ -196,13 +196,13 @@ const OwnerBookingCalendar = () => {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-2 sm:top-4 z-20">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-4 z-20 overflow-hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
           <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full min-w-0 overflow-hidden">
             <Button 
                 variant="outline" 
                 size="icon" 
@@ -213,17 +213,23 @@ const OwnerBookingCalendar = () => {
                 <RefreshCw className="h-4 w-4" />
             </Button>
             
-<div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded-lg border border-slate-200">
-            <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, -1))}>
+            <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <Button variant="ghost" size="icon" className="shrink-0"> onClick={() => setDate(addDays(date, -1))}>
                 <ChevronLeft className="w-4 h-4" />
             </Button>
             
             <Popover>
                 <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("min-w-[200px] justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0")}>
-                    <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-                    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-                </Button>
+                <Button 
+  variant="outline" 
+  className="flex-1 min-w-0 max-w-full overflow-hidden justify-start text-left font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0"
+>
+  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500 shrink-0" />
+
+  <span className="truncate w-full">
+    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+  </span>
+</Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
                 <Calendar

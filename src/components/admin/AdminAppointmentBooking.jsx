@@ -204,7 +204,13 @@ const AdminAppointmentBooking = () => {
 
         <Button
           variant="ghost"
-          size="icon"
+         ame="flex-1 min-w-0 justify-center font-medium"
+>
+  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
+  <span className="truncate">
+    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+  </span>
+</Button> size="icon"
           onClick={() => setDate(addDays(date, -1))}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -214,13 +220,7 @@ const AdminAppointmentBooking = () => {
           <PopoverTrigger asChild>
             <Button
   variant="ghost"
-  className="flex-1 min-w-0 justify-center font-medium"
->
-  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-  <span className="truncate">
-    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-  </span>
-</Button>
+  classN
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="end">
             <Calendar
