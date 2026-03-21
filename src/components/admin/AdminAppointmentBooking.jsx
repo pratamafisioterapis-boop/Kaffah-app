@@ -291,7 +291,7 @@ const formattedDate = format(date, "EEE, dd MMM yy", { locale: idLocale });
       )}
 
       <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="sm:max-w-md bg-white p-6 rounded-2xl">
+        <DialogContent className="w-full max-w-xl bg-white p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="mb-4">
             <DialogTitle>
               {activeModal?.type === 'slot' && 'Booking Slot'}

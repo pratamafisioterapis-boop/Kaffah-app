@@ -304,11 +304,11 @@ const PublicBookingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white font-sans text-slate-900 flex flex-col">
-      <header className="bg-white/90 backdrop-blur-md border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = '/'}>
-                {logoUrl ? <img src={logoUrl} alt="Logo" className="h-12 w-auto" /> : <div className="w-10 h-10 bg-[#1e3a8a] rounded flex items-center justify-center text-white font-bold">KC</div>}
-                <span className="font-bold text-xl text-[#1e3a8a] hidden sm:block tracking-tight">KAFFAH PHYSIOTHERAPY</span>
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+                {logoUrl ? <img src={logoUrl} alt="Logo" className="h-14 w-auto object-contain" /> : <div className="w-10 h-10 bg-[#1e3a8a] rounded flex items-center justify-center text-white font-bold">KC</div>}
+                <span className="font-bold text-base text-[#1e3a8a] tracking-tight">KAFFAH PHYSIOTHERAPY</span>
             </div>
         </div>
       </header>
