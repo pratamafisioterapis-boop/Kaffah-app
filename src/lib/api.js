@@ -510,10 +510,7 @@ export const createAppointment = async (params) => {
       return { error };
     }
 
-    supabase.functions
-  .invoke("process-booking-whatsapp-now")
-  .then(() => {})
-  .catch(() => {});
+    await supabase.functions.invoke("process-booking-whatsapp-now");
 
     return { data: { id: data }, error: null };
 
