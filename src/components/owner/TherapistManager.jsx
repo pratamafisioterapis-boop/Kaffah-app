@@ -226,6 +226,21 @@ const TherapistManager = () => {
     let savedData = null;
 
     if (editingTherapist) {
+      // 🔥 UPDATE EMAIL KE AUTH
+if (editingTherapist?.user_id && formData.email) {
+  await supabase.auth.admin.updateUserById(
+    editingTherapist.user_id,
+    { email: formData.email }
+  );
+}
+
+// 🔥 UPDATE PASSWORD KE AUTH
+if (editingTherapist?.user_id && password) {
+  await supabase.auth.admin.updateUserById(
+    editingTherapist.user_id,
+    { password: password }
+  );
+}
       const { data, error: updateError } = await savePhysiotherapist({ ...payload, id: editingTherapist.id });
       error = updateError;
       savedData = data;
