@@ -226,20 +226,13 @@ const TherapistManager = () => {
     let savedData = null;
 
     if (editingTherapist) {
-      // 🔥 UPDATE EMAIL KE AUTH
-if (editingTherapist?.user_id && formData.email) {
-  await supabase.auth.admin.updateUserById(
-    editingTherapist.user_id,
-    { email: formData.email }
-  );
-}
-
-// 🔥 UPDATE PASSWORD KE AUTH
-if (editingTherapist?.user_id && password) {
-  await supabase.auth.admin.updateUserById(
-    editingTherapist.user_id,
-    { password: password }
-  );
+      // 🔥 UPDATE AUTH VIA RPC (AMAN)
+if (editingTherapist?.user_id) {
+  await supabase.rpc('update_auth_user', {
+    p_user_id: editingTherapist.user_id,
+    p_email: formData.email || null,
+    p_password: password || null
+  });
 }
       const { data, error: updateError } = await savePhysiotherapist({ ...payload, id: editingTherapist.id });
       error = updateError;
