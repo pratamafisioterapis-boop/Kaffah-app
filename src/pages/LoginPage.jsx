@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -166,7 +167,9 @@ if (isPWA) {
       if (error) {
           throw error;
       }
-      
+       const { data: sessionData } = await supabase.auth.getSession();
+    console.log("SESSION CHECK:", sessionData);
+
       // Redirect is handled by useEffect
       toast({
         title: "Login Successful",
