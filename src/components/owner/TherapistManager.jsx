@@ -228,12 +228,13 @@ const TherapistManager = () => {
     if (editingTherapist) {
       // 🔥 UPDATE AUTH VIA RPC (AMAN)
 if (editingTherapist?.user_id) {
-  await supabase.rpc('update_auth_user', {
-    p_user_id: editingTherapist.user_id,
-    p_email: formData.email || null,
-    p_password: password || null
-  });
-}
+  const { error: authError } = await supabase.rpc('update_auth_user', {
+  p_user_id: editingTherapist.user_id,
+  p_email: formData.email || null,
+  p_password: password || null
+});
+
+console.log('AUTH UPDATE ERROR:', authError);
       const { data, error: updateError } = await savePhysiotherapist({ ...payload, id: editingTherapist.id });
       error = updateError;
       savedData = data;
