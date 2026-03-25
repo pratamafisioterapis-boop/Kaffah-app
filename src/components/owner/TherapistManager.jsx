@@ -226,23 +226,28 @@ const TherapistManager = () => {
     let savedData = null;
 
     if (editingTherapist) {
-      // 🔥 UPDATE AUTH VIA RPC (AMAN)
-if (editingTherapist?.user_id) {
-  const { error: authError } = await supabase.rpc('update_auth_user', {
-  p_user_id: editingTherapist.user_id,
-  p_email: formData.email || null,
-  p_password: password || null
-});
 
-console.log('AUTH UPDATE ERROR:', authError);
-      const { data, error: updateError } = await savePhysiotherapist({ ...payload, id: editingTherapist.id });
-      error = updateError;
-      savedData = data;
-    } else {
-      const { data, error: createError } = await createTherapistAccount(payload, password);
-      error = createError;
-      savedData = data;
-    }
+  // 🔥 UPDATE AUTH VIA RPC
+  if (editingTherapist?.user_id) {
+    const { error: authError } = await supabase.rpc('update_auth_user', {
+      p_user_id: editingTherapist.user_id,
+      p_email: formData.email || null,
+      p_password: password || null
+    });
+
+    console.log('AUTH UPDATE ERROR:', authError);
+  }
+
+  // 🔥 UPDATE DATA TERAPIS
+  const { data, error: updateError } = await savePhysiotherapist({
+    ...payload,
+    id: editingTherapist.id
+  });
+
+  error = updateError;
+  savedData = data;
+
+}
 
     if (!error) {
       toast({ title: "Berhasil", description: editingTherapist ? "Data terapis diperbarui" : "Akun terapis baru berhasil dibuat" });
