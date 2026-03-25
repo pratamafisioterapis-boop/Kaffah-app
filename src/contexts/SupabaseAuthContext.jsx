@@ -39,9 +39,6 @@ export const AuthProvider = ({ children }) => {
     setUserDetails(null);
     retryCount.current = 0;
     
-    // Clear persisted auth data
-    localStorage.removeItem('sb-access-token');
-    localStorage.removeItem('sb-refresh-token');
     
     // Also clear supabase specific keys
     const projectId = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0];
