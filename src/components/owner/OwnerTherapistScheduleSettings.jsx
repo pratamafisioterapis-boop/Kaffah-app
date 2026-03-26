@@ -14,10 +14,41 @@ const OwnerTherapistScheduleSettings = ({ therapistId }) => {
     const [updating, setUpdating] = useState(null); // Track which day is updating
 
     useEffect(() => {
-        if (therapistId) {
-            fetchSchedule();
+    let isMounted = true;
+
+    const load = async () => {
+        if (!therapistId) return;
+
+        setLoading(true);
+        const { data, error } = await getTherapistPracticeHours(therapistId);
+
+        if (!isMounted) return;
+
+        if (data) {
+            const fullWeek = Array.from({ length: 7 }, (_, i) => {
+                const existing = data.find(d => d.day_of_week === i);
+                return existing || {
+                    day_of_week: i,
+                    day_name: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][i],
+                    display_start_time: '09:00:00',
+                    display_end_time: '17:00:00',
+                    is_display_active: false
+                };
+            });
+            setSchedule(fullWeek);
+        } else {
+            toast({ variant: "destructive", title: "Error", description: error?.message || "Gagal memuat jadwal" });
         }
-    }, [therapistId]);
+
+        setLoading(false);
+    };
+
+    load();
+
+    return () => {
+        isMounted = false;
+    };
+}, [therapistId]);;
 
     const fetchSchedule = async () => {
         setLoading(true);
@@ -107,7 +138,7 @@ const OwnerTherapistScheduleSettings = ({ therapistId }) => {
                                 <Input 
                                     type="time" 
                                     value={day.display_start_time?.slice(0,5) || ''}
-                                    onChange={(e) => handleUpdate(day.day_of_week, { display_start_time: e.target.value })}
+                                    onChange={(e) => handleUpdate(day.day_of_week, { display_start_time: e.target.value + ':00' })}
                                     disabled={!day.is_display_active}
                                     className="w-32"
                                 />
@@ -115,7 +146,7 @@ const OwnerTherapistScheduleSettings = ({ therapistId }) => {
                                 <Input 
                                     type="time" 
                                     value={day.display_end_time?.slice(0,5) || ''}
-                                    onChange={(e) => handleUpdate(day.day_of_week, { display_end_time: e.target.value })}
+                                    onChange={(e) => handleUpdate(day.day_of_week, { display_end_time: e.target.value + ':00' })}
                                     disabled={!day.is_display_active}
                                     className="w-32"
                                 />
