@@ -191,8 +191,8 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
-                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(recap.start_time) : '-'} valueClassName="font-mono text-blue-700" />
-                            <DetailItem label="Selesai" value={recap.end_time ? formatTime(recap.end_time) : '-'} valueClassName="font-mono text-green-700" />
+                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(new Date(recap.start_time)) : '-'} valueClassName="font-mono text-blue-700" />
+                            <DetailItem label="Selesai" value={recap.end_time ? formatTime(new Date(recap.end_time)) : '-'} valueClassName="font-mono text-green-700" />
                         </div>
                     </div>
 

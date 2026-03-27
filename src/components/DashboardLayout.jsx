@@ -45,6 +45,15 @@ const safeFormatTime = (dateString) => {
 };
 
 const DashboardLayout = ({ children, navItems = [], role, userName }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, []);
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
@@ -463,11 +472,11 @@ const DashboardLayout = ({ children, navItems = [], role, userName }) => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xl font-bold text-slate-800 tracking-tight font-mono variant-numeric-tabular">
-                    {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <div className="h-4 w-px bg-indigo-200/60 mx-1"></div>
                   <span className="text-xs font-semibold text-slate-600 uppercase tracking-widest">
-                    {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    {currentTime.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
              </div>

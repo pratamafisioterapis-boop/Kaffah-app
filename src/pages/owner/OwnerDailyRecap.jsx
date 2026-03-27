@@ -355,7 +355,7 @@ const OwnerDailyRecap = () => {
                             ) : !recap.end_time ? (
                                 <div className="flex flex-col w-full gap-1">
                                     <div className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 w-full text-center">
-                                        {formatTime(recap.start_time)}
+                                        {formatTime(new Date(recap.start_time))}
                                     </div>
                                     <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white w-full" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
                                         {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
@@ -363,9 +363,9 @@ const OwnerDailyRecap = () => {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center bg-slate-100 px-2 py-1 rounded border border-slate-200 w-full">
-                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(recap.start_time)}</span>
+                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.start_time))}</span>
                                     <span className="text-slate-400 text-[8px] leading-none">↓</span>
-                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(recap.end_time)}</span>
+                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.end_time))}</span>
                                 </div>
                             )}
                         </td>

@@ -255,11 +255,21 @@ const DailyRecap = ({ hideControls = false }) => {
         });
       } else {
         toast({ 
-          title: "Sesi Dimulai", 
-          description: `Waktu mulai tercatat: ${timeString}`,
-          className: "bg-blue-600 text-white border-none"
-        });
-        await fetchRecaps();
+  title: "Sesi Dimulai", 
+  description: `Waktu mulai tercatat: ${timeString}`,
+  className: "bg-blue-600 text-white border-none"
+});
+
+// 🔥 UPDATE STATE LANGSUNG (INI KUNCI)
+setRecaps(prev =>
+  prev.map(item =>
+    item.id === recapId
+      ? { ...item, start_time: new Date().toISOString() }
+      : item
+  )
+);
+
+
       }
     } catch (e) {
       console.error("[UI] Exception in handleStartRecap:", e);
@@ -270,44 +280,48 @@ const DailyRecap = ({ hideControls = false }) => {
   };
 
   const handleEndRecap = async (e, recapId) => {
-    e.stopPropagation();
-    if (!recapId) return;
+  e.stopPropagation();
+  if (!recapId) return;
 
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const timeString = `${hours}:${minutes}:${seconds}`;
+  setActionLoadingId(recapId);
 
-    console.log(`[UI] Ending recap ${recapId} at ${timeString}`);
+  try {
+    const { data, error } = await setDailyRecapEndTime(recapId);
 
-    setActionLoadingId(recapId);
-    try {
-      const { data, error } = await setDailyRecapEndTime(recapId, timeString);
-      
-      if (error) {
-        console.error("[UI] Error ending recap:", error);
-        toast({ 
-          variant: "destructive", 
-          title: "Gagal Mengakhiri Sesi", 
-          description: error.message || "Terjadi kesalahan saat mengakhiri sesi." 
-        });
-      } else {
-        toast({ 
-          title: "Sesi Selesai", 
-          description: `Waktu selesai tercatat: ${timeString}`,
-          className: "bg-green-600 text-white border-none" 
-        });
-        await fetchRecaps();
-      }
-    } catch (e) {
-      console.error("[UI] Exception in handleEndRecap:", e);
-      toast({ variant: "destructive", title: "Error", description: e.message });
-    } finally { 
-      setActionLoadingId(null); 
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Mengakhiri Sesi",
+        description: error.message || "Terjadi kesalahan."
+      });
+    } else {
+      const nowISO = new Date().toISOString(); // 🔥 PENTING
+
+      toast({
+        title: "Sesi Selesai",
+        description: "Waktu selesai tercatat",
+        className: "bg-green-600 text-white border-none"
+      });
+
+      // 🔥 UPDATE STATE YANG BENAR
+      setRecaps(prev =>
+        prev.map(item =>
+          item.id === recapId
+            ? { ...item, end_time: nowISO }
+            : item
+        )
+      );
     }
-  };
-
+  } catch (e) {
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: e.message
+    });
+  } finally {
+    setActionLoadingId(null);
+  }
+};
 const getPremiumPastelBadge = (text) => {
   if (!text) return 'bg-slate-100 text-slate-500 border-0';
 
@@ -530,16 +544,16 @@ const getPremiumPastelBadge = (text) => {
                         </Button>
                       ) : !recap.end_time ? (
                         <div className="flex flex-col gap-1">
-                                         <span className="text-sm font-mono text-blue-600 bg-blue-50 rounded px-1">{formatTime(recap.start_time)}</span>
+                                         <span className="text-sm font-mono text-blue-600 bg-blue-50 rounded px-1">{formatTime(new Date(recap.start_time))}</span>
                                          <Button size="sm" className="h-6 w-full text-sm bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                             {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
                           </Button>
                         </div>
                       ) : (
                                          <div className="text-sm font-mono text-slate-500 flex flex-col items-center leading-tight">
-                          <span>{formatTime(recap.start_time)}</span>
+                          <span>{formatTime(new Date(recap.start_time))}</span>
                                              <span className="text-sm opacity-50">↓</span>
-                          <span>{formatTime(recap.end_time)}</span>
+                          <span>{formatTime(new Date(recap.end_time))}</span>
                         </div>
                       )}
                     </td>

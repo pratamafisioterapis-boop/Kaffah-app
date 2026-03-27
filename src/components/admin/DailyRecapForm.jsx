@@ -201,7 +201,7 @@ if (pkgLabel || pkgId) {
             service_type: data.service_type || '',
             patient_type: data.patient_type || '',
             package_type_id: data.package_tracking_id || data.package_type || '', // Explicitly empty, will be resolved by useEffect
-            package_type: data.package_type || '', // Preserve label
+            package_type: '', // Preserve label
             therapist_id: data.therapist_id || '',
             amount: data.amount || 0,
             payment_method: data.payment_method || '',
@@ -210,8 +210,10 @@ if (pkgLabel || pkgId) {
         }));
 
         if (data.patient_id) {
-            fetchPatientPackageInfo(data.patient_id);
-        }
+    setTimeout(() => {
+        fetchPatientPackageInfo(data.patient_id);
+    }, 0);
+}
     };
 
     // Resolve Package Type UUID based on initialData
@@ -245,28 +247,42 @@ if (pkgLabel || pkgId) {
         }
 
         try {
-            const { data, error } = await supabase
-                .from('package_tracking')
-                .select('*')
-                .eq('patient_id', patientId)
-                .in('status', ['aktif', 'pending', 'expired']) 
-                .order('created_at', { ascending: false })
-                .maybeSingle();
+            const { data: packages, error } = await supabase
+    .from('package_tracking')
+    .select(`
+        *,
+        packages (
+            name
+        )
+    `)
+    .eq('patient_id', patientId)
+    .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            if (data) {
-                const pkg = data;
+            if (packages && packages.length > 0) {
+    const pkg = packages.find(p => 
+    p.status === 'aktif' &&
+    p.sessions_used < p.total_sessions
+);
+
+    if (!pkg) {
+        setPackageInfo(null);
+        return;
+    }
                 const endDate = new Date(pkg.extended_until || pkg.end_date);
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 
-                const isExpired = endDate < today && pkg.sessions_used < pkg.total_sessions;
+               const isExpired = 
+    endDate < today || 
+    pkg.sessions_used >= pkg.total_sessions;
                 
                 setPackageInfo({
-                    ...pkg,
-                    isExpired
-                });
+    ...pkg,
+    package_name: pkg.packages?.name || pkg.package_name,
+    isExpired
+});
 
                 if (mode === 'add') {
                     if (!isExpired && pkg.status !== 'habis') {
@@ -339,7 +355,15 @@ if (pkgLabel || pkgId) {
         try {
             const isoDate = parseDateFromDisplay(formData.recap_date);
             const therapistName = therapists.find(t => t.value === formData.therapist_id)?.label || '';
-
+const { data: activePackage } = await supabase
+  .from('package_tracking')
+  .select('id')
+  .eq('patient_id', formData.patient_id)
+  .eq('status', 'aktif')
+  .lt('sessions_used', 'total_sessions')
+  .order('created_at', { ascending: false })
+  .limit(1)
+  .single();
             const payload = {
                 recap_date: isoDate,
                 patient_id: formData.patient_id,
@@ -347,6 +371,7 @@ if (pkgLabel || pkgId) {
                 diagnosis: formData.diagnosis,
                 service_type: formData.service_type,
                 patient_type: formData.patient_type,
+               package_tracking_id: activePackage?.id || null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null, 
                 therapist_id: formData.therapist_id,

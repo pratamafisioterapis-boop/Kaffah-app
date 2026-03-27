@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/customSupabaseClient';
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { createTherapistSchedule } from '@/lib/api';
@@ -141,25 +142,23 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
           throw new Error(`Shift #${i+1}: ${timeRangeVal.error}`);
         }
 
-        const otherNewShifts = shifts.filter((_, idx) => idx !== i);
-        const internalOverlap = Utils.validateNoOverlappingShifts(shift, otherNewShifts);
-        if (!internalOverlap.valid) {
-             throw new Error(`Shift #${i+1}: Bertabrakan dengan shift lain yang sedang dibuat.`);
-        }
+        // OVERLAP VALIDATION DISABLED (allow overlapping shifts)
+// const otherNewShifts = shifts.filter((_, idx) => idx !== i);
+// const internalOverlap = Utils.validateNoOverlappingShifts(shift, otherNewShifts);
+// if (!internalOverlap.valid) {
+//      throw new Error(`Shift #${i+1}: Bertabrakan dengan shift lain yang sedang dibuat.`);
+// }
         
-        const existingForDay = existingSchedules
-  .filter(s => s.day_of_week === parseInt(dayOfWeek))
-  .map(s => ({
-      start_time: s.start_time?.slice(0,5),
-      end_time: s.end_time?.slice(0,5)
-  }));
-        const dbOverlap = Utils.validateNoOverlappingShifts(shift, existingForDay);
-
-if (!dbOverlap || dbOverlap.valid === false) {
-  throw new Error(`Shift #${i + 1}: ${dbOverlap?.error || 'Jadwal bertabrakan dengan jadwal yang sudah ada.'}`);
-
-        }
+        
       }
+// DELETE DISABLED (support multi shift)
+// const { error: deleteError } = await supabase
+//   .from('therapist_schedules')
+//   .delete()
+//   .eq('therapist_id', therapist.id)
+//   .eq('day_of_week', parseInt(dayOfWeek));
+
+
 
       // 2. Submit Loop
       const results = [];
@@ -192,13 +191,30 @@ if (!dbOverlap || dbOverlap.valid === false) {
         if (!validation.valid) {
            throw new Error(`Validasi Gagal (Shift #${i+1}): ${validation.errorString}`);
         }
+// CEK DUPLICATE DULU
+const { data: existing } = await supabase
+  .from('therapist_schedules')
+  .select('*')
+  .eq('therapist_id', payload.therapist_id)
+  .eq('day_of_week', payload.day_of_week)
+  .eq('start_time', payload.start_time)
+  .eq('end_time', payload.end_time)
+  .maybeSingle();
 
+if (existing) {
+  console.log('⏭️ Skip duplicate shift:', payload);
+  continue;
+}
+
+// BARU INSERT
         const result = await createTherapistSchedule(payload);
         console.log(`API Result for Shift #${i+1}:`, result);
 
         results.push({ ...result, index: i });
       }
-
+if (results.length === 0) {
+  throw new Error("Semua shift sudah ada, tidak ada data baru yang disimpan.");
+}
       // 3. Process Results & Error Handling
       const failed = results.filter(r => r.success === false || r.error);
       
@@ -233,7 +249,7 @@ if (!dbOverlap || dbOverlap.valid === false) {
 
       toast({
         title: "Berhasil",
-        description: `${shifts.length} shift berhasil ditambahkan.`,
+        description: `${results.length} shift berhasil ditambahkan.`,
         className: "bg-green-50 border-green-200 text-green-800"
       });
       

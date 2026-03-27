@@ -24,7 +24,7 @@ const TherapistScheduleSettingsPage = () => {
     return (
         <div className="container mx-auto p-6 max-w-4xl">
             <div className="flex items-center gap-4 mb-6">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/owner/therapists')}>
+                <Button variant="ghost" size="icon" onClick={() => navigate('/owner/physiotherapist-management')}>
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div>

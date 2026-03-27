@@ -484,7 +484,23 @@ export const createAppointment = async (params) => {
     if (!finalDate) {
       throw new Error("Appointment date is required");
     }
+// 🔥 CEK PAKET AKTIF
+let activePackage = null;
 
+if (params.p_patient_id || params.patientId) {
+  const patientId = params.p_patient_id || params.patientId;
+
+  const { data } = await supabase
+    .from('package_tracking')
+    .select('id, package_name')
+    .eq('patient_id', patientId)
+    .eq('status', 'aktif')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  activePackage = data;
+}
     const payload = {
       p_therapist_id: params.p_therapist_id || params.therapistId,
       p_appointment_date: finalDate,
@@ -789,13 +805,17 @@ export const getPatientActivePackage = async (patientId) => {
       .from('package_tracking')
       .select('*')
       .eq('patient_id', patientId)
-      .gt('total_sessions', 1) // 🔥 hanya paket (bukan single session)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('status', 'aktif')
+      .order('created_at', { ascending: false });
 
     if (error) return { error };
-    return { data, error: null };
+
+    // 🔥 FILTER DI JS (INI KUNCI)
+    const activePackage = (data || []).find(
+      p => p.sessions_used < p.total_sessions
+    );
+
+    return { data: activePackage || null, error: null };
 
   }, 'getPatientActivePackage', { retry: true });
 };
@@ -854,11 +874,34 @@ if (baseDate < today) {
 export const createDailyRecap = async (payload) => {
   return safeQuery(async () => {
     const cleanedPayload = cleanDailyRecapPayload(payload);
+    // 🔥 FIX WAJIB: pastikan patient_id selalu ada
+if (!cleanedPayload.patient_id && cleanedPayload.actual_patient_id) {
+  cleanedPayload.patient_id = cleanedPayload.actual_patient_id;
+}
+if (!cleanedPayload.patient_id) {
+  throw new Error("PATIENT ID KOSONG - TIDAK BOLEH LANJUT");
+}
     
     if (cleanedPayload.package_type && typeof cleanedPayload.package_type !== 'string') {
       cleanedPayload.package_type = String(cleanedPayload.package_type);
     }
+// 🔥 AUTO APPLY PACKAGE (WAJIB)
+if (cleanedPayload.patient_id) {
+  const { data: activePackage } = await supabase
+    .from('package_tracking')
+    .select('id, package_name')
+    .eq('patient_id', cleanedPayload.patient_id)
+    .eq('status', 'aktif')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
+  if (activePackage) {
+    cleanedPayload.package_tracking_id = activePackage.id;
+    cleanedPayload.package_type = activePackage.package_name;
+    cleanedPayload.amount = 0;
+  }
+}
     const { data, error } = await supabase.rpc(
       'create_daily_recap_with_package',
       { p_payload: cleanedPayload }
@@ -916,6 +959,8 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   discount_type,
   discount_value,
   created_at,
+  start_time,
+  end_time,
 
   patients!patient_id(
     id,
@@ -1829,8 +1874,35 @@ export const getTherapistTimeOff = async (therapistId) => {
 
   }, 'getTherapistTimeOff');
 };
-export const getTherapistPracticeHours = async () => ({ data: [] });
-export const updateTherapistPracticeHours = async () => ({ data: {} });
+export const getTherapistPracticeHours = async (therapistId) => {
+  return safeQuery(async () => {
+    return await supabase
+      .from('therapist_schedules')
+      .select('*')
+      .eq('therapist_id', therapistId);
+  }, 'getTherapistPracticeHours');
+};
+export const updateTherapistPracticeHours = async (
+  therapistId,
+  dayOfWeek,
+  startTime,
+  endTime,
+  isActive
+) => {
+  return safeQuery(async () => {
+    return await supabase
+      .from('therapist_schedules')
+      .upsert({
+  therapist_id: therapistId,
+  day_of_week: dayOfWeek,
+  start_time: startTime,
+end_time: endTime,
+  display_start_time: startTime,
+  display_end_time: endTime,
+  is_display_active: isActive
+}, { onConflict: 'therapist_id,day_of_week' });
+  }, 'updateTherapistPracticeHours');
+};
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
     if (!payload?.id) {

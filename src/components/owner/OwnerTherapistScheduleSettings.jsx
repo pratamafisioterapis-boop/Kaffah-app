@@ -84,12 +84,16 @@ const OwnerTherapistScheduleSettings = ({ therapistId }) => {
         const currentDay = updatedSchedule.find(d => d.day_of_week === dayOfWeek);
         
         const { error } = await updateTherapistPracticeHours(
-            therapistId,
-            dayOfWeek,
-            currentDay.display_start_time,
-            currentDay.display_end_time,
-            currentDay.is_display_active
-        );
+    therapistId,
+    dayOfWeek,
+    currentDay.display_start_time?.length === 5 
+        ? currentDay.display_start_time + ':00' 
+        : currentDay.display_start_time,
+    currentDay.display_end_time?.length === 5 
+        ? currentDay.display_end_time + ':00' 
+        : currentDay.display_end_time,
+    currentDay.is_display_active
+);
 
         if (error) {
             toast({ variant: "destructive", title: "Gagal Update", description: error.message });

@@ -50,6 +50,7 @@ const ManualBookingForm = ({ therapist, date, onClose, onSuccess, leaveStatus = 
   const [conflictData, setConflictData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [resultData, setResultData] = useState(null);
+  const [packageInfo, setPackageInfo] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
 
   const isLeave = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
@@ -146,11 +147,15 @@ const ManualBookingForm = ({ therapist, date, onClose, onSuccess, leaveStatus = 
 
       const { data: activePkg } = await getActivePackage(val);
       if (activePkg) {
-        toast({
-          title: "Paket Aktif Ditemukan",
-          description: `Pasien memiliki paket aktif: ${activePkg.package_name}.`
-        });
-      }
+  setPackageInfo(activePkg);
+
+  toast({
+    title: "Paket Aktif Ditemukan",
+    description: `Pasien memiliki paket aktif: ${activePkg.package_name}.`
+  });
+} else {
+  setPackageInfo(null);
+}
     } catch {}
   };
 
@@ -490,14 +495,41 @@ const handleConfirmRecurring = async () => {
       </div>
 
       {formData.patient_type === 'registered' ? (
-        <SearchableSelect
-          options={patientOptions}
-          value={formData.patient_id}
-          onChange={handlePatientSelect}
-          placeholder="Cari nama pasien..."
-          disabled={isLeave}
-        />
-      ) : (
+  <>
+    <SearchableSelect
+      options={patientOptions}
+      value={formData.patient_id}
+      onChange={handlePatientSelect}
+      placeholder="Cari nama pasien..."
+      disabled={isLeave}
+    />
+
+    {packageInfo && (
+      <div className="border rounded-lg p-3 bg-green-50 mt-2">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">{packageInfo.package_name}</span>
+          <span className="text-xs bg-green-200 px-2 py-1 rounded">AKTIF</span>
+        </div>
+
+        <div className="flex gap-2 mt-2">
+          <div className="flex-1 bg-gray-100 p-2 rounded text-center">
+            <div className="text-xs">Terpakai</div>
+            <div className="font-bold">
+              {packageInfo.sessions_used}/{packageInfo.total_sessions}
+            </div>
+          </div>
+
+          <div className="flex-1 bg-gray-100 p-2 rounded text-center">
+            <div className="text-xs">Sisa</div>
+            <div className="font-bold">
+              {packageInfo.total_sessions - packageInfo.sessions_used}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
+) : (
         <>
           <Input
             placeholder="Nama Pasien"
