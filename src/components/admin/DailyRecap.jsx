@@ -198,9 +198,9 @@ const DailyRecap = ({ hideControls = false }) => {
         const formatted = safeData.map(r => ({
           ...r,
           date: r.recap_date,
-          display_therapist_name: getTherapistName(r) 
-        }));
-        
+          display_therapist_name: getTherapistName(r),
+        package_type: r.package_type || (r.package_tracking_id ? 'Paket' : null)
+}));
         setRecaps(formatted);
         setTotalRecords(count || 0);
         setTotalPages(Math.ceil((count || 0) / limit) || 1);
@@ -502,7 +502,7 @@ const getPremiumPastelBadge = (text) => {
                recaps.map((recap, idx) => {
                  const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
                  const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
-                 const packageLabel = optionsMap[recap.package_type] || recap.package_type || '-';
+                 const packageLabel = recap.package_type || '-';
                  
                  return (
                   <motion.tr

@@ -261,15 +261,12 @@ if (pkgLabel || pkgId) {
             if (error) throw error;
 
             if (packages && packages.length > 0) {
-    const pkg = packages.find(p => 
-    p.status === 'aktif' &&
-    p.sessions_used < p.total_sessions
-);
+    const pkg = packages[0]; // ambil terakhir (meskipun expired / habis)
 
-    if (!pkg) {
-        setPackageInfo(null);
-        return;
-    }
+if (!pkg) {
+    setPackageInfo(null);
+    return;
+}
                 const endDate = new Date(pkg.extended_until || pkg.end_date);
                 const today = new Date();
                 today.setHours(0,0,0,0);
@@ -284,17 +281,18 @@ if (pkgLabel || pkgId) {
     isExpired
 });
 
-                if (mode === 'add') {
-                    if (!isExpired && pkg.status !== 'habis') {
-                         setFormData(prev => ({
-                             ...prev,
-                             package_type_id: pkg.package_type_id,
-                             package_type: pkg.package_name,
-                             amount: 0,
-                             payment_method: 'Package'
-                         }));
-                    }
-                }
+                const isPackageAlreadySelected = !!formData.package_type_id;
+
+if (mode === 'add' && !isPackageAlreadySelected) {
+    setFormData(prev => ({
+        ...prev,
+        package_type_id: pkg.package_type_id,
+        package_type: pkg.package_name,
+        amount: 0,
+        payment_method: 'Package'
+    }));
+}
+                
             } else {
                 setPackageInfo(null);
             }
@@ -306,9 +304,11 @@ if (pkgLabel || pkgId) {
 
     const handlePatientChange = (val) => {
         setFormData(prev => ({
-            ...prev,
-            patient_id: val
-        }));
+    ...prev,
+    patient_id: val,
+    package_type_id: '',   // reset hanya saat ganti pemilik
+    package_type: ''
+}));
         fetchPatientPackageInfo(val);
     };
 
@@ -371,7 +371,7 @@ const { data: activePackage } = await supabase
                 diagnosis: formData.diagnosis,
                 service_type: formData.service_type,
                 patient_type: formData.patient_type,
-               package_tracking_id: activePackage?.id || null,
+               package_tracking_id: formData.package_type_id || null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null, 
                 therapist_id: formData.therapist_id,

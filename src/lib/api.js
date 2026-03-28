@@ -86,7 +86,7 @@ const enrichedDiagnosis = diagArray.map(d => optionsMap[d] || d);
 
 const enrichedServiceType = optionsMap[recap.service_type] || recap.service_type;
 const enrichedPatientType = optionsMap[recap.patient_type] || recap.patient_type;
-const enrichedPackageType = optionsMap[recap.package_type] || recap.package_type;
+const enrichedPackageType = recap.package_type;
 const enrichedPaymentMethod = optionsMap[recap.payment_method] || recap.payment_method;
 
 return {

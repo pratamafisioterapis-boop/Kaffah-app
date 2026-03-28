@@ -71,7 +71,9 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     // Resolve labels from IDs using optionsMap
     const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
     const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
-    const packageLabel = optionsMap[recap.package_type] || recap.package_type || '-';
+    const packageLabel =
+  recap.package_type ||
+  (recap.package_tracking_id ? 'Paket' : '-');
 
     const renderDiagnoses = (diagnosis) => {
     let diagnosesList = [];
