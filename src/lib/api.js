@@ -660,7 +660,11 @@ export const getPatients = async (searchTerm = '') => {
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
-      query = query.or(`full_name.ilike.%${searchTerm.trim()}%,phone.ilike.%${searchTerm.trim()}%`);
+      const terms = searchTerm.trim().split(/\s+/);
+
+terms.forEach(term => {
+  query = query.ilike('full_name', `%${term}%`);
+});
     }
 
     const { data, error } = await query.range(0, 4000);
@@ -978,7 +982,7 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
     address,
     phone
   ),
-  therapist:physiotherapists!therapist_id(
+  therapist:physiotherapists!daily_recaps_therapist_id_fkey(
     id,
     name
   )

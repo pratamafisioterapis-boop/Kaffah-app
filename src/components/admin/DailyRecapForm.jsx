@@ -364,23 +364,35 @@ const { data: activePackage } = await supabase
   .order('created_at', { ascending: false })
   .limit(1)
   .single();
-            const payload = {
-                recap_date: isoDate,
-                patient_id: formData.patient_id,
-                actual_patient_id: formData.actual_patient_id,
-                diagnosis: formData.diagnosis,
-                service_type: formData.service_type,
-                patient_type: formData.patient_type,
-               package_tracking_id: formData.package_type_id || null,
-                package_type_id: formData.package_type_id || null,
-                package_type: formData.package_type || null, 
-                therapist_id: formData.therapist_id,
-                therapist_name: therapistName,
-                amount: parseFloat(formData.amount) || 0,
-                payment_method: formData.payment_method,
-                discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
-                discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0)
-            };
+            const selectedDiagnosisLabels = diagnoses
+  .filter(d => formData.diagnosis.includes(d.value))
+  .map(d => d.label);
+
+const selectedServiceLabel = services.find(s => s.value === formData.service_type)?.label || '';
+const selectedPatientTypeLabel = patientTypes.find(p => p.value === formData.patient_type)?.label || '';
+
+const payload = {
+    recap_date: isoDate,
+    patient_id: formData.patient_id,
+    actual_patient_id: formData.actual_patient_id,
+
+    diagnosis: formData.diagnosis,
+    diagnosis_labels: selectedDiagnosisLabels,
+
+    service_type: selectedServiceLabel,
+    patient_type: selectedPatientTypeLabel,
+
+    package_tracking_id: formData.package_type_id || null,
+    package_type_id: formData.package_type_id || null,
+    package_type: formData.package_type || null,
+
+    therapist_id: formData.therapist_id,
+    therapist_name: therapistName,
+    amount: parseFloat(formData.amount) || 0,
+    payment_method: formData.payment_method,
+    discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
+    discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0)
+};
 
             let result;
             if (mode === 'add') {

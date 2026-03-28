@@ -151,7 +151,7 @@ const OwnerDailyRecap = () => {
                 *,
                 patients:patients!daily_recap_patient_id_fkey(id, full_name, medical_record_number, phone),
                 actual_patients:patients!daily_recap_actual_patient_id_fkey(id, full_name, medical_record_number, phone),
-                therapist:physiotherapists!therapist_id(id, name)
+                therapist:physiotherapists!daily_recaps_therapist_id_fkey(id, name)
             `, { count: 'exact' })
             .gte('recap_date', queryDateRange.start)
             .lte('recap_date', queryDateRange.end);

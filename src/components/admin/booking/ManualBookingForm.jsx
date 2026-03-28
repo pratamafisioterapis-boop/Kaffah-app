@@ -32,6 +32,9 @@ const ManualBookingForm = ({ therapist, date, onClose, onSuccess, leaveStatus = 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
+  const [patientSearch, setPatientSearch] = useState('');
+const [filteredPatients, setFilteredPatients] = useState([]);
+const [showDropdown, setShowDropdown] = useState(false);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [matchedSlot, setMatchedSlot] = useState(null);
   const [slotError, setSlotError] = useState(null);
@@ -328,11 +331,7 @@ const handleConfirmRecurring = async () => {
       setLoading(false);
     }
   };
-  const patientOptions = patients.map(p => ({
-    value: p.id,
-    label: `${p.full_name || 'Tanpa Nama'} (${p.medical_record_number || '-'})`,
-    description: p.phone
-  }));
+  
   if (showConflictModal && conflictData) {
     return (
       <div className="space-y-4">
@@ -496,13 +495,52 @@ const handleConfirmRecurring = async () => {
 
       {formData.patient_type === 'registered' ? (
   <>
-    <SearchableSelect
-      options={patientOptions}
-      value={formData.patient_id}
-      onChange={handlePatientSelect}
-      placeholder="Cari nama pasien..."
-      disabled={isLeave}
-    />
+    <div className="space-y-2 relative">
+  <Input
+    placeholder="Cari nama pasien..."
+    value={patientSearch}
+    onChange={async (e) => {
+      const value = e.target.value;
+      setPatientSearch(value);
+
+      if (!value) {
+        setFilteredPatients([]);
+        return;
+      }
+
+      try {
+        const { data } = await getPatients(value);
+        setFilteredPatients(data || []);
+        setShowDropdown(true);
+      } catch {}
+    }}
+  />
+
+  {showDropdown && (
+    <div className="absolute z-50 w-full bg-white border rounded mt-1 max-h-48 overflow-auto shadow">
+      {filteredPatients.length > 0 ? (
+        filteredPatients.map(p => (
+          <div
+            key={p.id}
+            onClick={() => {
+              handlePatientSelect(p.id);
+              setPatientSearch(p.full_name);
+              setShowDropdown(false);
+            }}
+            className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+          >
+            <div className="font-medium">{p.full_name}</div>
+            <div className="text-xs text-gray-500">{p.medical_record_number}</div>
+          </div>
+        ))
+      ) : (
+        <div className="p-2 text-gray-400 text-sm">
+          Tidak ditemukan
+        </div>
+      )}
+    </div>
+  )}
+</div>
 
     {packageInfo && (
       <div className="border rounded-lg p-3 bg-green-50 mt-2">

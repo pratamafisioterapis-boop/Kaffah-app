@@ -167,7 +167,7 @@ const DailyRecap = ({ hideControls = false }) => {
             address,
             phone
           ),
-          therapist:physiotherapists!therapist_id(
+          therapist:physiotherapists!daily_recaps_therapist_id_fkey(
             id,
             name
           )

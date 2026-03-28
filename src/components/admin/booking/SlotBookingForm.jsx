@@ -31,6 +31,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
+  
   const [packageInfo, setPackageInfo] = useState(null);
   const [isJustActivated, setIsJustActivated] = useState(false);
   const [showExtendModal, setShowExtendModal] = useState(false);
@@ -111,10 +112,12 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
       }
 
         setPackageInfo(pkg);
-      toast({
-  title: "DEBUG PACKAGE",
-  description: pkg ? JSON.stringify(pkg).slice(0, 100) : "NULL"
-});
+     if (!pkg) {
+  toast({
+    title: "Info Paket",
+    description: "Pasien tidak memiliki paket yang aktif/expired"
+  });
+}
       setIsJustActivated(true);
       setTimeout(() => setIsJustActivated(false), 2000);
 
