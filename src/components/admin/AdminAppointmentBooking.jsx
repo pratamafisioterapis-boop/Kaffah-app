@@ -39,7 +39,10 @@ const AdminAppointmentBooking = () => {
   const { user, userDetails } = useAuth();
   const { toast } = useToast();
 
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(() => {
+  const saved = localStorage.getItem('appointment_date');
+  return saved ? new Date(saved) : new Date();
+});
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -49,10 +52,18 @@ const AdminAppointmentBooking = () => {
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-const formattedDate = format(date, "EEE, dd MMM yy", { locale: idLocale });
+const formattedDate = date
+  ? format(date, "EEE, dd MMM yy", { locale: idLocale })
+  : '';
   useEffect(() => {
     loadInitialData();
   }, [user, userDetails]);
+
+  useEffect(() => {
+  if (date) {
+    localStorage.setItem('appointment_date', date.toISOString());
+  }
+}, [date]);
 
   useEffect(() => {
     if (therapists.length > 0) {
