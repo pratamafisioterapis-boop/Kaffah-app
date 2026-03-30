@@ -66,7 +66,7 @@ const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) =>
         service_type: '',
         patient_type: '',
         package_type_id: '',
-        package_type: '',
+        package_type: data.package_type || '',
         therapist_id: '',
         amount: '',
         payment_method: '',
@@ -201,7 +201,7 @@ if (pkgLabel || pkgId) {
             service_type: data.service_type || '',
             patient_type: data.patient_type || '',
             package_type_id: data.package_tracking_id || data.package_type || '', // Explicitly empty, will be resolved by useEffect
-            package_type: '', // Preserve label
+            package_type: data.package_type || '', // Preserve label
             therapist_id: data.therapist_id || '',
             amount: data.amount || 0,
             payment_method: data.payment_method || '',
@@ -384,7 +384,7 @@ const payload = {
 
     package_tracking_id: null,
     package_type_id: formData.package_type_id || null,
-    package_type: formData.package_type || null,
+    package_type: formData.package_type ?? initialData?.package_type ?? null,
 
     therapist_id: formData.therapist_id,
     therapist_name: therapistName,
@@ -518,7 +518,7 @@ const payload = {
                                     <RefreshCw className="w-3 h-3 mr-1" /> Extend
                                 </Button>
                                 <Button size="sm" onClick={() => {
-                                    setFormData(prev => ({ ...prev, package_type_id: '', package_type: '', amount: '' }));
+                                    setFormData(prev => ({ ...prev, package_type_id: '', package_type: data.package_type || '', amount: '' }));
                                 }}>
                                     Beli Baru
                                 </Button>
