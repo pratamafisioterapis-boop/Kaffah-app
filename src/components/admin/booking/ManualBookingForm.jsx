@@ -186,32 +186,7 @@ const [showDropdown, setShowDropdown] = useState(false);
       });
       return;
     }
-    // 🔥 CEK BENTROK APPOINTMENT
-    const startDate = new Date(`${format(date, 'yyyy-MM-dd')}T${formData.start_time}:00`);
-    const endDate = new Date(startDate.getTime() + (matchedSlot.calculated_duration || 60) * 60000);
-
-    const { data: existingAppointments } = await supabase
-      .from('appointments')
-      .select('appointment_date, duration_minutes')
-      .eq('therapist_id', therapist.id);
-
-    const isConflict = existingAppointments?.some(app => {
-      const appStart = new Date(app.appointment_date);
-      const appEnd = new Date(appStart.getTime() + app.duration_minutes * 60000);
-
-      return (
-        startDate < appEnd && endDate > appStart
-      );
-    });
-
-    if (isConflict) {
-      toast({
-        variant: "destructive",
-        title: "Jadwal Bentrok",
-        description: "Sudah ada appointment di jam tersebut."
-      });
-      return;
-    }
+    
     
     // 🔥 HANDLE RECURRING
     if (isRecurring) {
@@ -280,6 +255,7 @@ const [showDropdown, setShowDropdown] = useState(false);
         patientId: formData.patient_type === 'registered' ? formData.patient_id : null,
         guestName: formData.patient_type === 'guest' ? formData.guest_name : null,
         guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null,
+        p_allow_overlap: true
       });
 
       if (result?.error) {
