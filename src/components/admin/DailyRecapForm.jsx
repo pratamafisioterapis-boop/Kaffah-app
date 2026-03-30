@@ -382,7 +382,7 @@ const payload = {
     service_type: selectedServiceLabel,
     patient_type: selectedPatientTypeLabel,
 
-    package_tracking_id: formData.package_type_id || null,
+    package_tracking_id: null,
     package_type_id: formData.package_type_id || null,
     package_type: formData.package_type || null,
 
