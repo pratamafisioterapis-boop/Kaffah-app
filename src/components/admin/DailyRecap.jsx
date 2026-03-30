@@ -198,7 +198,7 @@ const DailyRecap = ({ hideControls = false }) => {
           ...r,
           date: r.recap_date,
           display_therapist_name: getTherapistName(r),
-        package_type: r.package_type || (r.package_tracking_id ? 'Paket' : null)
+        package_type: r.package_type
 }));
         setRecaps(formatted);
         setTotalRecords(count || 0);

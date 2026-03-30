@@ -209,7 +209,7 @@ const DailyRecap = ({ hideControls = false }) => {
           ...r,
           date: r.recap_date,
           display_therapist_name: getTherapistName(r),
-        package_type: r.package_type || (r.package_tracking_id ? 'Paket' : null)
+        package_type: r.package_type
 }));
         
         setRecaps(formatted);
@@ -440,9 +440,7 @@ const getPremiumPastelBadge = (text) => {
                recaps.map((recap, idx) => {
                  const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
                  const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
-                 const packageLabel =
-  recap.package_type ||
-  (recap.package_tracking_id ? 'Paket' : '-');
+                 const packageLabel = recap.package_type || '-';
                  
                  return (
                   <motion.tr

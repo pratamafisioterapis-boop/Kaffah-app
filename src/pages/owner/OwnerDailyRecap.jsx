@@ -185,7 +185,7 @@ const OwnerDailyRecap = () => {
               ...r,
               date: r.recap_date,
               display_therapist_name: getTherapistName(r),
-          package_type: r.package_type || (r.package_tracking_id ? 'Paket' : null)
+          package_type: r.package_type
 }));
           
           setRecaps(formatted || []);
@@ -315,9 +315,7 @@ const OwnerDailyRecap = () => {
                    // Map single fields using optionsMap
                    const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
                    const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
-                   const packageLabel =
-  recap.package_type ||
-  (recap.package_tracking_id ? 'Paket' : '-');
+                   const packageLabel = recap.package_type || '-';
 
                    return (
                       <motion.tr 
