@@ -514,7 +514,8 @@ if (params.p_patient_id || params.patientId) {
       p_service_id: params.p_service_id || params.serviceId || null,
       p_guest_name: params.p_guest_name || params.guestName || null,
       p_guest_phone: params.p_guest_phone || params.guestPhone || null,
-      p_is_homecare: params.p_is_homecare ?? false
+      p_is_homecare: params.p_is_homecare ?? false,
+      p_allow_overlap: params.p_allow_overlap ?? false
     };
 
     const { data, error } = await supabase.rpc(

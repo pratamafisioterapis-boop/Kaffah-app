@@ -22,7 +22,7 @@ import {
 } from '@/lib/api';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import SearchableSelect from '@/components/ui/searchable-select';
+
 import { format, isValid } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 
@@ -105,32 +105,27 @@ const [showDropdown, setShowDropdown] = useState(false);
     return;
   }
 
-  // 🔍 Cek apakah masuk slot aktif
-  const found = availableSlots.find(slot => {
-    const start = slot.slot_start.slice(0, 5);
-    const end = slot.slot_end.slice(0, 5);
-    return formData.start_time >= start && formData.start_time < end;
+  const startDate = new Date(`2000-01-01T${formData.start_time}:00`);
+  const endManual = new Date(startDate.getTime() + 90 * 60000);
+
+  const overlappedSlots = availableSlots.filter(slot => {
+    const slotStart = new Date(`2000-01-01T${slot.slot_start}:00`);
+    const slotEnd = new Date(`2000-01-01T${slot.slot_end}:00`);
+
+    return startDate < slotEnd && endManual > slotStart;
   });
 
-  if (found) {
-    // 🔥 Hitung durasi dari start_time + 90 menit
-    const startDate = new Date(`2000-01-01T${formData.start_time}:00`);
-    const endManual = new Date(startDate.getTime() + 90 * 60000);
-    const slotEnd = new Date(`2000-01-01T${found.slot_end}:00`);
-
-    // 👉 Pastikan masih masuk dalam slot
-    if (endManual <= slotEnd) {
-      setMatchedSlot({
-        ...found,
-        calculated_duration: 90
-      });
-      setSlotError(null);
-      return;
-    }
+  if (overlappedSlots.length > 0) {
+    setMatchedSlot({
+      slot_start: formData.start_time,
+      slot_end: formData.start_time,
+      calculated_duration: 90,
+      overlappedSlots
+    });
+    setSlotError(null);
+    return;
   }
-
-  // 🔓 Kalau tidak masuk slot → bebas
-  setMatchedSlot({
+ setMatchedSlot({
     slot_start: formData.start_time,
     slot_end: formData.start_time,
     calculated_duration: 60
@@ -138,6 +133,7 @@ const [showDropdown, setShowDropdown] = useState(false);
 
   setSlotError(null);
 };
+  
   const handlePatientSelect = async (val) => {
     setFormData(prev => ({ ...prev, patient_id: val }));
     if (!val) return;
@@ -215,7 +211,9 @@ const [showDropdown, setShowDropdown] = useState(false);
         description: "Sudah ada appointment di jam tersebut."
       });
       return;
-    }// 🔥 HANDLE RECURRING
+    }
+    
+    // 🔥 HANDLE RECURRING
     if (isRecurring) {
       if (!formData.recurringEndDate) {
         toast({
