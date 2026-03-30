@@ -97,11 +97,7 @@ const DailyRecap = ({ hideControls = false }) => {
         const parsed = JSON.parse(saved);
 
         // Ambil hari ini lagi (biar auto reset jam 00:01)
-        if (parsed.start !== todayMakassar || parsed.end !== todayMakassar) {
-          return defaultRange;
-        }
-
-        return parsed;
+      return parsed;
       }
     } catch (e) { }
 
@@ -158,13 +154,15 @@ const DailyRecap = ({ hideControls = false }) => {
 
   useEffect(() => { fetchRecaps(); }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, lastSyncTime]);
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
+  const interval = setInterval(() => {
+    const now = new Date();
 
-      const todayMakassar = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-        .toISOString()
-        .split('T')[0];
+    const todayMakassar = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+      .toISOString()
+      .split('T')[0];
 
+    // 🔥 HANYA RESET kalau filter = today
+    if (activeFilter === 'today') {
       if (
         dateRange.start !== todayMakassar ||
         dateRange.end !== todayMakassar
@@ -174,10 +172,11 @@ const DailyRecap = ({ hideControls = false }) => {
           end: todayMakassar
         });
       }
-    }, 60000); // cek tiap 1 menit
+    }
+  }, 60000);
 
-    return () => clearInterval(interval);
-  }, []);
+  return () => clearInterval(interval);
+}, [activeFilter, dateRange]);
   const fetchRecaps = useCallback(async () => {
     if (!queryDateRange.start || !queryDateRange.end) return;
     setLoadingRecaps(true);
