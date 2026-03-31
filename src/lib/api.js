@@ -436,6 +436,28 @@ export const getAvailableSlots = async (date, therapistId) => {
     if (error) return { error };
     
     let result = data;
+
+// filter dulu
+if (therapistId && result) {
+  result = result.filter(s => s.therapist_id === therapistId);
+}
+
+// baru sort
+if (Array.isArray(result)) {
+  result = result.sort((a, b) => {
+    if (a.therapist_id !== b.therapist_id) {
+      return a.therapist_id.localeCompare(b.therapist_id);
+    }
+
+    const timeA = a.slot_start?.split(':').map(Number) || [0,0];
+    const timeB = b.slot_start?.split(':').map(Number) || [0,0];
+
+    const minutesA = timeA[0] * 60 + timeA[1];
+    const minutesB = timeB[0] * 60 + timeB[1];
+
+    return minutesA - minutesB;
+  });
+}
     if (therapistId && result) {
       result = result.filter(s => s.therapist_id === therapistId);
     }

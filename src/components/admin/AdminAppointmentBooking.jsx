@@ -151,6 +151,11 @@ const formattedDate = date
 
           newSchedulesMap[s.therapist_id].push(slotObj);
         });
+        Object.keys(newSchedulesMap).forEach((therapistId) => {
+  newSchedulesMap[therapistId].sort((a, b) =>
+    a.slot_start_time.localeCompare(b.slot_start_time)
+  );
+});
       }
 
       setSchedulesMap(newSchedulesMap);
@@ -279,7 +284,24 @@ const formattedDate = date
         </div>
       ) : (
           <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
-          {therapists.map((therapist) => {
+          {[...therapists]
+  .sort((a, b) => {
+    const getFirstSlot = (therapist) => {
+      const slots = schedulesMap[therapist.id] || [];
+
+      if (slots.length === 0) return "99:99";
+
+      // ambil slot paling awal
+      const sortedSlots = [...slots].sort((x, y) =>
+        x.slot_start_time.localeCompare(y.slot_start_time)
+      );
+
+      return sortedSlots[0].slot_start_time;
+    };
+
+    return getFirstSlot(a).localeCompare(getFirstSlot(b));
+  })
+  .map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
             const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);
             const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
