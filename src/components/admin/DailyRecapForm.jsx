@@ -66,7 +66,7 @@ const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) =>
         service_type: '',
         patient_type: '',
         package_type_id: '',
-        package_type: data.package_type || '',
+        package_type: '',
         therapist_id: '',
         amount: '',
         payment_method: '',
@@ -201,7 +201,7 @@ if (pkgLabel || pkgId) {
             service_type: data.service_type || '',
             patient_type: data.patient_type || '',
             package_type_id: data.package_tracking_id || data.package_type || '', // Explicitly empty, will be resolved by useEffect
-            package_type: data.package_type || '', // Preserve label
+            package_type: '', // Preserve label
             therapist_id: data.therapist_id || '',
             amount: data.amount || 0,
             payment_method: data.payment_method || '',
@@ -371,27 +371,34 @@ const { data: activePackage } = await supabase
 const selectedServiceLabel = services.find(s => s.value === formData.service_type)?.label || '';
 const selectedPatientTypeLabel = patientTypes.find(p => p.value === formData.patient_type)?.label || '';
 
+const selectedPackage = packageTypes.find(p => p.value === formData.package_type_id);
+
 const payload = {
-    recap_date: isoDate,
-    patient_id: formData.patient_id,
-    actual_patient_id: formData.actual_patient_id,
+  recap_date: isoDate,
+  patient_id: formData.patient_id,
+  actual_patient_id: formData.actual_patient_id,
 
-    diagnosis: formData.diagnosis,
-    diagnosis_labels: selectedDiagnosisLabels,
+  diagnosis: formData.diagnosis,
+  diagnosis_labels: selectedDiagnosisLabels,
 
-    service_type: selectedServiceLabel,
-    patient_type: selectedPatientTypeLabel,
+  service_type: selectedServiceLabel,
+  patient_type: selectedPatientTypeLabel,
 
-    package_tracking_id: null,
-    package_type_id: formData.package_type_id || null,
-    package_type: formData.package_type ?? initialData?.package_type ?? null,
+  package_tracking_id: null,
+  package_type_id: formData.package_type_id || null,
 
-    therapist_id: formData.therapist_id,
-    therapist_name: therapistName,
-    amount: parseFloat(formData.amount) || 0,
-    payment_method: formData.payment_method,
-    discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
-    discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0)
+  package_type:
+    selectedPackage?.label ||
+    formData.package_type ||
+    initialData?.package_type ||
+    null,
+
+  therapist_id: formData.therapist_id,
+  therapist_name: therapistName,
+  amount: parseFloat(formData.amount) || 0,
+  payment_method: formData.payment_method,
+  discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
+  discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0)
 };
 
             let result;
@@ -518,7 +525,7 @@ const payload = {
                                     <RefreshCw className="w-3 h-3 mr-1" /> Extend
                                 </Button>
                                 <Button size="sm" onClick={() => {
-                                    setFormData(prev => ({ ...prev, package_type_id: '', package_type: data.package_type || '', amount: '' }));
+                                    setFormData(prev => ({ ...prev, package_type_id: '', package_type: '', amount: '' }));
                                 }}>
                                     Beli Baru
                                 </Button>
