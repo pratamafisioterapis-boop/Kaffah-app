@@ -92,12 +92,15 @@ const DailyRecap = ({ hideControls = false }) => {
     };
 
     try {
-      const saved = localStorage.getItem("dailyRecapDateFilter");
+      const saved = localStorage.getItem("global_date_range");
       if (saved) {
         const parsed = JSON.parse(saved);
 
         // Ambil hari ini lagi (biar auto reset jam 00:01)
-      return parsed;
+      return {
+  start: parsed.startDate,
+  end: parsed.endDate
+};
       }
     } catch (e) { }
 
@@ -142,7 +145,13 @@ const DailyRecap = ({ hideControls = false }) => {
     fetchOptions();
   }, []);
 
-  useEffect(() => { setCurrentPage(1); if (queryDateRange?.start && queryDateRange?.end) { localStorage.setItem("dailyRecapDateFilter", JSON.stringify(queryDateRange)); } }, [queryDateRange]);
+  useEffect(() => { setCurrentPage(1); if (queryDateRange?.start && queryDateRange?.end) { localStorage.setItem(
+  "global_date_range",
+  JSON.stringify({
+    startDate: queryDateRange.start,
+    endDate: queryDateRange.end
+  })
+); } }, [queryDateRange]);
   useEffect(() => { const timer = setTimeout(() => { setDebouncedSearch(searchTerm); setCurrentPage(1); }, 500); return () => clearTimeout(timer); }, [searchTerm]);
   
   useEffect(() => {

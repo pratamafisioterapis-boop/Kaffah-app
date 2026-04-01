@@ -9,42 +9,45 @@ import { cn } from '@/lib/utils';
 
 const GlobalDateRangeFilter = ({ dateRange, onDateRangeChange, className }) => {
   const { startDate, endDate } = dateRange;
-
+const saveToStorage = (range) => {
+  localStorage.setItem('global_date_range', JSON.stringify(range));
+};
   // Handlers for single date selection updates
   const handleStartDateSelect = (date) => {
-    if (!date) return;
-    const newStart = format(date, 'yyyy-MM-dd');
-    
-    // If new start is after end, reset end or set end to start
-    if (endDate && new Date(newStart) > new Date(endDate)) {
-        onDateRangeChange({ startDate: newStart, endDate: newStart });
-    } else {
-        onDateRangeChange({ ...dateRange, startDate: newStart });
-    }
-  };
+  if (!date) return;
+  const newStart = format(date, 'yyyy-MM-dd');
+  
+  const newRange =
+    endDate && new Date(newStart) > new Date(endDate)
+      ? { startDate: newStart, endDate: newStart }
+      : { ...dateRange, startDate: newStart };
 
-  const handleEndDateSelect = (date) => {
-    if (!date) return;
-    const newEnd = format(date, 'yyyy-MM-dd');
-    
-    // If new end is before start, generally shouldn't happen due to disabled days, but safe guard
-    if (startDate && new Date(newEnd) < new Date(startDate)) {
-         // Do nothing or swap? Let's just update
-         onDateRangeChange({ ...dateRange, endDate: newEnd });
-    } else {
-         onDateRangeChange({ ...dateRange, endDate: newEnd });
-    }
-  };
+  onDateRangeChange(newRange);
+  saveToStorage(newRange);
+};
+
+ const handleEndDateSelect = (date) => {
+  if (!date) return;
+  const newEnd = format(date, 'yyyy-MM-dd');
+  
+  const newRange = { ...dateRange, endDate: newEnd };
+
+  onDateRangeChange(newRange);
+  saveToStorage(newRange);
+};
 
   const handleReset = (e) => {
-      e.stopPropagation();
-      // Default to current month or let parent decide, passing nulls
-      const now = new Date();
-      onDateRangeChange({
-          startDate: format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'),
-          endDate: format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd')
-      });
+  e.stopPropagation();
+  const now = new Date();
+
+  const newRange = {
+    startDate: format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'),
+    endDate: format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd')
   };
+
+  onDateRangeChange(newRange);
+  saveToStorage(newRange);
+};
 
   // Safe parsing helper
   const getDate = (dateStr) => {
