@@ -103,6 +103,8 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
 
     try {
       const { data: activePkg } = await getActivePackage(val);
+
+console.log('🔥 PACKAGE RESULT:', activePkg);
       let pkg = null;
 
       if (Array.isArray(activePkg) && activePkg.length > 0) {
