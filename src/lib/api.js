@@ -86,7 +86,7 @@ const enrichedDiagnosis = diagArray.map(d => optionsMap[d] || d);
 
 const enrichedServiceType = optionsMap[recap.service_type] || recap.service_type;
 const enrichedPatientType = optionsMap[recap.patient_type] || recap.patient_type;
-const enrichedPackageType = recap.package_type;
+const enrichedPackageType = optionsMap[recap.package_type] || recap.package_type;
 const enrichedPaymentMethod = optionsMap[recap.payment_method] || recap.payment_method;
 
 return {
@@ -436,28 +436,6 @@ export const getAvailableSlots = async (date, therapistId) => {
     if (error) return { error };
     
     let result = data;
-
-// filter dulu
-if (therapistId && result) {
-  result = result.filter(s => s.therapist_id === therapistId);
-}
-
-// baru sort
-if (Array.isArray(result)) {
-  result = result.sort((a, b) => {
-    if (a.therapist_id !== b.therapist_id) {
-      return a.therapist_id.localeCompare(b.therapist_id);
-    }
-
-    const timeA = a.slot_start?.split(':').map(Number) || [0,0];
-    const timeB = b.slot_start?.split(':').map(Number) || [0,0];
-
-    const minutesA = timeA[0] * 60 + timeA[1];
-    const minutesB = timeB[0] * 60 + timeB[1];
-
-    return minutesA - minutesB;
-  });
-}
     if (therapistId && result) {
       result = result.filter(s => s.therapist_id === therapistId);
     }
@@ -506,39 +484,25 @@ export const createAppointment = async (params) => {
     if (!finalDate) {
       throw new Error("Appointment date is required");
     }
-// 🔥 CEK PAKET AKTIF
-let activePackage = null;
 
-if (params.p_patient_id || params.patientId) {
-  const patientId = params.p_patient_id || params.patientId;
-
-  const { data } = await supabase
-    .from('package_tracking')
-    .select('id, package_name')
-    .eq('patient_id', patientId)
-    .eq('status', 'aktif')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  activePackage = data;
-}
     const payload = {
-      p_therapist_id: params.p_therapist_id || params.therapistId,
-      p_appointment_date: finalDate,
-      p_duration_minutes: parseInt(
-        params.p_duration_minutes || params.durationMinutes || 60
-      ),
-      p_patient_id: params.p_patient_id || params.patientId || null,
-      p_status: params.p_status || params.status || "confirmed",
-      p_clinic_id: params.p_clinic_id || params.clinicId || null,
-      p_notes: params.p_notes || params.notes || null,
-      p_service_id: params.p_service_id || params.serviceId || null,
-      p_guest_name: params.p_guest_name || params.guestName || null,
-      p_guest_phone: params.p_guest_phone || params.guestPhone || null,
-      p_is_homecare: params.p_is_homecare ?? false,
-      p_allow_overlap: params.p_allow_overlap ?? false
-    };
+  p_therapist_id: params.p_therapist_id || params.therapistId,
+  p_appointment_date: finalDate,
+  p_duration_minutes: parseInt(
+    params.p_duration_minutes || params.durationMinutes || 60
+  ),
+  p_patient_id: params.p_patient_id || params.patientId || null,
+  p_status: params.p_status || params.status || "confirmed",
+  p_clinic_id: params.p_clinic_id || params.clinicId || null,
+  p_notes: params.p_notes || params.notes || null,
+  p_service_id: params.p_service_id || params.serviceId || null,
+  p_guest_name: params.p_guest_name || params.guestName || null,
+  p_guest_phone: params.p_guest_phone || params.guestPhone || null,
+  p_is_homecare: params.p_is_homecare ?? false,
+
+  // 🔥 TAMBAHAN WAJIB
+  p_allow_overlap: false
+};
 
     const { data, error } = await supabase.rpc(
       "create_appointment_safe",
@@ -549,7 +513,10 @@ if (params.p_patient_id || params.patientId) {
       return { error };
     }
 
-    await supabase.functions.invoke("process-booking-whatsapp-now");
+    supabase.functions
+  .invoke("process-booking-whatsapp-now")
+  .then(() => {})
+  .catch(() => {});
 
     return { data: { id: data }, error: null };
 
@@ -683,21 +650,22 @@ export const getPatients = async (searchTerm = '') => {
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
-      const term = searchTerm.trim();
-
-      query = query.or(
-        `full_name.ilike.%${term}%,medical_record_number.ilike.%${term}%`
-      );
-      // ❌ TIDAK PERLU LIMIT → biar hasil lengkap
-    } else {
-      query = query.limit(50); // ✅ default ringan
+      query = query.or(`full_name.ilike.%${searchTerm.trim()}%,phone.ilike.%${searchTerm.trim()}%`);
     }
 
-    const { data, error } = await query;
-
+    const { data, error } = await query.range(0, 4000);
     if (error) return { error };
 
-    return { data: data || [], error: null };
+    const formattedData = (data || []).map(p => ({
+      id: p.id,
+      value: p.id,
+      label: `${p.medical_record_number || 'RM'} - ${p.full_name}`,
+      full_name: p.full_name,
+      medical_record_number: p.medical_record_number,
+      phone: p.phone
+    }));
+
+    return { data: formattedData, error: null };
   }, 'getPatients', { retry: true });
 };
 export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) => {
@@ -824,28 +792,16 @@ export const getPatientActivePackage = async (patientId) => {
   return safeQuery(async () => {
 
     const { data, error } = await supabase
-  .from('package_tracking')
-  .select('*')
-  .eq('patient_id', patientId)
-  .order('created_at', { ascending: false });
+      .from('package_tracking')
+      .select('*')
+      .eq('patient_id', patientId)
+      .gt('total_sessions', 1) // 🔥 hanya paket (bukan single session)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error) return { error };
-
-    if (!data || data.length === 0) {
-      return { data: null, error: null };
-    }
-
-    // 1️⃣ cari paket aktif valid
-    let pkg = data.find(
-  p => p.sessions_remaining > 0
-);
-
-    // 2️⃣ kalau tidak ada → ambil terakhir (expired / selesai)
-    if (!pkg) {
-      pkg = data[0];
-    }
-
-    return { data: pkg, error: null };
+    return { data, error: null };
 
   }, 'getPatientActivePackage', { retry: true });
 };
@@ -887,7 +843,7 @@ if (baseDate < today) {
       .update({
         end_date: newDate.toISOString(),
         extended_until: newDate.toISOString(),
-        status: 'Aktif', // 🔥 WAJIB aktif lagi
+        status: 'aktif', // 🔥 WAJIB aktif lagi
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -904,34 +860,11 @@ if (baseDate < today) {
 export const createDailyRecap = async (payload) => {
   return safeQuery(async () => {
     const cleanedPayload = cleanDailyRecapPayload(payload);
-    // 🔥 FIX WAJIB: pastikan patient_id selalu ada
-if (!cleanedPayload.patient_id && cleanedPayload.actual_patient_id) {
-  cleanedPayload.patient_id = cleanedPayload.actual_patient_id;
-}
-if (!cleanedPayload.patient_id) {
-  throw new Error("PATIENT ID KOSONG - TIDAK BOLEH LANJUT");
-}
     
     if (cleanedPayload.package_type && typeof cleanedPayload.package_type !== 'string') {
       cleanedPayload.package_type = String(cleanedPayload.package_type);
     }
-// 🔥 AUTO APPLY PACKAGE (WAJIB)
-if (cleanedPayload.patient_id) {
-  const { data: activePackage } = await supabase
-    .from('package_tracking')
-    .select('id, package_name')
-    .eq('patient_id', cleanedPayload.patient_id)
-    .eq('status', 'Aktif')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
-  if (activePackage) {
-    cleanedPayload.package_tracking_id = activePackage.id;
-    cleanedPayload.package_type = activePackage.package_name;
-    cleanedPayload.amount = 0;
-  }
-}
     const { data, error } = await supabase.rpc(
       'create_daily_recap_with_package',
       { p_payload: cleanedPayload }
@@ -983,14 +916,13 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   service_type,
   patient_type,
   package_type,
+  package_tracking_id,
   therapist_id,
   amount,
   payment_method,
   discount_type,
   discount_value,
   created_at,
-  start_time,
-  end_time,
 
   patients!patient_id(
     id,
@@ -1008,7 +940,7 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
     address,
     phone
   ),
-  therapist:physiotherapists!daily_recaps_therapist_id_fkey(
+  therapist:physiotherapists!therapist_id(
     id,
     name
   )
@@ -1451,22 +1383,7 @@ export const deletePackageTracking = async () => ({ data: true });
 export const deleteDailyRecapsByPackageType = async () => ({ data: true });
 export const updatePackageSessionsUsed = async () => ({ data: {} });
 export const updatePackageTrackingStatus = async () => ({ data: {} });
-export const getAllPackageTrackings = async () => {
-  return safeQuery(async () => {
-
-    const { data, error } = await supabase
-      .from('package_tracking') // ⚠️ ini nama table kamu
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) return { error };
-
-    console.log("SUPABASE PACKAGE:", data);
-
-    return { data, error: null };
-
-  }, 'getAllPackageTrackings', { retry: true });
-};
+export const getAllPackageTrackings = async () => ({ data: [] });
 export const getPackageUsageHistory = async (packageId) => {
   return safeQuery(async () => {
 
@@ -1904,35 +1821,8 @@ export const getTherapistTimeOff = async (therapistId) => {
 
   }, 'getTherapistTimeOff');
 };
-export const getTherapistPracticeHours = async (therapistId) => {
-  return safeQuery(async () => {
-    return await supabase
-      .from('therapist_schedules')
-      .select('*')
-      .eq('therapist_id', therapistId);
-  }, 'getTherapistPracticeHours');
-};
-export const updateTherapistPracticeHours = async (
-  therapistId,
-  dayOfWeek,
-  startTime,
-  endTime,
-  isActive
-) => {
-  return safeQuery(async () => {
-    return await supabase
-      .from('therapist_schedules')
-      .upsert({
-  therapist_id: therapistId,
-  day_of_week: dayOfWeek,
-  start_time: startTime,
-end_time: endTime,
-  display_start_time: startTime,
-  display_end_time: endTime,
-  is_display_active: isActive
-}, { onConflict: 'therapist_id,day_of_week' });
-  }, 'updateTherapistPracticeHours');
-};
+export const getTherapistPracticeHours = async () => ({ data: [] });
+export const updateTherapistPracticeHours = async () => ({ data: {} });
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
     if (!payload?.id) {

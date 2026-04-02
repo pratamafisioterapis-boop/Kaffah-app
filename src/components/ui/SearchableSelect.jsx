@@ -159,9 +159,14 @@ const SearchableSelect = ({
             type="text"
             value={open ? searchTerm : (multiple ? "" : selectedLabels)}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setOpen(true);
-            }}
+  const val = e.target.value;
+  setSearchTerm(val);
+  setOpen(true);
+
+  if (onSearch) {
+    onSearch(val); // 🔥 INI YANG BIKIN SEARCH HIDUP
+  }
+}}
             onFocus={() => {
               setSearchTerm("");
               setOpen(true);
