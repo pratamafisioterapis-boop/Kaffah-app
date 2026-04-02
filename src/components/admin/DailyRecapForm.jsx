@@ -8,12 +8,12 @@ import { Calendar as CalendarIcon, Loader2, RefreshCw, Trash2 } from 'lucide-rea
 import { 
     fetchPhysiotherapists, 
     fetchOperationalOptions, 
-    fetchPatients,
     fetchPackageTypes,
     formatDateDisplay,
     parseDateFromDisplay,
     validateDailyRecapForm
 } from '@/lib/dailyRecapHelpers';
+import { getPatients as fetchPatients } from '@/lib/api';
 import { getDiagnosisOptions } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import DatePicker from '@/components/DatePicker';
@@ -83,6 +83,34 @@ const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) =>
         }
     }, [initialData, mode]);
 
+    // Inject missing patients after options are loaded
+    useEffect(() => {
+        if (mode === 'edit' && initialData) {
+            const injectMissingPatient = async (patientId) => {
+                if (!patientId || patients.some(p => p.value === patientId)) return;
+                try {
+                    const { data: pat, error } = await supabase
+                        .from('patients')
+                        .select('full_name')
+                        .eq('id', patientId)
+                        .single();
+                    if (!error && pat) {
+                        setPatients(prev => [...prev, { value: patientId, label: pat.full_name }]);
+                    }
+                } catch (e) {
+                    console.error('Error fetching patient name', e);
+                }
+            };
+
+            if (initialData.patient_id) {
+                injectMissingPatient(initialData.patient_id);
+            }
+            if (initialData.actual_patient_id) {
+                injectMissingPatient(initialData.actual_patient_id);
+            }
+        }
+    }, [patients, mode, initialData]);
+
     const loadOptions = async () => {
         setIsLoadingData(true);
         try {
@@ -96,7 +124,15 @@ const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) =>
                 fetchOperationalOptions('payment_method')
             ]);
             
-            setPatients(Array.isArray(pats) ? pats : []);
+            setPatients(
+  Array.isArray(pats?.data)
+    ? pats.data.map(p => ({
+        value: p.id,
+        label: p.full_name || 'TANPA NAMA'
+      }))
+    : []
+);
+
             setTherapists(Array.isArray(physios) ? physios : []);
             setDiagnoses(diagOpts?.data || []);
             setServices(Array.isArray(servOpts) ? servOpts : []);
@@ -108,12 +144,47 @@ const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) =>
             
             if (mode === 'edit' && initialData) {
                 // PATIENT
-                if (initialData.patient_id && initialData.patient_name) {
+                if (initialData.patient_id && (initialData.patient_name || initialData.patients?.full_name)) {
+                    const label = initialData.patient_name || initialData.patients?.full_name;
                     setPatients(prev => {
                         const exists = prev.some(p => p.value === initialData.patient_id);
                         if (exists) return prev;
-                        return [...prev, { value: initialData.patient_id, label: initialData.patient_name }];
+                        return [...prev, { value: initialData.patient_id, label }];
                     });
+                }
+
+                // ACTUAL PATIENT
+                if (initialData.actual_patient_id && (initialData.actual_patient_name || initialData.actual_patients?.full_name)) {
+                    const label = initialData.actual_patient_name || initialData.actual_patients?.full_name;
+                    setPatients(prev => {
+                        const exists = prev.some(p => p.value === initialData.actual_patient_id);
+                        if (exists) return prev;
+                        return [...prev, { value: initialData.actual_patient_id, label }];
+                    });
+                }
+
+                // Fetch missing patient names if not in options
+                const fetchMissingPatient = async (patientId, isActual = false) => {
+                    if (!patientId || patients.some(p => p.value === patientId)) return;
+                    try {
+                        const { data: pat, error } = await supabase
+                            .from('patients')
+                            .select('full_name')
+                            .eq('id', patientId)
+                            .single();
+                        if (!error && pat) {
+                            setPatients(prev => [...prev, { value: patientId, label: pat.full_name }]);
+                        }
+                    } catch (e) {
+                        console.error('Error fetching patient name', e);
+                    }
+                };
+
+                if (initialData.patient_id) {
+                    fetchMissingPatient(initialData.patient_id);
+                }
+                if (initialData.actual_patient_id) {
+                    fetchMissingPatient(initialData.actual_patient_id);
                 }
 
                 // THERAPIST
@@ -480,13 +551,23 @@ const payload = {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Nama Pasien (Pemilik Paket) <span className="text-red-500">*</span></Label>
-                    <SearchableSelect 
-                        options={patients}
-                        value={formData.patient_id}
-                        onChange={handlePatientChange}
-                        placeholder={isLoadingData ? "Memuat..." : "Cari Pasien..."}
-                        className={errors.patient_id ? "border-red-500" : ""}
-                    />
+                    <SearchableSelect
+  options={patients}
+  value={formData.patient_id}
+  onChange={(val) => setFormData(prev => ({ ...prev, patient_id: val }))}
+  placeholder="Cari pasien..."
+  onSearch={async (term) => {
+    const res = await fetchPatients(term);
+    setPatients(
+  Array.isArray(res?.data)
+    ? res.data.map(p => ({
+        value: p.id,
+        label: p.full_name
+      }))
+    : []
+);
+  }}
+/>
                     {errors.patient_id && <p className="text-xs text-red-500">{errors.patient_id}</p>}
                 </div>
                 <div className="space-y-2">

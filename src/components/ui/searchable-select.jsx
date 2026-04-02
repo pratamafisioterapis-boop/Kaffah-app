@@ -45,7 +45,7 @@ const SearchableSelect = ({
       return selectedValues.map(getLabel).filter(Boolean).join(", ");
     }
     const opt = safeOptions.find(o => o.value === value);
-    return opt ? opt.label : "";
+    return opt ? opt.label : (value ? String(value) : "");
   }, [selectedValues, value, safeOptions, multiple]);
 
   // Sync search term with selected value when dropdown closes
