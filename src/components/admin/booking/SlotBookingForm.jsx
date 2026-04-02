@@ -37,6 +37,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendDate, setExtendDate] = useState('');
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [isSelecting, setIsSelecting] = useState(false);
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchContainerRef = useRef(null);
@@ -91,58 +92,65 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   };
 
   const handlePatientSelect = async (val) => {
-    setFormData(prev => ({ ...prev, patient_id: val }));
-    setShowDropdown(false);
+  setIsSelecting(true); // 🔥 lock supaya onChange ga ganggu
 
-    if (!val) return;
-    
-    const selectedPatient = patients.find(p => p.id === val);
-    if (selectedPatient) {
-        setPatientSearchTerm(selectedPatient.full_name);
+  setShowDropdown(false);
+  setFormData(prev => ({ ...prev, patient_id: val }));
+
+  if (!val) return;
+
+  const selectedPatient = patients.find(p => p.id === val);
+  if (selectedPatient) {
+    setPatientSearchTerm(selectedPatient.full_name);
+  }
+
+  try {
+    const { data: activePkg } = await getActivePackage(val);
+
+    let pkg = null;
+
+    if (Array.isArray(activePkg) && activePkg.length > 0) {
+  pkg = activePkg.find(p => p.sessions_remaining > 0) || activePkg[0];
+    } else if (activePkg && !Array.isArray(activePkg)) {
+      pkg = activePkg;
     }
 
-    try {
-      const { data: activePkg } = await getActivePackage(val);
+    setPackageInfo(pkg);
 
-
-      let pkg = null;
-
-      if (Array.isArray(activePkg) && activePkg.length > 0) {
-        pkg = activePkg[0];
-      } else if (activePkg && !Array.isArray(activePkg)) {
-        pkg = activePkg;
-      }
-
-        setPackageInfo(pkg);
-     if (!pkg) {
-  toast({
-    title: "Info Paket",
-    description: "Pasien tidak memiliki paket yang aktif/expired"
-  });
-}
-      setIsJustActivated(true);
-      setTimeout(() => setIsJustActivated(false), 2000);
-
-      const { data: patientData } = await getPatientById(val);
-      if (patientData && patientData.medical_history) {
-           setFormData(prev => ({ ...prev, notes: patientData.medical_history }));
-      }
-      
-      if (pkg) {
-        const lastDate = getLastValidDate(pkg);
-        const isExpired = lastDate ? isBefore(new Date(lastDate), startOfDay(new Date())) : false;
-
-        toast({ 
-          title: isExpired ? "Paket Expired" : "Paket Aktif",
-          description: isExpired
-            ? `Paket ${pkg.package_name} sudah expired`
-            : `Pasien memiliki paket: ${pkg.package_name}`
-        });
-      }
-    } catch (err) {
-      console.error("Error loading patient package info:", err);
+    if (!pkg) {
+      toast({
+        title: "Info Paket",
+        description: "Pasien tidak memiliki paket yang aktif/expired"
+      });
     }
-  };
+
+    setIsJustActivated(true);
+    setTimeout(() => setIsJustActivated(false), 2000);
+
+    const { data: patientData } = await getPatientById(val);
+    if (patientData && patientData.medical_history) {
+      setFormData(prev => ({ ...prev, notes: patientData.medical_history }));
+    }
+
+    if (pkg) {
+      const lastDate = getLastValidDate(pkg);
+      const isExpired = lastDate
+        ? isBefore(new Date(lastDate), startOfDay(new Date()))
+        : false;
+
+      toast({
+        title: isExpired ? "Paket Expired" : "Paket Aktif",
+        description: isExpired
+          ? `Paket ${pkg.package_name} sudah expired`
+          : `Pasien memiliki paket: ${pkg.package_name}`
+      });
+    }
+  } catch (err) {
+    console.error("Error loading patient package info:", err);
+  }
+
+  setTimeout(() => setIsSelecting(false), 100); // 🔥 unlock lagi
+};
 
   const handleSubmit = async () => {
     if (loading) return;
@@ -344,6 +352,10 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
               value={patientSearchTerm}
               onChange={async (e) => {
   const value = e.target.value;
+
+  // 🔥 TAMBAHAN INI
+  setFormData(prev => ({ ...prev, patient_id: '' }));
+
   setPatientSearchTerm(value);
 
   try {
@@ -365,7 +377,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
           {showDropdown && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
               {filteredPatients.length > 0 ? filteredPatients.map(p => (
-                <div key={p.id} className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm" onMouseDown={() => handlePatientSelect(p.id)}>
+                <div key={p.id} className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm" onClick={() => handlePatientSelect(p.id)}>
                   <div className="font-medium">{p.full_name}</div>
                   <div className="text-xs text-slate-500">{p.medical_record_number}</div>
                 </div>

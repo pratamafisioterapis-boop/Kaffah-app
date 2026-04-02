@@ -4,6 +4,7 @@ import {
   Loader2, AlertCircle, Clock, CalendarDays,
   CheckCircle
 } from 'lucide-react';
+import { extendPackage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,6 +55,8 @@ const [showDropdown, setShowDropdown] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [packageInfo, setPackageInfo] = useState(null);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+const [extendDate, setExtendDate] = useState('');
   const [showResultModal, setShowResultModal] = useState(false);
 
   const isLeave = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
@@ -150,12 +153,21 @@ const [showDropdown, setShowDropdown] = useState(false);
       }
 
       const { data: activePkg } = await getActivePackage(val);
-      if (activePkg) {
-  setPackageInfo(activePkg);
 
+let pkg = null;
+
+if (Array.isArray(activePkg) && activePkg.length > 0) {
+  pkg = activePkg.find(p => p.sessions_remaining > 0) || activePkg[0];
+} else if (activePkg && !Array.isArray(activePkg)) {
+  pkg = activePkg;
+}
+
+setPackageInfo(pkg);
+
+if (pkg) {
   toast({
-    title: "Paket Aktif Ditemukan",
-    description: `Pasien memiliki paket aktif: ${activePkg.package_name}.`
+    title: "Paket Ditemukan",
+    description: `Pasien memiliki paket: ${pkg.package_name}.`
   });
 } else {
   setPackageInfo(null);
@@ -522,30 +534,56 @@ const handleConfirmRecurring = async () => {
   )}
 </div>
 
-    {packageInfo && (
-      <div className="border rounded-lg p-3 bg-green-50 mt-2">
-        <div className="flex justify-between items-center">
-          <span className="font-semibold">{packageInfo.package_name}</span>
-          <span className="text-xs bg-green-200 px-2 py-1 rounded">AKTIF</span>
+   {packageInfo && (() => {
+  const lastDate = packageInfo.extended_until || packageInfo.end_date;
+  const isExpired = lastDate
+    ? new Date(lastDate) < new Date(new Date().setHours(0,0,0,0))
+    : false;
+
+  return (
+    <div className={`border rounded-lg p-3 mt-2 ${
+      isExpired ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+    }`}>
+      
+      <div className="flex justify-between items-center">
+        <span className="font-semibold">{packageInfo.package_name}</span>
+        
+        <span className={`text-xs px-2 py-1 rounded ${
+          isExpired ? 'bg-red-200 text-red-700' : 'bg-green-200 text-green-700'
+        }`}>
+          {isExpired ? 'EXPIRED' : 'AKTIF'}
+        </span>
+      </div>
+
+      <div className="flex gap-2 mt-2">
+        <div className="flex-1 bg-white p-2 rounded text-center border">
+          <div className="text-xs">Terpakai</div>
+          <div className="font-bold">
+            {packageInfo.sessions_used}/{packageInfo.total_sessions}
+          </div>
         </div>
 
-        <div className="flex gap-2 mt-2">
-          <div className="flex-1 bg-gray-100 p-2 rounded text-center">
-            <div className="text-xs">Terpakai</div>
-            <div className="font-bold">
-              {packageInfo.sessions_used}/{packageInfo.total_sessions}
-            </div>
-          </div>
-
-          <div className="flex-1 bg-gray-100 p-2 rounded text-center">
-            <div className="text-xs">Sisa</div>
-            <div className="font-bold">
-              {packageInfo.total_sessions - packageInfo.sessions_used}
-            </div>
+        <div className="flex-1 bg-white p-2 rounded text-center border">
+          <div className="text-xs">Sisa</div>
+          <div className="font-bold">
+            {packageInfo.sessions_remaining}
           </div>
         </div>
       </div>
-    )}
+
+      {isExpired && (
+        <button
+          onClick={() => setShowExtendModal(true)}
+          className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white text-sm py-2 rounded"
+        >
+          Perpanjang Masa Aktif
+        </button>
+      )}
+    </div>
+  );
+})()}
+
+        
   </>
 ) : (
         <>
@@ -617,8 +655,58 @@ const handleConfirmRecurring = async () => {
           Simpan
         </Button>
       </DialogFooter>
+      {showExtendModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+    <div className="bg-white rounded-xl p-6 w-full max-w-xs space-y-4 shadow-2xl">
+      <h3 className="font-bold text-lg">Perpanjang Paket</h3>
+
+      <div className="space-y-2">
+        <Label className="text-xs">Tanggal Expired Baru</Label>
+        <Input
+          type="date"
+          value={extendDate}
+          onChange={(e) => setExtendDate(e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button variant="ghost" className="flex-1" onClick={() => setShowExtendModal(false)}>
+          Batal
+        </Button>
+
+        <Button
+          className="flex-1 bg-blue-600"
+          onClick={async () => {
+            try {
+              const today = new Date();
+              const selected = new Date(extendDate);
+              const diffDays = Math.ceil((selected - today) / (1000 * 60 * 60 * 24));
+
+              await extendPackage(packageInfo.id, diffDays);
+
+              const { data } = await getActivePackage(formData.patient_id);
+
+              let pkg = Array.isArray(data)
+                ? data.find(p => p.sessions_remaining > 0) || data[0]
+                : data;
+
+              setPackageInfo(pkg);
+
+              setShowExtendModal(false);
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+        >
+        Simpan
+        </Button>
+      </div>
     </div>
-  );
+  </div>
+)}
+
+</div>
+);
 };
 
 export default ManualBookingForm;

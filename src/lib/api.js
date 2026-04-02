@@ -837,8 +837,8 @@ export const getPatientActivePackage = async (patientId) => {
 
     // 1️⃣ cari paket aktif valid
     let pkg = data.find(
-      p => p.status === 'Aktif' && p.sessions_used < p.total_sessions
-    );
+  p => p.sessions_remaining > 0
+);
 
     // 2️⃣ kalau tidak ada → ambil terakhir (expired / selesai)
     if (!pkg) {
