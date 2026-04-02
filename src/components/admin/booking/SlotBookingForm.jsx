@@ -343,23 +343,21 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
               placeholder="Ketik nama atau No. RM..." 
               value={patientSearchTerm}
               onChange={async (e) => {
-                const value = e.target.value;
-                setPatientSearchTerm(value);
+  const value = e.target.value;
+  setPatientSearchTerm(value);
 
-                if (!value) {
-                  setFilteredPatients([]);
-                  return;
-                }
-
-                try {
-                  const { data } = await getPatients(value);
-                  setFilteredPatients(data || []);
-                  setShowDropdown(true);
-                } catch (err) {
-                  console.error("Error searching patients:", err);
-                }
-              }}
-              onFocus={() => setShowDropdown(true)}
+  try {
+    const { data } = await getPatients(value || '');
+    setFilteredPatients(data || []);
+    setShowDropdown(true);
+  } catch (err) {
+    console.error(err);
+  }
+}}
+              onFocus={() => {
+  setFilteredPatients(patients);
+  setShowDropdown(true);
+}}
               className="pl-9"
               disabled={isLeave || loading}
             />

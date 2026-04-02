@@ -516,7 +516,7 @@ if (params.p_patient_id || params.patientId) {
     .from('package_tracking')
     .select('id, package_name')
     .eq('patient_id', patientId)
-    .eq('status', 'Aktif')
+    .eq('status', 'aktif')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -679,30 +679,25 @@ export const getPatients = async (searchTerm = '') => {
     let query = supabase
       .from('patients')
       .select('id, full_name, medical_record_number, phone')
-      .eq('status', 'Aktif')
+      .eq('status', 'aktif')
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
-      const terms = searchTerm.trim().split(/\s+/);
+      const term = searchTerm.trim();
 
-terms.forEach(term => {
-  query = query.ilike('full_name', `%${term}%`);
-});
+      query = query.or(
+        `full_name.ilike.%${term}%,medical_record_number.ilike.%${term}%`
+      );
+      // ❌ TIDAK PERLU LIMIT → biar hasil lengkap
+    } else {
+      query = query.limit(50); // ✅ default ringan
     }
 
-    const { data, error } = await query.range(0, 4000);
+    const { data, error } = await query;
+
     if (error) return { error };
 
-    const formattedData = (data || []).map(p => ({
-      id: p.id,
-      value: p.id,
-      label: `${p.medical_record_number || 'RM'} - ${p.full_name}`,
-      full_name: p.full_name,
-      medical_record_number: p.medical_record_number,
-      phone: p.phone
-    }));
-
-    return { data: formattedData, error: null };
+    return { data: data || [], error: null };
   }, 'getPatients', { retry: true });
 };
 export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) => {
@@ -729,7 +724,7 @@ export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) =
       `)
       .eq('birth_date', birthDate)
       .ilike('full_name', `%${lastName}`)
-      .eq('status', 'Aktif');
+      .eq('status', 'aktif');
 
     if (error) return { error };
 

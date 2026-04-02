@@ -71,13 +71,18 @@ const [showDropdown, setShowDropdown] = useState(false);
   }, [formData.start_time, availableSlots]);
 
   const loadPatients = async () => {
-    try {
-      const { data } = await getPatients();
-      setPatients(Array.isArray(data) ? data : []);
-    } catch {
-      toast({ variant: "destructive", title: "Gagal memuat data pasien" });
-    }
-  };
+  try {
+    const { data } = await getPatients();
+
+    const safeData = Array.isArray(data) ? data : [];
+
+    setPatients(safeData);
+    setFilteredPatients(safeData); // 🔥 INI TAMBAHAN WAJIB
+
+  } catch {
+    toast({ variant: "destructive", title: "Gagal memuat data pasien" });
+  }
+};
 
   const fetchSlots = async () => {
     if (!therapist?.id || !date) return;
@@ -473,21 +478,22 @@ const handleConfirmRecurring = async () => {
   <Input
     placeholder="Cari nama pasien..."
     value={patientSearch}
-    onChange={async (e) => {
-      const value = e.target.value;
-      setPatientSearch(value);
+     onFocus={() => {
+    setFilteredPatients(patients); // 🔥 tampilkan semua dulu
+    setShowDropdown(true);
+  }}
+   onChange={async (e) => {
+  const value = e.target.value;
+  setPatientSearch(value);
 
-      if (!value) {
-        setFilteredPatients([]);
-        return;
-      }
-
-      try {
-        const { data } = await getPatients(value);
-        setFilteredPatients(data || []);
-        setShowDropdown(true);
-      } catch {}
-    }}
+  try {
+    const { data } = await getPatients(value || '');
+    setFilteredPatients(data || []);
+    setShowDropdown(true);
+  } catch (err) {
+    console.error(err);
+  }
+}}
   />
 
   {showDropdown && (
