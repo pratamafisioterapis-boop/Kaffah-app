@@ -516,7 +516,7 @@ if (params.p_patient_id || params.patientId) {
     .from('package_tracking')
     .select('id, package_name')
     .eq('patient_id', patientId)
-    .eq('status', 'aktif')
+    .eq('status', 'Aktif')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -679,7 +679,7 @@ export const getPatients = async (searchTerm = '') => {
     let query = supabase
       .from('patients')
       .select('id, full_name, medical_record_number, phone')
-      .eq('status', 'aktif')
+      .eq('status', 'Aktif')
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
@@ -729,7 +729,7 @@ export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) =
       `)
       .eq('birth_date', birthDate)
       .ilike('full_name', `%${lastName}`)
-      .eq('status', 'aktif');
+      .eq('status', 'Aktif');
 
     if (error) return { error };
 
@@ -829,20 +829,28 @@ export const getPatientActivePackage = async (patientId) => {
   return safeQuery(async () => {
 
     const { data, error } = await supabase
-      .from('package_tracking')
-      .select('*')
-      .eq('patient_id', patientId)
-      .eq('status', 'aktif')
-      .order('created_at', { ascending: false });
+  .from('package_tracking')
+  .select('*')
+  .eq('patient_id', patientId)
+  .order('created_at', { ascending: false });
 
     if (error) return { error };
 
-    // 🔥 FILTER DI JS (INI KUNCI)
-    const activePackage = (data || []).find(
-      p => p.sessions_used < p.total_sessions
+    if (!data || data.length === 0) {
+      return { data: null, error: null };
+    }
+
+    // 1️⃣ cari paket aktif valid
+    let pkg = data.find(
+      p => p.status === 'Aktif' && p.sessions_used < p.total_sessions
     );
 
-    return { data: activePackage || null, error: null };
+    // 2️⃣ kalau tidak ada → ambil terakhir (expired / selesai)
+    if (!pkg) {
+      pkg = data[0];
+    }
+
+    return { data: pkg, error: null };
 
   }, 'getPatientActivePackage', { retry: true });
 };
@@ -884,7 +892,7 @@ if (baseDate < today) {
       .update({
         end_date: newDate.toISOString(),
         extended_until: newDate.toISOString(),
-        status: 'aktif', // 🔥 WAJIB aktif lagi
+        status: 'Aktif', // 🔥 WAJIB aktif lagi
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -918,7 +926,7 @@ if (cleanedPayload.patient_id) {
     .from('package_tracking')
     .select('id, package_name')
     .eq('patient_id', cleanedPayload.patient_id)
-    .eq('status', 'aktif')
+    .eq('status', 'Aktif')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
