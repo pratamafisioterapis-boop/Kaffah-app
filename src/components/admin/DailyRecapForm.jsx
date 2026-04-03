@@ -369,7 +369,11 @@ name
 if (error) throw error;
 
 if (packages && packages.length > 0) {
-const pkg = packages[0]; // ambil terakhir (meskipun expired / habis)
+let pkg = packages.find(p => p.status === 'aktif' && p.sessions_remaining > 0);
+
+if (!pkg) pkg = packages.find(p => p.status === 'aktif');
+
+if (!pkg) pkg = packages[0];
 
 if (!pkg) {
 setPackageInfo(null);

@@ -791,17 +791,34 @@ export const getAllRecapOptions = async () => {
 export const getPatientActivePackage = async (patientId) => {
   return safeQuery(async () => {
 
-    const { data, error } = await supabase
+    // Prioritas: ambil yang berstatus 'aktif' dulu
+    const { data: activeData, error: activeError } = await supabase
       .from('package_tracking')
       .select('*')
       .eq('patient_id', patientId)
-      .gt('total_sessions', 1) // 🔥 hanya paket (bukan single session)
+      .eq('status', 'aktif')          // ← TAMBAHKAN filter status
+      .gt('total_sessions', 1)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) return { error };
-    return { data, error: null };
+    if (activeError) return { error: activeError };
+
+    // Kalau ada yang aktif, kembalikan itu
+    if (activeData) return { data: activeData, error: null };
+
+    // Fallback: kalau tidak ada yang aktif, ambil yang terbaru (expired/selesai)
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('package_tracking')
+      .select('*')
+      .eq('patient_id', patientId)
+      .gt('total_sessions', 1)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fallbackError) return { error: fallbackError };
+    return { data: fallbackData, error: null };
 
   }, 'getPatientActivePackage', { retry: true });
 };

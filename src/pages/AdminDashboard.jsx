@@ -7,15 +7,22 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign } from 'lucide-react'; 
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid
+} from 'recharts';
+import { supabase } from '@/lib/supabase';
 // Import Pages/Components
 import DailyRecap from '@/components/admin/DailyRecap';
 import FollowUpManagementPage from '@/components/admin/FollowUpManagementPage'; 
 import AdminAccountingDashboard from '@/components/admin/AdminAccountingDashboard';
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
-import DailyEvaluationReportWidget from '@/components/admin/DailyEvaluationReportWidget';
-
 // Consolidated Pages
 import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
 import AppointmentsPage from '@/pages/AppointmentsPage';
@@ -26,7 +33,15 @@ import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapi
 const AdminDashboardHome = () => {
   const location = useLocation(); 
   const today = new Date().toISOString().split('T')[0];
-
+  const [slotData, setSlotData] = useState({
+  total: 0,
+  filled: 0
+});
+const [topPatients, setTopPatients] = useState([]);
+const [therapistStats, setTherapistStats] = useState([]);
+const [trendPatients, setTrendPatients] = useState([]);
+const [topDiagnoses, setTopDiagnoses] = useState([]);
+const [topServices, setTopServices] = useState([]);
   // Initialize state from localStorage or default to current date
   const [dateRange, setDateRange] = useState(() => {
     const savedRange = localStorage.getItem('adminDashboardDateRange');
@@ -46,7 +61,275 @@ const AdminDashboardHome = () => {
   useEffect(() => {
     localStorage.setItem('adminDashboardDateRange', JSON.stringify(dateRange));
   }, [dateRange]);
-  
+  useEffect(() => {
+  const fetchSlotData = async (range) => {
+  const todayDate = new Date();
+  const dayOfWeek = todayDate.getDay(); // 0–6
+
+  // ambil slot sesuai hari
+  const { data: schedules, error: scheduleError } = await supabase
+    .from('therapist_schedules')
+    .select('id')
+    .eq('day_of_week', dayOfWeek);
+
+  if (scheduleError) {
+    console.error(scheduleError);
+    return;
+  }
+
+  const total = schedules.length;
+
+  const { data: therapistRecaps, error: recapError } = await supabase
+  .from('daily_recaps')
+  .select(`
+    therapist_id,
+    recap_date
+  `)
+  .gte('recap_date', range.startDate)
+  .lte('recap_date', range.endDate);
+
+if (recapError) {
+  console.error(recapError);
+  return;
+}
+const therapistIds = [...new Set(therapistRecaps.map(t => t.therapist_id))];
+
+const { data: therapistData } = await supabase
+  .from('physiotherapists')
+  .select('id, name')
+  .in('id', therapistIds);
+
+const therapistNameMap = {};
+therapistData.forEach(t => {
+  therapistNameMap[t.id] = t.name;
+});
+
+
+  // === THERAPIST PERFORMANCE ===
+const therapistMap = {};
+
+therapistRecaps.forEach(item => {
+  if (!item.therapist_id) return;
+
+  if (!therapistMap[item.therapist_id]) {
+    therapistMap[item.therapist_id] = 0;
+  }
+
+  therapistMap[item.therapist_id] += 1;
+});
+
+const therapistStatsArray = Object.entries(therapistMap)
+  .map(([therapist_id, total]) => {
+  const therapist = therapistNameMap[therapist_id];
+
+  return {
+    therapist_id,
+    name: therapistNameMap[therapist_id] || 'Unknown',
+    total
+  };
+})
+  .sort((a, b) => b.total - a.total);
+
+setTherapistStats(therapistStatsArray);
+
+// === TOP PATIENT ===
+const { data: patientAppointments, error: patientError } = await supabase
+  .from('daily_recaps')
+  .select('patient_id, recap_date, service_type')
+  .gte('recap_date', range.startDate)
+  .lte('recap_date', range.endDate);
+
+if (patientError) {
+  console.error(patientError);
+  return;
+}
+
+// ambil ID dulu (INI YANG TADI SALAH POSISI)
+const patientIds = [...new Set(patientAppointments.map(p => p.patient_id))];
+
+// ambil data pasien
+const { data: patientsData } = await supabase
+  .from('patients')
+  .select('id, full_name')
+  .in('id', patientIds);
+
+// mapping nama
+const patientNameMap = {};
+patientsData?.forEach(p => {
+  patientNameMap[p.id] = p.full_name;
+});
+
+// hitung jumlah kunjungan
+const patientMap = {};
+
+patientAppointments.forEach(item => {
+  if (!item.patient_id) return;
+
+  if (!patientMap[item.patient_id]) {
+    patientMap[item.patient_id] = {
+      name: patientNameMap[item.patient_id] || 'Unknown',
+      total: 0
+    };
+  }
+
+  patientMap[item.patient_id].total += 1;
+});
+
+// convert ke array
+const topPatientsArray = Object.values(patientMap)
+  .sort((a, b) => b.total - a.total);
+
+setTopPatients(topPatientsArray);
+// === TOP SERVICES ===
+// === TOP SERVICES ===
+const serviceMap = {};
+
+// ambil semua service_id unik
+const serviceIds = [
+  ...new Set(
+    patientAppointments
+      .map(item => item.service_type)
+      .filter(Boolean)
+  )
+];
+
+// ambil nama service dari tabel services
+const { data: servicesData } = await supabase
+  .from('services')
+  .select('id, name')
+  .in('id', serviceIds);
+
+// mapping id → nama
+const serviceNameMap = {};
+servicesData?.forEach(s => {
+  serviceNameMap[s.id] = s.name;
+});
+
+// hitung total
+patientAppointments.forEach(item => {
+  if (!item.service_type) return;
+
+  const serviceName =
+    serviceNameMap[item.service_type] || item.service_type;
+
+  if (!serviceMap[serviceName]) {
+    serviceMap[serviceName] = 0;
+  }
+
+  serviceMap[serviceName] += 1;
+});
+
+const topServicesArray = Object.entries(serviceMap)
+  .map(([name, total]) => ({ name, total }))
+  .sort((a, b) => b.total - a.total);
+
+setTopServices(topServicesArray);
+
+
+// === TOP DIAGNOSIS ===
+const diagnosisMap = {};
+
+const { data: diagnosisData } = await supabase
+  .from('daily_recaps')
+  .select('diagnosis')
+  .gte('recap_date', range.startDate)
+  .lte('recap_date', range.endDate);
+
+diagnosisData?.forEach(item => {
+  if (!item.diagnosis) return;
+
+  let labels = item.diagnosis;
+
+// handle string JSON
+if (typeof labels === "string") {
+  try {
+    labels = JSON.parse(labels);
+  } catch {
+    labels = [labels];
+  }
+}
+
+// pastikan array
+// kalau string → pecah pakai koma
+if (typeof labels === "string") {
+  labels = labels.split(",").map(l => l.trim());
+}
+
+// kalau bukan array → bungkus jadi array
+if (!Array.isArray(labels)) {
+  labels = [labels];
+}
+
+  labels.forEach(label => {
+  if (!label) return;
+
+  // kalau object → ambil labelnya
+  let name = label;
+
+  if (typeof label === "object") {
+    name = label.label || label.name;
+  }
+
+  if (!name) return;
+
+  if (!diagnosisMap[name]) {
+    diagnosisMap[name] = 0;
+  }
+
+  diagnosisMap[name] += 1;
+});
+});
+    
+
+const topDiagnosisArray = Object.entries(diagnosisMap)
+  .map(([name, total]) => ({ name, total }))
+  .sort((a, b) => b.total - a.total);
+
+setTopDiagnoses(topDiagnosisArray);
+
+const { data: trendData, error: trendError } = await supabase
+  .from('daily_recaps')
+  .select('recap_date')
+  .gte('recap_date', range.startDate)
+  .lte('recap_date', range.endDate);
+
+if (trendError) {
+  console.error(trendError);
+} else {
+  const trendMap = {};
+
+trendData.forEach(item => {
+  if (!item.recap_date) return;
+
+  const date = new Date(item.recap_date);
+
+  // kelompokkan per 3 hari
+  const groupKey = Math.floor(date.getDate() / 3);
+
+  const key = `${date.getFullYear()}-${date.getMonth()}-${groupKey}`;
+
+  if (!trendMap[key]) {
+    trendMap[key] = {
+      label: item.recap_date,
+      total: 0
+    };
+  }
+
+  trendMap[key].total += 1;
+});
+
+const trendArray = Object.values(trendMap)
+  .map(item => ({
+    date: item.label,
+    total: item.total
+  }))
+  .sort((a, b) => a.date.localeCompare(b.date));
+
+setTrendPatients(trendArray);
+}
+  };
+  fetchSlotData(dateRange);
+}, [dateRange]);
   return (
     <>
       <Helmet>
@@ -113,18 +396,331 @@ const AdminDashboardHome = () => {
                <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Today's Overview</h3>
                <TodaysOverviewWidget />
              </div>
+{/* Slot Utilization */}
+<div className="space-y-3">
+  <h3 className="text-lg font-semibold text-slate-800 tracking-tight">
+    Slot Utilization
+  </h3>
 
+  {(() => {
+    const percent =
+      slotData.total > 0
+        ? Math.round((slotData.filled / slotData.total) * 100)
+        : 0;
+
+    let color = "bg-blue-500";
+    let label = "Normal";
+
+    if (percent < 30) {
+      color = "bg-red-500";
+      label = "Low Utilization";
+    } else if (percent < 70) {
+      color = "bg-yellow-500";
+      label = "Moderate";
+    } else {
+      color = "bg-green-500";
+      label = "Optimal";
+    }
+
+    return (
+      <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 hover:shadow-md transition-all">
+        
+        {/* TOP */}
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-slate-500">Today Usage</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {percent}%
+            </p>
+          </div>
+
+          <div className={`px-3 py-1 text-xs font-semibold rounded-full text-white ${color}`}>
+            {label}
+          </div>
+        </div>
+
+        {/* PROGRESS */}
+        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div
+            className={`${color} h-3 rounded-full transition-all`}
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+
+        {/* DETAIL */}
+        <div className="flex justify-between text-sm text-slate-500">
+          <span>{slotData.filled} slot terisi</span>
+          <span>{slotData.total} total slot</span>
+        </div>
+
+      </div>
+    );
+  })()}
+</div>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  {/* TOP THERAPIST */}
+  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+
+  <h3 className="text-lg font-semibold text-slate-800">
+    Top Therapist
+  </h3>
+
+  {therapistStats.length === 0 ? (
+    <p className="text-sm text-slate-400">Belum ada data</p>
+  ) : (
+    therapistStats.slice(0, 5).map((t, i) => (
+      <div
+        key={t.therapist_id}
+        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[60px]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-lg">
+            {
+  i === 0
+    ? "🥇" // Gold
+    : i === 1
+    ? "🥈" // Silver
+    : i === 2
+    ? "🥉" // Bronze
+    : i === 3
+    ? "🎖️" // Medal (lebih umum)
+    : "🏅" // Award (lebih bawah)
+}
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              {t.name}
+            </p>
+            <p className="text-xs text-slate-400">
+              Therapist
+            </p>
+          </div>
+        </div>
+
+        <div className="text-right">
+          <p className="text-lg font-bold text-slate-900">
+            {t.total}
+          </p>
+          <p className="text-xs text-slate-400">
+            pasien
+          </p>
+        </div>
+      </div>
+    ))
+  )}
+
+</div>
+  
+{/* TOP PATIENT */}
+<div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+
+  <h3 className="text-lg font-semibold text-slate-800">
+    Top Patient
+  </h3>
+
+  {topPatients.length === 0 ? (
+  <div className="flex-1 flex items-center justify-center">
+    <p className="text-sm text-slate-400">Belum ada data</p>
+  </div>
+) : (
+  <div className="flex-1 flex flex-col justify-between">
+    {topPatients.slice(0, 5).map((p, i) => (
+      <div
+        key={i}
+        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-lg">
+            {
+  i === 0
+    ? "🥇" // Gold
+    : i === 1
+    ? "🥈" // Silver
+    : i === 2
+    ? "🥉" // Bronze
+    : i === 3
+    ? "🎖️" // Medal (lebih umum)
+    : "🏅" // Award (lebih bawah)
+}
+          </div>
+
+          <div>
+  <p className="text-sm font-semibold text-slate-800">
+    {p.name}
+  </p>
+  <p className="text-xs text-transparent">
+    placeholder
+  </p>
+</div>
+        </div>
+
+        <span className="text-sm font-bold text-slate-900">
+          {p.total}x
+        </span>
+      </div>
+        ))}
+  </div>
+  )}
+
+</div>
+ 
+
+  </div>
+{/* TOP DIAGNOSA + TOP LAYANAN */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  {/* TOP DIAGNOSA */}
+  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+
+    <h3 className="text-lg font-semibold text-slate-800">
+      Top Diagnosa
+    </h3>
+
+    {topDiagnoses.length === 0 ? (
+  <div className="flex-1 flex items-center justify-center">
+    <p className="text-sm text-slate-400">Belum ada data</p>
+  </div>
+) : (
+  <div className="flex-1 flex flex-col gap-3">
+    {topDiagnoses.slice(0, 5).map((d, i) => (
+      <div
+        key={i}
+        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-lg">
+            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}
+          </div>
+
+         <p className="text-sm font-semibold text-slate-800 line-clamp-1">
+  {d.name}
+</p>
+        </div>
+
+        <span className="text-sm font-bold text-slate-900">
+          {d.total}
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+
+  </div>
+
+
+  {/* TOP LAYANAN */}
+  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+
+    <h3 className="text-lg font-semibold text-slate-800">
+      Top Layanan
+    </h3>
+
+   {topServices.length === 0 ? (
+  <div className="flex-1 flex items-center justify-center">
+    <p className="text-sm text-slate-400">Belum ada data</p>
+  </div>
+) : (
+  <div className="flex-1 flex flex-col gap-3">
+    {topServices.slice(0, 5).map((s, i) => (
+      <div
+        key={i}
+        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-lg">
+            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}
+          </div>
+
+          <p className="text-sm font-semibold text-slate-800 line-clamp-1">
+  {s.name}
+</p>
+        </div>
+
+        <span className="text-sm font-bold text-slate-900">
+          {s.total}
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+</div>
+</div>
+{/* PEAK ACTIVITY FULL WIDTH */}
+<div className="space-y-3 mt-6">
+  <h3 className="text-lg font-semibold text-slate-800">
+    Trend Patients
+  </h3>
+
+  <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl border shadow-sm p-6">
+
+  {trendPatients.length > 0 ? (
+    <div className="w-full h-[250px]">
+
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={trendPatients}>
+
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
+          <XAxis
+  dataKey="date"
+  ticks={trendPatients
+    .filter((_, i) => i % Math.ceil(trendPatients.length / 6) === 0)
+    .map(d => d.date)
+  }
+  tickFormatter={(date) =>
+    new Date(date).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short'
+    })
+  }
+  tick={{ fontSize: 12 }}
+/>
+
+          <YAxis
+            allowDecimals={false}
+            tick={{ fontSize: 12 }}
+          />
+
+          <Tooltip
+            formatter={(value) => [`${value} pasien`, 'Jumlah']}
+            labelFormatter={(label) =>
+              new Date(label).toLocaleDateString('id-ID', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })
+            }
+          />
+
+          <Line
+            type="monotone"
+            dataKey="total"
+            stroke="#2563eb"
+            strokeWidth={3}
+            dot={{ r: 4 }}
+            activeDot={{ r: 6 }}
+          />
+
+        </LineChart>
+      </ResponsiveContainer>
+
+    </div>
+  ) : (
+    <p className="text-sm text-slate-400">Belum ada data</p>
+  )}
+
+</div>
+</div>
              {/* Middle Section: Recap Metrics & Evaluation Report */}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-3">
+                <div className="lg:col-span-3 space-y-3">
                   <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Recap Metrics</h3>
                   <AdminDashboardMetrics dateRange={dateRange} />
                 </div>
                 
-                <div className="space-y-3">
-                   {/* Unfilled Evaluations Widget - Placed in side column for better layout */}
-                   <DailyEvaluationReportWidget dateRange={dateRange} />
-                </div>
+                
              </div>
 
              <div className="min-h-[200px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
