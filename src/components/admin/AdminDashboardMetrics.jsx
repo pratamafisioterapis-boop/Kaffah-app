@@ -48,7 +48,7 @@ const AdminDashboardMetrics = ({ dateRange }) => {
       // 1. Fetch Daily Recaps
       const { data: recaps, error: recapsError } = await supabase
         .from('daily_recaps')
-        .select('id, patient_id, package_type, amount, patient_type')
+        .select('id, patient_id, is_package_purchase, patient_type')
         .gte('recap_date', dateRange.startDate)
         .lte('recap_date', dateRange.endDate);
 
@@ -94,23 +94,11 @@ const AdminDashboardMetrics = ({ dateRange }) => {
 
         // Logic for Paket vs Non Paket based on sales (amount > 0)
         // Note: Total Sesi counts ALL recaps, regardless of amount
-        const amount = Number(recap.amount) || 0;
-        
-        if (amount > 0 && recap.package_type) {
-          const type = normalize(recap.package_type);
-          
-          // Check if exists in operational_options map (as per requirement)
-          if (Object.prototype.hasOwnProperty.call(packageSessionMap, type)) {
-            const sessionCount = packageSessionMap[type];
-            // If session_count > 1, it's a "Paket" purchase
-            if (sessionCount > 1) {
-              totalPaketCount++;
-            } else {
-              // If session_count <= 1 (or default 1), it's a "Non Paket" (Single Session) purchase
-              totalNonPaketCount++; 
-            }
-          }
-        }
+        if (recap.is_package_purchase === true) {
+  totalPaketCount++;
+} else {
+  totalNonPaketCount++;
+}
       });
 
       setMetrics({
