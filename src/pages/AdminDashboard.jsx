@@ -228,7 +228,16 @@ setTopServices(topServicesArray);
 
 // === TOP DIAGNOSIS ===
 const diagnosisMap = {};
+// ambil master diagnosa
+const { data: masterDiagnoses } = await supabase
+  .from('operational_options')
+  .select('id, label')
+  .eq('category', 'diagnosa');
 
+const diagnosisNameMap = {};
+masterDiagnoses?.forEach(d => {
+  diagnosisNameMap[d.id] = d.label;
+});
 const { data: diagnosisData } = await supabase
   .from('daily_recaps')
   .select('diagnosis')
@@ -266,6 +275,10 @@ if (!Array.isArray(labels)) {
   // kalau object → ambil labelnya
   let name = label;
 
+// kalau UUID → ubah jadi nama
+if (diagnosisNameMap[label]) {
+  name = diagnosisNameMap[label];
+}
   if (typeof label === "object") {
     name = label.label || label.name;
   }
