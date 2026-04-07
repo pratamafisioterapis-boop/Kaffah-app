@@ -19,6 +19,7 @@ import { Loader2, Calendar, User, CreditCard, Receipt, PlayCircle, StopCircle } 
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { getDailyRecaps, getPatientById, updateDailyRecap, setDailyRecapStartTime, setDailyRecapEndTime } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Badge } from '@/components/ui/badge';
 import { formatTimeIndonesia, getPatientName } from '@/lib/utils';
 import InvoiceModal from '@/components/admin/InvoiceModal';
@@ -77,24 +78,35 @@ const DailyRecapsDetailModal = ({
   };
 
   const handleOpenInvoice = async (recap) => {
-    let patientDetails = null;
-    try {
-        const { data } = await getPatientById(recap.actual_patient_id || recap.patient_id);
-        patientDetails = data;
-    } catch (e) {
-        console.error("Failed to fetch patient details for invoice", e);
-    }
-    const invoiceData = {
-      ...recap,
-      patient_name: getPatientName(recap),
-      patient_address: patientDetails?.address || '-',
-      patient_phone: patientDetails?.phone || '-',
-      rm_number: recap.actual_patient?.rm_number || recap.patient?.rm_number || '-',
-      discount: 0
-    };
-    setSelectedInvoiceData(invoiceData);
-    setInvoiceModalOpen(true);
+  let patientDetails = null;
+
+  try {
+    const { data } = await getPatientById(recap.actual_patient_id || recap.patient_id);
+    patientDetails = data;
+  } catch (e) {
+    console.error("Failed to fetch patient details for invoice", e);
+  }
+
+  // 🔥 CEK: apakah sudah ada invoice
+  const { data: existingInvoice } = await supabase
+    .from('invoice_records')
+    .select('invoice_number')
+    .eq('daily_recap_id', recap.id)
+    .maybeSingle();
+
+  const invoiceData = {
+    ...recap,
+    patient_name: getPatientName(recap),
+    patient_address: patientDetails?.address || '-',
+    patient_phone: patientDetails?.phone || '-',
+    rm_number: recap.actual_patient?.rm_number || recap.patient?.rm_number || '-',
+    discount: 0,
+    existing_invoice: existingInvoice?.invoice_number || null
   };
+
+  setSelectedInvoiceData(invoiceData);
+  setInvoiceModalOpen(true);
+};
 
   const handleTimeClick = async (recap) => {
     if (recap.is_virtual) {

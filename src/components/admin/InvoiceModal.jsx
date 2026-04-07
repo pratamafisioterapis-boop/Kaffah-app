@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { supabase } from '@/lib/supabase';
 import { 
   Dialog, 
   DialogContent, 
@@ -14,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings } from '@/lib/api';
 
 const InvoiceModal = ({ isOpen, onClose, data }) => {
+  const [detailData, setDetailData] = useState(null);
   const componentRef = useRef();
   const { toast } = useToast();
   // Deprecated useMediaAssets for logo, now using settings
@@ -29,6 +31,7 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
+        
         setLoadingSettings(true);
         
         try {
@@ -51,7 +54,67 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
             setLoadingSettings(false);
         }
       };
+      const fetchDetailData = async () => {
+  if (!data?.id) return;
+
+  // 🔹 ambil daily recap dulu
+  const { data: recap, error } = await supabase
+    .from('daily_recaps')
+    .select(`
+      *,
+      patients (
+        full_name,
+        medical_record_number,
+        address,
+        phone
+      )
+    `)
+    .eq('id', data.id)
+    .single();
+
+  if (error || !recap) return;
+
+  let therapistName = '-';
+
+// 🔥 selalu ambil dari physiotherapists kalau ada id
+if (recap.therapist_id) {
+  const { data: physio } = await supabase
+    .from('physiotherapists')
+    .select('name')
+    .eq('id', recap.therapist_id)
+    .single();
+
+  if (physio?.name) {
+    therapistName = physio.name;
+  }
+}
+
+// 🔥 fallback terakhir kalau masih kosong
+if (!therapistName || therapistName === '-') {
+  if (recap.therapist_name && recap.therapist_name.trim() !== '') {
+    therapistName = recap.therapist_name;
+  }
+}
+
+  // 🔥 kalau therapist_name kosong → ambil manual
+  if (!therapistName && recap.therapist_id) {
+    const { data: physio } = await supabase
+      .from('physiotherapists')
+      .select('name')
+      .eq('id', recap.therapist_id)
+      .single();
+
+    therapistName = physio?.name || '-';
+  }
+
+  // 🔥 inject ke data final
+  setDetailData({
+    ...recap,
+    therapist_name: therapistName
+  });
+};
       fetchData();
+fetchDetailData();
     }
   }, [isOpen]);
 
@@ -150,10 +213,36 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
       
-      const safeName = (data?.patient_name || 'Patient').replace(/[^a-zA-Z0-9]/g, '_');
-      const dateStr = data?.recap_date || new Date().toISOString().split('T')[0];
-      
-      pdf.save(`Invoice_${safeName}_${dateStr}.pdf`);
+      const safeName = (data?.patient_name || data?.full_name || 'Patient').replace(/[^a-zA-Z0-9]/g, '_');
+const rm = data?.medical_record_number || 'RM00000';
+const dateStr = data?.recap_date || new Date().toISOString().split('T')[0];
+const invoiceNumber = `INV/KFF/${dateStr}/${rm}`;
+await supabase
+  .from('daily_recaps')
+  .update({ receipt_number: invoiceNumber })
+  .eq('id', data.id);
+// 🔍 CEK DULU: sudah ada invoice atau belum
+const { data: existingInvoice } = await supabase
+  .from('invoice_records')
+  .select('id')
+  .eq('daily_recap_id', data.id)
+  .maybeSingle();
+
+if (!existingInvoice) {
+  // ✅ kalau belum ada → insert
+  await supabase.from('invoice_records').insert([
+    {
+      daily_recap_id: data.id,
+      patient_id: data.patient_id,
+      therapist_id: data.therapist_id,
+      amount: data.amount || 0,
+      invoice_number: invoiceNumber,
+      generated_at: new Date()
+    }
+  ]);
+}
+
+pdf.save(`INV_KAFFAH_${rm}_${safeName}_${dateStr}.pdf`);
       
       toast({
         title: "Download Berhasil",
@@ -170,7 +259,122 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       setIsGenerating(false);
     }
   };
+const handleSendWA = async () => {
+  // 🔥 kalau sudah ada URL → langsung pakai
+if (data?.invoice_url) {
+  const phone =
+    data?.patients?.phone ||
+    data?.guest_phone ||
+    "";
 
+  if (!phone) {
+    alert("Nomor tidak ada");
+    return;
+  }
+
+  const formattedPhone = phone.replace(/^0/, "62");
+
+  const message = `Halo, ini invoice terapi Anda 🙏
+
+Silakan cek di link berikut:
+${data.invoice_url}`;
+
+  const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+
+  window.open(url, "_blank");
+  return;
+}
+  const element = componentRef.current;
+  if (!element) return;
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    const pdf = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pdfWidth = 210;
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+    // 🔥 convert ke blob (INI KUNCI)
+    const blob = pdf.output('blob');
+
+    // 🔥 nama file
+const fileName = `inv_${data.id}.pdf`;
+
+// 🔥 upload ke supabase
+const { error: uploadError } = await supabase
+  .storage
+  .from('invoices')
+  .upload(fileName, blob, {
+    contentType: 'application/pdf',
+    upsert: true,
+  });
+
+if (uploadError) {
+  console.error("UPLOAD ERROR:", uploadError);
+  alert(uploadError.message);
+  return;
+}
+
+// 🔥 ambil public URL
+const { data: publicUrlData } = supabase
+  .storage
+  .from('invoices')
+  .getPublicUrl(fileName);
+
+const fileUrl = `${publicUrlData.publicUrl}?download=0`;
+await supabase
+  .from('daily_recaps')
+  .update({ invoice_url: fileUrl })
+  .eq('id', data.id);
+// 🔥 ambil nomor pasien
+const phone =
+  data?.patients?.phone ||
+  data?.guest_phone ||
+  "";
+
+if (!phone) {
+  alert("Nomor tidak ada");
+  return;
+}
+
+const formattedPhone = phone.replace(/^0/, "62");
+
+// 🔥 buka WA dengan link
+const shortLinkText = "Klik di sini untuk lihat kwitansi";
+
+const message = `Berikut *Kwitansi Terapi* hari ini.
+
+Terima kasih telah mempercayakan pemulihan di *Kaffah Physiotherapy*.
+Semoga lekas membaik dan sehat selalu 🌿
+
+*Salam Sehat,*
+Kaffah Physiotherapy
+
+${shortLinkText}:
+${fileUrl}`;
+
+const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+
+window.open(url, "_blank");
+  } catch (err) {
+    console.error(err);
+    alert("Gagal kirim");
+  }
+};
   if (!data) return null;
 
   return (
@@ -187,6 +391,13 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
               {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
               Download PDF
             </Button>
+            <Button 
+  size="sm" 
+  onClick={handleSendWA} 
+  className="bg-green-600 hover:bg-green-700 text-white"
+>
+  Send WA
+</Button>
             <DialogClose asChild>
               <Button variant="ghost" size="icon">
                 <X className="w-4 h-4" />
@@ -203,8 +414,11 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
                </div>
              ) : (
                <InvoiceTemplate 
-                    ref={componentRef} 
-                    data={data} 
+  ref={componentRef} 
+ data={{
+  ...data,
+  ...detailData
+}}
                     logoUrl={logoUrl} 
                     invoiceTitle={invoiceSettings.invoiceTitle}
                     invoiceSubtitle={invoiceSettings.invoiceSubtitle}

@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAppointmentState } from '@/contexts/AppointmentStateContext'; 
 import { supabase } from '@/lib/customSupabaseClient';
+import InvoiceModal from '@/components/admin/InvoiceModal';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
@@ -126,6 +127,8 @@ const DailyRecap = ({ hideControls = false }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedRecap, setSelectedRecap] = useState(null);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
   const [modalMode, setModalMode] = useState('add');
 
   useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
@@ -483,20 +486,31 @@ const getPremiumPastelBadge = (text) => {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left table-auto">
+        <div className="overflow-x-hidden">
+          <table className="w-full text-xs text-left table-fixed">
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Tanggal</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Nama Pasien</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Diagnosa</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Layanan</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Tipe Pasien</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Paket</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Terapis</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Nominal</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide">Status</th>
-                <th className="px-5 py-4 text-center text-slate-700 font-semibold tracking-wide w-[120px]">Waktu Sesi</th>
+                <th className="px-2 py-3 text-center text-slate-700 font-semibold w-[110px]">Tanggal</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[140px]">Nama Pasien</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[130px]">Diagnosa</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[120px]">Layanan</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[100px]">Tipe</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[80px]">Paket</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[120px]">Terapis</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[90px]">Nominal</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[80px]">Status</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[100px]">Sesi</th>
+
+<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[90px]">Invoice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -565,6 +579,19 @@ const getPremiumPastelBadge = (text) => {
                         </div>
                       )}
                     </td>
+                    <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+  <Button
+    size="sm"
+    variant="outline"
+    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+    onClick={() => {
+      setSelectedInvoiceData(recap);
+      setInvoiceModalOpen(true);
+    }}
+  >
+    Invoice
+  </Button>
+</td>
                   </motion.tr>
                  );
                })}
@@ -595,6 +622,11 @@ const getPremiumPastelBadge = (text) => {
         onEdit={handleEditFromDetail}
         onDelete={fetchRecaps}
       />
+      <InvoiceModal
+  isOpen={invoiceModalOpen}
+  onClose={() => setInvoiceModalOpen(false)}
+  data={selectedInvoiceData}
+/>
     </div>
   );
 };
