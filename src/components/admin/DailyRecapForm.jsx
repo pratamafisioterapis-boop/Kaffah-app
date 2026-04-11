@@ -478,7 +478,13 @@ const selectedDiagnosisLabels = diagnoses
 const selectedServiceLabel = services.find(s => s.value === formData.service_type)?.label || '';
 const selectedPatientTypeLabel = patientTypes.find(p => p.value === formData.patient_type)?.label || '';
 
-const selectedPackage = packageTypes.find(p => p.value === formData.package_type_id);
+const selectedPackage = packageTypes.find(
+  p => String(p.value) === String(formData.package_type_id)
+);
+
+if (!selectedPackage) {
+  throw new Error("Package tidak terdeteksi. Pilih ulang paket.");
+}
 
 const payload = {
 recap_date: isoDate,
@@ -494,11 +500,7 @@ patient_type: selectedPatientTypeLabel,
 package_tracking_id: null,
 package_type_id: formData.package_type_id || null,
 
-package_type:
-selectedPackage?.label ||
-formData.package_type ||
-initialData?.package_type ||
-null,
+package_type: selectedPackage.label,
 
 therapist_id: formData.therapist_id,
 therapist_name: therapistName,
@@ -696,12 +698,13 @@ allowCreate={true}
 options={packageTypes}
 value={formData.package_type || ''}
 onChange={(val) => {
-const selected = packageTypes.find(p => p.value === val);
-setFormData(prev => ({
-...prev,
-package_type: selected?.label || '',
-package_type_id: val
-}));
+  console.log('VAL PACKAGE:', val);
+
+  setFormData(prev => ({
+    ...prev,
+    package_type: val,
+    package_type_id: val
+  }));
 }}
 allowCreate={true}
 />

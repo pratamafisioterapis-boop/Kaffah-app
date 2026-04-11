@@ -899,23 +899,25 @@ export const createDailyRecap = async (payload) => {
 };
 
 export const updateDailyRecap = async (id, payload) => {
-    return safeQuery(async () => {
+  return safeQuery(async () => {
 
-        const cleanedPayload = cleanDailyRecapPayload(payload);
+    const cleanedPayload = cleanDailyRecapPayload(payload);
 
-        const { data, error } = await supabase.rpc(
-            'update_daily_recap_with_package',
-            {
-                p_recap_id: id,
-                p_payload: cleanedPayload
-            }
-        );
+    const { data, error } = await supabase
+      .from('daily_recaps')
+      .update({
+        ...cleanedPayload,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
-        if (error) return { error };
+    if (error) return { error };
 
-        return { data, error: null };
+    return { data, error: null };
 
-    }, 'updateDailyRecap');
+  }, 'updateDailyRecap');
 };
 
 export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 20, offset = 0, sort = { key: 'recap_date', direction: 'desc' } }) => {
