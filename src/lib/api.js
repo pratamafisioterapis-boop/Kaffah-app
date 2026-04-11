@@ -24,7 +24,8 @@ const cleanDailyRecapPayload = (data) => {
     'service_type_id', 
     'therapist_name',
     'is_auto_filled',
-    'discount_label'
+    'discount_label',
+    'package_type_id'
   ];
 
   fieldsToRemove.forEach(field => {
