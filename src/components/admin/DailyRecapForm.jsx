@@ -262,7 +262,7 @@ guest_name: guestNameFix,
 diagnosis: diag,
 service_type: data.service_type || '',
 patient_type: data.patient_type || '',
-package_type_id: data.package_tracking_id || data.package_type || '', // Explicitly empty, will be resolved by useEffect
+package_type_id: '',
 package_type: '', // Preserve label
 therapist_id: data.therapist_id || '',
 amount: data.amount || 0,
@@ -330,11 +330,7 @@ useEffect(() => {
 if (mode === 'edit' && initialData && packageTypes.length > 0) {
 if (!formData.package_type_id) {
 // Determine the value to resolve
-const valToResolve = 
-initialData.package_tracking_id || 
-initialData.package_type || 
-initialData.package_type_id || 
-initialData.raw_package_type_id;
+const valToResolve = initialData.package_type;
 const resolvedId = resolvePackageTypeValue(valToResolve, packageTypes);
 if (resolvedId) {
 const matchedOption = packageTypes.find(p => p.value === resolvedId);
@@ -498,7 +494,7 @@ service_type: selectedServiceLabel,
 patient_type: selectedPatientTypeLabel,
 
 package_tracking_id: null,
-package_type_id: formData.package_type_id || null,
+
 
 package_type: selectedPackage.label,
 
@@ -698,12 +694,12 @@ allowCreate={true}
 options={packageTypes}
 value={formData.package_type || ''}
 onChange={(val) => {
-  console.log('VAL PACKAGE:', val);
+  const selected = packageTypes.find(p => p.value === val);
 
   setFormData(prev => ({
     ...prev,
-    package_type: val,
-    package_type_id: val
+    package_type_id: val,
+    package_type: selected?.label || ''
   }));
 }}
 allowCreate={true}
