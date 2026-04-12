@@ -108,27 +108,37 @@ const FollowUpManagementPage = () => {
 
   const handleToggleBablast = async () => {
 
-    const { data: current } = await supabase
-      .from('wa_settings')
-      .select('id, enabled')
-      .single();
+  const { data: current } = await supabase
+    .from('wa_settings')
+    .select('id, enabled')
+    .single();
 
-    if (!current) return;
+  if (!current) return;
 
-    const newValue = !current.enabled;
+  const newValue = !current.enabled;
 
-    const { data } = await supabase
-      .from('wa_settings')
-      .update({
-        enabled: newValue,
-        last_enabled_at: newValue ? new Date().toISOString() : current.last_enabled_at
-      })
-      .eq('id', current.id)
-      .select()
-      .single();
+  const payload = newValue
+    ? {
+        enabled: true,
+        last_enabled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), // 🔥 TAMBAH INI
+      }
+    : {
+        enabled: false,
+        updated_at: new Date().toISOString(), // 🔥 TAMBAH INI
+      };
 
-    if (data) setIsBablastEnabled(data.enabled);
-  };
+  const { data, error } = await supabase
+    .from('wa_settings')
+    .update(payload)
+    .eq('id', current.id)
+    .select()
+    .single();
+
+  if (!error && data) {
+    setIsBablastEnabled(data.enabled);
+  }
+};
 
   const handleToggleChatAI = async () => {
 
