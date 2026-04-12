@@ -329,7 +329,7 @@ const { data: publicUrlData } = supabase
   .from('invoices')
   .getPublicUrl(fileName);
 
-const fileUrl = `${publicUrlData.publicUrl}?download=0`;
+const fileUrl = publicUrlData.publicUrl;
 await supabase
   .from('daily_recaps')
   .update({ invoice_url: fileUrl })
