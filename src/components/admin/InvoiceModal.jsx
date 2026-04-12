@@ -58,34 +58,26 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
   if (!data?.id) return;
 
   // 🔹 ambil daily recap dulu
-  const { data: recap, error } = await supabase
-    .from('daily_recaps')
-    .select(`
-      *,
-      patients (
-        full_name,
-        medical_record_number,
-        address,
-        phone
-      )
-    `)
-    .eq('id', data.id)
-    .single();
+  const { data: recap } = await supabase
+  .from('daily_recaps')
+  .select('*')
+  .eq('id', data.id)
+  .single();
 
   if (error || !recap) return;
 
   let therapistName = '-';
-
-// 🔥 selalu ambil dari physiotherapists kalau ada id
+let physioData = null;
 if (recap.therapist_id) {
   const { data: physio } = await supabase
     .from('physiotherapists')
-    .select('name')
+    .select('name, signature_url, stamp_url')
     .eq('id', recap.therapist_id)
     .single();
 
-  if (physio?.name) {
-    therapistName = physio.name;
+  if (physio) {
+    physioData = physio;
+    therapistName = physio.name || '-';
   }
 }
 
@@ -100,18 +92,20 @@ if (!therapistName || therapistName === '-') {
   if (!therapistName && recap.therapist_id) {
     const { data: physio } = await supabase
       .from('physiotherapists')
-      .select('name')
-      .eq('id', recap.therapist_id)
-      .single();
+.select('name, signature_url, stamp_url')
+.eq('id', recap.therapist_id)
+.single();
 
     therapistName = physio?.name || '-';
   }
 
   // 🔥 inject ke data final
   setDetailData({
-    ...recap,
-    therapist_name: therapistName
-  });
+  ...recap,
+  therapist_name: physioData?.name || '-',
+  signature_url: physioData?.signature_url || null,
+  stamp_url: physioData?.stamp_url || null
+});
 };
       fetchData();
 fetchDetailData();
@@ -416,8 +410,8 @@ window.open(url, "_blank");
                <InvoiceTemplate 
   ref={componentRef} 
  data={{
-  ...data,
-  ...detailData
+  ...detailData,
+  ...data
 }}
                     logoUrl={logoUrl} 
                     invoiceTitle={invoiceSettings.invoiceTitle}

@@ -502,7 +502,7 @@ export const createAppointment = async (params) => {
   p_is_homecare: params.p_is_homecare ?? false,
 
   // 🔥 TAMBAHAN WAJIB
-  p_allow_overlap: false
+  p_allow_overlap: params.p_allow_overlap ?? false
 };
 
     const { data, error } = await supabase.rpc(
@@ -808,7 +808,23 @@ export const getPatientActivePackage = async (patientId) => {
 
   }, 'getPatientActivePackage', { retry: true });
 };
+export const getPatientLatestPackage = async (patientId) => {
+  return safeQuery(async () => {
 
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return { data: data || null, error: null };
+
+  }, 'getPatientLatestPackage', { retry: true });
+};
 export const getActivePackage = async (patientId) => {
     return getPatientActivePackage(patientId);
 };
@@ -912,6 +928,7 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   .from('daily_recaps')
   .select(`
   id,
+  receipt_number,
   guest_name,
   guest_phone,
   patient_id,
@@ -946,9 +963,11 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
     phone
   ),
   therapist:physiotherapists!therapist_id(
-    id,
-    name
-  )
+  id,
+  name,
+  signature_url,
+  stamp_url
+)
 `, { count: 'exact' });
 
     if (startDate) {
@@ -1485,6 +1504,7 @@ export const getDetailedDailyRecapsWithPatients = async () => {
       .from('daily_recaps')
       .select(`
         id,
+        receipt_number,
         recap_date,
         patient_id,
         amount,

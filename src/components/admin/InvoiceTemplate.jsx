@@ -90,7 +90,17 @@ const checked = (val) => payment === val ? '☑' : '☐';
   <div style={infoRowLeft}>
     <span style={labelLeft}>DATE</span>
     <span style={colon}>:</span>
-    <span style={value}>{data?.recap_date || '-'}</span>
+    <span style={value}>
+  {data?.recap_date
+    ? (() => {
+        const d = new Date(data.recap_date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      })()
+    : '-'}
+</span>
   </div>
 
   <div style={infoRowLeft}>
@@ -228,37 +238,122 @@ const checked = (val) => payment === val ? '☑' : '☐';
 <p style={text}>{checked('insurance')} Insurance</p>
 <p style={text}>{checked('transfer')} Transfer</p>
         </div>
+        
         {/* SIGNATURE */}
 <div style={{
   display: 'flex',
   justifyContent: 'space-between',
-  marginTop: '100px'
+  alignItems: 'center',
+  marginTop: '50px'
 }}>
   
-  <div style={{ textAlign: 'center' }}>
-    <p style={{ fontSize: '12px', marginBottom: '60px' }}>
-      Physiotherapist
-    </p>
-    <p style={{ fontSize: '12px', fontWeight: '600' }}>
-   
-            <p style={text}>
-  {data?.physiotherapists?.name 
-    || data?.therapist_name 
-    || data?.therapist?.name 
-    || '-'}
-</p>
-</p>
+  <div style={{ 
+    textAlign: 'center',
+    width: '33%',
+    height: '160px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+  }}>
+    <p>Physiotherapist</p>
+  {/* SIGNATURE CONTAINER */}
+  <div style={{
+    height: '70px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center'
+  }}>
+    {data?.therapist?.signature_url && (
+      <img 
+        src={data.therapist.signature_url} 
+        style={{ width: '70px' }}
+      />
+    )}
   </div>
 
-  <div style={{ textAlign: 'center' }}>
-    <p style={{ fontSize: '12px', marginBottom: '60px' }}>
-      Patient
-    </p>
-    <p style={{ fontSize: '12px', fontWeight: '600' }}>
-  {data?.patients?.full_name || data?.patient_name || '-'}
-</p>
+  {/* GARIS (ANCHOR UTAMA) */}
+  <div style={{
+    width: '160px',
+    height: '1px',
+    background: '#000',
+    margin: '0 auto'
+  }} />
 
+  {/* STAMP CONTAINER */}
+  <div style={{
+    height: '70px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center'
+  }}>
+    {data?.therapist?.stamp_url ? (
+  <img 
+    src={data.therapist.stamp_url} 
+    style={{ width: '120px', marginTop: '5px' }}
+  />
+) : (
+  <p style={{ 
+    fontSize: '12px', 
+    fontWeight: '600',
+    marginTop: '10px'
+  }}>
+    {data?.therapist?.name || data?.therapist_name || '-'}
+  </p>
+)}
   </div>
+</div>
+{/* LOGO TENGAH */}
+<div style={{
+  width: '160px',
+  height: '140px', // 🔥 tinggi total biar sejajar kiri-kanan
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+}}>
+  <img 
+    src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/assets-invoice/logo/logo.png"
+    style={{ 
+      width: '110px',
+      opacity: 0.25
+    }}
+  />
+</div>
+  <div style={{ 
+    textAlign: 'center',
+    width: '33%',
+    height: '160px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+  }}>
+    <p>Patient</p>
+
+  {/* EMPTY CONTAINER (SAMAKAN DENGAN SIGNATURE) */}
+ <div style={{
+  height: '120px',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between'
+}}>
+</div>
+  {/* GARIS (HARUS IDENTIK) */}
+  <div style={{
+    width: '160px',
+    height: '1px',
+    background: '#000',
+    margin: '0 auto'
+  }} />
+
+  {/* NAMA */}
+  <p style={{ 
+    fontSize: '12px', 
+    fontWeight: '600',
+    marginTop: '6px',
+    marginBottom: '40px'
+  }}>
+    {data?.patients?.full_name || data?.patient_name || '-'}
+  </p>
+</div>
 
 </div>
 </div>

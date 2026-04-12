@@ -9,7 +9,7 @@ import {
   bookAppointmentSafe, 
   getPatients, 
   getPatientById, 
-  getActivePackage, 
+  getPatientLatestPackage, 
   checkFollowUpQueueExists, 
   deleteFollowUpQueueEntry, 
   checkRecurringSlotConflicts, 
@@ -105,17 +105,9 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   }
 
   try {
-    const { data: activePkg } = await getActivePackage(val);
+    const { data: pkg } = await getPatientLatestPackage(val);
 
-    let pkg = null;
-
-    if (Array.isArray(activePkg) && activePkg.length > 0) {
-  pkg = activePkg.find(p => p.sessions_remaining > 0) || activePkg[0];
-    } else if (activePkg && !Array.isArray(activePkg)) {
-      pkg = activePkg;
-    }
-
-    setPackageInfo(pkg);
+setPackageInfo(pkg);
 
     if (!pkg) {
       toast({
@@ -470,8 +462,8 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
                   const diffDays = Math.ceil((selected - today) / (1000 * 60 * 60 * 24));
                   await extendPackage(packageInfo.id, diffDays);
                   toast({ title: "Berhasil", description: "Paket diperpanjang" });
-                  const { data } = await getActivePackage(formData.patient_id);
-                  setPackageInfo(Array.isArray(data) ? data[0] : data);
+                  const { data } = await getPatientLatestPackage(formData.patient_id);
+setPackageInfo(data);
                   setIsJustActivated(true);
                   setTimeout(() => setIsJustActivated(false), 2000);
                   setShowExtendModal(false);

@@ -174,7 +174,7 @@ const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
       .split('T')[0];
 
     // 🔥 HANYA RESET kalau filter = today
-    if (activeFilter === 'today') {
+    if (activeFilter === 'today' && !localStorage.getItem("global_date_range")) {
       if (
         dateRange.start !== todayMakassar ||
         dateRange.end !== todayMakassar
@@ -389,8 +389,9 @@ const getPremiumPastelBadge = (text) => {
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 <Button
-                  variant={activeFilter === 'today' ? 'default' : 'outline'}
-                  size="sm"
+  variant={activeFilter === 'today' ? 'default' : 'outline'}
+  className={activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  size="sm"
                   onClick={() => {
                     const now = new Date();
                     const today = new Date(now.getTime() + (8 * 60 * 60 * 1000))
@@ -410,45 +411,62 @@ const getPremiumPastelBadge = (text) => {
                 </Button>
 
                 <Button
-                  variant={activeFilter === 'week' ? 'default' : 'outline'}
-                  size="sm"
+  variant={activeFilter === 'week' ? 'default' : 'outline'}
+  className={activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  size="sm"
                   onClick={() => {
-                    const now = new Date();
-                    const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  const now = new Date();
 
-                    const firstDay = new Date(base);
-                    firstDay.setDate(base.getDate() - base.getDay());
+  // 🔥 pakai waktu lokal langsung (jangan shift lagi)
+  const base = new Date(now);
 
-                    const lastDay = new Date(firstDay);
-                    lastDay.setDate(firstDay.getDate() + 6);
+  const day = base.getDay(); // 0 (Minggu) - 6 (Sabtu)
 
-                    const start = firstDay.toISOString().split('T')[0];
-                    const end = lastDay.toISOString().split('T')[0];
+  // 🔥 hitung offset ke Senin (ISO)
+  const diffToMonday = (day + 6) % 7;
 
-                    setActiveFilter('week');
+  const monday = new Date(base);
+  monday.setDate(base.getDate() - diffToMonday);
 
-                    setDateRange({ start, end });
-                    setDateRangeDisplay({
-                      start: displayDateID(start),
-                      end: displayDateID(end)
-                    });
-                  }}
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const start = monday.toISOString().split('T')[0];
+  const end = sunday.toISOString().split('T')[0];
+
+  setActiveFilter('week');
+
+  setDateRange({ start, end });
+  setDateRangeDisplay({
+    start: displayDateID(start),
+    end: displayDateID(end)
+  });
+}}
                 >
                   Minggu Ini
                 </Button>
 
                 <Button
-                  variant={activeFilter === 'month' ? 'default' : 'outline'}
-                  size="sm"
+  variant={activeFilter === 'month' ? 'default' : 'outline'}
+  className={activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  size="sm"
                   onClick={() => {
                     const now = new Date();
                     const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
                     const firstDay = new Date(base.getFullYear(), base.getMonth(), 1);
-                    const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0);
 
-                    const start = firstDay.toISOString().split('T')[0];
-                    const end = lastDay.toISOString().split('T')[0];
+// 🔥 format manual (bukan toISOString)
+const formatLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const start = formatLocal(firstDay);
+const end = formatLocal(lastDay);
 
                     setActiveFilter('month');
 
@@ -463,22 +481,60 @@ const getPremiumPastelBadge = (text) => {
                 </Button>
               </div>
               <Input 
-                value={dateRangeDisplay.start} 
-                onChange={(e) => setDateRangeDisplay(p => ({...p, start: e.target.value}))} 
-                className="w-32 text-xs" 
-                onClick={() => setShowStartCalendar(true)}
-              />
-              {showStartCalendar && <div className="absolute z-50 mt-10"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(d) => { setDateRange(p=>({...p, start: d})); setDateRangeDisplay(p=>({...p, start: displayDateID(d)})); setShowStartCalendar(false);}} onClose={() => setShowStartCalendar(false)} /></div>}
-              <span>-</span>
-              <Input 
-                value={dateRangeDisplay.end} 
-                onChange={(e) => setDateRangeDisplay(p => ({...p, end: e.target.value}))} 
-                className="w-32 text-xs"
-                onClick={() => setShowEndCalendar(true)}
-              />
-              {showEndCalendar && <div className="absolute z-50 mt-10 ml-36"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(d) => { setDateRange(p=>({...p, end: d})); setDateRangeDisplay(p=>({...p, end: displayDateID(d)})); setShowEndCalendar(false);}} onClose={() => setShowEndCalendar(false)} /></div>}
-              
-              <Button variant="outline" size="icon" onClick={fetchRecaps}><RefreshCcw className="w-4 h-4"/></Button>
+  value={dateRangeDisplay.start} 
+  onChange={(e) => {
+    setActiveFilter(null);
+    setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
+  }} 
+  className="w-32 text-xs" 
+  onClick={() => setShowStartCalendar(true)}
+/>
+
+{showStartCalendar && (
+  <div className="absolute z-50 mt-10">
+    <DatePicker
+      value={parseDateFromDisplay(dateRangeDisplay.start)}
+      onChange={(d) => {
+        setActiveFilter(null);
+        setDateRange(p => ({ ...p, start: d }));
+        setDateRangeDisplay(p => ({ ...p, start: displayDateID(d) }));
+        setShowStartCalendar(false);
+      }}
+      onClose={() => setShowStartCalendar(false)}
+    />
+  </div>
+)}
+
+<span>-</span>
+
+<Input 
+  value={dateRangeDisplay.end} 
+  onChange={(e) => {
+    setActiveFilter(null);
+    setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
+  }} 
+  className="w-32 text-xs"
+  onClick={() => setShowEndCalendar(true)}
+/>
+
+{showEndCalendar && (
+  <div className="absolute z-50 mt-10 ml-36">
+    <DatePicker
+      value={parseDateFromDisplay(dateRangeDisplay.end)}
+      onChange={(d) => {
+        setActiveFilter(null);
+        setDateRange(p => ({ ...p, end: d }));
+        setDateRangeDisplay(p => ({ ...p, end: displayDateID(d) }));
+        setShowEndCalendar(false);
+      }}
+      onClose={() => setShowEndCalendar(false)}
+    />
+  </div>
+)}
+
+<Button variant="outline" size="icon" onClick={fetchRecaps}>
+  <RefreshCcw className="w-4 h-4"/>
+</Button>
             </div>
             <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px]" />
           </div>
