@@ -637,16 +637,17 @@ const end = formatLocal(lastDay);
                     </td>
                     <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
   <Button
-    size="sm"
-    variant="outline"
-    className="text-blue-600 border-blue-200 hover:bg-blue-50"
-    onClick={() => {
-      setSelectedInvoiceData(recap);
-      setInvoiceModalOpen(true);
-    }}
-  >
-    Invoice
-  </Button>
+  size="sm"
+  variant="outline"
+  disabled={parseFloat(recap.amount || 0) === 0}
+  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+  onClick={() => {
+    setSelectedInvoiceData(recap);
+    setInvoiceModalOpen(true);
+  }}
+>
+  Invoice
+</Button>
 </td>
                   </motion.tr>
                  );
