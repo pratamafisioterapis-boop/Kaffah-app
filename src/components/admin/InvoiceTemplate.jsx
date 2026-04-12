@@ -186,7 +186,7 @@ const checked = (val) => payment === val ? '☑' : '☐';
               <td style={tdCenter}>
   {data?.package_type || data?.service_type || '-'}
 </td>
-              <td style={tdCenter}>{formatCurrency(data?.amount)}</td>
+              <td style={tdCenter}>{formatCurrency(data?.amount_original || data?.amount)}</td>
             </tr>
 
             {[...Array(5)].map((_, i) => (
@@ -211,11 +211,17 @@ const checked = (val) => payment === val ? '☑' : '☐';
           <div style={totalGrid}>
             <span>Subtotal</span>
             <span>:</span>
-            <span>{formatCurrency(data?.amount)}</span>
+            <span>{formatCurrency(data?.amount_original || data?.amount)}</span>
 
             <span>Discount</span>
             <span>:</span>
-            <span>-</span>
+            <span style={{ textAlign: 'right' }}>
+  {data?.discount_value
+    ? data?.discount_type === 'percentage'
+      ? `${data.discount_value}%`
+      : formatCurrency(data.discount_value)
+    : ''}
+</span>
           </div>
 
           <div style={balanceGrid}>

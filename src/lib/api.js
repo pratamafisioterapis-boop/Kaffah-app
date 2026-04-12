@@ -24,7 +24,6 @@ const cleanDailyRecapPayload = (data) => {
     'service_type_id', 
     'therapist_name',
     'is_auto_filled',
-    'discount_label',
     'package_type_id'
   ];
 
@@ -905,10 +904,14 @@ export const updateDailyRecap = async (id, payload) => {
 
     const cleanedPayload = cleanDailyRecapPayload(payload);
 
+cleanedPayload.amount_original = payload.amount_original;
+
+
     const { data, error } = await supabase
       .from('daily_recaps')
       .update({
         ...cleanedPayload,
+        amount_original: payload.amount_original,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -941,9 +944,11 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   package_tracking_id,
   therapist_id,
   amount,
+  amount_original,
   payment_method,
   discount_type,
   discount_value,
+  discount_label,
   created_at,
 
   patients!patient_id(

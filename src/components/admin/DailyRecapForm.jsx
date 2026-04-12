@@ -50,6 +50,7 @@ const [services, setServices] = useState([]);
 const [patientTypes, setPatientTypes] = useState([]);
 const [packageTypes, setPackageTypes] = useState([]);
 const [paymentMethods, setPaymentMethods] = useState([]);
+const [discountOptions, setDiscountOptions] = useState([]);
 const [isLoadingData, setIsLoadingData] = useState(false);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [showDatePicker, setShowDatePicker] = useState(false);
@@ -70,6 +71,7 @@ therapist_id: '',
 amount: '',
 payment_method: '',
 discount_type: 'none',
+discount_label: '',
 discount_value: ''
 });
 
@@ -116,14 +118,15 @@ injectMissingPatient(initialData.actual_patient_id);
 const loadOptions = async () => {
 setIsLoadingData(true);
 try {
-const [pats, physios, diagOpts, servOpts, pTypes, pkgTypes, payMethods] = await Promise.all([
+const [pats, physios, diagOpts, servOpts, pTypes, pkgTypes, payMethods, discountOpts] = await Promise.all([
 fetchPatients(),
 fetchPhysiotherapists(),
 getDiagnosisOptions(),
 fetchOperationalOptions(['service', 'layanan']),
 fetchOperationalOptions('patient_type'),
 fetchPackageTypes(),
-fetchOperationalOptions('payment_method')
+fetchOperationalOptions('payment_method'),
+fetchOperationalOptions('discount_type')
 ]);
 setPatients(Array.isArray(pats) ? pats : []);
 setTherapists(Array.isArray(physios) ? physios : []);
@@ -133,6 +136,7 @@ setPatientTypes(Array.isArray(pTypes) ? pTypes : []);
 const loadedPackageTypes = Array.isArray(pkgTypes) ? pkgTypes : [];
 setPackageTypes(loadedPackageTypes);
 setPaymentMethods(Array.isArray(payMethods) ? payMethods : []);
+setDiscountOptions(Array.isArray(discountOpts) ? discountOpts : []);
 if (mode === 'edit' && initialData) {
 // PATIENT
 if (initialData.patient_id && (initialData.patient_name || initialData.patients?.full_name)) {
@@ -252,7 +256,17 @@ data.name ||
 data.patient ||
 ''
 ).trim();
+let originalAmount = data.amount_original ?? data.amount ?? 0;
 
+if (data.discount_type === 'percentage') {
+  originalAmount = Math.round(
+    data.amount / (1 - (data.discount_value || 0) / 100)
+  );
+}
+
+if (data.discount_type === 'nominal') {
+  originalAmount = data.amount + (data.discount_value || 0);
+}
 setFormData(prev => ({
 ...prev,
 recap_date: formatDateDisplay(data.date || data.recap_date),
@@ -265,9 +279,10 @@ patient_type: data.patient_type || '',
 package_type_id: '',
 package_type: '', // Preserve label
 therapist_id: data.therapist_id || '',
-amount: data.amount || 0,
+amount: data.amount_original ?? originalAmount,
 payment_method: data.payment_method || '',
 discount_type: data.discount_type || 'none',
+discount_label: data.discount_label || '',
 discount_value: data.discount_value || ''
 }));
 // FORCE inject patient supaya label pasti ada
@@ -500,10 +515,12 @@ package_type: selectedPackage.label,
 
 therapist_id: formData.therapist_id,
 therapist_name: therapistName,
+amount_original: parseFloat(formData.amount) || 0,
 amount: parseFloat(formData.amount) || 0,
 payment_method: formData.payment_method,
 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
-discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0)
+discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
+discount_label: formData.discount_label || null
 };
 
 let result;
@@ -714,10 +731,17 @@ allowCreate={true}
 <div className="space-y-2">
 <Label>Nominal (Rp)</Label>
 <Input 
-type="number"
-value={formData.amount}
-onChange={(e) => handleChange('amount', e.target.value)}
-placeholder="0"
+  type="number"
+  value={formData.amount}
+  onChange={(e) => {
+    const value = Number(e.target.value || 0);
+    setFormData(prev => ({
+      ...prev,
+      amount: value,
+      amount_original: value // 🔥 INI KUNCINYA
+    }));
+  }}
+  placeholder="0"
 />
 </div>
 <div className="space-y-2">
@@ -738,6 +762,18 @@ value={formData.discount_type}
 onValueChange={(val) => handleChange('discount_type', val)}
 className="flex gap-4 mb-3"
 >
+  <SearchableSelect
+  options={discountOptions}
+  value={formData.discount_label}
+  onChange={(val) => {
+  const selected = discountOptions.find(d => d.value === val);
+  setFormData(prev => ({
+    ...prev,
+    discount_label: selected?.label || ''
+  }));
+}}
+  placeholder="Pilih jenis diskon (opsional)"
+/>
 <div className="flex items-center space-x-2">
 <RadioGroupItem value="none" id="d-none" />
 <Label htmlFor="d-none" className="font-normal cursor-pointer">Tidak ada</Label>

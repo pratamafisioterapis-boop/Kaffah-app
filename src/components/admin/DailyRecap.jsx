@@ -68,7 +68,7 @@ const DailyRecap = ({ hideControls = false }) => {
   const { lastSyncTime } = useAppointmentState(); 
   
   const [recaps, setRecaps] = useState([]);
-  const [activeFilter, setActiveFilter] = useState('today');
+  const [activeFilter, setActiveFilter] = useState(null);
   // Cache for options (diagnosa, service_type, etc.)
   const [optionsMap, setOptionsMap] = useState({});
 
@@ -210,7 +210,14 @@ const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
           ...r,
           date: r.recap_date,
           display_therapist_name: getTherapistName(r),
-        package_type: r.package_type
+        package_type: r.package_type,
+        amount_original: r.amount_original ?? (
+    r.discount_type === 'percentage'
+      ? Math.round(r.amount / (1 - (r.discount_value || 0) / 100))
+      : r.discount_type === 'nominal'
+      ? r.amount + (r.discount_value || 0)
+      : r.amount
+  )
 }));
         setRecaps(formatted);
         setTotalRecords(count || 0);
