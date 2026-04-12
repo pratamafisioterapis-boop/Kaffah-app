@@ -109,12 +109,17 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
 
 setPackageInfo(pkg);
 
-    if (!pkg) {
-      toast({
-        title: "Info Paket",
-        description: "Pasien tidak memiliki paket yang aktif/expired"
-      });
-    }
+    if (!pkg || pkg.sessions_remaining === 0) {
+  toast({
+    title: "Info Paket",
+    description: "Pasien tidak memiliki paket yang aktif/expired"
+  });
+} else if (!isExpired) {
+  toast({
+    title: "Paket Aktif",
+    description: `Pasien memiliki paket: ${pkg.package_name}`
+  });
+}
 
     setIsJustActivated(true);
     setTimeout(() => setIsJustActivated(false), 2000);
@@ -130,12 +135,7 @@ setPackageInfo(pkg);
         ? isBefore(new Date(lastDate), startOfDay(new Date()))
         : false;
 
-      toast({
-        title: isExpired ? "Paket Expired" : "Paket Aktif",
-        description: isExpired
-          ? `Paket ${pkg.package_name} sudah expired`
-          : `Pasien memiliki paket: ${pkg.package_name}`
-      });
+      
     }
   } catch (err) {
     console.error("Error loading patient package info:", err);
@@ -384,9 +384,12 @@ setPackageInfo(pkg);
         </div>
       )}
 
-      {formData.patient_type === 'registered' && packageInfo && (() => {
+      {formData.patient_type === 'registered' && packageInfo && packageInfo.sessions_remaining > 0 && (() => {
         const lastDate = getLastValidDate(packageInfo);
-        const isExpired = lastDate ? isBefore(new Date(lastDate), startOfDay(new Date())) : false;
+        const isExpired = 
+  packageInfo.sessions_remaining > 0 &&
+  lastDate &&
+  isBefore(new Date(lastDate), startOfDay(new Date()));
         return (
           <div className={cn("p-4 rounded-xl border text-sm transition-all duration-300", isExpired ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200", isJustActivated && "ring-2 ring-emerald-400 scale-[1.01]")}>
             <div className="flex justify-between items-center mb-2">

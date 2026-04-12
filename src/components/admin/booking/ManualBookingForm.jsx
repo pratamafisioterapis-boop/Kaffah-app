@@ -534,11 +534,12 @@ const handleConfirmRecurring = async () => {
   )}
 </div>
 
-   {packageInfo && (() => {
+   {packageInfo && packageInfo.sessions_remaining > 0 && (() => {
   const lastDate = packageInfo.extended_until || packageInfo.end_date;
-  const isExpired = lastDate
-    ? new Date(lastDate) < new Date(new Date().setHours(0,0,0,0))
-    : false;
+  const isExpired = 
+  packageInfo.sessions_remaining > 0 &&
+  lastDate &&
+  new Date(lastDate) < new Date(new Date().setHours(0,0,0,0));
 
   return (
     <div className={`border rounded-lg p-3 mt-2 ${
