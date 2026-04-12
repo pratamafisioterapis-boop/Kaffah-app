@@ -501,7 +501,10 @@ export const createAppointment = async (params) => {
   p_is_homecare: params.p_is_homecare ?? false,
 
   // 🔥 TAMBAHAN WAJIB
-  p_allow_overlap: params.p_allow_overlap ?? false
+  p_allow_overlap: params.p_allow_overlap ?? false,
+
+  // 🔥 INI YANG KURANG
+  p_is_manual: params.p_is_manual ?? false
 };
 
     const { data, error } = await supabase.rpc(

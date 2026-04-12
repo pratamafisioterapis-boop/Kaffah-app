@@ -269,10 +269,10 @@ if (pkg) {
         notes: formData.notes,
         is_homecare: isHomecare,
   is_recurring: isRecurring,
+  p_is_manual: true,
         patientId: formData.patient_type === 'registered' ? formData.patient_id : null,
         guestName: formData.patient_type === 'guest' ? formData.guest_name : null,
-        guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null,
-        p_allow_overlap: true
+        guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null
       });
 
       if (result?.error) {

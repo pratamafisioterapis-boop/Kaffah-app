@@ -48,7 +48,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
     guest_name: '',
     guest_phone: '',
     notes: '',
-    duration: slot?.duration_minutes || 60,
+    duration: 60,
     isRecurring: false,
     recurringEndDate: '',
     is_homecare: false
@@ -204,7 +204,8 @@ setPackageInfo(pkg);
         p_guest_name: formData.patient_type === 'guest' ? formData.guest_name : null,
         p_guest_phone: formData.patient_type === 'guest' ? formData.guest_phone : null,
         p_service_id: null,
-        p_is_homecare: formData.is_homecare
+        p_is_homecare: formData.is_homecare,
+        p_is_manual: false
       });
 
       if (!result || result.error) throw result?.error || new Error("Gagal menyimpan jadwal");
