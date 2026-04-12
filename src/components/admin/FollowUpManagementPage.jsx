@@ -121,11 +121,11 @@ const FollowUpManagementPage = () => {
     ? {
         enabled: true,
         last_enabled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(), // 🔥 TAMBAH INI
+        updated_at: new Date().toISOString() // 🔥 TAMBAH INI
       }
     : {
         enabled: false,
-        updated_at: new Date().toISOString(), // 🔥 TAMBAH INI
+        updated_at: new Date().toISOString() // 🔥 TAMBAH INI
       };
 
   const { data, error } = await supabase
