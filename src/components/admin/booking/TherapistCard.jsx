@@ -266,23 +266,21 @@ const TherapistCard = ({
                   
                   return (
                     <div 
-                      key={app.id}
-                      className={cn(
-                        "group flex items-center gap-4 p-3 rounded-xl cursor-pointer",
+  key={app.id}
+  className={cn(
+    "group flex items-center gap-4 p-3 rounded-xl cursor-pointer",
 
-                        // 🔥 CLEAN PREMIUM
-                        "bg-white/70 backdrop-blur border border-white/40",
+    app.status === 'cancelled'
+      ? "bg-red-50 border-red-300"
+      : "bg-white/70 backdrop-blur border border-white/40",
 
-                        // 🔥 SOFT SHADOW
-                        "shadow-sm hover:shadow-md",
+    "shadow-sm hover:shadow-md",
 
-                        // 🔥 HOVER INTERACTION
-                        "hover:-translate-y-[1px]",
-                        "hover:bg-white",
+    "hover:-translate-y-[1px]",
+    "hover:bg-white",
 
-                        // 🔥 TRANSITION
-                        "transition-all duration-200"
-                      )}
+    "transition-all duration-200"
+  )}
                       onClick={() => onAppointmentClick(app)}
                     >
                       <div className="shrink-0 font-mono text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">

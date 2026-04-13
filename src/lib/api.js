@@ -1482,6 +1482,7 @@ export const setDailyRecapStartTime = async (recapId) => {
       .from('daily_recaps')
       .update({
         start_time: new Date().toISOString(),
+        status: 'ongoing', // 🔥 TAMBAHAN PENTING
         updated_at: new Date().toISOString()
       })
       .eq('id', recapId)
@@ -1495,6 +1496,7 @@ export const setDailyRecapEndTime = async (recapId) => {
       .from('daily_recaps')
       .update({
         end_time: new Date().toISOString(),
+        status: 'completed', // 🔥 TAMBAHAN
         updated_at: new Date().toISOString()
       })
       .eq('id', recapId)

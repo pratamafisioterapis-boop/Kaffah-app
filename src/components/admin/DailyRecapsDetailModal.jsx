@@ -117,7 +117,10 @@ const DailyRecapsDetailModal = ({
     setActionLoadingId(recap.id);
     try {
         if (!recap.start_time) {
-            const { error } = await setDailyRecapStartTime(recap.id);
+            const now = new Date();
+const timeString = now.toTimeString().split(' ')[0];
+
+const { error } = await setDailyRecapStartTime(recap.id, timeString);
             if (error) throw error;
             toast({ title: "Session Started", description: "Waktu mulai telah dicatat." });
         } else if (!recap.end_time) {
@@ -125,7 +128,9 @@ const DailyRecapsDetailModal = ({
             if (error) throw error;
             toast({ title: "Session Ended", description: "Waktu selesai telah dicatat." });
         }
-        await fetchRecaps();
+        setTimeout(() => {
+  fetchRecaps();
+}, 300);
     } catch (error) {
         toast({ variant: "destructive", title: "Failed", description: error.message });
     } finally {

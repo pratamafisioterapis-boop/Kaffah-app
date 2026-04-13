@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square, 
@@ -63,6 +64,7 @@ const renderPatientName = (recap) => {
 };
 
 const DailyRecap = ({ hideControls = false }) => {
+  const location = useLocation();
   const { toast } = useToast();
   const isMounted = useRef(true);
   const { lastSyncTime } = useAppointmentState(); 
@@ -130,7 +132,9 @@ const DailyRecap = ({ hideControls = false }) => {
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
   const [modalMode, setModalMode] = useState('add');
-
+useEffect(() => {
+  fetchRecaps();
+}, [location.pathname]);
   useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
   
   // 1. Fetch Options on Mount
@@ -208,6 +212,8 @@ const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
         const safeData = data || [];
         const formatted = safeData.map(r => ({
           ...r,
+           start_time: r.start_time,
+end_time: r.end_time,
           date: r.recap_date,
           display_therapist_name: getTherapistName(r),
         package_type: r.package_type,
@@ -229,7 +235,7 @@ const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
     } finally { 
       if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast]);
 
   const handleRowClick = (recap) => {
     setSelectedRecap(recap);
@@ -623,7 +629,7 @@ const end = formatLocal(lastDay);
                        )}
                      </td>
                      <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {!recap.start_time ? (
+                      {recap.start_time == null ? (
                                  <Button size="sm" className="h-7 w-full text-sm bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>

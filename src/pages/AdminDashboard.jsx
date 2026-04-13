@@ -67,18 +67,43 @@ const [topServices, setTopServices] = useState([]);
   const dayOfWeek = todayDate.getDay(); // 0–6
 
   // ambil slot sesuai hari
-  const { data: schedules, error: scheduleError } = await supabase
-    .from('therapist_schedules')
-    .select('id')
-    .eq('day_of_week', dayOfWeek);
+  // 🔥 AMBIL SLOT REAL DARI FUNCTION
+const today = new Date().toISOString().split('T')[0];
 
-  if (scheduleError) {
-    console.error(scheduleError);
-    return;
-  }
+const { data: slotsData, error: slotError } = await supabase
+  .rpc('get_available_slots_with_status_by_date', {
+    p_date: today
+  });
 
-  const total = schedules.length;
+if (slotError) {
+  console.error(slotError);
+  return;
+}
 
+// TOTAL SLOT
+const total = slotsData.length;
+
+// SLOT TERISI
+// 🔥 SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
+const { data: filledAppointments, error: filledError } = await supabase
+  .from('appointments')
+  .select('id')
+  .gte('appointment_date', today + 'T00:00:00')
+.lte('appointment_date', today + 'T23:59:59')
+  .neq('status', 'cancelled');
+
+if (filledError) {
+  console.error(filledError);
+  return;
+}
+
+const filled = filledAppointments.length;
+
+// SET STATE
+setSlotData({
+  total,
+  filled
+});
   const { data: therapistRecaps, error: recapError } = await supabase
   .from('daily_recaps')
   .select(`
@@ -136,6 +161,7 @@ setTherapistStats(therapistStatsArray);
 const { data: patientAppointments, error: patientError } = await supabase
   .from('daily_recaps')
   .select('patient_id, recap_date, service_type')
+   .not('patient_id', 'is', null)
   .gte('recap_date', range.startDate)
   .lte('recap_date', range.endDate);
 
