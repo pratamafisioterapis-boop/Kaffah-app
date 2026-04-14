@@ -303,7 +303,12 @@ const formattedDate = date
   })
   .map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
-            const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);
+            const therapistApps = appointments
+  .filter(a => a.therapist_id === therapist.id)
+  .filter(a => {
+    // tetap tampilkan semua termasuk cancelled
+    return true;
+  });
             const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
 
             return (
