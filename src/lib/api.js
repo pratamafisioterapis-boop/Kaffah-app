@@ -953,7 +953,10 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   discount_value,
   discount_label,
   created_at,
-
+  start_time,
+  end_time,
+  status,
+ 
   patients!patient_id(
     id,
     full_name,
@@ -977,14 +980,14 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
   stamp_url
 )
 `, { count: 'exact' });
-
+ 
     if (startDate) {
         query = query.gte('recap_date', startDate);
     }
     if (endDate) {
         query = query.lte('recap_date', endDate);
     }
-
+ 
     if (search && search.trim()) {
       const q = search.trim();
       const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
@@ -996,25 +999,25 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
            query = query.ilike('guest_name', `%${q}%`);
       }
     }
-
+ 
     if (sort.key) {
         query = query.order(sort.key, { ascending: sort.direction === 'asc' });
     } else {
         query = query.order('recap_date', { ascending: false });
     }
-
+ 
     if (limit && limit !== 'all') {
       const from = offset;
       const to = offset + limit - 1;
       query = query.range(from, to);
     }
-
+ 
     const { data, count, error } = await query;
     
     if (error) return { error };
     
     const enrichedData = await enrichRecapsWithOptions(data);
-
+ 
     return { data: enrichedData, count, error: null };
   }, 'getDailyRecaps', { retry: true });
 };
