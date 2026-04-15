@@ -1,76 +1,173 @@
-/**
- * Client-side Scheduler for WhatsApp Automation
- * In a production environment, this should be replaced by:
- * 1. Supabase Edge Functions (scheduled via pg_cron)
- * 2. External Cron Service (cron-job.org calling an API endpoint)
- * 
- * This file provides the logic to trigger the backend generation functions.
- */
-
+import { supabase } from '@/lib/customSupabaseClient';
 import { generateFollowUpQueue, getFollowUpQueue, sendFollowUpWhatsApp } from '@/lib/api';
+import { format } from 'date-fns';
+
+// ─── Konstanta Toleransi Waktu ────────────────────────────────────────────────
+// Cron bisa terlambat beberapa menit, jadi beri toleransi ±5 menit
+const TIME_TOLERANCE_MINUTES = 5;
 
 /**
- * Trigger daily generation jobs
- * Should be called once per day (e.g., when Admin logs in)
+ * Cek apakah jam sekarang cocok dengan jam config (dengan toleransi)
+ * @param {string} configTime - format "HH:mm", misal "09:00"
+ * @returns {boolean}
  */
-export const runDailyWhatsAppAutomation = async () => {
-  console.log("🔄 Running Daily WhatsApp Automation...");
-  
-  try {
-    // 1. Generate Appointment Reminders (H-1)
-    await generateFollowUpQueue('reminder');
-    
-    // 2. Generate Expiry Warnings (H-7, H-3, H-1)
-    await generateFollowUpQueue('expiry');
-    
-    // 3. Generate Birthday Greetings
-    await generateFollowUpQueue('birthday');
+const isTimeMatch = (configTime) => {
+  if (!configTime) return false;
 
-    // 4. Generate Recap Queue (H+1)
-    await generateFollowUpQueue('recap');
-    
-    console.log("✅ Daily Automation Finished");
-    return { success: true };
-  } catch (error) {
-    console.error("❌ Daily Automation Failed:", error);
-    return { success: false, error };
+  const now = new Date();
+  const [configHour, configMinute] = configTime.split(':').map(Number);
+
+  const configDate = new Date();
+  configDate.setHours(configHour, configMinute, 0, 0);
+
+  const diffMinutes = Math.abs((now - configDate) / 1000 / 60);
+  return diffMinutes <= TIME_TOLERANCE_MINUTES;
+};
+
+/**
+ * Fetch semua config WA yang aktif dari database
+ * @returns {Promise<Array>}
+ */
+const getActiveConfigs = async () => {
+  const { data, error } = await supabase
+    .from('wa_schedule_config')
+    .select('*')
+    .eq('is_enabled', true);
+
+  if (error) {
+    console.error('[Scheduler] Gagal fetch config:', error);
+    return [];
+  }
+
+  return data || [];
+};
+
+/**
+ * Tentukan apakah kategori ini perlu dijalankan sekarang berdasarkan config-nya
+ * @param {object} config - row dari wa_schedule_config
+ * @returns {boolean}
+ */
+const shouldRunNow = (config) => {
+  const { timing_type, timing_value } = config;
+
+  switch (timing_type) {
+    case 'immediate':
+      // Selalu jalankan (booking confirmation, dll)
+      return true;
+
+    case 'custom_time': {
+      // Jalankan hanya kalau jam sekarang cocok dengan timing_value.time
+      const scheduledTime = timing_value?.time;
+      const match = isTimeMatch(scheduledTime);
+      if (!match) {
+        console.log(
+          `[Scheduler] "${config.category}" dijadwalkan jam ${scheduledTime}, sekarang ${format(new Date(), 'HH:mm')} — SKIP`
+        );
+      }
+      return match;
+    }
+
+    case 'custom_days': {
+      // Untuk follow_up: timing_value.days (kirim N hari setelah kunjungan)
+      // Untuk expiry: timing_value.days_before (array, [7, 3, 1])
+      // Logic pengecekan hari dilakukan di generateFollowUpQueue di backend
+      // Di sini cukup pastikan ini bukan jam aneh (idealnya pagi hari)
+      const scheduledTime = timing_value?.time || '08:00'; // default pagi
+      return isTimeMatch(scheduledTime);
+    }
+
+    case 'multiple': {
+      // Sama dengan custom_days tapi bisa multi-hari
+      const scheduledTime = timing_value?.time || '08:00';
+      return isTimeMatch(scheduledTime);
+    }
+
+    default:
+      return false;
   }
 };
 
 /**
- * Process Pending Queue
- * Finds pending messages scheduled for now or past, and sends them.
- * Note: Browser must be open for this to work in client-side mode.
+ * Trigger daily generation jobs — sekarang respek config dari DB
+ * Dipanggil oleh Cron Job setiap 5-10 menit (atau setiap jam)
+ */
+export const runDailyWhatsAppAutomation = async () => {
+  console.log(`🔄 [Scheduler] Running WhatsApp Automation check — ${format(new Date(), 'dd/MM/yyyy HH:mm')}`);
+
+  const configs = await getActiveConfigs();
+
+  if (configs.length === 0) {
+    console.log('📭 [Scheduler] Tidak ada kategori WA yang aktif.');
+    return { success: true, ran: [] };
+  }
+
+  const results = [];
+
+  for (const config of configs) {
+    const run = shouldRunNow(config);
+
+    if (!run) {
+      // Sudah di-log di shouldRunNow, skip
+      continue;
+    }
+
+    console.log(`🚀 [Scheduler] Menjalankan kategori: "${config.category}"`);
+
+    try {
+      await generateFollowUpQueue(config.category);
+      results.push({ category: config.category, status: 'success' });
+      console.log(`✅ [Scheduler] "${config.category}" selesai.`);
+    } catch (error) {
+      console.error(`❌ [Scheduler] "${config.category}" gagal:`, error);
+      results.push({ category: config.category, status: 'failed', error: error.message });
+    }
+  }
+
+  console.log(`✅ [Scheduler] Selesai. Kategori yang dijalankan: ${results.length}`);
+  return { success: true, ran: results };
+};
+
+/**
+ * Process Pending Queue — kirim pesan yang sudah jatuh tempo
+ * Dipanggil terpisah, bisa setiap menit oleh Cron
  */
 export const processPendingQueue = async () => {
-  console.log("📨 Processing Pending WhatsApp Queue...");
-  
+  console.log('📨 [Scheduler] Processing Pending WhatsApp Queue...');
+
   try {
-    // Fetch pending items
     const { data: queue } = await getFollowUpQueue('pending');
-    
+
     if (!queue || queue.length === 0) {
-      console.log("📭 No pending messages to send.");
+      console.log('📭 [Scheduler] Tidak ada pesan pending.');
       return;
     }
 
     const now = new Date();
-    
-    // Filter items that are due
+
+    // Filter item yang sudah jatuh tempo
     const dueItems = queue.filter(item => {
-        const scheduled = new Date(`${item.scheduled_date}T${item.scheduled_time || '00:00:00'}`);
-        return scheduled <= now;
+      const scheduled = new Date(`${item.scheduled_date}T${item.scheduled_time || '00:00:00'}`);
+      return scheduled <= now;
     });
 
-    console.log(`🚀 Sending ${dueItems.length} due messages...`);
+    if (dueItems.length === 0) {
+      console.log(`📭 [Scheduler] ${queue.length} pesan pending tapi belum jatuh tempo.`);
+      return;
+    }
+
+    console.log(`🚀 [Scheduler] Mengirim ${dueItems.length} pesan...`);
 
     for (const item of dueItems) {
+      try {
         await sendFollowUpWhatsApp(item.id);
+        console.log(`✅ Terkirim: ${item.id} → ${item.phone_number}`);
+      } catch (err) {
+        console.error(`❌ Gagal kirim item ${item.id}:`, err);
+      }
     }
-    
-    console.log("✅ Queue Processing Complete");
 
+    console.log('✅ [Scheduler] Queue Processing Complete');
   } catch (error) {
-    console.error("❌ Queue Processing Failed:", error);
+    console.error('❌ [Scheduler] Queue Processing Failed:', error);
   }
 };
