@@ -135,7 +135,20 @@ export const processPendingQueue = async () => {
   console.log('📨 [Scheduler] Processing Pending WhatsApp Queue...');
 
   try {
-    const { data: queue } = await getFollowUpQueue('pending');
+    const allowedTypes = [
+  'reschedule_appointment',
+  'therapy_reminder',
+  'reminder_therapist_h10',
+  'cancel_appointment',
+  'booking_appointment',
+  'booking_appointment_therapist'
+];
+
+const { data: queue } = await getFollowUpQueue('pending');
+
+const filteredQueue = (queue || []).filter(item =>
+  allowedTypes.includes(item.follow_up_type)
+);
 
     if (!queue || queue.length === 0) {
       console.log('📭 [Scheduler] Tidak ada pesan pending.');
