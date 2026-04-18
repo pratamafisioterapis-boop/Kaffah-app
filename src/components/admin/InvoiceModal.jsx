@@ -122,9 +122,18 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
     return pdf;
   };
 
+  // ── Helper: Medical Record Number ────────────────────────────────────────
+  // FIX: medical_record_number ada di data.patients (hasil join di getDailyRecaps)
+  // bukan di root data, makanya selalu fallback ke RM00000
+  const getMedicalRecordNumber = () =>
+    data?.patients?.medical_record_number ||
+    data?.patient?.medical_record_number  ||
+    data?.medical_record_number           ||
+    'RM00000';
+
   // ── Helper: Invoice Number ────────────────────────────────────────────────
   const getInvoiceNumber = () => {
-    const rm      = data?.medical_record_number || 'RM00000';
+    const rm      = getMedicalRecordNumber();
     const dateStr = data?.recap_date || new Date().toISOString().split('T')[0];
     return `INV/KFF/${dateStr}/${rm}`;
   };
@@ -139,9 +148,9 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
     '';
 
   // ── Helper: Upload PDF ke Supabase Storage → return public URL ───────────
-  const uploadPDF = async (pdf) => {
-    const blob     = pdf.output('blob');
-    const fileName = `inv_${data.id}.pdf`;
+  // FIX: fileName diterima sebagai parameter, bukan hardcode inv_${data.id}.pdf
+  const uploadPDF = async (pdf, fileName) => {
+    const blob = pdf.output('blob');
 
     const { error: uploadError } = await supabase
       .storage
@@ -200,14 +209,12 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
 
       await saveInvoiceRecord(invoiceNumber);
 
-      const rm      = data?.medical_record_number || 'RM00000';
+      const rm      = getMedicalRecordNumber();
       const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');
       const dateFormatted = `${dy}-${mo}-${yr.slice(2)}`;
 
       pdf.save(`Rcpt_${rm}_${dateFormatted}.pdf`);
-
-      toast({ title: "Download Berhasil", description: "Invoice berhasil disimpan sebagai PDF." });
     } catch (err) {
       console.error('PDF Generation Error:', err);
       toast({ variant: "destructive", title: "Gagal Mengunduh", description: err.message });
@@ -237,19 +244,20 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       // 2. Gunakan invoice_url yang sudah ada, atau generate + upload baru
       let fileUrl = data?.invoice_url || detailData?.invoice_url || null;
 
-      if (!fileUrl) {
-        toast({ title: "Menyiapkan Invoice...", description: "Sedang generate dan upload PDF." });
-        const pdf = await generatePDF();
-        fileUrl   = await uploadPDF(pdf);
-        await saveInvoiceRecord(getInvoiceNumber());
-      }
-
-      // 3. Siapkan nama file untuk Wablas
-      const rm       = data?.medical_record_number || 'RM00000';
+      // 3. Siapkan nama file dengan format Rcpt_RM_DD-MM-YY.pdf
+      const rm       = getMedicalRecordNumber();
       const rawDate  = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');
       const dateFormatted = `${dy}-${mo}-${yr.slice(2)}`;
       const fileName = `Rcpt_${rm}_${dateFormatted}.pdf`;
+
+      if (!fileUrl) {
+        toast({ title: "Menyiapkan Invoice...", description: "Sedang generate dan upload PDF." });
+        const pdf = await generatePDF();
+        // FIX: teruskan fileName ke uploadPDF supaya nama file di Storage juga benar
+        fileUrl   = await uploadPDF(pdf, fileName);
+        await saveInvoiceRecord(getInvoiceNumber());
+      }
 
       // 4. Siapkan pesan caption
       const caption =
