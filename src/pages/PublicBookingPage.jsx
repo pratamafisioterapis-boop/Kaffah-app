@@ -215,37 +215,27 @@ const PublicBookingPage = () => {
           // 1. Create Patient Record in Online Staging
           if (!patientData.birth_date) throw new Error("Tanggal lahir wajib diisi.");
           
-          const onlinePatientPayload = {
-              full_name: patientData.full_name,
-              phone: patientData.phone,
-              address: patientData.address || '',
-              birth_date: patientData.birth_date, // Captured from new form
-              medical_history: patientData.complaint,
-              created_at: new Date().toISOString()
-          };
-
-          const { data: onlinePatient, error: onlineError } = await createOnlinePatient(onlinePatientPayload);
-          if (onlineError) throw new Error(`Gagal menyimpan data pasien: ${onlineError.message}`);
+          
 
           // 2. Create Appointment
           const therapist = therapists.find(t => t.id === selectedTherapistId);
-          const timePart = selectedSlot.slot.slot_start_time.substring(0, 5);
-          const appointmentDate = constructAppointmentDateTime(selectedDate, timePart);
+          const timePart = selectedSlot.time;
+          const dateStr = format(selectedDate, 'yyyy-MM-dd');
+const appointmentDate = `${dateStr}T${timePart}:00`;
           const serviceName = selectedService?.name || 'Physiotherapy';
           const combinedNotes = `[${serviceName}] Keluhan: ${patientData.complaint}`;
 
           const appointmentPayload = {
-              therapist_id: selectedTherapistId,
-              clinic_id: therapist.clinic_id,
-              appointment_date: appointmentDate,
-              duration_minutes: selectedSlot.duration,
-              status: 'confirmed', 
-              notes: combinedNotes,
-              guest_name: patientData.full_name, 
-              guest_phone: patientData.phone,
-              guest_complaint: patientData.complaint,
-              patient_id: undefined // Always undefined for online booking (handled as guest initially)
-          };
+  therapistId: selectedTherapistId, // 🔥 FIX
+  clinicId: therapist.clinic_id,
+  appointmentDate: appointmentDate,
+  durationMinutes: selectedSlot.duration,
+  status: 'confirmed', 
+  notes: combinedNotes,
+  guestName: patientData.full_name, 
+  guestPhone: patientData.phone,
+  patientId: patientData?.patient_id || null
+};
 
           const { error: apptError } = await createAppointment(appointmentPayload);
           if (apptError) throw new Error(`Gagal membuat janji temu: ${apptError.message}`);

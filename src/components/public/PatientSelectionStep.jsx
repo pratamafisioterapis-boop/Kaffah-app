@@ -59,11 +59,13 @@ const PatientSelectionStep = ({
     setFoundPatient(patient);
 
     setFormData(prev => ({
-      ...prev,
-      full_name: patient.full_name,
-      birth_date: patient.birth_date,
-      isNew: false
-    }));
+  ...prev,
+  patient_id: patient.id,
+  full_name: patient.full_name,
+  birth_date: patient.birth_date,
+  phone: patient.phone || '',
+  isNew: false
+}));
   };
 
   const handleContactAdmin = () => {
@@ -98,10 +100,10 @@ Terimakasih Atas Perhatiannya
     return;
   }
 
-  if (!formData.phone) {
-    alert('Nomor WhatsApp wajib diisi');
-    return;
-  }
+ if (mode === 'new' && !formData.phone) {
+  alert('Nomor WhatsApp wajib diisi');
+  return;
+}
 
   if (!formData.birth_date) {
     alert('Tanggal lahir wajib diisi');
