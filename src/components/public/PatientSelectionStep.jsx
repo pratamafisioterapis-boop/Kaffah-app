@@ -91,9 +91,25 @@ Terimakasih Atas Perhatiannya
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    onComplete(formData);
-  };
+  e.preventDefault();
+
+  if (mode === 'new' && !formData.full_name) {
+    alert('Nama pasien wajib diisi');
+    return;
+  }
+
+  if (!formData.phone) {
+    alert('Nomor WhatsApp wajib diisi');
+    return;
+  }
+
+  if (!formData.birth_date) {
+    alert('Tanggal lahir wajib diisi');
+    return;
+  }
+
+  onComplete(formData);
+};
 
   return (
     <motion.div
@@ -230,7 +246,15 @@ Terimakasih Atas Perhatiannya
             <form onSubmit={handleSubmit} className="space-y-6">
 
               {mode === 'new' && (
-                <>
+  <>
+    <div>
+      <Label>Nama Lengkap Pasien</Label>
+      <Input
+        name="full_name"
+        value={formData.full_name}
+        onChange={handleChange}
+      />
+    </div>
                   <div>
                     <Label>Nomor WhatsApp</Label>
                     <Input

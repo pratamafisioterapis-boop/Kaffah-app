@@ -473,8 +473,9 @@ export const createAppointment = async (params) => {
   try {
     let finalDate =
       params.p_appointment_date ||
-      params.appointmentDate ||
-      params.p_start_time ||
+      params.appointmentDate    ||
+      params.appointment_date   ||
+      params.p_start_time       ||
       params.startTime;
 
     if (finalDate instanceof Date) {
