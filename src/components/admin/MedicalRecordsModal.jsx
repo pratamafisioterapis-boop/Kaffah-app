@@ -120,15 +120,17 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
   const fetchDropdownData = async () => {
     setLoading(true);
     try {
-      const [patientsRes, therapistsList, diagnosesList] = await Promise.all([
-        getPatients(),
-        getTherapists(),
-        getDiagnosisOptions()
-      ]);
+      const [patientsRes, therapistsList, diagnosesRes] = await Promise.all([
+  getPatients(),
+  getTherapists(),
+  getDiagnosisOptions()
+]);
+
+const diagnosesList = diagnosesRes?.data || [];
 
       setPatients(patientsRes.data || []);
       
-      const therapistOptions = (therapistsList || []).map(t => ({
+      const therapistOptions = (therapistsList.data || []).map(t => ({
         value: t.id,
         label: t.name, 
         original: t
@@ -138,11 +140,11 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
       // Map diagnoses using updated getDiagnosisOptions structure
       // getDiagnosisOptions returns {id, label, category, value}
       // SearchableSelect needs label/value
-      const diagnosisOptions = (diagnosesList || []).map(d => ({
-        value: d.label, 
-        label: d.label  
-      }));
-      setDiagnoses(diagnosisOptions);
+      const diagnosisOptions = (diagnosesList.data || []).map(d => ({
+  value: d.id,
+  label: d.label  
+}));
+      setDiagnoses([...diagnosisOptions]);
 
     } catch (err) {
       console.error("Error fetching form data:", err);
