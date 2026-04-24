@@ -326,7 +326,9 @@ const formatTanggal = (date) => {
 </td>
 
 <td className="p-3 text-sm text-slate-600 max-w-[250px] whitespace-normal break-words">
-  {item.diagnosis_labels || '-'}
+  {Array.isArray(item.diagnosis_labels)
+  ? item.diagnosis_labels.join(', ')
+  : item.diagnosis_labels || '-'}
 </td>
 
 <td className="p-3 text-xs">
