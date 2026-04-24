@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -20,7 +21,41 @@ const CenteredPatientTable = ({
     onRefresh,
     onRowClick // New prop for handling row clicks
 }) => {
-    
+    const [selectedPatient, setSelectedPatient] = useState(null);
+const [isOpen, setIsOpen] = useState(false);
+const [historyData, setHistoryData] = useState([]);
+const [loadingHistory, setLoadingHistory] = useState(false);
+useEffect(() => {
+  if (!selectedPatient) return;
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+
+    const { data, error } = await supabase
+  .from('daily_recaps')
+  .select(`
+    recap_date,
+    therapist_name,
+    service_type,
+    package_type,
+    patient_type,
+    diagnosis_labels,
+amount
+  `)
+  .eq('actual_patient_id', selectedPatient.id)
+  .order('recap_date', { ascending: false });
+
+    if (!error) {
+      setHistoryData(data || []);
+    }
+
+    setLoadingHistory(false);
+  };
+
+  if (isOpen) {
+    fetchHistory();
+  }
+}, [selectedPatient, isOpen]);
     // Derived values
     const { page, totalPages } = pagination;
     const { search, status, completeness } = filters;
@@ -43,7 +78,15 @@ const CenteredPatientTable = ({
             onPaginationChange({ ...pagination, page: newPage });
         }
     };
-
+const formatTanggal = (date) => {
+  const d = new Date(date);
+  return d.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
             {/* Toolbar */}
@@ -104,6 +147,7 @@ const CenteredPatientTable = ({
                             <TableHead className="text-center font-semibold text-slate-700">Status</TableHead>
                             {/* 9. Kelengkapan */}
                             <TableHead className="text-center font-semibold text-slate-700">Kelengkapan</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -192,6 +236,19 @@ const CenteredPatientTable = ({
                                             {patient.isComplete ? 'Lengkap' : 'Tidak Lengkap'}
                                         </Badge>
                                     </TableCell>
+                                    <TableCell className="text-center">
+  <Button 
+    variant="outline" 
+    size="sm"
+    onClick={(e) => {
+  e.stopPropagation();
+  setSelectedPatient(patient);
+  setIsOpen(true);
+}}
+  >
+    Riwayat
+  </Button>
+</TableCell>
                                 </TableRow>
                             ))
                         )}
@@ -225,6 +282,95 @@ const CenteredPatientTable = ({
                     </Button>
                 </div>
             </div>
+            {isOpen && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl w-[900px] max-h-[80vh] overflow-y-auto shadow-xl">
+      <h2 className="text-lg font-bold mb-2">Riwayat Kunjungan</h2>
+      
+      <p className="text-sm text-slate-600 mb-4">
+  {selectedPatient?.full_name}
+</p>
+
+{/* 🔥 TARUH DI SINI */}
+{loadingHistory ? (
+  <p className="text-sm text-slate-500">Loading...</p>
+) : historyData.length === 0 ? (
+  <p className="text-sm text-slate-500">Belum ada riwayat</p>
+) : (
+  <>
+    <p className="text-xs text-slate-500 mb-2">
+      Total Kunjungan: <span className="font-semibold">{historyData.length}</span>
+    </p>
+
+    <div className="max-h-[500px] overflow-y-auto border rounded-lg">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-100 text-xs text-slate-600 sticky top-0">
+  <tr>
+    <th className="p-3 text-left">Tanggal</th>
+    <th className="p-3 text-left">Diagnosa</th>
+    <th className="p-3 text-left">Tipe Pasien</th>
+    <th className="p-3 text-left">Tipe Paket</th>
+    <th className="p-3 text-left">Fisioterapis</th>
+    <th className="p-3 text-right">Nominal</th>
+  </tr>
+</thead>
+
+        <tbody>
+          {historyData.map((item, i) => (
+            <tr 
+              key={i} 
+              className="border-t hover:bg-slate-50 transition"
+            >
+              <td className="p-3 text-slate-700">
+  {formatTanggal(item.recap_date)}
+</td>
+
+<td className="p-3 text-sm text-slate-600 max-w-[250px] whitespace-normal break-words">
+  {item.diagnosis_labels || '-'}
+</td>
+
+<td className="p-3 text-xs">
+  <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">
+    {item.patient_type || '-'}
+  </span>
+</td>
+
+<td className="p-3 text-xs">
+  {item.package_type ? (
+    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+      {item.package_type}
+    </span>
+  ) : (
+    <span className="text-slate-400">Non Paket</span>
+  )}
+</td>
+
+<td className="p-3 text-xs text-slate-600">
+  {item.therapist_name || '-'}
+</td>
+
+<td className="p-3 text-right font-semibold text-slate-800">
+  {item.amount 
+    ? `Rp ${item.amount.toLocaleString('id-ID')}` 
+    : '-'}
+</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
+
+<Button 
+  className="mt-4"
+  onClick={() => setIsOpen(false)}
+>
+  Tutup
+</Button>
+    </div>
+  </div>
+)}
         </div>
     );
 };
