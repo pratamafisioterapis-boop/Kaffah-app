@@ -173,12 +173,37 @@ const OwnerDashboardHome = () => {
       // Handle both { data: [...] } and direct array
       const therapistList = Array.isArray(response) ? response : (response?.data || []);
       
-      // 🔥 hanya therapist aktif
+
+// 🔥 hanya therapist aktif
 const activeTherapistsOnly = (therapistList || []).filter(
   t => t.is_active === true
 );
 
-setTherapists(activeTherapistsOnly);
+// 🔥 ambil slot hari ini
+const today = new Date().toISOString().split('T')[0];
+
+const { data: slotData } = await supabase.rpc(
+  'get_available_slots_with_status_by_date',
+  { p_date: today }
+);
+
+// 🔥 hitung total slot per therapist
+const slotCountMap = {};
+
+(slotData || []).forEach(slot => {
+  if (!slotCountMap[slot.therapist_id]) {
+    slotCountMap[slot.therapist_id] = 0;
+  }
+  slotCountMap[slot.therapist_id] += 1;
+});
+
+// 🔥 inject total_slots ke therapist
+const enrichedTherapists = activeTherapistsOnly.map(t => ({
+  ...t,
+  total_slots: slotCountMap[t.id] || 0
+}));
+
+setTherapists(enrichedTherapists);
 
       // 2. Fetch session counts for each therapist
       const sessionCounts = {};

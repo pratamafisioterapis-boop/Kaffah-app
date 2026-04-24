@@ -13,118 +13,51 @@ const SlotUtilizationChart = () => {
   const [error, setError] = useState(null);
 
   const fetchUtilizationData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const today = new Date();
-      // Adjust to Jakarta/Local timezone concepts if needed, but simplistic "today" based on client browser is usually acceptable for dashboards unless strict server time is required.
-      // Ideally we use the server date or consistent ISO string.
-      const dateStr = format(today, 'yyyy-MM-dd');
-      const dayOfWeek = today.getDay(); // 0 = Sunday
+  setLoading(true);
+  setError(null);
 
-      // 1. Fetch Global Settings for default slot duration
-      const { data: settings } = await supabase
-        .from('appointment_settings')
-        .select('slot_duration')
-        .single();
-      const slotDuration = settings?.slot_duration || 60;
+  try {
+    const today = new Date().toISOString().split('T')[0];
 
-      // 2. Fetch Active Schedules for today's day of week
-      const { data: schedules, error: schedError } = await supabase
-        .from('therapist_schedules')
-        .select(`
-            id, 
-            therapist_id, 
-            start_time, 
-            end_time,
-            therapist_slots(id, is_available)
-        `)
-        .eq('is_active', true)
-        .eq('day_of_week', dayOfWeek);
+    const { data, error } = await supabase.rpc(
+      'get_available_slots_with_status_by_date',
+      { p_date: today }
+    );
 
-      if (schedError) throw schedError;
+    if (error) throw error;
 
-      // 3. Fetch Time Offs for today
-      const { data: timeOffs, error: toError } = await supabase
-        .from('therapist_time_off')
-        .select('therapist_id')
-        .lte('start_date', dateStr)
-        .gte('end_date', dateStr);
+    const totalSlots = (data || []).length;
 
-      if (toError) throw toError;
+    const filled = (data || []).filter(
+      s => s.status === 'terisi'
+    ).length;
 
-      // Set of therapist IDs on leave
-      const therapistsOnLeave = new Set(timeOffs?.map(t => t.therapist_id) || []);
+    const empty = (data || []).filter(
+      s => s.status === 'aktif'
+    ).length;
 
-      // 4. Calculate Total Capacity
-      let totalCapacity = 0;
-      
-      schedules.forEach(schedule => {
-        // Skip if therapist is on leave
-        if (therapistsOnLeave.has(schedule.therapist_id)) return;
+    const utilization = totalSlots > 0
+      ? Math.round((filled / totalSlots) * 100)
+      : 0;
 
-        let slotsCount = 0;
-        
-        // Priority: Manual Slots from DB > Calculated from Time Range
-        if (schedule.therapist_slots && schedule.therapist_slots.length > 0) {
-            // Count available + booked slots (total capacity is the sum of all slots defined)
-            // Assuming 'is_available' toggles availability, but existence implies capacity.
-            // If is_available=false means "blocked by admin", we might exclude it. 
-            // Usually capacity = potential slots. Let's count all defined slots.
-            slotsCount = schedule.therapist_slots.length;
-        } else if (schedule.start_time && schedule.end_time) {
-            // Calculate
-            const startParts = schedule.start_time.split(':');
-            const endParts = schedule.end_time.split(':');
-            const startMins = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-            const endMins = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
-            
-            if (endMins > startMins) {
-                slotsCount = Math.floor((endMins - startMins) / slotDuration);
-            }
-        }
-        
-        totalCapacity += slotsCount;
-      });
+    setMetrics({
+      filled,
+      empty,
+      utilization
+    });
 
-      // 5. Fetch Filled Slots (Appointments Today)
-      // Status: confirmed, ongoing, completed
-      const { count: filledCount, error: appError } = await supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .gte('appointment_date', `${dateStr}T00:00:00`)
-        .lte('appointment_date', `${dateStr}T23:59:59`)
-        .in('status', ['confirmed', 'ongoing', 'completed']);
+    setData([
+      { name: 'Terisi', value: filled, color: '#3b82f6' },
+      { name: 'Kosong', value: empty, color: '#e2e8f0' }
+    ]);
 
-      if (appError) throw appError;
-
-      const safeFilled = filledCount || 0;
-      const safeCapacity = totalCapacity || 0;
-      // Empty slots cannot be negative if overbooked (force 0)
-      const safeEmpty = Math.max(0, safeCapacity - safeFilled);
-      
-      const utilizationRate = safeCapacity > 0 
-        ? Math.round((safeFilled / safeCapacity) * 100) 
-        : 0;
-
-      setMetrics({
-        filled: safeFilled,
-        empty: safeEmpty,
-        utilization: utilizationRate
-      });
-
-      setData([
-        { name: 'Terisi', value: safeFilled, color: '#3b82f6' },
-        { name: 'Kosong', value: safeEmpty, color: '#e2e8f0' }
-      ]);
-
-    } catch (err) {
-      console.error("Error fetching slot utilization:", err);
-      setError("Gagal memuat data.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    console.error("Error fetching slot utilization:", err);
+    setError("Gagal memuat data.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchUtilizationData();

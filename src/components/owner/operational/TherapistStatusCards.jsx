@@ -19,12 +19,18 @@ const TherapistStatusCards = ({ therapists = [], therapistSessions = {}, isLoadi
     const totalSlots = therapist.total_slots || 0;
     // Calculate load percentage (0 if no slots to avoid division by zero)
     // If sessions > 0 but slots = 0, technically infinite load, cap at 100% or treat as overload
-    let percentage = 0;
-    if (totalSlots > 0) {
-      percentage = (sessions / totalSlots) * 100;
-    } else if (sessions > 0) {
-      percentage = 100; 
-    }
+    // 🔥 sementara: pakai session saja (karena totalSlots belum valid)
+let percentage = 0;
+
+if (sessions === 0) {
+  percentage = 0;
+} else if (sessions <= 2) {
+  percentage = 40;
+} else if (sessions <= 4) {
+  percentage = 70;
+} else {
+  percentage = 100;
+}
 
     // 1. NON ACTIVE
     if (!therapist.is_active) {

@@ -37,108 +37,42 @@ const CapacityVsDemandChart = () => {
       // Let's stick to the prompt's explicit list: confirmed, ongoing, completed.
       // Wait, if I don't include 'scheduled', future demand might be zero. 
       // I will add 'scheduled' to ensure the chart is useful, as "confirmed" might be a manual step.
-      const { data: appointments, error: aptError } = await supabase
-        .from('appointments')
-        .select('appointment_date, status')
-        .gte('appointment_date', `${startDateStr}T00:00:00`)
-        .lte('appointment_date', `${endDateStr}T23:59:59`)
-        .in('status', ['confirmed', 'ongoing', 'completed', 'scheduled']);
-
-      if (aptError) throw aptError;
-
-      // 2. Fetch Therapist Schedules (Active Only)
-      const { data: schedules, error: schedError } = await supabase
-        .from('therapist_schedules')
-        .select('id, therapist_id, day_of_week, start_time, end_time, is_active')
-        .eq('is_active', true);
-
-      if (schedError) throw schedError;
-
-      // 3. Fetch Time Offs (Leaves) 
-      // We fetch any leave that overlaps with the current week
-      const { data: timeOffs, error: toError } = await supabase
-        .from('therapist_time_off')
-        .select('therapist_id, start_date, end_date, reason')
-        .lte('start_date', endDateStr)
-        .gte('end_date', startDateStr);
-
-      if (toError) throw toError;
-
-      // 4. Fetch Slot Duration
-      const { data: settings } = await supabase.from('appointment_settings').select('slot_duration').single();
-      const slotDuration = settings?.slot_duration || 60;
-
-      // 5. Fetch specific slot counts if they exist (Manual overrides)
-      const { data: dbSlots } = await supabase
-          .from('therapist_slots')
-          .select('schedule_id, is_available')
-          .eq('is_available', true);
       
-      const slotsBySchedule = {};
-      if (dbSlots) {
-          dbSlots.forEach(slot => {
-              if (!slotsBySchedule[slot.schedule_id]) slotsBySchedule[slot.schedule_id] = 0;
-              slotsBySchedule[slot.schedule_id]++;
-          });
-      }
 
       // Process Data by Day
       const days = eachDayOfInterval({ start: startDate, end: endDate });
       
-      const processedData = days.map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const dayOfWeek = getDay(day); // 0=Sun, 1=Mon...
-        
-        // --- Calculate Demand ---
-        const demandCount = appointments.filter(apt => {
-          return apt.appointment_date.startsWith(dateStr);
-        }).length;
+      const processedData = [];
 
-        // --- Calculate Capacity ---
-        let dailyCapacity = 0;
-        
-        // Filter schedules active on this day of week
-        const relevantSchedules = schedules.filter(s => s.day_of_week === dayOfWeek);
+for (const day of days) {
+  const dateStr = format(day, 'yyyy-MM-dd');
 
-        relevantSchedules.forEach(schedule => {
-           // Check if this therapist is on leave (cuti/izin) for this specific date
-           // Logic: Leave is active if dateStr is within start_date and end_date (inclusive)
-           const isTherapistOnLeave = timeOffs.some(leave => {
-               return leave.therapist_id === schedule.therapist_id &&
-                      dateStr >= leave.start_date && 
-                      dateStr <= leave.end_date;
-           });
+  const { data: slotData, error } = await supabase.rpc(
+    'get_available_slots_with_status_by_date',
+    { p_date: dateStr }
+  );
 
-           // Only add capacity if therapist is NOT on leave
-           if (!isTherapistOnLeave) {
-               let slotsCount = 0;
-               
-               // Priority 1: Use DB slots count if available
-               if (slotsBySchedule[schedule.id] > 0) {
-                   slotsCount = slotsBySchedule[schedule.id];
-               } 
-               // Priority 2: Calculate from start/end time
-               else if (schedule.start_time && schedule.end_time) {
-                   const startParts = schedule.start_time.split(':');
-                   const endParts = schedule.end_time.split(':');
-                   const start = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-                   const end = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
-                   const duration = end - start;
-                   slotsCount = Math.floor(duration / slotDuration);
-               }
-               
-               dailyCapacity += Math.max(0, slotsCount);
-           }
-        });
+  if (error) {
+    console.error(error);
+    continue;
+  }
 
-        return {
-          day: format(day, 'EEEE', { locale: id }), // Senin, Selasa...
-          shortDay: format(day, 'EEE', { locale: id }),
-          fullDate: format(day, 'dd MMM yyyy', { locale: id }),
-          capacity: dailyCapacity,
-          demand: demandCount
-        };
-      });
+  // 🔥 kapasitas = semua slot
+const capacity = (slotData || []).length;
+
+// 🔥 permintaan = slot terisi
+const demand = (slotData || []).filter(
+  s => s.status === 'terisi'
+).length;
+
+  processedData.push({
+    day: format(day, 'EEEE', { locale: id }),
+    shortDay: format(day, 'EEE', { locale: id }),
+    fullDate: format(day, 'dd MMM yyyy', { locale: id }),
+    capacity,
+    demand
+  });
+}
 
       setData(processedData);
 
