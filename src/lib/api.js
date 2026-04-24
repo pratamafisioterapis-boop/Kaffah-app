@@ -1475,7 +1475,33 @@ export const updatePackageStatusAutomatically = async () => ({ data: true });
 export const getPackageByPatientAndDate = async () => ({ data: null });
 export const getFirstSessionNominalInPackage = async () => ({ data: 0 });
 export const getPackageSessionCount = async () => ({ data: 0 });
-export const fetchTotalPackages = async () => ({ data: 0 });
+export const fetchTotalPackages = async (startDate, endDate) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('daily_recaps')
+      .select('package_tracking_id')
+      .not('package_tracking_id', 'is', null);
+
+    if (startDate) {
+      query = query.gte('recap_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('recap_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    // 🔥 UNIQUE package_tracking_id
+    const uniquePackages = new Set(
+      (data || []).map(d => d.package_tracking_id)
+    );
+
+    return { data: uniquePackages.size || 0 };
+  }, 'fetchTotalPackages');
+};
 export const createBulkMedicalRecords = async () => ({ data: [] });
 export const setDailyRecapStartTime = async (recapId) => {
   return safeQuery(async () => {
@@ -1588,8 +1614,66 @@ export const deletePatient = async (id) => {
     return { success: true, error: null };
   }, 'deletePatient');
 };
-export const getTherapistPatients = async () => ({ data: [] });
-export const fetchTotalPatients = async () => ({ data: 0 });
+export const getTherapistPatients = async (therapistId) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('daily_recaps')
+      .select(`
+        patient_id,
+        patients:patients (
+          id,
+          full_name,
+          phone
+        )
+      `)
+      .eq('therapist_id', therapistId)
+      .not('patient_id', 'is', null);
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    // 🔥 unique patient
+    const uniqueMap = new Map();
+
+    (data || []).forEach(item => {
+      if (item.patient_id && item.patients) {
+        uniqueMap.set(item.patient_id, item.patients);
+      }
+    });
+
+    return {
+      data: Array.from(uniqueMap.values())
+    };
+  }, 'getTherapistPatients');
+};
+export const fetchTotalPatients = async (startDate, endDate) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('daily_recaps')
+      .select('patient_id', { count: 'exact' })
+      .not('patient_id', 'is', null);
+
+    if (startDate) {
+      query = query.gte('recap_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('recap_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    // 🔥 ambil unique patient
+    const uniquePatients = new Set(
+      (data || []).map(d => d.patient_id)
+    );
+
+    return { data: uniquePatients.size || 0 };
+  }, 'fetchTotalPatients');
+};
 export const getRecentFollowUpLogs = async () => ({ data: [] });
 export const sendPushNotification = async () => ({ data: true });
 export const sendWhatsAppMessageManual = async () => ({ data: true });
@@ -2158,10 +2242,143 @@ export const getTherapistLeaveStatus = async (therapistId, date) => {
   }, 'getTherapistLeaveStatus');
 };
 export const getClinicTherapistTargets = async () => ({ data: [] });
-export const fetchTotalSessions = async () => ({ data: 0 });
-export const fetchTodaySessions = async () => ({ data: 0 });
-export const fetchOngoingSessions = async () => ({ data: 0 });
-export const fetchCompletedSessions = async () => ({ data: 0 });
-export const fetchCancelledAppointments = async () => ({ data: 0 });
-export const fetchEmptySlots = async () => ({ data: 0 });
-export const fetchTodaySessionsPerTherapist = async () => ({ data: [] });
+export const fetchTotalSessions = async (startDate, endDate) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true });
+
+    if (startDate) {
+      query = query.gte('recap_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('recap_date', endDate);
+    }
+
+    const { count, error } = await query;
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchTotalSessions');
+};
+// ============================
+// TODAY SESSIONS
+// ============================
+export const fetchTodaySessions = async () => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count, error } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lte('appointment_date', `${today}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed']);
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchTodaySessions');
+};
+
+// ============================
+// ONGOING SESSIONS
+// ============================
+export const fetchOngoingSessions = async () => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count, error } = await supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'ongoing')
+      .eq('recap_date', today); // 🔥 FILTER HARI INI
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchOngoingSessions');
+};
+
+// ============================
+// COMPLETED SESSIONS
+// ============================
+export const fetchCompletedSessions = async () => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count, error } = await supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .eq('recap_date', today); // 🔥 WAJIB FILTER HARI INI
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchCompletedSessions');
+};
+
+// ============================
+// CANCELLED APPOINTMENTS
+// ============================
+export const fetchCancelledAppointments = async () => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count, error } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lte('appointment_date', `${today}T23:59:59`)
+      .eq('status', 'cancelled'); // 🔥 hanya cancelled hari ini
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchCancelledAppointments');
+};
+
+// ============================
+// EMPTY SLOTS (SIMPLE VERSION)
+// ============================
+export const fetchEmptySlots = async () => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase.rpc(
+      'get_available_slots_with_status_by_date',
+      { p_date: today }
+    );
+
+    if (error) return { error };
+
+    // 🔥 status di DB: 'aktif' = kosong
+    const emptyCount = (data || []).filter(
+      slot => slot.status === 'aktif'
+    ).length;
+
+    return { data: emptyCount };
+  }, 'fetchEmptySlots');
+};
+
+// ============================
+// TODAY SESSIONS PER THERAPIST
+// ============================
+export const fetchTodaySessionsPerTherapist = async (therapistId) => {
+  return safeQuery(async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count, error } = await supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true })
+      .eq('recap_date', today)
+      .eq('therapist_id', therapistId);
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchTodaySessionsPerTherapist');
+};

@@ -173,7 +173,12 @@ const OwnerDashboardHome = () => {
       // Handle both { data: [...] } and direct array
       const therapistList = Array.isArray(response) ? response : (response?.data || []);
       
-      setTherapists(therapistList);
+      // 🔥 hanya therapist aktif
+const activeTherapistsOnly = (therapistList || []).filter(
+  t => t.is_active === true
+);
+
+setTherapists(activeTherapistsOnly);
 
       // 2. Fetch session counts for each therapist
       const sessionCounts = {};
