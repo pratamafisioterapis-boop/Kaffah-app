@@ -25,7 +25,6 @@ import DashboardLayout from '@/components/DashboardLayout';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
 
 // Loading Component
@@ -114,7 +113,7 @@ function App() {
           </Helmet>
           
           <Router>
-            <PWAInstallPrompt />
+            {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
