@@ -12,6 +12,11 @@ import { format, parseISO, isValid } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
+const getTodayWITA = () => {
+  return new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar' })
+  ).toISOString().split('T')[0];
+};
 // ============================================
 // HELPERS
 // ============================================
@@ -445,7 +450,7 @@ export const getAvailableSlots = async (date, therapistId) => {
 };
 
 export const getAvailableSlotsToday = async (therapistId) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayWITA();
   return getAvailableSlots(today, therapistId);
 };
 
@@ -2268,7 +2273,7 @@ export const fetchTotalSessions = async (startDate, endDate) => {
 // ============================
 export const fetchTodaySessions = async () => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { count, error } = await supabase
       .from('appointments')
@@ -2288,7 +2293,7 @@ export const fetchTodaySessions = async () => {
 // ============================
 export const fetchOngoingSessions = async () => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { count, error } = await supabase
       .from('daily_recaps')
@@ -2307,7 +2312,7 @@ export const fetchOngoingSessions = async () => {
 // ============================
 export const fetchCompletedSessions = async () => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { count, error } = await supabase
       .from('daily_recaps')
@@ -2326,7 +2331,7 @@ export const fetchCompletedSessions = async () => {
 // ============================
 export const fetchCancelledAppointments = async () => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { count, error } = await supabase
       .from('appointments')
@@ -2346,7 +2351,7 @@ export const fetchCancelledAppointments = async () => {
 // ============================
 export const fetchEmptySlots = async () => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { data, error } = await supabase.rpc(
       'get_available_slots_with_status_by_date',
@@ -2369,7 +2374,7 @@ export const fetchEmptySlots = async () => {
 // ============================
 export const fetchTodaySessionsPerTherapist = async (therapistId) => {
   return safeQuery(async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayWITA();
 
     const { count, error } = await supabase
       .from('daily_recaps')

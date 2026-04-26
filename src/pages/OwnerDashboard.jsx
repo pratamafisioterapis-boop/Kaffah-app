@@ -180,7 +180,9 @@ const activeTherapistsOnly = (therapistList || []).filter(
 );
 
 // 🔥 ambil slot hari ini
-const today = new Date().toISOString().split('T')[0];
+const today = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar' })
+).toISOString().split('T')[0];
 
 const { data: slotData } = await supabase.rpc(
   'get_available_slots_with_status_by_date',
