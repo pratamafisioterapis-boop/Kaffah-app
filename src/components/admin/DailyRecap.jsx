@@ -5,7 +5,7 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square, 
   ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3
 } from 'lucide-react';
-import { getDailyRecaps } from '@/lib/api';
+import { getDailyRecaps, getPhysiotherapists } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -71,6 +71,22 @@ const DailyRecap = ({ hideControls = false }) => {
   
   const [recaps, setRecaps] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
+  const [selectedTherapist, setSelectedTherapist] = useState('');
+  const therapistOptions = useMemo(() => {
+  const map = new Map();
+
+  recaps.forEach(r => {
+    if (r.therapist_id && r.display_therapist_name) {
+      map.set(r.therapist_id, r.display_therapist_name);
+    }
+  });
+
+  return Array.from(map.entries()).map(([id, name]) => ({
+    id,
+    name
+  }));
+}, [recaps]);
+  const [therapists, setTherapists] = useState([]);
   // Cache for options (diagnosa, service_type, etc.)
   const [optionsMap, setOptionsMap] = useState({});
 
@@ -136,6 +152,16 @@ useEffect(() => {
   fetchRecaps();
 }, [location.pathname]);
   useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
+  useEffect(() => {
+  const fetchTherapists = async () => {
+    const { data, error } = await getPhysiotherapists();
+    if (data && !error) {
+      setTherapists(data);
+    }
+  };
+
+  fetchTherapists();
+}, []);
   
   // 1. Fetch Options on Mount
   useEffect(() => {
@@ -168,7 +194,17 @@ useEffect(() => {
     }
   }, [dateRange, dateErrors]);
 
-  useEffect(() => { fetchRecaps(); }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, lastSyncTime]);
+  useEffect(() => { 
+  fetchRecaps(); 
+}, [
+  queryDateRange, 
+  currentPage, 
+  limit, 
+  debouncedSearch, 
+  sortConfig, 
+  lastSyncTime, 
+  selectedTherapist
+]);
   useEffect(() => {
   const interval = setInterval(() => {
     const now = new Date();
@@ -199,13 +235,14 @@ useEffect(() => {
 
     try {
       const { data, count, error } = await getDailyRecaps({
-        startDate: queryDateRange.start,
-        endDate: queryDateRange.end,
-        search: debouncedSearch,
-        limit,
-        offset: (currentPage - 1) * limit,
-        sort: sortConfig
-      });
+  startDate: queryDateRange.start,
+  endDate: queryDateRange.end,
+  search: debouncedSearch,
+  therapistId: selectedTherapist || null, // 🔥 TAMBAH INI
+  limit,
+  offset: (currentPage - 1) * limit,
+  sort: sortConfig
+});
       if (error) throw error;
 
       if (isMounted.current) {
@@ -235,7 +272,7 @@ end_time: r.end_time,
     } finally { 
       if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist]);
 
   const handleRowClick = (recap) => {
     setSelectedRecap(recap);
@@ -548,6 +585,40 @@ const end = formatLocal(lastDay);
 <Button variant="outline" size="icon" onClick={fetchRecaps}>
   <RefreshCcw className="w-4 h-4"/>
 </Button>
+<div className="relative">
+  <select
+    value={selectedTherapist}
+    onChange={(e) => {
+      setSelectedTherapist(e.target.value);
+      setCurrentPage(1);
+    }}
+    className={`h-9 rounded-md pl-3 pr-8 text-sm transition-all appearance-none cursor-pointer
+      ${selectedTherapist
+        ? 'bg-blue-600 text-white border border-blue-600 hover:bg-blue-700'
+        : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+      }`}
+  >
+    <option value="">Semua Terapis</option>
+
+    {therapistOptions.map((t) => (
+      <option key={t.id} value={t.id}>
+        {t.name}
+      </option>
+    ))}
+  </select>
+
+  {/* 🔽 ICON PANAH */}
+  <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+    <svg
+      className={`w-4 h-4 ${selectedTherapist ? 'text-white' : 'text-slate-500'}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+</div>
             </div>
             <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px]" />
           </div>

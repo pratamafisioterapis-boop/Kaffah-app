@@ -931,7 +931,15 @@ cleanedPayload.amount_original = payload.amount_original;
   }, 'updateDailyRecap');
 };
 
-export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 20, offset = 0, sort = { key: 'recap_date', direction: 'desc' } }) => {
+export const getDailyRecaps = async ({ 
+  startDate, 
+  endDate, 
+  search = '', 
+  therapistId = null, // 🔥 TAMBAH INI
+  limit = 20, 
+  offset = 0, 
+  sort = { key: 'recap_date', direction: 'desc' } 
+}) => {
   return safeQuery(async () => {
     let query = supabase
   .from('daily_recaps')
@@ -990,6 +998,9 @@ export const getDailyRecaps = async ({ startDate, endDate, search = '', limit = 
     if (endDate) {
         query = query.lte('recap_date', endDate);
     }
+    if (therapistId) {
+  query = query.eq('therapist_id', therapistId);
+}
  
     if (search && search.trim()) {
       const q = search.trim();
