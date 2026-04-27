@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getServiceRates } from '@/lib/api';
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
 } from '@/components/ui/card';
@@ -33,11 +34,10 @@ const SalaryCalculator = () => {
   const [patientTypeRates, setPatientTypeRates] = useState({}); // { 'Type': Price }
   
   // Filter State
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [period, setPeriod] = useState({
-    month: currentDate.getMonth().toString(),
-    year: currentDate.getFullYear().toString()
-  });
+  const [dateRange, setDateRange] = useState({
+  start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
+});
 
   // Calculation State
   const [loading, setLoading] = useState(false);
@@ -52,37 +52,26 @@ const SalaryCalculator = () => {
   }, []);
 
   const fetchInitialData = async () => {
-    setLoading(true);
-    try {
-      const [therapistRes, optionsRes] = await Promise.all([
-        getAllPhysiotherapists(),
-        getOperationalOptions()
-      ]);
-      
-      if (therapistRes.data) setTherapists(therapistRes.data);
-      
-      // Parse operational options for patient types or just use defaults
-      // Assuming 'patient_type' category exists in operational_options
-      const types = optionsRes.data?.filter(o => o.category === 'patient_type') || [];
-      const defaultRates = {};
-      types.forEach(t => {
-         // Mock Jasa Value based on label if not present, or use 0
-         // In a real app, we'd fetch from a settings table
-         defaultRates[t.label] = 50000; // Default placeholder
-      });
-      // Add standard ones if missing
-      if (!defaultRates['Umum']) defaultRates['Umum'] = 150000;
-      if (!defaultRates['BPJS']) defaultRates['BPJS'] = 25000;
-      
-      setPatientTypeRates(defaultRates);
-      setCustomRates(defaultRates);
-    } catch (error) {
-      console.error("Failed to load initial data", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to load calculator data." });
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const [therapistRes, ratesRes] = await Promise.all([
+      getAllPhysiotherapists(),
+      getServiceRates()
+    ]);
+
+    if (therapistRes.data) setTherapists(therapistRes.data);
+
+    // 🔥 mapping rate dari DB
+    const rateMap = {};
+    (ratesRes.data || []).forEach(r => {
+      rateMap[r.service_name] = r.rate;
+    });
+
+    setCustomRates(rateMap);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleCalculate = async () => {
     if (!selectedTherapistId) {
@@ -98,22 +87,27 @@ const SalaryCalculator = () => {
       if (!therapist) throw new Error("Therapist not found");
 
       // Calculate Dates
-      const start = startOfMonth(new Date(parseInt(period.year), parseInt(period.month)));
-      const end = endOfMonth(start);
-      const startDateStr = format(start, 'yyyy-MM-dd');
-      const endDateStr = format(end, 'yyyy-MM-dd');
+      const startDateStr = dateRange.start;
+const endDateStr = dateRange.end;
 
       // Fetch Data
       const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
-        getDailyRecaps({ startDate: startDateStr, endDate: endDateStr }), // Need to ensure API supports filtering by therapist in backend or filter here
-        getTherapistSchedules(selectedTherapistId),
-        getTherapistTimeOff(selectedTherapistId)
-      ]);
+  getDailyRecaps({
+    startDate: startDateStr,
+    endDate: endDateStr,
+    therapistId: selectedTherapistId,
+    limit: 'all'
+  }),
+  getTherapistSchedules(selectedTherapistId),
+  getTherapistTimeOff(selectedTherapistId)
+]);
 
       // Filter recaps for this therapist specifically
       // Note: getDailyRecaps might return all, so we filter client side if API doesn't support specific therapist filter in one go
       // API update in Task 5 requested ensure getDailyRecaps supports filters. We'll filter here to be safe.
-      const therapistRecaps = (recapsRes.data || []).filter(r => r.therapist_id === selectedTherapistId || r.therapist_name === therapist.name);
+      const therapistRecaps = (recapsRes.data || []).filter(
+  r => r.therapist_id === selectedTherapistId
+);
       
       // 1. Calculate Attendance
       const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
@@ -142,15 +136,11 @@ const SalaryCalculator = () => {
          });
       }
 
-      const total = calculateTotalSalary({
-        base: baseSalary,
-        transport: transportAllowance,
-        commission: commission
-      });
+      const total = baseSalary + transportAllowance + commission;
 
       setResult({
         therapistName: therapist.name,
-        period: `${format(start, 'MMMM yyyy')}`,
+        period: `${startDateStr} s/d ${endDateStr}`,
         salaryType: salaryType === 'full_salary' ? 'Full Salary (Omzet)' : 'Custom Salary (Jasa)',
         attendanceDays,
         baseSalary,
@@ -178,7 +168,20 @@ const SalaryCalculator = () => {
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
   ];
   const years = [2024, 2025, 2026, 2027];
+const handlePeriodeIni = () => {
+  const today = new Date();
 
+  // tanggal 27 bulan ini
+  const end = new Date(today.getFullYear(), today.getMonth(), 27);
+
+  // tanggal 28 bulan sebelumnya
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, 28);
+
+  setDateRange({
+    start: format(start, 'yyyy-MM-dd'),
+    end: format(end, 'yyyy-MM-dd')
+  });
+};
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -211,29 +214,42 @@ const SalaryCalculator = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Bulan</Label>
-              <Select value={period.month} onValueChange={(v) => setPeriod({...period, month: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {months.map((m, i) => (
-                    <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+  <Label>Tanggal Mulai</Label>
+  <Input
+    type="date"
+    value={dateRange.start}
+    onChange={(e) =>
+      setDateRange((prev) => ({
+        ...prev,
+        start: e.target.value,
+      }))
+    }
+  />
+</div>
 
-            <div className="space-y-2">
-              <Label>Tahun</Label>
-              <Select value={period.year} onValueChange={(v) => setPeriod({...period, year: v})}>
-                 <SelectTrigger><SelectValue /></SelectTrigger>
-                 <SelectContent>
-                   {years.map(y => (
-                     <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                   ))}
-                 </SelectContent>
-              </Select>
-            </div>
-
+<div className="space-y-2">
+  <Label>Tanggal Selesai</Label>
+  <Input
+    type="date"
+    value={dateRange.end}
+    onChange={(e) =>
+      setDateRange((prev) => ({
+        ...prev,
+        end: e.target.value,
+      }))
+    }
+  />
+</div>
+<Button 
+   onClick={handlePeriodeIni}
+   className={`w-full ${
+     dateRange.start.endsWith('-28') && dateRange.end.endsWith('-27')
+       ? 'bg-blue-600 text-white hover:bg-blue-700'
+       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+   }`}
+>
+   Periode Ini
+</Button>
             <Button 
                onClick={handleCalculate} 
                disabled={calculating || !selectedTherapistId}

@@ -330,9 +330,38 @@ export function parseWorkingHours(json) {
  * @param {Array} records - Array of attendance records
  * @returns {number} Count of attendance days
  */
-export function calculateAttendanceDays(records) {
-  if (!records || !Array.isArray(records)) return 0;
-  return records.length;
+export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  let totalDays = 0;
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const day = d.getDay(); // 0=minggu, 1=senin ...
+
+    // 1. cek ada jadwal aktif di hari ini
+    const hasSchedule = (schedules || []).some(s => {
+      return s.day_of_week === day && s.is_active;
+    });
+
+    if (!hasSchedule) continue;
+
+    // 2. cek apakah lagi cuti
+    const isOnLeave = (timeOffs || []).some(t => {
+      const startOff = new Date(t.start_date);
+      const endOff = new Date(t.end_date);
+
+      return d >= startOff && d <= endOff;
+    });
+
+    if (isOnLeave) continue;
+
+    totalDays++;
+  }
+
+  return totalDays;
 }
 
 /**
@@ -342,12 +371,14 @@ export function calculateAttendanceDays(records) {
  * @param {number|string} days - Number of days attended
  * @returns {number} Total full salary
  */
-export function calculateFullSalary(base, transport, days) {
-  const baseNum = Number(base) || 0;
-  const transportNum = Number(transport) || 0;
-  const daysNum = Number(days) || 0;
-  return baseNum + (transportNum * daysNum);
+export function calculateFullSalary(recaps) {
+  if (!recaps || !Array.isArray(recaps)) return 0;
+
+  return recaps.reduce((total, r) => {
+    return total + (parseFloat(r.amount) || 0);
+  }, 0);
 }
+
 
 /**
  * Calculates custom commission-based salary.
@@ -355,10 +386,21 @@ export function calculateFullSalary(base, transport, days) {
  * @param {number|string} commission - Total commission earned
  * @returns {number} Total custom salary
  */
-export function calculateCustomSalary(base, commission) {
-  const baseNum = Number(base) || 0;
-  const commissionNum = Number(commission) || 0;
-  return baseNum + commissionNum;
+export function calculateCustomSalary(recaps, rates) {
+  if (!recaps || !Array.isArray(recaps)) return 0;
+
+  return recaps.reduce((total, r) => {
+    const type = r.patient_type || r.service_type || '';
+    
+    // cari rate yg mengandung keyword (flexible match)
+    const matchedKey = Object.keys(rates).find(key =>
+      key.toLowerCase().includes(type.toLowerCase())
+    );
+
+    const rate = parseFloat(rates[matchedKey]) || 0;
+
+    return total + rate;
+  }, 0);
 }
 
 /**

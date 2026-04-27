@@ -1322,13 +1322,159 @@ export const createOwnerReceivable = async (payload) => {
     return { data, success: true, error: null };
   }, 'createOwnerReceivable');
 };
-export const getExpenses = async () => ({ data: [] });
-export const createExpense = async () => ({ data: {} });
-export const getAdditionalIncome = async () => ({ data: [] });
-export const createAdditionalIncome = async () => ({ data: {} });
-export const getReceivables = async () => ({ data: [] });
-export const createReceivable = async () => ({ data: {} });
-export const updateReceivable = async () => ({ data: {} });
+// ============================================
+// OWNER ACCOUNTING (FIXED - NO MORE DUMMY)
+// ============================================
+
+// 🔹 GET OWNER EXPENSES
+export const getExpenses = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_expenditures')
+      .select(`
+        *,
+        subcategory:accounting_subcategories (
+          id,
+          subcategory_name
+        )
+      `)
+      .order('date', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getExpenses', { retry: true });
+};
+
+
+// 🔹 CREATE OWNER EXPENSE
+export const createExpense = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_expenditures')
+      .insert({
+        date: payload.date,
+        amount: payload.amount,
+        category: payload.category,
+        sub_category: payload.sub_category || null,
+        description: payload.description || null,
+        created_by: payload.created_by || null,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createExpense');
+};
+
+
+// 🔹 GET OWNER INCOME
+export const getAdditionalIncome = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_income')
+      .select(`
+        *,
+        subcategory:accounting_subcategories (
+          id,
+          subcategory_name
+        )
+      `)
+      .order('date', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getAdditionalIncome', { retry: true });
+};
+
+
+// 🔹 CREATE OWNER INCOME
+export const createAdditionalIncome = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_income')
+      .insert({
+        date: payload.date,
+        amount: payload.amount,
+        category: payload.category,
+        sub_category: payload.sub_category || null,
+        description: payload.description || null,
+        created_by: payload.created_by || null,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createAdditionalIncome');
+};
+
+
+// 🔹 GET RECEIVABLES (PIUTANG)
+export const getReceivables = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_receivables')
+      .select('*')
+      .order('due_date', { ascending: true });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getReceivables', { retry: true });
+};
+
+
+// 🔹 CREATE RECEIVABLE
+export const createReceivable = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_receivables')
+      .insert({
+        due_date: payload.due_date,
+        amount: payload.amount,
+        description: payload.description || null,
+        status: 'unpaid',
+        created_by: payload.created_by || null,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createReceivable');
+};
+
+
+// 🔹 UPDATE RECEIVABLE
+export const updateReceivable = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_receivables')
+      .update({
+        due_date: payload.due_date,
+        amount: payload.amount,
+        description: payload.description || null,
+        status: payload.status || 'unpaid',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'updateReceivable');
+};
 export const deleteAdminExpense = async (id) => {
   return safeQuery(async () => {
     const { error } = await supabase
@@ -1547,10 +1693,95 @@ export const setDailyRecapEndTime = async (recapId) => {
       .single();
   }, 'setDailyRecapEndTime', { retry: true });
 };
-export const getMedicalRecordsWithPatients = async () => ({ data: [] });
-export const createBulkMedicalRecordsDetailed = async () => ({ data: [] });
-export const createMedicalRecordDetailed = async () => ({ data: {} });
-export const updateMedicalRecordDetailed = async () => ({ data: {} });
+// ============================================
+// MEDICAL RECORDS (FIXED - NO MORE DUMMY)
+// ============================================
+
+
+// 🔹 GET MEDICAL RECORDS + PATIENT
+export const getMedicalRecordsWithPatients = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .select(`
+        *,
+        patient:patients (
+          id,
+          full_name,
+          medical_record_number,
+          phone
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getMedicalRecordsWithPatients', { retry: true });
+};
+
+
+// 🔹 CREATE BULK MEDICAL RECORDS
+export const createBulkMedicalRecordsDetailed = async (payloads) => {
+  return safeQuery(async () => {
+    if (!Array.isArray(payloads) || payloads.length === 0) {
+      return { error: { message: "Payload harus berupa array dan tidak boleh kosong" } };
+    }
+
+    const insertPayload = payloads.map(p => ({
+      ...p,
+      created_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .insert(insertPayload)
+      .select();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createBulkMedicalRecordsDetailed');
+};
+
+
+// 🔹 CREATE SINGLE MEDICAL RECORD
+export const createMedicalRecordDetailed = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .insert({
+        ...payload,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createMedicalRecordDetailed');
+};
+
+
+// 🔹 UPDATE MEDICAL RECORD
+export const updateMedicalRecordDetailed = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .update({
+        ...payload,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'updateMedicalRecordDetailed');
+};
 export const getDetailedDailyRecapsWithPatients = async () => {
   try {
     const { data, error } = await supabase
@@ -1583,11 +1814,150 @@ export const getDetailedDailyRecapsWithPatients = async () => {
   }
 };
 
-export const getMissingRecaps = async () => ({ data: [] });
-export const createMedicalRecord = async () => ({ data: {} });
-export const getMedicalRecords = async () => ({ data: [] });
-export const updateMedicalRecord = async () => ({ data: {} });
-export const getTherapistRecaps = async () => ({ data: [] });
+// ============================================
+// MEDICAL RECORDS & RECAP HELPERS (FIXED)
+// ============================================
+
+
+// 🔹 GET MISSING RECAPS (appointment ada tapi recap belum)
+export const getMissingRecaps = async (date) => {
+  return safeQuery(async () => {
+    const targetDate = date || getTodayWITA();
+
+    // ambil appointment hari itu
+    const { data: appointments, error: err1 } = await supabase
+      .from('appointments')
+      .select('id, patient_id, therapist_id, appointment_date, status')
+      .gte('appointment_date', `${targetDate}T00:00:00`)
+      .lte('appointment_date', `${targetDate}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'completed']);
+
+    if (err1) return { error: err1 };
+
+    if (!appointments || appointments.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const appointmentIds = appointments.map(a => a.id);
+
+    // ambil recap yg sudah ada
+    const { data: recaps, error: err2 } = await supabase
+      .from('daily_recaps')
+      .select('appointment_id')
+      .in('appointment_id', appointmentIds);
+
+    if (err2) return { error: err2 };
+
+    const recapIds = new Set((recaps || []).map(r => r.appointment_id));
+
+    // filter yg belum ada recap
+    const missing = appointments.filter(a => !recapIds.has(a.id));
+
+    return { data: missing, error: null };
+
+  }, 'getMissingRecaps');
+};
+
+
+// 🔹 CREATE MEDICAL RECORD (simple)
+export const createMedicalRecord = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .insert({
+        ...payload,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+
+  }, 'createMedicalRecord');
+};
+
+
+// 🔹 GET MEDICAL RECORDS
+export const getMedicalRecords = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select(`
+        *,
+        patient:patients (
+          id,
+          full_name,
+          medical_record_number
+        ),
+        therapist:physiotherapists (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+
+  }, 'getMedicalRecords', { retry: true });
+};
+
+
+// 🔹 UPDATE MEDICAL RECORD
+export const updateMedicalRecord = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .update({
+        ...payload,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+
+  }, 'updateMedicalRecord');
+};
+
+
+// 🔹 GET THERAPIST RECAPS
+export const getTherapistRecaps = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('daily_recaps')
+      .select(`
+        id,
+        recap_date,
+        patient_id,
+        amount,
+        diagnosis,
+        service_type,
+        patients (
+          full_name,
+          medical_record_number
+        )
+      `)
+      .eq('therapist_id', therapistId)
+      .order('recap_date', { ascending: false });
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+
+  }, 'getTherapistRecaps', { retry: true });
+};
 export const getPatientById = async (id) => {
   return safeQuery(async () => {
     const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
@@ -2232,12 +2602,111 @@ export const deleteTherapistSchedule = async (id) => {
     return { data: true, error: null };
   }, 'deleteTherapistSchedule');
 };
-export const getAllTherapistTargets = async () => ({ data: [] });
-export const createTherapistTarget = async () => ({ data: {} });
-export const updateTherapistTarget = async () => ({ data: {} });
-export const deleteTherapistTarget = async () => ({ data: true });
-export const getTherapistTargetProgress = async () => ({ data: {} });
-export const getActiveTherapistTarget = async () => ({ data: null });
+// ============================================
+// THERAPIST TARGET (FIXED - NO MORE DUMMY)
+// ============================================
+
+
+// 🔹 GET ALL TARGETS
+export const getAllTherapistTargets = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_targets')
+      .select(`
+        *,
+        therapist:physiotherapists (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getAllTherapistTargets', { retry: true });
+};
+
+
+// 🔹 CREATE TARGET (PAKAI RPC)
+export const createTherapistTarget = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('create_therapist_target', {
+      p_clinic_id: payload.clinic_id,
+      p_therapist_id: payload.therapist_id,
+      p_start_date: payload.start_date,
+      p_end_date: payload.end_date,
+      p_target_visits: payload.target_visits,
+      p_excluded_patient_types: payload.excluded_patient_types || []
+    });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createTherapistTarget');
+};
+
+
+// 🔹 UPDATE TARGET (RPC)
+export const updateTherapistTarget = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('update_therapist_target', {
+      p_target_id: id,
+      p_target_visits: payload.target_visits,
+      p_start_date: payload.start_date,
+      p_end_date: payload.end_date,
+      p_excluded_patient_types: payload.excluded_patient_types || []
+    });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'updateTherapistTarget');
+};
+
+
+// 🔹 DELETE TARGET (RPC)
+export const deleteTherapistTarget = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.rpc('delete_therapist_target', {
+      p_target_id: id
+    });
+
+    if (error) return { error };
+
+    return { data: true, success: true, error: null };
+  }, 'deleteTherapistTarget');
+};
+
+
+// 🔹 GET TARGET PROGRESS (RPC)
+export const getTherapistTargetProgress = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('get_therapist_target_progress', {
+      p_therapist_id: therapistId,
+      p_start_date: startDate,
+      p_end_date: endDate
+    });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getTherapistTargetProgress');
+};
+
+
+// 🔹 GET ACTIVE TARGET (RPC)
+export const getActiveTherapistTarget = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('get_active_therapist_target', {
+      p_therapist_id: therapistId
+    });
+
+    if (error) return { error };
+
+    return { data: data || null, success: true, error: null };
+  }, 'getActiveTherapistTarget');
+};
 export const getTherapistLeaveStatus = async (therapistId, date) => {
   return safeQuery(async () => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -2397,4 +2866,48 @@ export const fetchTodaySessionsPerTherapist = async (therapistId) => {
 
     return { data: count || 0 };
   }, 'fetchTodaySessionsPerTherapist');
+};
+// ============================================
+// SERVICE RATES
+// ============================================
+
+export const getServiceRates = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('service_rates')
+      .select('*');
+
+    if (error) return { error };
+
+    return { data, error: null };
+  }, 'getServiceRates');
+};
+
+export const createServiceRate = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('service_rates')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, error: null };
+  }, 'createServiceRate');
+};
+
+export const updateServiceRate = async (id, rate) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('service_rates')
+      .update({ rate })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, error: null };
+  }, 'updateServiceRate');
 };
