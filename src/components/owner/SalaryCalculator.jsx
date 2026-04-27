@@ -105,9 +105,7 @@ const endDateStr = dateRange.end;
       // Filter recaps for this therapist specifically
       // Note: getDailyRecaps might return all, so we filter client side if API doesn't support specific therapist filter in one go
       // API update in Task 5 requested ensure getDailyRecaps supports filters. We'll filter here to be safe.
-      const therapistRecaps = (recapsRes.data || []).filter(
-  r => r.therapist_id === selectedTherapistId
-);
+      const therapistRecaps = recapsRes.data || [];
       
       // 1. Calculate Attendance
       const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
