@@ -371,13 +371,19 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate)
  * @param {number|string} days - Number of days attended
  * @returns {number} Total full salary
  */
-export function calculateFullSalary(recaps) {
-  if (!recaps || !Array.isArray(recaps)) return 0;
+export const calculateFullSalary = (recaps) => {
+  return (recaps || []).reduce((total, item) => {
+    
+    // kalau paket & ada amount_package → pakai itu
+    if (item.package_tracking_id && item.amount_package) {
+      return total + item.amount_package;
+    }
 
-  return recaps.reduce((total, r) => {
-    return total + (parseFloat(r.amount) || 0);
+    // fallback ke amount
+    return total + (item.amount || 0);
+
   }, 0);
-}
+};
 
 
 /**
