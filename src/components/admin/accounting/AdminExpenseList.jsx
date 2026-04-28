@@ -58,7 +58,6 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal</th>
-                <th className="px-6 py-4 font-semibold whitespace-nowrap">Waktu</th>
                 <th className="px-6 py-4 font-semibold">Kategori</th>
                 <th className="px-6 py-4 font-semibold">Sub Kategori</th>
                 <th className="px-6 py-4 font-semibold">Akun Bank</th>
@@ -72,9 +71,6 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                 <tr key={ex.id || index} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="px-6 py-4 whitespace-nowrap text-slate-700 font-medium">
                     {formatDate(ex.transaction_date)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                    {formatTime(ex.input_time)}
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide">
@@ -132,7 +128,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             </tbody>
             <tfoot className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
                 <tr>
-                    <td colSpan={6} className="px-6 py-4 text-right text-sm uppercase tracking-wider text-slate-500">Total Pengeluaran</td>
+                    <td colSpan={5} className="px-6 py-4 text-right text-sm uppercase tracking-wider text-slate-500">Total Pengeluaran</td>
                     <td className="px-6 py-4 text-right text-rose-700 text-base font-bold font-mono">Rp {totalAmount.toLocaleString('id-ID')}</td>
                     {(canEdit || canDelete) && <td></td>}
                 </tr>

@@ -1069,7 +1069,44 @@ export const deleteBankAccount = async (id) => {
 // ============================================
 // STUBS FOR OTHER FUNCTIONS
 // ============================================
-export const getAdminAccountingReport = async () => ({ data: [] });
+export const getAdminAccountingReport = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+
+    let query = supabase
+      .from('admin_expenses')
+      .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name
+        )
+      `)
+      .order('transaction_date', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('transaction_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('transaction_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    return {
+      data: {
+        total_income: 0,
+        total_expenses: data.reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
+        expenses_breakdown: data,
+        income_breakdown: []
+      },
+      error: null
+    };
+
+  }, 'getAdminAccountingReport');
+};
 export const getAccountingCategories = async () => {
   return safeQuery(async () => {
     return await supabase
