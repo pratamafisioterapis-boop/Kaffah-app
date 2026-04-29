@@ -18,7 +18,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
 
   const [form, setForm] = useState({
     amount: '',
-    source: '', 
+    category: '', 
     sub_category: '',
     description: '',
     transaction_date: format(new Date(), 'yyyy-MM-dd'),
@@ -35,7 +35,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
     if (initialData) {
       setForm({
         amount: initialData.amount || '',
-        source: initialData.source || '',
+        category: initialData.category || '',
         sub_category: initialData.sub_category || '',
         description: initialData.description || '',
         transaction_date: initialData.transaction_date || format(new Date(), 'yyyy-MM-dd'),
@@ -108,7 +108,11 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
         toast({ title: "Income Updated", description: "Income record updated successfully." });
       } else {
         const currentTime = format(new Date(), 'HH:mm:ss');
-        const payload = { ...form, input_time: currentTime };
+        const payload = {
+  ...form,
+  category: form.source, // 🔥 INI FIX NYA
+  input_time: currentTime
+};
         const { error } = await createAdminIncome(payload);
         if (error) throw error;
         toast({ title: "Income Recorded", description: "Successfully added new income record." });
@@ -117,7 +121,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
       if (!isEditMode) {
         setForm({
           amount: '',
-          source: '',
+          category: '',
           sub_category: '',
           description: '',
           transaction_date: format(new Date(), 'yyyy-MM-dd'),
@@ -177,7 +181,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
         <Label htmlFor="source">Main Category (Auto-filled)</Label>
         <Input 
           id="source" 
-          value={form.source}
+          value={form.category}
           readOnly
           className="bg-slate-50 text-slate-500 cursor-not-allowed"
           placeholder="Main category will appear here..."

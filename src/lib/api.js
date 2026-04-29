@@ -1072,35 +1072,34 @@ export const deleteBankAccount = async (id) => {
 export const getAdminAccountingReport = async ({ startDate, endDate }) => {
   return safeQuery(async () => {
 
-    let query = supabase
+    // 🔥 EXPENSE
+    let expenseQuery = supabase
       .from('admin_expenses')
-      .select(`
-        *,
-        bank_accounts (
-          id,
-          bank_name
-        )
-      `)
+      .select('*')
       .order('transaction_date', { ascending: false });
 
-    if (startDate) {
-      query = query.gte('transaction_date', startDate);
-    }
+    if (startDate) expenseQuery = expenseQuery.gte('transaction_date', startDate);
+    if (endDate) expenseQuery = expenseQuery.lte('transaction_date', endDate);
 
-    if (endDate) {
-      query = query.lte('transaction_date', endDate);
-    }
+    const { data: expenses } = await expenseQuery;
 
-    const { data, error } = await query;
+    // 🔥 INCOME
+    let incomeQuery = supabase
+      .from('admin_income')
+      .select('*')
+      .order('date', { ascending: false });
 
-    if (error) return { error };
+    if (startDate) incomeQuery = incomeQuery.gte('date', startDate);
+    if (endDate) incomeQuery = incomeQuery.lte('date', endDate);
+
+    const { data: income } = await incomeQuery;
 
     return {
       data: {
-        total_income: 0,
-        total_expenses: data.reduce((acc, curr) => acc + Number(curr.amount || 0), 0),
-        expenses_breakdown: data,
-        income_breakdown: []
+        total_income: income?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0,
+        total_expenses: expenses?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0,
+        expenses_breakdown: expenses || [],
+        income_breakdown: income || []
       },
       error: null
     };

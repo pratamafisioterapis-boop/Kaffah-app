@@ -57,7 +57,6 @@ const AdminIncomeList = ({ income = [], onRefresh, onEdit, onDelete, canEdit: pr
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal</th>
-                <th className="px-6 py-4 font-semibold whitespace-nowrap">Waktu</th>
                 <th className="px-6 py-4 font-semibold">Sumber</th>
                 <th className="px-6 py-4 font-semibold">Sub Kategori</th>
                 <th className="px-6 py-4 font-semibold">Akun Bank</th>
@@ -70,14 +69,11 @@ const AdminIncomeList = ({ income = [], onRefresh, onEdit, onDelete, canEdit: pr
               {dataToRender.map((inc, index) => (
                 <tr key={inc.id || index} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="px-6 py-4 whitespace-nowrap text-slate-700 font-medium">
-                    {formatDate(inc.transaction_date)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                    {formatTime(inc.input_time)}
+                    {formatDate(inc.date)}
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wide">
-                        {inc.source || 'General'}
+                        {inc.category || 'General'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-600 text-xs uppercase font-medium tracking-wide">
@@ -131,7 +127,7 @@ const AdminIncomeList = ({ income = [], onRefresh, onEdit, onDelete, canEdit: pr
             </tbody>
             <tfoot className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
                 <tr>
-                    <td colSpan={6} className="px-6 py-4 text-right text-sm uppercase tracking-wider text-slate-500">Total Pemasukan</td>
+                    <td colSpan={5} className="px-6 py-4 text-right text-sm uppercase tracking-wider text-slate-500">Total Pemasukan</td>
                     <td className="px-6 py-4 text-right text-emerald-700 text-base font-bold font-mono">Rp {totalAmount.toLocaleString('id-ID')}</td>
                     {(canEdit || canDelete) && <td></td>}
                 </tr>
