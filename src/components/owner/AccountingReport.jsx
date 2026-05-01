@@ -76,13 +76,10 @@ const ReportTable = ({ title, data, columns, total, type }) => {
     );
 };
 
-const AccountingReport = () => {
+const AccountingReport = ({ dateRange }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [dateRange, setDateRange] = useState({
-    startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd')
-  });
+  
 
   const [data, setData] = useState({
     ownerIncome: [],
@@ -146,7 +143,14 @@ const AccountingReport = () => {
 
   const netProfit = totalIncome - totalExpenses;
 
-  const formatDate = (dateStr) => format(new Date(dateStr), 'dd/MM/yyyy');
+  const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+
+  const date = new Date(dateStr);
+  if (isNaN(date)) return '-';
+
+  return format(date, 'dd/MM/yyyy');
+};
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -265,22 +269,38 @@ const AccountingReport = () => {
                     <div className="flex items-center gap-2">
                          <div className="grid gap-1">
                             <Label className="text-xs text-slate-500">Mulai</Label>
-                            <Input 
-                                type="date" 
-                                value={dateRange.startDate} 
-                                onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-                                className="h-9 w-[140px] text-sm"
-                            />
+                            <div className="relative">
+  <Input 
+  type="text"
+  value={formatDate(dateRange.startDate)}
+  readOnly
+  className="h-9 w-[140px] text-sm pr-8 pointer-events-none"
+/>
+  <Input 
+    type="date"
+    value={dateRange.startDate}
+    onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
+    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+  />
+</div>
                          </div>
                          <span className="mb-2 text-slate-400">-</span>
                          <div className="grid gap-1">
                             <Label className="text-xs text-slate-500">Akhir</Label>
-                            <Input 
-                                type="date" 
-                                value={dateRange.endDate} 
-                                onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-                                className="h-9 w-[140px] text-sm"
-                            />
+                            <div className="relative">
+  <Input 
+    type="text"
+    value={formatDate(dateRange.endDate)}
+    readOnly
+    className="h-9 w-[140px] text-sm pr-8"
+  />
+  <Input 
+    type="date"
+    value={dateRange.endDate}
+    onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
+    className="absolute inset-0 opacity-0 cursor-pointer"
+  />
+</div>
                          </div>
                     </div>
                     <Button onClick={handleExportPDF} variant="outline" className="h-9 border-slate-300 text-slate-700 hover:bg-slate-50">

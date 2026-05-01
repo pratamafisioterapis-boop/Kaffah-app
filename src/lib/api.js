@@ -1193,9 +1193,9 @@ export const deleteAccountingSubcategory = async (id) => {
     return { success: true, error: null };
   }, 'deleteAccountingSubcategory');
 };
-export const getOwnerExpenditures = async () => {
+export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('owner_expenditures')
       .select(`
         *,
@@ -1206,14 +1206,19 @@ export const getOwnerExpenditures = async () => {
       `)
       .order('date', { ascending: false });
 
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate) query = query.lte('date', endDate);
+
+    const { data, error } = await query;
+
     if (error) return { error };
 
     return { data, success: true, error: null };
   }, 'getOwnerExpenditures', { retry: true });
 };
-export const getOwnerIncome = async () => {
+export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('owner_income')
       .select(`
         *,
@@ -1223,6 +1228,11 @@ export const getOwnerIncome = async () => {
         )
       `)
       .order('date', { ascending: false });
+
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate) query = query.lte('date', endDate);
+
+    const { data, error } = await query;
 
     if (error) return { error };
 

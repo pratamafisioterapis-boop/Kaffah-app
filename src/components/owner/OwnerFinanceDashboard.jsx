@@ -138,32 +138,48 @@ const OwnerFinanceDashboard = () => {
 
   // Fetch Data Functions
   const fetchOwnerData = async () => {
-    setOwnerLoading(true);
-    try {
-      const [expRes, incRes, recRes, bankRes] = await Promise.all([
-          getOwnerExpenditures(dateRange), 
-          getOwnerIncome(dateRange), 
-          getOwnerReceivables(), 
-          getBankAccounts()
-      ]);
-      
-      setOwnerData({
-        expenditures: expRes?.data || [],
-        income: incRes?.data || [],
-        receivables: recRes?.data || [],
-        bankAccounts: bankRes?.data || []
-      });
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load owner data."
-      });
-    } finally {
-      setOwnerLoading(false);
+  setOwnerLoading(true);
+
+  try {
+    const [expRes, incRes, recRes, bankRes] = await Promise.all([
+      getOwnerExpenditures(dateRange), 
+      getOwnerIncome(dateRange), 
+      getOwnerReceivables(), 
+      getBankAccounts()
+    ]);
+
+    console.log("DEBUG OWNER:", {
+      expRes,
+      incRes,
+      recRes,
+      bankRes
+    });
+
+    // 🚨 HANDLE ERROR DULU
+    if (expRes?.error || incRes?.error || recRes?.error || bankRes?.error) {
+      throw expRes?.error || incRes?.error || recRes?.error || bankRes?.error;
     }
-  };
+
+    setOwnerData({
+      expenditures: expRes?.data || [],
+      income: incRes?.data || [],
+      receivables: recRes?.data || [],
+      bankAccounts: bankRes?.data || []
+    });
+
+  } catch (error) {
+    console.error("FINAL ERROR:", error);
+
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: error.message || "Failed to load owner data."
+    });
+
+  } finally {
+    setOwnerLoading(false);
+  }
+};
 
   const fetchAdminData = async () => {
     setAdminLoading(true);
@@ -302,7 +318,7 @@ const OwnerFinanceDashboard = () => {
       }}>
              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-1 border border-emerald-100 shadow-lg">
                 <div className="bg-white/95 backdrop-blur rounded-xl p-6">
-                    <AccountingReport />
+                    <AccountingReport dateRange={dateRange} />
                 </div>
              </div>
           </motion.div>}
@@ -371,7 +387,7 @@ const OwnerFinanceDashboard = () => {
   render: row =>
     row.sub_category ? (
       <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-teal-200 text-teal-700">
-        row.subcategory?.subcategory_name || '-'
+        {row.subcategory?.subcategory_name || '-'}
       </span>
     ) : (
       <span className="text-slate-400">-</span>
