@@ -45,6 +45,8 @@ const MedicalRecordsManagement = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [viewRecord, setViewRecord] = useState(null);
+const [isViewOpen, setIsViewOpen] = useState(false);
 
   // Sort State
   const [sortConfig, setSortConfig] = useState(() => {
@@ -115,7 +117,10 @@ const MedicalRecordsManagement = () => {
   const handleSaveSuccess = () => {
     fetchInitialData(); // Refresh data after save
   };
-
+const handleViewRecord = (record) => {
+  setViewRecord(record);
+  setIsViewOpen(true);
+};
   const handleDelete = (id) => {
     toast({ description: "Fitur Hapus akan segera tersedia!" });
   };
@@ -371,7 +376,11 @@ const MedicalRecordsManagement = () => {
                 sortedRecords.map((record) => {
                    const statusLabel = getStatusLabel(record);
                    return (
-                    <tr key={record.id} className="hover:bg-slate-50 transition-colors">
+                    <tr 
+  key={record.id}
+  className="hover:bg-blue-50 transition-colors cursor-pointer"
+  onClick={() => handleViewRecord(record)}
+>
                       <td className="px-6 py-4 text-slate-600 font-medium whitespace-nowrap">
                         {record.patient?.medical_record_number || '-'}
                       </td>
@@ -390,7 +399,8 @@ const MedicalRecordsManagement = () => {
                          </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <DropdownMenu>
+  <div onClick={(e) => e.stopPropagation()}>
+    <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <span className="sr-only">Open menu</span>
@@ -406,6 +416,7 @@ const MedicalRecordsManagement = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+</div>
                       </td>
                     </tr>
                   );
@@ -422,7 +433,15 @@ const MedicalRecordsManagement = () => {
         onSave={handleSaveSuccess}
         recordData={selectedRecord}
       />
-
+<MedicalRecordsModal
+  isOpen={isViewOpen}
+  onClose={() => {
+    setIsViewOpen(false);
+    setViewRecord(null);
+  }}
+  onSave={() => {}}
+  recordData={viewRecord}
+/>
       {/* Import CSV Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="sm:max-w-md">

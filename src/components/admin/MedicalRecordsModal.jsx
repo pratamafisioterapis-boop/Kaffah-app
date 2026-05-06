@@ -125,6 +125,7 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
   getTherapists(),
   getDiagnosisOptions()
 ]);
+console.log('DIAGNOSES RES:', diagnosesRes);
 
 const diagnosesList = diagnosesRes?.data || [];
 
@@ -140,10 +141,11 @@ const diagnosesList = diagnosesRes?.data || [];
       // Map diagnoses using updated getDiagnosisOptions structure
       // getDiagnosisOptions returns {id, label, category, value}
       // SearchableSelect needs label/value
-      const diagnosisOptions = (diagnosesList.data || []).map(d => ({
+      const diagnosisOptions = diagnosesList.map(d => ({
   value: d.id,
   label: d.label  
 }));
+console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
       setDiagnoses([...diagnosisOptions]);
 
     } catch (err) {
