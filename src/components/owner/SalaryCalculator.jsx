@@ -25,7 +25,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
-const SalaryCalculator = () => {
+const SalaryCalculator = ({ dateRange }) => {
   const { toast } = useToast();
   
   // Data State
@@ -33,11 +33,7 @@ const SalaryCalculator = () => {
   const [selectedTherapistId, setSelectedTherapistId] = useState('');
   const [patientTypeRates, setPatientTypeRates] = useState({}); // { 'Type': Price }
   
-  // Filter State
-  const [dateRange, setDateRange] = useState({
-  start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-  end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
-});
+ 
 
   // Calculation State
   const [loading, setLoading] = useState(false);
@@ -87,8 +83,8 @@ const SalaryCalculator = () => {
       if (!therapist) throw new Error("Therapist not found");
 
       // Calculate Dates
-      const startDateStr = dateRange.start;
-const endDateStr = dateRange.end;
+      const startDateStr = dateRange?.start;
+const endDateStr = dateRange?.end;
 
       // Fetch Data
       const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
@@ -106,6 +102,7 @@ const endDateStr = dateRange.end;
       // Note: getDailyRecaps might return all, so we filter client side if API doesn't support specific therapist filter in one go
       // API update in Task 5 requested ensure getDailyRecaps supports filters. We'll filter here to be safe.
       const therapistRecaps = recapsRes.data || [];
+      console.log("RECAPS DATA:", therapistRecaps);
       
       // 1. Calculate Attendance
       const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
@@ -169,10 +166,7 @@ const endDateStr = dateRange.end;
 const handlePeriodeIni = () => {
   const today = new Date();
 
-  // tanggal 27 bulan ini
   const end = new Date(today.getFullYear(), today.getMonth(), 27);
-
-  // tanggal 28 bulan sebelumnya
   const start = new Date(today.getFullYear(), today.getMonth() - 1, 28);
 
   setDateRange({
@@ -213,35 +207,53 @@ const handlePeriodeIni = () => {
 
             <div className="space-y-2">
   <Label>Tanggal Mulai</Label>
-  <Input
-    type="date"
-    value={dateRange.start}
-    onChange={(e) =>
-      setDateRange((prev) => ({
-        ...prev,
-        start: e.target.value,
-      }))
-    }
-  />
+  <div className="relative">
+    <Input
+      type="text"
+      value={dateRange?.start ? format(new Date(dateRange.start), 'dd/MM/yyyy') : ''}
+      readOnly
+      className="pointer-events-none"
+    />
+    <Input
+      type="date"
+      value={dateRange.start}
+      onChange={(e) =>
+        setDateRange((prev) => ({
+          ...prev,
+          start: e.target.value,
+        }))
+      }
+      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+    />
+  </div>
 </div>
 
 <div className="space-y-2">
   <Label>Tanggal Selesai</Label>
-  <Input
-    type="date"
-    value={dateRange.end}
-    onChange={(e) =>
-      setDateRange((prev) => ({
-        ...prev,
-        end: e.target.value,
-      }))
-    }
-  />
+  <div className="relative">
+    <Input
+      type="text"
+      value={dateRange?.end ? format(new Date(dateRange.end), 'dd/MM/yyyy') : ''}
+      readOnly
+      className="pointer-events-none"
+    />
+    <Input
+      type="date"
+      value={dateRange.end}
+      onChange={(e) =>
+        setDateRange((prev) => ({
+          ...prev,
+          end: e.target.value,
+        }))
+      }
+      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+    />
+  </div>
 </div>
 <Button 
    onClick={handlePeriodeIni}
    className={`w-full ${
-     dateRange.start.endsWith('-28') && dateRange.end.endsWith('-27')
+     dateRange?.start?.endsWith('-28') && dateRange?.end?.endsWith('-27')
        ? 'bg-blue-600 text-white hover:bg-blue-700'
        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
    }`}

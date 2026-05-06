@@ -1,4 +1,4 @@
-import { clsx } from "clsx";
+import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge";
  * @returns {string} Merged class string
  */
 export function cn(...inputs) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(...inputs));
 }
 
 /**
@@ -373,18 +373,15 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate)
  */
 export const calculateFullSalary = (recaps) => {
   return (recaps || []).reduce((total, item) => {
-    
-    // kalau paket & ada amount_package → pakai itu
+
     if (item.package_tracking_id && item.amount_package) {
       return total + item.amount_package;
     }
 
-    // fallback ke amount
     return total + (item.amount || 0);
 
   }, 0);
 };
-
 
 /**
  * Calculates custom commission-based salary.
