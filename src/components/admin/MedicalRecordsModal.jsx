@@ -106,14 +106,20 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
     if (isOpen) {
       fetchDropdownData();
       if (recordData) {
-        setFormData({
-          ...initialFormState,
-          ...recordData,
-          record_date: recordData.record_date ? format(new Date(recordData.record_date), 'yyyy-MM-dd') : initialFormState.record_date
-        });
-      } else {
-        setFormData(initialFormState);
-      }
+
+  console.log('MODAL RECORD DATA:', recordData);
+
+  setFormData({
+    ...initialFormState,
+    ...recordData,
+    record_date: recordData.record_date
+      ? format(new Date(recordData.record_date), 'yyyy-MM-dd')
+      : initialFormState.record_date
+  });
+
+} else {
+  setFormData(initialFormState);
+}
     }
   }, [isOpen, recordData]);
 
@@ -220,7 +226,15 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
         // but since the component state has it, we pass it and let api.js handle the stripping 
         // OR strip here. The prompt asks to update the handler.
         // Let's strip here as well for clarity and redundancy as requested in Task 3.
-        const { therapist_id, therapist_name, ...cleanedData } = formData;
+        const {
+  therapist_id,
+  therapist_name,
+  patient,
+  created_at,
+  created_by,
+  id,
+  ...cleanedData
+} = formData;
         
         // However, we need to pass formData to the API functions which expect an object.
         // The API functions (Task 1 & 2) are now updated to destructure these out.
@@ -249,8 +263,11 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
         className: "bg-green-50 border-green-200",
       });
 
-      if (onSave) onSave();
-      onClose();
+      if (onSave) {
+  await onSave(result.data);
+}
+
+onClose();
 
     } catch (err) {
       console.error("Submit error:", err);

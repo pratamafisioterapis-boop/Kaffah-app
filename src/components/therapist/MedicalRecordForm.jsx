@@ -17,7 +17,7 @@ import { id } from 'date-fns/locale';
 const MedicalRecordForm = ({ therapist }) => {
   const { patientId: paramPatientId } = useParams();
   const [searchParams] = useSearchParams();
-  const appointmentId = searchParams.get('appointmentId');
+  const dailyRecapId = searchParams.get('dailyRecapId');
   const recordId = searchParams.get('recordId');
   const dateParam = searchParams.get('date'); 
   
@@ -30,12 +30,12 @@ const MedicalRecordForm = ({ therapist }) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
-    appointment_id: (appointmentId && isValidUUID(appointmentId)) ? appointmentId : '',
+    daily_recap_id: null,
     subjective: '',
     objective: '',
     assessment: '',
     plan: '',
-    record_type: 'SOAP'
+    record_type: 'DAILY_EVALUATION'
   });
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const MedicalRecordForm = ({ therapist }) => {
         if (record) {
           setFormData({
             patient_id: record.patient_id,
-            appointment_id: record.appointment_id || '',
+            daily_recap_id: record.daily_recap_id || null,
             subjective: record.subjective || '',
             objective: record.objective || '',
             assessment: record.assessment || '',
@@ -112,18 +112,16 @@ const MedicalRecordForm = ({ therapist }) => {
     setLoading(true);
     try {
        const cleanData = { ...formData };
-       if (!isValidUUID(cleanData.appointment_id)) {
-           cleanData.appointment_id = null;
-       }
 
        const payload = {
-         ...cleanData,
-         subjective: cleanData.subjective || '',
-         objective: cleanData.objective || '',
-         assessment: cleanData.assessment || '',
-         plan: cleanData.plan || '',
-         created_by: therapist.user_id,
-       };
+  ...cleanData,
+  daily_recap_id: dailyRecapId,
+  subjective: cleanData.subjective || '',
+  objective: cleanData.objective || '',
+  assessment: cleanData.assessment || '',
+  plan: cleanData.plan || '',
+  created_by: therapist.user_id,
+};
 
        if (dateParam && !recordId) {
           payload.created_at = `${dateParam}T12:00:00`;

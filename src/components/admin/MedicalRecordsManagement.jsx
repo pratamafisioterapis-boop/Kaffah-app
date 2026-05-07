@@ -105,25 +105,92 @@ const [isViewOpen, setIsViewOpen] = useState(false);
   };
 
   const handleOpenEditModal = (record) => {
-    setSelectedRecord(record);
-    setIsModalOpen(true);
-  };
+
+  // 🔥 ambil data terbaru dari records state
+  const freshRecord = records.find(r => r.id === record.id);
+
+  setSelectedRecord(
+    freshRecord
+      ? JSON.parse(JSON.stringify(freshRecord))
+      : JSON.parse(JSON.stringify(record))
+  );
+
+  setIsModalOpen(true);
+};
 
   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedRecord(null);
   };
 
-  const handleSaveSuccess = () => {
-    fetchInitialData(); // Refresh data after save
-  };
+  const handleSaveSuccess = async (updatedRecord = null) => {
+
+  if (updatedRecord?.id) {
+
+    setRecords(prev =>
+  prev.map(item => {
+
+    if (item.id !== updatedRecord.id) {
+      return item;
+    }
+
+    // 🔥 merge dengan object lama
+    return {
+      ...item,
+      ...updatedRecord
+    };
+
+  })
+);
+
+    // 🔥 reset stale selected record
+    setSelectedRecord(null);
+    setViewRecord(null);
+
+  } else {
+    await fetchInitialData();
+  }
+};
 const handleViewRecord = (record) => {
-  setViewRecord(record);
+
+  const freshRecord = records.find(r => r.id === record.id);
+
+  setViewRecord(
+    freshRecord
+      ? JSON.parse(JSON.stringify(freshRecord))
+      : JSON.parse(JSON.stringify(record))
+  );
+
   setIsViewOpen(true);
 };
-  const handleDelete = (id) => {
-    toast({ description: "Fitur Hapus akan segera tersedia!" });
-  };
+  const handleDelete = async (id) => {
+  const confirmDelete = window.confirm("Yakin ingin menghapus rekam medis ini?");
+
+  if (!confirmDelete) return;
+
+  try {
+    const { deleteMedicalRecord } = await import('@/lib/api');
+
+    const { error } = await deleteMedicalRecord(id);
+
+    if (error) throw error;
+
+    toast({
+      title: "Berhasil",
+      description: "Rekam medis berhasil dihapus.",
+    });
+
+    fetchInitialData();
+  } catch (err) {
+    console.error(err);
+
+    toast({
+      variant: "destructive",
+      title: "Gagal menghapus",
+      description: err.message || "Terjadi kesalahan saat menghapus data.",
+    });
+  }
+};
   
   const handleSort = (field) => {
     setSortConfig(prev => {
@@ -427,13 +494,15 @@ const handleViewRecord = (record) => {
         </div>
       </div>
 
-      <MedicalRecordsModal 
-        isOpen={isModalOpen}
+      <MedicalRecordsModal
+  key={selectedRecord?.id || 'create'}
+  isOpen={isModalOpen}
         onClose={handleModalClose}
         onSave={handleSaveSuccess}
         recordData={selectedRecord}
       />
 <MedicalRecordsModal
+  key={viewRecord?.id || 'view'}
   isOpen={isViewOpen}
   onClose={() => {
     setIsViewOpen(false);

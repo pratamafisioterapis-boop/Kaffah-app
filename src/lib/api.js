@@ -1747,11 +1747,42 @@ export const setDailyRecapEndTime = async (recapId) => {
 // 🔹 GET MEDICAL RECORDS + PATIENT
 export const getMedicalRecordsWithPatients = async () => {
   return safeQuery(async () => {
+
     const { data, error } = await supabase
       .from('medical_records_detailed')
       .select(`
-        *,
-        patient:patients (
+        id,
+        created_at,
+        record_date,
+        patient_id,
+        medical_diagnosis,
+        history_main_problem,
+        vital_nadi,
+        vital_blood_pressure,
+        vital_height,
+        vital_weight,
+        vital_temperature,
+        vital_respiration,
+        vital_spo2,
+        phy_quick_test,
+        phy_inspection,
+        phy_palpation,
+        phy_endfeel,
+        phy_auscultation,
+        phy_rom,
+        phy_anthropometry,
+        phy_muscle_strength,
+        phy_pain_rest,
+        phy_pain_motion,
+        phy_pain_pressure,
+        physio_body_structure,
+        physio_functional_limitation,
+        physio_participation_restriction,
+        specific_test,
+        radiology_lab,
+        treatment_goal,
+
+        patient:patients!patient_id (
           id,
           full_name,
           medical_record_number,
@@ -1760,9 +1791,16 @@ export const getMedicalRecordsWithPatients = async () => {
       `)
       .order('created_at', { ascending: false });
 
+    console.log('MEDICAL RECORDS FETCH:', data);
+
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    return {
+      data,
+      success: true,
+      error: null
+    };
+
   }, 'getMedicalRecordsWithPatients', { retry: true });
 };
 
@@ -1813,19 +1851,35 @@ export const createMedicalRecordDetailed = async (payload) => {
 // 🔹 UPDATE MEDICAL RECORD
 export const updateMedicalRecordDetailed = async (id, payload) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+
+    const cleanedPayload = Object.fromEntries(
+      Object.entries(payload).filter(
+        ([_, value]) => value !== undefined
+      )
+    );
+
+    cleanedPayload.updated_at = new Date().toISOString();
+
+    console.log('UPDATE ID:', id);
+    console.log('CLEANED PAYLOAD:', cleanedPayload);
+
+    const { error } = await supabase
       .from('medical_records_detailed')
-      .update({
-        ...payload,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single();
+      .update(cleanedPayload)
+      .eq('id', id);
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    // 🔥 RETURN PAYLOAD LANGSUNG
+    return {
+      data: {
+        id,
+        ...cleanedPayload
+      },
+      success: true,
+      error: null
+    };
+
   }, 'updateMedicalRecordDetailed');
 };
 export const getDetailedDailyRecapsWithPatients = async () => {
@@ -1972,7 +2026,24 @@ export const updateMedicalRecord = async (id, payload) => {
   }, 'updateMedicalRecord');
 };
 
+export const deleteMedicalRecord = async (id) => {
+  return safeQuery(async () => {
 
+    const { error } = await supabase
+      .from('medical_records_detailed')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { error };
+
+    return {
+      data: true,
+      success: true,
+      error: null
+    };
+
+  }, 'deleteMedicalRecord');
+};
 // 🔹 GET THERAPIST RECAPS
 export const getTherapistRecaps = async (therapistId, startDate, endDate) => {
   return safeQuery(async () => {

@@ -19,10 +19,10 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
 
   if (!patient) return null;
 
-  const handleCreate = (date) => {
-    navigate(`/therapist/records/new/${patient.id}?date=${date}`);
-    onClose();
-  };
+  const handleCreate = (date, dailyRecapId) => {
+  navigate(`/therapist/records/new/${patient.id}?date=${date}&dailyRecapId=${dailyRecapId}`);
+  onClose();
+};
 
   const handleEdit = (recordId, date) => {
     navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
@@ -113,7 +113,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
                              <Button 
                                 size="sm" 
                                 className="bg-blue-600 hover:bg-blue-700 h-8 text-xs"
-                                onClick={() => handleCreate(item.date)}
+                                onClick={() => handleCreate(item.date, item.id)}
                               >
                                 <PlusCircle className="w-3 h-3 mr-1" /> Tambah SOAP
                               </Button>
