@@ -94,9 +94,7 @@ const TherapistDashboardWidget = () => {
       {/* 1. Greeting & Motivation */}
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
 
-      {/* 2. Available Slots (Operational Status) */}
-      <AvailableSlotsWidget therapistId={therapistProfile.id} />
-
+      
       {/* 3. Metrics Overview - Passed profile data */}
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
     </div>

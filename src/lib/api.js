@@ -113,6 +113,7 @@ return {
 
 export const startDailyRecapSession = async (recapId) => {
   return safeQuery(async () => {
+    const { startDate, endDate } = filters;
     return await supabase
       .from('daily_recaps')
       .update({ 
@@ -2045,7 +2046,10 @@ export const deleteMedicalRecord = async (id) => {
   }, 'deleteMedicalRecord');
 };
 // 🔹 GET THERAPIST RECAPS
-export const getTherapistRecaps = async (therapistId, startDate, endDate) => {
+export const getTherapistRecaps = async (
+  therapistId,
+  filters = {}
+) => {
   return safeQuery(async () => {
     let query = supabase
       .from('daily_recaps')
@@ -2056,10 +2060,10 @@ export const getTherapistRecaps = async (therapistId, startDate, endDate) => {
         amount,
         diagnosis,
         service_type,
-        patients (
-          full_name,
-          medical_record_number
-        )
+        patients!daily_recap_patient_id_fkey (
+  full_name,
+  medical_record_number
+)
       `)
       .eq('therapist_id', therapistId)
       .order('recap_date', { ascending: false });
@@ -2799,15 +2803,32 @@ export const deleteTherapistTarget = async (id) => {
 // 🔹 GET TARGET PROGRESS (RPC)
 export const getTherapistTargetProgress = async (therapistId, startDate, endDate) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.rpc('get_therapist_target_progress', {
-      p_therapist_id: therapistId,
-      p_start_date: startDate,
-      p_end_date: endDate
-    });
+
+    const { data: recaps, error } = await supabase
+      .from('daily_recaps')
+      .select('id')
+      .eq('therapist_id', therapistId)
+      .gte('recap_date', startDate)
+      .lte('recap_date', endDate);
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    const actualVisits = recaps?.length || 0;
+
+    return {
+      data: {
+        target_visits: 0,
+        actual_visits: actualVisits,
+        achievement_percentage: 0,
+        start_date: startDate,
+        end_date: endDate,
+        excluded_patient_types: [],
+        status: 'active'
+      },
+      success: true,
+      error: null
+    };
+
   }, 'getTherapistTargetProgress');
 };
 
@@ -2815,13 +2836,25 @@ export const getTherapistTargetProgress = async (therapistId, startDate, endDate
 // 🔹 GET ACTIVE TARGET (RPC)
 export const getActiveTherapistTarget = async (therapistId) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.rpc('get_active_therapist_target', {
-      p_therapist_id: therapistId
-    });
+
+    const today = getTodayWITA();
+
+    const { data, error } = await supabase
+      .from('therapist_targets')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .lte('start_date', today)
+      .gte('end_date', today)
+      .maybeSingle();
 
     if (error) return { error };
 
-    return { data: data || null, success: true, error: null };
+    return {
+      data: data || null,
+      success: true,
+      error: null
+    };
+
   }, 'getActiveTherapistTarget');
 };
 export const getTherapistLeaveStatus = async (therapistId, date) => {

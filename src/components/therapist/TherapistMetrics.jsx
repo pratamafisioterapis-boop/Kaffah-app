@@ -51,7 +51,10 @@ const TherapistMetrics = ({ therapist, userId }) => {
       const startMonth = startOfMonth(now).toISOString().split('T')[0];
       const endMonth = endOfMonth(now).toISOString().split('T')[0];
       const todayISO = now.toISOString().split('T')[0];
-
+console.log('THERAPIST ID:', therapist.id);
+console.log('USER ID:', userId);
+console.log('START MONTH:', startMonth);
+console.log('END MONTH:', endMonth);
       const [
         recapsRes,
         activeTargetRes,
