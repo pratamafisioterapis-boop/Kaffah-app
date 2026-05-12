@@ -76,7 +76,10 @@ const ReportTable = ({ title, data, columns, total, type }) => {
     );
 };
 
-const AccountingReport = ({ dateRange }) => {
+const AccountingReport = ({
+  dateRange,
+  onDateRangeChange
+}) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   
@@ -277,31 +280,45 @@ const AccountingReport = ({ dateRange }) => {
   className="h-9 w-[140px] text-sm pr-8 pointer-events-none"
 />
   <Input 
-    type="date"
-    value={dateRange.startDate}
-    onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-  />
+  type="date"
+  value={dateRange.startDate}
+  onChange={(e) =>
+    onDateRangeChange({
+      ...dateRange,
+      startDate: e.target.value
+    })
+  }
+  className="absolute inset-0 opacity-0 cursor-pointer z-10"
+/>
 </div>
                          </div>
-                         <span className="mb-2 text-slate-400">-</span>
+                         <span className="mt-6 text-slate-400 px-1">-</span>
                          <div className="grid gap-1">
-                            <Label className="text-xs text-slate-500">Akhir</Label>
-                            <div className="relative">
-  <Input 
-    type="text"
-    value={formatDate(dateRange.endDate)}
-    readOnly
-    className="h-9 w-[140px] text-sm pr-8"
-  />
-  <Input 
-    type="date"
-    value={dateRange.endDate}
-    onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-    className="absolute inset-0 opacity-0 cursor-pointer"
-  />
+  <Label className="text-xs text-slate-500">Akhir</Label>
+
+  <div className="relative">
+    
+    <Input
+      type="text"
+      value={formatDate(dateRange.endDate)}
+      readOnly
+      className="h-9 w-[140px] text-sm pr-8 pointer-events-none"
+    />
+
+    <Input
+      type="date"
+      value={dateRange.endDate}
+      onChange={(e) =>
+        onDateRangeChange({
+          ...dateRange,
+          endDate: e.target.value
+        })
+      }
+      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+    />
+
+  </div>
 </div>
-                         </div>
                     </div>
                     <Button onClick={handleExportPDF} variant="outline" className="h-9 border-slate-300 text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4 mr-2" />

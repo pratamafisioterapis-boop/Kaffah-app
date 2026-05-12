@@ -314,7 +314,10 @@ const OwnerFinanceDashboard = () => {
       }}>
              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-1 border border-emerald-100 shadow-lg">
                 <div className="bg-white/95 backdrop-blur rounded-xl p-6">
-                    <AccountingReport dateRange={dateRange} />
+                    <AccountingReport
+  dateRange={dateRange}
+  onDateRangeChange={setDateRange}
+/>
                 </div>
              </div>
           </motion.div>}
