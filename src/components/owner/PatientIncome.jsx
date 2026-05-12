@@ -9,6 +9,8 @@ import { Download, Loader2, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const PatientIncome = () => {
   // Default to current month
@@ -147,27 +149,67 @@ package_tracking_id,
   }, [dateRange]);
 
   const handleDownload = () => {
-    // Simple CSV export logic
-    const headers = ["Nama Pasien", "No RM", "Jumlah Kunjungan", "Total Pendapatan (Est)", "Kunjungan Terakhir"];
-    const rows = incomeData.map(p => [
-      `"${p.patientName}"`,
-      p.mrn,
-      p.visitCount,
-      Math.round(p.totalRevenue), // CSV usually better without currency formatting symbols
-      p.lastVisit
-    ]);
+  const exportData = incomeData.map((item) => ({
+    "Tanggal Daily Recap": item.recapDate
+      ? format(new Date(item.recapDate), 'dd MMM yyyy', { locale: id })
+      : '-',
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    "Nama Pasien": item.patientName,
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `laporan_pendapatan_pasien_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    "Tipe Pasien": item.patientType || '-',
+
+    "Harga Paket":
+      item.packagePrice > 0
+        ? item.packagePrice
+        : 0,
+
+    "Pendapatan":
+      item.totalRevenue || 0
+  }));
+
+  // Buat worksheet
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+  // Auto width column
+  const columnWidths = [
+    { wch: 20 },
+    { wch: 30 },
+    { wch: 20 },
+    { wch: 18 },
+    { wch: 18 }
+  ];
+
+  worksheet['!cols'] = columnWidths;
+
+  // Workbook
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    'Income Report'
+  );
+
+  // Generate excel buffer
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  // Save file
+  const fileData = new Blob(
+    [excelBuffer],
+    {
+      type:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    }
+  );
+
+  saveAs(
+    fileData,
+    `laporan_pendapatan_pasien_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+  );
+};
 
   return (
     <div className="space-y-6">
