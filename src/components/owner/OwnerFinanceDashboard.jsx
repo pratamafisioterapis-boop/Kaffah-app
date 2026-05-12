@@ -370,7 +370,14 @@ const OwnerFinanceDashboard = () => {
                <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} activeClass="bg-cyan-100 text-cyan-700 border-cyan-300" inactiveClass="" />
             </div>
 
-            <Card className="card-premium bg-gradient-owner border-none">
+            <div className="flex justify-end">
+  <GlobalDateRangeFilter
+    dateRange={dateRange}
+    onDateRangeChange={setDateRange}
+  />
+</div>
+
+<Card className="card-premium bg-gradient-owner border-none">
               <CardContent className="p-6 md:p-8">
                 {activeOwnerTab === 'expenditures' && <div className="space-y-6">
                     <div className="flex justify-between items-center">

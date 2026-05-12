@@ -1199,12 +1199,12 @@ export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
     let query = supabase
       .from('owner_expenditures')
       .select(`
-        *,
-        subcategory:accounting_subcategories (
-          id,
-          subcategory_name
-        )
-      `)
+  *,
+  subcategory:sub_category (
+    id,
+    subcategory_name
+  )
+`)
       .order('date', { ascending: false });
 
     if (startDate) query = query.gte('date', startDate);
@@ -1222,12 +1222,12 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
     let query = supabase
       .from('owner_income')
       .select(`
-        *,
-        subcategory:accounting_subcategories (
-          id,
-          subcategory_name
-        )
-      `)
+  *,
+  subcategory:sub_category (
+    id,
+    subcategory_name
+  )
+`)
       .order('date', { ascending: false });
 
     if (startDate) query = query.gte('date', startDate);
@@ -1454,12 +1454,12 @@ export const getExpenses = async () => {
     const { data, error } = await supabase
       .from('owner_expenditures')
       .select(`
-        *,
-        subcategory:accounting_subcategories (
-          id,
-          subcategory_name
-        )
-      `)
+  *,
+  subcategory:sub_category (
+    id,
+    subcategory_name
+  )
+`)
       .order('date', { ascending: false });
 
     if (error) return { error };
@@ -1499,12 +1499,12 @@ export const getAdditionalIncome = async () => {
     const { data, error } = await supabase
       .from('owner_income')
       .select(`
-        *,
-        subcategory:accounting_subcategories (
-          id,
-          subcategory_name
-        )
-      `)
+  *,
+  subcategory:sub_category (
+    id,
+    subcategory_name
+  )
+`)
       .order('date', { ascending: false });
 
     if (error) return { error };

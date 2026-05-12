@@ -100,12 +100,12 @@ if (
   return;
 }
       const payload = {
-        date: formData.date,
-        description: formData.description,
-        amount: Number(formData.amount),
-        input_time: currentTime,
-        sub_category_id: formData.sub_category 
-      };
+  date: formData.date,
+  description: formData.description,
+  amount: Number(formData.amount),
+  input_time: currentTime,
+  sub_category: formData.sub_category
+};
 
       // Add bank account if selected
       if (formData.bank_account_id) {
