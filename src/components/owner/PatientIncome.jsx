@@ -13,9 +13,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const PatientIncome = () => {
   // Default to current month
   const [dateRange, setDateRange] = useState({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date())
-  });
+  startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd')
+});
 
   const [loading, setLoading] = useState(true);
   const [incomeData, setIncomeData] = useState([]);
@@ -24,39 +24,45 @@ const PatientIncome = () => {
 
   useEffect(() => {
     const fetchIncomeData = async () => {
-      if (!dateRange?.from || !dateRange?.to) return;
+      if (!dateRange?.startDate || !dateRange?.endDate) return;
 
       setLoading(true);
       setError(null);
-      console.log("🚀 Starting Fetch Income Data...", { from: dateRange.from, to: dateRange.to });
+     console.log("🚀 Starting Fetch Income Data...", { 
+  startDate: dateRange.startDate, 
+  endDate: dateRange.endDate 
+});
 
       try {
         // Format dates for Supabase (YYYY-MM-DD)
-        const startDate = format(dateRange.from, 'yyyy-MM-dd');
-        const endDate = format(dateRange.to, 'yyyy-MM-dd');
+       const startDate = dateRange.startDate;
+const endDate = dateRange.endDate;
 
         // 1. Fetch Data with Relationships
         // We explicitly select patients and package_tracking to handle relations
         const { data: rawData, error: fetchError } = await supabase
           .from('daily_recaps')
           .select(`
-            id,
-            recap_date,
-            amount,
-            status,
-            patient_id,
-            package_tracking_id,
+  id,
+recap_date,
+amount,
+amount_package,
+patient_type,
+status,
+patient_id,
+package_tracking_id,
             patients!patient_id (
               full_name,
               medical_record_number
             ),
             package_tracking:package_tracking_id (
+            id,
               nominal,
               total_sessions
             )
           `)
           .gte('recap_date', startDate)
-          .lte('recap_date', endDate)
+.lte('recap_date', endDate)
           .not('patient_id', 'is', null) // Filter out records without patients
           .order('recap_date', { ascending: false });
 
@@ -77,66 +83,55 @@ const PatientIncome = () => {
           let source = 'direct';
 
           // Logic: Prioritize direct amount. If 0, try to calculate from package.
-          if (record.amount > 0) {
-            calculatedAmount = Number(record.amount);
-            source = 'direct';
-          } else if (record.package_tracking && record.package_tracking.nominal > 0) {
-            // Avoid division by zero
-            const totalSessions = record.package_tracking.total_sessions || 1;
-            calculatedAmount = Number(record.package_tracking.nominal) / totalSessions;
-            source = 'package_allocation';
-          } else {
-            // Fallback: use 0 if everything fails
-            calculatedAmount = 0;
-            source = 'none';
-          }
+          if (Number(record.amount_package) > 0) {
+  calculatedAmount = Number(record.amount_package);
+  source = 'package_amount';
+
+} else if (Number(record.amount) > 0) {
+  calculatedAmount = Number(record.amount);
+  source = 'direct_amount';
+
+} else {
+  calculatedAmount = 0;
+  source = 'none';
+}
 
           return {
-            ...record,
-            calculatedAmount,
-            source,
-            patientName: record.patients?.full_name || 'Unknown Patient',
-            mrn: record.patients?.medical_record_number || '-'
-          };
+  ...record,
+  calculatedAmount,
+  source,
+
+  patientName: record.patients?.full_name || 'Unknown Patient',
+
+ patientType: record.patient_type || '-',
+
+  packagePrice:
+    record.package_tracking?.nominal || 0
+};
         });
 
         // 3. Group by Patient
-        const patientMap = {};
-
-        processedData.forEach(item => {
-          const pId = item.patient_id;
-          if (!patientMap[pId]) {
-            patientMap[pId] = {
-              patientId: pId,
-              patientName: item.patientName,
-              mrn: item.mrn,
-              visitCount: 0,
-              totalRevenue: 0,
-              lastVisit: item.recap_date
-            };
-          }
-
-          patientMap[pId].visitCount += 1;
-          patientMap[pId].totalRevenue += item.calculatedAmount;
-          
-          // Keep track of most recent visit
-          if (new Date(item.recap_date) > new Date(patientMap[pId].lastVisit)) {
-            patientMap[pId].lastVisit = item.recap_date;
-          }
-        });
-
-        const groupedList = Object.values(patientMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
+        const groupedList = processedData
+  .map(item => ({
+    patientId: item.patient_id,
+    patientName: item.patientName,
+    patientType: item.patientType,
+    packagePrice: item.packagePrice,
+    recapDate: item.recap_date,
+    totalRevenue: item.calculatedAmount
+  }))
+  .sort((a, b) => new Date(b.recapDate) - new Date(a.recapDate));
 
         console.log("📊 Processed Patient List:", groupedList);
 
         // 4. Calculate Summary
         const totalIncome = groupedList.reduce((sum, p) => sum + p.totalRevenue, 0);
-        const totalVisits = groupedList.reduce((sum, p) => sum + p.visitCount, 0);
+        const totalVisits = groupedList.length;
 
         setIncomeData(groupedList);
         setSummary({
           totalIncome,
-          totalPatients: groupedList.length,
+          totalPatients: new Set(groupedList.map(item => item.patientId)).size,
           totalVisits
         });
 
@@ -183,7 +178,11 @@ const PatientIncome = () => {
           <p className="text-muted-foreground">Analisis kontribusi pendapatan dari setiap pasien (Accrual Basis)</p>
         </div>
         <div className="flex items-center gap-2">
-          <DateRangeFilter date={dateRange} setDate={setDateRange} />
+          <DateRangeFilter
+  startDate={dateRange.startDate}
+  endDate={dateRange.endDate}
+  onDateChange={setDateRange}
+/>
           <Button variant="outline" size="icon" onClick={handleDownload} disabled={loading || incomeData.length === 0}>
             <Download className="h-4 w-4" />
           </Button>
@@ -250,50 +249,69 @@ const PatientIncome = () => {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Pasien</TableHead>
-                  <TableHead>No. RM</TableHead>
-                  <TableHead className="text-right">Kunjungan</TableHead>
-                  <TableHead className="text-right">Total Pendapatan</TableHead>
-                  <TableHead className="text-right">Rata-rata / Visit</TableHead>
-                  <TableHead className="text-right">Terakhir Berkunjung</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Memuat data...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : incomeData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      Tidak ada data pendapatan untuk periode ini.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  incomeData.map((patient) => (
-                    <TableRow key={patient.patientId}>
-                      <TableCell className="font-medium">{patient.patientName}</TableCell>
-                      <TableCell>{patient.mrn}</TableCell>
-                      <TableCell className="text-right">{patient.visitCount}</TableCell>
-                      <TableCell className="text-right font-bold text-green-600">
-                        {formatCurrency(patient.totalRevenue)}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatCurrency(patient.totalRevenue / (patient.visitCount || 1))}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {patient.lastVisit ? format(new Date(patient.lastVisit), 'dd MMM yyyy', { locale: id }) : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+  <TableRow>
+    <TableHead>Tanggal Daily Recap</TableHead>
+    <TableHead>Nama Pasien</TableHead>
+    <TableHead>Tipe Pasien</TableHead>
+<TableHead className="text-right">Harga Paket</TableHead>
+<TableHead className="text-right">Pendapatan</TableHead>
+  </TableRow>
+</TableHeader>
+
+<TableBody>
+  {loading ? (
+    <TableRow>
+      <TableCell colSpan={4} className="h-24 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Memuat data...</span>
+        </div>
+      </TableCell>
+    </TableRow>
+  ) : incomeData.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+        Tidak ada data pendapatan untuk periode ini.
+      </TableCell>
+    </TableRow>
+  ) : (
+    incomeData.map((item, index) => (
+      <TableRow key={`${item.patientId}-${index}`}>
+        <TableCell className="font-medium">
+          {item.recapDate
+            ? format(new Date(item.recapDate), 'dd MMM yyyy', { locale: id })
+            : '-'}
+        </TableCell>
+
+        <TableCell className="font-medium">
+          {item.patientName}
+        </TableCell>
+
+        <TableCell>
+  <span
+    className={`px-2 py-1 rounded text-xs font-medium ${
+      item.patientType === 'Paket'
+        ? 'bg-blue-100 text-blue-700'
+        : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    {item.patientType}
+  </span>
+</TableCell>
+
+<TableCell className="text-right font-medium text-blue-600">
+  {item.packagePrice > 0
+    ? formatCurrency(item.packagePrice)
+    : '-'}
+</TableCell>
+
+        <TableCell className="text-right font-bold text-green-600">
+          {formatCurrency(item.totalRevenue)}
+        </TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
             </Table>
           </div>
         </CardContent>

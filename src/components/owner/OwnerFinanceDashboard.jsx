@@ -261,11 +261,7 @@ const OwnerFinanceDashboard = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto items-center">
-            <GlobalDateRangeFilter 
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-            />
-
+            
             <Button onClick={() => {
             fetchOwnerData();
             fetchAdminData();
