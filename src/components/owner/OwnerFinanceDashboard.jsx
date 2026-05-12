@@ -15,6 +15,7 @@ import PatientIncome from '@/components/owner/PatientIncome';
 import GlobalDateRangeFilter from '@/components/shared/GlobalDateRangeFilter';
 import SalaryCalculator from '@/components/owner/SalaryCalculator';
 import PackageHistory from '@/components/owner/PackageHistory'; 
+import PackageFunds from '@/components/owner/PackageFunds';
 import { formatTime } from '@/lib/dateFormatHelpers';
 
 // --- Animated Tab Components ---
@@ -297,6 +298,15 @@ const OwnerFinanceDashboard = () => {
         <TabButton isActive={activeTab === 'owner'} onClick={() => setActiveTab('owner')} label="Owner Accounting" icon={Briefcase} themeColor="bg-teal-500" activeClass="bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
         <TabButton isActive={activeTab === 'admin'} onClick={() => setActiveTab('admin')} label="Admin Accounting" icon={ShieldCheck} themeColor="bg-orange-500" activeClass="bg-orange-50 text-orange-700 shadow-sm ring-1 ring-orange-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
         <TabButton isActive={activeTab === 'patient_income_calc'} onClick={() => setActiveTab('patient_income_calc')} label="Income Calculator" icon={Calculator} themeColor="bg-blue-500" activeClass="bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
+          <TabButton
+  isActive={activeTab === 'package_funds'}
+  onClick={() => setActiveTab('package_funds')}
+  label="Dana Paket"
+  icon={Package}
+  themeColor="bg-cyan-500"
+  activeClass="bg-cyan-50 text-cyan-700 shadow-sm ring-1 ring-cyan-200"
+  inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+/>
       </div>
 
       <AnimatePresence mode="wait">
@@ -576,10 +586,25 @@ const OwnerFinanceDashboard = () => {
       }}>
              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-1 border border-blue-100 shadow-lg">
                 <div className="bg-white/80 backdrop-blur rounded-xl p-6">
-                    <PatientIncome dateRange={dateRange} />
-                </div>
+  <PatientIncome dateRange={dateRange} />
+</div>
              </div>
           </motion.div>}
+          {/* --- PACKAGE FUNDS SECTION --- */}
+{activeTab === 'package_funds' && (
+  <motion.div
+    key="package_funds"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+  >
+    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-1 border border-cyan-100 shadow-lg">
+      <div className="bg-white/90 backdrop-blur rounded-xl p-6">
+        <PackageFunds />
+      </div>
+    </div>
+  </motion.div>
+)}
       </AnimatePresence>
     </div>;
 };
