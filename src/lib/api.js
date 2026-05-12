@@ -1240,9 +1240,10 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
     return { data, success: true, error: null };
   }, 'getOwnerIncome', { retry: true });
 };
-export const getAdminExpenses = async () => {
+export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+
+    let query = supabase
       .from('admin_expenses')
       .select(`
         *,
@@ -1254,8 +1255,25 @@ export const getAdminExpenses = async () => {
         )
       `)
       .order('transaction_date', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('transaction_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('transaction_date', endDate);
+    }
+
+    const { data, error } = await query;
+
     if (error) return { error };
-    return { data, success: true, error: null };
+
+    return {
+      data,
+      success: true,
+      error: null
+    };
+
   }, 'getAdminExpenses', { retry: true });
 };
 export const getAdminIncome = async () => {
@@ -1268,7 +1286,64 @@ export const getAdminIncome = async () => {
     return { data, success: true, error: null };
   }, 'getAdminIncome', { retry: true });
 };
-export const getPatientIncomeFromPackages = async () => ({ data: [] });
+export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
+  return safeQuery(async () => {
+
+    let query = supabase
+      .from('daily_recaps')
+      .select(`
+        id,
+        recap_date,
+        amount,
+        amount_package,
+        package_type,
+        full_name,
+        guest_name
+      `)
+      .or('amount.not.is.null,amount_package.not.is.null')
+      .order('recap_date', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('recap_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('recap_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    const formatted = (data || []).map(item => ({
+      id: item.id,
+
+      date: item.recap_date,
+
+      patient_name:
+        item.full_name ||
+        item.guest_name ||
+        'Tanpa Nama',
+
+      package_name:
+        item.package_type ||
+        'Visit',
+
+      amount:
+        item.amount_package &&
+        Number(item.amount_package) > 0
+          ? Number(item.amount_package)
+          : Number(item.amount || 0)
+    }));
+
+    return {
+      data: formatted,
+      success: true,
+      error: null
+    };
+
+  }, 'getPatientIncomeFromPackages', { retry: true });
+};
 export const createAdminAccount = async () => ({ data: {} });
 export const getOwnerReceivables = async () => {
   return safeQuery(async () => {
@@ -2181,13 +2256,192 @@ export const fetchTotalPatients = async (startDate, endDate) => {
     return { data: uniquePatients.size || 0 };
   }, 'fetchTotalPatients');
 };
-export const getRecentFollowUpLogs = async () => ({ data: [] });
-export const sendPushNotification = async () => ({ data: true });
-export const sendWhatsAppMessageManual = async () => ({ data: true });
-export const getFollowUpQueueFiltered = async () => ({ data: [] });
-export const getJadwalQueueFiltered = async () => ({ data: [] });
-export const getGeneralSettings = async () => ({ data: {} });
-export const getInvoiceSettings = async () => ({ data: {} });
+export const getRecentFollowUpLogs = async () => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase
+      .from('follow_up_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) return { error };
+
+    return {
+      data: data || [],
+      success: true,
+      error: null
+    };
+
+  }, 'getRecentFollowUpLogs', { retry: true });
+};
+
+export const sendPushNotification = async (payload) => {
+  return safeQuery(async () => {
+
+    console.log('PUSH NOTIFICATION:', payload);
+
+    return {
+      data: true,
+      success: true,
+      error: null
+    };
+
+  }, 'sendPushNotification');
+};
+
+export const sendWhatsAppMessageManual = async (payload) => {
+  return safeQuery(async () => {
+
+    console.log('WHATSAPP MANUAL:', payload);
+
+    return {
+      data: true,
+      success: true,
+      error: null
+    };
+
+  }, 'sendWhatsAppMessageManual');
+};
+
+export const getFollowUpQueueFiltered = async ({
+  status = null,
+  follow_up_type = null,
+  startDate = null,
+  endDate = null
+} = {}) => {
+  return safeQuery(async () => {
+
+    let query = supabase
+      .from('follow_up_queue')
+      .select(`
+        *,
+        patient:patients (
+          id,
+          full_name,
+          phone,
+          medical_record_number
+        )
+      `)
+      .order('scheduled_date', { ascending: true });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (follow_up_type) {
+      query = query.eq('follow_up_type', follow_up_type);
+    }
+
+    if (startDate) {
+      query = query.gte('scheduled_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('scheduled_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    return {
+      data: data || [],
+      success: true,
+      error: null
+    };
+
+  }, 'getFollowUpQueueFiltered', { retry: true });
+};
+
+export const getJadwalQueueFiltered = async ({
+  startDate = null,
+  endDate = null,
+  therapistId = null
+} = {}) => {
+  return safeQuery(async () => {
+
+    let query = supabase
+      .from('appointments')
+      .select(`
+        *,
+        patient:patients (
+          id,
+          full_name,
+          phone,
+          medical_record_number
+        ),
+        therapist:physiotherapists (
+          id,
+          name
+        )
+      `)
+      .order('appointment_date', { ascending: true });
+
+    if (startDate) {
+      query = query.gte('appointment_date', `${startDate}T00:00:00`);
+    }
+
+    if (endDate) {
+      query = query.lte('appointment_date', `${endDate}T23:59:59`);
+    }
+
+    if (therapistId) {
+      query = query.eq('therapist_id', therapistId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    return {
+      data: data || [],
+      success: true,
+      error: null
+    };
+
+  }, 'getJadwalQueueFiltered', { retry: true });
+};
+
+export const getGeneralSettings = async () => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase
+      .from('general_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return {
+      data: data || {},
+      success: true,
+      error: null
+    };
+
+  }, 'getGeneralSettings', { retry: true });
+};
+
+export const getInvoiceSettings = async () => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase
+      .from('invoice_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return {
+      data: data || {},
+      success: true,
+      error: null
+    };
+
+  }, 'getInvoiceSettings', { retry: true });
+};
 export const getOperationalOptions = async (category) => {
   return safeQuery(async () => {
     const { data, error } = await supabase
@@ -2448,8 +2702,57 @@ export const getTherapistTimeOff = async (therapistId) => {
 
   }, 'getTherapistTimeOff');
 };
-export const getTherapistPracticeHours = async () => ({ data: [] });
-export const updateTherapistPracticeHours = async () => ({ data: {} });
+export const getTherapistPracticeHours = async (therapistId) => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase.rpc(
+      'get_therapist_practice_hours',
+      {
+        p_therapist_id: therapistId
+      }
+    );
+
+    if (error) return { error };
+
+    return {
+      data: data || [],
+      success: true,
+      error: null
+    };
+
+  }, 'getTherapistPracticeHours', { retry: true });
+};
+
+export const updateTherapistPracticeHours = async ({
+  therapist_id,
+  day_of_week,
+  display_start_time,
+  display_end_time,
+  is_display_active
+}) => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase.rpc(
+      'update_therapist_practice_hours',
+      {
+        p_therapist_id: therapist_id,
+        p_day_of_week: day_of_week,
+        p_display_start_time: display_start_time,
+        p_display_end_time: display_end_time,
+        p_is_display_active: is_display_active
+      }
+    );
+
+    if (error) return { error };
+
+    return {
+      data,
+      success: true,
+      error: null
+    };
+
+  }, 'updateTherapistPracticeHours');
+};
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
     if (!payload?.id) {

@@ -389,16 +389,16 @@ const AccountingReport = ({
               />
 
               <ReportTable 
-                  title="Pemasukan Admin" 
-                  data={data.adminIncome} 
-                  total={subTotalAdminInc} 
-                  type="income"
-                  columns={[
-                      { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
-                      { header: 'Kategori', accessor: 'category' },
-                      { header: 'Deskripsi', accessor: 'description' }
-                  ]}
-              />
+  title="Pemasukan Admin" 
+  data={data.adminIncome} 
+  total={subTotalAdminInc} 
+  type="income"
+  columns={[
+      { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+      { header: 'Kategori', accessor: 'category' },
+      { header: 'Deskripsi', accessor: 'description' }
+  ]}
+/>
 
                <ReportTable 
                   title="Pendapatan Pasien (Paket/Visit)" 
