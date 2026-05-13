@@ -525,10 +525,6 @@ const OwnerFinanceDashboard = () => {
                 accessor: 'transaction_date',
                 render: row => formatDate(row.transaction_date)
               }, {
-                header: 'Time',
-                accessor: 'input_time',
-                render: row => formatTime(row.input_time)
-              }, {
                 header: 'Category',
                 accessor: 'category',
                 render: row => <span className="bg-white/80 px-2 py-1 rounded-md text-xs font-semibold border border-amber-200 text-amber-800">{row.category}</span>

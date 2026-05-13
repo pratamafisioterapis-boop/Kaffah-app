@@ -21,9 +21,8 @@ const PatientIncome = () => {
 
   const [loading, setLoading] = useState(true);
   const [incomeData, setIncomeData] = useState([]);
-  const [summary, setSummary] = useState({ totalIncome: 0, totalPatients: 0, totalVisits: 0 });
   const [error, setError] = useState(null);
-
+const [paymentFilter, setPaymentFilter] = useState('all');
   useEffect(() => {
     const fetchIncomeData = async () => {
       if (!dateRange?.startDate || !dateRange?.endDate) return;
@@ -39,6 +38,20 @@ const PatientIncome = () => {
         // Format dates for Supabase (YYYY-MM-DD)
        const startDate = dateRange.startDate;
 const endDate = dateRange.endDate;
+// Fetch payment methods
+const { data: paymentMethods, error: paymentError } =
+  await supabase
+    .from('operational_options')
+    .select('id, label')
+    .eq('category', 'payment_method');
+
+if (paymentError) throw paymentError;
+
+const paymentMethodMap = {};
+
+paymentMethods?.forEach(method => {
+  paymentMethodMap[method.id] = method.label;
+});
 
         // 1. Fetch Data with Relationships
         // We explicitly select patients and package_tracking to handle relations
@@ -49,6 +62,7 @@ const endDate = dateRange.endDate;
 recap_date,
 amount,
 amount_package,
+payment_method,
 patient_type,
 status,
 patient_id,
@@ -73,12 +87,29 @@ package_tracking_id,
         console.log("📦 Raw Data Fetched:", rawData?.length, "records");
 
         if (!rawData || rawData.length === 0) {
-          setIncomeData([]);
-          setSummary({ totalIncome: 0, totalPatients: 0, totalVisits: 0 });
-          setLoading(false);
-          return;
-        }
+  setIncomeData([]);
+  setLoading(false);
+  return;
+}
+// Mapping payment method package
+const packagePaymentMap = {};
 
+rawData.forEach(item => {
+  const hasPayment =
+  Number(item.amount || 0) > 0 ||
+  Number(item.amount_package || 0) > 0;
+
+  if (
+    item.package_tracking_id &&
+    hasPayment &&
+    item.payment_method
+  ) {
+    packagePaymentMap[item.package_tracking_id] =
+  paymentMethodMap[item.payment_method] ||
+  item.payment_method ||
+  '-';
+  }
+});
         // 2. Process & Calculate Revenue (Accrual Basis)
         const processedData = rawData.map(record => {
           let calculatedAmount = 0;
@@ -97,11 +128,18 @@ package_tracking_id,
   calculatedAmount = 0;
   source = 'none';
 }
-
+const paymentMethod =
+  record.package_tracking_id
+    ? packagePaymentMap[record.package_tracking_id] || '-'
+    : paymentMethodMap[record.payment_method] ||
+      record.payment_method ||
+      '-';
           return {
   ...record,
   calculatedAmount,
+  realAmount: Number(record.amount || 0),
   source,
+  paymentMethod,
 
   patientName: record.patients?.full_name || 'Unknown Patient',
 
@@ -118,24 +156,20 @@ package_tracking_id,
     patientId: item.patient_id,
     patientName: item.patientName,
     patientType: item.patientType,
+    paymentMethod: item.paymentMethod,
     packagePrice: item.packagePrice,
     recapDate: item.recap_date,
-    totalRevenue: item.calculatedAmount
+
+    totalRevenue: item.calculatedAmount,
+
+    realAmount: item.realAmount
   }))
   .sort((a, b) => new Date(b.recapDate) - new Date(a.recapDate));
 
         console.log("📊 Processed Patient List:", groupedList);
 
         // 4. Calculate Summary
-        const totalIncome = groupedList.reduce((sum, p) => sum + p.totalRevenue, 0);
-        const totalVisits = groupedList.length;
-
         setIncomeData(groupedList);
-        setSummary({
-          totalIncome,
-          totalPatients: new Set(groupedList.map(item => item.patientId)).size,
-          totalVisits
-        });
 
       } catch (err) {
         console.error("❌ Error fetching patient income:", err);
@@ -147,7 +181,37 @@ package_tracking_id,
 
     fetchIncomeData();
   }, [dateRange]);
+const paymentMethodOptions = [
+  'all',
+  ...new Set(
+    incomeData
+      .map(item => item.paymentMethod)
+      .filter(Boolean)
+  )
+];
 
+const filteredIncomeData =
+  paymentFilter === 'all'
+    ? incomeData
+    : incomeData.filter(
+        item => item.paymentMethod === paymentFilter
+      );
+      const filteredSummary = {
+  totalIncome: filteredIncomeData.reduce(
+    (sum, item) => sum + item.totalRevenue,
+    0
+  ),
+
+  totalPatients: new Set(
+    filteredIncomeData.map(item => item.patientId)
+  ).size,
+
+  totalVisits: filteredIncomeData.length
+};
+const realIncome = filteredIncomeData.reduce(
+  (sum, item) => sum + Number(item.realAmount || 0),
+  0
+);
   const handleDownload = () => {
   const exportData = incomeData.map((item) => ({
     "Tanggal Daily Recap": item.recapDate
@@ -157,6 +221,7 @@ package_tracking_id,
     "Nama Pasien": item.patientName,
 
     "Tipe Pasien": item.patientType || '-',
+    "Payment Method": item.paymentMethod || '-',
 
     "Harga Paket":
       item.packagePrice > 0
@@ -219,13 +284,37 @@ package_tracking_id,
           <h2 className="text-2xl font-bold tracking-tight">Laporan Pendapatan per Pasien</h2>
           <p className="text-muted-foreground">Analisis kontribusi pendapatan dari setiap pasien (Accrual Basis)</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <DateRangeFilter
   startDate={dateRange.startDate}
   endDate={dateRange.endDate}
   onDateChange={setDateRange}
 />
-          <Button variant="outline" size="icon" onClick={handleDownload} disabled={loading || incomeData.length === 0}>
+          <div className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm">
+  <div className="flex flex-col">
+    <span className="text-xs text-muted-foreground">
+      Payment Method
+    </span>
+
+    <select
+      value={paymentFilter}
+      onChange={(e) => setPaymentFilter(e.target.value)}
+      className="h-10 min-w-[140px] bg-transparent text-sm outline-none"
+    >
+      {paymentMethodOptions.map(method => (
+        <option key={method} value={method}>
+          {method === 'all'
+            ? 'Semua Payment'
+            : method}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+  
+
+
+<Button variant="outline" size="icon" onClick={handleDownload} disabled={loading || incomeData.length === 0}>
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -240,7 +329,7 @@ package_tracking_id,
       )}
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pendapatan</CardTitle>
@@ -249,11 +338,32 @@ package_tracking_id,
             {loading ? (
                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(summary.totalIncome)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(filteredSummary.totalIncome)}</div>
             )}
             <p className="text-xs text-muted-foreground">Estimasi revenue (termasuk alokasi paket)</p>
           </CardContent>
         </Card>
+        <Card>
+  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <CardTitle className="text-sm font-medium">
+      Pendapatan Real
+    </CardTitle>
+  </CardHeader>
+
+  <CardContent>
+    {loading ? (
+      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+    ) : (
+      <div className="text-2xl font-bold text-emerald-600">
+        {formatCurrency(realIncome)}
+      </div>
+    )}
+
+    <p className="text-xs text-muted-foreground">
+      Hanya amount langsung dari daily recaps
+    </p>
+  </CardContent>
+</Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pasien Aktif</CardTitle>
@@ -262,7 +372,7 @@ package_tracking_id,
             {loading ? (
                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
-              <div className="text-2xl font-bold">{summary.totalPatients}</div>
+              <div className="text-2xl font-bold">{filteredSummary.totalPatients}</div>
             )}
             <p className="text-xs text-muted-foreground">Pasien dengan kunjungan di periode ini</p>
           </CardContent>
@@ -275,7 +385,7 @@ package_tracking_id,
             {loading ? (
                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
-              <div className="text-2xl font-bold">{summary.totalVisits}</div>
+              <div className="text-2xl font-bold">{filteredSummary.totalVisits}</div>
             )}
             <p className="text-xs text-muted-foreground">Jumlah sesi terapi selesai</p>
           </CardContent>
@@ -295,6 +405,7 @@ package_tracking_id,
     <TableHead>Tanggal Daily Recap</TableHead>
     <TableHead>Nama Pasien</TableHead>
     <TableHead>Tipe Pasien</TableHead>
+    <TableHead>Payment Method</TableHead>
 <TableHead className="text-right">Harga Paket</TableHead>
 <TableHead className="text-right">Pendapatan</TableHead>
   </TableRow>
@@ -310,14 +421,14 @@ package_tracking_id,
         </div>
       </TableCell>
     </TableRow>
-  ) : incomeData.length === 0 ? (
+  ) : filteredIncomeData.length === 0 ? (
     <TableRow>
       <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
         Tidak ada data pendapatan untuk periode ini.
       </TableCell>
     </TableRow>
   ) : (
-    incomeData.map((item, index) => (
+    filteredIncomeData.map((item, index) => (
       <TableRow key={`${item.patientId}-${index}`}>
         <TableCell className="font-medium">
           {item.recapDate
@@ -338,6 +449,11 @@ package_tracking_id,
     }`}
   >
     {item.patientType}
+  </span>
+</TableCell>
+<TableCell>
+  <span className="font-medium text-slate-700">
+    {item.paymentMethod || '-'}
   </span>
 </TableCell>
 
