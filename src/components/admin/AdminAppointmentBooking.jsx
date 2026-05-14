@@ -219,12 +219,12 @@ const formattedDate = date
     </div>
 
     {/* RIGHT SIDE */}
-    <div className="flex items-center gap-3 ml-auto w-full md:w-auto min-w-0 overflow-hidden">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 ml-auto w-full md:w-auto">
 {/* Bablast Toggle */}
-<div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
+<div className="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shrink-0">
 
   <span className="text-sm font-medium text-slate-700">
-    Bablast
+    WaAuto
   </span>
 
   <button
@@ -298,7 +298,7 @@ const formattedDate = date
       </Button>
 
       {/* Date Controller */}
-      <div className="flex items-center gap-1 min-w-0 w-full overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+      <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
