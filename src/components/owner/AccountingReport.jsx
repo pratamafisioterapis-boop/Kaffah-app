@@ -270,42 +270,53 @@ const AccountingReport = ({
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 items-end">
                     <div className="flex items-center gap-2">
-                         <div className="grid gap-1">
-                            <Label className="text-xs text-slate-500">Mulai</Label>
-                            <div className="relative">
-  <Input 
-  type="text"
-  value={formatDate(dateRange.startDate)}
-  readOnly
-  className="h-9 w-[140px] text-sm pr-8 pointer-events-none"
-/>
-  <Input 
-  type="date"
-  value={dateRange.startDate}
-  onChange={(e) =>
-    onDateRangeChange({
-      ...dateRange,
-      startDate: e.target.value
-    })
-  }
-  className="absolute inset-0 opacity-0 cursor-pointer z-10"
-/>
+  
+  <div className="grid gap-1">
+  <Label className="text-xs text-slate-500">Mulai</Label>
+
+  <div className="relative">
+    <Input
+      type="text"
+      value={formatDate(dateRange.startDate)}
+      readOnly
+      className="h-9 w-[140px] text-sm cursor-pointer"
+      onClick={() =>
+        document.getElementById('start-date-picker')?.showPicker()
+      }
+    />
+
+    <Input
+      id="start-date-picker"
+      type="date"
+      value={dateRange.startDate}
+      onChange={(e) =>
+        onDateRangeChange({
+          ...dateRange,
+          startDate: e.target.value
+        })
+      }
+      className="absolute inset-0 opacity-0 pointer-events-none"
+    />
+  </div>
 </div>
-                         </div>
-                         <span className="mt-6 text-slate-400 px-1">-</span>
-                         <div className="grid gap-1">
+  <span className="mt-6 text-slate-400 px-1">-</span>
+
+  <div className="grid gap-1">
   <Label className="text-xs text-slate-500">Akhir</Label>
 
   <div className="relative">
-    
     <Input
       type="text"
       value={formatDate(dateRange.endDate)}
       readOnly
-      className="h-9 w-[140px] text-sm pr-8 pointer-events-none"
+      className="h-9 w-[140px] text-sm cursor-pointer"
+      onClick={() =>
+        document.getElementById('end-date-picker')?.showPicker()
+      }
     />
 
     <Input
+      id="end-date-picker"
       type="date"
       value={dateRange.endDate}
       onChange={(e) =>
@@ -314,12 +325,12 @@ const AccountingReport = ({
           endDate: e.target.value
         })
       }
-      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+      className="absolute inset-0 opacity-0 pointer-events-none"
     />
-
   </div>
 </div>
-                    </div>
+
+</div>
                     <Button onClick={handleExportPDF} variant="outline" className="h-9 border-slate-300 text-slate-700 hover:bg-slate-50">
                         <Download className="w-4 h-4 mr-2" />
                         Export PDF
