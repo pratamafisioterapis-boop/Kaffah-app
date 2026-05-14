@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  RefreshCw,
   AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -287,15 +286,6 @@ const formattedDate = date
   </button>
 
 </div>
-      {/* Refresh */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => fetchDayData(date)}
-        disabled={isRefreshing}
-      >
-        <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-      </Button>
 
       {/* Date Controller */}
       <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
