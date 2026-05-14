@@ -345,7 +345,10 @@ const OwnerFinanceDashboard = () => {
       }}>
              <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-2xl p-1 border border-violet-100 shadow-lg">
                 <div className="bg-white/95 backdrop-blur rounded-xl p-6">
-                    <SalaryCalculator dateRange={dateRange} />
+                    <SalaryCalculator
+  dateRange={dateRange}
+  setDateRange={setDateRange}
+/>
                 </div>
              </div>
           </motion.div>}

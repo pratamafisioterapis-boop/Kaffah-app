@@ -25,7 +25,10 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
-const SalaryCalculator = ({ dateRange }) => {
+const SalaryCalculator = ({ dateRange, setDateRange }) => {
+  useEffect(() => {
+  console.log('DATE RANGE UPDATED:', dateRange);
+}, [dateRange]);
   const { toast } = useToast();
   
   // Data State
@@ -83,8 +86,8 @@ const SalaryCalculator = ({ dateRange }) => {
       if (!therapist) throw new Error("Therapist not found");
 
       // Calculate Dates
-      const startDateStr = dateRange?.start;
-const endDateStr = dateRange?.end;
+      const startDateStr = dateRange?.startDate;
+const endDateStr = dateRange?.endDate;
 
       // Fetch Data
       const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
@@ -170,9 +173,9 @@ const handlePeriodeIni = () => {
   const start = new Date(today.getFullYear(), today.getMonth() - 1, 28);
 
   setDateRange({
-    start: format(start, 'yyyy-MM-dd'),
-    end: format(end, 'yyyy-MM-dd')
-  });
+  startDate: format(start, 'yyyy-MM-dd'),
+  endDate: format(end, 'yyyy-MM-dd')
+});
 };
   return (
     <div className="space-y-6">
@@ -207,53 +210,90 @@ const handlePeriodeIni = () => {
 
             <div className="space-y-2">
   <Label>Tanggal Mulai</Label>
+
   <div className="relative">
     <Input
       type="text"
-      value={dateRange?.start ? format(new Date(dateRange.start), 'dd/MM/yyyy') : ''}
-      readOnly
-      className="pointer-events-none"
-    />
-    <Input
-      type="date"
-      value={dateRange.start}
-      onChange={(e) =>
-        setDateRange((prev) => ({
-          ...prev,
-          start: e.target.value,
-        }))
+      value={
+        dateRange?.startDate
+          ? format(new Date(dateRange.startDate), 'dd/MM/yyyy')
+          : ''
       }
-      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+      readOnly
+      className="h-10 cursor-pointer"
+      onClick={() =>
+        document.getElementById('salary-start-date')?.showPicker()
+      }
+    />
+
+    <Input
+      id="salary-start-date"
+      type="date"
+      value={dateRange?.startDate || ''}
+      onChange={(e) => {
+  console.log('START CHANGED:', e.target.value);
+
+  setDateRange((prev) => {
+    const updated = {
+      ...prev,
+      startDate: e.target.value
+    };
+
+    console.log('NEW STATE:', updated);
+
+    return updated;
+  });
+}}
+      className="absolute inset-0 opacity-0 pointer-events-none"
     />
   </div>
 </div>
 
 <div className="space-y-2">
   <Label>Tanggal Selesai</Label>
+
   <div className="relative">
     <Input
       type="text"
-      value={dateRange?.end ? format(new Date(dateRange.end), 'dd/MM/yyyy') : ''}
-      readOnly
-      className="pointer-events-none"
-    />
-    <Input
-      type="date"
-      value={dateRange.end}
-      onChange={(e) =>
-        setDateRange((prev) => ({
-          ...prev,
-          end: e.target.value,
-        }))
+      value={
+        dateRange?.endDate
+          ? format(new Date(dateRange.endDate), 'dd/MM/yyyy')
+          : ''
       }
-      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+      readOnly
+      className="h-10 cursor-pointer"
+      onClick={() =>
+        document.getElementById('salary-end-date')?.showPicker()
+      }
+    />
+
+    <Input
+      id="salary-end-date"
+      type="date"
+      value={dateRange?.endDate || ''}
+      onChange={(e) => {
+  console.log('END CHANGED:', e.target.value);
+
+  setDateRange((prev) => {
+    const updated = {
+      ...prev,
+      endDate: e.target.value
+    };
+
+    console.log('NEW STATE:', updated);
+
+    return updated;
+  });
+}}
+      className="absolute inset-0 opacity-0 pointer-events-none"
     />
   </div>
 </div>
 <Button 
    onClick={handlePeriodeIni}
    className={`w-full ${
-     dateRange?.start?.endsWith('-28') && dateRange?.end?.endsWith('-27')
+     dateRange?.startDate?.endsWith('-28') &&
+dateRange?.endDate?.endsWith('-27')
        ? 'bg-blue-600 text-white hover:bg-blue-700'
        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
    }`}
