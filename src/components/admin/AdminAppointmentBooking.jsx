@@ -52,12 +52,28 @@ const AdminAppointmentBooking = () => {
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
+  const [isBablastEnabled, setIsBablastEnabled] = useState(false);
 const formattedDate = date
   ? format(date, "EEE, dd MMM yy", { locale: idLocale })
   : '';
   useEffect(() => {
-    loadInitialData();
-  }, [user, userDetails]);
+
+  loadInitialData();
+
+  const fetchWASettings = async () => {
+    const { data } = await supabase
+      .from('wa_settings')
+      .select('enabled')
+      .single();
+
+    if (data) {
+      setIsBablastEnabled(data.enabled);
+    }
+  };
+
+  fetchWASettings();
+
+}, [user, userDetails]);
 
   useEffect(() => {
   if (date) {
@@ -204,7 +220,73 @@ const formattedDate = date
 
     {/* RIGHT SIDE */}
     <div className="flex items-center gap-3 ml-auto w-full md:w-auto min-w-0 overflow-hidden">
+{/* Bablast Toggle */}
+<div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
 
+  <span className="text-sm font-medium text-slate-700">
+    Bablast
+  </span>
+
+  <button
+    onClick={async () => {
+
+  // ambil current row
+  const { data: current } = await supabase
+    .from('wa_settings')
+    .select('id, enabled')
+    .single();
+
+  if (!current) return;
+
+  const newValue = !current.enabled;
+
+  const { data, error } = await supabase
+    .from('wa_settings')
+    .update({
+      enabled: newValue,
+      updated_at: new Date().toISOString(),
+
+      ...(newValue && {
+        last_enabled_at: new Date().toISOString()
+      })
+    })
+    .eq('id', current.id)
+    .select()
+    .single();
+
+  if (!error && data) {
+
+    setIsBablastEnabled(data.enabled);
+
+    toast({
+      title: data.enabled
+        ? 'Bablast Aktif'
+        : 'Bablast Nonaktif',
+
+      description: data.enabled
+        ? 'WhatsApp otomatis diaktifkan'
+        : 'WhatsApp otomatis dimatikan'
+    });
+
+  }
+
+}}
+    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+      isBablastEnabled
+        ? 'bg-green-500'
+        : 'bg-gray-300'
+    }`}
+  >
+    <span
+      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+        isBablastEnabled
+          ? 'translate-x-8'
+          : 'translate-x-1'
+      }`}
+    />
+  </button>
+
+</div>
       {/* Refresh */}
       <Button
         variant="outline"

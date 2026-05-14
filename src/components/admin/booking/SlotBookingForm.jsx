@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, User, Phone, FileText, Clock, CalendarDays, AlertCircle, Search, ChevronDown, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -58,6 +59,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [isBablastEnabled, setIsBablastEnabled] = useState(false);
 
   const isLeave = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
 
@@ -68,7 +70,22 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   useEffect(() => {
     loadPatients();
   }, []);
+useEffect(() => {
 
+  const fetchWASettings = async () => {
+    const { data } = await supabase
+      .from('wa_settings')
+      .select('enabled')
+      .single();
+
+    if (data) {
+      setIsBablastEnabled(data.enabled);
+    }
+  };
+
+  fetchWASettings();
+
+}, []);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
@@ -193,20 +210,23 @@ setPackageInfo(pkg);
           }
       }
 
-      const result = await bookAppointmentSafe({
-        p_therapist_id: therapist.id,
-        p_clinic_id: therapist.clinic_id,
-        p_appointment_date: appointmentDate,
-        p_duration_minutes: formData.duration,
-        p_status: 'confirmed',
-        p_notes: formData.notes,
-        p_patient_id: formData.patient_type === 'registered' ? formData.patient_id : null,
-        p_guest_name: formData.patient_type === 'guest' ? formData.guest_name : null,
-        p_guest_phone: formData.patient_type === 'guest' ? formData.guest_phone : null,
-        p_service_id: null,
-        p_is_homecare: formData.is_homecare,
-        p_is_manual: false
-      });
+     const result = await bookAppointmentSafe({
+  p_therapist_id: therapist.id,
+  p_clinic_id: therapist.clinic_id,
+  p_appointment_date: appointmentDate,
+  p_duration_minutes: formData.duration,
+  p_status: 'confirmed',
+  p_notes: formData.notes,
+  p_patient_id: formData.patient_type === 'registered' ? formData.patient_id : null,
+  p_guest_name: formData.patient_type === 'guest' ? formData.guest_name : null,
+  p_guest_phone: formData.patient_type === 'guest' ? formData.guest_phone : null,
+  p_service_id: null,
+  p_is_homecare: formData.is_homecare,
+  p_is_manual: false,
+
+  // 🔥 TAMBAHAN
+  p_disable_whatsapp: !isBablastEnabled
+});
 
       if (!result || result.error) throw result?.error || new Error("Gagal menyimpan jadwal");
       
