@@ -1280,9 +1280,17 @@ export const getAdminIncome = async () => {
   return safeQuery(async () => {
     const { data, error } = await supabase
       .from('admin_income')
-      .select('*')
+      .select(`
+        *,
+        subcategory:sub_category (
+          id,
+          subcategory_name
+        )
+      `)
       .order('date', { ascending: false });
+
     if (error) return { error };
+
     return { data, success: true, error: null };
   }, 'getAdminIncome', { retry: true });
 };
@@ -1297,8 +1305,18 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         amount,
         amount_package,
         package_type,
-        full_name,
-        guest_name
+        patient_type,
+        guest_name,
+
+        patient:patients!patient_id (
+          id,
+          full_name
+        ),
+
+        actual_patient:patients!actual_patient_id (
+          id,
+          full_name
+        )
       `)
       .or('amount.not.is.null,amount_package.not.is.null')
       .order('recap_date', { ascending: false });
@@ -1315,17 +1333,35 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
 
     if (error) return { error };
 
+    // 🔥 ambil label operational options
+    const { data: options } = await supabase
+      .from('operational_options')
+      .select('id, label')
+      .eq('is_active', true);
+
+    const optionsMap = (options || []).reduce((acc, item) => {
+      acc[item.id] = item.label;
+      return acc;
+    }, {});
+
     const formatted = (data || []).map(item => ({
       id: item.id,
 
       date: item.recap_date,
 
       patient_name:
-        item.full_name ||
+        item.actual_patient?.full_name ||
+        item.patient?.full_name ||
         item.guest_name ||
         'Tanpa Nama',
 
+      patient_type:
+        optionsMap[item.patient_type] ||
+        item.patient_type ||
+        '-',
+
       package_name:
+        optionsMap[item.package_type] ||
         item.package_type ||
         'Visit',
 

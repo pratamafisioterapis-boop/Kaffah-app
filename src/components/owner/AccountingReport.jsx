@@ -14,6 +14,7 @@ import {
   getPatientIncomeFromPackages 
 } from '@/lib/api';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 import 'jspdf-autotable';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -154,7 +155,151 @@ const AccountingReport = ({
 
   return format(date, 'dd/MM/yyyy');
 };
+const handleExportExcel = () => {
+  // =========================
+  // GABUNG PEMASUKAN
+  // =========================
+  const combinedIncome = [
+    ...data.ownerIncome.map(item => ({
+      tanggal: formatDate(item.date),
+      sumber: 'Pemasukan Owner',
+      kategori: item.category || '-',
+      deskripsi: item.description || '-',
+      nama: '-',
+      paket: '-',
+      jumlah: Number(item.amount) || 0
+    })),
 
+    ...data.adminIncome.map(item => ({
+      tanggal: formatDate(item.transaction_date || item.date),
+      sumber: 'Pemasukan Admin',
+      kategori: item.category || '-',
+      deskripsi: item.description || '-',
+      nama: '-',
+      paket: '-',
+      jumlah: Number(item.amount) || 0
+    })),
+
+    ...data.patientIncome.map(item => ({
+      tanggal: formatDate(item.date),
+      sumber: 'Pendapatan Pasien',
+      kategori: '-',
+      deskripsi: '-',
+      nama: item.patient_name || '-',
+      paket: item.package_name || '-',
+      jumlah: Number(item.amount) || 0
+    }))
+  ];
+  combinedIncome.sort((a, b) => {
+  const [dayA, monthA, yearA] = a.tanggal.split('/');
+  const [dayB, monthB, yearB] = b.tanggal.split('/');
+
+  const dateA = new Date(yearA, monthA - 1, dayA);
+  const dateB = new Date(yearB, monthB - 1, dayB);
+
+  return dateA - dateB;
+});
+
+  // =========================
+  // GABUNG PENGELUARAN
+  // =========================
+  const combinedExpenses = [
+    ...data.ownerExpenses.map(item => ({
+      tanggal: formatDate(item.date),
+      sumber: 'Pengeluaran Owner',
+      kategori: item.category || '-',
+      deskripsi: item.description || '-',
+      jumlah: Number(item.amount) || 0
+    })),
+
+    ...data.adminExpenses.map(item => ({
+      tanggal: formatDate(item.transaction_date || item.date),
+      sumber: 'Pengeluaran Admin',
+      kategori: item.category || '-',
+      deskripsi: item.description || '-',
+      jumlah: Number(item.amount) || 0
+    }))
+  ];
+combinedExpenses.sort((a, b) => {
+  const [dayA, monthA, yearA] = a.tanggal.split('/');
+  const [dayB, monthB, yearB] = b.tanggal.split('/');
+
+  const dateA = new Date(yearA, monthA - 1, dayA);
+  const dateB = new Date(yearB, monthB - 1, dayB);
+
+  return dateA - dateB;
+});
+  // =========================
+  // WORKBOOK
+  // =========================
+  const workbook = XLSX.utils.book_new();
+
+  // =========================
+  // SHEET PEMASUKAN
+  // =========================
+  const incomeSheet = XLSX.utils.json_to_sheet(
+  combinedIncome.map(item => ({
+    ...item,
+    jumlah: `Rp ${new Intl.NumberFormat('id-ID').format(item.jumlah)}`
+  }))
+);
+
+  XLSX.utils.sheet_add_aoa(
+    incomeSheet,
+    [
+      [],
+      ['TOTAL PEMASUKAN', totalIncome]
+    ],
+    { origin: -1 }
+  );
+
+  // =========================
+  // SHEET PENGELUARAN
+  // =========================
+  const expenseSheet = XLSX.utils.json_to_sheet(
+  combinedExpenses.map(item => ({
+    ...item,
+    jumlah: `Rp ${new Intl.NumberFormat('id-ID').format(item.jumlah)}`
+  }))
+);
+
+  XLSX.utils.sheet_add_aoa(
+    expenseSheet,
+    [
+      [],
+      ['TOTAL PENGELUARAN', totalExpenses]
+    ],
+    { origin: -1 }
+  );
+
+  // =========================
+  // SHEET RINGKASAN
+  // =========================
+  const summarySheet = XLSX.utils.aoa_to_sheet([
+    ['LAPORAN AKUNTANSI'],
+    [],
+    ['Periode', `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`],
+    [],
+    ['Total Pemasukan', totalIncome],
+    ['Total Pengeluaran', totalExpenses],
+    ['Net Profit', netProfit]
+  ]);
+
+  // =========================
+  // APPEND
+  // =========================
+  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+  XLSX.utils.book_append_sheet(workbook, incomeSheet, 'Pemasukan');
+  XLSX.utils.book_append_sheet(workbook, expenseSheet, 'Pengeluaran');
+
+  // =========================
+  // EXPORT
+  // =========================
+  XLSX.writeFile(
+    workbook,
+    `laporan_akuntansi_${dateRange.startDate}_${dateRange.endDate}.xlsx`
+  );
+};
   const handleExportPDF = () => {
     const doc = new jsPDF();
     
@@ -335,6 +480,14 @@ const AccountingReport = ({
                         <Download className="w-4 h-4 mr-2" />
                         Export PDF
                     </Button>
+                    <Button
+  onClick={handleExportExcel}
+  variant="outline"
+  className="h-9 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+>
+  <Download className="w-4 h-4 mr-2" />
+  Export Excel
+</Button>
                 </div>
             </div>
         </CardContent>
@@ -393,10 +546,11 @@ const AccountingReport = ({
                   total={subTotalOwnerInc} 
                   type="income"
                   columns={[
-                      { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-                      { header: 'Kategori', accessor: 'category' },
-                      { header: 'Deskripsi', accessor: 'description' }
-                  ]}
+    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+    { header: 'Kategori', accessor: 'category' },
+    { header: 'Sub Category', accessor: 'subcategory' },
+    { header: 'Deskripsi', accessor: 'description' }
+]}
               />
 
               <ReportTable 
@@ -405,10 +559,11 @@ const AccountingReport = ({
   total={subTotalAdminInc} 
   type="income"
   columns={[
-      { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-      { header: 'Kategori', accessor: 'category' },
-      { header: 'Deskripsi', accessor: 'description' }
-  ]}
+    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+    { header: 'Kategori', accessor: 'category' },
+    { header: 'Sub Category', accessor: 'subcategory' },
+    { header: 'Deskripsi', accessor: 'description' }
+]}
 />
 
                <ReportTable 
@@ -417,10 +572,14 @@ const AccountingReport = ({
                   total={subTotalPatientInc} 
                   type="income"
                   columns={[
-                      { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-                      { header: 'Pasien', accessor: 'patient_name' },
-                      { header: 'Paket', accessor: 'package_name' }
-                  ]}
+    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+    { header: 'Pasien', accessor: 'patient_name' },
+    {
+  header: 'Tipe Pasien',
+  accessor: 'patient_type'
+},
+    { header: 'Paket', accessor: 'package_name' }
+]}
               />
           </div>
 
@@ -437,10 +596,11 @@ const AccountingReport = ({
                   total={subTotalOwnerExp} 
                   type="expense"
                   columns={[
-                      { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-                      { header: 'Kategori', accessor: 'category' },
-                      { header: 'Deskripsi', accessor: 'description' }
-                  ]}
+    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+    { header: 'Kategori', accessor: 'category' },
+    { header: 'Sub Category', accessor: 'subcategory' },
+    { header: 'Deskripsi', accessor: 'description' }
+]}
               />
 
               <ReportTable 
@@ -449,10 +609,11 @@ const AccountingReport = ({
                   total={subTotalAdminExp} 
                   type="expense"
                   columns={[
-                      { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
-                      { header: 'Kategori', accessor: 'category' },
-                      { header: 'Deskripsi', accessor: 'description' }
-                  ]}
+    { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
+    { header: 'Kategori', accessor: 'category' },
+    { header: 'Sub Category', accessor: 'subcategory' },
+    { header: 'Deskripsi', accessor: 'description' }
+]}
               />
           </div>
       </div>
