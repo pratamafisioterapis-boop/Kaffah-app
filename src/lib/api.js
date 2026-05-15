@@ -1268,30 +1268,74 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
 
     if (error) return { error };
 
+    // 🔥 ambil subcategory manual
+    const { data: subcategories } = await supabase
+      .from('accounting_subcategories')
+      .select('id, subcategory_name');
+
+    const subMap = (subcategories || []).reduce((acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    }, {});
+
+    const enriched = (data || []).map(item => ({
+      ...item,
+      subcategory: item.sub_category
+        ? subMap[item.sub_category] || null
+        : null
+    }));
+
     return {
-      data,
+      data: enriched,
       success: true,
       error: null
     };
 
   }, 'getAdminExpenses', { retry: true });
 };
-export const getAdminIncome = async () => {
+export const getAdminIncome = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+
+    let query = supabase
       .from('admin_income')
-      .select(`
-        *,
-        subcategory:sub_category (
-          id,
-          subcategory_name
-        )
-      `)
+      .select('*')
       .order('date', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('date', endDate);
+    }
+
+    const { data, error } = await query;
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    // 🔥 ambil semua subcategory manual
+    const { data: subcategories } = await supabase
+      .from('accounting_subcategories')
+      .select('id, subcategory_name');
+
+    const subMap = (subcategories || []).reduce((acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    }, {});
+
+    const enriched = (data || []).map(item => ({
+      ...item,
+      subcategory: item.sub_category
+        ? subMap[item.sub_category] || null
+        : null
+    }));
+
+    return {
+      data: enriched,
+      success: true,
+      error: null
+    };
+
   }, 'getAdminIncome', { retry: true });
 };
 export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
@@ -1700,12 +1744,13 @@ export const updateAdminIncome = async (id, payload) => {
     const { data, error } = await supabase
       .from('admin_income')
       .update({
-        date: payload.date,
-        amount: payload.amount,
-        category: payload.category,
-        description: payload.description || null,
-        updated_at: new Date().toISOString()
-      })
+  date: payload.date,
+  amount: payload.amount,
+  category: payload.category,
+  sub_category: payload.sub_category || null,
+  description: payload.description || null,
+  updated_at: new Date().toISOString()
+})
       .eq('id', id)
       .select()
       .single();
@@ -1718,13 +1763,14 @@ export const createAdminIncome = async (payload) => {
     const { data, error } = await supabase
       .from('admin_income')
       .insert({
-        date: payload.date,
-        amount: payload.amount,
-        category: payload.category,
-        description: payload.description || null,
-        created_by: payload.created_by || null,
-        created_at: new Date().toISOString()
-      })
+  date: payload.date,
+  amount: payload.amount,
+  category: payload.category,
+  sub_category: payload.sub_category || null,
+  description: payload.description || null,
+  created_by: payload.created_by || null,
+  created_at: new Date().toISOString()
+})
       .select()
       .single();
     if (error) return { error };
