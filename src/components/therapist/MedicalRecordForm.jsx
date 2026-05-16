@@ -166,9 +166,9 @@ const MedicalRecordForm = ({ therapist }) => {
   };
 
   const patientOptions = patients.map(p => ({
-     value: p.id,
-     label: `${p.full_name} (${p.rm_number})`
-  }));
+  value: p.id,
+  label: `${p.full_name} (${p.medical_record_number || '-'})`
+}));
 
   if (initialLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin" /></div>;
 

@@ -457,10 +457,12 @@ useEffect(() => {
              
              <div className="flex flex-col">
                <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight capitalize flex items-center gap-2">
-                 {location.pathname.includes('/dashboard')
-                    ? 'Dashboard'
-                    : location.pathname.split('/').pop().replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}
-               </h1>
+  {location.pathname.includes('/records/new')
+    ? 'Buat Catatan Medis (SOAP)'
+    : location.pathname.includes('/dashboard')
+    ? 'Dashboard'
+    : location.pathname.split('/').pop().replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}
+</h1>
                <p className="text-xs text-slate-500 hidden sm:block">Welcome back, let's make today productive.</p>
              </div>
           </div>

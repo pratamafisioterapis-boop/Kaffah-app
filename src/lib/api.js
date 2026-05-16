@@ -2138,46 +2138,59 @@ export const createMedicalRecord = async (payload) => {
 
 
 // 🔹 GET MEDICAL RECORDS
-export const getMedicalRecords = async (
-  userId,
+export const getMedicalRecords = async ({
+  patientId = null,
+  therapistId = null,
+  startDate = null,
+  endDate = null,
   page = 1,
   limit = 20
-) => {
+} = {}) => {
   return safeQuery(async () => {
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('medical_records')
       .select(`
-        patient_id,
-        created_at,
-
+        *,
         patient:patients (
           id,
           full_name,
           medical_record_number
         )
-      `, { count: 'exact' })
-      .eq('created_by', userId)
+      `, { count: 'exact' });
+
+    // 🔥 FILTER PASIEN
+    if (patientId) {
+      query = query.eq('patient_id', patientId);
+    }
+
+    // 🔥 FILTER TERAPIS
+    if (therapistId) {
+      query = query.eq('created_by', therapistId);
+    }
+
+    // 🔥 FILTER TANGGAL
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    query = query
       .order('created_at', { ascending: false })
       .range(from, to);
 
+    const { data, error, count } = await query;
+
     if (error) return { error };
 
-    const uniquePatients = new Map();
-
-    (data || []).forEach(item => {
-      if (!item.patient_id || !item.patient) return;
-
-      if (!uniquePatients.has(item.patient_id)) {
-        uniquePatients.set(item.patient_id, item);
-      }
-    });
-
     return {
-      data: Array.from(uniquePatients.values()),
+      data: data || [],
       total: count || 0,
       success: true,
       error: null
