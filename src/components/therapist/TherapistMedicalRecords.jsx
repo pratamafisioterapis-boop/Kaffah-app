@@ -29,7 +29,8 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   
   const statusFilter = searchParams.get('status') || 'all';
   const [searchTerm, setSearchTerm] = useState('');
-
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 20;
   // Sort State
   const [sortConfig, setSortConfig] = useState(() => {
     const key = isOwnerView ? "medicalRecordsSortOwner" : "medicalRecordsSortTherapist";
@@ -50,7 +51,9 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState(null);
   const fileInputRef = useRef(null);
-
+useEffect(() => {
+  setCurrentPage(1);
+}, [searchTerm, statusFilter]);
   useEffect(() => {
     if (therapist?.id) { fetchData(); }
     else {
@@ -103,31 +106,36 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
           return; 
       }
       
-      const recordsMap = {};
-      const results = await Promise.allSettled(patientList.map(async (p) => {
-          // Check VALIDATION using helper
-          const validation = validatePatientId(p.id, 'fetchDataLoop');
-          if (!validation.valid) return { id: p.id, records: [] };
+      const { data: allRecords } = await getMedicalRecords(therapist.id);
 
-          const { data: records } = await getMedicalRecords(p.id); 
-          return { id: p.id, records: records || [] };
-      }));
-      
-      results.forEach((result) => { if (result.status === 'fulfilled') { recordsMap[result.value.id] = result.value.records; } });
-      
-      setPatientVisits(visitsByPatient);
-      setPatientRecords(recordsMap);
-      setPatients(patientList);
-      
-    } catch (err) { 
-        console.error("Error fetching data:", err);
-        setPatients([]); // Fallback
-        toast({ variant: "destructive", title: "Gagal Memuat Data", description: "Terjadi kesalahan saat memuat daftar pasien." }); 
-    } finally { 
-        setLoading(false); 
+const recordsMap = {};
+
+(allRecords || []).forEach(record => {
+    if (!record.patient_id) return;
+
+    if (!recordsMap[record.patient_id]) {
+        recordsMap[record.patient_id] = [];
     }
-  };
 
+    recordsMap[record.patient_id].push(record);
+});
+setPatientVisits(visitsByPatient);
+setPatientRecords(recordsMap);
+setPatients(patientList);
+
+} catch (err) { 
+    console.error("Error fetching data:", err);
+    setPatients([]);
+    toast({
+      variant: "destructive",
+      title: "Gagal Memuat Data",
+      description: "Terjadi kesalahan saat memuat daftar pasien."
+    });
+
+} finally { 
+    setLoading(false);
+}
+};
   const getPatientStatus = (patientId) => {
       const visits = patientVisits[patientId] || [];
       const records = patientRecords[patientId] || [];
@@ -247,7 +255,12 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
 
       return sortConfig.sortOrder === 'asc' ? comparison : -comparison;
   });
+const totalPages = Math.ceil(sortedList.length / itemsPerPage);
 
+const paginatedList = sortedList.slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
   const renderSortIcon = (field) => {
     if (sortConfig.sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-slate-300 ml-1" />;
     return sortConfig.sortOrder === 'asc' 
@@ -290,7 +303,7 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
             </TableHeader>
             <TableBody>
                 {loading ? ( <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-blue-600" /></TableCell></TableRow> ) : sortedList.length === 0 ? ( <TableRow><TableCell colSpan={4} className="text-center py-12 text-slate-500">{patients.length === 0 ? "Belum ada riwayat kunjungan (Daily Recaps)." : "Tidak ada pasien yang cocok."}</TableCell></TableRow> ) : (
-                sortedList.map((item) => {
+                paginatedList.map((item) => {
                     const visits = patientVisits[item.id] || [];
                     const latestVisit = visits.length > 0 ? visits.reduce((latest, current) => current.recap_date > latest ? current.recap_date : latest, '') : '-';
 
@@ -316,7 +329,33 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
             </Table>
         </div>
       </Card>
+{totalPages > 1 && (
+  <div className="flex items-center justify-center gap-2">
+    
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(prev => prev - 1)}
+    >
+      Previous
+    </Button>
 
+    <div className="text-sm text-slate-600 px-2">
+      Halaman {currentPage} / {totalPages}
+    </div>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage(prev => prev + 1)}
+    >
+      Next
+    </Button>
+
+  </div>
+)}
       <PatientSOAPStatusModal patient={selectedPatient} visits={selectedPatient ? (patientVisits[selectedPatient.id] || []) : []} records={selectedPatient ? (patientRecords[selectedPatient.id] || []) : []} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>

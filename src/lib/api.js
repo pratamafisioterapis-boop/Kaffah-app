@@ -2138,31 +2138,53 @@ export const createMedicalRecord = async (payload) => {
 
 
 // 🔹 GET MEDICAL RECORDS
-export const getMedicalRecords = async () => {
+export const getMedicalRecords = async (
+  userId,
+  page = 1,
+  limit = 20
+) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await supabase
       .from('medical_records')
       .select(`
-        *,
+        patient_id,
+        created_at,
+
         patient:patients (
           id,
           full_name,
           medical_record_number
-        ),
-        therapist:physiotherapists (
-          id,
-          name
         )
-      `)
-      .order('created_at', { ascending: false });
+      `, { count: 'exact' })
+      .eq('created_by', userId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    const uniquePatients = new Map();
+
+    (data || []).forEach(item => {
+      if (!item.patient_id || !item.patient) return;
+
+      if (!uniquePatients.has(item.patient_id)) {
+        uniquePatients.set(item.patient_id, item);
+      }
+    });
+
+    return {
+      data: Array.from(uniquePatients.values()),
+      total: count || 0,
+      success: true,
+      error: null
+    };
 
   }, 'getMedicalRecords', { retry: true });
 };
-
 
 // 🔹 UPDATE MEDICAL RECORD
 export const updateMedicalRecord = async (id, payload) => {

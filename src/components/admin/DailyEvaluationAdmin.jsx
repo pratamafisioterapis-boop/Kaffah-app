@@ -25,57 +25,46 @@ const DailyEvaluationAdmin = () => {
     try {
       // Fetch all medical records (SOAP)
       // Joined with patients for info and users (created_by) for therapist name
-      const { data, error } = await supabase
-        .from('medical_records')
-        .select(`
-          *,
-          patient:patients(id, full_name, rm_number),
-          therapist:users!created_by(full_name)
-        `)
-        .order('created_at', { ascending: false });
+      const {
+  data: { user }
+} = await supabase.auth.getUser();
 
-      if (error) throw error;
-
-      // Group by patient_id to show unique patients
-      const grouped = {};
-      
-      data.forEach(record => {
-        // Skip records where patient might have been deleted or is missing
-        if (!record.patient) return;
-
-        const patientId = record.patient_id;
-
-        if (!grouped[patientId]) {
-          grouped[patientId] = {
-            patient: record.patient,
-            records: [],
-            lastDate: record.created_at,
-            count: 0
-          };
-        }
-        
-        grouped[patientId].records.push(record);
-        grouped[patientId].count++;
-        
-        // Ensure lastDate is the most recent one
-        if (new Date(record.created_at) > new Date(grouped[patientId].lastDate)) {
-          grouped[patientId].lastDate = record.created_at;
-        }
-      });
+const { data, error } = await supabase
+  .from('medical_records')
+  .select(`
+    id,
+    patient_id,
+    created_at,
+    patient:patients(id, full_name, rm_number),
+    therapist:users!created_by(full_name)
+  `)
+  .eq('created_by', user.id)
+  .order('created_at', { ascending: false })
+.limit(50);
 
       // Convert to array and sort by most recent update first
-      const sortedGroups = Object.values(grouped).sort((a, b) => 
-        new Date(b.lastDate) - new Date(a.lastDate)
-      );
+      const uniquePatientsMap = new Map();
 
-      setPatientGroups(sortedGroups);
+data.forEach(record => {
+  if (!record.patient) return;
+
+  if (!uniquePatientsMap.has(record.patient_id)) {
+    uniquePatientsMap.set(record.patient_id, {
+      patient: record.patient,
+      records: [record],
+      lastDate: record.created_at,
+      count: 1
+    });
+  }
+});
+
+setPatientGroups(Array.from(uniquePatientsMap.values()));
     } catch (err) {
       console.error('Error fetching SOAP records:', err);
     } finally {
       setLoading(false);
     }
   };
-
   const filteredGroups = patientGroups.filter(group => 
     group.patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (group.patient.rm_number && group.patient.rm_number.toLowerCase().includes(searchTerm.toLowerCase()))
