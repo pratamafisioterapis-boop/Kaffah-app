@@ -36,6 +36,8 @@ const TherapistCard = ({
   const isLeave = ['cuti', 'non_active'].includes(leaveStatus);
   const isNoSchedule = leaveStatus === 'tidak_ada_jadwal';
   const isFullBooked = leaveStatus === 'full_booked';
+  const shouldGrayScale =
+  (isLeave || isNoSchedule) && !isFullBooked;
   
   // Robust filtering of slots
   const availableSlots = isLeave
@@ -88,7 +90,7 @@ const TherapistCard = ({
         // 🔥 SOFT GLOW BORDER
         "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20",
 
-        (isLeave || isNoSchedule) && "opacity-70 grayscale"
+        shouldGrayScale && "bg-slate-100"
       )}>
         <CardHeader className={cn(
   "relative py-6 px-5 border-b text-white",
@@ -136,11 +138,13 @@ const TherapistCard = ({
   {/* Avatar + Info */}
   <div className="flex items-center gap-5">
 
-    <Avatar className={cn(
-  "h-16 w-16 border border-white/20 shadow-xl",
-  "ring-2 ring-white/10 backdrop-blur",
-      (isLeave || isNoSchedule) && "opacity-50 grayscale"
-    )}>
+    <Avatar
+  className={cn(
+    "h-16 w-16 border border-white/20 shadow-xl",
+    "ring-2 ring-white/10 backdrop-blur",
+    shouldGrayScale && "opacity-50 grayscale"
+  )}
+>
       <AvatarImage src={therapist.avatar_url || ''} />
       <AvatarFallback className="bg-slate-900 text-white text-base font-bold">
         {therapist.name ? therapist.name.charAt(0) : 'T'}
@@ -268,19 +272,23 @@ const TherapistCard = ({
                     <div 
   key={app.id}
   className={cn(
-    "group flex items-center gap-4 p-3 rounded-xl cursor-pointer",
+  "group flex items-center gap-4 p-3 rounded-xl cursor-pointer border",
 
-    app.status === 'cancelled'
-      ? "bg-red-50 border-red-300"
-      : "bg-white/70 backdrop-blur border border-white/40",
+  app.status?.toLowerCase() === 'cancelled'
+  ? "bg-red-100 border-red-400 grayscale-0 opacity-100"
 
-    "shadow-sm hover:shadow-md",
+    : app.is_homecare
+    ? "bg-blue-100 border-blue-400"
 
-    "hover:-translate-y-[1px]",
-    "hover:bg-white",
+    : "bg-white/70 backdrop-blur border-white/40",
 
-    "transition-all duration-200"
-  )}
+  "shadow-sm hover:shadow-md",
+  "hover:-translate-y-[1px]",
+  "hover:bg-white",
+  "transition-all duration-200"
+)}
+
+    
                       onClick={() => onAppointmentClick(app)}
                     >
                       <div className="shrink-0 font-mono text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
