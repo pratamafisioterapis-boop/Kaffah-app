@@ -18,7 +18,12 @@ import { deleteAppointment, updateAppointment } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
 
-const BookedSlotDetailModal = ({ appointment, onClose, onSuccess }) => {
+const BookedSlotDetailModal = ({ 
+  appointment, 
+  onClose, 
+  onSuccess,
+  onViewHistory
+}) => {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -375,7 +380,14 @@ useEffect(() => {
     </div>
 
     {/* RIGHT */}
-    <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+    <div className="flex gap-2 w-full sm:w-auto sm:ml-auto flex-wrap">
+      <Button
+  variant="outline"
+  className="flex-1 sm:flex-none border-blue-200 text-blue-600 hover:bg-blue-50"
+  onClick={() => onViewHistory?.(appointment.patient?.id || appointment.patient_id)}
+>
+  Riwayat
+</Button>
       <Button
         variant="secondary"
         className="flex-1 sm:flex-none"

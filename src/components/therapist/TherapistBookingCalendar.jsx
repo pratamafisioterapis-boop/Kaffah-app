@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-
+import { supabase } from '@/lib/customSupabaseClient';
 import { 
   getAvailableSlots, 
   getAppointments,
@@ -38,7 +38,8 @@ const TherapistBookingCalendar = ({ therapist }) => {
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null); 
-
+const [patientHistory, setPatientHistory] = useState([]);
+const [historyLoading, setHistoryLoading] = useState(false);
   useEffect(() => {
     if (therapist) {
         fetchDayData(date);
@@ -112,6 +113,38 @@ const TherapistBookingCalendar = ({ therapist }) => {
       if (leaveStatus) return; // Disabled
       setActiveModal({ type: 'manual', data: { therapist: t } });
   };
+  const fetchPatientHistory = async (patientId) => {
+  if (!patientId) return;
+
+  setHistoryLoading(true);
+
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select(`
+        id,
+        appointment_date,
+        status,
+        patient:patients(full_name),
+        therapist:physiotherapists(name)
+      `)
+      .eq('patient_id', patientId)
+      .order('appointment_date', { ascending: false });
+
+    if (error) throw error;
+
+    setPatientHistory(data || []);
+
+    setActiveModal({
+      type: 'history'
+    });
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setHistoryLoading(false);
+  }
+};
 
   if (!therapist) return <div className="p-8 text-center text-slate-500">Loading therapist profile...</div>;
 
@@ -196,6 +229,7 @@ const TherapistBookingCalendar = ({ therapist }) => {
                 onSlotClick={handleSlotClick}
                 onManualBooking={handleManualBooking}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
+                onPatientClick={fetchPatientHistory}
                 leaveStatus={leaveStatus ? 'cuti' : 'aktif'}
               />
             </div>
@@ -210,11 +244,13 @@ const TherapistBookingCalendar = ({ therapist }) => {
                 {activeModal?.type === 'slot' && 'Booking Slot'}
                 {activeModal?.type === 'manual' && 'Booking Manual'}
                 {activeModal?.type === 'detail' && 'Detail Appointment'}
+{activeModal?.type === 'history' && 'Riwayat Appointment'}
              </DialogTitle>
              <DialogDescription>
                 {activeModal?.type === 'slot' && 'Isi data pasien untuk konfirmasi slot ini.'}
                 {activeModal?.type === 'manual' && 'Buat jadwal manual di luar slot tersedia.'}
                 {activeModal?.type === 'detail' && 'Informasi detail jadwal yang sudah di-booking.'}
+{activeModal?.type === 'history' && 'Riwayat appointment pasien.'}
              </DialogDescription>
           </DialogHeader>
 
@@ -238,12 +274,51 @@ const TherapistBookingCalendar = ({ therapist }) => {
           )}
 
           {activeModal?.type === 'detail' && (
-             <BookedSlotDetailModal 
-                appointment={activeModal.data}
-                onClose={closeModal}
-                onSuccess={handleSuccess}
-             />
-          )}
+  <BookedSlotDetailModal 
+    appointment={activeModal.data}
+    onClose={closeModal}
+    onSuccess={handleSuccess}
+    onViewHistory={fetchPatientHistory}
+  />
+)}
+          {activeModal?.type === 'history' && (
+  <div className="space-y-4">
+    <h2 className="text-xl font-bold">
+      Riwayat Appointment
+    </h2>
+
+    {historyLoading ? (
+      <div className="text-sm text-slate-500">
+        Memuat riwayat...
+      </div>
+    ) : (
+      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+        {patientHistory.map((item) => (
+          <div
+            key={item.id}
+            className="border rounded-xl p-4 bg-slate-50"
+          >
+            <div className="font-semibold text-slate-800">
+              {item.patient?.full_name}
+            </div>
+
+            <div className="text-sm text-slate-500 mt-1">
+              {format(new Date(item.appointment_date), 'dd MMM yyyy • HH:mm')}
+            </div>
+
+            <div className="text-sm text-slate-500">
+              Terapis: {item.therapist?.name}
+            </div>
+
+            <div className="text-xs mt-2 uppercase text-slate-400">
+              {item.status}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
         </DialogContent>
       </Dialog>
     </div>

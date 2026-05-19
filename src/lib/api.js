@@ -460,10 +460,15 @@ export const getAppointments = async (filters = {}) => {
     let query = supabase
       .from('appointments')
       .select(`
-        *,
-        patient:patients(full_name, phone, medical_record_number),
-        therapist:physiotherapists(id, name, theme_color)
-      `);
+  *,
+  patient:patients(
+    id,
+    full_name,
+    phone,
+    medical_record_number
+  ),
+  therapist:physiotherapists(id, name, theme_color)
+`);
 
     if (filters.date) query = query.gte('appointment_date', `${filters.date}T00:00:00`).lte('appointment_date', `${filters.date}T23:59:59`);
     if (filters.startDate) query = query.gte('appointment_date', filters.startDate);

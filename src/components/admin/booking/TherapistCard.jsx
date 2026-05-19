@@ -20,6 +20,7 @@ const TherapistCard = ({
   onSlotClick, 
   onManualBooking,
   onAppointmentClick,
+  onPatientClick,
   date, 
   leaveStatus = 'aktif'
 }) => {
@@ -295,9 +296,16 @@ const TherapistCard = ({
                           {timeString}
                        </div>
                        <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate group-hover:text-emerald-600 transition-colors">
+                        <button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    onPatientClick(app.patient?.id || app.patient_id);
+  }}
+  className="text-sm font-semibold text-slate-800 truncate hover:text-blue-600 transition-colors text-left"
+>
                             {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
-                          </p>
+                          </button>
                         <p className="text-[11px] text-slate-400 truncate">
                             {app.duration_minutes} min • {app.status}
                           </p>
