@@ -2083,17 +2083,61 @@ export const getDetailedDailyRecapsWithPatients = async () => {
 
 
 // 🔹 GET MISSING RECAPS (appointment ada tapi recap belum)
-export const getMissingRecaps = async (date) => {
+export const getMissingRecaps = async ({
+  startDate,
+  endDate,
+  therapistId
+} = {}) => {
   return safeQuery(async () => {
-    const targetDate = date || getTodayWITA();
 
-    // ambil appointment hari itu
-    const { data: appointments, error: err1 } = await supabase
+    const resolvedStart =
+      typeof startDate === 'string'
+        ? startDate
+        : getTodayWITA();
+
+    const resolvedEnd =
+      typeof endDate === 'string'
+        ? endDate
+        : resolvedStart;
+
+    let query = supabase
       .from('appointments')
-      .select('id, patient_id, therapist_id, appointment_date, status')
-      .gte('appointment_date', `${targetDate}T00:00:00`)
-      .lte('appointment_date', `${targetDate}T23:59:59`)
-      .in('status', ['confirmed', 'rescheduled', 'completed']);
+      .select(`
+        id,
+        patient_id,
+        therapist_id,
+        appointment_date,
+        status,
+
+        patient:patients(
+          id,
+          full_name
+        ),
+
+        therapist:physiotherapists(
+          id,
+          name
+        )
+      `)
+      .gte(
+        'appointment_date',
+        `${resolvedStart}T00:00:00`
+      )
+      .lte(
+        'appointment_date',
+        `${resolvedEnd}T23:59:59`
+      )
+      .in('status', [
+        'confirmed',
+        'rescheduled',
+        'completed'
+      ]);
+
+    if (therapistId) {
+      query = query.eq('therapist_id', therapistId);
+    }
+
+    const { data: appointments, error: err1 } = await query;
 
     if (err1) return { error: err1 };
 
@@ -2102,8 +2146,6 @@ export const getMissingRecaps = async (date) => {
     }
 
     const appointmentIds = appointments.map(a => a.id);
-
-    // ambil recap yg sudah ada
     const { data: recaps, error: err2 } = await supabase
       .from('daily_recaps')
       .select('appointment_id')
@@ -2111,16 +2153,21 @@ export const getMissingRecaps = async (date) => {
 
     if (err2) return { error: err2 };
 
-    const recapIds = new Set((recaps || []).map(r => r.appointment_id));
+    const recapIds = new Set(
+      (recaps || []).map(r => r.appointment_id)
+    );
 
-    // filter yg belum ada recap
-    const missing = appointments.filter(a => !recapIds.has(a.id));
+    const missing = appointments.filter(
+      a => !recapIds.has(a.id)
+    );
 
-    return { data: missing, error: null };
+    return {
+      data: missing,
+      error: null
+    };
 
   }, 'getMissingRecaps');
 };
-
 
 // 🔹 CREATE MEDICAL RECORD (simple)
 export const createMedicalRecord = async (payload) => {
@@ -2248,6 +2295,9 @@ export const getTherapistRecaps = async (
   filters = {}
 ) => {
   return safeQuery(async () => {
+
+    const { startDate, endDate } = filters;
+
     let query = supabase
       .from('daily_recaps')
       .select(`

@@ -144,17 +144,17 @@ const TherapistTargetManager = () => {
 
     let result;
     if (editingTarget) {
-      result = await updateTherapistTarget(editingTarget.id, payload);
-    } else {
-      result = await createTherapistTarget(
-        null, // clinic_id handled by API/backend context usually, or passed as null if API infers it
-        payload.therapist_id,
-        payload.start_date,
-        payload.end_date,
-        payload.target_visits,
-        payload.excluded_patient_types
-      );
-    }
+  result = await updateTherapistTarget(editingTarget.id, payload);
+} else {
+  result = await createTherapistTarget({
+    therapist_id: payload.therapist_id,
+    start_date: payload.start_date,
+    end_date: payload.end_date,
+    target_visits: payload.target_visits,
+    excluded_patient_types: payload.excluded_patient_types,
+    clinic_id: null
+  });
+}
 
     if (result.error) {
       toast({ variant: "destructive", title: "Gagal Menyimpan", description: result.error.message });
@@ -188,11 +188,10 @@ const TherapistTargetManager = () => {
     });
   };
 
-  const getTherapistName = (userId) => {
-    // Updated to check user_id
-    const t = therapists.find(p => p.user_id === userId || p.id === userId);
-    return t ? t.name : 'Unknown / Deleted User';
-  };
+  const getTherapistName = (therapistId) => {
+  const t = therapists.find(p => p.id === therapistId);
+  return t ? t.name : 'Unknown / Deleted Therapist';
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -223,9 +222,9 @@ const TherapistTargetManager = () => {
 
   // Updated to use user_id as value
   const therapistOptions = therapists.map(t => ({
-     value: t.user_id, // Now using auth.users.id
-     label: t.name
-  }));
+   value: t.id,
+   label: t.name
+}));
 
   return (
     <div className="space-y-6">

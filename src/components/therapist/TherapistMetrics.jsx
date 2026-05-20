@@ -17,7 +17,7 @@ import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import MissingRecapsCard from '@/components/shared/MissingRecapsCard';
+
 
 const TherapistMetrics = ({ therapist, userId }) => {
   const navigate = useNavigate();
@@ -62,11 +62,12 @@ console.log('END MONTH:', endMonth);
       ] = await Promise.all([
         getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
         getActiveTherapistTarget(userId),
-        getUnfilledSOAPVisits(therapist.name, therapist.user_id)
+        getUnfilledSOAPVisits(null, therapist.id)
       ]);
 
       const rawMonthlyRecaps = recapsRes.data || [];
-      const unfilledCount = unfilledRes.count || 0;
+      const unfilledCount = Number(unfilledRes?.count ?? 0);
+      
       
       const allPatientsCount = new Set(rawMonthlyRecaps.map(r => r.patient_id).filter(Boolean)).size;
       const todayRecaps = rawMonthlyRecaps.filter(r => r.recap_date === todayISO);
@@ -110,7 +111,7 @@ console.log('END MONTH:', endMonth);
       });
 
     } catch (error) {
-      console.error("Error loading metrics:", error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -246,12 +247,7 @@ console.log('END MONTH:', endMonth);
         </Card>
       </div>
 
-      <MissingRecapsCard 
-         title="My Missing Recaps" 
-         therapistId={therapist?.id} 
-         role="therapist" 
-         className="border-l-blue-500"
-      />
+      
     </div>
   );
 };

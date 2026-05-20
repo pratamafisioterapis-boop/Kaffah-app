@@ -110,58 +110,73 @@ export const getTherapistVisits = async (therapistId) => {
  * @returns {Promise<{count: number, error: any}>}
  */
 export const getUnfilledSOAPVisits = async (_unusedName, therapistId) => {
-  if (!therapistId) return { count: 0, error: null };
+  if (!therapistId) {
+    return { count: 0, error: null };
+  }
 
   try {
-    // 1. Get all recaps (visits) for this therapist using ID
+
+    // ambil semua recap therapist
     const { data: recaps, error: recapsError } = await supabase
       .from('daily_recaps')
-      .select('id, recap_date, patient_id, actual_patient_id')
+      .select('id')
       .eq('therapist_id', therapistId);
 
     if (recapsError) throw recapsError;
-    if (!recaps || recaps.length === 0) return { count: 0, error: null };
 
-    // 2. Get all medical records created by this therapist
-    const { data: records, error: recordsError } = await supabase
-      .from('medical_records')
-      .select('created_at, patient_id')
-      .eq('created_by', therapistId); // Assuming therapist_id in recaps maps to created_by in records (User ID)
-      // Note: therapist_id in daily_recaps is from physiotherapists table (UUID), 
-      // while created_by in medical_records is from users table (UUID).
-      // Usually these are same if setup correctly or linked. 
-      // If therapistId passed here is physiotherapist ID, we might need user ID.
-      // However, usually we pass user ID to this function.
-
-    if (recordsError) throw recordsError;
-
-    // 3. Compare Recaps vs Records
-    let unfilledCount = 0;
-    
-    // Create a Set of "patientId_date" strings from records for fast lookup
-    const recordSet = new Set();
-    if (records && records.length > 0) {
-      records.forEach(r => {
-        // created_at is timestamptz, format to YYYY-MM-DD
-        const dateStr = format(new Date(r.created_at), 'yyyy-MM-dd');
-        recordSet.add(`${r.patient_id}_${dateStr}`);
-      });
+    if (!recaps || recaps.length === 0) {
+      return { count: 0, error: null };
     }
 
-    recaps.forEach(recap => {
-      const recapDateStr = format(new Date(recap.recap_date), 'yyyy-MM-dd');
-      const targetPatientId = recap.actual_patient_id || recap.patient_id;
-      const key = `${targetPatientId}_${recapDateStr}`;
-      
-      if (!recordSet.has(key)) {
-        unfilledCount++;
-      }
-    });
+    const recapIds = recaps.map(r => r.id);
 
-    return { count: unfilledCount, error: null };
+    if (!recapIds.length) {
+      return { count: 0, error: null };
+    }
+
+    // ambil medical records berdasarkan recap therapist
+    const chunkSize = 200;
+    let medicalRecords = [];
+
+    for (let i = 0; i < recapIds.length; i += chunkSize) {
+
+      const chunk = recapIds.slice(i, i + chunkSize);
+
+      const { data, error } = await supabase
+        .from('medical_records')
+        .select('daily_recap_id')
+        .in('daily_recap_id', chunk);
+
+      if (error) throw error;
+
+      if (data) {
+        medicalRecords.push(...data);
+      }
+    }
+
+    // recap yg sudah punya SOAP
+    const filledRecapIds = new Set(
+      medicalRecords
+        .map(r => r.daily_recap_id)
+        .filter(Boolean)
+    );
+
+    // hitung yg belum punya SOAP
+    const unfilledCount = recaps.filter(
+      r => !filledRecapIds.has(r.id)
+    ).length;
+
+    return {
+      count: unfilledCount,
+      error: null
+    };
 
   } catch (error) {
-    console.error("Error calculating unfilled SOAP:", error);
-    return { count: 0, error };
+    console.error('Error calculating unfilled SOAP:', error);
+
+    return {
+      count: 0,
+      error
+    };
   }
 };
