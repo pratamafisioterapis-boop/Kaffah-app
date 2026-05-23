@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
-import '@/lib/debugFollowUpQueue'; // Initialize debug tools
+
 
 const FollowUpManagement = () => {
   const { toast } = useToast();
@@ -97,10 +97,16 @@ const FollowUpManagement = () => {
     setLoading(true);
     try {
       const { data, error } = await getFollowUpQueue(); 
+      console.log('FETCH RESULT:', { data, error });
       if (error) throw error;
       
-      const filtered = filterExpiredData(data || []);
+      const filtered = (data || []);
       console.log(`✅ [Fetch] Loaded ${filtered.length} valid items after auto-expire`);
+      
+      console.log(
+  'FAILED ITEMS:',
+  filtered.filter(i => i.status === 'failed')
+);
       setQueueData(filtered);
     } catch (error) {
       console.error("❌ Error fetching queue:", error);
@@ -276,18 +282,30 @@ const FollowUpManagement = () => {
   };
 
   // Filter queues based on new categories
-  const bookingQueue = queueData.filter(q => q.follow_up_type === 'booking_confirmation');
-  
-  // Consolidate 'follow_up' and 'recap' into post_treatment
-  const postTreatmentQueue = queueData.filter(q => ['follow_up', 'recap'].includes(q.follow_up_type));
-  
-  // Consolidate 'expiry', 'expiry_package'
-  const expiryQueue = queueData.filter(q => ['expiry', 'expiry_package'].includes(q.follow_up_type));
-  
-  // Consolidate 'reminder', 'jadwal'
-  const reminderQueue = queueData.filter(q => ['reminder', 'jadwal'].includes(q.follow_up_type));
-  
-  const birthdayQueue = queueData.filter(q => ['birthday'].includes(q.follow_up_type));
+  const bookingQueue = queueData.filter(q =>
+  ['booking_appointment', 'booking_appointment_therapist'].includes(q.follow_up_type) &&
+  ['pending', 'failed'].includes(q.status)
+);
+
+const postTreatmentQueue = queueData.filter(q =>
+  q.follow_up_type === 'follow_up' &&
+  ['pending', 'failed'].includes(q.status)
+);
+
+const expiryQueue = queueData.filter(q =>
+  q.follow_up_type === 'package_expiry' &&
+  ['pending', 'failed'].includes(q.status)
+);
+
+const reminderQueue = queueData.filter(q =>
+  ['therapy_reminder', 'reminder_therapist_h10'].includes(q.follow_up_type) &&
+  ['pending', 'failed'].includes(q.status)
+);
+
+const birthdayQueue = queueData.filter(q =>
+  q.follow_up_type === 'birthday_greeting' &&
+  ['pending', 'failed'].includes(q.status)
+);
 
   // Render Grid Card Component
   const QueueCard = ({ item }) => {
@@ -303,7 +321,13 @@ const FollowUpManagement = () => {
               default: return 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200';
           }
       };
-
+console.log({
+  booking: bookingQueue.length,
+  followup: postTreatmentQueue.length,
+  expiry: expiryQueue.length,
+  reminder: reminderQueue.length,
+  birthday: birthdayQueue.length,
+});
       return (
           <div className={`border rounded-xl p-5 hover:shadow-lg transition-all flex flex-col h-full relative overflow-hidden group ${isSelected ? 'bg-blue-50 border-blue-200 shadow-md' : 'bg-white border-slate-200'}`}>
               <div className={`absolute top-0 left-0 w-1 h-full ${
@@ -490,7 +514,13 @@ const FollowUpManagement = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="booking_confirmation" value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+      <Tabs
+  key={`${bookingQueue.length}-${postTreatmentQueue.length}-${expiryQueue.length}-${reminderQueue.length}-${birthdayQueue.length}`}
+  defaultValue="booking_confirmation"
+  value={activeTab}
+  onValueChange={setActiveTab}
+  className="w-full space-y-6"
+>
         <TabsList className="bg-white p-1.5 border border-slate-200 rounded-xl shadow-sm grid grid-cols-2 lg:grid-cols-5 h-auto gap-1">
           <TabsTrigger value="booking_confirmation" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
             <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Booking ({bookingQueue.length})</span>

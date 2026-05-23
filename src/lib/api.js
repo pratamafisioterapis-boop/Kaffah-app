@@ -266,7 +266,7 @@ export const generateFollowUps = async (type) => {
     }, `generateFollowUps:${type}`);
 };
 
-export const getFollowUpQueue = async (status = 'pending', type = null) => {
+export const getFollowUpQueue = async (status = null, type = null) => {
   return safeQuery(async () => {
     let query = supabase
       .from('follow_up_queue')
@@ -276,7 +276,11 @@ export const getFollowUpQueue = async (status = 'pending', type = null) => {
       `)
       .eq('is_expired', false);
     
-    if (status) query = query.eq('status', status);
+    if (status) {
+  query = query.eq('status', status);
+} else {
+  query = query.in('status', ['pending', 'failed']);
+}
     if (type) query = query.eq('follow_up_type', type);
     
     query = query.order('scheduled_date', { ascending: true })
@@ -2016,29 +2020,48 @@ export const updateMedicalRecordDetailed = async (id, payload) => {
   return safeQuery(async () => {
 
     const cleanedPayload = Object.fromEntries(
-      Object.entries(payload).filter(
-        ([_, value]) => value !== undefined
-      )
+      Object.entries(payload)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => {
+
+          if (value === '') {
+
+            // 🔥 foreign key jangan dijadikan null
+            if (
+              key === 'daily_recap_id' ||
+              key === 'patient_id'
+            ) {
+              return [key, value];
+            }
+
+            return [key, null];
+          }
+
+          return [key, value];
+        })
     );
+
+    // 🔥 WAJIB HAPUS
+    delete cleanedPayload.daily_recap_id;
 
     cleanedPayload.updated_at = new Date().toISOString();
 
-    console.log('UPDATE ID:', id);
-    console.log('CLEANED PAYLOAD:', cleanedPayload);
+    console.log('FINAL UPDATE PAYLOAD:', cleanedPayload);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('medical_records_detailed')
       .update(cleanedPayload)
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (error) return { error };
+    if (error) {
+      console.error('UPDATE ERROR:', error);
+      return { error };
+    }
 
-    // 🔥 RETURN PAYLOAD LANGSUNG
     return {
-      data: {
-        id,
-        ...cleanedPayload
-      },
+      data,
       success: true,
       error: null
     };
