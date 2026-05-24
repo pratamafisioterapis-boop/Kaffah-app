@@ -268,7 +268,7 @@ const getCount = (type) => {
           </TabsTrigger>
 
           <TabsTrigger value="therapy_reminder" className="flex-1 min-w-[120px]">
-            Jadwal ({getCount('therapy_reminder')})
+            Pengingat Terapi ({getCount('therapy_reminder')})
           </TabsTrigger>
 
           <TabsTrigger value="birthday_greeting" className="flex-1 min-w-[120px]">
