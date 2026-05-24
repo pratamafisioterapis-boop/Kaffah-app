@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Trash2, User, Lock, Check } from 'lucide-react';
+import { Loader2, Trash2, User, Lock, Check, MessageCircle } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { createAppointment, getPhysiotherapistByUserId, updateAppointment } from '@/lib/api'; 
 import { format } from 'date-fns';
@@ -31,6 +31,7 @@ const AppointmentDetailModal = ({
   const [isRescheduleMode, setIsRescheduleMode] = useState(false);
   const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [formData, setFormData] = useState({
     patient_id: '',
@@ -43,6 +44,8 @@ const AppointmentDetailModal = ({
   });
   
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [whatsappQueues, setWhatsappQueues] = useState([]);
+const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [therapistStatus, setTherapistStatus] = useState(null);
 
@@ -91,7 +94,24 @@ const AppointmentDetailModal = ({
       }
     }
   }, [isOpen, appointment, user]);
+const fetchWhatsAppQueues = async () => {
+  if (!appointment?.patient_id) return;
 
+  setLoadingWhatsApp(true);
+
+  const { data, error } = await supabase
+    .from('follow_up_queue')
+    .select('*')
+    .eq('patient_id', appointment.patient_id)
+    .in('status', ['pending', 'failed'])
+    .order('created_at', { ascending: false });
+
+  if (!error) {
+    setWhatsappQueues(data || []);
+  }
+
+  setLoadingWhatsApp(false);
+};
   const fetchMyTherapistId = async () => {
       if (user?.id) {
           const { data } = await getPhysiotherapistByUserId(user.id);
@@ -163,7 +183,11 @@ const AppointmentDetailModal = ({
       }
     }
   }, [formData.appointment_date, formData.appointment_time, originalData, appointment]);
-
+useEffect(() => {
+  if (showWhatsAppModal) {
+    fetchWhatsAppQueues();
+  }
+}, [showWhatsAppModal]);
   const handleSubmit = async () => {
   if (isRescheduleMode) {
     setShowRescheduleConfirm(true);
@@ -434,6 +458,18 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
     Reschedule
   </Button>
 )}
+{appointment?.id && (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setShowWhatsAppModal(true)}
+    disabled={loading}
+    type="button"
+  >
+    <MessageCircle className="w-4 h-4 mr-2" />
+    WhatsApp
+  </Button>
+)}
 </div>
 
   <div className="flex gap-2">
@@ -475,6 +511,76 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
       </Button>
       <Button onClick={handleConfirmReschedule}>
         Ya, Reschedule
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+<Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+  <DialogContent className="sm:max-w-[700px]">
+    <DialogHeader>
+      <DialogTitle>WhatsApp Follow Up</DialogTitle>
+      <DialogDescription>
+        Pending & failed WhatsApp queue untuk pasien ini
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="py-4 max-h-[500px] overflow-y-auto space-y-3">
+  {loadingWhatsApp ? (
+    <div className="flex items-center justify-center py-10">
+      <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+    </div>
+  ) : whatsappQueues.length === 0 ? (
+    <div className="text-center text-sm text-slate-500 py-10">
+      Tidak ada WhatsApp pending / failed
+    </div>
+  ) : (
+    whatsappQueues.map((item) => (
+      <div
+        key={item.id}
+        className="border rounded-xl p-4 space-y-3 bg-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-medium text-sm">
+              {item.follow_up_type || '-'}
+            </div>
+
+            <div className="text-xs text-slate-500">
+              {item.phone_number || item.guest_phone || '-'}
+            </div>
+          </div>
+
+          <Badge
+            variant={
+              item.status === 'failed'
+                ? 'destructive'
+                : 'secondary'
+            }
+          >
+            {item.status}
+          </Badge>
+        </div>
+
+        <div className="text-sm whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border">
+          {item.message_content || '-'}
+        </div>
+
+        {item.failed_reason && (
+          <div className="text-xs text-red-500">
+            Failed: {item.failed_reason}
+          </div>
+        )}
+      </div>
+    ))
+  )}
+</div>
+
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onClick={() => setShowWhatsAppModal(false)}
+      >
+        Tutup
       </Button>
     </DialogFooter>
   </DialogContent>

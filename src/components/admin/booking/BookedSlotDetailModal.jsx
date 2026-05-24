@@ -13,7 +13,7 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, FileText, CheckCircle2, Trash2, Loader2 } from 'lucide-react';
+import { User, Clock, FileText, CheckCircle2, Trash2, Loader2, MessageCircle } from 'lucide-react';
 import { deleteAppointment, updateAppointment } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
@@ -27,6 +27,9 @@ const BookedSlotDetailModal = ({
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+const [whatsappQueues, setWhatsappQueues] = useState([]);
+const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
 const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 const [newDate, setNewDate] = useState("");
 const [availableSlots, setAvailableSlots] = useState([]);
@@ -182,7 +185,42 @@ fetchBookedSlots(newDate);
         setShowDeleteConfirm(false);
     }
   };
+
+const fetchWhatsAppQueues = async () => {
+  if (!appointment?.patient_id) return;
+
+  setLoadingWhatsApp(true);
+
+  const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+
+const { data, error } = await supabase
+  .from('follow_up_queue')
+  .select('*')
+  .eq('patient_id', appointment.patient_id)
+  .in('status', ['pending', 'failed'])
+  .gte('created_at', today.toISOString())
+  .lt('created_at', tomorrow.toISOString())
+  .order('created_at', { ascending: false });
+
+  if (!error) {
+    setWhatsappQueues(data || []);
+  }
+
+  setLoadingWhatsApp(false);
+};
+
 useEffect(() => {
+  if (showWhatsAppModal) {
+    fetchWhatsAppQueues();
+  }
+}, [showWhatsAppModal]);
+  
+
+  useEffect(() => {
   const fetchTherapists = async () => {
     const { data, error } = await supabase
       .from('physiotherapists')
@@ -191,11 +229,14 @@ useEffect(() => {
       .order('name');
 
     if (error) {
-      toast({ variant: "destructive", title: "Gagal ambil therapist" });
+      toast({
+        variant: "destructive",
+        title: "Gagal ambil therapist"
+      });
       return;
     }
 
-    setTherapists(data);
+    setTherapists(data || []);
   };
 
   fetchTherapists();
@@ -341,13 +382,13 @@ useEffect(() => {
       </div>
 
       
-<DialogFooter className="sticky bottom-0 left-0 right-0 bg-white pt-3 pb-3 border-t flex flex-col gap-3 mt-4 z-10">
+<DialogFooter className="bg-white pt-3 pb-3 border-t flex flex-col gap-3 mt-4">
 
   {/* ACTION ROW */}
-  <div className="flex flex-col sm:flex-row gap-2 w-full">
+  <div className="flex flex-wrap items-center gap-2 w-full">
 
     {/* LEFT */}
-    <div className="flex gap-2 w-full sm:w-auto">
+    <div className="flex flex-wrap gap-2">
       <Button 
         variant="outline"
         className="flex-1 sm:flex-none border-red-200 text-red-600 hover:bg-red-50"
@@ -380,7 +421,7 @@ useEffect(() => {
     </div>
 
     {/* RIGHT */}
-    <div className="flex gap-2 w-full sm:w-auto sm:ml-auto flex-wrap">
+    <div className="flex flex-wrap gap-2 ml-auto">
       <Button
   variant="outline"
   className="flex-1 sm:flex-none border-blue-200 text-blue-600 hover:bg-blue-50"
@@ -395,12 +436,20 @@ useEffect(() => {
       >
         Reschedule
       </Button>
-
+<Button
+  variant="outline"
+  size="sm"
+  className="border-green-200 text-green-600 hover:bg-green-50"
+  onClick={() => setShowWhatsAppModal(true)}
+>
+  <MessageCircle className="w-4 h-4 mr-2" />
+  WhatsApp
+</Button>
       <Button 
-        onClick={onClose} 
-        variant="outline" 
-        className="flex-1 sm:flex-none"
-      >
+  onClick={onClose} 
+  variant="outline"
+  size="sm"
+>
         Tutup
       </Button>
     </div>
@@ -445,9 +494,234 @@ useEffect(() => {
   )}
 
 </DialogFooter>
+<Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+  <DialogContent className="w-[95vw] max-w-3xl">
+    <DialogHeader>
+      <DialogTitle>WhatsApp Follow Up</DialogTitle>
+      <DialogDescription>
+        Pending & failed WhatsApp queue pasien ini
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="py-4 max-h-[500px] overflow-y-auto space-y-3">
+      {loadingWhatsApp ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+        </div>
+      ) : whatsappQueues.length === 0 ? (
+        <div className="text-center text-sm text-slate-500 py-10">
+          Tidak ada WhatsApp pending / failed
+        </div>
+      ) : (
+        whatsappQueues.map((item) => (
+  <div
+    key={item.id}
+    className="rounded-3xl border bg-white overflow-hidden shadow-sm"
+  >
+
+    {/* HEADER */}
+    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-5 py-4 flex items-start justify-between gap-4">
+
+      <div className="flex gap-4">
+        
+        {/* AVATAR */}
+        <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg shrink-0">
+          {(appointment?.patient?.full_name || 'P')
+            .split(' ')
+            .map(n => n[0])
+            .slice(0,2)
+            .join('')}
+        </div>
+
+        {/* INFO */}
+        <div className="space-y-1">
+          <h3 className="font-semibold text-lg text-slate-800 leading-none">
+            {appointment?.patient?.full_name || '-'}
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+
+            <span>
+              📞 {item.phone_number || '-'}
+            </span>
+
+            <span>
+              {appointment?.patient?.rm_number || '-'}
+            </span>
+
+          </div>
+
+          <div className="text-sm text-slate-500">
+            📅 {format(
+              new Date(item.created_at),
+              'dd MMM yyyy • HH:mm'
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* BADGES */}
+      <div className="flex flex-col items-end gap-2">
+
+        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+          {item.follow_up_type || 'Follow Up'}
+        </Badge>
+
+        <Badge
+          className={
+            item.status === 'failed'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-orange-100 text-orange-700'
+          }
+        >
+          ● {item.status}
+        </Badge>
+
+      </div>
+    </div>
+
+    {/* MESSAGE */}
+    <div className="p-5">
+
+      <div className="rounded-2xl border bg-white p-4 shadow-sm text-sm text-slate-700 whitespace-pre-wrap">
+        {item.message_content}
+      </div>
+
+      
+
+      {/* BUTTONS */}
+      <div className="flex gap-3 mt-5">
+
+        {/* KIRIM */}
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-6"
+          onClick={() => {
+
+  const rawPhone =
+    item.phone_number ||
+    appointment?.patient?.phone ||
+    '';
+
+  if (!rawPhone) {
+    toast({
+      variant: "destructive",
+      title: "Nomor tidak ditemukan"
+    });
+    return;
+  }
+
+  // normalize nomor
+  let phone = rawPhone.replace(/\D/g, '');
+
+  if (phone.startsWith('0')) {
+    phone = '62' + phone.slice(1);
+  }
+
+  const encodedMessage = encodeURIComponent(
+    item.message_content || ''
+  );
+
+  const waUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+
+  window.open(waUrl, '_blank');
+
+}}
+        >
+          ✈ Kirim
+        </Button>
+
+        {/* SELESAI */}
+        <Button
+          variant="outline"
+          className="rounded-xl px-6"
+          onClick={async () => {
+
+            try {
+
+              const { error } = await supabase
+                .from('follow_up_queue')
+                .update({
+                  status: 'completed',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', item.id);
+
+              if (error) throw error;
+
+              toast({
+                title: "Follow up diselesaikan"
+              });
+
+              fetchWhatsAppQueues();
+
+            } catch (err) {
+
+              toast({
+                variant: "destructive",
+                title: "Gagal update status"
+              });
+
+            }
+
+          }}
+        >
+          ✓ Selesai
+        </Button>
+
+        {/* DELETE */}
+        <Button
+          variant="ghost"
+          className="text-red-500 hover:text-red-700"
+          onClick={async () => {
+
+            try {
+
+              const { error } = await supabase
+                .from('follow_up_queue')
+                .delete()
+                .eq('id', item.id);
+
+              if (error) throw error;
+
+              toast({
+                title: "Queue dihapus"
+              });
+
+              fetchWhatsAppQueues();
+
+            } catch (err) {
+
+              toast({
+                variant: "destructive",
+                title: "Gagal hapus"
+              });
+
+            }
+
+          }}
+        >
+          🗑
+        </Button>
+
+      </div>
+    </div>
+  </div>
+))
+      )}
+    </div>
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onClick={() => setShowWhatsAppModal(false)}
+      >
+        Tutup
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-[500px] w-full">
+        <DialogContent className="w-[95vw] max-w-lg">
             <DialogHeader>
                 <DialogTitle>Hapus Jadwal Appointment?</DialogTitle>
                 <DialogDescription>
