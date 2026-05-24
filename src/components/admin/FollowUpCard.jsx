@@ -176,13 +176,44 @@ const FollowUpCard = ({
                 {patientName}
               </h3>
 
-              <Badge
-                variant="outline"
-                className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${typeConfig.badge}`}
-              >
-                {typeConfig.icon}
-                {typeConfig.label}
-              </Badge>
+              <div className="flex flex-col items-end gap-1">
+
+  <Badge
+    variant="outline"
+    className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${typeConfig.badge}`}
+  >
+    {typeConfig.icon}
+    {typeConfig.label}
+  </Badge>
+
+  <Badge
+    variant="outline"
+    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
+      ${
+        item.status === 'failed'
+          ? 'bg-red-100 text-red-700 border-red-200'
+          : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+      }
+    `}
+  >
+    <div className="flex items-center gap-1">
+      <div
+        className={`w-1.5 h-1.5 rounded-full
+          ${
+            item.status === 'failed'
+              ? 'bg-red-500'
+              : 'bg-yellow-500'
+          }
+        `}
+      />
+
+      {item.status === 'failed'
+        ? 'Failed'
+        : 'Pending'}
+    </div>
+  </Badge>
+
+</div>
             </div>
 
             <div className="flex items-center text-xs text-slate-600 mt-1 gap-3">
