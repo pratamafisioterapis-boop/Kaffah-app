@@ -34,13 +34,30 @@ const FollowUpCard = ({
   // ==============================
   const isGuest = !item.patient_id;
 
-  const patientName = isGuest
-    ? item.guest_name || 'Guest'
-    : item.patient?.full_name || 'Pasien';
+  const therapistName =
+  item.follow_up_type === 'reminder_therapist_h10'
+    ? (
+        item.message_content?.match(/Physio\s([A-Za-z]+)/)?.[1] || 'Terapis'
+      )
+    : null;
 
-  const patientPhone = isGuest
-    ? item.guest_phone || '-'
-    : item.phone_number || item.patient?.phone || '-';
+const patientName =
+  item.follow_up_type === 'reminder_therapist_h10'
+    ? `Physio ${therapistName}`
+    : (
+        isGuest
+          ? item.guest_name || 'Guest'
+          : item.patient?.full_name || 'Pasien'
+      );
+
+  const patientPhone =
+  item.follow_up_type === 'reminder_therapist_h10'
+    ? item.phone_number || '-'
+    : (
+        isGuest
+          ? item.guest_phone || '-'
+          : item.phone_number || item.patient?.phone || '-'
+      );
 
   const medicalRecordNumber = isGuest
     ? ''

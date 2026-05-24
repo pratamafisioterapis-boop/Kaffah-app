@@ -274,7 +274,12 @@ const getCount = (type) => {
           <TabsTrigger value="birthday_greeting" className="flex-1 min-w-[120px]">
             Ultah ({getCount('birthday_greeting')})
           </TabsTrigger>
+          <TabsTrigger value="reminder_therapist_h10" className="flex-1 min-w-[160px]">
+  Jadwal Terapis Besok ({getCount('reminder_therapist_h10')})
+</TabsTrigger>
         </TabsList>
+
+
 
         <TabsContent value={activeTab} className="mt-6">
 
