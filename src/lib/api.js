@@ -272,35 +272,64 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       .from('follow_up_queue')
       .select(`
         *,
-        patient:patients(id, full_name, phone, medical_record_number, gender, nickname, birth_date)
-      `)
-      .eq('is_expired', false);
-    
+        patient:patients(
+          id,
+          full_name,
+          phone,
+          medical_record_number,
+          gender,
+          nickname,
+          birth_date
+        )
+      `);
+
+    // FILTER STATUS
     if (status) {
-  query = query.eq('status', status);
-} else {
-  query = query.in('status', ['pending', 'failed']);
-}
-    if (type) query = query.eq('follow_up_type', type);
-    
-    query = query.order('scheduled_date', { ascending: true })
-                 .order('scheduled_time', { ascending: true });
+      query = query.eq('status', status);
+    } else {
+      query = query.in('status', ['pending', 'failed']);
+    }
+
+    // FILTER TYPE
+    if (type) {
+      query = query.eq('follow_up_type', type);
+    }
+
+    // ORDER
+    query = query
+      .order('scheduled_date', { ascending: true })
+      .order('scheduled_time', { ascending: true });
 
     const { data: queueData, error: queueError } = await query;
 
-    if (queueError) return { error: queueError };
+    if (queueError) {
+      return {
+        data: [],
+        success: false,
+        error: queueError
+      };
+    }
 
+    // AMBIL APPOINTMENT DATA
     const appointmentIds = queueData
-      .filter(item => item.source_table === 'appointments' && item.source_id)
+      .filter(item =>
+        item.source_table === 'appointments' &&
+        item.source_id
+      )
       .map(item => item.source_id);
 
     let appointmentsMap = {};
+
     if (appointmentIds.length > 0) {
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, appointment_date, duration_minutes')
+        .select(`
+          id,
+          appointment_date,
+          duration_minutes
+        `)
         .in('id', appointmentIds);
-        
+
       if (!appError && appointments) {
         appointmentsMap = appointments.reduce((acc, app) => {
           acc[app.id] = app;
@@ -309,11 +338,16 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       }
     }
 
-    const enrichedData = queueData.map(item => {
+    // ENRICH DATA
+    const enrichedData = (queueData || []).map(item => {
       let appointmentData = null;
 
-      if (item.source_table === 'appointments' && item.source_id) {
-        appointmentData = appointmentsMap[item.source_id] || null;
+      if (
+        item.source_table === 'appointments' &&
+        item.source_id
+      ) {
+        appointmentData =
+          appointmentsMap[item.source_id] || null;
       }
 
       return {
@@ -323,10 +357,10 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       };
     });
 
-    return { 
-      data: enrichedData || [], 
-      success: true, 
-      error: null 
+    return {
+      data: enrichedData,
+      success: true,
+      error: null
     };
   }, 'getFollowUpQueue', { retry: true });
 };

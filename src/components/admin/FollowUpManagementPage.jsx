@@ -162,23 +162,22 @@ const FollowUpManagementPage = () => {
   });
 
   const filteredItems = queueItems.filter(
-    item =>
-      item &&
-      item.follow_up_type === activeTab &&
-      item.status === 'pending' &&
-      item.scheduled_date?.split('T')[0] === today
-  );
+  item =>
+    item &&
+    item.follow_up_type === activeTab &&
+    ['pending', 'failed'].includes(item.status) &&
+    item.scheduled_date?.split('T')[0] === today
+);
 
-  const getCount = (type) => {
-    return queueItems.filter(
-      i =>
-        i &&
-        i.follow_up_type === type &&
-        i.status === 'pending' &&
-        i.scheduled_date?.split('T')[0] === today
-    ).length;
-  };
-
+const getCount = (type) => {
+  return queueItems.filter(
+    i =>
+      i &&
+      i.follow_up_type === type &&
+      ['pending', 'failed'].includes(i.status) &&
+      i.scheduled_date?.split('T')[0] === today
+  ).length;
+};
   // ===============================
   // UI
   // ===============================
