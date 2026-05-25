@@ -276,42 +276,43 @@ const patientName =
       </div>
 
       {/* ===== Actions ===== */}
-      <div className="px-5 pb-5 flex gap-2">
+      <div className="px-5 pb-5 flex flex-wrap gap-2">
 
-        <Button
-          size="sm"
-          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1"
-          onClick={handleSendWhatsApp}
-          disabled={isProcessing}
-        >
-          {isProcessing
-            ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <Send className="w-3 h-3" />}
-          Kirim
-        </Button>
+  <Button
+    size="sm"
+    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1"
+    onClick={handleSendWhatsApp}
+    disabled={isProcessing}
+  >
+    {isProcessing
+      ? <Loader2 className="w-3 h-3 animate-spin" />
+      : <Send className="w-3 h-3" />}
+    Kirim
+  </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 rounded-xl"
-          onClick={() => handleAction(onComplete)}
-          disabled={isProcessing}
-        >
-          <CheckCircle className="w-3 h-3" />
-          Selesai
-        </Button>
+  <Button
+    size="sm"
+    variant="outline"
+    className="flex-1 rounded-xl"
+    onClick={() => handleAction(onComplete)}
+    disabled={isProcessing}
+  >
+    <CheckCircle className="w-3 h-3" />
+    Selesai
+  </Button>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          className="rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
-          onClick={() => handleAction(onDelete)}
-          disabled={isProcessing}
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
 
-      </div>
+  <Button
+    size="sm"
+    variant="ghost"
+    className="rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
+    onClick={() => handleAction(onDelete)}
+    disabled={isProcessing}
+  >
+    <Trash2 className="w-4 h-4" />
+  </Button>
+
+</div>
     </Card>
   );
 };

@@ -121,22 +121,63 @@ const FollowUpManagement = () => {
   };
 
   const handleGenerate = async (type) => {
-      setGenerating(true);
-      try {
-          console.log(`🚀 Generating queue for type: ${type}`);
-          const { success, error } = await generateFollowUpQueue(type);
-          if (error) throw error;
-          
-          toast({ title: "Success", description: "Queue generation triggered successfully." });
-          fetchQueue();
-      } catch (error) {
-          console.error("❌ Generation Failed:", error);
-          toast({ variant: "destructive", title: "Generation Failed", description: error.message });
-      } finally {
-          setGenerating(false);
-      }
-  };
+    setGenerating(true);
 
+    try {
+        let functionName = '';
+
+        switch (type) {
+            case 'follow_up':
+                functionName = 'generate_follow_up_daily';
+                break;
+
+            case 'package_expiry':
+                functionName = 'generate_smart_package_expiry';
+                break;
+
+            case 'therapy_reminder':
+            case 'reminder_therapist_h10':
+                functionName = 'generate_therapy_reminder_today';
+                break;
+
+            case 'birthday_greeting':
+                functionName = 'generate_birthday_greetings';
+                break;
+
+            case 'booking_appointment':
+            case 'booking_appointment_therapist':
+                functionName = 'generate_appointment_reminders';
+                break;
+
+            default:
+                throw new Error(`Unknown follow up type: ${type}`);
+        }
+
+        console.log('🚀 GENERATE FUNCTION:', functionName);
+
+        const { error } = await supabase.rpc(functionName);
+
+        if (error) throw error;
+
+        toast({
+            title: 'Berhasil',
+            description: `${functionName} berhasil dijalankan`
+        });
+
+        await fetchQueue();
+
+    } catch (error) {
+        console.error('❌ Generate Error:', error);
+
+        toast({
+            variant: 'destructive',
+            title: 'Generate gagal',
+            description: error.message
+        });
+    } finally {
+        setGenerating(false);
+    }
+};
   const handleSend = async (id) => {
       setProcessingId(id);
       try {
@@ -248,38 +289,70 @@ const FollowUpManagement = () => {
       }
   };
 
-  const handleBulkDelete = async () => {
-      if (selectedIds.size === 0) return;
-      
-      const count = selectedIds.size;
-      if (!confirm(`Yakin ingin menghapus ${count} data follow up?`)) return;
+  const handleBulkDelete = async (sectionItems = []) => {
 
-      setLoading(true);
-      try {
-          const ids = Array.from(selectedIds);
-          const { error } = await deleteFollowUpQueueBulk(ids);
-          if (error) throw error;
+    const sectionIds = sectionItems.map(item => item.id);
 
-          toast({ 
-              title: "Berhasil dihapus", 
-              description: `${count} data berhasil dihapus.`,
-              className: "bg-green-50 border-green-200" 
-          });
-          
-          // Refresh data and clear selection
-          await fetchQueue();
-          setSelectedIds(new Set());
-      } catch (error) {
-          console.error("Bulk Delete Error:", error);
-          toast({ 
-              variant: "destructive", 
-              title: "Gagal menghapus data", 
-              description: error.message 
-          });
-      } finally {
-          setLoading(false);
-      }
-  };
+    const idsToDelete = Array.from(selectedIds)
+        .filter(id => sectionIds.includes(id));
+
+    if (idsToDelete.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Tidak ada data',
+            description: 'Tidak ada data di section ini yang dipilih'
+        });
+        return;
+    }
+
+    if (!confirm(`Yakin ingin menghapus ${idsToDelete.length} data pada section ini?`)) {
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+
+        const { error } = await supabase
+            .from('follow_up_queue')
+            .delete()
+            .in('id', idsToDelete);
+
+        if (error) throw error;
+
+        toast({
+            title: 'Berhasil',
+            description: `${idsToDelete.length} data berhasil dihapus`
+        });
+
+        setQueueData(prev =>
+            prev.filter(item => !idsToDelete.includes(item.id))
+        );
+
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+
+            idsToDelete.forEach(id => {
+                newSet.delete(id);
+            });
+
+            return newSet;
+        });
+
+    } catch (error) {
+
+        console.error('BULK DELETE ERROR:', error);
+
+        toast({
+            variant: 'destructive',
+            title: 'Gagal menghapus',
+            description: error.message
+        });
+
+    } finally {
+        setLoading(false);
+    }
+};
 
   // Filter queues based on new categories
   const bookingQueue = queueData.filter(q =>
@@ -409,9 +482,32 @@ console.log({
                       </div>
                   )}
                   
-                  <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(item.id)} disabled={processingId === item.id}>
-                      <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+  <Button
+    size="sm"
+    variant="outline"
+    className="h-9 px-3 border-blue-200 text-blue-600 hover:bg-blue-50"
+    onClick={() => handleGenerate(
+  item.follow_up_type === 'reminder_therapist_h10'
+    ? 'reminder_therapist_h10'
+    : item.follow_up_type
+)}
+    disabled={generating}
+  >
+    <PlusCircle className="w-4 h-4 mr-1" />
+    Generate
+  </Button>
+
+  <Button
+    size="sm"
+    variant="ghost"
+    className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+    onClick={() => handleDelete(item.id)}
+    disabled={processingId === item.id}
+  >
+    <Trash2 className="w-4 h-4" />
+  </Button>
+</div>
               </div>
           </div>
       );
@@ -496,7 +592,33 @@ console.log({
             {selectedIds.size > 0 && (
                 <Button 
                     variant="destructive" 
-                    onClick={handleBulkDelete} 
+                    onClick={() => {
+    switch (activeTab) {
+
+        case 'booking_confirmation':
+            handleBulkDelete(bookingQueue);
+            break;
+
+        case 'post_treatment_follow_up':
+            handleBulkDelete(postTreatmentQueue);
+            break;
+
+        case 'expiry_package':
+            handleBulkDelete(expiryQueue);
+            break;
+
+        case 'appointment_reminder':
+            handleBulkDelete(reminderQueue);
+            break;
+
+        case 'birthday_greeting':
+            handleBulkDelete(birthdayQueue);
+            break;
+
+        default:
+            handleBulkDelete([]);
+    }
+}}
                     disabled={loading}
                     className="gap-2 bg-red-600 hover:bg-red-700"
                 >
@@ -560,7 +682,7 @@ console.log({
                 <QueueSection 
                     data={expiryQueue} 
                     title="Package Expiry" 
-                    typeForGen="expiry" 
+                    typeForGen="package_expiry"
                     description="Pengingat paket yang akan segera kadaluarsa (H-7, H-3, H-1)."
                 />
             </TabsContent>
@@ -568,7 +690,7 @@ console.log({
                 <QueueSection 
                     data={reminderQueue} 
                     title="Today's Therapy Schedule" 
-                    typeForGen="reminder" 
+                    typeForGen="therapy_reminder"
                     description="Pengingat jadwal terapi untuk hari ini."
                 />
             </TabsContent>
@@ -576,7 +698,7 @@ console.log({
                 <QueueSection 
                     data={birthdayQueue} 
                     title="Birthday Greetings" 
-                    typeForGen="birthday" 
+                   typeForGen="birthday_greeting"
                     description="Ucapan ulang tahun otomatis untuk pasien yang berulang tahun hari ini."
                 />
             </TabsContent>
