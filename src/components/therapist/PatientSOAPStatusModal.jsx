@@ -35,9 +35,8 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
     
     // Find record created on this date
     const matchedRecord = records.find(r => {
-        const recordDate = format(new Date(r.created_at), 'yyyy-MM-dd');
-        return recordDate === visitDate;
-    });
+    return r.daily_recap_id === visit.id;
+});
 
     return {
         id: visit.id,

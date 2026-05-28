@@ -115,13 +115,17 @@ const MedicalRecordForm = ({ therapist }) => {
 
        const payload = {
   ...cleanData,
-  daily_recap_id: dailyRecapId,
   subjective: cleanData.subjective || '',
   objective: cleanData.objective || '',
   assessment: cleanData.assessment || '',
   plan: cleanData.plan || '',
   created_by: therapist.user_id,
 };
+
+// 🔥 HANYA CREATE MODE
+if (!recordId) {
+  payload.daily_recap_id = dailyRecapId;
+}
 
        if (dateParam && !recordId) {
           payload.created_at = `${dateParam}T12:00:00`;

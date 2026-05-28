@@ -9,7 +9,16 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Copy, ChevronDown, ChevronUp, Calendar, User, FileText } from 'lucide-react';
+import { 
+  Loader2,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  User,
+  FileText,
+  Clock
+} from 'lucide-react';
 import { getMedicalRecords } from '@/lib/api';
 import { cn, isValidUUID } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -55,7 +64,15 @@ const SOAPHistoryModal = ({ isOpen, onClose, patientId, onCopy }) => {
     if (!dateString) return '-';
     return format(new Date(dateString), 'dd MMMM yyyy, HH:mm', { locale: id });
   };
+const formatDateOnly = (dateString) => {
+  if (!dateString) return '-';
 
+  return format(
+    new Date(dateString),
+    'dd MMMM yyyy',
+    { locale: id }
+  );
+};
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
@@ -94,16 +111,61 @@ const SOAPHistoryModal = ({ isOpen, onClose, patientId, onCopy }) => {
                   className="p-4 flex items-center justify-between cursor-pointer bg-slate-50/50 hover:bg-slate-50"
                   onClick={() => toggleExpand(record.id)}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                      {formatDate(record.created_at)}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <User className="w-3 h-3" />
-                      {record.therapist_name || 'Terapis'}
-                    </div>
-                  </div>
+                  <div className="space-y-2">
+
+  {/* 🔥 HIGHLIGHT TANGGAL KUNJUNGAN */}
+  <div className="flex items-center gap-2">
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 shadow-sm">
+      
+      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+
+      <span className="text-xs font-semibold text-blue-700">
+        Kunjungan:
+      </span>
+
+      <span className="text-sm font-bold text-blue-800">
+        {formatDateOnly(record.daily_recap?.recap_date)}
+      </span>
+
+    </div>
+  </div>
+
+  {/* 🔥 DETAIL SOAP */}
+  <div className="space-y-1 pl-1">
+
+    <div className="flex items-center gap-2 text-xs text-slate-500">
+      <User className="w-3 h-3" />
+      {record.therapist_name || 'Terapis'}
+    </div>
+
+    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+      <Clock className="w-3 h-3" />
+
+      <span>
+        SOAP dibuat:
+      </span>
+
+      <span className="font-medium">
+        {formatDate(record.created_at)}
+      </span>
+    </div>
+
+    {record.updated_at && (
+      <div className="flex items-center gap-1.5 text-xs text-amber-600">
+        <Clock className="w-3 h-3" />
+
+        <span>
+          Terakhir diupdate:
+        </span>
+
+        <span className="font-medium">
+          {formatDate(record.updated_at)}
+        </span>
+      </div>
+    )}
+
+  </div>
+</div>
                   
                   <div className="flex items-center gap-2">
                     <Button 

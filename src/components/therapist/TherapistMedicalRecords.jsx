@@ -137,19 +137,62 @@ setPatients(patientList);
 }
 };
   const getPatientStatus = (patientId) => {
-      const visits = patientVisits[patientId] || [];
-      const records = patientRecords[patientId] || [];
-      if (visits.length === 0) return { status: 'empty', missingCount: 0 };
-      let missingCount = 0; let filledCount = 0;
-      visits.forEach(visit => {
-         const visitDate = visit.recap_date;
-         const hasRecord = records.some(r => { const recordDate = format(new Date(r.created_at), 'yyyy-MM-dd'); return recordDate === visitDate; });
-         if (hasRecord) filledCount++; else missingCount++;
-      });
-      if (filledCount === 0) return { status: 'empty', missingCount: visits.length };
-      if (missingCount > 0) return { status: 'incomplete', missingCount };
-      return { status: 'complete', missingCount: 0 };
+
+  const visits = patientVisits[patientId] || [];
+  const records = patientRecords[patientId] || [];
+
+  if (visits.length === 0) {
+    return {
+      status: 'empty',
+      missingCount: 0
+    };
+  }
+
+  // 🔥 ambil semua daily_recap_id yg sudah punya SOAP
+  const filledRecapIds = new Set(
+    records
+      .map(r => r.daily_recap_id)
+      .filter(Boolean)
+  );
+
+  let filledCount = 0;
+  let missingCount = 0;
+
+  visits.forEach(visit => {
+
+    const hasRecord = filledRecapIds.has(visit.id);
+
+    if (hasRecord) {
+      filledCount++;
+    } else {
+      missingCount++;
+    }
+
+  });
+
+  // 🔥 semua kosong
+  if (filledCount === 0) {
+    return {
+      status: 'empty',
+      missingCount: visits.length
+    };
+  }
+
+  // 🔥 sebagian belum
+  if (missingCount > 0) {
+    return {
+      status: 'incomplete',
+      missingCount
+    };
+  }
+
+  // 🔥 semua lengkap
+  return {
+    status: 'complete',
+    missingCount: 0
   };
+};
+      
 
   const handlePatientClick = (patient) => { setSelectedPatient(patient); setIsModalOpen(true); };
   const handleFilterChange = (val) => { setSearchParams(prev => { const newParams = new URLSearchParams(prev); newParams.set('status', val); return newParams; }); };

@@ -2229,22 +2229,85 @@ export const getMissingRecaps = async ({
 // 🔹 CREATE MEDICAL RECORD (simple)
 export const createMedicalRecord = async (payload) => {
   return safeQuery(async () => {
+
+    // =================================
+    // EDIT MODE
+    // =================================
+    if (payload.id) {
+
+      const updatePayload = {
+        subjective: payload.subjective,
+        objective: payload.objective,
+        assessment: payload.assessment,
+        plan: payload.plan,
+        treatment_notes: payload.treatment_notes || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('medical_records')
+        .update(updatePayload)
+        .eq('id', payload.id)
+        .select()
+        .single();
+
+      if (error) return { error };
+
+      return {
+        data,
+        success: true,
+        error: null
+      };
+    }
+
+    // =================================
+    // CREATE MODE
+    // =================================
+
+    if (!payload.daily_recap_id) {
+      return {
+        error: {
+          message: 'daily_recap_id wajib diisi'
+        }
+      };
+    }
+
+    // cek duplicate
+    const { data: existing } = await supabase
+      .from('medical_records')
+      .select('id')
+      .eq('daily_recap_id', payload.daily_recap_id)
+      .maybeSingle();
+
+    if (existing) {
+      return {
+        error: {
+          message: 'SOAP sudah ada untuk recap ini'
+        }
+      };
+    }
+
+    const insertPayload = {
+      ...payload,
+      created_at: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
       .from('medical_records')
-      .insert({
-        ...payload,
-        created_at: new Date().toISOString()
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    return {
+      data,
+      success: true,
+      error: null
+    };
 
   }, 'createMedicalRecord');
 };
-
 
 // 🔹 GET MEDICAL RECORDS
 export const getMedicalRecords = async ({
@@ -2263,13 +2326,17 @@ export const getMedicalRecords = async ({
     let query = supabase
       .from('medical_records')
       .select(`
-        *,
-        patient:patients (
-          id,
-          full_name,
-          medical_record_number
-        )
-      `, { count: 'exact' });
+  *,
+  patient:patients (
+    id,
+    full_name,
+    medical_record_number
+  ),
+  daily_recap:daily_recaps (
+    id,
+    recap_date
+  )
+`, { count: 'exact' });
 
     // 🔥 FILTER PASIEN
     if (patientId) {
