@@ -187,24 +187,24 @@ fetchBookedSlots(newDate);
   };
 
 const fetchWhatsAppQueues = async () => {
-  if (!appointment?.patient_id) return;
-
   setLoadingWhatsApp(true);
 
-  const today = new Date();
-today.setHours(0, 0, 0, 0);
+  let query = supabase
+    .from('follow_up_queue')
+    .select('*')
+    .in('status', ['pending', 'failed']);
 
-const tomorrow = new Date(today);
-tomorrow.setDate(tomorrow.getDate() + 1);
+  if (appointment?.patient_id) {
+    query = query.eq('patient_id', appointment.patient_id);
+  } else {
+    query = query.eq('source_id', appointment.id);
+  }
 
-const { data, error } = await supabase
-  .from('follow_up_queue')
-  .select('*')
-  .eq('patient_id', appointment.patient_id)
-  .in('status', ['pending', 'failed'])
-  .gte('created_at', today.toISOString())
-  .lt('created_at', tomorrow.toISOString())
-  .order('created_at', { ascending: false });
+  const { data, error } = await query
+    .order('created_at', { ascending: false });
+
+  console.log('WA QUEUES', data);
+  console.log('APPOINTMENT', appointment);
 
   if (!error) {
     setWhatsappQueues(data || []);
@@ -536,8 +536,8 @@ useEffect(() => {
         {/* INFO */}
         <div className="space-y-1">
           <h3 className="font-semibold text-lg text-slate-800 leading-none">
-            {appointment?.patient?.full_name || '-'}
-          </h3>
+  {appointment?.patient?.full_name || appointment?.guest_name || '-'}
+</h3>
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
 
@@ -595,7 +595,7 @@ useEffect(() => {
         {/* KIRIM */}
         <Button
           className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-6"
-          onClick={() => {
+          onClick={async () => {
 
   const rawPhone =
     item.phone_number ||
@@ -610,7 +610,6 @@ useEffect(() => {
     return;
   }
 
-  // normalize nomor
   let phone = rawPhone.replace(/\D/g, '');
 
   if (phone.startsWith('0')) {
@@ -624,6 +623,29 @@ useEffect(() => {
   const waUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
 
   window.open(waUrl, '_blank');
+
+  try {
+
+    const { error } = await supabase
+      .from('follow_up_queue')
+      .update({
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', item.id);
+
+    if (error) throw error;
+
+    fetchWhatsAppQueues();
+
+  } catch (err) {
+
+    toast({
+      variant: "destructive",
+      title: "Gagal update status"
+    });
+
+  }
 
 }}
         >

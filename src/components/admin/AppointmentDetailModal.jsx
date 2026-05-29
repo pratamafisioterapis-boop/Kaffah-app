@@ -95,16 +95,26 @@ const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
     }
   }, [isOpen, appointment, user]);
 const fetchWhatsAppQueues = async () => {
-  if (!appointment?.patient_id) return;
-
   setLoadingWhatsApp(true);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('follow_up_queue')
     .select('*')
-    .eq('patient_id', appointment.patient_id)
-    .in('status', ['pending', 'failed'])
-    .order('created_at', { ascending: false });
+    .in('status', ['pending', 'failed']);
+
+  if (appointment?.patient_id) {
+    query = query.eq('patient_id', appointment.patient_id);
+  } else if (appointment?.guest_phone) {
+    query = query.eq('phone_number', appointment.guest_phone);
+  } else {
+    setWhatsappQueues([]);
+    setLoadingWhatsApp(false);
+    return;
+  }
+
+  const { data, error } = await query.order('created_at', {
+    ascending: false
+  });
 
   if (!error) {
     setWhatsappQueues(data || []);
