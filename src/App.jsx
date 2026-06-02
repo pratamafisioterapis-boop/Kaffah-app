@@ -111,7 +111,18 @@ function App() {
             <meta name="theme-color" content="#1e3a5f" />
             <link rel="manifest" href="/manifest.json" />
           </Helmet>
-          
+          <Helmet>
+  <title>Kaffah Physiotherapy</title>
+  <meta name="description" content="Kaffah Physiotherapy - Professional Management System" />
+  <meta name="theme-color" content="#1e3a5f" />
+
+  <meta
+    name="facebook-domain-verification"
+    content="mbetron48yku8aj5ixdi8u68irh8sf"
+  />
+
+  <link rel="manifest" href="/manifest.json" />
+</Helmet>
           <Router>
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
