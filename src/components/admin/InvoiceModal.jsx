@@ -281,11 +281,14 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       );
 
       if (rpcError) throw new Error(rpcError.message);
-
       // 6. Cek response dari Wablas
       const status = rpcResult?.status;
 
-      if (status === 200 || status === '200') {
+      if (
+  status === 200 ||
+  status === '200' ||
+  rpcResult?.request_id
+) {
         toast({
           title: "✅ Invoice Terkirim",
           description: `Invoice PDF berhasil dikirim via WhatsApp ke ${rawPhone}`,
