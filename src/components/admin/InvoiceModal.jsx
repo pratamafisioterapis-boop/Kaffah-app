@@ -18,6 +18,7 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
   const componentRef                       = useRef();
   const { toast }                          = useToast();
   const [isGenerating, setIsGenerating]   = useState(false);
+  const [isSendingManualWA, setIsSendingManualWA] = useState(false);
   const [isSendingWA, setIsSendingWA]     = useState(false);
   const [logoUrl, setLogoUrl]             = useState(null);
   const [invoiceSettings, setInvoiceSettings] = useState({
@@ -292,26 +293,10 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       } else if (rpcResult?.error) {
         throw new Error(rpcResult.error);
       } else {
-        // 7. Fallback: buka wa.me dengan link kalau response tidak 200
-        console.warn("Wablas response tidak 200:", rpcResult);
-
-        const fallbackMsg =
-          `Berikut *Kwitansi Terapi* hari ini.\n\n` +
-          `Terima kasih telah mempercayakan pemulihan di *Kaffah Physiotherapy*.\n` +
-          `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
-          `*Salam Sehat,*\nKaffah Physiotherapy\n\n` +
-          `Lihat kwitansi:\n${fileUrl}`;
-
-        const formattedPhone = rawPhone.replace(/^0/, '62');
-        window.open(
-          `https://wa.me/${formattedPhone}?text=${encodeURIComponent(fallbackMsg)}`,
-          '_blank'
-        );
-
-        toast({
-          title: "⚠️ Dikirim via Link",
-          description: "Kirim dokumen gagal, dibuka via WhatsApp Web sebagai fallback.",
-        });
+        throw new Error(
+  rpcResult?.content ||
+  'Gagal mengirim invoice otomatis'
+);
       }
 
     } catch (err) {
@@ -325,7 +310,83 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       setIsSendingWA(false);
     }
   };
+const handleSendManualWA = async () => {
+  setIsSendingManualWA(true);
 
+  try {
+
+    const rawPhone = getPatientPhone();
+
+    if (!rawPhone) {
+      toast({
+        variant: "destructive",
+        title: "Nomor Tidak Ditemukan",
+        description: "Nomor telepon pasien tidak tersedia.",
+      });
+      return;
+    }
+
+    let fileUrl =
+      data?.invoice_url ||
+      detailData?.invoice_url ||
+      null;
+
+    const rm = getMedicalRecordNumber();
+
+    const rawDate =
+      data?.recap_date ||
+      new Date().toISOString().split('T')[0];
+
+    const [yr, mo, dy] = rawDate.split('-');
+
+    const dateFormatted =
+      `${dy}-${mo}-${yr.slice(2)}`;
+
+    const fileName =
+      `Rcpt_${rm}_${dateFormatted}.pdf`;
+
+    if (!fileUrl) {
+
+      const pdf = await generatePDF();
+
+      fileUrl = await uploadPDF(
+        pdf,
+        fileName
+      );
+
+      await saveInvoiceRecord(
+        getInvoiceNumber()
+      );
+    }
+
+    const message =
+      `Berikut *Kwitansi Terapi* hari ini.\n\n` +
+      `Terima kasih telah mempercayakan pemulihan di *Kaffah Physiotherapy*.\n` +
+      `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
+      `*Salam Sehat,*\n` +
+      `Kaffah Physiotherapy\n\n` +
+      `Lihat kwitansi:\n${fileUrl}`;
+
+    const formattedPhone =
+      rawPhone.replace(/^0/, '62');
+
+    window.open(
+      `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`,
+      '_blank'
+    );
+
+  } catch (err) {
+
+    toast({
+      variant: "destructive",
+      title: "Gagal",
+      description: err.message
+    });
+
+  } finally {
+    setIsSendingManualWA(false);
+  }
+};
   // ── Print ─────────────────────────────────────────────────────────────────
   const handlePrint = () => {
     const printContent = componentRef.current;
@@ -398,17 +459,30 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
             </Button>
 
             <Button
-              size="sm"
-              onClick={handleSendWA}
-              disabled={isSendingWA || loadingSettings}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isSendingWA
-                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                : <Send className="w-4 h-4 mr-2" />
-              }
-              {isSendingWA ? 'Mengirim...' : 'Kirim WA'}
-            </Button>
+  size="sm"
+  onClick={handleSendWA}
+  disabled={isSendingWA || loadingSettings}
+  className="bg-green-600 hover:bg-green-700 text-white"
+>
+  {isSendingWA
+    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+    : <Send className="w-4 h-4 mr-2" />
+  }
+  {isSendingWA ? 'Mengirim...' : 'Kirim Otomatis'}
+</Button>
+
+<Button
+  size="sm"
+  onClick={handleSendManualWA}
+  disabled={isSendingManualWA || loadingSettings}
+  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+>
+  {isSendingManualWA
+    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+    : <Send className="w-4 h-4 mr-2" />
+  }
+  {isSendingManualWA ? 'Membuka...' : 'Kirim Manual'}
+</Button>
 
             <DialogClose asChild>
               <Button variant="ghost" size="icon">
