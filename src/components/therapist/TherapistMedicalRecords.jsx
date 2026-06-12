@@ -106,7 +106,9 @@ useEffect(() => {
           return; 
       }
       
-      const { data: allRecords } = await getMedicalRecords(therapist.id);
+      const { data: allRecords } = await getMedicalRecords({
+  limit: 9999
+});
 
 const recordsMap = {};
 
