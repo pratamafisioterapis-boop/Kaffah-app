@@ -31,7 +31,8 @@ const TherapistMetrics = ({ therapist, userId }) => {
     unfilledSoapCount: 0,
     activeTargetPeriod: null,
     excludedTypes: [],
-    targetStatus: null
+    targetStatus: null,
+    patientTypeStats: {}
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,24 +49,71 @@ const TherapistMetrics = ({ therapist, userId }) => {
 
     try {
       const now = new Date();
-      const startMonth = startOfMonth(now).toISOString().split('T')[0];
-      const endMonth = endOfMonth(now).toISOString().split('T')[0];
-      const todayISO = now.toISOString().split('T')[0];
-console.log('THERAPIST ID:', therapist.id);
-console.log('USER ID:', userId);
-console.log('START MONTH:', startMonth);
-console.log('END MONTH:', endMonth);
+
+const todayISO = format(
+  now,
+  'yyyy-MM-dd'
+);
+
+const startMonth = format(
+  startOfMonth(now),
+  'yyyy-MM-dd'
+);
+
+const endMonth = format(
+  endOfMonth(now),
+  'yyyy-MM-dd'
+);
+
+
+let startPeriod;
+let endPeriod;
+
+if (now.getDate() >= 28) {
+  startPeriod = new Date(now.getFullYear(), now.getMonth(), 28);
+  endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 27);
+} else {
+  startPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+  endPeriod = new Date(now.getFullYear(), now.getMonth(), 27);
+}
+
+const startCustom = format(startPeriod, 'yyyy-MM-dd');
+const endCustom = format(endPeriod, 'yyyy-MM-dd');
       const [
-        recapsRes,
-        activeTargetRes,
-        unfilledRes
-      ] = await Promise.all([
-        getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
-        getActiveTherapistTarget(userId),
-        getUnfilledSOAPVisits(null, therapist.id)
-      ]);
+  recapsRes,
+  activeTargetRes,
+  unfilledRes,
+  patientTypeRes
+] = await Promise.all([
+  getTherapistRecaps(
+    therapist.id,
+    {
+      startDate: startMonth,
+      endDate: endMonth
+    }
+  ),
+  getActiveTherapistTarget(userId),
+  getUnfilledSOAPVisits(null, therapist.id),
+
+  getTherapistRecaps(
+    therapist.id,
+    {
+      startDate: startCustom,
+      endDate: endCustom
+    }
+  )
+]);
 
       const rawMonthlyRecaps = recapsRes.data || [];
+      const patientTypeRecaps = patientTypeRes.data || [];
+
+const patientTypeStats = patientTypeRecaps.reduce((acc, item) => {
+  const type = item.patient_type || 'LAINNYA';
+
+  acc[type] = (acc[type] || 0) + 1;
+
+  return acc;
+}, {});
       const unfilledCount = Number(unfilledRes?.count ?? 0);
       
       
@@ -107,15 +155,13 @@ console.log('END MONTH:', endMonth);
         unfilledSoapCount: unfilledCount,
         activeTargetPeriod: targetInfo.period,
         excludedTypes: targetInfo.excluded,
-        targetStatus: targetInfo.status
+        targetStatus: targetInfo.status,
+        patientTypeStats
       });
 
     } catch (error) {
-      
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  console.error(error);
+}
   };
 
   const handleRefresh = () => {
@@ -150,6 +196,35 @@ console.log('END MONTH:', endMonth);
 
       {/* Top Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white border-slate-200 shadow-sm">
+  <CardHeader>
+    <CardTitle className="text-sm font-medium text-slate-600">
+      Tipe Pasien Ditangani
+    </CardTitle>
+
+    <CardDescription>
+      Periode 28 - 27
+    </CardDescription>
+  </CardHeader>
+
+  <CardContent>
+    <div className="space-y-2">
+      {Object.entries(metrics.patientTypeStats)
+        .sort((a, b) => b[1] - a[1])
+        .map(([type, count]) => (
+          <div
+            key={type}
+            className="flex justify-between text-sm"
+          >
+            <span>{type}</span>
+            <span className="font-semibold">
+              {count}
+            </span>
+          </div>
+        ))}
+    </div>
+  </CardContent>
+</Card>
         {/* Unfilled SOAP Metric */}
         <Card 
           className={cn(

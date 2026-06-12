@@ -2425,17 +2425,18 @@ export const getTherapistRecaps = async (
     let query = supabase
       .from('daily_recaps')
       .select(`
-        id,
-        recap_date,
-        patient_id,
-        amount,
-        diagnosis,
-        service_type,
-        patients!daily_recap_patient_id_fkey (
-  full_name,
-  medical_record_number
-)
-      `)
+  id,
+  recap_date,
+  patient_id,
+  amount,
+  diagnosis,
+  service_type,
+  patient_type,
+  patients!daily_recap_patient_id_fkey (
+    full_name,
+    medical_record_number
+  )
+`)
       .eq('therapist_id', therapistId)
       .order('recap_date', { ascending: false });
 
