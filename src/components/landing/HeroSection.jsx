@@ -79,7 +79,11 @@ const HeroSection = () => {
           ease: "easeOut"
         }} className="relative">
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white aspect-[4/3] lg:aspect-square">
-              <img src="https://horizons-cdn.hostinger.com/4394f517-4378-4143-ae49-279b5e8e1709/1000040527-C7ljw.jpg" alt="Fisioterapi Profesional" className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
+              <img
+  src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/landing%20page/20241021_211220_1.jpg"
+  alt="Fisioterapi Profesional"
+  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+/>
               <div className="absolute inset-0 bg-gradient-to-t from-kaffah-navy/60 to-transparent pointer-events-none" />
               
               <div className="absolute bottom-6 left-6 right-6 text-white">

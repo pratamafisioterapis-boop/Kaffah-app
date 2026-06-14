@@ -227,7 +227,11 @@ if (isPWA) {
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
                   <div className="relative w-full h-full bg-slate-950 rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
-                     <img src="https://horizons-cdn.hostinger.com/4394f517-4378-4143-ae49-279b5e8e1709/45c3007dc081c45726fe7287dd389736.jpg" alt="Kaffah Logo" className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" />
+                     <img
+  src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
+  alt="Kaffah Logo"
+  className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+/>
                   </div>
                 </motion.div>
                 
