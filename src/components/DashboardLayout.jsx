@@ -317,10 +317,10 @@ const pwaNavItems = useMemo(() => {
         <div className="relative">
            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 overflow-hidden">
              <img 
-               src="https://horizons-cdn.hostinger.com/4394f517-4378-4143-ae49-279b5e8e1709/45c3007dc081c45726fe7287dd389736.jpg" 
-               alt="Kaffah Physiotherapy Logo" 
-               className="w-full h-full object-contain p-1" 
-             />
+  src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
+  alt="Kaffah Physiotherapy Logo"
+  className="w-full h-full object-contain p-1"
+/>
            </div>
            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
         </div>
