@@ -223,7 +223,30 @@ const handleGenerate = async (type) => {
     ['pending', 'failed'].includes(item.status) &&
     item.scheduled_date?.split('T')[0] === today
 );
+const displayItems =
+  activeTab === 'package_expiry'
+    ? [...filteredItems].sort((a, b) => {
 
+        const daysA =
+          a.message_content?.match(/(\d+)\s*hari/i)?.[1] || 9999;
+
+        const daysB =
+          b.message_content?.match(/(\d+)\s*hari/i)?.[1] || 9999;
+
+        if (Number(daysA) !== Number(daysB)) {
+          return Number(daysA) - Number(daysB);
+        }
+
+        const sessionsA =
+          a.message_content?.match(/(\d+)\s*sesi/i)?.[1] || 0;
+
+        const sessionsB =
+          b.message_content?.match(/(\d+)\s*sesi/i)?.[1] || 0;
+
+        return Number(sessionsB) - Number(sessionsA);
+
+      })
+    : filteredItems;
 const getCount = (type) => {
   return queueItems.filter(
     i =>
@@ -386,7 +409,7 @@ const getCount = (type) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map(item => (
+              {displayItems.map(item => (
                 <FollowUpCard
                   key={item.id}
                   item={item}

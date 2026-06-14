@@ -169,7 +169,55 @@ const patientName =
     : 'PS';
 
   const shouldShowToggle = displayMessage && displayMessage.length > 140;
+const daysLeft =
+  displayMessage.match(/(\d+)\s*hari/i)?.[1] ?? '-';
 
+const sessionsRemaining =
+  displayMessage.match(/(\d+)\s*sesi/i)?.[1] ?? '-';
+
+const getPackageRisk = () => {
+
+  if (item.follow_up_type !== 'package_expiry') {
+    return null;
+  }
+
+  if (
+    daysLeft !== null &&
+    daysLeft <= 7 &&
+    sessionsRemaining >= 3
+  ) {
+    return {
+      label: 'PRIORITAS TINGGI',
+      bg: 'bg-red-50',
+      border: 'border-red-200',
+      text: 'text-red-700',
+      icon: '🔥'
+    };
+  }
+
+  if (
+    daysLeft !== null &&
+    daysLeft <= 14
+  ) {
+    return {
+      label: 'PERLU DIJADWALKAN',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      text: 'text-amber-700',
+      icon: '⚠️'
+    };
+  }
+
+  return {
+    label: 'MASIH AMAN',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    text: 'text-emerald-700',
+    icon: '✅'
+  };
+};
+
+const packageRisk = getPackageRisk();
   return (
     <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
 
@@ -250,6 +298,112 @@ const patientName =
               <Calendar className="w-3 h-3" />
               {formatDateDisplay()} • {formattedTime}
             </div>
+            {item.follow_up_type === 'package_expiry' && (() => {
+
+  const days = Number(daysLeft);
+
+  const colorConfig =
+    days <= 7
+      ? {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          text: 'text-red-700',
+          value: 'text-red-900',
+          label: '🔥 Prioritas Tinggi'
+        }
+      : days <= 14
+      ? {
+          bg: 'bg-amber-50',
+          border: 'border-amber-200',
+          text: 'text-amber-700',
+          value: 'text-amber-900',
+          label: '⚠️ Perlu Dijadwalkan'
+        }
+      : {
+          bg: 'bg-emerald-50',
+          border: 'border-emerald-200',
+          text: 'text-emerald-700',
+          value: 'text-emerald-900',
+          label: '✅ Masih Aman'
+        };
+
+  return (
+
+    <div className="mt-3">
+
+      <div
+        className={`
+          text-[10px]
+          font-semibold
+          px-2
+          py-1
+          rounded-lg
+          inline-flex
+          mb-2
+          ${colorConfig.bg}
+          ${colorConfig.text}
+        `}
+      >
+        {colorConfig.label}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+
+        <div
+          className={`
+            rounded-xl
+            border
+            px-3
+            py-2
+            ${colorConfig.bg}
+            ${colorConfig.border}
+          `}
+        >
+          <div className={`text-[10px] uppercase ${colorConfig.text}`}>
+            Masa Berlaku
+          </div>
+
+          <div
+            className={`text-xl font-bold mt-1 ${colorConfig.value}`}
+          >
+            {daysLeft}
+          </div>
+
+          <div className="text-[10px] text-slate-500">
+            Hari
+          </div>
+        </div>
+
+        <div
+          className="
+            rounded-xl
+            border
+            border-slate-200
+            bg-slate-50
+            px-3
+            py-2
+          "
+        >
+          <div className="text-[10px] uppercase text-slate-600">
+            Sesi Tersisa
+          </div>
+
+          <div className="text-xl font-bold mt-1 text-slate-900">
+            {sessionsRemaining}
+          </div>
+
+          <div className="text-[10px] text-slate-500">
+            Sesi
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  );
+
+})()}
           </div>
         </div>
       </div>
