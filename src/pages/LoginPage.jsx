@@ -115,12 +115,14 @@ switch (role) {
     break;
 
   case 'admin':
-  case 'clinic_admin':
-    navigate(
-      isPWA ? '/admin/appointments' : '/admin',
-      { replace: true }
-    );
-    break;
+case 'clinic_admin':
+  navigate(
+    isPWA
+      ? '/admin/appointment-booking'
+      : '/admin',
+    { replace: true }
+  );
+  break;
 
   case 'therapist':
   case 'physiotherapist':

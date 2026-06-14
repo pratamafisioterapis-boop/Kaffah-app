@@ -29,6 +29,7 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
+import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
 
 const AdminDashboardHome = () => {
   const location = useLocation(); 
@@ -800,7 +801,18 @@ const AdminDashboard = () => {
     { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' }, 
     { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
   ];
-
+const isPWA =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true ||
+  document.referrer.includes('android-app://');
+  // MODE PWA ADMIN TANPA SIDEBAR
+if (isPWA) {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <AdminAppointmentBooking />
+    </div>
+  );
+}
   return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
       <Routes>
