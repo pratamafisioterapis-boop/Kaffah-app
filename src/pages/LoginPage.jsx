@@ -104,58 +104,54 @@ const isPWA =
   window.navigator.standalone === true ||
   document.referrer.includes('android-app://');
 
-// ❗ hanya untuk PWA → override ke appointment
-if (isPWA) {
-  navigate('/admin/appointment-booking', { replace: true });
-  return;
+// Standard role-based redirect
+switch (role) {
+  case 'owner':
+  case 'super_admin':
+    navigate(
+      isPWA ? '/owner/dashboard' : '/owner',
+      { replace: true }
+    );
+    break;
+
+  case 'admin':
+  case 'clinic_admin':
+    navigate(
+      isPWA ? '/admin/appointments' : '/admin',
+      { replace: true }
+    );
+    break;
+
+  case 'therapist':
+  case 'physiotherapist':
+    navigate('/therapist', { replace: true });
+    break;
+
+  default:
+    // Unknown role
+    console.warn("[LoginPage] Unknown role encountered:", role);
+    await signOut();
+    setAuthError(`Role '${role}' is not authorized to access the system.`);
+    setIsRedirecting(false);
 }
-        // Standard role-based redirect
-        switch (role) {
-          case 'owner':
-          case 'super_admin':
-            navigate('/owner', { replace: true });
-            break;
-          case 'admin':
-          case 'clinic_admin':
-            navigate('/admin', { replace: true });
-            break;
-          case 'therapist':
-          case 'physiotherapist':
-            navigate('/therapist', { replace: true });
-            break;
-          default:
-            // Unknown role
-            console.warn("[LoginPage] Unknown role encountered:", role);
-            await signOut();
-            setAuthError(`Role '${role}' is not authorized to access the system.`);
-            setIsRedirecting(false);
-        }
       } catch (err) {
         if (mounted) {
-            console.error("[LoginPage] Critical redirect error:", err);
-            setAuthError("Unexpected error occurred during login resolution.");
-            setIsRedirecting(false);
+          console.error("[LoginPage] Critical redirect error:", err);
+          setAuthError("Unexpected error occurred during login resolution.");
+          setIsRedirecting(false);
         }
       }
     };
 
     if (user && !authLoading) {
-        checkUserRoleAndRedirect();
+      checkUserRoleAndRedirect();
     }
-    
-    return () => { mounted = false; };
-  }, [user, authLoading, navigate, signOut, location.state]);
-  useEffect(() => {
-  const isPWA =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://');
 
-  // ❗ kalau PWA + sudah login → langsung skip login
-  if (isPWA && user && !authLoading) {
-    navigate('/admin/appointment-booking', { replace: true });
-  }
-}, [user, authLoading, navigate]);
+    return () => {
+      mounted = false;
+    };
+  }, [user, authLoading, navigate, signOut, location.state]);
+  
 
   const handleLogin = async (e) => {
     e.preventDefault();

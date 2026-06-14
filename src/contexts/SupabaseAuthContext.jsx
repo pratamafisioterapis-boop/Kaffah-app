@@ -31,22 +31,17 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Helper to clear local state immediately
-  const clearLocalState = useCallback(() => {
-    console.log("[AuthContext] Clearing local auth state");
-    setUser(null);
-    setSession(null);
-    setUserDetails(null);
-    retryCount.current = 0;
+  
     
     
     // Also clear supabase specific keys
-    const projectId = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0];
-    if (projectId) {
-        const key = `sb-${projectId}-auth-token`;
-        localStorage.removeItem(key);
-    }
-  }, []);
+    const clearLocalState = useCallback(() => {
+  setUser(null);
+  setSession(null);
+  setUserDetails(null);
+  retryCount.current = 0;
+}, []);
+
 
   // Fetch additional user details from public.users table
   const fetchUserDetails = useCallback(async (userId) => {
@@ -153,22 +148,19 @@ export const AuthProvider = ({ children }) => {
         
         if (error) {
            console.warn(`[AuthContext] Session initialization error:`, error.message);
-           if (error.message.includes('refresh_token_not_found') || 
-               error.message.includes('Invalid Refresh Token') || 
-               error.message.includes('session_not_found')) {
-             console.log("[AuthContext] Refresh token invalid/not found. Clearing session.");
-             await supabase.auth.signOut(); 
-             if (mounted) clearLocalState();
-           }
+           if (
+  error.message.includes('refresh_token_not_found') ||
+  error.message.includes('Invalid Refresh Token')
+) {
+  await supabase.auth.signOut();
+  if (mounted) clearLocalState();
+}
         }
 
         if (mounted) {
             if (data?.session) {
-                await handleSession(data.session);
-            } else {
-                console.log("[AuthContext] No active session found on init.");
-                clearLocalState();
-            }
+    await handleSession(data.session);
+}
         }
       } catch (error) {
         console.error('[AuthContext] Unexpected error checking auth session:', error);

@@ -62,7 +62,9 @@ useEffect(() => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [openNotif, setOpenNotif] = useState(false);
-
+const isPWA =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true;
   useEffect(() => {
     const channel = supabase
       .channel('audit_logs_changes')
@@ -175,8 +177,14 @@ useEffect(() => {
   }, [location.pathname]);
 
   const processNavItems = (items) => {
-     if (!items) return [];
-     let newItems = [...items];
+   if (!items) return [];
+
+   // PWA: gunakan menu apa adanya
+   if (isPWA) {
+      return items;
+   }
+
+   let newItems = [...items];
      const isOwnerOrAdmin = ['owner', 'admin'].includes(role);
 
      if (isOwnerOrAdmin) {
@@ -223,8 +231,42 @@ useEffect(() => {
 
      return newItems;
   };
+const pwaNavItems = useMemo(() => {
 
-  const finalNavItems = useMemo(() => processNavItems(navItems), [navItems, role]);
+  if (!isPWA) return navItems;
+
+  if (role === 'admin') {
+    return [
+      {
+        label: 'Appointments',
+        path: '/admin/appointments',
+        icon: 'Calendar'
+      }
+    ];
+  }
+
+  if (role === 'owner') {
+    return [
+      {
+  label: 'Dashboard',
+  path: '/owner/dashboard',
+  icon: 'Home'
+},
+      {
+        label: 'Appointments',
+        path: '/owner/appointments',
+        icon: 'Calendar'
+      }
+    ];
+  }
+
+  return navItems; // therapist
+
+}, [navItems, role, isPWA]);
+  const finalNavItems = useMemo(
+  () => processNavItems(pwaNavItems),
+  [pwaNavItems, role]
+);
 
   useEffect(() => {
     const newExpanded = {};
