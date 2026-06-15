@@ -519,7 +519,8 @@ export const getAppointments = async (filters = {}) => {
 };
 
 export const createAppointment = async (params) => {
-  try {
+  try { 
+    console.log("PARAMS MASUK API", params);
     let finalDate =
       params.p_appointment_date ||
       params.appointmentDate    ||
@@ -536,11 +537,17 @@ export const createAppointment = async (params) => {
     }
 
     const payload = {
-  p_therapist_id: params.p_therapist_id || params.therapistId,
+  p_therapist_id:
+    params.p_therapist_id ||
+    params.therapist_id ||
+    params.therapistId,
+
   p_appointment_date: finalDate,
+
   p_duration_minutes: parseInt(
     params.p_duration_minutes || params.durationMinutes || 60
   ),
+
   p_patient_id: params.p_patient_id || params.patientId || null,
   p_status: params.p_status || params.status || "confirmed",
   p_clinic_id: params.p_clinic_id || params.clinicId || null,
@@ -548,11 +555,17 @@ export const createAppointment = async (params) => {
   p_service_id: params.p_service_id || params.serviceId || null,
   p_guest_name: params.p_guest_name || params.guestName || null,
   p_guest_phone: params.p_guest_phone || params.guestPhone || null,
-  p_is_homecare: params.p_is_homecare ?? false,
 
-  // 🔥 TAMBAHAN WAJIB
-  p_allow_overlap: params.p_allow_overlap ?? false
+  p_is_homecare: params.p_is_homecare ?? false,
+  p_allow_overlap: params.p_allow_overlap ?? false,
+
+  p_action_by: params.action_by ?? null,
+  p_action_by_name: params.action_by_name ?? null,
+  p_action_by_role: params.action_by_role ?? null,
+
+  p_is_manual: params.p_is_manual ?? false
 };
+console.log("PAYLOAD RPC FINAL", payload);
 
     const { data, error } = await supabase.rpc(
       "create_appointment_safe",
@@ -581,8 +594,19 @@ export const updateAppointment = async (id, updates) => {
   }, 'updateAppointment');
 };
 
-export const updateAppointmentStatus = async (id, status) => {
-  return updateAppointment(id, { status });
+export const updateAppointmentStatus = async (
+  id,
+  status,
+  actionBy = null,
+  actionByName = null,
+  actionByRole = null
+) => {
+  return updateAppointment(id, {
+    status,
+    action_by: actionBy,
+    action_by_name: actionByName,
+    action_by_role: actionByRole
+  });
 };
 
 export const deleteAppointment = async (id) => {

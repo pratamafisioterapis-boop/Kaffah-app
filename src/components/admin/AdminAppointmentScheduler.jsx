@@ -150,16 +150,32 @@ const AdminAppointmentScheduler = () => {
     );
 
     const payload = {
-      therapist_id: formData.therapist_id,
-      clinic_id: therapist?.clinic_id,
-      appointment_date: appointmentDate,
-      duration_minutes: matchedSlot.duration_minutes, // 🔥 AUTO FROM SLOT
-      status: 'confirmed',
-      notes: formData.notes,
-      patient_id: formData.patient_type === 'registered' ? formData.patient_id : null,
-      guest_name: formData.patient_type === 'guest' ? formData.guest_name : null,
-      guest_phone: formData.patient_type === 'guest' ? formData.guest_phone : null,
-    };
+  therapist_id: formData.therapist_id,
+  clinic_id: therapist?.clinic_id,
+  appointment_date: appointmentDate,
+  duration_minutes: matchedSlot.duration_minutes,
+  status: 'confirmed',
+  notes: formData.notes,
+
+  patient_id:
+    formData.patient_type === 'registered'
+      ? formData.patient_id
+      : null,
+
+  guest_name:
+    formData.patient_type === 'guest'
+      ? formData.guest_name
+      : null,
+
+  guest_phone:
+    formData.patient_type === 'guest'
+      ? formData.guest_phone
+      : null,
+
+  action_by: 'TEST_ACTION_BY',
+action_by_name: 'TEST_NAME',
+action_by_role: 'TEST_ROLE'
+};
 
     const { error } = await createAppointment(payload, userRole);
 

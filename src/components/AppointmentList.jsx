@@ -24,12 +24,14 @@ import { Input } from '@/components/ui/input';
 import { updateAppointmentStatus } from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) => {
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [processingId, setProcessingId] = useState(null);
+  const { user, userDetails } = useAuth();
 
  const handleStatusChange = async (id, newStatus) => {
   setProcessingId(id);
@@ -97,7 +99,13 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
     // =========================
     // UPDATE STATUS
     // =========================
-    const { error } = await updateAppointmentStatus(id, newStatus);
+    const { error } = await updateAppointmentStatus(
+  id,
+  newStatus,
+  user?.id,
+  userDetails?.full_name,
+  userDetails?.role
+);
     if (error) throw error;
 
     if (newStatus !== 'cancelled') {

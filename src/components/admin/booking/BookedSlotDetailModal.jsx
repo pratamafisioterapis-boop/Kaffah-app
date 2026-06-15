@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { User, Clock, FileText, CheckCircle2, Trash2, Loader2, MessageCircle } from 'lucide-react';
 import { deleteAppointment, updateAppointment } from '@/lib/api';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ const BookedSlotDetailModal = ({
   onViewHistory
 }) => {
   const { toast } = useToast();
+const { user, userDetails } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -403,8 +405,12 @@ useEffect(() => {
         onClick={async () => {
           try {
             const { error } = await updateAppointment(appointment.id, {
-              status: 'cancelled'
-            });
+  status: 'cancelled',
+
+  action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: userDetails?.role
+});
 
             if (error) throw error;
 
@@ -476,7 +482,11 @@ useEffect(() => {
           const { error } = await updateAppointment(appointment.id, {
   appointment_date: newDateTime,
   therapist_id: selectedTherapist,
-  status: 'rescheduled'
+  status: 'rescheduled',
+
+  action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: userDetails?.role
 });
 
           if (error) throw error;

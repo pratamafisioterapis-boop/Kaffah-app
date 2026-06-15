@@ -25,12 +25,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 import { format, isValid } from 'date-fns';
+
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+
 
 const MIN_DURATION = 60; // 🔥 Minimum 60 menit
 
 const ManualBookingForm = ({ therapist, date, onClose, onSuccess, leaveStatus = 'aktif' }) => {
   const { toast } = useToast();
+  const { user, userDetails } = useAuth();
+  console.log("MANUAL FORM USER", user);
+console.log("MANUAL FORM USERDETAILS", userDetails);
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [patientSearch, setPatientSearch] = useState('');
@@ -259,7 +265,14 @@ if (pkg) {
           await deleteFollowUpQueueEntry(existingQueue.id);
         }
       }
+console.log("AUTH USER", user);
+console.log("AUTH DETAILS", userDetails);
 
+console.log({
+  action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: userDetails?.role
+});
       const result = await bookAppointmentSafe({
         therapistId: therapist.id,
         clinicId: therapist.clinic_id,
@@ -269,10 +282,15 @@ if (pkg) {
         notes: formData.notes,
         is_homecare: isHomecare,
   is_recurring: isRecurring,
-  p_is_manual: true,
         patientId: formData.patient_type === 'registered' ? formData.patient_id : null,
         guestName: formData.patient_type === 'guest' ? formData.guest_name : null,
-        guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null
+        guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null,
+        action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: userDetails?.role,
+
+  p_is_manual: true,
+  p_disable_whatsapp: !isBablastEnabled
       });
 
       if (result?.error) {

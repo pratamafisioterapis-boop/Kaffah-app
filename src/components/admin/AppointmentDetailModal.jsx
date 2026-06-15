@@ -24,7 +24,7 @@ const AppointmentDetailModal = ({
   onSuccess 
 }) => {
   const { toast } = useToast();
-  const { user, role } = useAuth(); 
+  const { user, userDetails, role } = useAuth();
   const { deleteAppointment } = useAppointmentState();
   
   const [loading, setLoading] = useState(false);
@@ -218,13 +218,17 @@ useEffect(() => {
     try {
       const fullDateTime = new Date(`${formData.appointment_date}T${formData.appointment_time}`).toISOString();
       const payload = {
-        patient_id: formData.patient_id || null,
-        therapist_id: formData.therapist_id || null,
-        appointment_date: fullDateTime,
-        duration_minutes: parseInt(formData.duration_minutes),
-        status: formData.status,
-        notes: formData.notes
-      };
+  patient_id: formData.patient_id || null,
+  therapist_id: formData.therapist_id || null,
+  appointment_date: fullDateTime,
+  duration_minutes: parseInt(formData.duration_minutes),
+  status: formData.status,
+  notes: formData.notes,
+
+  action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: role
+};
 
       if (appointment?.id) {
         await updateAppointment(appointment.id, payload);
@@ -250,13 +254,17 @@ const handleConfirmReschedule = async () => {
     const fullDateTime = new Date(`${formData.appointment_date}T${formData.appointment_time}`).toISOString();
 
     const payload = {
-      patient_id: formData.patient_id || null,
-      therapist_id: formData.therapist_id || null,
-      appointment_date: fullDateTime,
-      duration_minutes: parseInt(formData.duration_minutes),
-      status: 'rescheduled',
-      notes: formData.notes
-    };
+  patient_id: formData.patient_id || null,
+  therapist_id: formData.therapist_id || null,
+  appointment_date: fullDateTime,
+  duration_minutes: parseInt(formData.duration_minutes),
+  status: 'rescheduled',
+  notes: formData.notes,
+
+  action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: role
+};
 
     await updateAppointment(appointment.id, payload);
 

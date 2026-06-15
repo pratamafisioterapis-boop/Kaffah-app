@@ -21,6 +21,7 @@ import { format, isValid, addDays, isBefore, startOfDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatus = 'aktif' }) => {
@@ -30,9 +31,9 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   };
 
   const { toast } = useToast();
+  const { user, userDetails } = useAuth();
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
-  
   const [packageInfo, setPackageInfo] = useState(null);
   const [isJustActivated, setIsJustActivated] = useState(false);
   const [showExtendModal, setShowExtendModal] = useState(false);
@@ -223,7 +224,9 @@ setPackageInfo(pkg);
   p_service_id: null,
   p_is_homecare: formData.is_homecare,
   p_is_manual: false,
-
+action_by: user?.id,
+  action_by_name: userDetails?.full_name,
+  action_by_role: userDetails?.role,
   // 🔥 TAMBAHAN
   p_disable_whatsapp: !isBablastEnabled
 });
