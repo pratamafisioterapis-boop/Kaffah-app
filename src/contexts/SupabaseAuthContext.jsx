@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import {
+  registerPushNotifications,
+  listenForegroundNotifications
+} from '@/lib/pushNotifications';
 import { useToast } from '@/components/ui/use-toast';
 
 const AuthContext = createContext(undefined);
@@ -309,7 +313,14 @@ export const AuthProvider = ({ children }) => {
   const role = useMemo(() => {
     return userDetails?.role || user?.user_metadata?.role || 'guest';
   }, [userDetails, user]);
+  useEffect(() => {
+  listenForegroundNotifications();
+}, []);
+useEffect(() => {
+  if (!user?.id) return;
 
+  registerPushNotifications(user.id);
+}, [user]);
   const value = useMemo(() => ({
     user,
     session,
