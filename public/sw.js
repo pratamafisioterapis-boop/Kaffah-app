@@ -66,18 +66,26 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/logo192.png',
-    badge: '/favicon.ico',
-    data: {
-      url: data.url || '/'
-    }
-  };
+  const raw = event.data.json();
+
+  const title =
+    raw?.notification?.title ||
+    raw?.data?.title ||
+    raw?.title ||
+    'NO TITLE';
+
+  const body =
+    raw?.notification?.body ||
+    raw?.data?.body ||
+    raw?.body ||
+    'NO BODY';
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(title, {
+      body,
+      icon: '/logo192.png',
+      badge: '/favicon.ico'
+    })
   );
 });
 
