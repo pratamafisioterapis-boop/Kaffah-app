@@ -139,13 +139,14 @@ const TherapistStatusCards = ({
             <Card
   key={therapist.id}
   className="
-    overflow-hidden
-    border-0
-    rounded-3xl
-    shadow-lg
-    bg-white
-    h-auto min-h-[210px]
-  "
+overflow-hidden
+border-0
+rounded-3xl
+shadow-lg
+bg-white
+min-h-[260px]
+md:min-h-[210px]
+"
 >
               <CardContent className="p-0">
 
@@ -195,50 +196,43 @@ const TherapistStatusCards = ({
 
                   <div className="flex-1 p-5">
 
-                    <div className="flex justify-between items-start gap-3">
+                    <div className="space-y-3">
 
-                      <div className="flex-1 min-w-0">
+  <div className="flex justify-end">
+    <div
+      className={`
+        ${color}
+        text-white
+        px-3
+        py-1
+        rounded-full
+        text-xs
+        font-bold
+      `}
+    >
+      {label}
+    </div>
+  </div>
 
-                        <h4
-  className="
-    text-lg
-    font-bold
-    text-slate-800
-    leading-snug
-    break-words
-    line-clamp-2
-  "
->
-                          {therapist.name}
-                        </h4>
+  <div>
+    <h4
+      className="
+      text-lg
+      font-bold
+      text-slate-800
+      leading-snug
+      break-words
+      "
+    >
+      {therapist.name}
+    </h4>
 
-                        <div className="text-sm text-slate-500 mt-1">
-                          {therapist.specialization ||
-                            'Physiotherapist'}
-                        </div>
+    <div className="text-sm text-slate-500 mt-1">
+      {therapist.specialization || 'Physiotherapist'}
+    </div>
+  </div>
 
-                      </div>
-
-                      <div
-  className={`
-    ${color}
-    text-white
-    px-2
-    md:px-3
-    py-1
-    rounded-full
-    text-[10px]
-    md:text-xs
-    font-bold
-    shrink-0
-    max-w-[90px]
-    truncate
-  `}
->
-                        {label}
-                      </div>
-
-                    </div>
+</div>
 
                     <div className="
 mt-5
