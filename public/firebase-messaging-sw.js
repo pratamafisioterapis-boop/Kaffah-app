@@ -18,10 +18,21 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+
+  const title =
+    payload?.notification?.title ||
+    payload?.data?.title ||
+    "NO TITLE";
+
+  const body =
+    payload?.notification?.body ||
+    payload?.data?.body ||
+    "NO BODY";
+
   self.registration.showNotification(
-    payload.notification.title,
+    title,
     {
-      body: payload.notification.body,
+      body,
       icon: "/logo192.png"
     }
   );
