@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SplashScreen from '@/components/SplashScreen';
 import { Button } from '@/components/ui/button';
 import { Download, Bell } from 'lucide-react';
 import { subscribeUserToPush } from '@/lib/pwaUtils';
@@ -57,7 +58,13 @@ const PWAInstallPrompt = () => {
        setShowNotifRequest(false);
     }
   };
+const isStandalone =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true;
 
+if (isStandalone) {
+  return <SplashScreen />;
+}
   if (!showInstall && !showNotifRequest) return null;
 
   return (
