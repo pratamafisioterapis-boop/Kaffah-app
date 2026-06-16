@@ -141,7 +141,7 @@ const TherapistCard = ({
 
     <Avatar
   className={cn(
-    className="h-12 w-12 md:h-16 md:w-16 border border-white/20 shadow-xl",
+    "h-12 w-12 md:h-16 md:w-16 border border-white/20 shadow-xl",
     "ring-2 ring-white/10 backdrop-blur",
     shouldGrayScale && "opacity-50 grayscale"
   )}
