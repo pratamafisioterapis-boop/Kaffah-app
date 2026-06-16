@@ -106,7 +106,7 @@ function App() {
       <AuthErrorBoundary>
         <AuthProvider>
           <Helmet>
-            <title>Kaffah Physiotherapy test 999</title>
+            <title>Kaffah Physiotherapy</title>
             <meta name="description" content="Kaffah Physiotherapy - Professional Management System" />
             <meta name="theme-color" content="#1e3a5f" />
             <link rel="manifest" href="/manifest.json" />
