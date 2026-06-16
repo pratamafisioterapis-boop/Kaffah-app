@@ -1,5 +1,3 @@
-
-import React, { Suspense, useEffect } from 'react';
 import React, { Suspense, useEffect, useState } from 'react';
 import SplashScreen from "@/components/SplashScreen";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -114,16 +112,7 @@ function App() {
       <AuthErrorBoundary>
         <AuthProvider>
 
-  <div
-  style={{
-    position: "fixed",
-    inset: 0,
-    background: "red",
-    zIndex: 999999
-  }}
->
-  TEST APP JSX
-</div>
+  
 
           <Helmet>
             <title>Kaffah Physiotherapy</title>
