@@ -29,11 +29,5 @@ messaging.onBackgroundMessage((payload) => {
     payload?.data?.body ||
     "NO BODY";
 
-  self.registration.showNotification(
-    title,
-    {
-      body,
-      icon: "/logo192.png"
-    }
-  );
+  console.log("BACKGROUND PUSH", payload);
 });
