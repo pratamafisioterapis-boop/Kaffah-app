@@ -66,13 +66,18 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  const raw = event.data.text();
+  const data = event.data.json();
+  const options = {
+    body: data.body,
+    icon: '/logo192.png',
+    badge: '/favicon.ico',
+    data: {
+      url: data.url || '/'
+    }
+  };
 
   event.waitUntil(
-    self.registration.showNotification('RAW PUSH', {
-      body: raw,
-      icon: '/logo192.png'
-    })
+    self.registration.showNotification(data.title, options)
   );
 });
 
