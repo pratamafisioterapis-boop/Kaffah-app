@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Users, Calendar, TrendingUp, Clock, Activity, Filter, DollarSign,
+  Users, Calendar, TrendingUp, Clock, Activity,  DollarSign,
   Briefcase, UserCheck, BarChart2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,8 +79,8 @@ const OwnerOperationalMetrics = () => {
   const [trendData, setTrendData] = useState([]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+  fetchData();
+}, [dateRange]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -203,14 +203,34 @@ const OwnerOperationalMetrics = () => {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-           <Input type="date" value={dateRange.startDate} onChange={(e) => setDateRange(prev => ({...prev, startDate: e.target.value}))} className="w-32" />
-           <span>-</span>
-           <Input type="date" value={dateRange.endDate} onChange={(e) => setDateRange(prev => ({...prev, endDate: e.target.value}))} className="w-32" />
-           <Button onClick={fetchData}><Filter className="w-4 h-4 mr-2"/>Filter</Button>
-        </div>
-      </div>
+        <div className="w-full md:w-auto">
+  <div className="grid grid-cols-2 gap-2">
+    <Input
+      type="date"
+      value={dateRange.startDate}
+      onChange={(e) =>
+        setDateRange(prev => ({
+          ...prev,
+          startDate: e.target.value
+        }))
+      }
+      className="w-full"
+    />
 
+    <Input
+      type="date"
+      value={dateRange.endDate}
+      onChange={(e) =>
+        setDateRange(prev => ({
+          ...prev,
+          endDate: e.target.value
+        }))
+      }
+      className="w-full"
+    />
+  </div>
+</div>
+</div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Total Pendapatan" value={formatCurrency(stats.totalRevenue)} subtitle="Gross Revenue" icon={DollarSign} color="bg-emerald-600" loading={loading} />
         <MetricCard title="Total Sesi Terapi" value={stats.totalSessions} subtitle="Volume Kunjungan" icon={Briefcase} color="bg-blue-600" loading={loading} />
