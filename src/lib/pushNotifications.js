@@ -31,12 +31,17 @@ export const registerPushNotifications = async (userId) => {
     }
 
     const { error } = await supabase
-      .from("fcm_tokens")
-      .upsert({
-        user_id: userId,
-        token,
-        updated_at: new Date().toISOString(),
-      });
+  .from("fcm_tokens")
+  .upsert(
+    {
+      user_id: userId,
+      token,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id",
+    }
+  );
 
     if (error) {
       console.error("FCM DB ERROR:", error);
