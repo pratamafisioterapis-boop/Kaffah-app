@@ -77,8 +77,14 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  self.registration.showNotification(
+    'DEBUG',
+    {
+      body: JSON.stringify(data),
+      icon: '/logo192.png'
+    }
+  )
+);
 });
 
 // Notification Click Handler
