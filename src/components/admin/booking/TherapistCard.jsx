@@ -94,14 +94,14 @@ const TherapistCard = ({
         shouldGrayScale && "bg-slate-100"
       )}>
         <CardHeader className={cn(
-  "relative py-6 px-5 border-b text-white",
+  "relative py-4 md:py-6 px-3 md:px-5 border-b text-white",
   "bg-gradient-to-br backdrop-blur-xl",
   "from-slate-800/90 to-slate-900/90",
   "border-white/10"
 )}>
 
           {/* Manual Booking Button – Top Right */}
-          <div className="absolute top-5 right-5 z-20">
+          <div className="absolute top-3 md:top-5 right-3 md:right-5 z-20">
             {isLeave ? (
               <Button
                 variant="outline"
@@ -109,14 +109,14 @@ const TherapistCard = ({
                 className="h-9 w-9 rounded-full bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed"
                 disabled
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
               </Button>
             ) : (
               <Button
   variant="outline"
   size="icon"
   className={cn(
-    "h-9 w-9 rounded-full transition-all duration-300",
+    "h-8 w-8 md:h-9 md:w-9 rounded-full transition-all duration-300",
     "bg-white text-slate-800 border border-white shadow-xl",
     "hover:bg-slate-100 hover:text-black",
     "hover:scale-105 active:scale-95",
@@ -131,17 +131,17 @@ const TherapistCard = ({
   )}
   onClick={() => onManualBooking(therapist)}
 >
-  <Plus className="h-4 w-4" />
+  <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
 </Button>
             )}
           </div>
 
   {/* Avatar + Info */}
-  <div className="flex items-center gap-5">
+  <div className="flex items-center gap-3 md:gap-5">
 
     <Avatar
   className={cn(
-    "h-16 w-16 border border-white/20 shadow-xl",
+    className="h-12 w-12 md:h-16 md:w-16 border border-white/20 shadow-xl",
     "ring-2 ring-white/10 backdrop-blur",
     shouldGrayScale && "opacity-50 grayscale"
   )}
@@ -154,7 +154,7 @@ const TherapistCard = ({
 
     <div className="flex flex-col">
       <div className="flex items-center gap-2">
-        <CardTitle className="text-base sm:text-lg font-semibold text-white leading-tight break-words">
+        <CardTitle className="text-sm md:text-lg font-semibold text-white leading-tight break-words">
           {therapist.name || 'Unnamed Therapist'}
         </CardTitle>
 
@@ -172,7 +172,7 @@ const TherapistCard = ({
         )}
       </div>
 
-      <p className="text-sm text-white/80">
+      <p className="text-xs md:text-sm text-white/80">
         {therapist.specialization || 'Fisioterapis'}
       </p>
     </div>
@@ -181,7 +181,7 @@ const TherapistCard = ({
 
 </CardHeader>
         
-        <CardContent className="flex-1 flex flex-col gap-8 pt-6 px-5 pb-6">
+        <CardContent className="flex-1 flex flex-col gap-4 md:gap-8 pt-4 md:pt-6 px-3 md:px-5 pb-4 md:pb-6">
           {/* Available Slots Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -189,10 +189,10 @@ const TherapistCard = ({
                 <div className={cn("w-1.5 h-1.5 rounded-full", isLeave ? "bg-gray-400" : "bg-emerald-500")}></div>
                  Slot Kosong
                </h4>
-              <span className="text-[10px] text-slate-400 font-medium">{isLeave ? 0 : availableSlots.length} available</span>
+              <span className="hidden md:block text-[10px] text-slate-400 font-medium">{isLeave ? 0 : availableSlots.length} available</span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {availableSlots.length > 0 ? (
                 availableSlots.map((slot, index) => {
                   const rawTime = slot.slot_start_time || "00:00";
@@ -214,7 +214,7 @@ const TherapistCard = ({
                       key={`${slot.id || index}`}
                       onClick={() => onSlotClick(slot, therapist)}
                       className={cn(
-  "w-full text-center px-3 py-2 rounded-full text-xs sm:text-sm font-semibold",
+  "w-full text-center px-2 py-2 rounded-xl text-[11px] md:text-sm font-semibold",
 
                         // 🔥 BASE PREMIUM
                         "bg-emerald-500/90 text-white backdrop-blur",
@@ -261,10 +261,10 @@ const TherapistCard = ({
                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                  Slot Terisi
                </h4>
-               <span className="text-[10px] text-slate-400 font-medium">{sortedAppointments.length} booked</span>
+               <span className="hidden md:block text-[10px] text-slate-400 font-medium">{sortedAppointments.length} booked</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {sortedAppointments.length > 0 ? (
                 sortedAppointments.map((app) => {
                   const timeString = formatTimeIndonesia(app.appointment_date) || "--:--";
@@ -273,7 +273,7 @@ const TherapistCard = ({
                     <div 
   key={app.id}
   className={cn(
-  "group flex items-center gap-4 p-3 rounded-xl cursor-pointer border",
+  "group flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-xl cursor-pointer border",
 
   app.status?.toLowerCase() === 'cancelled'
   ? "bg-red-100 border-red-400 grayscale-0 opacity-100"
@@ -292,7 +292,7 @@ const TherapistCard = ({
     
                       onClick={() => onAppointmentClick(app)}
                     >
-                      <div className="shrink-0 font-mono text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                      <div className="shrink-0 font-mono text-[11px] md:text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
                           {timeString}
                        </div>
                        <div className="flex-1 min-w-0">

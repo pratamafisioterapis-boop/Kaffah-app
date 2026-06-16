@@ -122,7 +122,7 @@ const OperationalDashboardUI = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {[...Array(9)].map((_, i) => (
           <KPISkeleton key={i} />
         ))}
@@ -131,7 +131,7 @@ const OperationalDashboardUI = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
       {KPI_DATA.map((kpi, index) => (
         <motion.div
           key={index}
@@ -139,16 +139,16 @@ const OperationalDashboardUI = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
         >
-          <Card className="rounded-xl border-slate-200 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-white group overflow-hidden relative h-full">
-            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${kpi.color}`}>
-              <kpi.icon className="w-24 h-24 transform translate-x-4 -translate-y-4" />
+          <Card className="rounded-xl border-slate-200 shadow-sm md:shadow-lg hover:shadow-xl transition-all duration-300 bg-white group overflow-hidden relative h-full">
+            <div className={`absolute top-0 right-0 p-2 md:p-4 opacity-5 md:opacity-10 group-hover:opacity-20 transition-opacity ${kpi.color}`}>
+              <kpi.icon className="w-16 h-16 md:w-24 md:h-24 transform translate-x-2 md:translate-x-4 -translate-y-2 md:-translate-y-4" />
             </div>
-            <CardContent className="p-6 relative z-10">
+            <CardContent className="p-3 md:p-6 relative z-10">
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-lg ${kpi.bg} ${kpi.color}`}>
-                  <kpi.icon className="w-6 h-6" />
+                <div className={`p-2 md:p-3 rounded-lg ${kpi.bg} ${kpi.color}`}>
+                  <kpi.icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
-                <div className={`text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${
+                <div className={`hidden md:flex text-xs font-bold px-2.5 py-1 rounded-full items-center gap-1 ${
                   kpi.trend === 'up' ? 'text-green-600 bg-green-50' : 
                   kpi.trend === 'down' ? 'text-red-600 bg-red-50' : 
                   kpi.trend === 'warning' ? 'text-orange-600 bg-orange-50' :
@@ -158,8 +158,10 @@ const OperationalDashboardUI = ({
                 </div>
               </div>
               <div>
-                <h3 className="text-4xl font-extrabold text-slate-900 tracking-tight">{kpi.value}</h3>
-                <p className="text-sm font-medium text-slate-500 mt-1">{kpi.label}</p>
+                <h3 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">{kpi.value}</h3>
+                <p className="text-[11px] md:text-sm font-medium text-slate-500 mt-1 leading-tight">
+  {kpi.label}
+</p>
               </div>
             </CardContent>
           </Card>

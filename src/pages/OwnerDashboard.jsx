@@ -280,14 +280,32 @@ setTherapists(enrichedTherapists);
         <meta name="description" content="Owner dashboard for Kaffah System Care" />
       </Helmet>
       
-      <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="space-y-5 md:space-y-8 animate-in fade-in duration-500 pb-24 md:pb-12 px-1">
+        <div className="
+flex flex-col
+gap-3
+md:flex-row
+md:items-end
+md:justify-between
+">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Owner Dashboard</h1>
-            <p className="text-slate-500">Executive overview of clinic performance.</p>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+  Owner Dashboard
+</h1>
+            <p className="text-sm md:text-base text-slate-500">
+  Executive overview of clinic performance.
+</p>
           </div>
           
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="
+flex flex-col
+sm:flex-row
+items-stretch
+sm:items-center
+gap-2
+w-full
+md:w-auto
+">
             <Button
               variant="outline"
               size="icon"
@@ -299,7 +317,16 @@ setTherapists(enrichedTherapists);
               <RefreshCw className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+            <div className="
+flex flex-col md:flex-row
+items-stretch md:items-center
+gap-2 md:gap-3
+bg-slate-50
+px-3 py-2
+rounded-xl
+border border-slate-200
+w-full md:w-auto
+">
               <span className="text-sm font-semibold text-slate-600">
                 Periode
               </span>
@@ -336,7 +363,17 @@ setTherapists(enrichedTherapists);
         </div>
 
         <Tabs defaultValue="operational" className="w-full space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1">
+          <TabsList className="
+grid
+w-full
+grid-cols-2
+bg-slate-100
+p-1
+rounded-xl
+sticky
+top-0
+z-10
+">
             <TabsTrigger 
               value="operational"
               className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all"
@@ -378,7 +415,7 @@ setTherapists(enrichedTherapists);
              </section>
 
              {/* Section 3: Charts Grid */}
-             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 <TrendSessionChart />
                 
                 <CapacityVsDemandChart />
