@@ -19,10 +19,20 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
 
+  const title =
+    payload?.notification?.title ||
+    payload?.data?.title ||
+    "NO TITLE";
+
+  const body =
+    payload?.notification?.body ||
+    payload?.data?.body ||
+    "NO BODY";
+
   self.registration.showNotification(
-    "DEBUG FIREBASE",
+    title,
     {
-      body: JSON.stringify(payload),
+      body,
       icon: "/logo192.png"
     }
   );
