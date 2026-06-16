@@ -172,7 +172,7 @@ if (sessions === 0) {
                         <span>{getInitials(therapist.name)}</span>
                       )}
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1">
+                    <div className="hidden sm:flex flex-col min-w-0 flex-1">
                       <h4
   className="font-bold text-[12px] sm:text-[15px] leading-tight truncate max-w-[70px] sm:max-w-none"
   title={therapist.name}
@@ -212,19 +212,20 @@ if (sessions === 0) {
     </div>
   </div>
 
-  <div className="text-sm opacity-90">
-    Load Kerja: {Math.round(percentage)}%
-  </div>
+  <div className="hidden sm:block text-sm opacity-90">
+  Load Kerja: {Math.round(percentage)}%
 </div>
-                      <span className="text-sm font-medium opacity-80 mb-1.5">
-                        / {totalSlots} Sesi
-                      </span>
+</div>
+                      <span className="hidden sm:inline text-sm font-medium opacity-80 mb-1.5">
+  / {totalSlots} Sesi
+</span>
                    </div>
                 </div>
 
+                
                 {/* Bottom: Progress Bar */}
-                <div className="w-full">
-                  <div className="space-y-2">
+<div className="hidden sm:block w-full">
+  <div className="space-y-2">
   <div className="flex justify-between text-xs font-medium">
     <span>Load Capacity</span>
     <span>{Math.round(percentage)}%</span>
@@ -237,7 +238,8 @@ if (sessions === 0) {
     />
   </div>
 </div>
-                </div>
+</div>
+              
 
               </CardContent>
               
