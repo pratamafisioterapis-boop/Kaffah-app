@@ -308,41 +308,37 @@ md:w-auto
 ">
             
 
-            <div className="
-w-full
-">
-              <span className="text-sm font-semibold text-slate-600">
-                Periode
-              </span>
+           <div className="w-full">
+  <div className="flex flex-col gap-2">
+    <span className="text-sm font-semibold text-slate-600">
+      Periode
+    </span>
 
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, startDate: e.target.value })
-                }
-                className="w-32 md:w-40 text-xs md:text-sm
-                          px-2 md:px-3 py-1.5 md:py-2
-                          border border-slate-300 rounded-lg
-                          outline-none focus:border-indigo-500
-                          focus:ring-1 focus:ring-indigo-500"
-              />
+    <div className="grid grid-cols-2 gap-2">
+      <input
+        type="date"
+        value={dateRange.startDate}
+        onChange={(e) =>
+          setDateRange({ ...dateRange, startDate: e.target.value })
+        }
+        className="w-full text-xs
+        px-2 py-2
+        border border-slate-300 rounded-lg"
+      />
 
-              <span className="text-slate-400 font-medium">–</span>
-
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, endDate: e.target.value })
-                }
-                className="w-32 md:w-40 text-xs md:text-sm
-                          px-2 md:px-3 py-1.5 md:py-2
-                          border border-slate-300 rounded-lg
-                          outline-none focus:border-indigo-500
-                          focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
+      <input
+        type="date"
+        value={dateRange.endDate}
+        onChange={(e) =>
+          setDateRange({ ...dateRange, endDate: e.target.value })
+        }
+        className="w-full text-xs
+        px-2 py-2
+        border border-slate-300 rounded-lg"
+      />
+    </div>
+  </div>
+</div>
           </div>
         </div>
 
