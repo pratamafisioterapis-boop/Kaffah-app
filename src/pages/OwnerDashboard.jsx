@@ -306,26 +306,10 @@ gap-2
 w-full
 md:w-auto
 ">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleManualRefresh}
-              disabled={isRefreshing || isLoading}
-              className={isRefreshing ? "animate-spin" : ""}
-              title="Refresh Data"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            
 
             <div className="
-flex flex-col md:flex-row
-items-stretch md:items-center
-gap-2 md:gap-3
-bg-slate-50
-px-3 py-2
-rounded-xl
-border border-slate-200
-w-full md:w-auto
+w-full
 ">
               <span className="text-sm font-semibold text-slate-600">
                 Periode
