@@ -289,8 +289,7 @@ console.log({
   action_by_name: userDetails?.full_name,
   action_by_role: userDetails?.role,
 
-  p_is_manual: true,
-  p_disable_whatsapp: !isBablastEnabled
+  p_is_manual: true
       });
 
       if (result?.error) {
