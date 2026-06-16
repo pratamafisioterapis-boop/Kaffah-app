@@ -1,5 +1,7 @@
 
 import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import SplashScreen from "@/components/SplashScreen";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
@@ -88,6 +90,12 @@ class AuthErrorBoundary extends React.Component {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone
+  );
+});
   if (!supabase) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -105,6 +113,13 @@ function App() {
     <ErrorBoundary>
       <AuthErrorBoundary>
         <AuthProvider>
+
+  {showSplash && (
+    <SplashScreen
+      onFinish={() => setShowSplash(false)}
+    />
+  )}
+
           <Helmet>
             <title>Kaffah Physiotherapy</title>
             <meta name="description" content="Kaffah Physiotherapy - Professional Management System" />
