@@ -153,12 +153,12 @@ if (sessions === 0) {
             <Card 
   key={therapist.id} 
   className={cn(
-    "relative overflow-hidden rounded-3xl border-0 shadow-xl cursor-pointer transition-all duration-300 active:scale-[0.98] group",
-    "min-h-[180px]",
-    `bg-gradient-to-br ${gradient}`
-  )}
+  "relative overflow-hidden rounded-3xl border-0 shadow-xl cursor-pointer transition-all duration-300 active:scale-[0.98] group",
+  "h-[220px]",
+  `bg-gradient-to-br ${gradient}`
+)}
 >
-              <CardContent className="p-5 flex flex-col h-full justify-between text-white relative z-10">
+              <CardContent className="p-4 flex flex-col h-full text-white relative z-10">
                 <div className="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-3xl -translate-y-8 translate-x-8" />
 
 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl translate-y-6 -translate-x-6" />
