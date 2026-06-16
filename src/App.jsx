@@ -114,11 +114,16 @@ function App() {
       <AuthErrorBoundary>
         <AuthProvider>
 
-  {showSplash && (
-    <SplashScreen
-      onFinish={() => setShowSplash(false)}
-    />
-  )}
+  <div
+  style={{
+    position: "fixed",
+    inset: 0,
+    background: "red",
+    zIndex: 999999
+  }}
+>
+  TEST APP JSX
+</div>
 
           <Helmet>
             <title>Kaffah Physiotherapy</title>
