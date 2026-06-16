@@ -14,11 +14,10 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showSplash, setShowSplash] = useState(false);
   const isPWA = useMemo(() => {
   return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator?.standalone === true
   );
 }, []);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -42,9 +41,6 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  
-    
-    
     // Also clear supabase specific keys
     const clearLocalState = useCallback(() => {
   setUser(null);
@@ -118,13 +114,6 @@ export const AuthProvider = ({ children }) => {
         const details = await fetchUserDetails(currentUser.id);
         setUserDetails(details);
 
-if (details && isPWA) {
-  setShowSplash(true);
-
-  setTimeout(() => {
-    setShowSplash(false);
-  }, 1200);
-}
       } else {
         console.error("[AuthContext] Critical: Session exists but user ID is missing");
         setUserDetails(null);
@@ -351,23 +340,7 @@ useEffect(() => {
     signOut,
     refreshSession
   }), [user, session, userDetails, role, loading, isOnline, signUp, signIn, signOut, refreshSession]);
-if (showSplash && userDetails) {
-  return (
-    <div className="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center">
-
-      <img
-        src="/logo192.png"
-        alt="Kaffah"
-        className="w-16 h-16 animate-[logoPop_.3s_ease]"
-      />
-
-      <h1 className="mt-4 text-lg font-semibold text-slate-800 animate-[fadeIn_.4s_ease]">
-        Assalamu'alaikum, {userDetails.full_name} 👋
-      </h1>
-
-    </div>
-  );
-}
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
