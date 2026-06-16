@@ -144,7 +144,7 @@ if (sessions === 0) {
     <div className="w-full py-8">
       <h3 className="text-xl font-bold text-slate-800 mb-6 px-1">Status Terapis</h3>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 px-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 px-1">
         {sortedTherapists.map((therapist) => {
           const { statusData } = therapist;
           const { label, gradient, icon: Icon, percentage, sessions, totalSlots } = statusData;
@@ -154,7 +154,7 @@ if (sessions === 0) {
   key={therapist.id} 
   className={cn(
   "relative overflow-hidden rounded-3xl border-0 shadow-xl cursor-pointer transition-all duration-300 active:scale-[0.98] group",
-  "h-[190px] sm:h-[210px]",
+  "h-[150px] sm:h-[190px] lg:h-[210px]",
   `bg-gradient-to-br ${gradient}`
 )}
 >
