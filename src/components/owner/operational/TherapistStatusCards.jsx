@@ -144,25 +144,28 @@ if (sessions === 0) {
     <div className="w-full py-8">
       <h3 className="text-xl font-bold text-slate-800 mb-6 px-1">Status Terapis</h3>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-1">
         {sortedTherapists.map((therapist) => {
           const { statusData } = therapist;
           const { label, gradient, icon: Icon, percentage, sessions, totalSlots } = statusData;
 
           return (
             <Card 
-              key={therapist.id} 
-              className={cn(
-                "relative overflow-hidden rounded-xl border-0 shadow-lg cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl group",
-                `bg-gradient-to-br ${gradient}`
-              )}
-            >
-              <CardContent className="p-4 sm:p-5 flex flex-col h-full justify-between text-white">
-                
+  key={therapist.id} 
+  className={cn(
+    "relative overflow-hidden rounded-3xl border-0 shadow-xl cursor-pointer transition-all duration-300 active:scale-[0.98] group",
+    "min-h-[180px]",
+    `bg-gradient-to-br ${gradient}`
+  )}
+>
+              <CardContent className="p-5 flex flex-col h-full justify-between text-white relative z-10">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-3xl -translate-y-8 translate-x-8" />
+
+<div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl translate-y-6 -translate-x-6" />
                 {/* Top Row: Avatar & Status Icon */}
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-center mb-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-bold border border-white/30 shadow-inner">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-bold border border-white/30 shadow-inner">
                       {therapist.avatar_url ? (
                         <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
@@ -170,48 +173,68 @@ if (sessions === 0) {
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <h4 className="font-bold text-[16px] md:text-[17px] leading-tight line-clamp-1" title={therapist.name}>
-                        {therapist.name}
-                      </h4>
-                      <span className="text-[10px] opacity-90 font-medium tracking-wider uppercase">
-                        {therapist.specialization || 'Physiotherapist'}
-                      </span>
+                      <h4
+  className="font-bold text-lg leading-tight line-clamp-1"
+  title={therapist.name}
+>
+  {therapist.name}
+</h4>
+
+<span className="text-xs opacity-80 font-medium">
+  {therapist.specialization || 'Physiotherapist'}
+</span>
                     </div>
                   </div>
                   
-                  <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-md shadow-sm">
-                    <Icon className="w-4 h-4 text-white" />
-                  </div>
+                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
+  <Icon className="w-5 h-5 text-white" />
+</div>
                 </div>
 
                 {/* Middle Row: Metrics */}
                 <div className="mb-4">
                    <div className="flex items-end gap-2 mb-1">
-                      <span className="text-[28px] md:text-[32px] font-bold leading-none">
-                        {sessions}
-                      </span>
+                      <div className="mb-5">
+  <div className="flex items-center justify-between mb-3">
+    <div>
+      <div className="text-[34px] font-extrabold leading-none">
+        {sessions}
+      </div>
+      <div className="text-xs opacity-80 mt-1">
+        Total Sesi Hari Ini
+      </div>
+    </div>
+
+    <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold border border-white/20">
+      {label}
+    </div>
+  </div>
+
+  <div className="text-sm opacity-90">
+    Load Kerja: {Math.round(percentage)}%
+  </div>
+</div>
                       <span className="text-sm font-medium opacity-80 mb-1.5">
                         / {totalSlots} Sesi
-                      </span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 border border-white/20 uppercase tracking-wide">
-                        {label}
-                      </span>
-                      <span className="text-xs font-medium opacity-90">
-                        {Math.round(percentage)}% Load
                       </span>
                    </div>
                 </div>
 
                 {/* Bottom: Progress Bar */}
                 <div className="w-full">
-                  <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000 ease-out rounded-full"
-                      style={{ width: `${Math.min(100, percentage)}%` }}
-                    />
-                  </div>
+                  <div className="space-y-2">
+  <div className="flex justify-between text-xs font-medium">
+    <span>Load Capacity</span>
+    <span>{Math.round(percentage)}%</span>
+  </div>
+
+  <div className="h-3 w-full bg-black/20 rounded-full overflow-hidden backdrop-blur-sm">
+    <div
+      className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(255,255,255,0.7)]"
+      style={{ width: `${Math.min(100, percentage)}%` }}
+    />
+  </div>
+</div>
                 </div>
 
               </CardContent>
