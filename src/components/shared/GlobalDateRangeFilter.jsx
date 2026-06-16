@@ -64,7 +64,7 @@ const saveToStorage = (range) => {
             <Button
               variant="outline"
               className={cn(
-                "w-full sm:w-[150px] justify-start text-left font-normal bg-white border-slate-200 shadow-sm hover:bg-slate-50",
+                "w-[125px] md:w-[150px] justify-start text-left font-normal bg-white border-slate-200 shadow-sm hover:bg-slate-50 px-2",
                 !startDate && "text-muted-foreground"
               )}
             >
@@ -90,7 +90,7 @@ const saveToStorage = (range) => {
             <Button
               variant="outline"
               className={cn(
-                "w-full sm:w-[150px] justify-start text-left font-normal bg-white border-slate-200 shadow-sm hover:bg-slate-50",
+                "w-[125px] md:w-[150px] justify-start text-left font-normal bg-white border-slate-200 shadow-sm hover:bg-slate-50 px-2",
                 !endDate && "text-muted-foreground"
               )}
             >
