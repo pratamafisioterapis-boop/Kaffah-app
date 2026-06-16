@@ -8,7 +8,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(self.clients.claim());
 });
-const CACHE_NAME = 'kaffah-care-v2';
+const CACHE_NAME = 'kaffah-care-v99';
 const urlsToCache = [
   '/',
   '/index.html',
