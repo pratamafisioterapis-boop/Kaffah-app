@@ -164,7 +164,7 @@ if (sessions === 0) {
 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl translate-y-6 -translate-x-6" />
                 {/* Top Row: Avatar & Status Icon */}
                 <div className="flex justify-between items-center mb-5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
                     <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-bold border border-white/30 shadow-inner">
                       {therapist.avatar_url ? (
                         <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full rounded-full object-cover" />
@@ -172,9 +172,9 @@ if (sessions === 0) {
                         <span>{getInitials(therapist.name)}</span>
                       )}
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0 flex-1">
                       <h4
-  className="font-bold text-lg leading-tight line-clamp-1"
+  className="font-bold text-lg leading-tight break-words"
   title={therapist.name}
 >
   {therapist.name}
