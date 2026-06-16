@@ -144,7 +144,7 @@ if (sessions === 0) {
     <div className="w-full py-8">
       <h3 className="text-xl font-bold text-slate-800 mb-6 px-1">Status Terapis</h3>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-1">
+      <div className="grid grid-cols-2 gap-3 px-1">
         {sortedTherapists.map((therapist) => {
           const { statusData } = therapist;
           const { label, gradient, icon: Icon, percentage, sessions, totalSlots } = statusData;
@@ -154,7 +154,7 @@ if (sessions === 0) {
   key={therapist.id} 
   className={cn(
   "relative overflow-hidden rounded-3xl border-0 shadow-xl cursor-pointer transition-all duration-300 active:scale-[0.98] group",
-  "h-[220px]",
+  "h-[190px] sm:h-[210px]",
   `bg-gradient-to-br ${gradient}`
 )}
 >
@@ -164,8 +164,8 @@ if (sessions === 0) {
 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-2xl translate-y-6 -translate-x-6" />
                 {/* Top Row: Avatar & Status Icon */}
                 <div className="flex justify-between items-center mb-5">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-bold border border-white/30 shadow-inner">
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-sm font-bold border border-white/30 shadow-inner">
                       {therapist.avatar_url ? (
                         <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
@@ -174,7 +174,7 @@ if (sessions === 0) {
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <h4
-  className="font-bold text-[15px] leading-tight whitespace-normal"
+  className="font-bold text-[13px] sm:text-[15px] leading-tight whitespace-normal line-clamp-2"
   title={therapist.name}
 >
   {therapist.name}
