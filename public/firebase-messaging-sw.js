@@ -29,5 +29,27 @@ messaging.onBackgroundMessage((payload) => {
     payload?.data?.body ||
     "NO BODY";
 
-  console.log("BACKGROUND PUSH", payload);
+  self.registration.showNotification(
+    title,
+    {
+      body,
+      icon: "/logo192.png",
+      data: {
+        url: payload?.data?.url,
+        appointment_date: payload?.data?.appointment_date,
+        appointment_id: payload?.data?.appointment_id
+      }
+    }
+  );
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const url =
+    event.notification?.data?.url ||
+    "/appointments";
+
+  event.waitUntil(
+    clients.openWindow(url)
+  );
 });
