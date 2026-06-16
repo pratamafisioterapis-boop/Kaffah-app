@@ -67,24 +67,24 @@ self.addEventListener('push', (event) => {
   if (!event.data) return;
 
   const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/logo192.png',
-    badge: '/favicon.ico',
-    data: {
-      url: data.url || '/'
-    }
-  };
+
+  const title =
+    data?.notification?.title ||
+    data?.data?.title ||
+    'NO TITLE';
+
+  const body =
+    data?.notification?.body ||
+    data?.data?.body ||
+    'NO BODY';
 
   event.waitUntil(
-  self.registration.showNotification(
-    'DEBUG',
-    {
-      body: JSON.stringify(data),
-      icon: '/logo192.png'
-    }
-  )
-);
+    self.registration.showNotification(title, {
+      body,
+      icon: '/logo192.png',
+      badge: '/favicon.ico'
+    })
+  );
 });
 
 // Notification Click Handler
