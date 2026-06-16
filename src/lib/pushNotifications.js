@@ -7,52 +7,28 @@ const VAPID_KEY =
 
 export const registerPushNotifications = async (userId) => {
   try {
-    alert("STEP 1 - REGISTER START");
-
-    if (!userId) {
-      alert("ERROR: USER ID KOSONG");
-      return null;
-    }
+    if (!userId) return null;
 
     const permission = await Notification.requestPermission();
 
-    alert("PERMISSION = " + permission);
-
     if (permission !== "granted") {
-      alert("NOTIFICATION DITOLAK");
       return null;
     }
 
-    alert("STEP 2 - GET MESSAGING");
-
     const messaging = getMessaging(firebaseApp);
-
-    alert("STEP 3 - REGISTER SERVICE WORKER");
 
     const registration = await navigator.serviceWorker.register(
       "/firebase-messaging-sw.js"
     );
-
-    alert("STEP 4 - GET TOKEN");
 
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
 
-    alert("STEP 5 - TOKEN RESULT");
-
     if (!token) {
-      alert("TOKEN NULL");
       return null;
     }
-
-    alert("TOKEN BERHASIL");
-    alert(token.substring(0, 60));
-
-    console.log("FCM TOKEN:", token);
-
-    alert("STEP 6 - SAVE DATABASE");
 
     const { error } = await supabase
       .from("fcm_tokens")
@@ -63,26 +39,15 @@ export const registerPushNotifications = async (userId) => {
       });
 
     if (error) {
-      alert("DB ERROR");
-      alert(JSON.stringify(error));
-      console.error(error);
+      console.error("FCM DB ERROR:", error);
       return null;
     }
 
-    alert("TOKEN TERSIMPAN");
+    console.log("FCM TOKEN SAVED");
 
     return token;
   } catch (err) {
     console.error("FCM ERROR:", err);
-
-    alert("FCM ERROR");
-
-    try {
-      alert(err?.message || JSON.stringify(err));
-    } catch {
-      alert("UNKNOWN ERROR");
-    }
-
     return null;
   }
 };
@@ -94,12 +59,20 @@ export const listenForegroundNotifications = () => {
     onMessage(messaging, (payload) => {
       console.log("Foreground Message:", payload);
 
-      if (payload?.notification) {
-        new Notification(payload.notification.title, {
-          body: payload.notification.body,
-          icon: "/logo192.png",
-        });
-      }
+      const title =
+        payload?.notification?.title ||
+        payload?.data?.title ||
+        "NO TITLE";
+
+      const body =
+        payload?.notification?.body ||
+        payload?.data?.body ||
+        "NO BODY";
+
+      new Notification(title, {
+        body,
+        icon: "/logo192.png",
+      });
     });
   } catch (err) {
     console.error(err);
