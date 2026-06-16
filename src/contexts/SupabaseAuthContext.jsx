@@ -319,8 +319,7 @@ export const AuthProvider = ({ children }) => {
 useEffect(() => {
   if (!user?.id) return;
 
-  alert("REGISTER PUSH DIPANGGIL");
-  alert("USER ID = " + user.id);
+  
 
   registerPushNotifications(user.id);
 
