@@ -144,7 +144,7 @@ const TherapistStatusCards = ({
     rounded-3xl
     shadow-lg
     bg-white
-    h-[210px]
+    h-auto min-h-[210px]
   "
 >
               <CardContent className="p-0">
@@ -156,7 +156,7 @@ const TherapistStatusCards = ({
                   <div
                     className={`
                       ${color}
-                      w-32
+                      w-24 md:w-32
                       min-h-[170px]
                       flex
                       flex-col
@@ -197,7 +197,7 @@ const TherapistStatusCards = ({
 
                     <div className="flex justify-between items-start gap-3">
 
-                      <div className="flex-1 min-w-0 h-[72px]">
+                      <div className="flex-1 min-w-0">
 
                         <h4
   className="
@@ -220,23 +220,33 @@ const TherapistStatusCards = ({
                       </div>
 
                       <div
-                        className={`
-                          ${color}
-                          text-white
-                          px-3
-                          py-1
-                          rounded-full
-                          text-xs
-                          font-bold
-                          shrink-0
-                        `}
-                      >
+  className={`
+    ${color}
+    text-white
+    px-2
+    md:px-3
+    py-1
+    rounded-full
+    text-[10px]
+    md:text-xs
+    font-bold
+    shrink-0
+    max-w-[90px]
+    truncate
+  `}
+>
                         {label}
                       </div>
 
                     </div>
 
-                    <div className="mt-5 grid grid-cols-3 gap-4">
+                    <div className="
+mt-5
+grid
+grid-cols-2
+sm:grid-cols-3
+gap-3
+">
 
                       <div>
                         <div className="text-3xl font-bold text-slate-900">
