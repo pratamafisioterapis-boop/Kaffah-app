@@ -144,7 +144,7 @@ if (sessions === 0) {
     <div className="w-full py-8">
       <h3 className="text-xl font-bold text-slate-800 mb-6 px-1">Status Terapis</h3>
       
-      <div className="grid grid-cols-2 gap-3 px-1">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 px-1">
         {sortedTherapists.map((therapist) => {
           const { statusData } = therapist;
           const { label, gradient, icon: Icon, percentage, sessions, totalSlots } = statusData;
@@ -174,13 +174,15 @@ if (sessions === 0) {
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <h4
-  className="font-bold text-[13px] sm:text-[15px] leading-tight whitespace-normal line-clamp-2"
+  className="font-bold text-[12px] sm:text-[15px] leading-tight truncate max-w-[70px] sm:max-w-none"
   title={therapist.name}
 >
   {therapist.name}
 </h4>
 
-<span className="text-[11px] opacity-80 font-medium whitespace-normal">
+<span
+  className="hidden sm:block text-[11px] opacity-80 font-medium"
+>
   {therapist.specialization || 'Physiotherapist'}
 </span>
                     </div>
