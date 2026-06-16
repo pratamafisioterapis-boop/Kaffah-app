@@ -66,25 +66,12 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  const raw = event.data.json();
-
-  const title =
-    raw?.notification?.title ||
-    raw?.data?.title ||
-    raw?.title ||
-    'NO TITLE';
-
-  const body =
-    raw?.notification?.body ||
-    raw?.data?.body ||
-    raw?.body ||
-    'NO BODY';
+  const raw = event.data.text();
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: '/logo192.png',
-      badge: '/favicon.ico'
+    self.registration.showNotification('RAW PUSH', {
+      body: raw,
+      icon: '/logo192.png'
     })
   );
 });
