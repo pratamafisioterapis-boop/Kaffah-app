@@ -13,9 +13,14 @@ import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
 const getTodayWITA = () => {
-  return new Date(
-    new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar' })
-  ).toISOString().split('T')[0];
+  const now = new Date();
+
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Makassar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
 };
 // ============================================
 // HELPERS
