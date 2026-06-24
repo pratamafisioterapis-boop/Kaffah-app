@@ -16,14 +16,12 @@ const TherapistStatusCards = ({
 
   const getStatusData = (therapist) => {
     const sessions = therapistSessions[therapist.id] || 0;
-    const totalSlots = therapist.total_slots || 0;
+const totalSlots = therapist.total_slots || 0;
 
-    let percentage = 0;
-
-    if (sessions === 0) percentage = 0;
-    else if (sessions <= 2) percentage = 40;
-    else if (sessions <= 4) percentage = 70;
-    else percentage = 100;
+const percentage =
+  totalSlots > 0
+    ? Math.round((sessions / totalSlots) * 100)
+    : 0;
 
     if (!therapist.is_active) {
       return {
