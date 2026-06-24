@@ -143,22 +143,27 @@ rounded-3xl
 shadow-lg
 bg-white
 min-h-[260px]
-md:min-h-[210px]
+md:min-h-auto md:h-[210px]
 "
 >
               <CardContent className="p-0">
 
-                <div className="flex h-full">
+                <div className="
+flex flex-col
+md:flex-row
+h-full
+">
 
                   {/* FOTO */}
 
                   <div
                     className={`
                       ${color}
-                      w-24 md:w-32
+                      w-full md:w-32
+h-28 md:h-auto
                       min-h-[170px]
                       flex
-                      flex-col
+                      flex-row md:flex-col
                       items-center
                       justify-center
                       text-white
@@ -166,7 +171,7 @@ md:min-h-[210px]
                     `}
                   >
 
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white/20">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-white/20">
 
                       {therapist.avatar_url ? (
                         <img
@@ -192,7 +197,7 @@ md:min-h-[210px]
 
                   {/* KONTEN */}
 
-                  <div className="flex-1 p-5">
+                  <div className="flex-1 p-4 md:p-5">
 
                     <div className="space-y-3">
 
@@ -225,7 +230,7 @@ md:min-h-[210px]
       {therapist.name}
     </h4>
 
-    <div className="text-sm text-slate-500 mt-1">
+    <div className="hidden md:block text-sm text-slate-500 mt-1">
       {therapist.specialization || 'Physiotherapist'}
     </div>
   </div>
