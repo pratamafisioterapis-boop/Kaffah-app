@@ -195,12 +195,7 @@ setData(processedData);
                     return label;
                   }}
                 />
-                <Legend 
-                  verticalAlign="top" 
-                  height={36} 
-                  iconType="circle"
-                  formatter={(value) => <span className="text-sm font-medium text-slate-600 ml-1">{value === 'capacity' ? 'Kapasitas' : 'Permintaan'}</span>}
-                />
+                
                 <Bar 
   yAxisId="left"
   dataKey="capacity" 
