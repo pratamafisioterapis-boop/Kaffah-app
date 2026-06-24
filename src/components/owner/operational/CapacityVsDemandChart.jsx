@@ -142,7 +142,11 @@ setData(processedData);
         ) : (
           <div className="h-[350px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }} barGap={4}>
+              <ComposedChart
+  data={data}
+  margin={{ top: 10, right: 5, left: -25, bottom: 0 }}
+  barGap={0}
+>
                 <defs>
                   <linearGradient id="colorCapacity" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.8}/>
