@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+import {
+  BarChart,
+  Bar,
+  Line,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, getDay, isWithinInterval, parseISO } from 'date-fns';
@@ -53,9 +62,9 @@ for (const day of days) {
   );
 
   if (error) {
-    console.error(error);
-    continue;
-  }
+  console.error(error);
+  continue;
+}
 
   // 🔥 kapasitas = semua slot
 const capacity = (slotData || []).length;
@@ -66,16 +75,17 @@ const demand = (slotData || []).filter(
 ).length;
 
   processedData.push({
-    day: format(day, 'EEEE', { locale: id }),
-    shortDay: format(day, 'EEE', { locale: id }),
-    fullDate: format(day, 'dd MMM yyyy', { locale: id }),
-    capacity,
-    demand
-  });
+  day: format(day, 'EEEE', { locale: id }),
+  shortDay: format(day, 'EEE', { locale: id }),
+  fullDate: format(day, 'dd MMM yyyy', { locale: id }),
+  capacity,
+  demand,
+  utilization: capacity > 0
+    ? Math.round((demand / capacity) * 100)
+    : 0
+});
 }
-
-      setData(processedData);
-
+setData(processedData);
     } catch (err) {
       console.error("Error fetching capacity vs demand:", err);
       setError("Gagal memuat data.");
@@ -132,7 +142,7 @@ const demand = (slotData || []).filter(
         ) : (
           <div className="h-[350px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }} barGap={4}>
+              <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }} barGap={4}>
                 <defs>
                   <linearGradient id="colorCapacity" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.8}/>
@@ -151,20 +161,33 @@ const demand = (slotData || []).filter(
                   tick={{ fontSize: 12, fill: '#64748b' }} 
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#64748b' }} 
-                  allowDecimals={false}
-                />
+                <YAxis
+  yAxisId="left"
+  axisLine={false}
+  tickLine={false}
+  tick={{ fontSize: 12, fill: '#64748b' }}
+  allowDecimals={false}
+/>
+
+<YAxis
+  yAxisId="right"
+  orientation="right"
+  domain={[0, 100]}
+  axisLine={false}
+  tickLine={false}
+  tick={{ fontSize: 12, fill: '#10b981' }}
+  tickFormatter={(value) => `${value}%`}
+/>
                 <Tooltip 
                   cursor={{ fill: '#f1f5f9' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
-                  formatter={(value, name) => [
-                    value, 
-                    name === 'capacity' ? 'Kapasitas (Slot)' : 'Permintaan (Booking)'
-                  ]}
+                  formatter={(value, name) => {
+  if (name === 'capacity') return [value, 'Kapasitas'];
+  if (name === 'demand') return [value, 'Terisi'];
+  if (name === 'utilization') return [`${value}%`, 'Utilisasi'];
+  return [value, name];
+}}
                   labelFormatter={(label, payload) => {
                     if (payload && payload.length > 0) {
                       return payload[0].payload.fullDate;
@@ -179,22 +202,34 @@ const demand = (slotData || []).filter(
                   formatter={(value) => <span className="text-sm font-medium text-slate-600 ml-1">{value === 'capacity' ? 'Kapasitas' : 'Permintaan'}</span>}
                 />
                 <Bar 
-                  dataKey="capacity" 
-                  name="capacity" 
+  yAxisId="left"
+  dataKey="capacity" 
+  name="capacity"
                   fill="url(#colorCapacity)" 
                   radius={[4, 4, 0, 0]} 
                   barSize={24}
                   animationDuration={1500}
                 />
                 <Bar 
-                  dataKey="demand" 
-                  name="demand" 
+  yAxisId="left"
+  dataKey="demand" 
+  name="demand"
                   fill="url(#colorDemand)" 
                   radius={[4, 4, 0, 0]} 
                   barSize={24} 
                   animationDuration={1500}
                 />
-              </BarChart>
+              <Line
+  yAxisId="right"
+  type="monotone"
+  dataKey="utilization"
+  name="utilization"
+  stroke="#10b981"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+  activeDot={{ r: 6 }}
+/>
+</ComposedChart>
             </ResponsiveContainer>
           </div>
         )}
