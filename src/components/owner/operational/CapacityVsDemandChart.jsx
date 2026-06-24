@@ -202,7 +202,7 @@ setData(processedData);
   name="capacity"
                   fill="url(#colorCapacity)" 
                   radius={[4, 4, 0, 0]} 
-                  barSize={24}
+                  barSize={36}
                   animationDuration={1500}
                 />
                 <Bar 
@@ -211,7 +211,7 @@ setData(processedData);
   name="demand"
                   fill="url(#colorDemand)" 
                   radius={[4, 4, 0, 0]} 
-                  barSize={24} 
+                 barSize={36}
                   animationDuration={1500}
                 />
               <Line
