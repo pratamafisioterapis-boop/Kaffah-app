@@ -128,7 +128,7 @@ setData(processedData);
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-[350px]">
+      <CardContent className="flex-1 min-h-[220px] md:min-h-[350px]">
         {error ? (
           <div className="h-full flex flex-col items-center justify-center text-red-500 text-sm gap-2">
             <AlertCircle className="h-6 w-6" />
@@ -140,7 +140,7 @@ setData(processedData);
             <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
           </div>
         ) : (
-          <div className="h-[350px] w-full mt-4">
+          <div className="h-[200px] md:h-[350px] w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
   data={data}
