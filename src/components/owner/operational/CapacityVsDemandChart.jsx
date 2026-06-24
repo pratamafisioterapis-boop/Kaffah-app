@@ -233,7 +233,7 @@ setData(processedData);
         cx={cx}
         cy={cy}
         r={5}
-        fill={payload.utilization < 50 ? '#ef4444' : '#10b981'}
+        fill={Number(payload.utilization) < 50 ? '#ef4444' : '#10b981'}
         stroke="white"
         strokeWidth={2}
       />
