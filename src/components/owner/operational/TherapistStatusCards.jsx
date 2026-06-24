@@ -171,7 +171,15 @@ h-28 md:h-auto
                     `}
                   >
 
-                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-white/20">
+                    <div className="
+w-28 h-28
+md:w-20 md:h-20
+rounded-3xl
+overflow-hidden
+bg-white/20
+border-2 border-white/20
+shadow-lg
+">
 
                       {therapist.avatar_url ? (
                         <img
