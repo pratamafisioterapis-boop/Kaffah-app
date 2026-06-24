@@ -225,8 +225,21 @@ setData(processedData);
   name="utilization"
   stroke="#10b981"
   strokeWidth={3}
-  dot={{ r: 4 }}
-  activeDot={{ r: 6 }}
+  dot={(props) => {
+    const { cx, cy, payload } = props;
+
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        fill={payload.utilization < 50 ? '#ef4444' : '#10b981'}
+        stroke="white"
+        strokeWidth={2}
+      />
+    );
+  }}
+  activeDot={{ r: 7 }}
 />
 </ComposedChart>
             </ResponsiveContainer>
