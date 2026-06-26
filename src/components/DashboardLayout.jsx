@@ -260,7 +260,11 @@ const pwaNavItems = useMemo(() => {
     ];
   }
 
-  return navItems; // therapist
+  if (role === 'therapist') {
+    return navItems.filter(item => item.path !== '/therapist/appointments');
+  }
+
+  return navItems;
 
 }, [navItems, role, isPWA]);
   const finalNavItems = useMemo(
