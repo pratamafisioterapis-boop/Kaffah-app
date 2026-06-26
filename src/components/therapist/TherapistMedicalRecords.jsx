@@ -44,8 +44,14 @@ const itemsPerPage = 20;
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState(null);
   const fileInputRef = useRef(null);
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
+  const isPWA = (() => {
+    try {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+    } catch {
+      return false;
+    }
+  })();
 
 useEffect(() => {
   setCurrentPage(1);
