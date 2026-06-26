@@ -73,21 +73,12 @@ const OwnerDashboardHome = () => {
   
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
-    const savedRange = localStorage.getItem('ownerDashboardDateRange');
-    if (savedRange) {
-      try {
-        return JSON.parse(savedRange);
-      } catch (e) {
-        console.error("Failed to parse date range from local storage", e);
-      }
-    }
-    
-    // Default: Last 30 days
-    const end = new Date();
-    const start = subDays(end, 30);
+    // Default: 1 bulan penuh bulan ini (1 - hari ini)
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
     return {
       startDate: format(start, 'yyyy-MM-dd'),
-      endDate: format(end, 'yyyy-MM-dd')
+      endDate: format(now, 'yyyy-MM-dd')
     };
   });
 
