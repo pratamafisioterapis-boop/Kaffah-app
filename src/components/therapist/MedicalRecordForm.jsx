@@ -94,14 +94,12 @@ const MedicalRecordForm = ({ therapist }) => {
     if (data.patient) {
       setPatients(prev => {
         const exists = prev.some(p => p.id === data.patient.id);
-
         if (exists) return prev;
-
         return [
           {
             id: data.patient.id,
             value: data.patient.id,
-            label: `${data.patient.full_name} (${data.patient.medical_record_number || '-'})`,
+            label: data.patient.full_name,
             full_name: data.patient.full_name,
             medical_record_number: data.patient.medical_record_number,
             phone: data.patient.phone || ''
@@ -209,10 +207,9 @@ if (!recordId) {
   };
 
   const patientOptions = patients.map(p => ({
-  value: p.id,
-  label: `${p.full_name} (${p.medical_record_number || '-'})`
-}));
-
+    value: p.id,
+    label: p.full_name
+  }));
   const isPWA = (() => {
     try {
       return window.matchMedia('(display-mode: standalone)').matches ||
@@ -235,7 +232,13 @@ if (!recordId) {
       {/* ── Header ── */}
       <div className={`flex items-center justify-between gap-3 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/therapist/records');
+            }
+          }}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
@@ -275,7 +278,7 @@ if (!recordId) {
                 options={patientOptions}
                 value={formData.patient_id}
                 onChange={(val) => setFormData({...formData, patient_id: val})}
-                disabled={paramPatientId !== 'select' || !recordId}
+                disabled={true}
                 placeholder="Cari Pasien..."
               />
               {paramPatientId !== 'select' && !patients.find(p => p.id === paramPatientId) && (
@@ -310,7 +313,13 @@ if (!recordId) {
             </div>
             {/* Submit */}
             <div className={`flex justify-end gap-3 bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
-              <Button type="button" variant="outline" className="rounded-xl" onClick={() => navigate(-1)}>Batal</Button>
+              <Button type="button" variant="outline" className="rounded-xl" onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate('/therapist/records');
+                }
+              }}>Batal</Button>
               <Button type="submit" className={`bg-blue-600 hover:bg-blue-700 rounded-xl ${isPWA ? 'flex-1' : 'min-w-[140px]'}`} disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Simpan Data</>}
               </Button>

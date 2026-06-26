@@ -18,15 +18,14 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
   if (!patient) return null;
 
   const handleCreate = (date, dailyRecapId) => {
-  navigate(`/therapist/records/new/${patient.id}?date=${date}&dailyRecapId=${dailyRecapId}`);
-  onClose();
-};
-
-  const handleEdit = (recordId, date) => {
-    navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
     onClose();
+    navigate(`/therapist/records/new/${patient.id}?date=${date}&dailyRecapId=${dailyRecapId}`);
   };
 
+  const handleEdit = (recordId, date) => {
+    onClose();
+    navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
+  };
   // Merge visits with records to determine status
   const timeline = visits.map(visit => {
     const visitDate = visit.recap_date; // YYYY-MM-DD
