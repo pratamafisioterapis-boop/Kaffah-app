@@ -112,87 +112,108 @@ const SessionTimelinessChart = ({ dateRange }) => {
     fetchTimelinessData();
   }, [dateRange]);
 
+  const complianceColor = complianceRate >= 80 ? '#10b981' : complianceRate >= 50 ? '#f59e0b' : '#ef4444';
+
   return (
-    <Card className="rounded-xl border-slate-200 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col h-full">
-      <CardHeader>
-        <CardTitle className="text-lg font-bold text-slate-800">Ketepatan Waktu Sesi</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+      <div className="p-5 md:p-6 pb-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Ketepatan Waktu Sesi</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Analisis kepatuhan waktu terapis</p>
+          </div>
+          {!loading && stats.total > 0 && (
+            <div className="text-right">
+              <p className="text-xl font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Compliance</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <CardContent className="pt-4 pb-5 px-5 md:px-6">
         {loading ? (
-           <div className="flex-1 flex flex-col items-center justify-center gap-2 min-h-[250px]">
-             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-             <p className="text-xs text-slate-500">Menganalisis data sesi...</p>
-           </div>
+          <div className="h-48 flex items-center justify-center">
+            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
+          </div>
         ) : error ? (
-           <div className="flex-1 flex flex-col items-center justify-center gap-2 text-red-500 min-h-[250px]">
-             <AlertCircle className="h-6 w-6" />
-             <p className="text-sm">{error}</p>
-             <Button variant="outline" size="sm" onClick={fetchTimelinessData}>Coba Lagi</Button>
-           </div>
+          <div className="h-48 flex flex-col items-center justify-center gap-2 text-rose-500 text-sm">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchTimelinessData}>Coba Lagi</Button>
+          </div>
         ) : stats.total === 0 ? (
-           <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[250px]">
-             <p>Tidak ada data sesi selesai pada periode ini.</p>
-           </div>
+          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+            Tidak ada data sesi pada periode ini.
+          </div>
         ) : (
-          <div className="flex flex-col gap-6 mt-2">
-            {/* Compliance Percentage (Gauge Visualization) */}
-            <div className="flex flex-col items-center justify-center relative h-[140px]">
-               <div className="relative w-48 h-24 overflow-hidden">
-                 <div className="absolute top-0 left-0 w-full h-full bg-slate-100 rounded-t-full"></div>
-                 <div 
-                   className="absolute top-0 left-0 w-full h-full bg-emerald-500 rounded-t-full origin-bottom transition-all duration-1000 ease-out"
-                   style={{ 
-                     transform: `rotate(${Math.min(180, (complianceRate / 100) * 180) - 180}deg)` 
-                   }} 
-                 ></div>
-               </div>
-               <div className="absolute bottom-4 flex flex-col items-center">
-                 <span className="text-3xl font-extrabold text-slate-800">{complianceRate}%</span>
-                 <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">Compliance</span>
-               </div>
+          <div className="flex flex-col gap-4">
+            {/* Compliance ring + stats */}
+            <div className="flex items-center gap-4">
+              {/* SVG Ring kecil */}
+              <div className="relative shrink-0" style={{ width: 88, height: 88 }}>
+                <svg width="88" height="88" viewBox="0 0 88 88">
+                  <circle cx="44" cy="44" r="36" fill="none" stroke="#f1f5f9" strokeWidth="8" />
+                  <circle
+                    cx="44" cy="44" r="36"
+                    fill="none"
+                    stroke={complianceColor}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(complianceRate / 100) * 2 * Math.PI * 36} ${2 * Math.PI * 36}`}
+                    strokeDashoffset={2 * Math.PI * 36 / 4}
+                    style={{ transition: 'stroke-dasharray 0.7s ease' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</span>
+                  <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Compliance</span>
+                </div>
+              </div>
+
+              {/* 3 stats vertikal */}
+              <div className="flex-1 grid grid-cols-3 gap-2">
+                {[
+                  { label: 'On-Time', value: stats.onTime, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                  { label: 'Late Start', value: stats.lateStart, color: 'text-amber-600', bg: 'bg-amber-50' },
+                  { label: 'Over Dur.', value: stats.overDuration, color: 'text-rose-600', bg: 'bg-rose-50' },
+                ].map(s => (
+                  <div key={s.label} className={`${s.bg} rounded-xl py-3 text-center`}>
+                    <p className={`text-xl md:text-2xl font-black leading-none ${s.color}`}>{s.value}</p>
+                    <p className="text-[9px] text-slate-400 font-semibold mt-1 leading-tight">{s.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Breakdown Bar Chart */}
-            <div className="h-[200px] w-full">
+            {/* Bar chart */}
+            <div className="h-[150px] md:h-[170px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="horizontal" margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="category" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fill: '#64748b' }} 
-                    interval={0}
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={24} />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc', radius: 8 }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                    formatter={(value) => [`${value} Sesi`, 'Jumlah']}
                   />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <Tooltip 
-                     cursor={{ fill: '#f1f5f9' }}
-                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                     formatter={(value) => [`${value} Sesi`, 'Jumlah']}
-                  />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
+                    {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
-            {/* Text Breakdown */}
-            <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-600 border-t pt-4 border-slate-100">
-               <div>
-                  <span className="block font-bold text-emerald-600">{stats.onTime}</span>
-                  On-Time
-               </div>
-               <div>
-                  <span className="block font-bold text-amber-500">{stats.lateStart}</span>
-                  Late Start
-               </div>
-               <div>
-                  <span className="block font-bold text-red-500">{stats.overDuration}</span>
-                  Over Duration
-               </div>
+
+            {/* Progress bar */}
+            <div>
+              <div className="flex justify-between text-[10px] font-medium text-slate-400 mb-1.5">
+                <span>Compliance Rate</span>
+                <span className="font-bold" style={{ color: complianceColor }}>{complianceRate}%</span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${complianceRate}%`, backgroundColor: complianceColor }} />
+              </div>
             </div>
           </div>
         )}
