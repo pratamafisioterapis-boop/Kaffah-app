@@ -92,6 +92,12 @@ const [
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom })
 ]);
 
+// Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
+const activeTarget = activeTargetRes?.data;
+const targetProgressRes = activeTarget
+  ? await getTherapistTargetProgress(userId, activeTarget.start_date, activeTarget.end_date)
+  : { data: null };
+
 const rawMonthlyRecaps = recapsRes.data || [];
       const periodRecaps = patientTypeRes.data || [];
 
