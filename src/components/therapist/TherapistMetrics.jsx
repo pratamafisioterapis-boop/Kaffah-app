@@ -79,73 +79,53 @@ if (now.getDate() >= 28) {
 
 const startCustom = format(startPeriod, 'yyyy-MM-dd');
 const endCustom = format(endPeriod, 'yyyy-MM-dd');
-      const [
+
+const [
   recapsRes,
   activeTargetRes,
   unfilledRes,
   patientTypeRes
 ] = await Promise.all([
-  getTherapistRecaps(
-    therapist.id,
-    {
-      startDate: startMonth,
-      endDate: endMonth
-    }
-  ),
+  getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(userId),
   getUnfilledSOAPVisits(null, therapist.id),
-
-  getTherapistRecaps(
-    therapist.id,
-    {
-      startDate: startCustom,
-      endDate: endCustom
-    }
-  )
+  getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom })
 ]);
 
-      const rawMonthlyRecaps = recapsRes.data || [];
+const rawMonthlyRecaps = recapsRes.data || [];
       const periodRecaps = patientTypeRes.data || [];
 
-const patientTypeStats = periodRecaps.reduce((acc, item) => {
-  const type = item.patient_type || 'LAINNYA';
+      const patientTypeStats = periodRecaps.reduce((acc, item) => {
+        const type = item.patient_type || 'LAINNYA';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
 
-  acc[type] = (acc[type] || 0) + 1;
-
-  return acc;
-}, {});
       const unfilledCount = Number(unfilledRes?.count ?? 0);
-      
-      
       const allPatientsCount = periodRecaps.length;
-const todayRecaps = rawMonthlyRecaps.filter(
-  r => r.recap_date === todayISO
-);
+      const todayRecaps = rawMonthlyRecaps.filter(r => r.recap_date === todayISO);
+
+      // Gunakan hasil targetProgressRes yang sudah di-fetch sebelumnya (tidak fetch ulang)
       let targetInfo = {
-         targetVisits: 0,
-         monthlyVisitsCalculated: 0,
-         progress: 0,
-         period: null,
-         excluded: [],
-         status: null
+        targetVisits: 0,
+        monthlyVisitsCalculated: 0,
+        progress: 0,
+        period: null,
+        excluded: [],
+        status: null
       };
 
-      if (activeTargetRes.data) {
-          const target = activeTargetRes.data;
-          const { data: progress } = await getTherapistTargetProgress(userId, target.start_date, target.end_date);
-          
-          if (progress) {
-             targetInfo = {
-                 targetVisits: progress.target_visits,
-                 monthlyVisitsCalculated: progress.actual_visits,
-                 progress: progress.achievement_percentage,
-                 period: { start: progress.start_date, end: progress.end_date },
-                 excluded: progress.excluded_patient_types || [],
-                 status: progress.status
-             };
-          }
+      const progressData = targetProgressRes?.data;
+      if (progressData) {
+        targetInfo = {
+          targetVisits: progressData.target_visits || 0,
+          monthlyVisitsCalculated: progressData.actual_visits || 0,
+          progress: progressData.achievement_percentage || 0,
+          period: { start: progressData.start_date, end: progressData.end_date },
+          excluded: progressData.excluded_patient_types || [],
+          status: progressData.status || null
+        };
       }
-
       setMetrics({
         totalPatients: allPatientsCount,
         todayAppointments: todayRecaps.length,
@@ -169,165 +149,168 @@ const todayRecaps = rawMonthlyRecaps.filter(
     loadMetrics(true);
   };
 
+  // Helper: progress color
+  const getProgressColor = (pct) => {
+    if (pct >= 100) return { bar: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+    if (pct >= 60) return { bar: 'bg-blue-500', text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
+    return { bar: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+  };
+  const progressColors = getProgressColor(metrics.targetVisitsProgress);
+  const progressCapped = Math.min(metrics.targetVisitsProgress, 100);
+
   return (
-    <div className="space-y-6 mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5 mb-8">
+
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Ringkasan Aktivitas Kamu</h2>
-           <p className="text-sm text-slate-500">Semua data otomatis. Fokus kamu tetap ke pasien 💙</p>
+          <h2 className="text-lg font-bold text-slate-800 tracking-tight">Ringkasan Aktivitas</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Data diperbarui otomatis dari rekap harian 💙</p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh} 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
           disabled={loading || refreshing}
-          className="bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-sm"
+          className="bg-white hover:bg-slate-50 border-slate-200 text-slate-500 h-8 px-3 text-xs shadow-none"
         >
-          <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} />
-          Refresh Data
+          <RefreshCw className={cn("w-3 h-3 mr-1.5", refreshing && "animate-spin")} />
+          Refresh
         </Button>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-3">
-         <Lightbulb className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-         <p className="text-sm text-slate-600">
-            <strong>Info:</strong> Data di bawah ini diperbarui otomatis dari rekap harian yang Anda isi. Pastikan rekap selalu terisi agar performa tercatat akurat!
-         </p>
-      </div>
+      {/* ── Row 1: 4 stat cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 
-      {/* Top Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white border-slate-200 shadow-sm">
-  <CardHeader>
-    <CardTitle className="text-sm font-medium text-slate-600">
-      Tipe Pasien Ditangani
-    </CardTitle>
-
-    <CardDescription>
-      Periode 28 - 27
-    </CardDescription>
-  </CardHeader>
-
-  <CardContent>
-    <div className="space-y-2">
-      {Object.entries(metrics.patientTypeStats)
-        .sort((a, b) => b[1] - a[1])
-        .map(([type, count]) => (
-          <div
-            key={type}
-            className="flex justify-between text-sm"
-          >
-            <span>{type}</span>
-            <span className="font-semibold">
-              {count}
-            </span>
-          </div>
-        ))}
-    </div>
-  </CardContent>
-</Card>
-        {/* Unfilled SOAP Metric */}
-        <Card 
-          className={cn(
-            "border shadow-sm transition-all cursor-pointer hover:shadow-md",
-            metrics.unfilledSoapCount > 0 
-              ? "bg-red-50/50 border-red-200" 
-              : "bg-white border-slate-200"
-          )}
-          onClick={() => navigate('/therapist/records')}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className={cn(
-              "text-sm font-medium",
-              metrics.unfilledSoapCount > 0 ? "text-red-700" : "text-slate-600"
-            )}>
-              Belum Diisi SOAP
-            </CardTitle>
-            <AlertCircle className={cn(
-              "h-4 w-4",
-              metrics.unfilledSoapCount > 0 ? "text-red-600" : "text-slate-400"
-            )} />
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-1">
-              <div className={cn(
-                "text-2xl font-bold",
-                metrics.unfilledSoapCount > 0 ? "text-red-700" : "text-slate-900"
-              )}>
-                {metrics.unfilledSoapCount}
-              </div>
-              <p className={cn(
-                "text-xs",
-                metrics.unfilledSoapCount > 0 ? "text-red-600/80" : "text-slate-500"
-              )}>
-                Kunjungan tanpa rekam medis
-              </p>
+        {/* Card: Jadwal Hari Ini */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hari Ini</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-emerald-600" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.todayAppointments}</p>
+            <p className="text-xs text-slate-400 mt-1">Sesi terapi hari ini</p>
+          </div>
+          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(metrics.todayAppointments * 10, 100)}%` }} />
+          </div>
+        </div>
 
-        {/* Total Patients Card */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-  Total Pasien
-</CardTitle>
+        {/* Card: Total Pasien */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pasien</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Users className="w-4 h-4 text-blue-600" />
+            </div>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.totalPatients}</p>
+            <p className="text-xs text-slate-400 mt-1">Periode 28–27</p>
+          </div>
+          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full" style={{ width: `${Math.min(metrics.totalPatients * 2, 100)}%` }} />
+          </div>
+        </div>
 
-<CardDescription>
-  Periode 28 - 27
-</CardDescription>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{metrics.totalPatients}</div>
-            <p className="text-xs text-slate-500">Pasien pernah ditangani</p>
-          </CardContent>
-        </Card>
+        {/* Card: SOAP Belum Diisi */}
+        <div
+          onClick={() => navigate('/therapist/records')}
+          className={cn(
+            "rounded-2xl border shadow-sm p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow",
+            metrics.unfilledSoapCount > 0
+              ? "bg-rose-50 border-rose-200"
+              : "bg-white border-slate-100"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className={cn("text-xs font-semibold uppercase tracking-wider", metrics.unfilledSoapCount > 0 ? "text-rose-400" : "text-slate-400")}>
+              SOAP
+            </span>
+            <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", metrics.unfilledSoapCount > 0 ? "bg-rose-100" : "bg-slate-50")}>
+              <AlertCircle className={cn("w-4 h-4", metrics.unfilledSoapCount > 0 ? "text-rose-600" : "text-slate-400")} />
+            </div>
+          </div>
+          <div>
+            <p className={cn("text-3xl font-bold leading-none", metrics.unfilledSoapCount > 0 ? "text-rose-700" : "text-slate-900")}>
+              {metrics.unfilledSoapCount}
+            </p>
+            <p className={cn("text-xs mt-1", metrics.unfilledSoapCount > 0 ? "text-rose-500" : "text-slate-400")}>
+              {metrics.unfilledSoapCount > 0 ? "Kunjungan belum tercatat →" : "Semua sudah tercatat ✓"}
+            </p>
+          </div>
+          <div className="h-1 w-full bg-rose-100 rounded-full overflow-hidden">
+            <div
+              className={cn("h-full rounded-full", metrics.unfilledSoapCount > 0 ? "bg-rose-400" : "bg-emerald-400")}
+              style={{ width: metrics.unfilledSoapCount > 0 ? '100%' : '0%' }}
+            />
+          </div>
+        </div>
 
-        {/* Today's Schedule Card */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-              Jadwal Hari Ini
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-emerald-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{metrics.todayAppointments}</div>
-            <p className="text-xs text-slate-500">Sesi terapi hari ini</p>
-          </CardContent>
-        </Card>
+        {/* Card: Target Progress */}
+        <div className={cn("rounded-2xl border shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow", progressColors.bg, progressColors.border)}>
+          <div className="flex items-center justify-between">
+            <span className={cn("text-xs font-semibold uppercase tracking-wider", progressColors.text)}>Target</span>
+            <div className={cn("w-8 h-8 rounded-xl bg-white/60 flex items-center justify-center")}>
+              <Target className={cn("w-4 h-4", progressColors.text)} />
+            </div>
+          </div>
+          <div>
+            <p className={cn("text-3xl font-bold leading-none", progressColors.text)}>{progressCapped}%</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {metrics.monthlyVisitsCalculated} / {metrics.targetVisits} kunjungan
+            </p>
+          </div>
+          <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all duration-700", progressColors.bar)}
+              style={{ width: `${progressCapped}%` }}
+            />
+          </div>
+        </div>
 
-        {/* Simplified Target Card (Quick View) */}
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white border-blue-600 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-100">
-              Pencapaian Kunjungan
-            </CardTitle>
-            <Target className="h-4 w-4 text-blue-100" />
-          </CardHeader>
-          <CardContent>
-             <div className="flex items-end justify-between">
-                <div>
-                   <div className="text-2xl font-bold">
-                     {metrics.targetVisitsProgress}%
-                   </div>
-                   <p className="text-xs text-blue-200 mt-0.5">Progress Kunjungan</p>
-                </div>
-                <div className="text-right">
-                   <div className="text-2xl font-bold">
-                     {metrics.monthlyVisitsCalculated}
-                   </div>
-                   <p className="text-xs text-blue-200 mt-0.5">
-                     Terhitung Target
-                   </p>
-                </div>
-             </div>
-          </CardContent>
-        </Card>
       </div>
 
-      
+      {/* ── Row 2: Tipe Pasien (wider card) ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-700">Distribusi Tipe Pasien</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Periode 28–27 bulan ini</p>
+          </div>
+          <CalendarDays className="w-4 h-4 text-slate-300" />
+        </div>
+
+        {Object.keys(metrics.patientTypeStats).length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-4">Belum ada data periode ini.</p>
+        ) : (
+          <div className="space-y-2.5">
+            {Object.entries(metrics.patientTypeStats)
+              .sort((a, b) => b[1] - a[1])
+              .map(([type, count]) => {
+                const total = Object.values(metrics.patientTypeStats).reduce((s, v) => s + v, 0);
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                  <div key={type} className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 w-28 truncate">{type}</span>
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-400 rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 w-6 text-right">{count}</span>
+                    <span className="text-xs text-slate-400 w-8 text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };

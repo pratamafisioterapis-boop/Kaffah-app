@@ -9,7 +9,6 @@ import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
 import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
 import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardWidget';
-import TherapistTargetWidget from '@/components/therapist/TherapistTargetWidget';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
@@ -53,15 +52,11 @@ const TherapistDashboard = () => {
   ];
 
   // Dashboard Home Layout Component
+  // Dashboard Home Layout Component
   const DashboardHome = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-       <div className="lg:col-span-2">
-          {/* Main Stats & Operational Widgets */}
+    <div className="grid grid-cols-1 gap-6">
+       <div>
           <TherapistDashboardWidget />
-       </div>
-       <div className="lg:col-span-1">
-          {/* Target & Performance Widget */}
-          <TherapistTargetWidget userId={user?.id} />
        </div>
     </div>
   );

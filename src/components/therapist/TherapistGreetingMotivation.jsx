@@ -55,32 +55,63 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
 
   }, []);
 
+  const hour = new Date().getHours();
+  const timeOfDay = hour >= 5 && hour < 12 ? 'pagi' : hour >= 12 && hour < 15 ? 'siang' : hour >= 15 && hour < 18 ? 'sore' : 'malam';
+  const gradients = {
+    pagi: 'from-amber-400 via-orange-400 to-rose-400',
+    siang: 'from-sky-500 via-blue-500 to-indigo-500',
+    sore: 'from-orange-500 via-rose-500 to-pink-500',
+    malam: 'from-indigo-600 via-violet-600 to-purple-600',
+  };
+  const currentGradient = gradients[timeOfDay];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white shadow-sm transition-shadow hover:shadow-md"
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${currentGradient} p-0 text-white shadow-lg`}
     >
-      <div className="absolute right-0 top-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-xl"></div>
-      <div className="absolute left-0 bottom-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-lg"></div>
+      {/* Decorative blobs */}
+      <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/3 h-24 w-24 rounded-full bg-white/5 blur-2xl pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-blue-100 mb-1">
-             <GreetingIcon className="w-5 h-5" />
-             <span className="text-sm font-medium uppercase tracking-wider opacity-90">{greeting}</span>
+      <div className="relative z-10 p-6 md:p-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          
+          {/* Left: Greeting */}
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/30 shrink-0">
+              <GreetingIcon className="w-7 h-7 text-white drop-shadow" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-0.5">
+                {greeting}
+              </p>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight leading-tight">
+                {therapistName || 'Terapis'} 
+                <span className="ml-2 text-2xl">👋</span>
+              </h1>
+              <p className="text-sm text-white/70 mt-1 font-medium">
+                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Halo, {therapistName || 'Terapis'}!
-          </h1>
-        </div>
-        
-        <div className="flex items-start gap-3 bg-white/10 p-3 rounded-lg border border-white/10 max-w-lg">
-           <Sparkles className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5" />
-           <p className="text-sm md:text-base font-medium leading-relaxed italic text-blue-50">
-             "{motivation}"
-           </p>
+
+          {/* Right: Motivation */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="flex items-start gap-3 bg-white/15 backdrop-blur-sm p-4 rounded-xl border border-white/20 max-w-md"
+          >
+            <Sparkles className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5 drop-shadow" />
+            <p className="text-sm font-medium leading-relaxed text-white/90 italic">
+              "{motivation}"
+            </p>
+          </motion.div>
+
         </div>
       </div>
     </motion.div>
