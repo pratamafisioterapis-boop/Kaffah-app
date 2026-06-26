@@ -140,7 +140,9 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
   // Warna progress ring
   const ringColor = achievement >= 100 ? '#10b981' : achievement >= 60 ? '#6366f1' : '#f59e0b';
   const circumference = 2 * Math.PI * 36;
-  const strokeDash = (achievement / 100) * circumference;
+  const strokeDash = achievement >= 100 
+    ? circumference 
+    : (achievement / 100) * circumference;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -177,7 +179,9 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
                 stroke={ringColor}
                 strokeWidth="8"
                 strokeLinecap="round"
-                strokeDasharray={`${strokeDash} ${circumference}`}
+                strokeDasharray={achievement >= 100 
+                  ? `${circumference} 0` 
+                  : `${strokeDash} ${circumference - strokeDash}`}
                 strokeDashoffset={circumference / 4}
                 style={{ transition: 'stroke-dasharray 0.7s ease' }}
               />
