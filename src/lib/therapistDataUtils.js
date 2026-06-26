@@ -109,18 +109,22 @@ export const getTherapistVisits = async (therapistId) => {
  * @param {string} therapistId - The UUID of the therapist
  * @returns {Promise<{count: number, error: any}>}
  */
-export const getUnfilledSOAPVisits = async (_unusedName, therapistId) => {
+export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate = null, endDate = null) => {
   if (!therapistId) {
     return { count: 0, error: null };
   }
 
   try {
-
-    // ambil semua recap therapist
-    const { data: recaps, error: recapsError } = await supabase
+    // ambil semua recap therapist dalam periode
+    let query = supabase
       .from('daily_recaps')
       .select('id')
       .eq('therapist_id', therapistId);
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+
+    const { data: recaps, error: recapsError } = await query;
 
     if (recapsError) throw recapsError;
 

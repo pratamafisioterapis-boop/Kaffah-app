@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,7 @@ const TherapistMetrics = ({ therapist, userId }) => {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
 
   useEffect(() => {
     if (therapist?.id && userId) {
@@ -79,6 +81,7 @@ if (now.getDate() >= 28) {
 
 const startCustom = format(startPeriod, 'yyyy-MM-dd');
 const endCustom = format(endPeriod, 'yyyy-MM-dd');
+setActivePeriod({ start: startPeriod, end: endPeriod });
 
 const [
   recapsRes,
@@ -88,7 +91,7 @@ const [
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(userId),
-  getUnfilledSOAPVisits(null, therapist.id),
+  getUnfilledSOAPVisits(null, therapist.id, startCustom, endCustom),
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom })
 ]);
 
@@ -170,7 +173,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight">Ringkasan Aktivitas</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-bold text-slate-800 tracking-tight">Ringkasan Aktivitas</h2>
+            <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              <CalendarDays className="w-3 h-3" />
+              {activePeriod.start ? format(activePeriod.start, 'dd MMM yyyy', { locale: idLocale }) : '...'} – {activePeriod.end ? format(activePeriod.end, 'dd MMM yyyy', { locale: idLocale }) : '...'}
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">Data diperbarui otomatis dari rekap harian 💙</p>
         </div>
         <Button
@@ -215,7 +224,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
           </div>
           <div>
             <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.totalPatients}</p>
-            <p className="text-xs text-slate-400 mt-1">Periode 28–27</p>
+            <p className="text-xs text-slate-400 mt-1">Kunjungan periode ini</p>
           </div>
           <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-blue-400 rounded-full" style={{ width: `${Math.min(metrics.totalPatients * 2, 100)}%` }} />
