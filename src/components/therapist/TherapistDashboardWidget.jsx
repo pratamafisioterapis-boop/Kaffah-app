@@ -4,6 +4,7 @@ import { getPhysiotherapistByUserId, getDailyRecaps } from '@/lib/api';
 import TherapistGreetingMotivation from './TherapistGreetingMotivation';
 import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
+import TherapistPerformanceWidget from './TherapistPerformanceWidget';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -91,12 +92,9 @@ const TherapistDashboardWidget = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* 1. Greeting & Motivation */}
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
-
-      
-      {/* 3. Metrics Overview - Passed profile data */}
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
+      <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
     </div>
   );
 };
