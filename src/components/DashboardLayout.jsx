@@ -481,13 +481,40 @@ const pwaNavItems = useMemo(() => {
         {renderSidebarContent()}
       </aside>
 
-      <main className="flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 pt-[80px] px-2 sm:px-0">
+      <main className={cn(
+        "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
+        isPWA && role === 'therapist' ? "pt-0" : "pt-[80px]"
+      )}>
+
+        {/* Header khusus PWA Therapist */}
+        {isPWA && role === 'therapist' && (
+          <header className="sticky top-0 z-50 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-slate-600 hover:bg-slate-100 rounded-xl shrink-0"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-base font-bold text-slate-800 truncate">
+              {location.pathname === '/therapist' ? 'Dashboard'
+                : location.pathname.includes('/booking') ? 'Booking Calendar'
+                : location.pathname.includes('/appointments') ? 'Daftar Appointment'
+                : location.pathname.includes('/records/new') ? 'Buat SOAP'
+                : location.pathname.includes('/records') ? 'Evaluasi Pasien'
+                : 'Therapist'}
+            </h1>
+          </header>
+        )}
+
+        {/* Header normal untuk non-PWA atau role lain */}
+        {!(isPWA && role === 'therapist') && (
         <header className={cn(
           "sticky top-4 z-50 mx-4 sm:mx-8 px-4 sm:px-6 py-3 flex justify-between items-center rounded-2xl transition-all duration-300",
           scrolled 
             ? "bg-white/70 backdrop-blur-xl shadow-lg border border-white/40" 
-            : "bg-white/50 backdrop-blur-md border border-white/30",
-          isPWA && role === 'therapist' && "hidden"
+            : "bg-white/50 backdrop-blur-md border border-white/30"
         )}>
           <div className="flex items-center gap-3">
              <Button 
@@ -621,8 +648,12 @@ const pwaNavItems = useMemo(() => {
             )}
           </div>
         </header>
-        
-        <div className="p-4 sm:p-8 pt-20 w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        )}
+
+        <div className={cn(
+          "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
+          isPWA && role === 'therapist' ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-20"
+        )}>
            {children}
         </div>
       </main>
