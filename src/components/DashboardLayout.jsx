@@ -453,27 +453,30 @@ const pwaNavItems = useMemo(() => {
     <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 font-sans">
       <AnimatePresence>
         {isSidebarOpen && (
-          <motion.div key="mobile-sidebar-container" className="fixed inset-0 z-40 lg:hidden">
-            <motion.div 
+          <>
+            {/* Overlay fullscreen */}
+            <motion.div
               key="overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm"
+              style={{ zIndex: 60 }}
             />
+            {/* Sidebar */}
             <motion.aside
               key="sidebar"
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute top-0 left-0 w-[280px] h-full shadow-2xl"
-              style={{ zIndex: 50 }}
+              className="fixed top-0 left-0 w-[280px] h-full shadow-2xl"
+              style={{ zIndex: 70 }}
             >
               {renderSidebarContent()}
             </motion.aside>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 
