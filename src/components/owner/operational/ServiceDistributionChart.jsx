@@ -1,74 +1,137 @@
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { CardContent } from '@/components/ui/card';
+import { supabase } from '@/lib/customSupabaseClient';
+import { Loader2 } from 'lucide-react';
 
-const DATA = [
-  { name: 'Dr. Sarah', Sport: 10, Neuro: 5, Geriatric: 2, Women: 0, Other: 1 },
-  { name: 'Dr. Budi',  Sport: 5,  Neuro: 12, Geriatric: 3, Women: 0, Other: 2 },
-  { name: 'Dr. Ayu',  Sport: 2,  Neuro: 3,  Geriatric: 8, Women: 5, Other: 1 },
-  { name: 'Dr. Reza', Sport: 8,  Neuro: 4,  Geriatric: 1, Women: 0, Other: 5 },
+const SERVICE_CONFIG = [
+  { key: 'Musculoskeletal Treatment',         short: 'Musculo',   color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
+  { key: 'Neurological Rehabilitation',       short: 'Neuro',     color: '#8b5cf6', bg: 'bg-violet-50',  text: 'text-violet-600'  },
+  { key: 'Pre-Post Operative Rehabilitation', short: 'Pre-Post',  color: '#10b981', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  { key: 'Sport Injury Treatment',            short: 'Sport',     color: '#f59e0b', bg: 'bg-amber-50',   text: 'text-amber-600'   },
+  { key: 'Recovery Treatment',                short: 'Recovery',  color: '#06b6d4', bg: 'bg-cyan-50',    text: 'text-cyan-600'    },
+  { key: 'Cardiorespiratory Physiotherapy',   short: 'Cardio',    color: '#f43f5e', bg: 'bg-rose-50',    text: 'text-rose-600'    },
 ];
 
-const COLORS = {
-  Sport:    '#6366f1',
-  Neuro:    '#8b5cf6',
-  Geriatric:'#10b981',
-  Women:    '#f43f5e',
-  Other:    '#cbd5e1',
-};
+const ServiceDistributionChart = ({ dateRange }) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
 
-const ServiceDistributionChart = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        let query = supabase
+          .from('daily_recaps')
+          .select('service_type');
+
+        if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
+        if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);
+
+        const { data: recaps, error } = await query;
+
+        if (error) throw error;
+
+        const totalCount = (recaps || []).length;
+        setTotal(totalCount);
+
+        const countMap = {};
+        (recaps || []).forEach(r => {
+          if (r.service_type) {
+            countMap[r.service_type] = (countMap[r.service_type] || 0) + 1;
+          }
+        });
+
+        const result = SERVICE_CONFIG.map(s => ({
+          ...s,
+          count: countMap[s.key] || 0,
+          pct: totalCount > 0 ? Math.round(((countMap[s.key] || 0) / totalCount) * 100) : 0
+        })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+
+        // Hitung yang tidak punya service_type
+        const classified = result.reduce((sum, s) => sum + s.count, 0);
+        const unclassified = totalCount - classified;
+
+        if (unclassified > 0) {
+          result.push({
+            key: 'Tidak Terklasifikasi',
+            short: 'Lainnya',
+            color: '#94a3b8',
+            bg: 'bg-slate-100',
+            text: 'text-slate-500',
+            count: unclassified,
+            pct: totalCount > 0 ? Math.round((unclassified / totalCount) * 100) : 0
+          });
+        }
+
+        setData(result);
+      } catch (err) {
+        console.error('ServiceDistributionChart error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [dateRange]);
+
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-      <div className="p-5 md:p-6 pb-0">
-        <h3 className="text-base font-bold text-slate-800">Distribusi Layanan per Fisioterapis</h3>
-        <p className="text-xs text-slate-400 mt-0.5">Breakdown tipe layanan per terapis</p>
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full">
+      {/* Header */}
+      <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Distribusi Layanan</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Breakdown tipe layanan keseluruhan</p>
+          </div>
+          {!loading && (
+            <div className="text-right">
+              <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Sesi</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <CardContent className="pt-4 pb-5 px-5 md:px-6">
-        <div className="h-[220px] md:h-[270px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={DATA} margin={{ top: 0, right: 5, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis
-                dataKey="name"
-                axisLine={false} tickLine={false}
-                tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-              />
-              <YAxis
-                axisLine={false} tickLine={false}
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
-                width={24}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: '12px', border: 'none',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: '12px'
-                }}
-                cursor={{ fill: '#f8fafc', radius: 6 }}
-              />
-              <Legend
-                verticalAlign="top"
-                height={32}
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: '11px', color: '#94a3b8', paddingBottom: '8px' }}
-              />
-              {Object.entries(COLORS).map(([key, color], i, arr) => (
-                <Bar
-                  key={key}
-                  dataKey={key}
-                  stackId="a"
-                  fill={color}
-                  radius={i === arr.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                  animationDuration={1200}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="h-px bg-slate-50 mx-5" />
+
+      <CardContent className="px-5 md:px-6 py-4">
+        {loading ? (
+          <div className="h-48 flex items-center justify-center">
+            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+            Belum ada data layanan.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {data.map((s, i) => (
+              <div key={s.key} className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                      {s.count.toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${s.pct}%`, backgroundColor: s.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
-    </Card>
+    </div>
   );
 };
 

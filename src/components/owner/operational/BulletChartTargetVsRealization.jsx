@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { getAllTherapistTargets, getDailyRecaps } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from 'date-fns';
 
 const BulletChartTargetVsRealization = ({ dateRange }) => {
@@ -78,11 +79,14 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
 
       console.log(`Fetching recaps for range: ${fetchStart} to ${fetchEnd}`);
 
-      const { data: recaps, error: recapError } = await getDailyRecaps({
-        startDate: fetchStart,
-        endDate: fetchEnd,
-        limit: 'all'
-      });
+      // Fetch langsung dari supabase agar bisa select field spesifik
+      const { data: recaps, error: recapError } = await supabase
+        .from('daily_recaps')
+        .select('therapist_id, recap_date, patient_type')
+        .gte('recap_date', fetchStart)
+        .lte('recap_date', fetchEnd);
+
+      if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
 
       if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
       console.log(`Fetched ${recaps?.length || 0} recaps.`);
@@ -112,31 +116,26 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       });
 
       const chartData = Object.values(activeTargetsByTherapist).map(target => {
-         const targetNameNorm = target.therapistName.trim().toLowerCase();
-         // Ensure we compare start of day to end of day to include full dates
          const targetStart = startOfDay(target.parsedStart);
          const targetEnd = endOfDay(target.parsedEnd);
+         const excludedTypes = target.excluded_patient_types || [];
 
-         // Count matching recaps
          const actualCount = recaps.filter(r => {
-            if (!r.therapist_name) return false;
-            
-            // Name Check (Case insensitive, partial match)
-            const rName = r.therapist_name.trim().toLowerCase();
-            const isNameMatch = rName === targetNameNorm || rName.includes(targetNameNorm) || targetNameNorm.includes(rName);
-            
-            if (!isNameMatch) return false;
+            // Match pakai therapist_id (lebih reliable dari nama)
+            if (r.therapist_id !== target.therapist_id) return false;
 
-            // Date Check
+            // Filter excluded patient types
+            if (excludedTypes.length > 0 && excludedTypes.includes(r.patient_type)) return false;
+
+            // Date check
             const rDate = parseISO(r.recap_date);
             return isWithinInterval(rDate, { start: targetStart, end: targetEnd });
          }).length;
 
-         // CRITICAL FIX: Sum up all possible target fields to ensure we catch the value
-         // And check for string vs number issues by casting
          const targetValue = Math.max(
              Number(target.target_sessions || 0),
              Number(target.target_visits || 0),
+             Number(target.target_visits || 0), // target_visits adalah field utama
              Number(target.target_patients || 0)
          );
 
@@ -196,7 +195,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
 
   if (error) {
     return (
-      <Card className="rounded-xl border-slate-200 shadow-sm h-full flex flex-col">
+      <Card className="rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
          <CardHeader className="flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-bold text-slate-800">Target vs Realisasi</CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
@@ -211,7 +210,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
   }
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 col-span-1 lg:col-span-2 overflow-hidden">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-slate-800">Target vs Realisasi</h3>
@@ -234,18 +233,22 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 px-5 md:px-6 pt-3">
+      <div className="flex items-center gap-4 px-5 md:px-6 pt-2">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-blue-200" />
+          <div className="w-3 h-1.5 rounded-full bg-blue-100" />
           <span className="text-[11px] text-slate-400 font-medium">Target</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-blue-600" />
+          <div className="w-3 h-1.5 rounded-full bg-indigo-500" />
           <span className="text-[11px] text-slate-400 font-medium">Realisasi</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-1.5 rounded-full bg-emerald-500" />
+          <span className="text-[11px] text-slate-400 font-medium">Tercapai</span>
         </div>
       </div>
 
-      <CardContent className="pt-4 pb-5 px-5 md:px-6">
+      <CardContent className="pt-4 pb-8 px-5 md:px-6">
         {loading ? (
           <div className="h-48 flex items-center justify-center">
             <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
@@ -261,24 +264,25 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+       <div className="space-y-6">
             {data.map((item, i) => {
               const pct = item.target > 0 ? Math.min(Math.round((item.realization / item.target) * 100), 100) : 0;
               const barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#6366f1' : '#f59e0b';
+              const barBg = pct >= 100 ? '#d1fae5' : pct >= 60 ? '#e0e7ff' : '#fef3c7';
               return (
-                <div key={i} className="space-y-1.5">
+                <div key={i} className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{item.displayName}</p>
-                      <p className="text-[10px] text-slate-400">{item.periodLabel}</p>
+                      <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.periodLabel}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-black leading-none" style={{ color: barColor }}>{pct}%</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{item.realization}/{item.target}</p>
+                      <p className="text-lg font-black leading-none" style={{ color: barColor }}>{pct}%</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.realization} / {item.target} kunjungan</p>
                     </div>
                   </div>
-                  {/* Double bar: target (light) + realization (solid) */}
-                  <div className="relative h-3 w-full bg-blue-100 rounded-full overflow-hidden">
+                  {/* Track */}
+                  <div className="relative h-5 w-full rounded-full overflow-hidden" style={{ backgroundColor: barBg }}>
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${pct}%`, backgroundColor: barColor }}

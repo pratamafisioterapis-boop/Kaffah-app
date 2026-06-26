@@ -386,18 +386,22 @@ setTherapists(enrichedTherapists);
              </section>
 
              {/* Section 3: Charts Grid */}
-             <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                <TrendSessionChart />
-                
-                <CapacityVsDemandChart />
-                
-                <SlotUtilizationChart />
-                <SessionTimelinessChart dateRange={dateRange} />
-                
-                {/* Fixed and Verified Bullet Chart */}
-                <BulletChartTargetVsRealization dateRange={dateRange} />
-                
-                <ServiceDistributionChart />
+             <section className="space-y-4 md:space-y-5">
+               {/* Row 1: Tren + Kapasitas */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+                 <TrendSessionChart />
+                 <CapacityVsDemandChart />
+               </div>
+               {/* Row 2: Utilisasi + Ketepatan */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+                 <SlotUtilizationChart />
+                 <SessionTimelinessChart dateRange={dateRange} />
+               </div>
+               {/* Row 3: Target vs Realisasi + Distribusi Layanan SEBELAHAN */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
+                 <BulletChartTargetVsRealization dateRange={dateRange} />
+                 <ServiceDistributionChart dateRange={dateRange} />
+               </div>
              </section>
           </TabsContent>
           
