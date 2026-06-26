@@ -3378,17 +3378,21 @@ export const getAllTherapistTargets = async () => {
 };
 
 
-// 🔹 CREATE TARGET (PAKAI RPC)
+// 🔹 CREATE TARGET (DIRECT INSERT)
 export const createTherapistTarget = async (payload) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.rpc('create_therapist_target', {
-      p_clinic_id: payload.clinic_id,
-      p_therapist_id: payload.therapist_id,
-      p_start_date: payload.start_date,
-      p_end_date: payload.end_date,
-      p_target_visits: payload.target_visits,
-      p_excluded_patient_types: payload.excluded_patient_types || []
-    });
+    const { data, error } = await supabase
+      .from('therapist_targets')
+      .insert({
+        clinic_id: payload.clinic_id || null,
+        therapist_id: payload.therapist_id,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        target_visits: payload.target_visits,
+        excluded_patient_types: payload.excluded_patient_types || []
+      })
+      .select()
+      .single();
 
     if (error) return { error };
 
@@ -3433,26 +3437,55 @@ export const deleteTherapistTarget = async (id) => {
 export const getTherapistTargetProgress = async (therapistId, startDate, endDate) => {
   return safeQuery(async () => {
 
-    const { data: recaps, error } = await supabase
+    // 1. Ambil data target dari DB
+    const { data: targetData, error: targetError } = await supabase
+      .from('therapist_targets')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .eq('start_date', startDate)
+      .eq('end_date', endDate)
+      .maybeSingle();
+
+    if (targetError) return { error: targetError };
+
+    const targetVisits = targetData?.target_visits || 0;
+    const excludedTypes = targetData?.excluded_patient_types || [];
+
+    // 2. Ambil recaps dalam periode, filter excluded types
+    let query = supabase
       .from('daily_recaps')
-      .select('id')
+      .select('id, patient_type')
       .eq('therapist_id', therapistId)
       .gte('recap_date', startDate)
       .lte('recap_date', endDate);
 
-    if (error) return { error };
+    const { data: recaps, error: recapsError } = await query;
+    if (recapsError) return { error: recapsError };
 
-    const actualVisits = recaps?.length || 0;
+    // 3. Filter recap yang bukan excluded type
+    const filteredRecaps = (recaps || []).filter(r => {
+      if (excludedTypes.length === 0) return true;
+      return !excludedTypes.includes(r.patient_type);
+    });
+
+    const actualVisits = filteredRecaps.length;
+    const achievement = targetVisits > 0 
+      ? Math.round((actualVisits / targetVisits) * 100) 
+      : 0;
+
+    const status = achievement >= 100 ? 'TERCAPAI' 
+      : achievement >= 50 ? 'BELUM TERCAPAI' 
+      : 'PERLU EVALUASI';
 
     return {
       data: {
-        target_visits: 0,
+        target_visits: targetVisits,
         actual_visits: actualVisits,
-        achievement_percentage: 0,
+        achievement_percentage: achievement,
         start_date: startDate,
         end_date: endDate,
-        excluded_patient_types: [],
-        status: 'active'
+        excluded_patient_types: excludedTypes,
+        status
       },
       success: true,
       error: null
@@ -3505,7 +3538,24 @@ export const getTherapistLeaveStatus = async (therapistId, date) => {
     return { isOnLeave: false };
   }, 'getTherapistLeaveStatus');
 };
-export const getClinicTherapistTargets = async () => ({ data: [] });
+export const getClinicTherapistTargets = async (clinicId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_targets')
+      .select(`
+        *,
+        therapist:physiotherapists (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'getClinicTherapistTargets', { retry: true });
+};
 export const fetchTotalSessions = async (startDate, endDate) => {
   return safeQuery(async () => {
     let query = supabase

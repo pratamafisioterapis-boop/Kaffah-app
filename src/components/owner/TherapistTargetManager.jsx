@@ -97,15 +97,21 @@ const TherapistTargetManager = () => {
     } else {
       setEditingTarget(null);
       const now = new Date();
-      const startOfMonth = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
-      const endOfMonth = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
-      
+      let startPeriod, endPeriod;
+      if (now.getDate() >= 28) {
+        startPeriod = new Date(now.getFullYear(), now.getMonth(), 28);
+        endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 27);
+      } else {
+        startPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+        endPeriod = new Date(now.getFullYear(), now.getMonth(), 27);
+      }
+
       setFormData({
         therapist_id: '',
-        start_date: startOfMonth,
-        end_date: endOfMonth,
+        start_date: format(startPeriod, 'yyyy-MM-dd'),
+        end_date: format(endPeriod, 'yyyy-MM-dd'),
         target_visits: '',
-        excluded_patient_types: []
+        excluded_patient_types: ['FREE', 'KONSULTASI', 'HOMECARE', 'XTRATIME']
       });
     }
     setIsDialogOpen(true);

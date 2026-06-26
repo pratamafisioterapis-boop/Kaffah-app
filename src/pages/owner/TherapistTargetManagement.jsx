@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    getClinicTherapistTargets, 
+    getAllTherapistTargets,
     getCurrentClinic, 
     getAllPhysiotherapists,
     createTherapistTarget,
@@ -66,7 +66,7 @@ const TherapistTargetManagement = () => {
     };
 
     const loadTargets = async (cId) => {
-        const { data } = await getClinicTherapistTargets(cId);
+        const { data } = await getAllTherapistTargets();
         
         // Enrich with progress
         if (data && data.length > 0) {
@@ -97,11 +97,17 @@ const TherapistTargetManagement = () => {
             });
         } else {
             setSelectedTarget(null);
-            // Default dates: start of current month to end of current month
+            // Default dates: 28 bulan lalu - 27 bulan ini
             const now = new Date();
-            const start = new Date(now.getFullYear(), now.getMonth(), 1);
-            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            
+            let start, end;
+            if (now.getDate() >= 28) {
+                start = new Date(now.getFullYear(), now.getMonth(), 28);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 27);
+            } else {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+                end = new Date(now.getFullYear(), now.getMonth(), 27);
+            }
+
             setFormData({
                 therapistId: '',
                 startDate: format(start, 'yyyy-MM-dd'),
@@ -110,7 +116,7 @@ const TherapistTargetManagement = () => {
                 excludedTypes: ''
             });
         }
-        setIsDialogOpen(true);
+        etIsDialogOpen(true);
     };
 
     const handleDeleteClick = (target) => {
@@ -139,14 +145,14 @@ const TherapistTargetManagement = () => {
                 });
                 toast({ title: "Success", description: "Target berhasil diperbarui." });
             } else {
-                await createTherapistTarget(
-                    clinicId,
-                    formData.therapistId,
-                    formData.startDate,
-                    formData.endDate,
-                    formData.targetVisits,
-                    excludedArray
-                );
+                await createTherapistTarget({
+                    clinic_id: clinicId,
+                    therapist_id: formData.therapistId,
+                    start_date: formData.startDate,
+                    end_date: formData.endDate,
+                    target_visits: parseInt(formData.targetVisits),
+                    excluded_patient_types: excludedArray
+                });
                 toast({ title: "Success", description: "Target berhasil dibuat." });
             }
             await loadTargets(clinicId);
