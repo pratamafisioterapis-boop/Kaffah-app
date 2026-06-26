@@ -194,22 +194,39 @@ const today = new Date(
   new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar' })
 ).toISOString().split('T')[0];
 
-const { data: slotData } = await supabase.rpc(
-  'get_available_slots_with_status_by_date',
-  { p_date: today }
-);
+// Langsung query dari tabel appointments/schedules lebih reliable
+// daripada RPC yang field-nya tidak pasti
+const { data: slotData, error: slotError } = await supabase
+  .from('therapist_schedules')
+  .select('therapist_id, id')
+  .eq('day_of_week', new Date().getDay())
+  .eq('is_active', true);
 
-// 🔥 hitung total slot per therapist
-const slotCountMap = {};
+// Fallback: coba RPC jika tabel schedules tidak ada
+let slotCountMap = {};
 
-(slotData || []).forEach(slot => {
-  if (!slotCountMap[slot.therapist_id]) {
-    slotCountMap[slot.therapist_id] = 0;
-  }
-  slotCountMap[slot.therapist_id] += 1;
-});
+if (slotError || !slotData) {
+  // Gunakan RPC sebagai fallback
+  const { data: rpcData } = await supabase.rpc(
+    'get_available_slots_with_status_by_date',
+    { p_date: today }
+  );
+  
+  (rpcData || []).forEach(slot => {
+    // Coba semua kemungkinan nama field
+    const tid = slot.therapist_id || slot.therapistId || slot.therapist;
+    if (!tid) return;
+    slotCountMap[tid] = (slotCountMap[tid] || 0) + 1;
+  });
+} else {
+  (slotData || []).forEach(s => {
+    const tid = s.therapist_id;
+    if (!tid) return;
+    slotCountMap[tid] = (slotCountMap[tid] || 0) + 1;
+  });
+}
 
-// 🔥 inject total_slots ke therapist
+// Inject total_slots ke therapist
 const enrichedTherapists = activeTherapistsOnly.map(t => ({
   ...t,
   total_slots: slotCountMap[t.id] || 0
