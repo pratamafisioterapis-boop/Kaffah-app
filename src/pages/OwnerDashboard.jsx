@@ -290,89 +290,53 @@ setTherapists(enrichedTherapists);
         <meta name="description" content="Owner dashboard for Kaffah System Care" />
       </Helmet>
       
-      <div className="space-y-5 md:space-y-8 animate-in fade-in duration-500 pb-24 md:pb-12 px-1">
-        <div className="
-flex flex-col
-gap-3
-md:flex-row
-md:items-end
-md:justify-between
-">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
-  Owner Dashboard
-</h1>
-            <p className="text-sm md:text-base text-slate-500">
-  Executive overview of clinic performance.
-</p>
-          </div>
-          
-          <div className="
-flex flex-col
-sm:flex-row
-items-stretch
-sm:items-center
-gap-2
-w-full
-md:w-auto
-">
-            
+      <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
-           <div className="w-full">
-  <div className="flex flex-col gap-2">
-    <span className="text-sm font-semibold text-slate-600">
-      Periode
-    </span>
+        {/* ── Hero Header ── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl">
+          {/* Decorative blobs */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
 
-    <div className="grid grid-cols-2 gap-2">
-      <input
-        type="date"
-        value={dateRange.startDate}
-        onChange={(e) =>
-          setDateRange({ ...dateRange, startDate: e.target.value })
-        }
-        className="w-full text-xs
-        px-2 py-2
-        border border-slate-300 rounded-lg"
-      />
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Owner Dashboard</h1>
+              <p className="text-slate-400 text-xs mt-1">Executive overview of clinic performance.</p>
+            </div>
 
-      <input
-        type="date"
-        value={dateRange.endDate}
-        onChange={(e) =>
-          setDateRange({ ...dateRange, endDate: e.target.value })
-        }
-        className="w-full text-xs
-        px-2 py-2
-        border border-slate-300 rounded-lg"
-      />
-    </div>
-  </div>
-</div>
+            {/* Periode Selector */}
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-2.5 w-full sm:w-auto">
+              <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="text-xs border-0 outline-none text-white font-medium bg-transparent flex-1 min-w-0"
+              />
+              <span className="text-white/30 shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="text-xs border-0 outline-none text-white font-medium bg-transparent flex-1 min-w-0"
+              />
+            </div>
           </div>
         </div>
 
-        <Tabs defaultValue="operational" className="w-full space-y-6">
-          <TabsList className="
-grid
-w-full
-grid-cols-2
-bg-slate-100
-p-1
-rounded-xl
-sticky
-top-0
-z-10
-">
-            <TabsTrigger 
+        {/* ── Tabs ── */}
+        <Tabs defaultValue="operational" className="w-full space-y-5">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-slate-200 p-1 rounded-2xl shadow-sm sticky top-2 z-10">
+            <TabsTrigger
               value="operational"
-              className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
             >
               Operational
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="finance"
-              className="data-[state=active]:bg-white data-[state=active]:text-teal-600 data-[state=active]:shadow-sm transition-all"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
             >
               Finance
             </TabsTrigger>
