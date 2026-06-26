@@ -213,117 +213,115 @@ if (!recordId) {
   label: `${p.full_name} (${p.medical_record_number || '-'})`
 }));
 
-  if (initialLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin" /></div>;
+  const isPWA = (() => {
+    try {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+    } catch { return false; }
+  })();
+
+  if (initialLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-blue-600" /></div>;
+
+  const soapFields = [
+    { key: 'subjective',  label: 'Subjective',  short: 'S', placeholder: 'Keluhan pasien, riwayat penyakit...', accent: 'border-l-blue-400',    badge: 'bg-blue-500',    labelColor: 'text-blue-700'   },
+    { key: 'objective',   label: 'Objective',   short: 'O', placeholder: 'Hasil observasi, pemeriksaan fisik, vital signs...', accent: 'border-l-teal-400',    badge: 'bg-teal-500',    labelColor: 'text-teal-700'   },
+    { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: 'Analisis, diagnosis fisioterapi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
+    { key: 'plan',        label: 'Plan',        short: 'P', placeholder: 'Rencana terapi, edukasi, home program...', accent: 'border-l-rose-400',    badge: 'bg-rose-500',    labelColor: 'text-rose-700'   },
+  ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-             <ArrowLeft className="w-5 h-5" />
+    <div className={isPWA ? "space-y-0" : "max-w-3xl mx-auto space-y-5"}>
+
+      {/* ── Header ── */}
+      <div className={`flex items-center justify-between gap-3 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
-             <h2 className="text-2xl font-bold text-slate-900">
-               {recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)'}
-             </h2>
-             <p className="text-slate-500 text-sm">
-                {dateParam ? (
-                    <span className="flex items-center gap-1.5 text-blue-600 font-medium">
-                        <CalendarDays className="w-4 h-4" /> 
-                        Untuk Tanggal: {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
-                    </span>
-                ) : "Catat perkembangan kesehatan pasien."}
-             </p>
+          <div className="min-w-0">
+            <h2 className={`font-bold text-slate-900 truncate ${isPWA ? 'text-base' : 'text-xl'}`}>
+              {recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)'}
+            </h2>
+            {dateParam && (
+              <span className="flex items-center gap-1 text-blue-600 font-medium text-xs mt-0.5">
+                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
+              </span>
+            )}
           </div>
         </div>
-
         {formData.patient_id && isValidUUID(formData.patient_id) && (
-          <Button 
-            variant="outline" 
-            className="gap-2 bg-white text-blue-600 border-blue-200 hover:bg-blue-50"
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl text-xs"
             onClick={() => setIsHistoryOpen(true)}
           >
-            <History className="w-4 h-4" />
-            Lihat SOAP Sebelumnya
+            <History className="w-3.5 h-3.5" />
+            {isPWA ? 'Riwayat' : 'Lihat SOAP Sebelumnya'}
           </Button>
         )}
       </div>
 
-      <Card>
-         <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Nama Pasien</label>
-                  <SearchableSelect 
-                    options={patientOptions}
-                    value={formData.patient_id}
-                    onChange={(val) => setFormData({...formData, patient_id: val})}
-                    disabled={paramPatientId !== 'select' || !!recordId}
-                    placeholder="Cari Pasien..."
+      {/* ── Form ── */}
+      <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-2xl'}`}>
+        <CardContent className="p-0">
+          <form onSubmit={handleSubmit}>
+
+            {/* Nama Pasien */}
+            <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Nama Pasien</label>
+              <SearchableSelect
+                options={patientOptions}
+                value={formData.patient_id}
+                onChange={(val) => setFormData({...formData, patient_id: val})}
+                disabled={paramPatientId !== 'select' || !recordId}
+                placeholder="Cari Pasien..."
+              />
+              {paramPatientId !== 'select' && !patients.find(p => p.id === paramPatientId) && (
+                <p className="text-xs text-amber-600 mt-1">Memuat data pasien terpilih...</p>
+              )}
+            </div>
+
+            {/* SOAP Fields */}
+            <div className={isPWA ? 'divide-y divide-slate-100' : 'grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100'}>
+              {soapFields.map((field) => (
+                <div
+                  key={field.key}
+                  className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}
+                >
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span className={`w-6 h-6 rounded-lg ${field.badge} text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}>
+                      {field.short}
+                    </span>
+                    <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
+                  </div>
+                  <Textarea
+                    placeholder={field.placeholder}
+                    className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${
+                      isPWA ? 'min-h-[100px] text-base' : 'min-h-[130px]'
+                    }`}
+                    value={formData[field.key]}
+                    onChange={e => setFormData({...formData, [field.key]: e.target.value})}
+                    required
                   />
-                  {paramPatientId !== 'select' && !patients.find(p => p.id === paramPatientId) && (
-                    <p className="text-xs text-amber-600 mt-1">Memuat data pasien terpilih...</p>
-                  )}
-               </div>
+                </div>
+              ))}
+            </div>
+            {/* Submit */}
+            <div className={`flex justify-end gap-3 bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
+              <Button type="button" variant="outline" className="rounded-xl" onClick={() => navigate(-1)}>Batal</Button>
+              <Button type="submit" className={`bg-blue-600 hover:bg-blue-700 rounded-xl ${isPWA ? 'flex-1' : 'min-w-[140px]'}`} disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Simpan Data</>}
+              </Button>
+            </div>
 
-               <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium text-slate-700">Subjective (S)</label>
-                     </div>
-                     <Textarea 
-                       placeholder="Keluhan pasien, riwayat penyakit..." 
-                       className="min-h-[140px] focus:ring-blue-200"
-                       value={formData.subjective}
-                       onChange={e => setFormData({...formData, subjective: e.target.value})}
-                       required
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-sm font-medium text-slate-700">Objective (O)</label>
-                     <Textarea 
-                       placeholder="Hasil observasi, pemeriksaan fisik, vital signs..." 
-                       className="min-h-[140px] focus:ring-blue-200"
-                       value={formData.objective}
-                       onChange={e => setFormData({...formData, objective: e.target.value})}
-                       required
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-sm font-medium text-slate-700">Assessment (A)</label>
-                     <Textarea 
-                       placeholder="Analisis, diagnosis fisioterapi..." 
-                       className="min-h-[140px] focus:ring-blue-200"
-                       value={formData.assessment}
-                       onChange={e => setFormData({...formData, assessment: e.target.value})}
-                       required
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-sm font-medium text-slate-700">Plan (P)</label>
-                     <Textarea 
-                       placeholder="Rencana terapi, edukasi, home program..." 
-                       className="min-h-[140px] focus:ring-blue-200"
-                       value={formData.plan}
-                       onChange={e => setFormData({...formData, plan: e.target.value})}
-                       required
-                     />
-                  </div>
-               </div>
-
-               <div className="pt-4 flex justify-end gap-3 border-t">
-                  <Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 min-w-[140px]" disabled={loading}>
-                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Simpan Data</>}
-                  </Button>
-               </div>
-
-            </form>
-         </CardContent>
+          </form>
+        </CardContent>
       </Card>
 
-      <SOAPHistoryModal 
-        isOpen={isHistoryOpen} 
+      <SOAPHistoryModal
+        isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         patientId={formData.patient_id}
         onCopy={handleCopySOAP}
