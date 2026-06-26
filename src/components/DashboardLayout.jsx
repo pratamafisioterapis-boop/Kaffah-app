@@ -486,7 +486,8 @@ const pwaNavItems = useMemo(() => {
           "sticky top-4 z-50 mx-4 sm:mx-8 px-4 sm:px-6 py-3 flex justify-between items-center rounded-2xl transition-all duration-300",
           scrolled 
             ? "bg-white/70 backdrop-blur-xl shadow-lg border border-white/40" 
-            : "bg-white/50 backdrop-blur-md border border-white/30"
+            : "bg-white/50 backdrop-blur-md border border-white/30",
+          isPWA && role === 'therapist' && "hidden"
         )}>
           <div className="flex items-center gap-3">
              <Button 
