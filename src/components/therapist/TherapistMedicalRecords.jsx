@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
 import { format } from 'date-fns';
-import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID } from '@/lib/utils';
+import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
 
