@@ -105,9 +105,9 @@ const endCustom = format(endPeriod, 'yyyy-MM-dd');
 ]);
 
       const rawMonthlyRecaps = recapsRes.data || [];
-      const patientTypeRecaps = patientTypeRes.data || [];
+      const periodRecaps = patientTypeRes.data || [];
 
-const patientTypeStats = patientTypeRecaps.reduce((acc, item) => {
+const patientTypeStats = periodRecaps.reduce((acc, item) => {
   const type = item.patient_type || 'LAINNYA';
 
   acc[type] = (acc[type] || 0) + 1;
@@ -117,9 +117,10 @@ const patientTypeStats = patientTypeRecaps.reduce((acc, item) => {
       const unfilledCount = Number(unfilledRes?.count ?? 0);
       
       
-      const allPatientsCount = new Set(rawMonthlyRecaps.map(r => r.patient_id).filter(Boolean)).size;
-      const todayRecaps = rawMonthlyRecaps.filter(r => r.recap_date === todayISO);
-
+      const allPatientsCount = periodRecaps.length;
+const todayRecaps = rawMonthlyRecaps.filter(
+  r => r.recap_date === todayISO
+);
       let targetInfo = {
          targetVisits: 0,
          monthlyVisitsCalculated: 0,
@@ -269,8 +270,12 @@ const patientTypeStats = patientTypeRecaps.reduce((acc, item) => {
         <Card className="bg-white border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
-              Total Pasien (Bulan Ini)
-            </CardTitle>
+  Total Pasien
+</CardTitle>
+
+<CardDescription>
+  Periode 28 - 27
+</CardDescription>
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
