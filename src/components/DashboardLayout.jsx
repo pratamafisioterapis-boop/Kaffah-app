@@ -460,7 +460,7 @@ const pwaNavItems = useMemo(() => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
             />
             <motion.aside
               key="sidebar"
@@ -469,6 +469,7 @@ const pwaNavItems = useMemo(() => {
               exit={{ x: -300 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="absolute top-0 left-0 w-[280px] h-full shadow-2xl"
+              style={{ zIndex: 50 }}
             >
               {renderSidebarContent()}
             </motion.aside>
