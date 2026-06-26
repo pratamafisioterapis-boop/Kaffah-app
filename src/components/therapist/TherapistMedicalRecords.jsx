@@ -27,19 +27,12 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const statusFilter = searchParams.get('status') || 'all';
+  const statusFilter = searchParams.get('status') || 'empty';
   const [searchTerm, setSearchTerm] = useState('');
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 20;
   // Sort State
-  const [sortConfig, setSortConfig] = useState(() => {
-    const key = isOwnerView ? "medicalRecordsSortOwner" : "medicalRecordsSortTherapist";
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return { sortBy: 'full_name', sortOrder: 'asc' };
-  });
+  const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'desc' });
 
   // Modal State
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -51,6 +44,9 @@ const itemsPerPage = 20;
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState(null);
   const fileInputRef = useRef(null);
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
 useEffect(() => {
   setCurrentPage(1);
 }, [searchTerm, statusFilter]);
@@ -66,10 +62,7 @@ useEffect(() => {
     return () => window.removeEventListener('medical-record-updated', handleUpdate);
   }, [therapist?.id]); 
 
-  useEffect(() => {
-      const key = isOwnerView ? "medicalRecordsSortOwner" : "medicalRecordsSortTherapist";
-      localStorage.setItem(key, JSON.stringify(sortConfig));
-  }, [sortConfig, isOwnerView]);
+  
 
   const fetchData = async (isSilent = false) => {
     if (!therapist?.id) {
@@ -295,6 +288,8 @@ setPatients(patientList);
            };
            const dateA = getLastVisit(a.id);
            const dateB = getLastVisit(b.id);
+           if (!dateA && dateB) return 1;
+           if (dateA && !dateB) return -1;
            comparison = dateA.localeCompare(dateB);
       }
 
@@ -329,51 +324,124 @@ const paginatedList = sortedList.slice(
          <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Nama pasien atau No. RM..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
-      <Card className="border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-            <Table>
-            <TableHeader className="bg-slate-50">
-                <TableRow>
-                    <TableHead className="w-[300px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('full_name')}>
-                        <div className="flex items-center gap-1">Nama Pasien {renderSortIcon('full_name')}</div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('date')}>
-                        <div className="flex items-center gap-1">Tanggal Kunjungan Terakhir {renderSortIcon('date')}</div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('status')}>
-                         <div className="flex items-center gap-1">Status SOAP {renderSortIcon('status')}</div>
-                    </TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {loading ? ( <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-blue-600" /></TableCell></TableRow> ) : sortedList.length === 0 ? ( <TableRow><TableCell colSpan={4} className="text-center py-12 text-slate-500">{patients.length === 0 ? "Belum ada riwayat kunjungan (Daily Recaps)." : "Tidak ada pasien yang cocok."}</TableCell></TableRow> ) : (
-                paginatedList.map((item) => {
-                    const visits = patientVisits[item.id] || [];
-                    const latestVisit = visits.length > 0 ? visits.reduce((latest, current) => current.recap_date > latest ? current.recap_date : latest, '') : '-';
+      {isPWA ? (
+        /* ── Tampilan PWA Mobile ── */
+        <div className="space-y-2">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="animate-spin w-6 h-6 text-blue-600" />
+            </div>
+          ) : paginatedList.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-sm">
+              {patients.length === 0 ? "Belum ada riwayat kunjungan." : "Tidak ada pasien yang cocok."}
+            </div>
+          ) : paginatedList.map((item) => {
+            const visits = patientVisits[item.id] || [];
+            const latestVisit = visits.length > 0
+              ? visits.reduce((latest, current) => current.recap_date > latest ? current.recap_date : latest, '')
+              : null;
 
-                    return (
+            return (
+              <div
+                key={item.id}
+                onClick={() => handlePatientClick(item)}
+                className={cn(
+                  "bg-white rounded-2xl border p-4 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all shadow-sm",
+                  item.status === 'empty' ? "border-rose-200 bg-rose-50/40" :
+                  item.status === 'incomplete' ? "border-amber-200 bg-amber-50/40" :
+                  "border-slate-100"
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <p className="font-bold text-slate-800 text-sm truncate">{item.full_name || 'Tanpa Nama'}</p>
+                    {item.status === 'empty' && (
+                      <span className="shrink-0 text-[10px] font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
+                        {item.missingCount} belum diisi
+                      </span>
+                    )}
+                    {item.status === 'incomplete' && (
+                      <span className="shrink-0 text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full">
+                        {item.missingCount} belum lengkap
+                      </span>
+                    )}
+                    {item.status === 'complete' && (
+                      <span className="shrink-0 text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                        Lengkap ✓
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">{item.medical_record_number || '-'}</p>
+                  {latestVisit && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Kunjungan terakhir: <span className="font-medium">{format(new Date(latestVisit), 'dd MMM yyyy')}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0 flex flex-col items-center gap-1">
+                  {item.status === 'empty' ? (
+                    <AlertCircle className="w-5 h-5 text-rose-500" />
+                  ) : item.status === 'incomplete' ? (
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  )}
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* ── Tampilan Desktop (Table) ── */
+        <Card className="border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50">
+                <TableRow>
+                  <TableHead className="w-[300px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('full_name')}>
+                    <div className="flex items-center gap-1">Nama Pasien {renderSortIcon('full_name')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('date')}>
+                    <div className="flex items-center gap-1">Tanggal Kunjungan Terakhir {renderSortIcon('date')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('status')}>
+                    <div className="flex items-center gap-1">Status SOAP {renderSortIcon('status')}</div>
+                  </TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-blue-600" /></TableCell></TableRow>
+                ) : sortedList.length === 0 ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-12 text-slate-500">{patients.length === 0 ? "Belum ada riwayat kunjungan (Daily Recaps)." : "Tidak ada pasien yang cocok."}</TableCell></TableRow>
+                ) : paginatedList.map((item) => {
+                  const visits = patientVisits[item.id] || [];
+                  const latestVisit = visits.length > 0 ? visits.reduce((latest, current) => current.recap_date > latest ? current.recap_date : latest, '') : '-';
+                  return (
                     <TableRow key={item.id} className="hover:bg-slate-50/50 cursor-pointer" onClick={() => handlePatientClick(item)}>
-                    <TableCell>
+                      <TableCell>
                         <div className="flex flex-col">
-                            <span className="font-semibold text-slate-900">{item.full_name || "Tanpa Nama"}</span>
-                            <span className="text-xs text-slate-500">{item.medical_record_number || '-'}</span>
+                          <span className="font-semibold text-slate-900">{item.full_name || "Tanpa Nama"}</span>
+                          <span className="text-xs text-slate-500">{item.medical_record_number || '-'}</span>
                         </div>
-                    </TableCell>
-                    <TableCell><span className="text-slate-600 font-medium text-sm">{latestVisit !== '-' ? format(new Date(latestVisit), 'dd MMM yyyy') : '-'}</span></TableCell>
-                    <TableCell>
+                      </TableCell>
+                      <TableCell><span className="text-slate-600 font-medium text-sm">{latestVisit !== '-' ? format(new Date(latestVisit), 'dd MMM yyyy') : '-'}</span></TableCell>
+                      <TableCell>
                         {item.status === 'complete' && (<div className="flex items-center gap-2"><Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-medium shadow-none"><CheckCircle2 className="w-3 h-3 mr-1" /> Lengkap</Badge><span className="text-xs text-slate-500">Semua kunjungan tercatat</span></div>)}
                         {item.status === 'incomplete' && (<div className="flex items-center gap-2"><Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 font-medium shadow-none"><AlertCircle className="w-3 h-3 mr-1" /> Belum Lengkap</Badge><span className="text-xs font-medium text-amber-600">{item.missingCount} kunjungan belum di-SOAP</span></div>)}
                         {item.status === 'empty' && (<div className="flex items-center gap-2"><Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100 font-medium shadow-none"><ClipboardList className="w-3 h-3 mr-1" /> Kosong</Badge><span className="text-xs font-medium text-red-600">Belum ada SOAP sama sekali</span></div>)}
-                    </TableCell>
-                    <TableCell className="text-right"><Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">Detail <ArrowRight className="w-4 h-4 ml-1" /></Button></TableCell>
+                      </TableCell>
+                      <TableCell className="text-right"><Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">Detail <ArrowRight className="w-4 h-4 ml-1" /></Button></TableCell>
                     </TableRow>
-                )})
-                )}
-            </TableBody>
+                  );
+                })}
+              </TableBody>
             </Table>
-        </div>
-      </Card>
+          </div>
+        </Card>
+      )}
 {totalPages > 1 && (
   <div className="flex items-center justify-center gap-2">
     
