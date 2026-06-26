@@ -90,7 +90,7 @@ const [
   patientTypeRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
-  getActiveTherapistTarget(userId),
+  getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
   getUnfilledSOAPVisits(null, therapist.id, startCustom, endCustom),
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom })
 ]);
@@ -98,7 +98,7 @@ const [
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
 const activeTarget = activeTargetRes?.data;
 const targetProgressRes = activeTarget
-  ? await getTherapistTargetProgress(userId, activeTarget.start_date, activeTarget.end_date)
+  ? await getTherapistTargetProgress(therapist.id, activeTarget.start_date, activeTarget.end_date)
   : { data: null };
 
 const rawMonthlyRecaps = recapsRes.data || [];
