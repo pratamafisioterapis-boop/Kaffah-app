@@ -146,56 +146,69 @@ const [historyLoading, setHistoryLoading] = useState(false);
   }
 };
 
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
   if (!therapist) return <div className="p-8 text-center text-slate-500">Loading therapist profile...</div>;
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
-      {/* Header & Date Navigation */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Booking Calendar Saya</h1>
-          <p className="text-slate-500 text-sm">Kelola jadwal dan booking pasien</p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-            <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => fetchDayData(date)} 
-                disabled={isRefreshing}
-                className={cn("mr-2", isRefreshing && "animate-spin")}
-            >
-                <RefreshCw className="h-4 w-4" />
+    <div className={cn("w-full mx-auto space-y-3 pb-12", isPWA ? "max-w-full" : "max-w-5xl space-y-6")}>
+
+      {/* ── Header Desktop (sembunyikan di PWA) ── */}
+      {!isPWA && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Booking Calendar Saya</h1>
+            <p className="text-slate-500 text-sm">Kelola jadwal dan booking pasien</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => fetchDayData(date)} disabled={isRefreshing} className={cn("mr-2", isRefreshing && "animate-spin")}>
+              <RefreshCw className="h-4 w-4" />
             </Button>
-            
             <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
-            <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, -1))}>
-                <ChevronLeft className="w-4 h-4" />
-            </Button>
-            
-            <Popover>
+              <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, -1))}><ChevronLeft className="w-4 h-4" /></Button>
+              <Popover>
                 <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("min-w-[200px] justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0")}>
+                  <Button variant="outline" className="min-w-[200px] justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0">
                     <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
                     {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
-                </Button>
+                  </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(d) => d && setDate(d)}
-                    initialFocus
-                />
+                  <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus />
                 </PopoverContent>
-            </Popover>
-
-            <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, 1))}>
-                <ChevronRight className="w-4 h-4" />
-            </Button>
+              </Popover>
+              <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, 1))}><ChevronRight className="w-4 h-4" /></Button>
             </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Navigasi Tanggal PWA (compact) ── */}
+      {isPWA && (
+        <div className="flex items-center gap-2 bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2.5">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setDate(addDays(date, -1))}>
+            <ChevronLeft className="w-4 h-4 text-slate-600" />
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-slate-700">
+                <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus />
+            </PopoverContent>
+          </Popover>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setDate(addDays(date, 1))}>
+            <ChevronRight className="w-4 h-4 text-slate-600" />
+          </Button>
+          <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", isRefreshing && "animate-spin")} onClick={() => fetchDayData(date)} disabled={isRefreshing}>
+            <RefreshCw className="w-4 h-4 text-slate-400" />
+          </Button>
+        </div>
+      )}
 
       {/* Content Grid */}
       {loading ? (
