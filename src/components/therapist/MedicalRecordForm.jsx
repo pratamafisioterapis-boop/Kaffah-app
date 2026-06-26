@@ -12,6 +12,7 @@ import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/customSupabaseClient';
 import { id } from 'date-fns/locale';
 
 const MedicalRecordForm = ({ therapist }) => {
@@ -61,30 +62,68 @@ const MedicalRecordForm = ({ therapist }) => {
   }, [paramPatientId]);
 
   const loadExistingRecord = async (id) => {
-    setInitialLoading(true);
-    try {
-        const { data, error } = await getMedicalRecords({ startDate: '2000-01-01' });
-        if (error) throw error;
-        const record = data?.find(r => r.id === id);
-        if (record) {
-          setFormData({
-            patient_id: record.patient_id,
-            daily_recap_id: record.daily_recap_id || null,
-            subjective: record.subjective || '',
-            objective: record.objective || '',
-            assessment: record.assessment || '',
-            plan: record.plan || '',
-            record_type: record.record_type || 'SOAP'
-          });
-        }
-    } catch (err) {
-        console.error("Failed to load existing record:", err);
-        toast({ variant: "destructive", title: "Error", description: "Gagal memuat data record." });
-    } finally {
-        setInitialLoading(false);
-    }
-  }
+  setInitialLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select(`
+        *,
+        patient:patients (
+          id,
+          full_name,
+          medical_record_number
+        )
+      `)
+      .eq('id', id)
+      .single();
 
+    if (error) throw error;
+
+    // Isi form SOAP
+    setFormData({
+      patient_id: data.patient_id,
+      daily_recap_id: data.daily_recap_id || null,
+      subjective: data.subjective || '',
+      objective: data.objective || '',
+      assessment: data.assessment || '',
+      plan: data.plan || '',
+      record_type: data.record_type || 'SOAP'
+    });
+
+    // Pastikan dropdown memiliki data pasien yang sedang diedit
+    if (data.patient) {
+      setPatients(prev => {
+        const exists = prev.some(p => p.id === data.patient.id);
+
+        if (exists) return prev;
+
+        return [
+          {
+            id: data.patient.id,
+            value: data.patient.id,
+            label: `${data.patient.full_name} (${data.patient.medical_record_number || '-'})`,
+            full_name: data.patient.full_name,
+            medical_record_number: data.patient.medical_record_number,
+            phone: data.patient.phone || ''
+          },
+          ...prev
+        ];
+      });
+    }
+
+  } catch (err) {
+    console.error("Failed to load existing record:", err);
+
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Gagal memuat data record."
+    });
+
+  } finally {
+    setInitialLoading(false);
+  }
+};
   const loadPatients = async () => {
     try {
         let data = [];
