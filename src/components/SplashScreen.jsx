@@ -47,7 +47,7 @@ const getTodayQuote = () => {
   return dailyQuotes[dayOfYear % dailyQuotes.length];
 };
 
-export default function SplashScreen() {
+export default function SplashScreen({ onDone }) {
   const { userDetails } = useAuth();
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
@@ -60,7 +60,10 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setFadeOut(true), 2800);
-    const hideTimer = setTimeout(() => setVisible(false), 3300);
+    const hideTimer = setTimeout(() => {
+      setVisible(false);
+      onDone?.();
+    }, 3300);
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
   }, []);
 

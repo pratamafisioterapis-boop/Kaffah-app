@@ -88,12 +88,8 @@ class AuthErrorBoundary extends React.Component {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(() => {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone
-  );
-});
+  const [showSplash, setShowSplash] = useState(true);
+
   if (!supabase) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -133,6 +129,7 @@ function App() {
   <link rel="manifest" href="/manifest.json" />
 </Helmet>
           <Router>
+            {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
