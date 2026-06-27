@@ -59,11 +59,11 @@ export default function SplashScreen({ onDone }) {
   const roleLabel = role === 'owner' ? 'Pemilik Klinik' : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFadeOut(true), 4000);
+    const fadeTimer = setTimeout(() => setFadeOut(true), 2500);
     const hideTimer = setTimeout(() => {
       setVisible(false);
       onDone?.();
-    }, 4600);
+    }, 3000);
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
   }, []);
 
