@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import {
-  DollarSign, Wallet, CreditCard, TrendingUp, TrendingDown,
+  DollarSign, TrendingUp, TrendingDown,
   AlertTriangle, RefreshCw, Loader2
 } from 'lucide-react';
 import {
@@ -13,8 +13,7 @@ import {
 } from 'recharts';
 import {
   getOwnerIncome, getOwnerExpenditures, getAdminIncome,
-  getAdminExpenses, getPatientIncomeFromPackages,
-  getOwnerReceivables, getBankAccounts
+  getAdminExpenses, getPatientIncomeFromPackages
 } from '@/lib/api';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
@@ -48,14 +47,12 @@ const RevenueOverview = ({ dateRange }) => {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, receiv, banks] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
         getPatientIncomeFromPackages(dateRange),
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
-        getOwnerReceivables(),
-        getBankAccounts()
       ]);
 
       setData({
@@ -64,8 +61,8 @@ const RevenueOverview = ({ dateRange }) => {
         patientIncome: patientInc?.data || [],
         ownerExpenses: ownerExp?.data || [],
         adminExpenses: adminExp?.data || [],
-        receivables: receiv?.data || [],
-        bankAccounts: banks?.data || []
+        receivables: [],
+        bankAccounts: []
       });
     } catch (error) {
       console.error('Error fetching finance overview:', error);
@@ -162,17 +159,14 @@ const RevenueOverview = ({ dateRange }) => {
   // ── Alerts ──
   const alerts = useMemo(() => {
     const items = [];
-    if (metrics.totalReceivable > 0) {
-      items.push({ type: 'warning', title: 'Outstanding Receivable', message: `${formatCurrency(metrics.totalReceivable)} belum tertagih` });
-    }
     if (metrics.netProfit < 0) {
       items.push({ type: 'danger', title: 'Loss Alert', message: 'Pengeluaran melebihi pemasukan periode ini' });
     }
-    if (metrics.totalCash < 1_000_000) {
-      items.push({ type: 'warning', title: 'Low Cash Balance', message: 'Posisi kas sangat rendah' });
+    if (metrics.totalExpenses > metrics.totalRevenue * 0.5) {
+      items.push({ type: 'warning', title: 'Expense Ratio Tinggi', message: `Pengeluaran mencapai ${metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}% dari revenue` });
     }
     if (items.length === 0) {
-      items.push({ type: 'success', title: 'Financial Health Stable', message: metrics.netProfit >= 0 ? 'Revenue growing, cash flow healthy' : 'Monitor expenses closely' });
+      items.push({ type: 'success', title: 'Financial Health Stable', message: 'Revenue positif, profit terjaga dengan baik' });
     }
     return items;
   }, [metrics]);
@@ -196,68 +190,105 @@ const RevenueOverview = ({ dateRange }) => {
         </Button>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { title: 'Total Revenue', value: metrics.totalRevenue, icon: DollarSign, color: 'bg-emerald-500', textColor: 'text-emerald-600' },
-          { title: 'Net Profit', value: metrics.netProfit, icon: metrics.netProfit >= 0 ? TrendingUp : TrendingDown, color: metrics.netProfit >= 0 ? 'bg-indigo-500' : 'bg-rose-500', textColor: metrics.netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600' },
-          { title: 'Cash Position', value: metrics.totalCash, icon: Wallet, color: 'bg-blue-500', textColor: 'text-blue-600' },
-          { title: 'Receivable', value: metrics.totalReceivable, icon: CreditCard, color: 'bg-amber-500', textColor: 'text-amber-600' }
-        ].map((item, idx) => (
-          <Card key={idx} className="rounded-2xl border-0 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs text-slate-500 font-medium">{item.title}</p>
-                  <p className={`text-lg lg:text-xl font-bold mt-1 ${item.textColor}`}>{formatShortCurrency(item.value)}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{formatCurrency(item.value)}</p>
-                </div>
-                <div className={`${item.color} p-2.5 rounded-xl text-white`}>
-                  <item.icon className="w-4 h-4" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* ── Executive Hero ── */}
-      <Card className="overflow-hidden border-0 rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-900 to-slate-950 text-white shadow-2xl">
-        <CardContent className="p-6 md:p-8">
-          <div className="flex flex-col xl:flex-row xl:justify-between gap-6">
+      <Card className="overflow-hidden border-0 rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white shadow-2xl relative">
+        {/* Decorative */}
+        <div className="absolute -top-10 -right-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <CardContent className="p-6 md:p-8 relative z-10">
+          <div className="flex flex-col">
             <div>
-              <p className="text-indigo-300 text-sm font-medium">Financial Health Overview</p>
-              <h2 className="text-4xl md:text-5xl font-black mt-2">{metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}</h2>
-              <div className={`inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full ${metrics.netProfit >= 0 ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300' : 'bg-rose-500/20 border border-rose-400/30 text-rose-300'}`}>
-                {metrics.netProfit >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                {metrics.netProfit >= 0 ? 'Net Profit Positive' : 'Net Profit Negative'}
+              <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-2">Financial Health Overview</p>
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="text-4xl md:text-5xl font-black">
+                  {metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}
+                </h2>
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                  metrics.netProfit >= 0
+                    ? 'bg-emerald-500/20 border border-emerald-400/30 text-emerald-300'
+                    : 'bg-rose-500/20 border border-rose-400/30 text-rose-300'
+                }`}>
+                  {metrics.netProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                  {metrics.netProfit >= 0 ? 'Net Profit Positive' : 'Net Profit Negative'}
+                </div>
               </div>
-              <p className="text-indigo-200 mt-4 max-w-md text-sm">
-                Periode {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} - {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
+              <p className="text-slate-400 text-xs mb-4">
+                {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
               </p>
+              <div className="mt-2">
+                <div className="flex justify-between text-[11px] mb-1.5">
+                  <span className="text-slate-400">Profit Margin</span>
+                  <span className={`font-bold ${metrics.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-700 ${metrics.netProfit >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}
+                    style={{ width: `${Math.min(Math.abs(metrics.totalRevenue > 0 ? (metrics.netProfit / metrics.totalRevenue) * 100 : 0), 100)}%` }} />
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="flex justify-between text-[11px] mb-1.5">
+                  <span className="text-slate-400">Expense Ratio</span>
+                  <span className={`font-bold ${metrics.totalRevenue > 0 && (metrics.totalExpenses / metrics.totalRevenue) < 0.5 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-700 ${metrics.totalRevenue > 0 && (metrics.totalExpenses / metrics.totalRevenue) < 0.5 ? 'bg-emerald-400' : 'bg-amber-400'}`}
+                    style={{ width: `${Math.min(metrics.totalRevenue > 0 ? (metrics.totalExpenses / metrics.totalRevenue) * 100 : 0, 100)}%` }} />
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/10 backdrop-blur rounded-2xl p-4">
-                <p className="text-indigo-200 text-[10px] uppercase tracking-wider">Revenue</p>
-                <h3 className="text-xl font-bold mt-1">{formatShortCurrency(metrics.totalRevenue)}</h3>
-              </div>
-              <div className="bg-white/10 backdrop-blur rounded-2xl p-4">
-                <p className="text-indigo-200 text-[10px] uppercase tracking-wider">Expenses</p>
-                <h3 className="text-xl font-bold mt-1">{formatShortCurrency(metrics.totalExpenses)}</h3>
-              </div>
-              <div className="bg-white/10 backdrop-blur rounded-2xl p-4">
-                <p className="text-indigo-200 text-[10px] uppercase tracking-wider">Profit</p>
-                <h3 className={`text-xl font-bold mt-1 ${metrics.netProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{formatShortCurrency(metrics.netProfit)}</h3>
-              </div>
-              <div className="bg-white/10 backdrop-blur rounded-2xl p-4">
-                <p className="text-indigo-200 text-[10px] uppercase tracking-wider">Cash</p>
-                <h3 className="text-xl font-bold mt-1">{formatShortCurrency(metrics.totalCash)}</h3>
-              </div>
-            </div>
+           
           </div>
         </CardContent>
       </Card>
 
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-white rounded-2xl border border-emerald-100 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-4xl md:text-5xl font-black leading-none text-emerald-600">{formatShortCurrency(metrics.totalRevenue)}</p>
+          <p className="text-sm text-slate-500 font-semibold mt-2">Total Revenue</p>
+          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.totalRevenue)}</p>
+        </div>
+
+        <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 md:p-6 ${
+          metrics.netProfit >= 0 ? 'border-indigo-100 border-l-4 border-l-indigo-500' : 'border-rose-100 border-l-4 border-l-rose-500'
+        }`}>
+          <div className="flex items-start justify-between mb-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${metrics.netProfit >= 0 ? 'bg-indigo-50' : 'bg-rose-50'}`}>
+              {metrics.netProfit >= 0 ? <TrendingUp className="w-6 h-6 text-indigo-600" /> : <TrendingDown className="w-6 h-6 text-rose-600" />}
+            </div>
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${metrics.netProfit >= 0 ? 'bg-indigo-50 text-indigo-600' : 'bg-rose-50 text-rose-600'}`}>
+              Margin {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
+            </span>
+          </div>
+          <p className={`text-4xl md:text-5xl font-black leading-none ${metrics.netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
+          <p className="text-sm text-slate-500 font-semibold mt-2">Net Profit</p>
+          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.netProfit)}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-rose-100 border-l-4 border-l-rose-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
+              <TrendingDown className="w-6 h-6 text-rose-600" />
+            </div>
+            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-rose-50 text-rose-600">
+              Ratio {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
+            </span>
+          </div>
+          <p className="text-4xl md:text-5xl font-black leading-none text-rose-600">{formatShortCurrency(metrics.totalExpenses)}</p>
+          <p className="text-sm text-slate-500 font-semibold mt-2">Total Pengeluaran</p>
+          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.totalExpenses)}</p>
+        </div>
+      </div>
       {/* ── Alerts + Revenue Breakdown ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <Card className="rounded-3xl border-0 shadow-xl bg-white">
@@ -351,50 +382,7 @@ const RevenueOverview = ({ dateRange }) => {
         </Card>
       </div>
 
-      {/* ── Top Patients + Cash Position ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <Card className="rounded-3xl border-0 shadow-xl">
-          <CardHeader><CardTitle className="text-lg">Top Patients by Revenue</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {topPatients.length > 0 ? topPatients.map((p, i) => (
-              <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
-                <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 flex items-center justify-center bg-indigo-100 text-indigo-700 rounded-full text-sm font-bold">{i + 1}</span>
-                  <span className="font-semibold text-sm">{p.name}</span>
-                </div>
-                <span className="font-bold text-slate-900 text-sm">{formatShortCurrency(p.amount)}</span>
-              </div>
-            )) : (
-              <div className="text-center py-8 text-slate-400">No patient income data</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-0 shadow-xl">
-          <CardHeader><CardTitle className="text-lg">Cash Position</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {data.bankAccounts.length > 0 ? (
-              <>
-                {data.bankAccounts.map((acc, i) => (
-                  <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-slate-50">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-slate-400" />
-                      <span className="font-medium text-sm">{acc.account_name || acc.bank_name || `Account ${i + 1}`}</span>
-                    </div>
-                    <span className="font-bold text-sm">{formatCurrency(acc.balance)}</span>
-                  </div>
-                ))}
-                <div className="border-t pt-4 flex justify-between font-bold text-base">
-                  <span>Total Cash</span>
-                  <span>{formatCurrency(metrics.totalCash)}</span>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8 text-slate-400">No bank accounts configured</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      
     </div>
   );
 };

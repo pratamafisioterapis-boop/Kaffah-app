@@ -19,7 +19,8 @@ import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import SettingsPage from '@/components/owner/SettingsPage';
 import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
-import OwnerFinanceDashboardWidget from '@/components/owner/OwnerFinanceDashboardWidget';
+import RevenueOverview from '@/components/owner/RevenueOverview';
+
 
 // Operational Components
 import OperationalDashboardUI from '@/components/owner/operational/OperationalDashboardUI';
@@ -386,11 +387,8 @@ setTherapists(enrichedTherapists);
              </section>
           </TabsContent>
           
-          <TabsContent
-            value="finance"
-            className="space-y-4 focus-visible:outline-none focus-visible:ring-0"
-          >
-            <OwnerFinanceDashboardWidget dateRange={dateRange} />
+          <TabsContent value="finance" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
+            <RevenueOverview dateRange={dateRange} />
           </TabsContent>
         </Tabs>
       </div>
