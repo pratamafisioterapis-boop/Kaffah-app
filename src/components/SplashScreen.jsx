@@ -86,6 +86,15 @@ export default function SplashScreen({ onDone }) {
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full">
 
+        {/* Logo */}
+        <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4">
+          <img
+            src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
+            alt="Kaffah Logo"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
         {/* Clinic name */}
         <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
 
@@ -93,7 +102,7 @@ export default function SplashScreen({ onDone }) {
         <div className="w-12 h-px bg-white/20 my-4" />
 
         {/* Greeting */}
-        <p className="text-white/60 text-sm font-medium">{greeting},</p>
+        <p className="text-white/60 text-sm font-medium">{greeting}</p>
         <h1 className="text-white text-3xl font-black mt-1 leading-tight">{name}</h1>
         {roleLabel && (
           <span className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
