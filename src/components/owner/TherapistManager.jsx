@@ -264,7 +264,11 @@ const TherapistManager = () => {
       setIsDialogOpen(false);
       fetchTherapists();
     } else {
-      toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
+      toast({ 
+        variant: "destructive", 
+        title: "Gagal Menyimpan", 
+        description: `${error.message || ''} ${error.details || ''} ${JSON.stringify(error)}`.slice(0, 200)
+      });
     }
     setSaving(false);
   };
