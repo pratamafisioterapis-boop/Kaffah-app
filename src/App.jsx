@@ -109,7 +109,14 @@ class AuthErrorBoundary extends React.Component {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true;
+    } catch {
+      return false;
+    }
+  });
 
   if (!supabase) {
     return (
