@@ -59,11 +59,11 @@ export default function SplashScreen({ onDone }) {
   const roleLabel = role === 'owner' ? 'Pemilik Klinik' : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFadeOut(true), 2800);
+    const fadeTimer = setTimeout(() => setFadeOut(true), 4000);
     const hideTimer = setTimeout(() => {
       setVisible(false);
       onDone?.();
-    }, 3300);
+    }, 4600);
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
   }, []);
 
@@ -85,15 +85,6 @@ export default function SplashScreen({ onDone }) {
       <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full">
-
-        {/* Logo */}
-        <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl mb-6 ring-2 ring-white/10">
-          <img
-            src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
-            alt="Kaffah Logo"
-            className="w-full h-full object-cover"
-          />
-        </div>
 
         {/* Clinic name */}
         <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
