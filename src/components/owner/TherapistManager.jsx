@@ -57,7 +57,11 @@ const TherapistManager = () => {
   }, []);
 
   const fetchClinicId = async () => {
-    const { data } = await getCurrentClinic();
+    const { data } = await supabase
+      .from('clinics')
+      .select('id')
+      .limit(1)
+      .single();
     if (data) setClinicId(data.id);
   };
 
