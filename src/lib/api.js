@@ -3120,25 +3120,10 @@ export const createTherapistAccount = async (payload, password) => {
       return { error: { message: "Email dan password wajib diisi" } };
     }
 
-    // 1️⃣ Create Supabase Auth User
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: payload.email,
-      password: password
-    });
-
-    if (authError) return { error: authError };
-
-    const userId = authData?.user?.id;
-
-    if (!userId) {
-      return { error: { message: "Gagal membuat user auth" } };
-    }
-
-    // 2️⃣ Insert ke table physiotherapists
+    // 1️⃣ Insert ke physiotherapists DULU (sesi owner masih aktif)
     const { data, error } = await supabase
       .from('physiotherapists')
       .insert({
-        user_id: userId,
         clinic_id: payload.clinic_id,
         name: payload.name,
         email: payload.email,
@@ -3160,6 +3145,18 @@ export const createTherapistAccount = async (payload, password) => {
       .single();
 
     if (error) return { error };
+
+    // 2️⃣ Buat auth user via RPC (tidak mengganti sesi aktif)
+    const { error: authError } = await supabase.rpc('create_auth_user_for_therapist', {
+      p_email: payload.email,
+      p_password: password,
+      p_therapist_id: data.id
+    });
+
+    if (authError) {
+      // Tetap return data meski auth gagal — data terapis sudah tersimpan
+      console.warn('Auth user creation failed:', authError);
+    }
 
     return { data, error: null };
 
