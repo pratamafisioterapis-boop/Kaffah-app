@@ -29,8 +29,29 @@ import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking'
 
 // Loading Component
 const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 z-50">
+    <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative z-10 flex flex-col items-center gap-8">
+      {/* Logo */}
+      <div className="w-20 h-20 rounded-2xl overflow-hidden">
+        <img
+          src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
+          alt="Kaffah"
+          className="w-full h-full object-cover"
+        />
+      </div>
+      {/* Spinner ring */}
+      <div className="relative w-12 h-12">
+        <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+        <div
+          className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-400"
+          style={{ animation: 'spin 0.9s linear infinite' }}
+        />
+      </div>
+      <p className="text-indigo-300/60 text-xs font-semibold uppercase tracking-widest">Memuat...</p>
+    </div>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
 );
 
