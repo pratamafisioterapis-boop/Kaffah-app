@@ -226,53 +226,43 @@ const TherapistManager = () => {
     let savedData = null;
 
     if (editingTherapist) {
+      // 🔥 UPDATE AUTH VIA RPC
+      if (editingTherapist?.user_id) {
+        const { error: authError } = await supabase.rpc('update_auth_user', {
+          p_user_id: editingTherapist.user_id,
+          p_email: formData.email || null,
+          p_password: password || null
+        });
+        console.log('AUTH UPDATE ERROR:', authError);
+      }
 
-  // 🔥 UPDATE AUTH VIA RPC
-  if (editingTherapist?.user_id) {
-    const { error: authError } = await supabase.rpc('update_auth_user', {
-      p_user_id: editingTherapist.user_id,
-      p_email: formData.email || null,
-      p_password: password || null
-    });
+      // 🔥 UPDATE DATA TERAPIS
+      const { data, error: updateError } = await savePhysiotherapist({
+        ...payload,
+        id: editingTherapist.id
+      });
 
-    console.log('AUTH UPDATE ERROR:', authError);
-  }
+      error = updateError;
+      savedData = data;
 
-  // 🔥 UPDATE DATA TERAPIS
-  const { data, error: updateError } = await savePhysiotherapist({
-    ...payload,
-    id: editingTherapist.id
-  });
-
-  error = updateError;
-  savedData = data;
-
-}
+    } else {
+      // 🔥 CREATE TERAPIS BARU
+      const { data, error: createError } = await createTherapistAccount(payload, password);
+      error = createError;
+      savedData = data;
+    }
 
     if (!error) {
-      toast({ title: "Berhasil", description: editingTherapist ? "Data terapis diperbarui" : "Akun terapis baru berhasil dibuat" });
-      
+      toast({ title: "Berhasil", description: editingTherapist ? "Data terapis diperbarui." : "Akun terapis baru berhasil dibuat." });
       if (editingTherapist) {
-  setTherapists(prev =>
-    prev.map(t =>
-      t.id === editingTherapist.id
-        ? {
-            ...t,
-            ...formData, // 🔥 ambil data terbaru termasuk theme_color
-          }
-        : t
-    )
-  );
-} else {
-  setTherapists(prev => [
-    ...prev,
-    {
-      ...savedData,
-      ...formData, // 🔥 pastikan theme_color ikut saat create
-    }
-  ]);
-}
+        setTherapists(prev => prev.map(t =>
+          t.id === editingTherapist.id ? { ...t, ...formData } : t
+        ));
+      } else {
+        setTherapists(prev => [...prev, { ...savedData, ...formData }]);
+      }
       setIsDialogOpen(false);
+      fetchTherapists();
     } else {
       toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
     }
