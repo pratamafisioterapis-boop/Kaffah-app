@@ -17,7 +17,6 @@ const dailyQuotes = [
   "🌙 Tetap rendah hati dalam setiap pencapaian.",
   "🌿 Kesabaran adalah kekuatan yang tidak terlihat.",
   "✨ Fokus pada proses, hasil akan mengikuti.",
-
   "🌾 Padi menguning di tengah sawah, semoga hari ini penuh berkah.",
   "🕊️ Burung terbang ke atas awan, semoga urusan dimudahkan Tuhan.",
   "🌿 Jalan pagi melihat embun, semoga hati selalu tenang dan santun.",
@@ -35,23 +34,104 @@ const dailyQuotes = [
   "☀️ Hari baru adalah kesempatan baru untuk menjadi lebih baik."
 ];
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 11) return "Selamat Pagi";
+  if (hour >= 11 && hour < 15) return "Selamat Siang";
+  if (hour >= 15 && hour < 18) return "Selamat Sore";
+  return "Selamat Malam";
+};
+
+const getTodayQuote = () => {
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  return dailyQuotes[dayOfYear % dailyQuotes.length];
+};
+
 export default function SplashScreen() {
+  const { userDetails } = useAuth();
+  const [visible, setVisible] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  const greeting = getGreeting();
+  const quote = getTodayQuote();
+  const name = userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || 'Selamat Datang';
+  const role = userDetails?.role;
+  const roleLabel = role === 'owner' ? 'Pemilik Klinik' : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setFadeOut(true), 2800);
+    const hideTimer = setTimeout(() => setVisible(false), 3300);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, []);
+
+  if (!visible) return null;
+
   return (
     <div
       style={{
-        position: "fixed",
+        position: 'fixed',
         inset: 0,
         zIndex: 999999,
-        background: "red",
-        color: "white",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "30px",
-        fontWeight: "bold"
+        transition: 'opacity 0.5s ease',
+        opacity: fadeOut ? 0 : 1,
       }}
+      className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center px-8"
     >
-      SPLASH REACT
+      {/* Decorative blobs */}
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full">
+
+        {/* Logo */}
+        <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl mb-6 ring-2 ring-white/10">
+          <img
+            src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
+            alt="Kaffah Logo"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Clinic name */}
+        <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
+
+        {/* Divider */}
+        <div className="w-12 h-px bg-white/20 my-4" />
+
+        {/* Greeting */}
+        <p className="text-white/60 text-sm font-medium">{greeting},</p>
+        <h1 className="text-white text-3xl font-black mt-1 leading-tight">{name}</h1>
+        {roleLabel && (
+          <span className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            {roleLabel}
+          </span>
+        )}
+
+        {/* Quote */}
+        <div className="mt-8 px-4 py-4 rounded-2xl bg-white/5 border border-white/10">
+          <p className="text-white/70 text-sm leading-relaxed">{quote}</p>
+        </div>
+
+        {/* Loading dots */}
+        <div className="flex items-center gap-1.5 mt-8">
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-indigo-400"
+              style={{
+                animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
