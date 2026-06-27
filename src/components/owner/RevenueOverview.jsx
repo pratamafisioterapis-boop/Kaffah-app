@@ -15,6 +15,7 @@ import {
   getOwnerIncome, getOwnerExpenditures, getAdminIncome,
   getAdminExpenses, getPatientIncomeFromPackages
 } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -23,16 +24,22 @@ const formatCurrency = (amount) =>
 
 const formatShortCurrency = (amount) => {
   const num = Number(amount) || 0;
-  if (num >= 1_000_000_000) return `Rp ${(num / 1_000_000_000).toFixed(1)} M`;
-  if (num >= 1_000_000) return `Rp ${(num / 1_000_000).toFixed(0)} Jt`;
+  if (num >= 1_000_000_000) return `Rp ${(num / 1_000_000_000).toFixed(1).replace(/\.0$/, '')} M`;
+  if (num >= 1_000_000) return `Rp ${(num / 1_000_000).toFixed(1).replace(/\.0$/, '')} Jt`;
   if (num >= 1_000) return `Rp ${(num / 1_000).toFixed(0)} Rb`;
-  return `Rp ${num}`;
+  return `Rp ${Math.round(num).toLocaleString('id-ID')}`;
+};
+
+const formatFull = (amount) => {
+  const num = Math.round(Number(amount) || 0);
+  return `Rp ${num.toLocaleString('id-ID')}`;
 };
 
 const RevenueOverview = ({ dateRange }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [danaPacket, setDanaPacket] = useState({ total: 0, sisaSesi: 0, jumlahPaket: 0 });
   const [data, setData] = useState({
     ownerIncome: [],
     adminIncome: [],
@@ -40,21 +47,48 @@ const RevenueOverview = ({ dateRange }) => {
     ownerExpenses: [],
     adminExpenses: [],
     receivables: [],
-    bankAccounts: []
+    bankAccounts: [],
+    nonPkgRecaps: [],
+    pkgRecaps: [],
   });
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
         getPatientIncomeFromPackages(dateRange),
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
+        supabase.from('daily_recaps')
+          .select('therapist_name, amount')
+          .gte('recap_date', dateRange.startDate)
+          .lte('recap_date', dateRange.endDate)
+          .is('package_tracking_id', null),
+        supabase.from('daily_recaps')
+          .select('therapist_name, package_tracking!inner(nominal, total_sessions)')
+          .gte('recap_date', dateRange.startDate)
+          .lte('recap_date', dateRange.endDate)
+          .not('package_tracking_id', 'is', null),
       ]);
+// Fetch dana paket aktif
+      const { data: activePkgs } = await supabase
+        .from('package_tracking')
+        .select('nominal, total_sessions, sessions_remaining')
+        .eq('status', 'aktif')
+        .gt('sessions_remaining', 0);
 
+      const danaTotal = (activePkgs || []).reduce((s, p) =>
+        s + (Number(p.nominal) / Number(p.total_sessions) * Number(p.sessions_remaining)), 0);
+      const sisaSesi = (activePkgs || []).reduce((s, p) => s + Number(p.sessions_remaining), 0);
+
+      setDanaPacket({
+        total: Math.round(danaTotal),
+        sisaSesi,
+        jumlahPaket: (activePkgs || []).length
+      });
       setData({
         ownerIncome: ownerInc?.data || [],
         adminIncome: adminInc?.data || [],
@@ -62,7 +96,9 @@ const RevenueOverview = ({ dateRange }) => {
         ownerExpenses: ownerExp?.data || [],
         adminExpenses: adminExp?.data || [],
         receivables: [],
-        bankAccounts: []
+        bankAccounts: [],
+        nonPkgRecaps: nonPkgRecaps?.data || [],
+        pkgRecaps: pkgRecaps?.data || [],
       });
     } catch (error) {
       console.error('Error fetching finance overview:', error);
@@ -155,7 +191,23 @@ const RevenueOverview = ({ dateRange }) => {
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
   }, [data]);
-
+// ── Revenue per Terapis ──
+  const therapistRevenue = useMemo(() => {
+    const map = {};
+    (data.nonPkgRecaps || []).forEach(r => {
+      if (!r.therapist_name) return;
+      map[r.therapist_name] = (map[r.therapist_name] || 0) + (Number(r.amount) || 0);
+    });
+    (data.pkgRecaps || []).forEach(r => {
+      if (!r.therapist_name) return;
+      const pt = r.package_tracking;
+      if (!pt) return;
+      map[r.therapist_name] = (map[r.therapist_name] || 0) + (Number(pt.nominal) / Number(pt.total_sessions));
+    });
+    return Object.entries(map)
+      .map(([name, revenue]) => ({ name: name.split(',')[0], fullName: name, revenue: Math.round(revenue) }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [data.nonPkgRecaps, data.pkgRecaps]);
   // ── Alerts ──
   const alerts = useMemo(() => {
     const items = [];
@@ -289,97 +341,76 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.totalExpenses)}</p>
         </div>
       </div>
-      {/* ── Alerts + Revenue Breakdown ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <Card className="rounded-3xl border-0 shadow-xl bg-white">
-          <CardHeader><CardTitle className="text-lg">Executive Alerts</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {alerts.map((alert, idx) => (
-              <div key={idx} className={`p-4 rounded-2xl border ${alert.type === 'success' ? 'bg-emerald-50 border-emerald-100' : alert.type === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-rose-50 border-rose-100'}`}>
-                <div className="flex items-center gap-3">
-                  {alert.type === 'success' ? <TrendingUp className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className={`w-5 h-5 ${alert.type === 'warning' ? 'text-amber-600' : 'text-rose-600'}`} />}
-                  <div>
-                    <div className={`font-semibold text-sm ${alert.type === 'success' ? 'text-emerald-700' : alert.type === 'warning' ? 'text-amber-700' : 'text-rose-700'}`}>{alert.title}</div>
-                    <div className="text-sm text-slate-600">{alert.message}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-0 shadow-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
-          <CardContent className="p-6 h-full flex flex-col justify-center">
-            <p className="opacity-80 text-sm">Revenue Breakdown</p>
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div><div className="text-xs opacity-70">Owner Income</div><div className="text-lg font-bold">{formatShortCurrency(metrics.ownerIncome)}</div></div>
-              <div><div className="text-xs opacity-70">Admin Income</div><div className="text-lg font-bold">{formatShortCurrency(metrics.adminIncome)}</div></div>
-              <div><div className="text-xs opacity-70">Patient Income</div><div className="text-lg font-bold">{formatShortCurrency(metrics.patientIncome)}</div></div>
+      {/* ── Dana Paket ── */}
+      <div className="bg-white rounded-2xl border border-amber-100 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+              <DollarSign className="w-6 h-6 text-amber-600" />
             </div>
-            <div className="mt-6 pt-4 border-t border-white/20 flex justify-between items-center">
-              <span className="opacity-80 text-sm">Expense Ratio</span>
-              <span className="text-xl font-bold">{metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%</span>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Dana Paket Belum Terealisasi</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Sisa sesi paket aktif yang belum dilakukan</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600">
+              {danaPacket.jumlahPaket} paket aktif
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+          <div className="bg-amber-50 rounded-xl p-4">
+            <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none">{formatFull(danaPacket.total)}</p>
+            <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
+          </div>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.sisaSesi}</p>
+            <p className="text-xs text-slate-500 font-semibold mt-2">Sisa Sesi</p>
+          </div>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.jumlahPaket}</p>
+            <p className="text-xs text-slate-500 font-semibold mt-2">Paket Aktif</p>
+          </div>
+        </div>
       </div>
 
-      {/* ── Charts ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <Card className="rounded-3xl border-0 shadow-xl">
-          <CardHeader><CardTitle className="text-lg">Revenue Trend</CardTitle></CardHeader>
-          <CardContent>
-            {revenueTrendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={revenueTrendData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => `Rp${(v / 1000000).toFixed(0)}M`} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                  <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-slate-400">No revenue data for this period</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-0 shadow-xl">
-          <CardHeader><CardTitle className="text-lg">Expense Breakdown</CardTitle></CardHeader>
-          <CardContent>
-            {expenseBreakdown.length > 0 ? (
-              <div className="flex flex-col items-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie data={expenseBreakdown} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value">
-                      {expenseBreakdown.map((_, index) => (
-                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                  {expenseBreakdown.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                      <span className="text-xs text-slate-600">{entry.name}</span>
+      {/* ── Revenue per Terapis ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Revenue per Terapis</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Kontribusi revenue per terapis periode ini</p>
+          </div>
+          <span className="text-xs text-slate-400">{therapistRevenue.length} terapis</span>
+        </div>
+        {therapistRevenue.length === 0 ? (
+          <p className="text-slate-400 text-sm text-center py-8">Belum ada data</p>
+        ) : (
+          <div className="space-y-4">
+            {therapistRevenue.map((t, i) => {
+              const pct = Math.round((t.revenue / (therapistRevenue[0]?.revenue || 1)) * 100);
+              const colors = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6'];
+              const color = colors[i % colors.length];
+              return (
+                <div key={t.fullName} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs font-black text-slate-300 w-5 shrink-0">#{i + 1}</span>
+                      <span className="text-sm font-semibold text-slate-700 truncate">{t.name}</span>
                     </div>
-                  ))}
+                    <div className="shrink-0">
+                      <span className="text-sm font-black text-slate-800">{formatFull(t.revenue)}</span>
+                    </div>
+                  </div>
+                  <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-[300px] rounded-2xl bg-gradient-to-br from-rose-50 to-orange-50 flex items-center justify-center text-slate-400">No expense data for this period</div>
-            )}
-          </CardContent>
-        </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       
