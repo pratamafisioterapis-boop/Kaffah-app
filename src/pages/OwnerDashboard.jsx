@@ -3,22 +3,11 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { format, subDays } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/lib/customSupabaseClient';
-import {
-  DollarSign,
-  Wallet,
-  CreditCard,
-  PiggyBank,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Target,
-  Activity
-} from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 // Pages
 import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
@@ -30,7 +19,7 @@ import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import SettingsPage from '@/components/owner/SettingsPage';
 import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
-import RevenueOverview from '@/components/owner/RevenueOverview';
+import OwnerFinanceDashboardWidget from '@/components/owner/OwnerFinanceDashboardWidget';
 
 // Operational Components
 import OperationalDashboardUI from '@/components/owner/operational/OperationalDashboardUI';
@@ -399,9 +388,9 @@ setTherapists(enrichedTherapists);
           
           <TabsContent
             value="finance"
-            className="space-y-6 focus-visible:outline-none focus-visible:ring-0"
+            className="space-y-4 focus-visible:outline-none focus-visible:ring-0"
           >
-            <RevenueOverview dateRange={dateRange} />
+            <OwnerFinanceDashboardWidget dateRange={dateRange} />
           </TabsContent>
         </Tabs>
       </div>
