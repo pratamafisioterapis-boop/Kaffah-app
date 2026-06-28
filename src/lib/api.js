@@ -2014,6 +2014,7 @@ export const getMedicalRecordsWithPatients = async () => {
         specific_test,
         radiology_lab,
         treatment_goal,
+        therapist_name,
 
         patient:patients!patient_id (
           id,

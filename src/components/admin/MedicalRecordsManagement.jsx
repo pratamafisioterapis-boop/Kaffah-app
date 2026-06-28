@@ -18,11 +18,13 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
   getPatients, 
   getMedicalRecordsWithPatients,
-  createBulkMedicalRecordsDetailed
+  createBulkMedicalRecordsDetailed,
+  getDiagnosisOptions
 } from '@/lib/api';
 import { cn, downloadCSV, parseCSVText } from '@/lib/utils';
 import { Skeleton } from "@/components/ui/skeleton";
-import MedicalRecordsModal from './MedicalRecordsModal'; // Import the new modal component
+import MedicalRecordsModal from './MedicalRecordsModal';
+import MedicalRecordViewSheet from './MedicalRecordViewSheet';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +38,8 @@ const MedicalRecordsManagement = () => {
   const { user } = useAuth();
   
   // State variables initialization
-  const [patients, setPatients] = useState([]); 
+  const [patients, setPatients] = useState([]);
+  const [diagnoses, setDiagnoses] = useState([]);
   const [records, setRecords] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +50,8 @@ const MedicalRecordsManagement = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
 const [isViewOpen, setIsViewOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   // Sort State
   const [sortConfig, setSortConfig] = useState(() => {
@@ -78,13 +83,15 @@ const [isViewOpen, setIsViewOpen] = useState(false);
     setLoading(true);
     setError(null);
     try {
-      const [patientsRes, recordsRes] = await Promise.all([
+      const [patientsRes, recordsRes, diagnosesRes] = await Promise.all([
         getPatients(),
-        getMedicalRecordsWithPatients()
+        getMedicalRecordsWithPatients(),
+        getDiagnosisOptions()
       ]);
 
       setPatients(patientsRes.data || []);
       setRecords(recordsRes.data || []);
+      setDiagnoses((diagnosesRes.data || []).map(d => ({ value: d.id, label: d.label })));
       
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -126,26 +133,23 @@ const [isViewOpen, setIsViewOpen] = useState(false);
   const handleSaveSuccess = async (updatedRecord = null) => {
 
   if (updatedRecord?.id) {
+    // Cek apakah record ini sudah ada di list (edit) atau baru (create)
+    const isExisting = records.some(item => item.id === updatedRecord.id);
 
-    setRecords(prev =>
-  prev.map(item => {
-
-    if (item.id !== updatedRecord.id) {
-      return item;
+    if (isExisting) {
+      // Edit: merge data yang ada
+      setRecords(prev =>
+        prev.map(item => {
+          if (item.id !== updatedRecord.id) return item;
+          return { ...item, ...updatedRecord };
+        })
+      );
+      setSelectedRecord(null);
+      setViewRecord(null);
+    } else {
+      // Create baru: fetch ulang agar dapat relasi patient
+      await fetchInitialData();
     }
-
-    // 🔥 merge dengan object lama
-    return {
-      ...item,
-      ...updatedRecord
-    };
-
-  })
-);
-
-    // 🔥 reset stale selected record
-    setSelectedRecord(null);
-    setViewRecord(null);
 
   } else {
     await fetchInitialData();
@@ -163,34 +167,26 @@ const handleViewRecord = (record) => {
 
   setIsViewOpen(true);
 };
-  const handleDelete = async (id) => {
-  const confirmDelete = window.confirm("Yakin ingin menghapus rekam medis ini?");
+  const handleDelete = (id) => {
+    setDeleteTargetId(id);
+    setDeleteDialogOpen(true);
+  };
 
-  if (!confirmDelete) return;
-
-  try {
-    const { deleteMedicalRecord } = await import('@/lib/api');
-
-    const { error } = await deleteMedicalRecord(id);
-
-    if (error) throw error;
-
-    toast({
-      title: "Berhasil",
-      description: "Rekam medis berhasil dihapus.",
-    });
-
-    fetchInitialData();
-  } catch (err) {
-    console.error(err);
-
-    toast({
-      variant: "destructive",
-      title: "Gagal menghapus",
-      description: err.message || "Terjadi kesalahan saat menghapus data.",
-    });
-  }
-};
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      const { deleteMedicalRecord } = await import('@/lib/api');
+      const { error } = await deleteMedicalRecord(deleteTargetId);
+      if (error) throw error;
+      toast({ title: "Berhasil", description: "Rekam medis berhasil dihapus." });
+      fetchInitialData();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Gagal menghapus", description: err.message || "Terjadi kesalahan." });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDeleteTargetId(null);
+    }
+  };
   
   const handleSort = (field) => {
     setSortConfig(prev => {
@@ -441,6 +437,10 @@ const handleViewRecord = (record) => {
                   onClick={() => handleSort('status')}>
                   <div className="flex items-center gap-1">Status {renderSortIcon('status')}</div>
                 </th>
+                <th className="px-5 py-3 whitespace-nowrap"
+                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Fisioterapis
+                </th>
                 <th className="px-5 py-3 w-10" />
               </tr>
             </thead>
@@ -496,6 +496,20 @@ const handleViewRecord = (record) => {
                           {statusLabel}
                         </span>
                       </td>
+                      <td className="px-5 py-3">
+                        {record.therapist_name
+                          ? <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold"
+                                style={{ background: '#f0fdf4', color: '#059669' }}>
+                                {record.therapist_name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs text-slate-600 truncate max-w-[120px]">
+                                {record.therapist_name.split(',')[0]}
+                              </span>
+                            </div>
+                          : <span style={{ color: '#cbd5e1', fontSize: '11px' }}>—</span>
+                        }
+                      </td>
                       <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -530,16 +544,52 @@ const handleViewRecord = (record) => {
         onSave={handleSaveSuccess}
         recordData={selectedRecord}
       />
-<MedicalRecordsModal
-  key={viewRecord?.id || 'view'}
+<MedicalRecordViewSheet
   isOpen={isViewOpen}
   onClose={() => {
     setIsViewOpen(false);
     setViewRecord(null);
   }}
-  onSave={() => {}}
-  recordData={viewRecord}
+  record={viewRecord}
+  diagnoses={diagnoses}
+  onEdit={(record) => {
+    setIsViewOpen(false);
+    setViewRecord(null);
+    handleOpenEditModal(record);
+  }}
 />
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-2xl border-0"
+          style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div className="p-5 pb-4">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fff1f2' }}>
+                <Trash2 className="w-5 h-5" style={{ color: '#e11d48' }} />
+              </div>
+              <div>
+                <DialogTitle className="text-sm font-bold text-slate-800 mb-1">Hapus Rekam Medis</DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 leading-relaxed">
+                  Data rekam medis ini akan dihapus permanen dan tidak bisa dikembalikan. Yakin ingin melanjutkan?
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 px-5 pb-5">
+            <button onClick={() => setDeleteDialogOpen(false)}
+              className="flex-1 h-9 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+              Batal
+            </button>
+            <button onClick={confirmDelete}
+              className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all"
+              style={{ background: '#e11d48' }}>
+              Hapus Permanen
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Import CSV Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="sm:max-w-md">
