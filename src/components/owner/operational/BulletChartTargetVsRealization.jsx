@@ -9,6 +9,20 @@ import { getAllTherapistTargets, getDailyRecaps } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from 'date-fns';
 
+// Helper: hitung periode aktif (28 bulan lalu/ini s/d 27 bulan ini/depan)
+const getCurrentPeriod = () => {
+  const now = new Date();
+  let start, end;
+  if (now.getDate() >= 28) {
+    start = new Date(now.getFullYear(), now.getMonth(), 28);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 27);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth() - 1, 28);
+    end = new Date(now.getFullYear(), now.getMonth(), 27);
+  }
+  return { start, end };
+};
+
 const BulletChartTargetVsRealization = ({ dateRange }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +69,11 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
             start = new Date(m.getFullYear(), m.getMonth(), 1);
             end = new Date(m.getFullYear(), m.getMonth() + 1, 0); // Last day of month
          } 
-         // Fallback: Current Month
+         // Fallback: Periode berjalan (28 bulan lalu/ini s/d 27 bulan ini/depan)
          else {
-            const now = new Date();
-            start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const period = getCurrentPeriod();
+            start = period.start;
+            end = period.end;
          }
 
          if (isValid(start) && start < minDate) minDate = start;
@@ -115,7 +129,13 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
          }
       });
 
-      const chartData = Object.values(activeTargetsByTherapist).map(target => {
+      // Filter: hanya tampilkan target yang overlap dengan periode berjalan saat ini
+      const { start: currentStart, end: currentEnd } = getCurrentPeriod();
+      const filteredTargets = Object.values(activeTargetsByTherapist).filter(target => {
+        return target.parsedStart <= currentEnd && target.parsedEnd >= currentStart;
+      });
+
+      const chartData = filteredTargets.map(target => {
          const targetStart = startOfDay(target.parsedStart);
          const targetEnd = endOfDay(target.parsedEnd);
          const excludedTypes = target.excluded_patient_types || [];

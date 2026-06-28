@@ -14,7 +14,7 @@ import {
   TrendingUp, Wallet, ShieldCheck, Briefcase 
 } from 'lucide-react';
 import { 
-  getAllPhysiotherapists, getDailyRecaps, getTherapistSchedules, 
+  getAllPhysiotherapists, getActivePhysiotherapists, getDailyRecaps, getTherapistSchedules, 
   getTherapistTimeOff, getOperationalOptions 
 } from '@/lib/api';
 import { 
@@ -42,6 +42,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [result, setResult] = useState(null);
+  const [allResults, setAllResults] = useState([]);
+  const [calculatingAll, setCalculatingAll] = useState(false);
   
   // Custom Rates Input (for manual override or config)
   const [customRates, setCustomRates] = useState({});
@@ -53,7 +55,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   const fetchInitialData = async () => {
   try {
     const [therapistRes, ratesRes] = await Promise.all([
-      getAllPhysiotherapists(),
+      getActivePhysiotherapists(),
       getServiceRates()
     ]);
 
@@ -161,294 +163,251 @@ const endDateStr = dateRange?.endDate;
       setCustomRates(prev => ({ ...prev, [type]: value }));
   };
 
-  const months = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-  ];
-  const years = [2024, 2025, 2026, 2027];
-const handlePeriodeIni = () => {
-  const today = new Date();
+  const handlePeriodeIni = () => {
+    const today = new Date();
+    const end = new Date(today.getFullYear(), today.getMonth(), 27);
+    const start = new Date(today.getFullYear(), today.getMonth() - 1, 28);
+    setDateRange({ startDate: format(start, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') });
+  };
 
-  const end = new Date(today.getFullYear(), today.getMonth(), 27);
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, 28);
+  const calcOneTherapist = async (therapist) => {
+    const salaryScheme = therapist.salary_scheme || 'full_salary';
 
-  setDateRange({
-  startDate: format(start, 'yyyy-MM-dd'),
-  endDate: format(end, 'yyyy-MM-dd')
-});
-};
+    let startDateStr, endDateStr;
+    if (salaryScheme === 'full_salary') {
+      const now = new Date();
+      startDateStr = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
+      endDateStr = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
+    } else {
+      startDateStr = dateRange?.startDate;
+      endDateStr = dateRange?.endDate;
+    }
+
+    const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
+      getDailyRecaps({ startDate: startDateStr, endDate: endDateStr, therapistId: therapist.id, limit: 'all' }),
+      getTherapistSchedules(therapist.id),
+      getTherapistTimeOff(therapist.id)
+    ]);
+    const therapistRecaps = recapsRes.data || [];
+    const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
+    const baseSalary = parseFloat(therapist.base_salary) || 0;
+    const transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * attendanceDays;
+    const salaryType = therapist.salary_scheme || 'full_salary';
+    let commission = 0;
+    let breakdown = {};
+    if (salaryType === 'full_salary') {
+      commission = calculateFullSalary(therapistRecaps);
+    } else {
+      commission = calculateCustomSalary(therapistRecaps, customRates);
+      therapistRecaps.forEach(r => {
+        const type = r.patient_type || 'General';
+        breakdown[type] = (breakdown[type] || 0) + 1;
+      });
+    }
+    const total = baseSalary + transportAllowance + commission;
+    return {
+      id: therapist.id,
+      name: therapist.name,
+      period: `${format(new Date(startDateStr), 'dd/MM/yyyy')} s/d ${format(new Date(endDateStr), 'dd/MM/yyyy')}`,
+      salaryType: salaryType === 'full_salary' ? 'Full Salary' : 'Custom Salary',
+      attendanceDays,
+      baseSalary,
+      transportAllowance,
+      commission,
+      total,
+      breakdown,
+      sessionCount: therapistRecaps.length
+    };
+  };
+
+  const handleCalculateAll = async () => {
+    if (!therapists.length) return;
+    setCalculatingAll(true);
+    setAllResults([]);
+    try {
+      const results = await Promise.all(therapists.map(t => calcOneTherapist(t)));
+      setAllResults(results.sort((a, b) => b.total - a.total));
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    } finally {
+      setCalculatingAll(false);
+    }
+  };
+
+  const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
+  const fmtShort = (n) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}jt`;
+    if (n >= 1000) return `${(n / 1000).toFixed(0)}rb`;
+    return String(n);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-blue-600" /> Salary Calculator
-          </h2>
-          <p className="text-slate-500">Estimasi gaji terapis berdasarkan performa dan kehadiran.</p>
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#ede9fe' }}>
+            <Calculator className="w-4 h-4" style={{ color: '#7c3aed' }} />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Salary Calculator</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Estimasi gaji semua terapis aktif dalam periode</p>
+          </div>
         </div>
-        <div className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-200">
-           Estimasi Gaji — Frontend Only
-        </div>
+        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full w-fit" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+          Estimasi — Frontend Only
+        </span>
       </div>
 
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
-              <Label>Pilih Terapis</Label>
-              <Select value={selectedTherapistId} onValueChange={setSelectedTherapistId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Terapis..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {therapists.map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-  <Label>Tanggal Mulai</Label>
-
-  <div className="relative">
-    <Input
-      type="text"
-      value={
-        dateRange?.startDate
-          ? format(new Date(dateRange.startDate), 'dd/MM/yyyy')
-          : ''
-      }
-      readOnly
-      className="h-10 cursor-pointer"
-      onClick={() =>
-        document.getElementById('salary-start-date')?.showPicker()
-      }
-    />
-
-    <Input
-      id="salary-start-date"
-      type="date"
-      value={dateRange?.startDate || ''}
-      onChange={(e) => {
-  console.log('START CHANGED:', e.target.value);
-
-  setDateRange((prev) => {
-    const updated = {
-      ...prev,
-      startDate: e.target.value
-    };
-
-    console.log('NEW STATE:', updated);
-
-    return updated;
-  });
-}}
-      className="absolute inset-0 opacity-0 pointer-events-none"
-    />
-  </div>
-</div>
-
-<div className="space-y-2">
-  <Label>Tanggal Selesai</Label>
-
-  <div className="relative">
-    <Input
-      type="text"
-      value={
-        dateRange?.endDate
-          ? format(new Date(dateRange.endDate), 'dd/MM/yyyy')
-          : ''
-      }
-      readOnly
-      className="h-10 cursor-pointer"
-      onClick={() =>
-        document.getElementById('salary-end-date')?.showPicker()
-      }
-    />
-
-    <Input
-      id="salary-end-date"
-      type="date"
-      value={dateRange?.endDate || ''}
-      onChange={(e) => {
-  console.log('END CHANGED:', e.target.value);
-
-  setDateRange((prev) => {
-    const updated = {
-      ...prev,
-      endDate: e.target.value
-    };
-
-    console.log('NEW STATE:', updated);
-
-    return updated;
-  });
-}}
-      className="absolute inset-0 opacity-0 pointer-events-none"
-    />
-  </div>
-</div>
-<Button 
-   onClick={handlePeriodeIni}
-   className={`w-full ${
-     dateRange?.startDate?.endsWith('-28') &&
-dateRange?.endDate?.endsWith('-27')
-       ? 'bg-blue-600 text-white hover:bg-blue-700'
-       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-   }`}
->
-   Periode Ini
-</Button>
-            <Button 
-               onClick={handleCalculate} 
-               disabled={calculating || !selectedTherapistId}
-               className="bg-blue-600 hover:bg-blue-700 w-full"
-            >
-              {calculating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Calculator className="w-4 h-4 mr-2" />}
-              Hitung Gaji
-            </Button>
-          </div>
-          
-          {/* Custom Rates Config (Visible only if Custom Salary might be used or always visible for override) */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-             <div className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1 cursor-pointer hover:text-blue-600" onClick={() => document.getElementById('rates-config').classList.toggle('hidden')}>
-                <TrendingUp className="w-3 h-3" /> Konfigurasi Tarif Jasa (Klik untuk buka/tutup)
-             </div>
-             <div id="rates-config" className="hidden grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg">
-                {Object.keys(customRates).map((type) => (
-                   <div key={type} className="space-y-1">
-                      <Label className="text-xs">{type}</Label>
-                      <div className="relative">
-                         <span className="absolute left-2 top-1.5 text-xs text-slate-400">Rp</span>
-                         <Input 
-                            className="h-8 pl-6 text-xs" 
-                            type="number" 
-                            value={customRates[type]} 
-                            onChange={(e) => handleRateChange(type, e.target.value)} 
-                         />
-                      </div>
-                   </div>
-                ))}
-             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {result && (
-        <motion.div 
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="space-y-6"
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+          <Calendar className="w-3.5 h-3.5" />
+          Periode:
+        </div>
+        <input
+          type="date"
+          value={dateRange?.startDate || ''}
+          onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+          className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white"
+          style={{ colorScheme: 'light' }}
+        />
+        <span className="text-slate-300 text-sm">–</span>
+        <input
+          type="date"
+          value={dateRange?.endDate || ''}
+          onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+          className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white"
+          style={{ colorScheme: 'light' }}
+        />
+        <button
+          onClick={handlePeriodeIni}
+          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+          style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
         >
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <ResultCard 
-                 title="Total Gaji (Estimasi)" 
-                 value={formatCurrency(result.total)} 
-                 icon={Wallet}
-                 color="text-emerald-600"
-                 bgColor="bg-emerald-50"
-                 borderColor="border-emerald-200"
-              />
-              <ResultCard 
-                 title="Gaji Pokok" 
-                 value={formatCurrency(result.baseSalary)} 
-                 icon={Briefcase}
-                 subtext="Fixed Monthly"
-              />
-              <ResultCard 
-                 title="Uang Transport" 
-                 value={formatCurrency(result.transportAllowance)} 
-                 icon={User}
-                 subtext={`${result.attendanceDays} hari kerja`}
-              />
-              <ResultCard 
-                 title="Komisi / Jasa" 
-                 value={formatCurrency(result.commission)} 
-                 icon={TrendingUp}
-                 subtext={`${result.sessionCount} sesi total`}
-              />
-              <ResultCard 
-                 title="Tipe Gaji" 
-                 value={result.salaryType} 
-                 icon={ShieldCheck}
-                 subtext="Berdasarkan setting terapis"
-              />
-           </div>
+          Periode Ini
+        </button>
+        <button
+          onClick={handleCalculateAll}
+          disabled={calculatingAll || !therapists.length}
+          className="ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
+          style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed', minWidth: '130px', justifyContent: 'center' }}
+        >
+          {calculatingAll
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
+            : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
+          }
+        </button>
+      </div>
 
-           {/* Breakdown Table */}
-           <Card>
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-lg">Rincian Perhitungan</CardTitle>
-                 <CardDescription>Detail sesi dan komponen gaji untuk periode {result.period}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                 <div className="rounded-md border">
-                    <table className="w-full text-sm">
-                       <thead className="bg-slate-50 text-slate-500">
-                          <tr>
-                             <th className="px-4 py-3 text-left font-medium">Komponen</th>
-                             <th className="px-4 py-3 text-right font-medium">Jumlah / Unit</th>
-                             <th className="px-4 py-3 text-right font-medium">Total (IDR)</th>
-                          </tr>
-                       </thead>
-                       <tbody className="divide-y">
-                          <tr>
-                             <td className="px-4 py-3">Gaji Pokok</td>
-                             <td className="px-4 py-3 text-right">1 Bulan</td>
-                             <td className="px-4 py-3 text-right">{formatCurrency(result.baseSalary)}</td>
-                          </tr>
-                          <tr>
-                             <td className="px-4 py-3">Transport</td>
-                             <td className="px-4 py-3 text-right">{result.attendanceDays} Hari</td>
-                             <td className="px-4 py-3 text-right">{formatCurrency(result.transportAllowance)}</td>
-                          </tr>
-                          {result.salaryType.includes('Custom') ? (
-                             Object.entries(result.breakdown || {}).map(([type, count]) => (
-                                <tr key={type} className="bg-blue-50/30">
-                                   <td className="px-4 py-3 pl-8 text-slate-600">• Jasa {type}</td>
-                                   <td className="px-4 py-3 text-right">{count} Sesi</td>
-                                   <td className="px-4 py-3 text-right">
-                                      {formatCurrency(count * (customRates[type] || 0))}
-                                   </td>
-                                </tr>
-                             ))
-                          ) : (
-                             <tr>
-                                <td className="px-4 py-3">Full Salary (Omzet)</td>
-                                <td className="px-4 py-3 text-right">{result.sessionCount} Sesi</td>
-                                <td className="px-4 py-3 text-right">{formatCurrency(result.commission)}</td>
-                             </tr>
-                          )}
-                          <tr className="bg-slate-50 font-bold">
-                             <td className="px-4 py-3">Total Estimasi</td>
-                             <td className="px-4 py-3 text-right">-</td>
-                             <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(result.total)}</td>
-                          </tr>
-                       </tbody>
-                    </table>
-                 </div>
-              </CardContent>
-           </Card>
-        </motion.div>
+      {/* Table */}
+      {allResults.length > 0 ? (
+        <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ background: '#f5f3ff', borderBottom: '2px solid #ede9fe' }}>
+                  {['#', 'Fisioterapis', 'Tipe Gaji', 'Periode', 'Sesi', 'Hari Kerja', 'Gaji Pokok', 'Transport', 'Komisi/Omzet', 'Total Estimasi'].map((h, i) => (
+                    <th key={i} className="px-4 py-3 whitespace-nowrap text-left"
+                      style={{ color: '#7c3aed', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {allResults.map((r, idx) => (
+                  <tr key={r.id}
+                    style={{ background: idx % 2 === 0 ? 'white' : '#faf9ff', borderBottom: '1px solid #f1f0ff', transition: 'background 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f5f3ff'}
+                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : '#faf9ff'}>
+                    {/* Rank */}
+                    <td className="px-4 py-3">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
+                        {idx + 1}
+                      </span>
+                    </td>
+                    {/* Name */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                          style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                          {r.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <span className="font-semibold text-slate-700 truncate max-w-[130px]">{r.name}</span>
+                      </div>
+                    </td>
+                    {/* Salary type badge */}
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                        style={{
+                          background: r.salaryType === 'Full Salary' ? '#ecfdf5' : '#eff6ff',
+                          color: r.salaryType === 'Full Salary' ? '#059669' : '#2563eb',
+                          border: `1px solid ${r.salaryType === 'Full Salary' ? '#bbf7d0' : '#bfdbfe'}`
+                        }}>
+                        {r.salaryType}
+                      </span>
+                    </td>
+                    {/* Periode */}
+                    <td className="px-4 py-3 text-slate-400 text-[10px] whitespace-nowrap">{r.period}</td>
+                    <td className="px-4 py-3 text-slate-600 font-medium">{r.sessionCount}</td>
+                    <td className="px-4 py-3 text-slate-600 font-medium">{r.attendanceDays} hari</td>
+                    <td className="px-4 py-3 text-slate-500">{fmtShort(r.baseSalary)}</td>
+                    <td className="px-4 py-3 text-slate-500">{fmtShort(r.transportAllowance)}</td>
+                    <td className="px-4 py-3 font-semibold" style={{ color: '#7c3aed' }}>{fmtShort(r.commission)}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-bold text-sm" style={{ color: '#059669' }}>{fmt(r.total)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
+                  <td colSpan={9} className="px-4 py-3 text-right font-bold text-xs" style={{ color: '#7c3aed' }}>
+                    Total Seluruh Gaji:
+                  </td>
+                  <td className="px-4 py-3 font-bold text-sm" style={{ color: '#059669' }}>
+                    {fmt(allResults.reduce((s, r) => s + r.total, 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Summary strip */}
+          <div className="grid grid-cols-3" style={{ borderTop: '1px solid #ede9fe', background: '#faf9ff' }}>
+            {[
+              { label: 'Total Terapis', value: `${allResults.length} orang`, icon: User },
+              { label: 'Total Sesi', value: `${allResults.reduce((s, r) => s + r.sessionCount, 0)} sesi`, icon: TrendingUp },
+              { label: 'Total Payroll', value: fmt(allResults.reduce((s, r) => s + r.total, 0)), icon: Wallet },
+            ].map(({ label, value, icon: Icon }, i) => (
+              <div key={label} className="flex items-center gap-3 px-5 py-3"
+                style={{ borderRight: i < 2 ? '1px solid #ede9fe' : 'none' }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#ede9fe' }}>
+                  <Icon className="w-3.5 h-3.5" style={{ color: '#7c3aed' }} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium" style={{ color: '#a78bfa' }}>{label}</div>
+                  <div className="text-sm font-bold text-slate-700">{value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 rounded-2xl"
+          style={{ background: '#faf9ff', border: '1px dashed #ddd6fe' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: '#ede9fe' }}>
+            <Calculator className="w-7 h-7" style={{ color: '#7c3aed' }} />
+          </div>
+          <p className="text-sm font-semibold text-slate-600">Belum ada data kalkulasi</p>
+          <p className="text-xs text-slate-400 mt-1">Pilih periode lalu tekan <strong>Hitung Semua</strong></p>
+        </div>
       )}
     </div>
   );
 };
-
-const ResultCard = ({ title, value, icon: Icon, subtext, color = "text-slate-900", bgColor = "bg-white", borderColor = "border-slate-200" }) => (
-  <Card className={cn("shadow-sm", bgColor, borderColor)}>
-    <CardContent className="p-6 flex items-center justify-between">
-       <div>
-          <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-          <h3 className={cn("text-2xl font-bold", color)}>{value}</h3>
-          {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
-       </div>
-       <div className={cn("p-3 rounded-full bg-white/50 border shadow-sm", borderColor)}>
-          <Icon className={cn("w-6 h-6", color)} />
-       </div>
-    </CardContent>
-  </Card>
-);
 
 export default SalaryCalculator;

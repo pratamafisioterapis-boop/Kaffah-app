@@ -249,30 +249,47 @@ const OwnerFinanceDashboard = () => {
   return <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 p-4 md:p-8 space-y-8 font-sans text-slate-900">
 
       {/* Header Section */}
-      <Card className="card-premium border-none shadow-xl bg-white/80 backdrop-blur-lg sticky top-2 z-30">
-        <CardContent className="p-6 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-200">
-              <Wallet className="w-8 h-8 text-white" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 md:p-6 shadow-xl sticky top-2 z-30">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">Accounting System</h1>
-              <p className="text-slate-500 font-medium mt-1">Manage finances, analytics & reporting</p>
+              <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Kaffah Physiotherapy</p>
+              <h1 className="text-white text-xl font-bold leading-tight">Accounting System</h1>
+              <p className="text-slate-400 text-xs mt-0.5">Manage finances, analytics & reporting</p>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto items-center">
-            
-            <Button onClick={() => {
-            fetchOwnerData();
-            fetchAdminData();
-          }} className="h-10 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm hover:shadow transition-all">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px]"
+              />
+              <span className="text-slate-500 shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px]"
+              />
+            </div>
+            <button
+              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
+              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/15 transition-colors text-slate-400 hover:text-white shrink-0"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
@@ -292,21 +309,24 @@ const OwnerFinanceDashboard = () => {
       </Dialog>
 
       {/* Custom Tab Navigation */}
-      <div className="flex flex-wrap gap-2 md:gap-4 p-2 bg-white/60 backdrop-blur rounded-2xl border border-white/40 shadow-sm">
-        <TabButton isActive={activeTab === 'accounting_report'} onClick={() => setActiveTab('accounting_report')} label="Accounting Report" icon={FileBarChart} themeColor="bg-emerald-500" activeClass="bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
-        <TabButton isActive={activeTab === 'salary_calculator'} onClick={() => setActiveTab('salary_calculator')} label="Salary Calculator" icon={Calculator} themeColor="bg-violet-500" activeClass="bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
-        <TabButton isActive={activeTab === 'owner'} onClick={() => setActiveTab('owner')} label="Owner Accounting" icon={Briefcase} themeColor="bg-teal-500" activeClass="bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
-        <TabButton isActive={activeTab === 'admin'} onClick={() => setActiveTab('admin')} label="Admin Accounting" icon={ShieldCheck} themeColor="bg-orange-500" activeClass="bg-orange-50 text-orange-700 shadow-sm ring-1 ring-orange-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
-        <TabButton isActive={activeTab === 'patient_income_calc'} onClick={() => setActiveTab('patient_income_calc')} label="Income Calculator" icon={Calculator} themeColor="bg-blue-500" activeClass="bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700" />
-          <TabButton
-  isActive={activeTab === 'package_funds'}
-  onClick={() => setActiveTab('package_funds')}
-  label="Dana Paket"
-  icon={Package}
-  themeColor="bg-cyan-500"
-  activeClass="bg-cyan-50 text-cyan-700 shadow-sm ring-1 ring-cyan-200"
-  inactiveClass="hover:bg-slate-100 text-slate-500 hover:text-slate-700"
-/>
+      <div className="flex overflow-x-auto gap-2 pb-1" style={{ scrollbarWidth: 'none' }}>
+        {[
+          { key: 'accounting_report',   label: 'Accounting Report',  icon: FileBarChart, active: 'bg-emerald-500 text-white shadow-emerald-200/60', inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600' },
+          { key: 'salary_calculator',   label: 'Salary Calculator',  icon: Calculator,   active: 'bg-violet-500 text-white shadow-violet-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600' },
+          { key: 'owner',               label: 'Owner Accounting',   icon: Briefcase,    active: 'bg-teal-500 text-white shadow-teal-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600' },
+          { key: 'admin',               label: 'Admin Accounting',   icon: ShieldCheck,  active: 'bg-orange-500 text-white shadow-orange-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600' },
+          { key: 'patient_income_calc', label: 'Income Calculator',  icon: DollarSign,   active: 'bg-blue-500 text-white shadow-blue-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600' },
+          { key: 'package_funds',       label: 'Dana Paket',         icon: Package,      active: 'bg-cyan-500 text-white shadow-cyan-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600' },
+        ].map(({ key, label, icon: Icon, active, inactive }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
+          >
+            <Icon className="w-3.5 h-3.5 shrink-0" />
+            {label}
+          </button>
+        ))}
       </div>
 
       <AnimatePresence mode="wait">
@@ -373,12 +393,7 @@ const OwnerFinanceDashboard = () => {
                <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} activeClass="bg-cyan-100 text-cyan-700 border-cyan-300" inactiveClass="" />
             </div>
 
-            <div className="flex justify-end">
-  <GlobalDateRangeFilter
-    dateRange={dateRange}
-    onDateRangeChange={setDateRange}
-  />
-</div>
+            
 
 <Card className="card-premium bg-gradient-owner border-none">
               <CardContent className="p-6 md:p-8">

@@ -20,56 +20,85 @@ import { useToast } from '@/components/ui/use-toast';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
     const isIncome = type === 'income';
-    const totalColor = isIncome ? "text-emerald-700" : "text-rose-700";
-    const headerColor = isIncome ? "bg-emerald-50 text-emerald-800 border-emerald-100" : "bg-rose-50 text-rose-800 border-rose-100";
+    const accentColor = isIncome ? '#059669' : '#e11d48';
+    const accentLight = isIncome ? '#f0fdf4' : '#fff1f2';
+    const accentPill = isIncome ? '#dcfce7' : '#ffe4e6';
+    const accentMid = isIncome ? '#bbf7d0' : '#fecdd3';
+    const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
 
     return (
-        <div className="space-y-3 mb-6">
-            <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-slate-700">{title}</h4>
+        <div className="overflow-hidden mb-3" style={{
+            borderRadius: '14px',
+            border: `1px solid ${accentMid}`,
+            boxShadow: `0 1px 4px ${accentColor}10`
+        }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3" style={{ background: accentLight }}>
+                <div className="flex items-center gap-2.5">
+                    <div className="w-1 h-5 rounded-full" style={{ background: accentColor }} />
+                    <div>
+                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>{title}</span>
+                        <span className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: accentPill, color: accentColor }}>
+                            {data.length} entri
+                        </span>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <div className="text-[10px] font-medium" style={{ color: accentColor + 'aa' }}>Subtotal</div>
+                    <div className="text-sm font-bold tabular-nums" style={{ color: accentColor }}>
+                        Rp {fmt(total)}
+                    </div>
+                </div>
             </div>
-            
-            <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-                <div className="overflow-x-auto max-h-[300px]">
-                    <table className="w-full text-sm text-left">
-                        <thead className={`text-xs uppercase font-semibold border-b ${headerColor}`}>
-                            <tr>
-                                {columns.map((col, idx) => (
-                                    <th key={idx} className="px-4 py-2 whitespace-nowrap">{col.header}</th>
-                                ))}
-                                <th className="px-4 py-2 text-right">Jumlah</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
+
+            {/* Thead */}
+            <div className="overflow-x-auto" style={{ borderTop: `1px solid ${accentMid}` }}>
+                <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
+                    <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                            {columns.map((col, idx) => (
+                                <th key={idx} className="px-4 py-2 whitespace-nowrap"
+                                    style={{ color: '#94a3b8', fontWeight: 600, letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>
+                                    {col.header}
+                                </th>
+                            ))}
+                            <th className="px-4 py-2 text-right w-28 whitespace-nowrap"
+                                style={{ color: '#94a3b8', fontWeight: 600, letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>
+                                Jumlah
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+                {/* Scrollable body */}
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                    <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
+                        <tbody>
                             {data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="px-4 py-6 text-center text-slate-400">
-                                        Tidak ada data
+                                    <td colSpan={columns.length + 1} style={{ padding: '28px 16px', textAlign: 'center', color: '#cbd5e1' }}>
+                                        <div style={{ fontSize: '13px' }}>Tidak ada data</div>
                                     </td>
                                 </tr>
                             ) : (
                                 data.map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                    <tr key={idx}
+                                        style={{ background: idx % 2 === 0 ? 'white' : accentLight + '80', transition: 'background 0.12s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = accentLight}
+                                        onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : accentLight + '80'}>
                                         {columns.map((col, cIdx) => (
-                                            <td key={cIdx} className="px-4 py-2 text-slate-600">
+                                            <td key={cIdx} className="px-4 truncate"
+                                                style={{ padding: '9px 16px', color: '#475569', borderBottom: '1px solid #f1f5f9' }}>
                                                 {col.render ? col.render(item) : item[col.accessor]}
                                             </td>
                                         ))}
-                                        <td className="px-4 py-2 text-right font-medium text-slate-800">
-                                            {new Intl.NumberFormat('id-ID').format(item.amount)}
+                                        <td className="w-28 text-right tabular-nums"
+                                            style={{ padding: '9px 16px', fontWeight: 700, color: accentColor, borderBottom: '1px solid #f1f5f9' }}>
+                                            {fmt(item.amount)}
                                         </td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
-                        <tfoot className="bg-slate-50 border-t border-slate-200 font-semibold">
-                            <tr>
-                                <td colSpan={columns.length} className="px-4 py-2 text-right text-slate-600">Subtotal:</td>
-                                <td className={`px-4 py-2 text-right ${totalColor}`}>
-                                    Rp {new Intl.NumberFormat('id-ID').format(total)}
-                                </td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -83,6 +112,7 @@ const AccountingReport = ({
 }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState('income');
   
 
   const [data, setData] = useState({
@@ -400,239 +430,165 @@ combinedExpenses.sort((a, b) => {
 
   return (
     <div className="space-y-6">
-      {/* Header & Filter */}
-      <Card className="bg-white shadow-sm border-slate-200">
-        <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-indigo-600" />
-                        Laporan Akuntansi Lengkap
-                    </h2>
-                    <p className="text-slate-500 text-sm mt-1">
-                        Periode: <span className="font-medium text-slate-700">{formatDate(dateRange.startDate)}</span> s/d <span className="font-medium text-slate-700">{formatDate(dateRange.endDate)}</span>
-                    </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 items-end">
-                    <div className="flex items-center gap-2">
-  
-  <div className="grid gap-1">
-  <Label className="text-xs text-slate-500">Mulai</Label>
-
-  <div className="relative">
-    <Input
-      type="text"
-      value={formatDate(dateRange.startDate)}
-      readOnly
-      className="h-9 w-[140px] text-sm cursor-pointer"
-      onClick={() =>
-        document.getElementById('start-date-picker')?.showPicker()
-      }
-    />
-
-    <Input
-      id="start-date-picker"
-      type="date"
-      value={dateRange.startDate}
-      onChange={(e) =>
-        onDateRangeChange({
-          ...dateRange,
-          startDate: e.target.value
-        })
-      }
-      className="absolute inset-0 opacity-0 pointer-events-none"
-    />
-  </div>
-</div>
-  <span className="mt-6 text-slate-400 px-1">-</span>
-
-  <div className="grid gap-1">
-  <Label className="text-xs text-slate-500">Akhir</Label>
-
-  <div className="relative">
-    <Input
-      type="text"
-      value={formatDate(dateRange.endDate)}
-      readOnly
-      className="h-9 w-[140px] text-sm cursor-pointer"
-      onClick={() =>
-        document.getElementById('end-date-picker')?.showPicker()
-      }
-    />
-
-    <Input
-      id="end-date-picker"
-      type="date"
-      value={dateRange.endDate}
-      onChange={(e) =>
-        onDateRangeChange({
-          ...dateRange,
-          endDate: e.target.value
-        })
-      }
-      className="absolute inset-0 opacity-0 pointer-events-none"
-    />
-  </div>
-</div>
-
-</div>
-                    <Button onClick={handleExportPDF} variant="outline" className="h-9 border-slate-300 text-slate-700 hover:bg-slate-50">
-                        <Download className="w-4 h-4 mr-2" />
-                        Export PDF
-                    </Button>
-                    <Button
-  onClick={handleExportExcel}
-  variant="outline"
-  className="h-9 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
->
-  <Download className="w-4 h-4 mr-2" />
-  Export Excel
-</Button>
-                </div>
-            </div>
-        </CardContent>
-      </Card>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#eef2ff' }}>
+            <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Laporan Akuntansi Lengkap</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Periode: {formatDate(dateRange.startDate)} s/d {formatDate(dateRange.endDate)}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleExportPDF} variant="outline" className="h-8 px-3 text-xs border-slate-200 text-slate-600 hover:bg-slate-50">
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            PDF
+          </Button>
+          <Button onClick={handleExportExcel} variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Excel
+          </Button>
+        </div>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 shadow-sm">
-            <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-emerald-600 mb-1">Total Pemasukan</p>
-                    <h3 className="text-2xl font-bold text-emerald-700">Rp {new Intl.NumberFormat('id-ID').format(totalIncome)}</h3>
-                </div>
-                <div className="p-3 bg-white rounded-full shadow-sm">
-                    <TrendingUp className="w-6 h-6 text-emerald-500" />
-                </div>
-            </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100 shadow-sm">
-            <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-rose-600 mb-1">Total Pengeluaran</p>
-                    <h3 className="text-2xl font-bold text-rose-700">Rp {new Intl.NumberFormat('id-ID').format(totalExpenses)}</h3>
-                </div>
-                <div className="p-3 bg-white rounded-full shadow-sm">
-                    <TrendingDown className="w-6 h-6 text-rose-500" />
-                </div>
-            </CardContent>
-        </Card>
-        <Card className={`border shadow-sm ${netProfit >= 0 ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100" : "bg-gradient-to-br from-orange-50 to-amber-50 border-amber-100"}`}>
-            <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                    <p className={`text-sm font-medium mb-1 ${netProfit >= 0 ? "text-blue-600" : "text-amber-600"}`}>Net Profit</p>
-                    <h3 className={`text-2xl font-bold ${netProfit >= 0 ? "text-blue-700" : "text-amber-700"}`}>
-                        Rp {new Intl.NumberFormat('id-ID').format(netProfit)}
-                    </h3>
-                </div>
-                <div className="p-3 bg-white rounded-full shadow-sm">
-                    <DollarSign className={`w-6 h-6 ${netProfit >= 0 ? "text-blue-500" : "text-amber-500"}`} />
-                </div>
-            </CardContent>
-        </Card>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Total Pemasukan', value: totalIncome, icon: TrendingUp, bg: '#f0fdf4', iconBg: '#dcfce7', color: '#16a34a' },
+          { label: 'Total Pengeluaran', value: totalExpenses, icon: TrendingDown, bg: '#fff1f2', iconBg: '#ffe4e6', color: '#e11d48' },
+          { label: 'Net Profit', value: netProfit, icon: DollarSign,
+            bg: netProfit >= 0 ? '#eff6ff' : '#fffbeb',
+            iconBg: netProfit >= 0 ? '#dbeafe' : '#fef3c7',
+            color: netProfit >= 0 ? '#2563eb' : '#d97706' },
+        ].map(({ label, value, icon: Icon, bg, iconBg, color }) => (
+          <div key={label} className="rounded-xl p-4 flex items-center gap-3" style={{ background: bg }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: iconBg }}>
+              <Icon className="w-5 h-5" style={{ color }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium truncate" style={{ color }}>{label}</p>
+              <p className="text-lg font-bold leading-tight" style={{ color }}>
+                Rp {new Intl.NumberFormat('id-ID').format(value)}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* INCOME COLUMN */}
-          <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-emerald-200">
-                  <TrendingUp className="w-6 h-6 text-emerald-600" />
-                  <h3 className="text-lg font-bold text-emerald-800">PEMASUKAN (INCOME)</h3>
-              </div>
-              
-              <ReportTable 
-                  title="Pemasukan Owner" 
-                  data={data.ownerIncome} 
-                  total={subTotalOwnerInc} 
-                  type="income"
-                  columns={[
-    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-    { header: 'Kategori', accessor: 'category' },
-    {
-  header: 'Sub Category',
-  accessor: 'subcategory',
-  render: (row) => row.subcategory?.subcategory_name || '-'
-},
-    { header: 'Deskripsi', accessor: 'description' }
-]}
-              />
-
-              <ReportTable 
-  title="Pemasukan Admin" 
-  data={data.adminIncome} 
-  total={subTotalAdminInc} 
-  type="income"
-  columns={[
-    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-    { header: 'Kategori', accessor: 'category' },
-    {
-  header: 'Sub Category',
-  accessor: 'subcategory',
-  render: (row) => row.subcategory?.subcategory_name || '-'
-},
-    { header: 'Deskripsi', accessor: 'description' }
-]}
-/>
-
-               <ReportTable 
-                  title="Pendapatan Pasien (Paket/Visit)" 
-                  data={data.patientIncome} 
-                  total={subTotalPatientInc} 
-                  type="income"
-                  columns={[
-    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-    { header: 'Pasien', accessor: 'patient_name' },
-    {
-  header: 'Tipe Pasien',
-  accessor: 'patient_type'
-},
-    { header: 'Paket', accessor: 'package_name' }
-]}
-              />
-          </div>
-
-          {/* EXPENSE COLUMN */}
-          <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-rose-200">
-                  <TrendingDown className="w-6 h-6 text-rose-600" />
-                  <h3 className="text-lg font-bold text-rose-800">PENGELUARAN (EXPENSE)</h3>
-              </div>
-
-               <ReportTable 
-                  title="Pengeluaran Owner" 
-                  data={data.ownerExpenses} 
-                  total={subTotalOwnerExp} 
-                  type="expense"
-                  columns={[
-    { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-    { header: 'Kategori', accessor: 'category' },
-    {
-  header: 'Sub Category',
-  accessor: 'subcategory',
-  render: (row) => row.subcategory?.subcategory_name || '-'
-},
-    { header: 'Deskripsi', accessor: 'description' }
-]}
-              />
-
-              <ReportTable 
-                  title="Pengeluaran Admin" 
-                  data={data.adminExpenses} 
-                  total={subTotalAdminExp} 
-                  type="expense"
-                  columns={[
-    { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
-    { header: 'Kategori', accessor: 'category' },
-    {
-  header: 'Sub Category',
-  accessor: 'subcategory',
-  render: (row) => row.subcategory?.subcategory_name || '-'
-},
-    { header: 'Deskripsi', accessor: 'description' }
-]}
-              />
-          </div>
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 w-fit" style={{ background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        {[
+          { key: 'income', label: 'Pemasukan', icon: TrendingUp, color: '#059669', activeBg: '#ecfdf5', activeBorder: '#bbf7d0' },
+          { key: 'expense', label: 'Pengeluaran', icon: TrendingDown, color: '#e11d48', activeBg: '#fff1f2', activeBorder: '#fecdd3' },
+        ].map(({ key, label, icon: Icon, color, activeBg, activeBorder }) => (
+          <button
+            key={key}
+            onClick={() => setActiveSection(key)}
+            className="flex items-center gap-2 px-5 py-2 text-xs font-bold transition-all"
+            style={{
+              borderRadius: '9px',
+              background: activeSection === key ? activeBg : 'transparent',
+              color: activeSection === key ? color : '#94a3b8',
+              border: activeSection === key ? `1px solid ${activeBorder}` : '1px solid transparent',
+              boxShadow: activeSection === key ? `0 1px 4px ${color}18` : 'none',
+              letterSpacing: '0.02em',
+            }}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
+        ))}
       </div>
+
+      {/* Income Section */}
+      {activeSection === 'income' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Pemasukan (Income)</span>
+            <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+              Total: Rp {new Intl.NumberFormat('id-ID').format(totalIncome)}
+            </span>
+          </div>
+          <ReportTable
+            title="Pemasukan Owner"
+            data={data.ownerIncome}
+            total={subTotalOwnerInc}
+            type="income"
+            columns={[
+              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+              { header: 'Kategori', accessor: 'category' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Deskripsi', accessor: 'description' }
+            ]}
+          />
+          <ReportTable
+            title="Pemasukan Admin"
+            data={data.adminIncome}
+            total={subTotalAdminInc}
+            type="income"
+            columns={[
+              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+              { header: 'Kategori', accessor: 'category' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Deskripsi', accessor: 'description' }
+            ]}
+          />
+          <ReportTable
+            title="Pendapatan Pasien (Paket/Visit)"
+            data={data.patientIncome}
+            total={subTotalPatientInc}
+            type="income"
+            columns={[
+              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+              { header: 'Pasien', accessor: 'patient_name' },
+              { header: 'Tipe Pasien', accessor: 'patient_type' },
+              { header: 'Paket', accessor: 'package_name' }
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Expense Section */}
+      {activeSection === 'expense' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <TrendingDown className="w-4 h-4 text-rose-500" />
+            <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Pengeluaran (Expense)</span>
+            <span className="ml-auto text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg">
+              Total: Rp {new Intl.NumberFormat('id-ID').format(totalExpenses)}
+            </span>
+          </div>
+          <ReportTable
+            title="Pengeluaran Owner"
+            data={data.ownerExpenses}
+            total={subTotalOwnerExp}
+            type="expense"
+            columns={[
+              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
+              { header: 'Kategori', accessor: 'category' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Deskripsi', accessor: 'description' }
+            ]}
+          />
+          <ReportTable
+            title="Pengeluaran Admin"
+            data={data.adminExpenses}
+            total={subTotalAdminExp}
+            type="expense"
+            columns={[
+              { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
+              { header: 'Kategori', accessor: 'category' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Deskripsi', accessor: 'description' }
+            ]}
+          />
+        </div>
+      )}
     </div>
   );
 };
