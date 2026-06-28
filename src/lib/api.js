@@ -3698,10 +3698,12 @@ export const fetchTodaySessionsPerTherapist = async (therapistId) => {
     const today = getTodayWITA();
 
     const { count, error } = await supabase
-      .from('daily_recaps')
+      .from('appointments')
       .select('id', { count: 'exact', head: true })
-      .eq('recap_date', today)
-      .eq('therapist_id', therapistId);
+      .eq('therapist_id', therapistId)
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lte('appointment_date', `${today}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed']);
 
     if (error) return { error };
 

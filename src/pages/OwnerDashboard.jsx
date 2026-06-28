@@ -172,9 +172,10 @@ const activeTherapistsOnly = (therapistList || []).filter(
 );
 
 // 🔥 ambil slot hari ini
-const today = new Date(
-  new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar' })
-).toISOString().split('T')[0];
+const today = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Makassar',
+  year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(new Date());
 
 // Langsung query dari tabel appointments/schedules lebih reliable
 // daripada RPC yang field-nya tidak pasti
