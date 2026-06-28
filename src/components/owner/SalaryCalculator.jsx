@@ -22,6 +22,8 @@ import {
   calculateTotalSalary, formatCurrency, cn 
 } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
@@ -44,6 +46,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   const [result, setResult] = useState(null);
   const [allResults, setAllResults] = useState([]);
   const [calculatingAll, setCalculatingAll] = useState(false);
+  const [selectedTherapistDetail, setSelectedTherapistDetail] = useState(null); // detail view
+  const [selectedPatientType, setSelectedPatientType] = useState(null); // drill-down tipe pasien
   
   // Custom Rates Input (for manual override or config)
   const [customRates, setCustomRates] = useState({});
@@ -183,39 +187,110 @@ const endDateStr = dateRange?.endDate;
       endDateStr = dateRange?.endDate;
     }
 
-    const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
-      getDailyRecaps({ startDate: startDateStr, endDate: endDateStr, therapistId: therapist.id, limit: 'all' }),
+    // Fetch recaps dengan data pasien & package tracking
+    const { data: rawRecaps } = await supabase
+      .from('daily_recaps')
+      .select(`
+        id, recap_date, amount, amount_package, patient_type, package_type, discount_type, discount_value,
+        patient:patients!patient_id (id, full_name),
+        actual_patient:patients!actual_patient_id (id, full_name),
+        package_tracking:package_tracking_id (id, nominal, total_sessions, package_name)
+      `)
+      .eq('therapist_id', therapist.id)
+      .gte('recap_date', startDateStr)
+      .lte('recap_date', endDateStr)
+      .order('recap_date', { ascending: true });
+
+    const [scheduleRes, timeOffRes, optionsRes] = await Promise.all([
       getTherapistSchedules(therapist.id),
-      getTherapistTimeOff(therapist.id)
+      getTherapistTimeOff(therapist.id),
+      supabase.from('operational_options').select('id, label').eq('is_active', true)
     ]);
-    const therapistRecaps = recapsRes.data || [];
+
+    const optionsMap = (optionsRes.data || []).reduce((acc, o) => { acc[o.id] = o.label; return acc; }, {});
+    const therapistRecaps = rawRecaps || [];
+    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, 'customRates keys:', Object.keys(customRates));
+
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
-    const transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * attendanceDays;
+    const transportPerDay = parseFloat(therapist.transport_per_day) || 0;
+    const transportAllowance = transportPerDay * attendanceDays;
     const salaryType = therapist.salary_scheme || 'full_salary';
+
     let commission = 0;
-    let breakdown = {};
-    if (salaryType === 'full_salary') {
-      commission = calculateFullSalary(therapistRecaps);
-    } else {
-      commission = calculateCustomSalary(therapistRecaps, customRates);
-      therapistRecaps.forEach(r => {
-        const type = r.patient_type || 'General';
-        breakdown[type] = (breakdown[type] || 0) + 1;
+    const breakdownByType = {}; // { patientTypeLabel: { count, totalAmount, sessions: [] } }
+
+    therapistRecaps.forEach(r => {
+      const typeLabel = optionsMap[r.patient_type] || r.patient_type || 'Umum';
+      const pkgTracking = r.package_tracking;
+      const totalSessions = pkgTracking?.total_sessions || 1;
+      const pkgNominal = pkgTracking?.nominal || 0;
+      const pkgName = optionsMap[r.package_type] || r.package_type || 'Visit';
+
+      let sessionAmount = 0;
+      if (salaryType === 'full_salary') {
+        if (totalSessions > 1 && pkgNominal > 0) {
+          // Paket multi-sesi: rata-rata dari harga paket dibagi total sesi
+          sessionAmount = Math.floor(pkgNominal / totalSessions);
+        } else {
+          // Sesi tunggal / visit: pakai amount langsung (sudah setelah diskon)
+          sessionAmount = Number(r.amount || 0);
+        }
+      } else {
+        // custom salary: patient_type di DB adalah text label langsung (misal "DUA KELUHAN")
+        // customRates key bisa berupa label atau UUID, coba exact match dulu lalu fuzzy
+        const ptLabel = (r.patient_type || '').toUpperCase();
+        const matchedKey = Object.keys(customRates).find(k =>
+          k.toUpperCase() === ptLabel ||
+          k.toUpperCase().includes(ptLabel) ||
+          ptLabel.includes(k.toUpperCase())
+        );
+        sessionAmount = parseFloat(customRates[matchedKey] || 0);
+        // Fallback: kalau rate tidak ketemu, set 0 (tidak diketahui)
+        // jangan fallback ke amount karena amount = yang dibayar pasien bukan rate terapis
+      }
+
+      commission += sessionAmount;
+
+      if (!breakdownByType[typeLabel]) {
+        breakdownByType[typeLabel] = { count: 0, totalAmount: 0, sessions: [] };
+      }
+      breakdownByType[typeLabel].count += 1;
+      breakdownByType[typeLabel].totalAmount += sessionAmount;
+      const originalAmount = Number(r.amount || 0);
+      // Nominal paket = yang dibayar pasien (selalu dari r.amount)
+      // Untuk paket multi-sesi: nominal paket = pkgNominal (harga total paket)
+      // Untuk visit/sesi tunggal: nominal paket = r.amount
+      const displayNominal = totalSessions > 1 ? pkgNominal : originalAmount;
+
+      breakdownByType[typeLabel].sessions.push({
+        date: r.recap_date,
+        patientName: r.actual_patient?.full_name || r.patient?.full_name || '-',
+        packageName: pkgName,
+        totalSessions,
+        pkgNominal: displayNominal,  // yang dibayar pasien
+        amount: sessionAmount,        // insentif terapis
+        isPackage: totalSessions > 1,
+        discountType: r.discount_type || 'none',
+        discountValue: r.discount_value || 0,
+        rawAmount: originalAmount
       });
-    }
+    });
+
     const total = baseSalary + transportAllowance + commission;
+
     return {
       id: therapist.id,
       name: therapist.name,
       period: `${format(new Date(startDateStr), 'dd/MM/yyyy')} s/d ${format(new Date(endDateStr), 'dd/MM/yyyy')}`,
       salaryType: salaryType === 'full_salary' ? 'Full Salary' : 'Custom Salary',
       attendanceDays,
+      transportPerDay,
       baseSalary,
       transportAllowance,
       commission,
       total,
-      breakdown,
+      breakdownByType,
       sessionCount: therapistRecaps.length
     };
   };
@@ -240,6 +315,137 @@ const endDateStr = dateRange?.endDate;
     if (n >= 1000) return `${(n / 1000).toFixed(0)}rb`;
     return String(n);
   };
+  const fmtDate = (d) => { try { return format(new Date(d), 'dd MMM yyyy', { locale: idLocale }); } catch { return d; } };
+
+  // ── Detail panel saat klik nama terapis ──
+  if (selectedTherapistDetail) {
+    const d = selectedTherapistDetail;
+    return (
+      <div className="space-y-4">
+        {/* Back header */}
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setSelectedTherapistDetail(null); setSelectedPatientType(null); }}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold transition-all"
+            style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
+            ← Kembali
+          </button>
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">{d.name}</h3>
+            <p className="text-xs text-slate-400">{d.period} · {d.salaryType}</p>
+          </div>
+        </div>
+
+        {/* Summary komponen gaji */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Gaji Pokok', value: fmt(d.baseSalary), color: '#4f46e5', bg: '#eef2ff' },
+            { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: fmt(d.transportAllowance), color: '#0891b2', bg: '#ecfeff' },
+            { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
+          ].map(({ label, value, color, bg }) => (
+            <div key={label} className="rounded-xl p-4" style={{ background: bg }}>
+              <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
+              <div className="text-base font-bold" style={{ color }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
+          <span className="text-xs font-bold text-white uppercase tracking-wider">Total Estimasi Gaji</span>
+          <span className="text-lg font-bold" style={{ color: '#4ade80' }}>{fmt(d.total)}</span>
+        </div>
+
+        {/* Breakdown per tipe pasien */}
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
+          <div className="px-4 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Insentif / Omzet per Tipe Pasien</span>
+            <span className="ml-2 text-xs text-slate-400">— klik untuk lihat detail</span>
+          </div>
+          {Object.entries(d.breakdownByType).map(([type, info], idx) => (
+            <div key={type}>
+              <button
+                onClick={() => setSelectedPatientType(selectedPatientType === type ? null : type)}
+                className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
+                style={{ background: selectedPatientType === type ? '#eef2ff' : idx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                    {info.count}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-700">{type}</div>
+                    <div className="text-[10px] text-slate-400">{info.count} sesi</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold" style={{ color: '#7c3aed' }}>{fmt(info.totalAmount)}</div>
+                  <div className="text-[10px] text-slate-400">{selectedPatientType === type ? '▲ tutup' : '▼ detail'}</div>
+                </div>
+              </button>
+
+              {/* Drill-down: list sesi per tipe pasien */}
+              {selectedPatientType === type && (
+                <div style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
+                  <table className="w-full" style={{ fontSize: '11px' }}>
+                    <thead>
+                      <tr style={{ background: '#f5f3ff', borderBottom: '1px solid #ede9fe' }}>
+                        {['Tanggal', 'Nama Pasien', 'Paket', 'Total Sesi', 'Nominal Paket', 'Diskon', 'Insentif/Sesi'].map(h => (
+                          <th key={h} className="px-4 py-2 text-left"
+                            style={{ color: '#7c3aed', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {info.sessions.map((s, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #f1f0ff', background: i % 2 === 0 ? 'white' : '#faf9ff' }}>
+                          <td className="px-4 py-2 text-slate-500 whitespace-nowrap">{fmtDate(s.date)}</td>
+                          <td className="px-4 py-2 font-semibold text-slate-700">{s.patientName}</td>
+                          <td className="px-4 py-2 text-slate-500">{s.packageName}</td>
+                          <td className="px-4 py-2 text-center">
+                            {s.isPackage
+                              ? <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>{s.totalSessions} sesi</span>
+                              : <span className="text-slate-400">Visit</span>}
+                          </td>
+                          <td className="px-4 py-2 text-slate-500">
+                            {fmt(s.pkgNominal)}
+                          </td>
+                          <td className="px-4 py-2">
+                            {s.discountType && s.discountType !== 'none' && s.discountValue > 0 ? (
+                              <div>
+                                <span className="line-through text-slate-400 text-[10px] mr-1">
+                                  {s.discountType === 'percentage'
+                                    ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
+                                    : fmt(s.rawAmount + s.discountValue)}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
+                                  {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-300 text-[10px]">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 font-bold" style={{ color: '#059669' }}>{fmt(s.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
+                        <td colSpan={6} className="px-4 py-2 text-right text-xs font-bold" style={{ color: '#7c3aed' }}>Subtotal:</td>
+                        <td className="px-4 py-2 font-bold text-sm" style={{ color: '#059669' }}>{fmt(info.totalAmount)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -329,15 +535,17 @@ const endDateStr = dateRange?.endDate;
                         {idx + 1}
                       </span>
                     </td>
-                    {/* Name */}
+                    {/* Name — klik untuk detail */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={() => { setSelectedTherapistDetail(r); setSelectedPatientType(null); }}
+                        className="flex items-center gap-2.5 hover:underline text-left">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
                           style={{ background: '#ede9fe', color: '#7c3aed' }}>
                           {r.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span className="font-semibold text-slate-700 truncate max-w-[130px]">{r.name}</span>
-                      </div>
+                        <span className="font-semibold truncate max-w-[130px]" style={{ color: '#7c3aed' }}>{r.name}</span>
+                      </button>
                     </td>
                     {/* Salary type badge */}
                     <td className="px-4 py-3">
@@ -350,7 +558,6 @@ const endDateStr = dateRange?.endDate;
                         {r.salaryType}
                       </span>
                     </td>
-                    {/* Periode */}
                     <td className="px-4 py-3 text-slate-400 text-[10px] whitespace-nowrap">{r.period}</td>
                     <td className="px-4 py-3 text-slate-600 font-medium">{r.sessionCount}</td>
                     <td className="px-4 py-3 text-slate-600 font-medium">{r.attendanceDays} hari</td>
