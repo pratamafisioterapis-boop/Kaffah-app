@@ -341,7 +341,21 @@ setFormData({
             }
 
             setDiagnosisOptions(Array.isArray(diagnoses?.data || diagnoses) ? (diagnoses?.data || diagnoses) : []);
-            setPatientTypeOptions(Array.isArray(pTypes?.data || pTypes) ? (pTypes?.data || pTypes) : []);
+            const patientTypeArr = Array.isArray(pTypes?.data || pTypes) ? (pTypes?.data || pTypes) : [];
+setPatientTypeOptions(patientTypeArr);
+
+// 🔥 FIX: inject patient_type existing sebagai option jika berupa label (bukan UUID)
+if (mode === 'edit' && initialData?.patient_type) {
+    const existingType = initialData.patient_type;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingType);
+    if (!isUUID) {
+        setPatientTypeOptions(prev => {
+            const exists = prev.some(opt => opt.value === existingType || opt.label === existingType);
+            if (exists) return prev;
+            return [...prev, { value: existingType, label: existingType }];
+        });
+    }
+}
             const rawPackages = Array.isArray(pkgs?.data || pkgs) ? (pkgs?.data || pkgs) : [];
 
             setPackageOptions(
@@ -855,10 +869,17 @@ setFormData({
             const selectedTherapist = therapists.find(t => t.value === formData.therapist_id);
             const therapistName = selectedTherapist ? selectedTherapist.label : '';
 
+            // Resolve patient_type: jika UUID → cari label-nya, jika sudah label → pakai langsung
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.patient_type || '');
+            const resolvedPatientType = isUUID
+                ? (patientTypeOptions.find(o => o.value === formData.patient_type)?.label || formData.patient_type)
+                : formData.patient_type;
+
             const payload = {
                 ...formData,
                 recap_date: isoDate,
                 therapist_name: therapistName,
+                patient_type: resolvedPatientType,
                 diagnosis: Array.isArray(formData.diagnosis) && formData.diagnosis.length > 0
   ? formData.diagnosis.map(d => {
       if (typeof d === 'string') return d; // kalau sudah UUID
