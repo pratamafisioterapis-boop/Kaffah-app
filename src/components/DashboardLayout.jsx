@@ -248,14 +248,44 @@ const pwaNavItems = useMemo(() => {
   if (role === 'owner') {
     return [
       {
-  label: 'Dashboard',
-  path: '/owner/dashboard',
-  icon: 'Home'
-},
+        label: 'Dashboard',
+        path: '/owner/dashboard',
+        icon: 'Home'
+      },
       {
         label: 'Appointments',
         path: '/owner/appointments',
         icon: 'Calendar'
+      },
+      {
+        label: 'Daily Recaps',
+        path: '/owner/daily-recap',
+        icon: 'ClipboardList'
+      },
+      {
+        label: 'Package Recaps',
+        path: '/owner/package-recaps',
+        icon: 'Package'
+      },
+      {
+        label: 'Medical Records',
+        path: '/owner/medical-records',
+        icon: 'Activity'
+      },
+      {
+        label: 'Physiotherapist Management',
+        path: '/owner/therapist-management',
+        icon: 'Users'
+      },
+      {
+        label: 'Accounting System',
+        path: '/owner/finance-dashboard',
+        icon: 'DollarSign'
+      },
+      {
+        label: 'Setup',
+        path: '/owner/settings',
+        icon: 'Settings'
       }
     ];
   }
