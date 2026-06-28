@@ -15,12 +15,6 @@ import { useNavigate } from 'react-router-dom';
 const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) => {
   const navigate = useNavigate();
 
-  const isPWA = (() => {
-    try {
-      return window.matchMedia('(display-mode: standalone)').matches || window.navigator?.standalone === true;
-    } catch { return false; }
-  })();
-
   if (!patient) return null;
 
   const handleCreate = (date, dailyRecapId) => {
@@ -32,21 +26,18 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
     onClose();
     navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
   };
-  // Merge visits with records to determine status
-  const timeline = visits.map(visit => {
-    const visitDate = visit.recap_date; // YYYY-MM-DD
-    
-    // Find record created on this date
-    const matchedRecord = records.find(r => {
-    return r.daily_recap_id === visit.id;
-});
 
+  const timeline = visits.map(visit => {
+    const visitDate = visit.recap_date;
+    const matchedRecord = records.find(r => {
+      return r.daily_recap_id === visit.id;
+    });
     return {
-        id: visit.id,
-        date: visitDate,
-        formattedDate: format(new Date(visitDate), 'dd MMMM yyyy', { locale: id }),
-        record: matchedRecord,
-        status: matchedRecord ? 'filled' : 'unfilled'
+      id: visit.id,
+      date: visitDate,
+      formattedDate: format(new Date(visitDate), 'dd MMMM yyyy', { locale: id }),
+      record: matchedRecord,
+      status: matchedRecord ? 'filled' : 'unfilled'
     };
   });
 
@@ -55,21 +46,11 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`flex flex-col p-0 gap-0 overflow-hidden ${
-        isPWA
-          ? 'fixed inset-0 w-full h-full max-w-full max-h-full rounded-none translate-x-0 translate-y-0 top-0 left-0'
-          : 'max-w-lg max-h-[90vh] rounded-2xl'
-      }`}>
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden">
 
         {/* Header */}
-        <div className={`border-b bg-white shrink-0 ${isPWA ? 'px-4 pb-4 pt-14' : 'p-5'}`}>
+        <div className="p-5 border-b bg-white">
           <div className="flex items-center gap-3 mb-4">
-            {isPWA && (
-              <button onClick={onClose}
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-slate-500 hover:bg-slate-100 text-lg">
-                ←
-              </button>
-            )}
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5 text-slate-600" />
             </div>
@@ -126,19 +107,18 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`rounded-xl border-slate-200 ${isPWA ? 'h-11 px-4 text-sm' : 'h-8 text-xs'}`}
+                    className="h-8 text-xs rounded-xl border-slate-200"
                     onClick={() => handleEdit(item.record.id, item.date)}
                   >
-                    <Edit className={`mr-1.5 ${isPWA ? 'w-4 h-4' : 'w-3 h-3'}`} /> Edit
+                    <Edit className="w-3 h-3 mr-1" /> Edit
                   </Button>
                 ) : (
                   <Button
                     size="sm"
-                    className={`bg-blue-600 hover:bg-blue-700 rounded-xl ${isPWA ? 'h-11 px-4 text-sm font-bold' : 'h-8 text-xs'}`}
+                    className="h-8 text-xs bg-blue-600 hover:bg-blue-700 rounded-xl"
                     onClick={() => handleCreate(item.date, item.id)}
                   >
-                    <PlusCircle className={`mr-1.5 ${isPWA ? 'w-4 h-4' : 'w-3 h-3'}`} />
-                    {isPWA ? 'Isi SOAP' : 'Tambah SOAP'}
+                    <PlusCircle className="w-3 h-3 mr-1" /> Tambah SOAP
                   </Button>
                 )}
               </div>
@@ -147,12 +127,9 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
         </div>
 
         {/* Footer */}
-        {!isPWA && (
-          <div className="p-4 border-t bg-white flex justify-end shrink-0">
-            <Button variant="outline" onClick={onClose} className="rounded-xl">Tutup</Button>
-          </div>
-        )}
-        {isPWA && <div className="pb-8 shrink-0" />}
+        <div className="p-4 border-t bg-white flex justify-end">
+          <Button variant="outline" onClick={onClose} className="rounded-xl">Tutup</Button>
+        </div>
 
       </DialogContent>
     </Dialog>
