@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
 import { useToast } from '@/components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import {
   DollarSign, TrendingUp, TrendingDown,
-  AlertTriangle, RefreshCw, Loader2
+  AlertTriangle, RefreshCw, Loader2, Plus
 } from 'lucide-react';
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
@@ -38,6 +40,8 @@ const formatFull = (amount) => {
 const RevenueOverview = ({ dateRange }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeFormType, setActiveFormType] = useState('expenditure');
   const [refreshing, setRefreshing] = useState(false);
   const [danaPacket, setDanaPacket] = useState({ total: 0, sisaSesi: 0, jumlahPaket: 0 });
   const [data, setData] = useState({
@@ -234,6 +238,53 @@ const RevenueOverview = ({ dateRange }) => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500">
+      {/* Quick Action Widget */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {activeFormType === 'expenditure' ? 'Tambah Pengeluaran' : 'Tambah Pemasukan'} Owner
+            </DialogTitle>
+          </DialogHeader>
+          <OwnerFinanceForm
+            type={activeFormType}
+            dateRange={dateRange}
+            onSuccess={() => {
+              setIsFormOpen(false);
+              fetchData(true);
+            }}
+            onCancel={() => setIsFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl"
+        style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
+        <div className="flex items-center gap-2 mr-1">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#0d9488' }}>
+            <Plus className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
+        </div>
+        <button
+          onClick={() => { setActiveFormType('expenditure'); setIsFormOpen(true); }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          style={{ background: '#e11d48' }}
+        >
+          <TrendingDown className="w-3.5 h-3.5" />
+          + Pengeluaran
+        </button>
+        <button
+          onClick={() => { setActiveFormType('income'); setIsFormOpen(true); }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          style={{ background: '#059669' }}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          + Pemasukan
+        </button>
+        <span className="text-[11px] text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah halaman</span>
+      </div>
+
       {/* Refresh Button */}
       <div className="flex justify-end">
         <Button onClick={() => fetchData(true)} variant="outline" size="sm" disabled={refreshing} className="rounded-xl">

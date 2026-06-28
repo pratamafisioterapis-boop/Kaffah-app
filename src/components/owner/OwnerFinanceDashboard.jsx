@@ -350,6 +350,33 @@ const OwnerFinanceDashboard = () => {
         ))}
       </div>
 
+      {/* Quick Action Widget */}
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
+        <div className="flex items-center gap-2 mr-1">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#14b8a6', opacity: 0.85 }}>
+            <DollarSign className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
+        </div>
+        <button
+          onClick={() => openForm('expenditure')}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          style={{ background: '#e11d48' }}
+        >
+          <TrendingDown className="w-3.5 h-3.5" />
+          + Pengeluaran
+        </button>
+        <button
+          onClick={() => openForm('income')}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          style={{ background: '#059669' }}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          + Pemasukan
+        </button>
+        <span className="text-[11px] text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah tab</span>
+      </div>
+
       <AnimatePresence mode="wait">
         
         {/* --- ACCOUNTING REPORT SECTION --- */}

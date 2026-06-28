@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, startOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, RefreshCw, ArrowDownRight, Users, UserCheck } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, RefreshCw, ArrowDownRight, Users, UserCheck, Zap, Plus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
@@ -31,7 +31,7 @@ const PATIENT_TYPE_COLORS = {
   'registered':   '#e2e8f0',
 };
 
-const OwnerFinanceDashboardWidget = ({ dateRange }) => {
+const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [dailyChart, setDailyChart] = useState([]);
@@ -218,6 +218,37 @@ const OwnerFinanceDashboardWidget = ({ dateRange }) => {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Quick Action ── */}
+      {(onAddExpense || onAddIncome) && (
+        <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-2xl p-3 md:p-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 mr-1">
+              <Zap className="w-4 h-4 text-teal-600" />
+              <span className="text-sm font-semibold text-teal-700">Quick Action Owner</span>
+            </div>
+            {onAddExpense && (
+              <button
+                onClick={onAddExpense}
+                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-100 transition-colors"
+              >
+                <TrendingDown className="w-4 h-4" />
+                + Pengeluaran
+              </button>
+            )}
+            {onAddIncome && (
+              <button
+                onClick={onAddIncome}
+                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-100 transition-colors"
+              >
+                <TrendingUp className="w-4 h-4" />
+                + Pemasukan
+              </button>
+            )}
+            <span className="text-xs text-teal-400 hidden md:inline">Catat transaksi owner secara cepat</span>
+          </div>
+        </div>
+      )}
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
