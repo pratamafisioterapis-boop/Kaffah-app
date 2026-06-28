@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import AddPackageModal from '@/components/shared/AddPackageModal';
 import ExtendPackageModal from '@/components/shared/ExtendPackageModal';
 import PackageHistoryModal from '@/components/shared/PackageHistoryModal';
+import EditPackageStatusModal from '@/components/admin/EditPackageStatusModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
@@ -40,6 +41,7 @@ export const PackageRecapsContent = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isEditStatusModalOpen, setIsEditStatusModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     
     const [selectedPackage, setSelectedPackage] = useState(null);
@@ -89,6 +91,12 @@ export const PackageRecapsContent = () => {
         e.stopPropagation();
         setSelectedPackage(pkg);
         setIsDeleteConfirmOpen(true);
+    };
+
+    const handleEditStatusClick = (e, pkg) => {
+        e.stopPropagation();
+        setSelectedPackage(pkg);
+        setIsEditStatusModalOpen(true);
     };
 
     const confirmDelete = async () => {
@@ -429,6 +437,14 @@ export const PackageRecapsContent = () => {
                                                             Perpanjang
                                                         </Button>
                                                     )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                        onClick={(e) => handleEditStatusClick(e, pkg)}
+                                                    >
+                                                        Ubah Status
+                                                    </Button>
                                                     <Button 
                                                         size="sm" 
                                                         variant="ghost" 
@@ -469,6 +485,13 @@ export const PackageRecapsContent = () => {
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 packageData={selectedPackage}
+            />
+
+            <EditPackageStatusModal
+                isOpen={isEditStatusModalOpen}
+                onClose={() => setIsEditStatusModalOpen(false)}
+                packageData={selectedPackage}
+                onSuccess={fetchPackages}
             />
 
             <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>

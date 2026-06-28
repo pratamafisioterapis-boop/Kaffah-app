@@ -1852,7 +1852,18 @@ export const createAdminIncome = async (payload) => {
     return { data, success: true, error: null };
   }, 'createAdminIncome');
 };
-export const updatePackageTracking = async () => ({ data: {} });
+export const updatePackageTracking = async (id, updates) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updatePackageTracking');
+};
 export const deletePackageTracking = async () => ({ data: true });
 export const deleteDailyRecapsByPackageType = async () => ({ data: true });
 export const updatePackageSessionsUsed = async () => ({ data: {} });

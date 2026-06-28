@@ -183,7 +183,7 @@ const EditPackageStatusModal = ({ isOpen, onClose, packageData, onSuccess }) => 
                   <SelectItem value="selesai">Selesai (Habis)</SelectItem>
                   <SelectItem value="expired">Expired (Kadaluarsa)</SelectItem>
                   <SelectItem value="diperpanjang">Diperpanjang</SelectItem>
-                  <SelectItem value="belum dimulai">Belum Dimulai</SelectItem>
+                  <SelectItem value="pending">Pending (Belum Dimulai)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
