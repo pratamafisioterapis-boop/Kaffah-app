@@ -113,40 +113,32 @@ const [extendDate, setExtendDate] = useState('');
   };
 
   const detectSlot = () => {
-  if (!formData.start_time) {
-    setMatchedSlot(null);
-    setSlotError(null);
-    return;
-  }
+    if (!formData.start_time) {
+      setMatchedSlot(null);
+      setSlotError(null);
+      return;
+    }
 
-  const startDate = new Date(`2000-01-01T${formData.start_time}:00`);
-  const endManual = new Date(startDate.getTime() + 90 * 60000);
+    const startDate = new Date(`2000-01-01T${formData.start_time}:00`);
+    const endManual = new Date(startDate.getTime() + 90 * 60000);
 
-  const overlappedSlots = availableSlots.filter(slot => {
-    const slotStart = new Date(`2000-01-01T${slot.slot_start}:00`);
-    const slotEnd = new Date(`2000-01-01T${slot.slot_end}:00`);
+    const overlappedSlots = availableSlots.filter(slot => {
+      const slotStart = new Date(`2000-01-01T${slot.slot_start}:00`);
+      const slotEnd = new Date(`2000-01-01T${slot.slot_end}:00`);
+      return startDate < slotEnd && endManual > slotStart;
+    });
 
-    return startDate < slotEnd && endManual > slotStart;
-  });
-
-  if (overlappedSlots.length > 0) {
+    // Booking manual selalu boleh — dengan atau tanpa overlap slot
+    // Jika overlap slot aktif → durasi 90 menit, jika tidak → tetap 60 menit
     setMatchedSlot({
       slot_start: formData.start_time,
       slot_end: formData.start_time,
-      calculated_duration: 90,
-      overlappedSlots
+      calculated_duration: overlappedSlots.length > 0 ? 90 : 60,
+      overlappedSlots,
+      is_manual_outside_slot: overlappedSlots.length === 0
     });
     setSlotError(null);
-    return;
-  }
- setMatchedSlot({
-    slot_start: formData.start_time,
-    slot_end: formData.start_time,
-    calculated_duration: 60
-  });
-
-  setSlotError(null);
-};
+  };
   
   const handlePatientSelect = async (val) => {
     setFormData(prev => ({ ...prev, patient_id: val }));
@@ -201,13 +193,14 @@ if (pkg) {
       return;
     }
 
+    // Booking manual tidak diblokir oleh slot — selalu diizinkan
     if (!matchedSlot) {
-      toast({
-        variant: "destructive",
-        title: "Jam Tidak Valid",
-        description: "Silakan pilih jam dalam slot aktif (min 60 menit)."
+      setMatchedSlot({
+        slot_start: formData.start_time,
+        slot_end: formData.start_time,
+        calculated_duration: 60,
+        is_manual_outside_slot: true
       });
-      return;
     }
     
     
@@ -277,11 +270,12 @@ console.log({
         therapistId: therapist.id,
         clinicId: therapist.clinic_id,
         appointmentDate: appointmentDate,
-        durationMinutes: matchedSlot.calculated_duration || 90,
+        durationMinutes: matchedSlot ? matchedSlot.calculated_duration || 60 : 60,
         status: 'confirmed',
         notes: formData.notes,
         is_homecare: isHomecare,
-  is_recurring: isRecurring,
+        is_recurring: isRecurring,
+        p_allow_overlap: true,
         patientId: formData.patient_type === 'registered' ? formData.patient_id : null,
         guestName: formData.patient_type === 'guest' ? formData.guest_name : null,
         guestPhone: formData.patient_type === 'guest' ? formData.guest_phone : null,
