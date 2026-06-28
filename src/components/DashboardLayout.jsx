@@ -357,6 +357,14 @@ const pwaNavItems = useMemo(() => {
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
                   <ChevronDown className={cn("w-4 h-4 transition-transform duration-200 opacity-50", isExpanded ? "rotate-180" : "")} />
                 </button>
+              ) : item.onClick ? (
+                <button
+                  onClick={() => { item.onClick(); setIsSidebarOpen(false); }}
+                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden text-slate-400 hover:text-white hover:bg-white/5"
+                >
+                  <Icon className="h-5 w-5 transition-colors text-slate-400 group-hover:text-blue-400" />
+                  <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+                </button>
               ) : (
                 <NavLink
                   to={item.path}

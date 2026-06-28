@@ -13,12 +13,15 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { Settings } from 'lucide-react';
+import TherapistSettingsDrawer from '@/components/therapist/TherapistSettingsDrawer';
 
 const TherapistDashboard = () => {
   const { user, signOut } = useAuth();
   const [therapistProfile, setTherapistProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -49,6 +52,7 @@ const TherapistDashboard = () => {
     { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' }, 
     { label: 'Daftar Appointment', path: '/therapist/appointments', icon: 'Settings' },
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
+    { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
 
   // Dashboard Home Layout Component
@@ -93,6 +97,12 @@ const TherapistDashboard = () => {
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
         </Routes>
       </DashboardLayout>
+    <TherapistSettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        therapist={therapistProfile}
+        onTherapistUpdated={(updated) => setTherapistProfile(updated)}
+      />
     </>
   );
 };
