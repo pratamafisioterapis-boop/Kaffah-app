@@ -64,12 +64,12 @@ const OwnerDashboardHome = () => {
   
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
-    // Default: 1 bulan penuh bulan ini (1 - hari ini)
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return {
-      startDate: format(start, 'yyyy-MM-dd'),
-      endDate: format(now, 'yyyy-MM-dd')
+      startDate: format(firstDay, 'yyyy-MM-dd'),
+      endDate: format(lastDay, 'yyyy-MM-dd')
     };
   });
 
