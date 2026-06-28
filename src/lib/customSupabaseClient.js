@@ -8,7 +8,8 @@ const customSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: window.localStorage, // 🔥 WAJIB TAMBAH INI
+    storage: window.localStorage,
+    storageKey: 'kaffah-auth-token', // key tetap, tidak berubah-ubah
   }
 })
 

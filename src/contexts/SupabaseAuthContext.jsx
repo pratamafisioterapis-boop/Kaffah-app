@@ -166,9 +166,17 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (mounted) {
-            if (data?.session) {
-    await handleSession(data.session);
-}
+          if (data?.session) {
+            await handleSession(data.session);
+          } else {
+            // Tidak ada session — tapi jika offline, jangan paksa logout
+            // Biarkan user tetap di halaman, tunggu koneksi kembali
+            if (!navigator.onLine) {
+              console.log('[AuthContext] Offline on init, skipping clearLocalState');
+            } else {
+              clearLocalState();
+            }
+          }
         }
       } catch (error) {
         console.error('[AuthContext] Unexpected error checking auth session:', error);
@@ -193,11 +201,22 @@ export const AuthProvider = ({ children }) => {
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             await handleSession(currentSession);
         } else if (event === 'TOKEN_REFRESH_ERROR') {
-            console.error('[AuthContext] Token refresh error detected');
+            console.error('[AuthContext] Token refresh error detected, attempting recovery...');
+            // Jangan langsung logout — coba refresh manual dulu
+            try {
+              const { data: recovered, error: recoverErr } = await supabase.auth.refreshSession();
+              if (!recoverErr && recovered?.session) {
+                console.log('[AuthContext] Session recovered after TOKEN_REFRESH_ERROR');
+                await handleSession(recovered.session);
+                return;
+              }
+            } catch (e) {
+              console.error('[AuthContext] Recovery attempt failed:', e);
+            }
+            // Hanya logout jika recovery benar-benar gagal
             await supabase.auth.signOut();
             clearLocalState();
             setLoading(false);
-            
             toast({
               variant: "destructive",
               title: "Sesi Berakhir",
@@ -207,9 +226,20 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
+    // Saat kembali online, coba recover session
+    const handleReconnect = async () => {
+      console.log('[AuthContext] Back online, attempting session recovery...');
+      const { data, error } = await supabase.auth.getSession();
+      if (!error && data?.session && mounted) {
+        await handleSession(data.session);
+      }
+    };
+    window.addEventListener('online', handleReconnect);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('online', handleReconnect);
     };
   }, [handleSession, clearLocalState, toast]);
 
