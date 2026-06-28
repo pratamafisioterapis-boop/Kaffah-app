@@ -521,11 +521,13 @@ const PackageRecapsAdmin = () => {
         { label: 'Dashboard', path: '/admin/dashboard', icon: 'Home' },
         { label: 'Appointments', path: '/admin/appointments', icon: 'Calendar' },
         { label: 'Daily Recaps', path: '/admin/daily-recap', icon: 'ClipboardList' },
-        { label: 'Package Recaps', path: '/admin/package-recaps', icon: 'Package' }, // Explicitly added to avoid confusion if layout dynamic logic fails
+        { label: 'Package Recaps', path: '/admin/package-recaps', icon: 'Package' },
+        { label: 'Database Patients', path: '/admin/database-patients', icon: 'Database' },
         { label: 'Medical Records', path: '/admin/medical-records', icon: 'Activity' },
-        { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'Users' },
+        { label: 'Physiotherapist Management', path: '/admin/physiotherapist-management', icon: 'Users' },
+        { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
         { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' },
-        { label: 'Accounting System', path: '/admin/finance-dashboard', icon: 'DollarSign' }
+        { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' }
     ];
 
     return (
