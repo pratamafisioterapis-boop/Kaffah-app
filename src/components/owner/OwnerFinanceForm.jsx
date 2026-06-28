@@ -147,127 +147,109 @@ if (
   };
 
   return (
-    <Card className="border-0 shadow-none">
-      <CardContent className="p-0">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="space-y-2">
-               <Label>Date</Label>
-               <Input 
-                 type="date" 
-                 name="date" 
-                 value={formData.date} 
-                 onChange={handleChange} 
-                 required 
-               />
-             </div>
-             
-             <div className="space-y-2">
-                <Label>Amount (IDR)</Label>
-                <Input 
-                  type="number" 
-                  name="amount" 
-                  value={formData.amount} 
-                  onChange={handleChange} 
-                  placeholder="0" 
-                  required 
-                />
-             </div>
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
 
-          {type !== 'receivable' && (
-            <>
-              <div className="space-y-2">
-                <Label>Sub Category *</Label>
-                <SearchableSelect
-                  options={subcategories}
-                  value={formData.sub_category}
-                  onChange={handleSubCategoryChange}
-                  placeholder="Select sub category..."
-                  allowCreate={false} 
-                  notFoundText="No sub category found."
-                />
-              </div>
+      {/* Tanggal + Jumlah */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">Tanggal</label>
+          <Input type="date" name="date" value={formData.date} onChange={handleChange} required
+            className="h-9 text-sm rounded-xl border-slate-200" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">Jumlah (IDR)</label>
+          <Input type="number" name="amount" value={formData.amount} onChange={handleChange} placeholder="0" required
+            className="h-9 text-sm rounded-xl border-slate-200" />
+        </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label>Main Category (Auto-filled)</Label>
-                <Input 
-                  value={formData.category} 
-                  readOnly 
-                  className="bg-slate-50 text-slate-500 cursor-not-allowed"
-                  placeholder="Main category will appear here..."
-                />
-              </div>
-            </>
-          )}
-
-          {type === 'receivable' && (
-             <div className="space-y-2">
-               <Label>Debtor Name (Nama Peminjam)</Label>
-               <Input 
-                 name="custom_name" 
-                 value={formData.custom_name} 
-                 onChange={handleChange} 
-                 placeholder="Enter name"
-                 required 
-               />
-             </div>
-          )}
-
-          {type !== 'receivable' && (
-             <div className="space-y-2">
-               <Label>Bank Account (Optional)</Label>
-               <SearchableSelect
-                  options={bankAccounts}
-                  value={formData.bank_account_id}
-                  onChange={(val) => handleSelectChange('bank_account_id', val)}
-                  placeholder="Select bank account..."
-                  allowCreate={false}
-               />
-             </div>
-          )}
-          
-          {type === 'receivable' && (
-             <div className="space-y-2">
-                <Label>Status</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(val) => handleSelectChange('status', val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                     <SelectItem value="Unpaid">Unpaid</SelectItem>
-                     <SelectItem value="Paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-             </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea 
-              name="description" 
-              value={formData.description} 
-              onChange={handleChange} 
-              placeholder="Enter details..." 
-              rows={3} 
+      {type !== 'receivable' && (
+        <>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">
+              Sub Kategori <span className="text-red-400">*</span>
+            </label>
+            <SearchableSelect
+              options={subcategories}
+              value={formData.sub_category}
+              onChange={handleSubCategoryChange}
+              placeholder="Pilih sub kategori..."
+              allowCreate={false}
+              notFoundText="Sub kategori tidak ditemukan."
             />
           </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-             <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-               Cancel
-             </Button>
-             <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
-               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-               Save Record
-             </Button>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Kategori Utama</label>
+            <div className="h-9 px-3 flex items-center rounded-xl text-sm text-slate-400"
+              style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              {formData.category || 'Otomatis terisi setelah pilih sub kategori'}
+            </div>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </>
+      )}
+
+      {type === 'receivable' && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">
+            Nama Peminjam <span className="text-red-400">*</span>
+          </label>
+          <Input name="custom_name" value={formData.custom_name} onChange={handleChange}
+            placeholder="Masukkan nama..." required
+            className="h-9 text-sm rounded-xl border-slate-200" />
+        </div>
+      )}
+
+      {type !== 'receivable' && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">
+            Akun Bank <span className="text-slate-400 font-normal">(opsional)</span>
+          </label>
+          <SearchableSelect
+            options={bankAccounts}
+            value={formData.bank_account_id}
+            onChange={(val) => handleSelectChange('bank_account_id', val)}
+            placeholder="Pilih akun bank..."
+            allowCreate={false}
+          />
+        </div>
+      )}
+
+      {type === 'receivable' && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">Status</label>
+          <Select value={formData.status} onValueChange={(val) => handleSelectChange('status', val)}>
+            <SelectTrigger className="h-9 rounded-xl border-slate-200 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Unpaid">Belum Lunas</SelectItem>
+              <SelectItem value="Paid">Lunas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-slate-600">Deskripsi</label>
+        <Textarea name="description" value={formData.description} onChange={handleChange}
+          placeholder="Masukkan keterangan..." rows={3}
+          className="text-sm rounded-xl border-slate-200 resize-none" />
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={onCancel} disabled={loading}
+          className="flex-1 h-9 rounded-xl text-xs font-semibold transition-all"
+          style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+          Batal
+        </button>
+        <button type="submit" disabled={loading}
+          className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
+          style={{ background: type === 'expenditure' ? '#e11d48' : type === 'income' ? '#059669' : '#0891b2' }}>
+          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {loading ? 'Menyimpan...' : 'Simpan'}
+        </button>
+      </div>
+    </form>
   );
 };
 

@@ -36,70 +36,92 @@ const TabButton = ({
     damping: 30
   }} />}
   </button>;
-const SubTabButton = ({
-  isActive,
-  onClick,
-  label,
-  icon: Icon,
-  activeClass,
-  inactiveClass
-}) => <motion.button whileHover={{
-  scale: 1.02
-}} whileTap={{
-  scale: 0.98
-}} onClick={onClick} className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm border", isActive ? `${activeClass} shadow-md ring-1 ring-opacity-50` : `${inactiveClass} hover:bg-slate-50 border-slate-200 text-slate-500`)}>
-    <Icon className="w-4 h-4" />
-    {label}
-  </motion.button>;
+const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
+  const colors = {
+    rose:    { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' },
+    emerald: { bg: '#f0fdf4', color: '#059669', border: '#bbf7d0' },
+    blue:    { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+    cyan:    { bg: '#ecfeff', color: '#0891b2', border: '#a5f3fc' },
+  };
+  const c = colors[color] || colors.blue;
+  return (
+    <button onClick={onClick}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap"
+      style={{
+        background: isActive ? c.bg : 'white',
+        color: isActive ? c.color : '#94a3b8',
+        border: `1px solid ${isActive ? c.border : '#e2e8f0'}`,
+        boxShadow: isActive ? `0 1px 4px ${c.color}18` : 'none',
+      }}>
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </button>
+  );
+};
 
 // --- Reusable Table Component ---
-const DataTable = ({
-  columns,
-  data,
-  loading,
-  emptyMessage,
-  onDelete,
-  showDelete = true
-}) => {
+const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, accentColor = '#64748b' }) => {
   if (loading) {
-    return <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <Loader2 className="w-6 h-6 animate-spin mb-2" style={{ color: accentColor }} />
+        <p className="text-xs text-slate-400 font-medium">Memuat data...</p>
+      </div>
+    );
   }
   if (!data || data.length === 0) {
-    return <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-        <div className="p-4 bg-white rounded-full shadow-sm mb-3">
-          <AlertCircle className="w-6 h-6 text-slate-300" />
+    return (
+      <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
+          <AlertCircle className="w-5 h-5 text-slate-300" />
         </div>
-        <p className="font-medium">{emptyMessage}</p>
-      </div>;
+        <p className="text-sm font-semibold text-slate-400">{emptyMessage}</p>
+      </div>
+    );
   }
-  return <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+  return (
+    <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200">
-            <tr>
-              {columns.map((col, idx) => <th key={idx} className={cn("px-6 py-4 font-semibold tracking-wider", col.className)}>
+        <table className="w-full text-left" style={{ fontSize: '12px' }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              {columns.map((col, idx) => (
+                <th key={idx} className={cn("px-5 py-3 whitespace-nowrap", col.className)}
+                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   {col.header}
-                </th>)}
-              {showDelete && <th className="px-6 py-4 text-right w-[80px]">Actions</th>}
+                </th>
+              ))}
+              {showDelete && <th className="px-5 py-3 w-14" style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px' }} />}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
-            {data.map((row, rowIdx) => <tr key={row.id || rowIdx} className="hover:bg-slate-50/80 transition-colors group">
-                {columns.map((col, colIdx) => <td key={colIdx} className={cn("px-6 py-4", col.className)}>
+          <tbody>
+            {data.map((row, rowIdx) => (
+              <tr key={row.id || rowIdx}
+                className="group transition-colors"
+                style={{ background: rowIdx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = rowIdx % 2 === 0 ? 'white' : '#fafafa'}>
+                {columns.map((col, colIdx) => (
+                  <td key={colIdx} className={cn("px-5 py-3", col.className)} style={{ color: '#475569' }}>
                     {col.render ? col.render(row) : row[col.accessor]}
-                  </td>)}
-                {showDelete && <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all" onClick={() => onDelete && onDelete(row.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </td>}
-              </tr>)}
+                  </td>
+                ))}
+                {showDelete && (
+                  <td className="px-5 py-3 text-right">
+                    <button onClick={() => onDelete && onDelete(row.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-lg flex items-center justify-center ml-auto"
+                      style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 // --- Main Component ---
@@ -315,7 +337,6 @@ const OwnerFinanceDashboard = () => {
           { key: 'salary_calculator',   label: 'Salary Calculator',  icon: Calculator,   active: 'bg-violet-500 text-white shadow-violet-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600' },
           { key: 'owner',               label: 'Owner Accounting',   icon: Briefcase,    active: 'bg-teal-500 text-white shadow-teal-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600' },
           { key: 'admin',               label: 'Admin Accounting',   icon: ShieldCheck,  active: 'bg-orange-500 text-white shadow-orange-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600' },
-          { key: 'patient_income_calc', label: 'Income Calculator',  icon: DollarSign,   active: 'bg-blue-500 text-white shadow-blue-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600' },
           { key: 'package_funds',       label: 'Dana Paket',         icon: Package,      active: 'bg-cyan-500 text-white shadow-cyan-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600' },
         ].map(({ key, label, icon: Icon, active, inactive }) => (
           <button
@@ -376,241 +397,219 @@ const OwnerFinanceDashboard = () => {
         
 
         {/* --- OWNER SECTION --- */}
-        {activeTab === 'owner' && <motion.div key="owner" initial={{
-        opacity: 0,
-        y: 10
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: -10
-      }} className="space-y-6">
-            <div className="flex flex-wrap gap-3 pb-2">
-               <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} activeClass="bg-rose-100 text-rose-700 border-rose-300" inactiveClass="" />
-               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} activeClass="bg-emerald-100 text-emerald-700 border-emerald-300" inactiveClass="" />
-               <SubTabButton isActive={activeOwnerTab === 'bank'} onClick={() => setActiveOwnerTab('bank')} label="Akun Bank" icon={Building} activeClass="bg-blue-100 text-blue-700 border-blue-300" inactiveClass="" />
-               <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} activeClass="bg-cyan-100 text-cyan-700 border-cyan-300" inactiveClass="" />
+        {activeTab === 'owner' && <motion.div key="owner" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+            <div className="flex gap-1.5 p-1 w-fit rounded-xl" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+              <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} color="rose" />
+              <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
+              <SubTabButton isActive={activeOwnerTab === 'bank'} onClick={() => setActiveOwnerTab('bank')} label="Akun Bank" icon={Building} color="blue" />
+              <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} color="cyan" />
             </div>
 
-            
+            <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+              {activeOwnerTab === 'expenditures' && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#fff1f2' }}>
+                        <TrendingDown className="w-4 h-4" style={{ color: '#e11d48' }} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800">Pengeluaran Owner</h3>
+                        <p className="text-xs text-slate-400">{ownerData.expenditures.length} transaksi dalam periode ini</p>
+                      </div>
+                    </div>
+                    <button onClick={() => openForm('expenditure')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      style={{ background: '#e11d48' }}>
+                      <Plus className="w-3.5 h-3.5" /> Tambah
+                    </button>
+                  </div>
+                  <DataTable accentColor="#e11d48" loading={ownerLoading} emptyMessage="Belum ada pengeluaran."
+                    data={ownerData.expenditures}
+                    onDelete={id => handleDelete(deleteOwnerExpenditure, id, 'expenditure', fetchOwnerData)}
+                    columns={[
+                      { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
+                      { header: 'Kategori', accessor: 'category', render: row => (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
+                      )},
+                      { header: 'Sub Kategori', accessor: 'sub_category', render: row => row.subcategory?.subcategory_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.subcategory.subcategory_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
+                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
+                        <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
+                      )},
+                    ]} />
+                </div>
+              )}
 
-<Card className="card-premium bg-gradient-owner border-none">
-              <CardContent className="p-6 md:p-8">
-                {activeOwnerTab === 'expenditures' && <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h2 className="text-xl font-bold text-teal-900">Owner Expenditures</h2>
-                        <p className="text-teal-700/70">Manage your personal and operational expenses.</p>
+              {activeOwnerTab === 'income' && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                        <TrendingUp className="w-4 h-4" style={{ color: '#059669' }} />
                       </div>
-                      <Button onClick={() => openForm('expenditure')} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200">
-                        <Plus className="w-4 h-4 mr-2" /> Record Expense
-                      </Button>
-                    </div>
-                    <DataTable loading={ownerLoading} emptyMessage="No expenditures found." data={ownerData.expenditures} onDelete={id => handleDelete(deleteOwnerExpenditure, id, 'expenditure', fetchOwnerData)} columns={[{
-                header: 'Date',
-                accessor: 'date',
-                render: row => formatDate(row.date)
-              },  {
-                header: 'Category',
-                accessor: 'category',
-                render: row => <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-rose-100 text-rose-700">{row.category}</span>
-              }, {
-  header: 'Sub Category',
-  accessor: 'sub_category',
-  render: row =>
-    row.sub_category ? (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-teal-200 text-teal-700">
-        {row.subcategory?.subcategory_name || '-'}
-      </span>
-    ) : (
-      <span className="text-slate-400">-</span>
-    )
-}, {
-                header: 'Description',
-                accessor: 'description',
-                className: 'text-slate-600'
-              }, {
-                header: 'Amount',
-                accessor: 'amount',
-                className: 'text-right font-bold text-rose-600',
-                render: row => formatCurrency(row.amount)
-              }]} />
-                  </div>}
-                {activeOwnerTab === 'income' && <div className="space-y-6">
-                     <div className="flex justify-between items-center">
                       <div>
-                        <h2 className="text-xl font-bold text-teal-900">Owner Income</h2>
-                        <p className="text-teal-700/70">Track your incoming revenue sources.</p>
+                        <h3 className="text-sm font-bold text-slate-800">Pemasukan Owner</h3>
+                        <p className="text-xs text-slate-400">{ownerData.income.length} transaksi dalam periode ini</p>
                       </div>
-                      <Button onClick={() => openForm('income')} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200">
-                        <Plus className="w-4 h-4 mr-2" /> Record Income
-                      </Button>
                     </div>
-                    <DataTable loading={ownerLoading} emptyMessage="No income records found." data={ownerData.income} onDelete={id => handleDelete(deleteOwnerIncome, id, 'income', fetchOwnerData)} columns={[{
-                header: 'Date',
-                accessor: 'date',
-                render: row => formatDate(row.date)
-              },  {
-                header: 'Category',
-                accessor: 'category',
-                render: row => <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-emerald-100 text-emerald-700">{row.category}</span>
-              }, {
-  header: 'Sub Category',
-  accessor: 'sub_category',
-  render: row =>
-    row.sub_category ? (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-emerald-200 text-emerald-700">
-        {row.sub_category}
-      </span>
-    ) : (
-      <span className="text-slate-400">-</span>
-    )
-}, {
-                header: 'Description',
-                accessor: 'description'
-              }, {
-                header: 'Amount',
-                accessor: 'amount',
-                className: 'text-right font-bold text-emerald-600',
-                render: row => formatCurrency(row.amount)
-              }]} />
-                  </div>}
-                {activeOwnerTab === 'bank' && <OwnerBankAccountManager />}
-                {activeOwnerTab === 'receivables' && <div className="space-y-6">
-                    <div className="flex justify-between items-center">
+                    <button onClick={() => openForm('income')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      style={{ background: '#059669' }}>
+                      <Plus className="w-3.5 h-3.5" /> Tambah
+                    </button>
+                  </div>
+                  <DataTable accentColor="#059669" loading={ownerLoading} emptyMessage="Belum ada pemasukan."
+                    data={ownerData.income}
+                    onDelete={id => handleDelete(deleteOwnerIncome, id, 'income', fetchOwnerData)}
+                    columns={[
+                      { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
+                      { header: 'Kategori', accessor: 'category', render: row => (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{row.category}</span>
+                      )},
+                      { header: 'Sub Kategori', accessor: 'sub_category', render: row => row.sub_category
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.sub_category}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
+                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
+                        <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
+                      )},
+                    ]} />
+                </div>
+              )}
+
+              {activeOwnerTab === 'bank' && (
+                <div className="p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#eff6ff' }}>
+                      <Building className="w-4 h-4" style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Akun Bank</h3>
+                      <p className="text-xs text-slate-400">Kelola rekening bank owner</p>
+                    </div>
+                  </div>
+                  <OwnerBankAccountManager />
+                </div>
+              )}
+
+              {activeOwnerTab === 'receivables' && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#ecfeff' }}>
+                        <CreditCard className="w-4 h-4" style={{ color: '#0891b2' }} />
+                      </div>
                       <div>
-                        <h2 className="text-xl font-bold text-teal-900">Receivables (Piutang)</h2>
-                        <p className="text-teal-700/70">Monitor outstanding payments.</p>
+                        <h3 className="text-sm font-bold text-slate-800">Piutang</h3>
+                        <p className="text-xs text-slate-400">{ownerData.receivables.length} data piutang</p>
                       </div>
-                      <Button onClick={() => openForm('receivable')} className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200">
-                        <Plus className="w-4 h-4 mr-2" /> Add Receivable
-                      </Button>
                     </div>
-                    <DataTable loading={ownerLoading} emptyMessage="No receivables found." data={ownerData.receivables} onDelete={id => handleDelete(deleteOwnerReceivable, id, 'receivable', fetchOwnerData)} columns={[{
-                header: 'Date',
-                accessor: 'date',
-                render: row => formatDate(row.date)
-              }, {
-                header: 'Name',
-                accessor: 'custom_name',
-                className: 'font-semibold text-slate-800'
-              }, {
-                header: 'Description',
-                accessor: 'description'
-              }, {
-                header: 'Status',
-                accessor: 'status',
-                render: row => <span className={cn("inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border", row.status === 'Paid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200")}>
-                            {row.status}
-                          </span>
-              }, {
-                header: 'Amount',
-                accessor: 'amount',
-                className: 'text-right font-bold text-slate-700',
-                render: row => formatCurrency(row.amount)
-              }]} />
-                  </div>}
-              </CardContent>
-            </Card>
+                    <button onClick={() => openForm('receivable')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      style={{ background: '#0891b2' }}>
+                      <Plus className="w-3.5 h-3.5" /> Tambah
+                    </button>
+                  </div>
+                  <DataTable accentColor="#0891b2" loading={ownerLoading} emptyMessage="Belum ada piutang."
+                    data={ownerData.receivables}
+                    onDelete={id => handleDelete(deleteOwnerReceivable, id, 'receivable', fetchOwnerData)}
+                    columns={[
+                      { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
+                      { header: 'Nama', accessor: 'custom_name', render: row => (
+                        <span className="font-semibold text-slate-700">{row.custom_name}</span>
+                      )},
+                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Status', accessor: 'status', render: row => (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{
+                          background: row.status === 'Paid' ? '#f0fdf4' : '#fffbeb',
+                          color: row.status === 'Paid' ? '#059669' : '#d97706',
+                          border: `1px solid ${row.status === 'Paid' ? '#bbf7d0' : '#fde68a'}`
+                        }}>{row.status}</span>
+                      )},
+                      { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
+                        <span className="font-bold tabular-nums text-slate-700">{formatCurrency(row.amount)}</span>
+                      )},
+                    ]} />
+                </div>
+              )}
+            </div>
           </motion.div>}
 
         {/* --- ADMIN SECTION --- */}
-        {activeTab === 'admin' && <motion.div key="admin" initial={{
-        opacity: 0,
-        y: 10
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: -10
-      }} className="space-y-6">
-             <div className="flex gap-3 pb-2">
-               <SubTabButton isActive={activeAdminTab === 'expenses'} onClick={() => setActiveAdminTab('expenses')} label="Pengeluaran Admin" icon={TrendingDown} activeClass="bg-red-100 text-red-700 border-red-300" inactiveClass="" />
-               <SubTabButton isActive={activeAdminTab === 'income'} onClick={() => setActiveAdminTab('income')} label="Pemasukan Admin" icon={TrendingUp} activeClass="bg-orange-100 text-orange-700 border-orange-300" inactiveClass="" />
+        {activeTab === 'admin' && <motion.div key="admin" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+            <div className="flex gap-1.5 p-1 w-fit rounded-xl" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+              <SubTabButton isActive={activeAdminTab === 'expenses'} onClick={() => setActiveAdminTab('expenses')} label="Pengeluaran Admin" icon={TrendingDown} color="rose" />
+              <SubTabButton isActive={activeAdminTab === 'income'} onClick={() => setActiveAdminTab('income')} label="Pemasukan Admin" icon={TrendingUp} color="emerald" />
             </div>
 
-            <Card className="card-premium bg-gradient-admin border-none">
-              <CardContent className="p-6 md:p-8">
-                {activeAdminTab === 'expenses' && <div className="space-y-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-amber-900">Admin Expenses</h2>
-                      <p className="text-amber-700/70">Operational costs recorded by clinic staff.</p>
+            <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+              {activeAdminTab === 'expenses' && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#fff1f2' }}>
+                      <TrendingDown className="w-4 h-4" style={{ color: '#e11d48' }} />
                     </div>
-                    <DataTable loading={adminLoading} emptyMessage="No admin expenses found." data={adminData.expenses} onDelete={id => handleDelete(deleteAdminExpense, id, 'admin expense', fetchAdminData)} columns={[{
-                header: 'Date',
-                accessor: 'transaction_date',
-                render: row => formatDate(row.transaction_date)
-              }, {
-                header: 'Category',
-                accessor: 'category',
-                render: row => <span className="bg-white/80 px-2 py-1 rounded-md text-xs font-semibold border border-amber-200 text-amber-800">{row.category}</span>
-              }, {
-                header: 'Sub Category',
-                accessor: 'sub_category'
-              }, {
-                header: 'Description',
-                accessor: 'description',
-                className: 'max-w-[200px] truncate'
-              }, {
-                header: 'Amount',
-                accessor: 'amount',
-                className: 'text-right font-bold text-red-600',
-                render: row => formatCurrency(row.amount)
-              }]} />
-                  </div>}
-                {activeAdminTab === 'income' && <div className="space-y-6">
                     <div>
-                      <h2 className="text-xl font-bold text-amber-900">Admin Income</h2>
-                      <p className="text-amber-700/70">Additional revenue recorded by clinic staff.</p>
+                      <h3 className="text-sm font-bold text-slate-800">Pengeluaran Admin</h3>
+                      <p className="text-xs text-slate-400">{adminData.expenses.length} transaksi dalam periode ini</p>
                     </div>
-                    <DataTable loading={adminLoading} emptyMessage="No admin income found." data={adminData.income} onDelete={id => handleDelete(deleteAdminIncome, id, 'admin income', fetchAdminData)} columns={[{
-                header: 'Date',
-                accessor: 'transaction_date',
-                render: row => formatDate(row.transaction_date)
-              }, {
-                header: 'Time',
-                accessor: 'input_time',
-                render: row => formatTime(row.input_time)
-              }, {
-                header: 'Source',
-                accessor: 'source',
-                render: row => <span className="bg-white/80 px-2 py-1 rounded-md text-xs font-semibold border border-orange-200 text-orange-800">{row.source}</span>
-              }, {
-                header: 'Sub Category',
-                accessor: 'sub_category'
-              }, {
-                header: 'Description',
-                accessor: 'description'
-              }, {
-                header: 'Amount',
-                accessor: 'amount',
-                className: 'text-right font-bold text-green-600',
-                render: row => formatCurrency(row.amount)
-              }]} />
-                  </div>}
-              </CardContent>
-            </Card>
+                  </div>
+                  <DataTable accentColor="#e11d48" loading={adminLoading} emptyMessage="Belum ada pengeluaran admin."
+                    data={adminData.expenses}
+                    onDelete={id => handleDelete(deleteAdminExpense, id, 'admin expense', fetchAdminData)}
+                    columns={[
+                      { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date) },
+                      { header: 'Kategori', accessor: 'category', render: row => (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
+                      )},
+                      { header: 'Sub Kategori', accessor: 'sub_category', className: 'text-slate-500' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
+                      { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
+                        <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
+                      )},
+                    ]} />
+                </div>
+              )}
+
+              {activeAdminTab === 'income' && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                      <TrendingUp className="w-4 h-4" style={{ color: '#059669' }} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Pemasukan Admin</h3>
+                      <p className="text-xs text-slate-400">{adminData.income.length} transaksi dalam periode ini</p>
+                    </div>
+                  </div>
+                  <DataTable accentColor="#059669" loading={adminLoading} emptyMessage="Belum ada pemasukan admin."
+                    data={adminData.income}
+                    onDelete={id => handleDelete(deleteAdminIncome, id, 'admin income', fetchAdminData)}
+                    columns={[
+                      { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date || row.date) },
+                      { header: 'Sub Kategori', accessor: 'sub_category', className: 'text-slate-500' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[160px]' },
+                      { header: 'Metode Pembayaran', accessor: 'source', render: row => {
+                        const val = row.source || row.category;
+                        return val
+                          ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{val}</span>
+                          : <span style={{ color: '#cbd5e1' }}>—</span>;
+                      }},
+                      { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
+                        <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
+                      )},
+                    ]} />
+                </div>
+              )}
+            </div>
           </motion.div>}
 
-        {/* --- PATIENT INCOME CALCULATION SECTION --- */}
-        {activeTab === 'patient_income_calc' && <motion.div key="patient_income" initial={{
-        opacity: 0,
-        y: 10
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: -10
-      }}>
-             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-1 border border-blue-100 shadow-lg">
-                <div className="bg-white/80 backdrop-blur rounded-xl p-6">
-  <PatientIncome dateRange={dateRange} />
-</div>
-             </div>
-          </motion.div>}
+        
           {/* --- PACKAGE FUNDS SECTION --- */}
 {activeTab === 'package_funds' && (
   <motion.div

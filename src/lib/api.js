@@ -1835,14 +1835,17 @@ export const createAdminIncome = async (payload) => {
     const { data, error } = await supabase
       .from('admin_income')
       .insert({
-  date: payload.date,
-  amount: payload.amount,
-  category: payload.category,
-  sub_category: payload.sub_category || null,
-  description: payload.description || null,
-  created_by: payload.created_by || null,
-  created_at: new Date().toISOString()
-})
+        date: payload.date || payload.transaction_date || null,
+        transaction_date: payload.transaction_date || payload.date || null,
+        amount: payload.amount,
+        category: payload.category,
+        source: payload.source || null,
+        sub_category: payload.sub_category || null,
+        description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        created_by: payload.created_by || null,
+        created_at: new Date().toISOString()
+      })
       .select()
       .single();
     if (error) return { error };

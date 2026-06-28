@@ -522,7 +522,7 @@ combinedExpenses.sort((a, b) => {
             columns={[
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
               { header: 'Deskripsi', accessor: 'description' }
             ]}
           />
@@ -534,7 +534,7 @@ combinedExpenses.sort((a, b) => {
             columns={[
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
               { header: 'Deskripsi', accessor: 'description' }
             ]}
           />
@@ -571,7 +571,7 @@ combinedExpenses.sort((a, b) => {
             columns={[
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
               { header: 'Deskripsi', accessor: 'description' }
             ]}
           />
@@ -583,7 +583,7 @@ combinedExpenses.sort((a, b) => {
             columns={[
               { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
               { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || '-' },
+              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
               { header: 'Deskripsi', accessor: 'description' }
             ]}
           />
