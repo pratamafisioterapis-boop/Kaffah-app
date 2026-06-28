@@ -230,26 +230,41 @@ const TherapistManager = () => {
     let savedData = null;
 
     if (editingTherapist) {
-      // 🔥 UPDATE AUTH VIA RPC
-      if (editingTherapist?.user_id) {
-        const { error: authError } = await supabase.rpc('update_auth_user', {
-          p_user_id: editingTherapist.user_id,
-          p_email: formData.email || null,
-          p_password: password || null
-        });
-        console.log('AUTH UPDATE ERROR:', authError);
-      }
 
-      // 🔥 UPDATE DATA TERAPIS
-      const { data, error: updateError } = await savePhysiotherapist({
-        ...payload,
-        id: editingTherapist.id
-      });
+  // 🔥 UPDATE AUTH VIA RPC — hanya jika ada password baru
+  if (editingTherapist?.user_id && password && password.trim() !== '') {
+    if (password.length < 6) {
+      toast({ variant: "destructive", title: "Password Terlalu Pendek", description: "Password minimal 6 karakter." });
+      setSaving(false);
+      return;
+    }
 
-      error = updateError;
-      savedData = data;
+    const { error: authError } = await supabase.rpc('update_auth_user', {
+      p_user_id: editingTherapist.user_id,
+      p_email: formData.email || null,
+      p_password: password.trim()
+    });
 
+    if (authError) {
+      console.error('AUTH UPDATE ERROR:', authError);
+      toast({ variant: "destructive", title: "Gagal Update Password", description: authError.message || "Password tidak dapat diperbarui." });
+      setSaving(false);
+      return;
     } else {
+      console.log('Password berhasil diupdate untuk user:', editingTherapist.user_id);
+    }
+  }
+
+  // 🔥 UPDATE DATA TERAPIS
+  const { data, error: updateError } = await savePhysiotherapist({
+    ...payload,
+    id: editingTherapist.id
+  });
+
+  error = updateError;
+  savedData = data;
+
+} else {
       // 🔥 CREATE TERAPIS BARU
       const { data, error: createError } = await createTherapistAccount(payload, password);
       error = createError;
