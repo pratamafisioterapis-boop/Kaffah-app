@@ -67,6 +67,7 @@ const DailyRecap = ({ hideControls = false }) => {
   const location = useLocation();
   const { toast } = useToast();
   const isMounted = useRef(true);
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { lastSyncTime } = useAppointmentState(); 
   
   const [recaps, setRecaps] = useState([]);
@@ -434,10 +435,11 @@ const getPremiumPastelBadge = (text) => {
     <div className="space-y-6">
       {!hideControls && (
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-          <div><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>
-          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1">
+          {!isPWA && <div><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
+          <div className={cn("flex flex-wrap items-center gap-2 w-full", isPWA ? "flex-col" : "xl:w-auto gap-3")}>
+            {/* Filter Tombol Periode */}
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex gap-1 flex-1">
                 <Button
   variant={activeFilter === 'today' ? 'default' : 'outline'}
   className={activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
@@ -530,6 +532,10 @@ const end = formatLocal(lastDay);
                   Bulan Ini
                 </Button>
               </div>
+            </div>
+            {/* Filter Tanggal + Refresh + Terapis */}
+            <div className={cn("flex items-center gap-2 w-full flex-wrap", isPWA && "flex-col")}>
+              <div className="flex items-center gap-1 flex-1">
               <Input 
   value={dateRangeDisplay.start} 
   onChange={(e) => {
@@ -620,12 +626,93 @@ const end = formatLocal(lastDay);
   </div>
 </div>
             </div>
-            <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px]" />
+            </div>
+            {/* Search */}
+            <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={cn(isPWA ? "w-full" : "w-[200px]")} />
           </div>
         </div>
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {isPWA ? (
+          // ── CARD LAYOUT PWA ──
+          <div className="divide-y divide-slate-100">
+            {loadingRecaps ? (
+              <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-blue-500"/></div>
+            ) : recaps.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
+                <Search className="w-8 h-8 text-slate-300"/>
+                <p>Tidak ada data rekap harian.</p>
+              </div>
+            ) : recaps.map((recap, idx) => {
+              const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+              const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
+              const packageLabel = recap.package_type || '-';
+              const mainName = recap.actual_patients?.full_name || recap.patients?.full_name || recap.guest_name || 'Nama tidak tersedia';
+              const isDifferent = recap.actual_patient_id && recap.patient_id && recap.actual_patient_id !== recap.patient_id;
+
+              return (
+                <div
+                  key={recap.id}
+                  onClick={() => handleRowClick(recap)}
+                  className={cn("px-4 py-3 cursor-pointer active:bg-blue-50 transition-colors", idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')}
+                >
+                  {/* Baris 1: Tanggal + Status */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-400 font-medium">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
+                    {recap.end_time
+                      ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-[10px]">Selesai</Badge>
+                      : recap.start_time
+                      ? <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px]">Berlangsung</Badge>
+                      : <Badge className="bg-slate-100 text-slate-500 border-0 text-[10px]">Belum</Badge>}
+                  </div>
+
+                  {/* Baris 2: Nama Pasien + Nominal */}
+                  <div className="flex items-start justify-between mb-1.5">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-900 text-sm leading-tight">{mainName}</span>
+                      {isDifferent && recap.patients?.full_name && (
+                        <span className="text-[10px] text-slate-400">(Paket: {recap.patients.full_name})</span>
+                      )}
+                    </div>
+                    <span className="font-bold text-blue-600 text-sm ml-2 shrink-0">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                  </div>
+
+                  {/* Baris 3: Terapis + Badge */}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                    <span className="text-xs text-slate-500 font-medium">{recap.display_therapist_name}</span>
+                    <span className="text-slate-300 text-xs">·</span>
+                    <Badge className={cn("text-[10px] font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
+                    <Badge variant="outline" className="text-[10px] font-normal py-0 px-1.5">{serviceLabel}</Badge>
+                    {packageLabel !== '-' && <Badge className="text-[10px] py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
+                  </div>
+
+                  {/* Baris 4: Tombol Sesi */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    {recap.start_time == null ? (
+                      <Button size="sm" className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Play className="w-3 h-3 mr-1.5"/>Mulai Sesi</>}
+                      </Button>
+                    ) : !recap.end_time ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 shrink-0">{formatTime(new Date(recap.start_time))}</span>
+                        <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white flex-1 rounded-lg" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                          {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Square className="w-3 h-3 mr-1.5"/>Selesai</>}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 w-fit">
+                        <span>{formatTime(new Date(recap.start_time))}</span>
+                        <span className="text-slate-300">→</span>
+                        <span>{formatTime(new Date(recap.end_time))}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className="overflow-x-hidden">
           <table className="w-full text-xs text-left table-fixed">
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
@@ -739,6 +826,7 @@ const end = formatLocal(lastDay);
             </tbody>
           </table>
         </div>
+        )} {/* ── end isPWA ── */}
         <div className="p-4 border-t border-slate-100 flex justify-between items-center bg-white text-xs text-slate-500">
           <span>Hal {currentPage} dari {totalPages} ({totalRecords} data)</span>
           <div className="flex gap-1">
