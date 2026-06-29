@@ -27,6 +27,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 
 // Shared Logic Component
 export const PackageRecapsContent = () => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const { toast } = useToast();
     const [packages, setPackages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -376,6 +377,83 @@ export const PackageRecapsContent = () => {
             {/* Top Pagination Controls */}
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 
+            {/* CARD LAYOUT PWA */}
+            {isPWA ? (
+                <div className="space-y-3">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-16">
+                            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+                            <p className="text-sm text-slate-400">Memuat data paket...</p>
+                        </div>
+                    ) : paginatedPackages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+                            <Package className="w-12 h-12 text-slate-300 mb-3" />
+                            <p className="text-slate-500 font-medium">Belum ada data paket</p>
+                        </div>
+                    ) : (
+                        paginatedPackages.map((pkg) => {
+                            const sisaHari = calculateSisaHari(pkg);
+                            return (
+                                <div key={pkg.id} onClick={() => handleRowClick(pkg)} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
+                                    {/* Baris 1: Nama + Status */}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <p className="font-bold text-slate-900 text-sm leading-tight">{pkg.patients?.full_name || '-'}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{pkg.package_name || '-'}</p>
+                                        </div>
+                                        {getStatusBadge(pkg.status)}
+                                    </div>
+
+                                    {/* Baris 2: Sesi & Sisa Hari */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
+                                            <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
+                                                {pkg.sessions_used}<span className="text-slate-400 font-normal">/{pkg.total_sessions}</span>
+                                            </p>
+                                        </div>
+                                        <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                                            <p className="text-[10px] text-blue-400 font-medium uppercase tracking-wide">Sisa Sesi</p>
+                                            <p className="text-base font-bold text-blue-600 mt-0.5">{pkg.sessions_remaining}</p>
+                                        </div>
+                                        {sisaHari !== null && (
+                                            <div className={cn("flex-1 rounded-xl p-3 text-center border", getSisaHariColor(sisaHari))}>
+                                                <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
+                                                <p className="text-base font-bold mt-0.5">{sisaHari}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Baris 3: Tgl Selesai + Aksi */}
+                                    <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>{pkg.extended_until
+                                                ? <span className="text-orange-600 font-semibold">{formatDateIndonesian(pkg.extended_until)}</span>
+                                                : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
+                                            }</span>
+                                        </div>
+                                        <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            {pkg.status === 'expired' && (
+                                                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700" onClick={(e) => handleExtendClick(e, pkg)}>
+                                                    Perpanjang
+                                                </Button>
+                                            )}
+                                            <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700" onClick={(e) => handleEditStatusClick(e, pkg)}>
+                                                Ubah Status
+                                            </Button>
+                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            ) : (
+            /* TABLE DESKTOP */
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -402,28 +480,15 @@ export const PackageRecapsContent = () => {
                             ) : (
                                 paginatedPackages.map((pkg) => {
                                     const sisaHari = calculateSisaHari(pkg);
-                                    
                                     return (
-                                        <tr 
-                                            key={pkg.id} 
-                                            onClick={() => handleRowClick(pkg)}
-                                            className="hover:bg-blue-50 cursor-pointer transition-colors"
-                                        >
-                                            <td className="px-4 py-3 font-medium text-slate-900 text-center">
-                                                {pkg.patients?.full_name || '-'}
-                                            </td>
+                                        <tr key={pkg.id} onClick={() => handleRowClick(pkg)} className="hover:bg-blue-50 cursor-pointer transition-colors">
+                                            <td className="px-4 py-3 font-medium text-slate-900 text-center">{pkg.patients?.full_name || '-'}</td>
                                             <td className="px-4 py-3 text-slate-600 text-center">{pkg.package_name || '-'}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                {pkg.sessions_used} / {pkg.total_sessions}
-                                            </td>
-                                            <td className="px-4 py-3 text-center font-bold text-slate-700">
-                                                {pkg.sessions_remaining}
-                                            </td>
+                                            <td className="px-4 py-3 text-center">{pkg.sessions_used} / {pkg.total_sessions}</td>
+                                            <td className="px-4 py-3 text-center font-bold text-slate-700">{pkg.sessions_remaining}</td>
+                                            <td className="px-4 py-3 text-slate-500 text-center">{pkg.start_date ? formatDateIndonesian(pkg.start_date) : '-'}</td>
                                             <td className="px-4 py-3 text-slate-500 text-center">
-                                                {pkg.start_date ? formatDateIndonesian(pkg.start_date) : '-'}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-500 text-center">
-                                                {pkg.extended_until 
+                                                {pkg.extended_until
                                                     ? <span className="text-orange-600 font-medium">{formatDateIndonesian(pkg.extended_until)}</span>
                                                     : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                                 }
@@ -433,35 +498,18 @@ export const PackageRecapsContent = () => {
                                                     {sisaHari !== null ? `${sisaHari} Hari` : '-'}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {getStatusBadge(pkg.status)}
-                                            </td>
+                                            <td className="px-4 py-3 text-center">{getStatusBadge(pkg.status)}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex justify-center gap-2">
                                                     {pkg.status === 'expired' && (
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline" 
-                                                            className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
-                                                            onClick={(e) => handleExtendClick(e, pkg)}
-                                                        >
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50" onClick={(e) => handleExtendClick(e, pkg)}>
                                                             Perpanjang
                                                         </Button>
                                                     )}
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-                                                        onClick={(e) => handleEditStatusClick(e, pkg)}
-                                                    >
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50" onClick={(e) => handleEditStatusClick(e, pkg)}>
                                                         Ubah Status
                                                     </Button>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="ghost" 
-                                                        className="h-7 w-7 p-0 text-slate-400 hover:text-red-600"
-                                                        onClick={(e) => handleDeleteClick(e, pkg)}
-                                                    >
+                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </div>
@@ -474,6 +522,7 @@ export const PackageRecapsContent = () => {
                     </table>
                 </div>
             </div>
+            )}
             
             {/* Bottom Pagination Controls */}
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
