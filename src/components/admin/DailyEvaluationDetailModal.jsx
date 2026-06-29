@@ -18,7 +18,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
         <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pr-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pr-8">
             <div>
               <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-blue-600" />
@@ -28,7 +28,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                 <span className="font-semibold text-slate-800 text-base">{patient.full_name}</span>
                 <span className="text-slate-300 hidden sm:inline">•</span>
                 <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
-                  {patient.rm_number || 'No RM'}
+                  {patient.medical_record_number || '-'}
                 </span>
               </DialogDescription>
             </div>

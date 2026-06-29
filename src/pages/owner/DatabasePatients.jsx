@@ -8,6 +8,7 @@ import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
 
 const DatabasePatients = () => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const { toast } = useToast();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -119,7 +120,8 @@ const DatabasePatients = () => {
 
     return (
         <div className="space-y-6">
-            {/* Hero Banner */}
+            {/* Hero Banner — sembunyikan di PWA */}
+            {!isPWA && (
             <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
               <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
@@ -145,6 +147,27 @@ const DatabasePatients = () => {
                 </div>
               </div>
             </div>
+            )}
+
+            {/* PWA Header */}
+            {isPWA && (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Database Pasien</h2>
+                <p className="text-xs text-slate-500">{pagination.totalItems} pasien terdaftar</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleRefresh} variant="outline" size="sm" className="h-9">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </Button>
+                <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2 h-9">
+                  <Plus className="w-4 h-4" /> Tambah
+                </Button>
+              </div>
+            </div>
+            )}
 
             {/* Patient Table Component */}
             <CenteredPatientTable 

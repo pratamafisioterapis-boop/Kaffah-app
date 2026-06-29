@@ -59,29 +59,29 @@ const PhysiotherapistManagementPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="list" className="w-full space-y-8">
+      <Tabs defaultValue="list" className="w-full space-y-6">
 
         {/* TAB MENU */}
-        <TabsList className="grid w-full md:w-[900px] grid-cols-2 md:grid-cols-5 bg-slate-100 p-1 rounded-xl">
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-xl w-full">
 
-          <TabsTrigger value="list" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <Users className="w-4 h-4" /> Data Terapis
+          <TabsTrigger value="list" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <Users className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Data Terapis</span>
           </TabsTrigger>
 
-          <TabsTrigger value="schedule" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <CalendarClock className="w-4 h-4" /> Jadwal
+          <TabsTrigger value="schedule" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <CalendarClock className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Jadwal</span>
           </TabsTrigger>
 
-          <TabsTrigger value="timeoff" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <CalendarOff className="w-4 h-4" /> Cuti
+          <TabsTrigger value="timeoff" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <CalendarOff className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Cuti</span>
           </TabsTrigger>
 
-          <TabsTrigger value="targets" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <Target className="w-4 h-4" /> Target
+          <TabsTrigger value="targets" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <Target className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Target</span>
           </TabsTrigger>
 
-          <TabsTrigger value="badges" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <Shield className="w-4 h-4" /> Badges
+          <TabsTrigger value="badges" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <Shield className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Badges</span>
           </TabsTrigger>
         </TabsList>
 

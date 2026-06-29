@@ -126,6 +126,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
 
 // --- Main Component ---
 const OwnerFinanceDashboard = () => {
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const {
     toast
   } = useToast();
@@ -284,6 +285,7 @@ const OwnerFinanceDashboard = () => {
               <p className="text-sm text-slate-400 mt-0.5">Manage finances, analytics & reporting</p>
             </div>
           </div>
+          {!isPWA && (
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
               <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
@@ -309,6 +311,7 @@ const OwnerFinanceDashboard = () => {
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
+          )}
         </div>
       </div>
 
@@ -349,8 +352,32 @@ const OwnerFinanceDashboard = () => {
         ))}
       </div>
 
-      {/* Quick Action Widget */}
+      {/* Quick Action Widget — PWA: date filter masuk sini */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
+        {isPWA && (
+          <div className="flex items-center gap-1.5 bg-white/80 border border-teal-200 rounded-xl px-3 py-2 w-full">
+            <span className="text-teal-700 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="text-xs bg-transparent border-0 outline-none text-slate-700 font-medium flex-1"
+            />
+            <span className="text-slate-400 shrink-0">–</span>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="text-xs bg-transparent border-0 outline-none text-slate-700 font-medium flex-1"
+            />
+            <button
+              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
+              className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 mr-1">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#14b8a6', opacity: 0.85 }}>
             <DollarSign className="w-3.5 h-3.5 text-white" />

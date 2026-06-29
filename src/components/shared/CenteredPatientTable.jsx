@@ -19,8 +19,9 @@ const CenteredPatientTable = ({
     onPaginationChange, 
     onFilterChange, 
     onRefresh,
-    onRowClick // New prop for handling row clicks
+    onRowClick
 }) => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const [selectedPatient, setSelectedPatient] = useState(null);
 const [isOpen, setIsOpen] = useState(false);
 const [historyData, setHistoryData] = useState([]);
@@ -102,9 +103,9 @@ const formatTanggal = (date) => {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
             {/* Toolbar */}
-            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-white rounded-t-xl">
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <div className="relative w-full md:w-64">
+            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center bg-white rounded-t-xl">
+                <div className="flex flex-wrap items-center gap-2 w-full">
+                    <div className="relative flex-1 min-w-[160px]">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input 
                             placeholder="Cari nama, RM, atau No HP..." 
@@ -113,7 +114,6 @@ const formatTanggal = (date) => {
                             className="pl-9 h-9 text-xs"
                         />
                     </div>
-                    
                     <select 
                         value={status}
                         onChange={(e) => handleStatusFilter(e.target.value)}
@@ -123,7 +123,6 @@ const formatTanggal = (date) => {
                         <option value="aktif">Aktif</option>
                         <option value="nonaktif">Nonaktif</option>
                     </select>
-
                     <select 
                          value={completeness}
                          onChange={(e) => handleCompletenessFilter(e.target.value)}
@@ -136,8 +135,176 @@ const formatTanggal = (date) => {
                 </div>
             </div>
 
-            {/* Table Area */}
+            {/* PWA CARD LAYOUT */}
+            {isPWA ? (
+                <div className="divide-y divide-slate-100">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-16">
+                            <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
+                            <p className="text-xs text-slate-400">Memuat data pasien...</p>
+                        </div>
+                    ) : patients.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16">
+                            <User className="h-10 w-10 text-slate-200 mb-2" />
+                            <p className="text-sm text-slate-500">Tidak ada data pasien ditemukan.</p>
+                        </div>
+                    ) : (
+                        patients.map((patient, idx) => (
+                            <div
+                                key={patient.id}
+                                onClick={() => onRowClick && onRowClick(patient)}
+                                className={cn(
+                                    "px-4 py-3 cursor-pointer active:bg-indigo-50 transition-colors",
+                                    idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                                )}
+                            >
+                                {/* Baris 1: RM + Status + Kelengkapan */}
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="font-mono text-[10px] text-indigo-500 font-semibold">
+                                        {patient.medical_record_number || '-'}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0 border-0", patient.statusClass)}>
+                                            {patient.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                                        </Badge>
+                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0 border-0", patient.completenessClass)}>
+                                            {patient.isComplete ? 'Lengkap' : 'Belum'}
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                {/* Baris 2: Nama + Nickname */}
+                                <div className="mb-1">
+                                    <p className="font-semibold text-slate-900 text-sm leading-tight">{patient.full_name}</p>
+                                    {patient.nickname && <p className="text-xs text-slate-400">{patient.nickname}</p>}
+                                </div>
+
+                                {/* Baris 3: Info */}
+                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                    <span>{patient.gender} · {patient.formattedAge}</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span>{patient.formattedPhone}</span>
+                                </div>
+
+                                {/* Baris 4: Tombol Riwayat */}
+                                <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 w-full"
+                                        onClick={() => { setSelectedPatient(patient); setIsOpen(true); }}
+                                    >
+                                        Lihat Riwayat Kunjungan
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+            /* DESKTOP TABLE */
             <div className="relative overflow-x-auto">
+                <Table>
+                    <TableHeader className="bg-slate-50">
+                        <TableRow>
+                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">No RM</TableHead>
+                            <TableHead className="text-left font-semibold text-slate-700 min-w-[200px]">Nama Pasien</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700 w-[60px]">Gender</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700 w-[80px]">Usia</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700 min-w-[150px]">Tgl Lahir</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Nomor HP</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Info Tambahan</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Status</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Kelengkapan</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                            <TableRow>
+                                <TableCell colSpan={9} className="h-48 text-center">
+                                    <div className="flex flex-col items-center justify-center text-slate-500">
+                                        <Loader2 className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
+                                        <p className="text-xs">Memuat data pasien...</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : patients.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={9} className="h-48 text-center text-slate-500">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <User className="h-10 w-10 text-slate-200 mb-2" />
+                                        <p>Tidak ada data pasien ditemukan.</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            patients.map((patient, idx) => (
+                                <TableRow 
+                                    key={patient.id} 
+                                    className={cn(
+                                        "group transition-colors hover:bg-slate-50 cursor-pointer",
+                                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                                    )}
+                                    onClick={() => onRowClick && onRowClick(patient)}
+                                >
+                                    <TableCell className="font-mono text-xs font-medium text-slate-600 text-center">
+                                        {patient.medical_record_number || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-left">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-slate-800 text-sm">{patient.full_name}</span>
+                                            <span className="text-xs text-slate-400">{patient.nickname || '-'}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-slate-600 text-xs text-center font-medium">{patient.gender}</TableCell>
+                                    <TableCell className="text-slate-600 text-xs text-center">{patient.formattedAge}</TableCell>
+                                    <TableCell className="text-slate-600 text-xs text-center capitalize">{patient.formattedBirthDate}</TableCell>
+                                    <TableCell className="text-slate-600 text-xs font-mono text-center">{patient.formattedPhone}</TableCell>
+                                    <TableCell className="text-slate-600 text-xs text-center">{patient.additionalInfoLabel}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.statusClass)}>
+                                            {patient.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.completenessClass)}>
+                                            {patient.isComplete ? 'Lengkap' : 'Tidak Lengkap'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}
+                                        >
+                                            Riwayat
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+            )}
+
+            {/* Pagination */}
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white rounded-b-xl">
+                <div className="text-xs text-slate-500">
+                    Hal <span className="font-medium">{page}</span> dari <span className="font-medium">{totalPages}</span>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page <= 1 || loading} className="h-8 w-8 p-0">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(page + 1)} disabled={page >= totalPages || loading} className="h-8 w-8 p-0">
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+            {/* Table Area — Desktop Only */}
+            {!isPWA && <div className="relative overflow-x-auto">
                 <Table>
                     <TableHeader className="bg-slate-50">
                         <TableRow>

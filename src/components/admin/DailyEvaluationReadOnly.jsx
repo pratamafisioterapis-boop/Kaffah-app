@@ -128,10 +128,13 @@ const DailyEvaluationReadOnly = () => {
   if (loading) { return ( <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-slate-200 shadow-sm"><Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" /><p className="text-slate-500 font-medium">Memuat data evaluasi harian...</p></div> ); }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[600px]">
+    <div className={isPWA ? "min-h-[600px]" : "bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[600px]"}>
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div className="flex-1"><h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />Daftar Evaluasi Harian (SOAP)</h2><p className="text-sm text-slate-500 mt-1">Pantau perkembangan pasien melalui catatan SOAP dari terapis.</p></div>
+          <div className="flex-1">
+            {!isPWA && <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />Daftar Evaluasi Harian (SOAP)</h2>}
+            {!isPWA && <p className="text-sm text-slate-500 mt-1">Pantau perkembangan pasien melalui catatan SOAP dari terapis.</p>}
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
             {!isPWA && (
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -144,7 +147,7 @@ const DailyEvaluationReadOnly = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
           {filteredGroups.length === 0 ? ( <div className="col-span-full text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200"><div className="mx-auto h-12 w-12 text-slate-300 mb-3"><ClipboardList className="h-full w-full" /></div><p className="text-slate-900 font-medium">Tidak ada data ditemukan</p><p className="text-sm text-slate-500 mt-1">{searchTerm ? 'Coba kata kunci pencarian lain.' : 'Belum ada evaluasi SOAP yang tercatat.'}</p></div> ) : (
             filteredGroups.map((group) => (
               <Card key={group.patient.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white" onClick={() => handlePatientClick(group)}>

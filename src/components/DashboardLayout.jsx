@@ -268,6 +268,11 @@ const pwaNavItems = useMemo(() => {
         icon: 'Package'
       },
       {
+        label: 'Database Patients',
+        path: '/owner/database-patients',
+        icon: 'Database'
+      },
+      {
         label: 'Medical Records',
         path: '/owner/medical-records',
         icon: 'Activity'

@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 const TherapistManager = () => {
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
   const navigate = useNavigate();
   const [therapists, setTherapists] = useState([]);
@@ -346,12 +347,12 @@ const headerColorMap = {
 };
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-800">Manajemen Terapis & Akun</h2>
           <p className="text-sm text-slate-500">Kelola profil, akun login, dan status fisioterapis.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
           <UserPlus className="w-4 h-4 mr-2" /> Buat Akun Terapis
         </Button>
       </div>
@@ -359,7 +360,7 @@ const headerColorMap = {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
           {therapists.map((therapist) => (
             <motion.div 
               key={therapist.id}
