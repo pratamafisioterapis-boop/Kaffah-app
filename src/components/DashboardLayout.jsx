@@ -528,7 +528,7 @@ const pwaNavItems = useMemo(() => {
 
       <main className={cn(
         "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
-        isPWA && role === 'therapist' ? "pt-0" : "pt-[80px]"
+        isPWA && role === 'therapist' ? "pt-0" : "pt-0"
       )}>
 
         {/* Header khusus PWA Therapist */}
@@ -586,151 +586,11 @@ const pwaNavItems = useMemo(() => {
           </header>
         )}
 
-        {/* Header normal untuk non-PWA atau role lain */}
-        {!(isPWA && (role === 'therapist' || role === 'owner')) && (
-        <header className={cn(
-          "sticky top-4 z-50 mx-4 sm:mx-8 px-4 sm:px-6 py-3 flex justify-between items-center rounded-2xl transition-all duration-300",
-          scrolled 
-            ? "bg-white/70 backdrop-blur-xl shadow-lg border border-white/40" 
-            : "bg-white/50 backdrop-blur-md border border-white/30"
-        )}>
-          <div className="flex items-center gap-3">
-             <Button 
-               variant="ghost" 
-               size="icon" 
-               className="lg:hidden text-slate-600 hover:bg-slate-100"
-               onClick={() => setIsSidebarOpen(true)}
-             >
-               <Menu className="h-6 w-6" />
-             </Button>
-             
-             <div className="flex flex-col">
-               <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight capitalize flex items-center gap-2">
-  {location.pathname.includes('/records/new')
-    ? 'Buat Catatan Medis (SOAP)'
-    : location.pathname.includes('/dashboard')
-    ? 'Dashboard'
-    : location.pathname.split('/').pop().replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}
-</h1>
-               <p className="text-xs text-slate-500 hidden sm:block">Welcome back, let's make today productive.</p>
-             </div>
-          </div>
-          
-          <div className="flex items-center gap-3 sm:gap-4">
-             <div className="hidden md:flex items-center gap-3 bg-gradient-to-r from-blue-50/80 to-purple-50/80 backdrop-blur-sm px-5 py-2.5 rounded-full border border-blue-100/50 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300 group cursor-default">
-                <div className="p-2 bg-white rounded-full shadow-sm border border-blue-100 group-hover:border-blue-200 transition-colors">
-                  <Clock className="w-4 h-4 text-blue-600 animate-[pulse_2s_ease-in-out_infinite]" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl font-bold text-slate-800 tracking-tight font-mono variant-numeric-tabular">
-                    {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <div className="h-4 w-px bg-indigo-200/60 mx-1"></div>
-                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-widest">
-                    {currentTime.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-             </div>
-
-             <Button variant="ghost" size="icon" className="hidden sm:flex text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full">
-                <Search className="w-5 h-5" />
-             </Button>
-
-             <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setOpenNotif(!openNotif)}
-                className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full relative"
-              >
-                <Bell className="w-5 h-5" />
-                {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                )}
-            </Button>
-            {openNotif && (
-              <div className="absolute right-0 top-12 w-80 bg-white shadow-xl rounded-xl border z-50 p-3 max-h-[400px] overflow-y-auto">
-                <p className="text-sm font-semibold mb-2">Notifikasi</p>
-
-                {notifications.length === 0 ? (
-                  <p className="text-xs text-gray-500 text-center py-4">Belum ada aktivitas</p>
-                ) : (
-                  notifications.map((item) => {
-                    const isInsert = item.action === 'INSERT';
-                    const isDelete = item.action === 'DELETE';
-                    const actionText = isInsert ? 'Menambahkan' : isDelete ? 'Menghapus' : 'Mengubah';
-                    const color = isInsert ? 'text-green-600' : isDelete ? 'text-red-500' : 'text-blue-600';
-
-                    const handleClick = async () => {
-                      await supabase.from('audit_logs').update({ is_read: true }).eq('id', item.id);
-
-                      if (item.resource_type === 'appointments') {
-                        const rawDate = item.changes?.appointment_date;
-                        const cleanDate = typeof rawDate === 'string' ? rawDate.split('T')[0] : null;
-                        navigate('/admin/appointments', { state: { highlightId: item.resource_id, date: cleanDate } });
-                      }
-
-                      if (item.resource_type === 'daily_recaps') {
-                        const rawDate = item.changes?.recap_date;
-                        const cleanDate = typeof rawDate === 'string' ? rawDate.split('T')[0] : null;
-                        navigate('/admin/daily-recaps', { state: { highlightId: item.resource_id, date: cleanDate } });
-                      }
-                      setOpenNotif(false);
-                    };
-
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={handleClick}
-                        className="p-3 rounded-xl hover:bg-slate-50 transition border-b last:border-none cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-slate-800">
-                            {item.users?.full_name || 'User'}
-                          </p>
-                          <span className={`text-[10px] font-semibold ${color}`}>
-                            {actionText.toUpperCase()}
-                          </span>
-                        </div>
-
-                        {item.resource_type === 'appointments' && (
-                          <div className="mt-1 text-xs text-slate-600">
-                            <p className="text-[11px]">📅 Appointment</p>
-                            <p className="font-semibold text-slate-900">{item.patient_name || '-'}</p>
-                            <p>
-                              {safeFormatDate(item.changes?.appointment_date)} • {safeFormatTime(item.changes?.appointment_date)}
-                            </p>
-                          </div>
-                        )}
-
-                        {item.resource_type === 'daily_recaps' && (
-                          <div className="mt-1 text-xs text-slate-600">
-                            <p className="text-[11px]">📝 Daily Recap</p>
-                            <p className="font-semibold text-slate-900">{item.patient_name || '-'}</p>
-                          </div>
-                        )}
-
-                        {item.resource_type !== 'appointments' && item.resource_type !== 'daily_recaps' && (
-                          <p className="text-xs text-slate-600 mt-1">
-                            {actionText} {item.resource_type}
-                          </p>
-                        )}
-
-                        <p className="text-[10px] text-gray-400 mt-2">
-                          {new Date(item.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </header>
-        )}
+        {/* Header normal dihapus - digantikan hero banner di masing-masing halaman */}
 
         <div className={cn(
           "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
-          isPWA && (role === 'therapist' || role === 'owner') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-20"
+          isPWA && (role === 'therapist' || role === 'owner') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
            {children}
         </div>

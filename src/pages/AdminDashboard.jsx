@@ -30,7 +30,27 @@ import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
 import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
-
+const HeroClock = () => {
+  const [now, setNow] = React.useState(new Date());
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 backdrop-blur-sm px-3 py-2 rounded-xl">
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span className="text-sm font-bold text-white font-mono tracking-wider">
+        {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+      </span>
+      <div className="h-3.5 w-px bg-white/20"></div>
+      <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
+        {now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+      </span>
+    </div>
+  );
+};
 const AdminDashboardHome = () => {
   const location = useLocation(); 
   const today = new Date().toISOString().split('T')[0];
@@ -378,41 +398,45 @@ setTrendPatients(trendArray);
       </Helmet>
       
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
-            <p className="text-slate-500">Manage daily clinic operations and financial performance.</p>
-          </div>
-          <div className="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
-            <div className="flex items-center text-sm font-semibold text-slate-600">
-              Periode
+
+        {/* ===== HERO BANNER ===== */}
+        <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+                <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Admin Dashboard</h2>
+                <p className="text-sm text-slate-400 mt-0.5">Pusat kendali operasional dan manajemen klinik</p>
+              </div>
             </div>
-
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, startDate: e.target.value })
-              }
-              className="w-32 md:w-40 text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2
-                        border border-slate-300 rounded-lg outline-none
-                        focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-
-            <span className="text-slate-400 font-medium">–</span>
-
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, endDate: e.target.value })
-              }
-              className="w-32 md:w-40 text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2
-                        border border-slate-300 rounded-lg outline-none
-                        focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
+            <div className="flex flex-col sm:items-end gap-2 shrink-0">
+              <HeroClock />
+              <div className="flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm px-3 py-2 rounded-xl">
+                <span className="text-xs font-semibold text-indigo-200 whitespace-nowrap">Periode</span>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                  className="w-28 text-xs px-2 py-1.5 rounded-lg outline-none bg-white/10 border border-white/20 text-white [color-scheme:dark] focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                />
+                <span className="text-slate-400 font-medium">–</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                  className="w-28 text-xs px-2 py-1.5 rounded-lg outline-none bg-white/10 border border-white/20 text-white [color-scheme:dark] focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+                />
+              </div>
+            </div>
           </div>
         </div>
+        {/* ===== END HERO BANNER ===== */}
 
         <Tabs defaultValue="operational" className="w-full space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1">
