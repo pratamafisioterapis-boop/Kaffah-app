@@ -259,7 +259,35 @@ const OwnerBookingCalendar = () => {
          </div>
       ) : (
        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
-          {therapists.map((therapist) => {
+          {[...therapists]
+  .sort((a, b) => {
+    const slotsA = schedulesMap[a.id] || [];
+    const slotsB = schedulesMap[b.id] || [];
+
+    const isFullA = slotsA.length > 0 && slotsA.every(s => s.status === 'terisi');
+    const isFullB = slotsB.length > 0 && slotsB.every(s => s.status === 'terisi');
+
+    const noScheduleA = slotsA.length === 0;
+    const noScheduleB = slotsB.length === 0;
+
+    if (noScheduleA && !noScheduleB) return 1;
+    if (!noScheduleA && noScheduleB) return -1;
+
+    if (isFullA && !isFullB) return 1;
+    if (!isFullA && isFullB) return -1;
+
+    const getFirstSlot = (slots) => {
+      if (slots.length === 0) return "99:99";
+      const aktifSlots = slots.filter(s => s.status === 'aktif');
+      const sorted = [...(aktifSlots.length > 0 ? aktifSlots : slots)].sort((x, y) =>
+        (x.slot_start_time || '').localeCompare(y.slot_start_time || '')
+      );
+      return sorted[0]?.slot_start_time || '99:99';
+    };
+
+    return getFirstSlot(slotsA).localeCompare(getFirstSlot(slotsB));
+  })
+  .map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
             const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);
             const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
