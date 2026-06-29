@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 const initialFormState = {
   record_date: format(new Date(), 'yyyy-MM-dd'),
   patient_id: '',
-  medical_diagnosis: '',
+  medical_diagnosis: [],
   history_main_problem: '',
   vital_nadi: '',
   vital_blood_pressure: '',
@@ -119,7 +119,12 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
     ...recordData,
     record_date: recordData.record_date
       ? format(new Date(recordData.record_date), 'yyyy-MM-dd')
-      : initialFormState.record_date
+      : initialFormState.record_date,
+    medical_diagnosis: Array.isArray(recordData.medical_diagnosis)
+      ? recordData.medical_diagnosis
+      : recordData.medical_diagnosis
+      ? [recordData.medical_diagnosis]
+      : []
   });
 
 } else {
@@ -239,6 +244,13 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
   id,
   ...cleanedData
 } = formData;
+
+        // Stringify array fields agar bisa disimpan ke kolom text
+        if (Array.isArray(cleanedData.medical_diagnosis)) {
+          cleanedData.medical_diagnosis = cleanedData.medical_diagnosis.length > 0
+            ? JSON.stringify(cleanedData.medical_diagnosis)
+            : null;
+        }
         
         // However, we need to pass formData to the API functions which expect an object.
         // The API functions (Task 1 & 2) are now updated to destructure these out.
@@ -367,6 +379,7 @@ onClose();
                         value={formData.medical_diagnosis}
                         onChange={(val) => handleSelectChange('medical_diagnosis', val)}
                         placeholder="Pilih atau cari diagnosis..."
+                        multiple={true}
                       />
                     </div>
                     <div className="md:col-span-2 space-y-2">
