@@ -306,21 +306,23 @@ setTherapists(enrichedTherapists);
             </div>
 
             {/* Periode Selector */}
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-2.5 w-full sm:w-auto">
-              <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs border-0 outline-none text-white font-medium bg-transparent flex-1 min-w-0"
-              />
-              <span className="text-white/30 shrink-0">–</span>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs border-0 outline-none text-white font-medium bg-transparent flex-1 min-w-0"
-              />
+            <div className="flex flex-col gap-1.5 bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-2.5 w-full sm:w-auto">
+              <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">Periode</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
+                />
+                <span className="text-white/30 shrink-0">–</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
+                />
+              </div>
             </div>
           </div>
         </div>
