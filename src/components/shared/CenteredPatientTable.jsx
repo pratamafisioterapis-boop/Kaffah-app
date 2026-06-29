@@ -100,8 +100,9 @@ const formatTanggal = (date) => {
     year: 'numeric'
   });
 };
-    return (
+   return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
+
             {/* Toolbar */}
             <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center bg-white rounded-t-xl">
                 <div className="flex flex-wrap items-center gap-2 w-full">
@@ -158,7 +159,6 @@ const formatTanggal = (date) => {
                                     idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
                                 )}
                             >
-                                {/* Baris 1: RM + Status + Kelengkapan */}
                                 <div className="flex items-center justify-between mb-1">
                                     <span className="font-mono text-[10px] text-indigo-500 font-semibold">
                                         {patient.medical_record_number || '-'}
@@ -172,21 +172,15 @@ const formatTanggal = (date) => {
                                         </Badge>
                                     </div>
                                 </div>
-
-                                {/* Baris 2: Nama + Nickname */}
                                 <div className="mb-1">
                                     <p className="font-semibold text-slate-900 text-sm leading-tight">{patient.full_name}</p>
                                     {patient.nickname && <p className="text-xs text-slate-400">{patient.nickname}</p>}
                                 </div>
-
-                                {/* Baris 3: Info */}
                                 <div className="flex items-center gap-3 text-xs text-slate-500">
                                     <span>{patient.gender} · {patient.formattedAge}</span>
                                     <span className="text-slate-300">·</span>
                                     <span>{patient.formattedPhone}</span>
                                 </div>
-
-                                {/* Baris 4: Tombol Riwayat */}
                                 <div className="mt-2" onClick={e => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
@@ -222,7 +216,7 @@ const formatTanggal = (date) => {
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-48 text-center">
+                                <TableCell colSpan={10} className="h-48 text-center">
                                     <div className="flex flex-col items-center justify-center text-slate-500">
                                         <Loader2 className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
                                         <p className="text-xs">Memuat data pasien...</p>
@@ -231,7 +225,7 @@ const formatTanggal = (date) => {
                             </TableRow>
                         ) : patients.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-48 text-center text-slate-500">
+                                <TableCell colSpan={10} className="h-48 text-center text-slate-500">
                                     <div className="flex flex-col items-center justify-center">
                                         <User className="h-10 w-10 text-slate-200 mb-2" />
                                         <p>Tidak ada data pasien ditemukan.</p>
@@ -242,15 +236,10 @@ const formatTanggal = (date) => {
                             patients.map((patient, idx) => (
                                 <TableRow 
                                     key={patient.id} 
-                                    className={cn(
-                                        "group transition-colors hover:bg-slate-50 cursor-pointer",
-                                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-                                    )}
+                                    className={cn("group transition-colors hover:bg-slate-50 cursor-pointer", idx % 2 === 0 ? "bg-white" : "bg-slate-50/50")}
                                     onClick={() => onRowClick && onRowClick(patient)}
                                 >
-                                    <TableCell className="font-mono text-xs font-medium text-slate-600 text-center">
-                                        {patient.medical_record_number || '-'}
-                                    </TableCell>
+                                    <TableCell className="font-mono text-xs font-medium text-slate-600 text-center">{patient.medical_record_number || '-'}</TableCell>
                                     <TableCell className="text-left">
                                         <div className="flex flex-col">
                                             <span className="font-medium text-slate-800 text-sm">{patient.full_name}</span>
@@ -273,11 +262,7 @@ const formatTanggal = (date) => {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}
-                                        >
+                                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}>
                                             Riwayat
                                         </Button>
                                     </TableCell>
@@ -303,255 +288,77 @@ const formatTanggal = (date) => {
                     </Button>
                 </div>
             </div>
-            {/* Table Area — Desktop Only */}
-            {!isPWA && <div className="relative overflow-x-auto">
-                <Table>
-                    <TableHeader className="bg-slate-50">
-                        <TableRow>
-                            {/* 1. No RM */}
-                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">No RM</TableHead>
-                            {/* 2. Nama Pasien (Left Align) */}
-                            <TableHead className="text-left font-semibold text-slate-700 min-w-[200px]">Nama Pasien</TableHead>
-                            {/* 3. Gender */}
-                            <TableHead className="text-center font-semibold text-slate-700 w-[60px]">Gender</TableHead>
-                            {/* 4. Usia */}
-                            <TableHead className="text-center font-semibold text-slate-700 w-[80px]">Usia</TableHead>
-                            {/* 5. Tgl Lahir */}
-                            <TableHead className="text-center font-semibold text-slate-700 min-w-[150px]">Tgl Lahir</TableHead>
-                            {/* 6. No HP */}
-                            <TableHead className="text-center font-semibold text-slate-700">Nomor HP</TableHead>
-                            {/* 7. Info Tambahan */}
-                            <TableHead className="text-center font-semibold text-slate-700">Info Tambahan</TableHead>
-                            {/* 8. Status */}
-                            <TableHead className="text-center font-semibold text-slate-700">Status</TableHead>
-                            {/* 9. Kelengkapan */}
-                            <TableHead className="text-center font-semibold text-slate-700">Kelengkapan</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={9} className="h-48 text-center">
-                                    <div className="flex flex-col items-center justify-center text-slate-500">
-                                        <Loader2 className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
-                                        <p className="text-xs">Memuat data pasien...</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : patients.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={9} className="h-48 text-center text-slate-500">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <User className="h-10 w-10 text-slate-200 mb-2" />
-                                        <p>Tidak ada data pasien ditemukan.</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            patients.map((patient, idx) => (
-                                <TableRow 
-                                    key={patient.id} 
-                                    className={cn(
-                                        "group transition-colors hover:bg-slate-50 cursor-pointer",
-                                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-                                    )}
-                                    onClick={() => onRowClick && onRowClick(patient)}
-                                >
-                                    {/* 1. No RM */}
-                                    <TableCell className="font-mono text-xs font-medium text-slate-600 text-center">
-                                        {patient.medical_record_number || '-'}
-                                    </TableCell>
-                                    
-                                    {/* 2. Nama Pasien + Nickname */}
-                                    <TableCell className="text-left">
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-800 text-sm">{patient.full_name}</span>
-                                            <span className="text-xs text-slate-400">{patient.nickname || '-'}</span>
-                                        </div>
-                                    </TableCell>
-                                    
-                                    {/* 3. Gender */}
-                                    <TableCell className="text-slate-600 text-xs text-center font-medium">
-                                        {patient.gender}
-                                    </TableCell>
-                                    
-                                    {/* 4. Usia */}
-                                    <TableCell className="text-slate-600 text-xs text-center">
-                                        {patient.formattedAge}
-                                    </TableCell>
-                                    
-                                    {/* 5. Tgl Lahir */}
-                                    <TableCell className="text-slate-600 text-xs text-center capitalize">
-                                        {patient.formattedBirthDate}
-                                    </TableCell>
-                                    
-                                    {/* 6. No HP */}
-                                    <TableCell className="text-slate-600 text-xs font-mono text-center">
-                                        {patient.formattedPhone}
-                                    </TableCell>
 
-                                    {/* 7. Info Tambahan */}
-                                    <TableCell className="text-slate-600 text-xs text-center">
-                                        {patient.additionalInfoLabel}
-                                    </TableCell>
-                                    
-                                    {/* 8. Status */}
-                                    <TableCell className="text-center">
-                                        <Badge 
-                                            variant="outline" 
-                                            className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.statusClass)}
-                                        >
-                                            {patient.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
-                                        </Badge>
-                                    </TableCell>
-                                    
-                                    {/* 9. Kelengkapan */}
-                                    <TableCell className="text-center">
-                                        <Badge 
-                                            variant="outline" 
-                                            className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.completenessClass)}
-                                        >
-                                            {patient.isComplete ? 'Lengkap' : 'Tidak Lengkap'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-  <Button 
-    variant="outline" 
-    size="sm"
-    onClick={(e) => {
-  e.stopPropagation();
-  setSelectedPatient(patient);
-  setIsOpen(true);
-}}
-  >
-    Riwayat
-  </Button>
-</TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white rounded-b-xl">
-                <div className="text-xs text-slate-500">
-                    Hal <span className="font-medium">{page}</span> dari <span className="font-medium">{totalPages}</span>
-                </div>
-                <div className="flex gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page <= 1 || loading}
-                        className="h-8 w-8 p-0"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page >= totalPages || loading}
-                        className="h-8 w-8 p-0"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+            {/* Modal Riwayat */}
             {isOpen && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-xl w-[900px] max-h-[80vh] overflow-y-auto shadow-xl">
-      <h2 className="text-lg font-bold mb-2">Riwayat Kunjungan</h2>
-      
-      <p className="text-sm text-slate-600 mb-4">
-  {selectedPatient?.full_name}
-</p>
-
-{/* 🔥 TARUH DI SINI */}
-{loadingHistory ? (
-  <p className="text-sm text-slate-500">Loading...</p>
-) : historyData.length === 0 ? (
-  <p className="text-sm text-slate-500">Belum ada riwayat</p>
-) : (
-  <>
-    <p className="text-xs text-slate-500 mb-2">
-      Total Kunjungan: <span className="font-semibold">{historyData.length}</span>
-    </p>
-
-    <div className="max-h-[500px] overflow-y-auto border rounded-lg">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-100 text-xs text-slate-600 sticky top-0">
-  <tr>
-    <th className="p-3 text-left">Tanggal</th>
-    <th className="p-3 text-left">Diagnosa</th>
-    <th className="p-3 text-left">Tipe Pasien</th>
-    <th className="p-3 text-left">Tipe Paket</th>
-    <th className="p-3 text-left">Fisioterapis</th>
-    <th className="p-3 text-right">Nominal</th>
-  </tr>
-</thead>
-
-        <tbody>
-          {historyData.map((item, i) => (
-            <tr 
-              key={i} 
-              className="border-t hover:bg-slate-50 transition"
-            >
-              <td className="p-3 text-slate-700">
-  {formatTanggal(item.recap_date)}
-</td>
-
-<td className="p-3 text-sm text-slate-600 max-w-[250px] whitespace-normal break-words">
-  {Array.isArray(item.diagnosis_labels)
-  ? item.diagnosis_labels.join(', ')
-  : item.diagnosis_labels || '-'}
-</td>
-
-<td className="p-3 text-xs">
-  <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">
-    {item.patient_type || '-'}
-  </span>
-</td>
-
-<td className="p-3 text-xs">
-  {item.package_type ? (
-    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-      {item.package_type}
-    </span>
-  ) : (
-    <span className="text-slate-400">Non Paket</span>
-  )}
-</td>
-
-<td className="p-3 text-xs text-slate-600">
-  {item.therapist_name || '-'}
-</td>
-
-<td className="p-3 text-right font-semibold text-slate-800">
-  {item.amount 
-    ? `Rp ${item.amount.toLocaleString('id-ID')}` 
-    : '-'}
-</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </>
-)}
-
-<Button 
-  className="mt-4"
-  onClick={() => setIsOpen(false)}
->
-  Tutup
-</Button>
-    </div>
-  </div>
-)}
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                    <div className={cn("bg-white rounded-xl shadow-xl overflow-y-auto", isPWA ? "w-full max-h-[90vh]" : "w-[900px] max-h-[80vh]")}>
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900">Riwayat Kunjungan</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">{selectedPatient?.full_name}</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>Tutup</Button>
+                        </div>
+                        <div className="p-5">
+                            {loadingHistory ? (
+                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-500" /></div>
+                            ) : historyData.length === 0 ? (
+                                <p className="text-sm text-slate-500 text-center py-8">Belum ada riwayat kunjungan</p>
+                            ) : (
+                                <>
+                                    <p className="text-xs text-slate-500 mb-3">Total Kunjungan: <span className="font-semibold">{historyData.length}</span></p>
+                                    {isPWA ? (
+                                        <div className="space-y-3">
+                                            {historyData.map((item, i) => (
+                                                <div key={i} className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-xs font-semibold text-slate-700">{formatTanggal(item.recap_date)}</p>
+                                                        <span className="text-xs font-bold text-slate-800">{item.amount ? `Rp ${item.amount.toLocaleString('id-ID')}` : '-'}</span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600">{Array.isArray(item.diagnosis_labels) ? item.diagnosis_labels.join(', ') : item.diagnosis_labels || '-'}</p>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600">{item.patient_type || '-'}</span>
+                                                        {item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">{item.package_type}</span> : <span className="text-[10px] text-slate-400">Non Paket</span>}
+                                                        <span className="text-[10px] text-slate-500">{item.therapist_name || '-'}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="border rounded-lg overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-slate-100 text-xs text-slate-600 sticky top-0">
+                                                    <tr>
+                                                        <th className="p-3 text-left">Tanggal</th>
+                                                        <th className="p-3 text-left">Diagnosa</th>
+                                                        <th className="p-3 text-left">Tipe Pasien</th>
+                                                        <th className="p-3 text-left">Tipe Paket</th>
+                                                        <th className="p-3 text-left">Fisioterapis</th>
+                                                        <th className="p-3 text-right">Nominal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {historyData.map((item, i) => (
+                                                        <tr key={i} className="border-t hover:bg-slate-50 transition">
+                                                            <td className="p-3 text-slate-700">{formatTanggal(item.recap_date)}</td>
+                                                            <td className="p-3 text-xs text-slate-600 max-w-[250px] whitespace-normal break-words">{Array.isArray(item.diagnosis_labels) ? item.diagnosis_labels.join(', ') : item.diagnosis_labels || '-'}</td>
+                                                            <td className="p-3 text-xs"><span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">{item.patient_type || '-'}</span></td>
+                                                            <td className="p-3 text-xs">{item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{item.package_type}</span> : <span className="text-slate-400">Non Paket</span>}</td>
+                                                            <td className="p-3 text-xs text-slate-600">{item.therapist_name || '-'}</td>
+                                                            <td className="p-3 text-right font-semibold text-slate-800">{item.amount ? `Rp ${item.amount.toLocaleString('id-ID')}` : '-'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
