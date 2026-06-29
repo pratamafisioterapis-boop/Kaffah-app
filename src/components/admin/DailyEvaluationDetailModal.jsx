@@ -16,7 +16,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
+      <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
         <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pr-4">
             <div>
@@ -38,7 +38,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-0 bg-slate-50/30">
+        <ScrollArea className="flex-1 min-h-0 p-0 bg-slate-50/30">
           <div className="p-6 space-y-8">
             {sortedRecords.length === 0 ? (
                 <div className="text-center py-10 text-slate-500">
