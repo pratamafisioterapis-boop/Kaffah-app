@@ -279,12 +279,12 @@ const pwaNavItems = useMemo(() => {
       },
       {
         label: 'Physiotherapist Management',
-        path: '/owner/therapist-management',
+        path: '/owner/physiotherapist-management',
         icon: 'Users'
       },
       {
         label: 'Accounting System',
-        path: '/owner/finance-dashboard',
+        path: '/owner/accounting',
         icon: 'DollarSign'
       },
       {
@@ -575,9 +575,12 @@ const pwaNavItems = useMemo(() => {
                   : location.pathname.includes('/appointments') ? 'Appointments'
                   : location.pathname.includes('/daily-recap') ? 'Daily Recaps'
                   : location.pathname.includes('/package-recaps') ? 'Package Recaps'
+                  : location.pathname.includes('/database-patients') ? 'Database Patients'
                   : location.pathname.includes('/medical-records') ? 'Medical Records'
                   : location.pathname.includes('/therapist-management') ? 'Therapist Management'
+                  : location.pathname.includes('/physiotherapist-management') ? 'Therapist Management'
                   : location.pathname.includes('/finance-dashboard') ? 'Accounting System'
+                  : location.pathname.includes('/accounting') ? 'Accounting System'
                   : location.pathname.includes('/settings') ? 'Setup'
                   : 'Owner'}
               </h1>
