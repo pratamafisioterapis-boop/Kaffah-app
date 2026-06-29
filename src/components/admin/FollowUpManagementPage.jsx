@@ -260,25 +260,29 @@ const getCount = (type) => {
   // UI
   // ===============================
   return (
-  <div className="p-8 max-w-7xl mx-auto space-y-8">
+  <div className="space-y-6">
 
-    {/* ================= HEADER ================= */}
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex justify-between items-center">
-
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Follow Up Management
-        </h1>
-        <p className="text-slate-500 mt-1 text-sm">
-          Kelola antrian pesan WhatsApp otomatis
-        </p>
-      </div>
-
-      <div className="flex items-center gap-8">
+    {/* Hero Banner */}
+    <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Follow Up Management</h2>
+            <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan WhatsApp otomatis</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-8">
 
         {/* Bablast */}
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-slate-600">
+          <span className="text-sm font-medium text-white">
             Bablast
           </span>
 
@@ -297,11 +301,11 @@ const getCount = (type) => {
         </div>
 
         {/* Divider */}
-        <div className="h-6 w-px bg-slate-200" />
+        <div className="h-6 w-px bg-white/20" />
 
         {/* Chat AI */}
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-slate-600">
+          <span className="text-sm font-medium text-white">
             Chat AI
           </span>
 
@@ -319,6 +323,7 @@ const getCount = (type) => {
           </button>
         </div>
 
+      </div>
       </div>
     </div>
 

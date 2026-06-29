@@ -142,33 +142,41 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
   return (
     <div className="space-y-6 w-full font-sans">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Akuntansi & Keuangan</h1>
-          <p className="text-slate-500 mt-1">Kelola arus kas operasional klinik (Admin)</p>
-        </div>
-
-        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-          <div className="px-2 text-slate-400">
-             <Calendar className="w-4 h-4" />
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <Wallet className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Akuntansi & Keuangan</h2>
+              <p className="text-sm text-slate-400 mt-0.5">Kelola arus kas operasional klinik (Admin)</p>
+            </div>
           </div>
-          <input 
-            type="date" 
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-slate-700 w-32"
-            value={dateRange.startDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-          />
-          <span className="text-slate-300">|</span>
-          <input 
-            type="date" 
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-slate-700 w-32"
-            value={dateRange.endDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-          />
-          <Button onClick={fetchData} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm h-8">
-            <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
-          </Button>
+          <div className="flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm p-1.5 rounded-xl shrink-0">
+            <div className="px-2 text-indigo-300">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <input
+              type="date"
+              className="bg-transparent border-none text-sm font-medium focus:ring-0 text-white [color-scheme:dark] w-32"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+            />
+            <span className="text-white/30">|</span>
+            <input
+              type="date"
+              className="bg-transparent border-none text-sm font-medium focus:ring-0 text-white [color-scheme:dark] w-32"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+            />
+            <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white rounded-lg h-8">
+              <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
+            </Button>
+          </div>
         </div>
       </div>
 

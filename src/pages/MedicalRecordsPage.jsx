@@ -8,20 +8,17 @@ const MedicalRecordsPage = () => {
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-2xl p-5 md:p-6"
-        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)', boxShadow: '0 8px 32px rgba(15,23,42,0.18)' }}>
-        <div className="absolute top-0 right-0 w-56 h-56 rounded-full blur-3xl pointer-events-none" style={{ background: '#3b82f620', transform: 'translate(30%, -40%)' }} />
-        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-2xl pointer-events-none" style={{ background: '#6366f115', transform: 'translate(-30%, 40%)' }} />
-        <div className="relative flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-            <FileText className="w-5 h-5" style={{ color: '#818cf8' }} />
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+            <FileText className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#818cf8' }}>Kaffah Physiotherapy</p>
-            <h1 className="text-white text-lg font-bold leading-tight">Medical Records & Evaluation</h1>
-            <p className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>Pusat data rekam medis pasien dan evaluasi SOAP</p>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Medical Records & Evaluation</h2>
+            <p className="text-sm text-slate-400 mt-0.5">Pusat data rekam medis pasien dan evaluasi SOAP</p>
           </div>
         </div>
       </div>

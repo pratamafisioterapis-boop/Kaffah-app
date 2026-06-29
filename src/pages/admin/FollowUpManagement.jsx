@@ -579,17 +579,26 @@ console.log({
   };
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-500 p-6 max-w-[1600px] mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            Follow Up Management
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse ml-2" title="Live Updates Active" />
-          </h1>
-          <p className="text-slate-500 mt-1">Kelola antrian pesan otomatis, pengingat jadwal, dan notifikasi paket.</p>
-        </div>
-        <div className="flex items-center gap-3">
-            {selectedIds.size > 0 && (
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 p-6 max-w-[1600px] mx-auto">
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight flex items-center gap-2">
+                Follow Up Management
+                <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" title="Live Updates Active" />
+              </h2>
+              <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan otomatis, pengingat jadwal, dan notifikasi paket</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+        {selectedIds.size > 0 && (
                 <Button 
                     variant="destructive" 
                     onClick={() => {
@@ -629,10 +638,11 @@ console.log({
             <Badge variant="outline" className="hidden md:flex py-1.5 px-3 border-slate-200 bg-slate-50 text-slate-600">
                 Auto-Expire: {format(startOfDay(new Date()), 'dd MMM yyyy')}
             </Badge>
-            <Button variant="outline" onClick={fetchQueue} disabled={loading} className="gap-2 border-slate-200 hover:bg-slate-50">
+            <Button variant="outline" onClick={fetchQueue} disabled={loading} className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
                 <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
             </Button>
+          </div>
         </div>
       </div>
 

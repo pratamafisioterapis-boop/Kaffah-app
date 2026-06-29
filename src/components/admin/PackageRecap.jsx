@@ -158,37 +158,43 @@ const fetchData = async () => {
   return (
     <div className="space-y-6">
 
-      {/* HEADER MODERN */}
+      {/* HERO BANNER */}
       {!hideControls && (
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-6 rounded-2xl border border-slate-200">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-900">Tracking Paket</h2>
-            <p className="text-base text-slate-500 mt-1">
-              Monitor penggunaan paket pasien secara real-time
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                className="pl-9 h-11 text-base border-slate-300"
-                placeholder="Cari pasien / paket..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        <>
+        <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+          <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
             </div>
-
-            <Button
-              variant="outline"
-              onClick={() => setRefreshTrigger(prev => prev + 1)}
-              className="h-11 px-4"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Tracking Paket</h2>
+              <p className="text-sm text-slate-400 mt-0.5">Monitor penggunaan paket pasien secara real-time</p>
+            </div>
           </div>
         </div>
+        <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="relative flex-1 md:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              className="pl-9 border-slate-300"
+              placeholder="Cari pasien / paket..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setRefreshTrigger(prev => prev + 1)}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+        </>
       )}
 
       {/* TABLE MODERN */}

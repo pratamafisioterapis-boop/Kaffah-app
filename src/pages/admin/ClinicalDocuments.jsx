@@ -14,9 +14,19 @@ const ClinicalDocuments = () => {
       </Helmet>
 
       <div className="space-y-6 animate-in fade-in duration-500">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Clinical Documents</h1>
-          <p className="text-slate-500">Generate medical resumes and physiotherapy certificates.</p>
+        {/* Hero Banner */}
+        <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+          <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Clinical Documents</h2>
+              <p className="text-sm text-slate-400 mt-0.5">Generate medical resumes and physiotherapy certificates</p>
+            </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">

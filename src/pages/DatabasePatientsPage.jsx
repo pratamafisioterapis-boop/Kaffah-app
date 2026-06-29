@@ -37,24 +37,37 @@ const DatabasePatientsPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Database Patients</h1>
-          <p className="text-slate-500 mt-1">Kelola data pasien dan riwayat paket perawatan secara terpusat.</p>
-        </div>
-        
-        {role === 'owner' && (
-             <Dialog>
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Database Patients</h2>
+              <p className="text-sm text-slate-400 mt-0.5">Kelola data pasien dan riwayat paket perawatan secara terpusat</p>
+            </div>
+          </div>
+          {role === 'owner' && (
+            <div className="shrink-0">
+              <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className="gap-2 bg-white hover:bg-slate-50">
-                        <Upload className="w-4 h-4"/> Import Pasien CSV
-                    </Button>
+                  <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
+                    <Upload className="w-4 h-4"/> Import Pasien CSV
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <PatientImportCSV onImportSuccess={() => window.location.reload()} />
+                  <PatientImportCSV onImportSuccess={() => window.location.reload()} />
                 </DialogContent>
-             </Dialog>
-         )}
+              </Dialog>
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="patients" className="w-full space-y-6">

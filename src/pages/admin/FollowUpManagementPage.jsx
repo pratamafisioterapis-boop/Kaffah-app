@@ -10,7 +10,7 @@ import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const FollowUpManagementPage = () => {
@@ -143,7 +143,44 @@ const FollowUpManagementPage = () => {
 
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
-             <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+            {/* Hero Banner */}
+            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+                    <MessageCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Follow Up Management</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan WhatsApp otomatis hari ini</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => handleGenerate('therapy_reminder')}
+                    disabled={generating === 'therapy_reminder'}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    {generating === 'therapy_reminder' && <Loader2 className="w-3 h-3 animate-spin mr-1"/>}
+                    Gen. Reminder
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                    className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Alert className="bg-blue-50 border-blue-200 text-blue-800">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertTitle className="text-blue-900 font-semibold">Automated Follow Up System</AlertTitle>
                 <AlertDescription className="text-xs mt-1 space-y-1">
@@ -152,32 +189,6 @@ const FollowUpManagementPage = () => {
                     <p>• <strong>Manual Generation:</strong> Use the buttons below to manually trigger generation if auto-scheduler fails.</p>
                 </AlertDescription>
             </Alert>
-
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Follow Up Management</h1>
-                    <p className="text-slate-500 mt-1">Kelola antrian pesan WhatsApp otomatis hari ini</p>
-                </div>
-                <div className="flex gap-2">
-                     <Button 
-                        variant="outline" size="sm" 
-                        onClick={() => handleGenerate('therapy_reminder')}
-                        disabled={generating === 'therapy_reminder'}
-                    >
-                        {generating === 'therapy_reminder' && <Loader2 className="w-3 h-3 animate-spin mr-1"/>}
-                        Gen. Reminder
-                    </Button>
-                    <Button 
-                        variant="outline" size="sm" 
-                        onClick={handleRefresh}
-                        disabled={isLoading}
-                        className="gap-2"
-                    >
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                        Refresh
-                    </Button>
-                </div>
-            </div>
 
             {error && (
                 <Alert variant="destructive">

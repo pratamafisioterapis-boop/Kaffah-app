@@ -282,16 +282,27 @@ export const PackageRecapsContent = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Package Recaps</h1>
-                    <p className="text-slate-500 text-sm mt-1">Kelola status dan riwayat paket pasien</p>
+            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Package Recaps</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">Kelola status dan riwayat paket pasien</p>
+                  </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto shadow-sm">
-                        <Plus className="w-4 h-4 mr-2" /> ➕ Tambahkan Pasien Paket
-                    </Button>
+                <div className="shrink-0">
+                  <Button onClick={() => setIsAddModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 shadow-lg w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
+                  </Button>
                 </div>
+              </div>
             </div>
 
             {/* Restructured Filter Section */}
