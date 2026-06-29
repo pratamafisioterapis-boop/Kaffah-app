@@ -18,11 +18,11 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   getPatients, 
-  getActivePhysiotherapists,
   createMedicalRecordDetailed,
   updateMedicalRecordDetailed,
   getDiagnosisOptions 
 } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -133,7 +133,7 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
     try {
       const [patientsRes, therapistsList, diagnosesRes] = await Promise.all([
   getPatients(search),
-  getActivePhysiotherapists(),
+  supabase.from('physiotherapists').select('id, name').order('name', { ascending: true }),
   getDiagnosisOptions()
 ]);
 console.log('DIAGNOSES RES:', diagnosesRes);
