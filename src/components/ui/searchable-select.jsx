@@ -72,15 +72,14 @@ const SearchableSelect = ({
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
-    if (!searchTerm || (searchTerm === selectedLabels && !multiple)) {
-      return safeOptions;
+    const lowerTerm = searchTerm ? searchTerm.toLowerCase().trim() : '';
+    
+    if (!lowerTerm || (searchTerm === selectedLabels && !multiple)) {
+      // Tanpa search: tampilkan max 50 opsi saja agar tidak berat
+      return safeOptions.slice(0, 50);
     }
     
-    const lowerTerm = searchTerm.toLowerCase().trim();
-    
-    // Debug logging as requested
-    console.log(`[SearchableSelect] Filtering for: "${lowerTerm}"`);
-    
+    // Ada search term: filter semua opsi
     return safeOptions.filter(opt => {
       const labelMatch = String(opt.label || '').toLowerCase().includes(lowerTerm);
       const valueMatch = String(opt.value || '').toLowerCase().includes(lowerTerm);
