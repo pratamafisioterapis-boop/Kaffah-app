@@ -42,6 +42,7 @@ const normalizePackageStatus = (status) => {
 
 const PackageRecap = ({ hideControls = false }) => {
   console.log("PACKAGE RECAP RENDER");
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,8 +159,8 @@ const fetchData = async () => {
   return (
     <div className="space-y-6">
 
-      {/* HERO BANNER */}
-      {!hideControls && (
+      {/* HERO BANNER — sembunyikan di PWA */}
+      {!hideControls && !isPWA && (
         <>
         <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
@@ -186,10 +187,7 @@ const fetchData = async () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setRefreshTrigger(prev => prev + 1)}
-          >
+          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -197,7 +195,85 @@ const fetchData = async () => {
         </>
       )}
 
-      {/* TABLE MODERN */}
+      {/* SEARCH BAR PWA */}
+      {!hideControls && isPWA && (
+        <div className="flex items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              className="pl-9 border-slate-200 bg-slate-50"
+              placeholder="Cari pasien / paket..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="icon" onClick={() => setRefreshTrigger(prev => prev + 1)}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      )}
+
+      {/* CARD LAYOUT PWA */}
+      {isPWA ? (
+        <div className="space-y-3">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+              <p className="text-sm text-slate-400">Memuat data paket...</p>
+            </div>
+          ) : paginatedData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+              <PackageIcon className="w-12 h-12 text-slate-300 mb-3" />
+              <p className="text-slate-500 font-medium">Belum ada data paket</p>
+            </div>
+          ) : (
+            paginatedData.map((item) => {
+              const sisaHari = calculateSisaHari(item);
+              return (
+                <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+                  {/* Baris 1: Nama + Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm leading-tight">{item.patient_name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.package_name}</p>
+                    </div>
+                    {getStatusBadge(item.computed_status)}
+                  </div>
+
+                  {/* Baris 2: Sesi & Sisa Hari */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
+                      <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
+                        {item.computed_sessions_used}<span className="text-slate-400 font-normal">/{item.computed_total_sessions}</span>
+                      </p>
+                    </div>
+                    <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                      <p className="text-[10px] text-blue-400 font-medium uppercase tracking-wide">Sisa Sesi</p>
+                      <p className="text-base font-bold text-blue-600 mt-0.5">{item.computed_sessions_remaining}</p>
+                    </div>
+                    {sisaHari !== null && (
+                      <div className={`flex-1 rounded-xl p-3 text-center border ${getSisaHariColor(sisaHari)}`}>
+                        <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
+                        <p className="text-base font-bold mt-0.5">{sisaHari}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Baris 3: Tgl Selesai */}
+                  {item.end_date && (
+                    <div className="flex items-center gap-2 text-xs text-slate-500 border-t border-slate-100 pt-2">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Selesai: <span className="font-semibold text-slate-700">{format(new Date(item.end_date), 'dd MMM yyyy', { locale: id })}</span></span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+      /* TABLE DESKTOP */
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50 text-base">
@@ -212,54 +288,37 @@ const fetchData = async () => {
               <TableHead className="px-6 py-4 text-right font-semibold">Aksi</TableHead>
             </TableRow>
           </TableHeader>
-
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-16 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
-                  <p className="text-base text-slate-500">
-                    Sedang memuat data paket...
-                  </p>
+                  <p className="text-base text-slate-500">Sedang memuat data paket...</p>
                 </TableCell>
               </TableRow>
             ) : paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-20 text-center">
                   <PackageIcon className="w-14 h-14 mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-xl font-medium text-slate-900">
-                    Belum ada data paket
-                  </h3>
+                  <h3 className="text-xl font-medium text-slate-900">Belum ada data paket</h3>
                 </TableCell>
               </TableRow>
             ) : (
               paginatedData.map((item) => {
                 const sisaHari = calculateSisaHari(item);
                 return (
-                  <TableRow
-                    key={item.id}
-                    className=""
-                  >
-                    <TableCell className="px-6 py-4 text-base font-semibold">
-                      {item.patient_name}
-                    </TableCell>
-
-                    <TableCell className="px-6 py-4 text-base">
-                      {item.package_name}
-                    </TableCell>
-
+                  <TableRow key={item.id}>
+                    <TableCell className="px-6 py-4 text-base font-semibold">{item.patient_name}</TableCell>
+                    <TableCell className="px-6 py-4 text-base">{item.package_name}</TableCell>
                     <TableCell className="px-6 py-4 text-center text-base font-mono">
                       {item.computed_sessions_used} / {item.computed_total_sessions}
                     </TableCell>
-
                     <TableCell className="px-6 py-4 text-center text-base font-semibold text-blue-600">
                       {item.computed_sessions_remaining}
                     </TableCell>
-
                     <TableCell className="px-6 py-4 text-center text-base">
                       {item.end_date ? format(new Date(item.end_date), 'dd MMM yyyy', { locale: id }) : '-'}
                     </TableCell>
-
                     <TableCell className="px-6 py-4 text-center">
                       {sisaHari !== null && (
                         <Badge variant="outline" className={getSisaHariColor(sisaHari)}>
@@ -267,17 +326,14 @@ const fetchData = async () => {
                         </Badge>
                       )}
                     </TableCell>
-
                     <TableCell className="px-6 py-4 text-center">
                       {getStatusBadge(item.computed_status)}
                     </TableCell>
-
                     <TableCell className="px-6 py-4 text-right">
                       <Button variant="ghost" className="h-10 w-10 rounded-xl">
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                       </Button>
                     </TableCell>
-
                   </TableRow>
                 );
               })
@@ -285,6 +341,7 @@ const fetchData = async () => {
           </TableBody>
         </Table>
       </div>
+      )}
 
       <DeletePackageConfirmationModal
         isOpen={deleteModalOpen}

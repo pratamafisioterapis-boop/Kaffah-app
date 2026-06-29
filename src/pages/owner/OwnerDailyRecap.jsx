@@ -267,7 +267,7 @@ const OwnerDailyRecap = () => {
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+      {!isPWA && <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
@@ -281,7 +281,7 @@ const OwnerDailyRecap = () => {
             <p className="text-sm text-slate-400 mt-0.5">Kelola data kunjungan dan pendapatan harian klinik</p>
           </div>
         </div>
-      </div>
+      </div>}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan harian klinik</p></div>
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
