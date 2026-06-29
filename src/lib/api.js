@@ -1839,10 +1839,8 @@ export const createAdminIncome = async (payload) => {
       .from('admin_income')
       .insert({
         date: payload.date || payload.transaction_date || null,
-        transaction_date: payload.transaction_date || payload.date || null,
         amount: payload.amount,
         category: payload.category,
-        source: payload.source || null,
         sub_category: payload.sub_category || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
