@@ -729,10 +729,13 @@ export const getPatients = async (searchTerm = '') => {
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
-      query = query.or(`full_name.ilike.%${searchTerm.trim()}%,phone.ilike.%${searchTerm.trim()}%`);
+      query = query.or(`full_name.ilike.%${searchTerm.trim()}%,medical_record_number.ilike.%${searchTerm.trim()}%`);
+      query = query.limit(50);
+    } else {
+      query = query.limit(50);
     }
 
-    const { data, error } = await query.range(0, 4000);
+    const { data, error } = await query;
     if (error) return { error };
 
     const formattedData = (data || []).map(p => ({

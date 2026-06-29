@@ -128,11 +128,11 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
     }
   }, [isOpen, recordData]);
 
-  const fetchDropdownData = async () => {
+  const fetchDropdownData = async (search = '') => {
     setLoading(true);
     try {
       const [patientsRes, therapistsList, diagnosesRes] = await Promise.all([
-  getPatients(),
+  getPatients(search),
   getActivePhysiotherapists(),
   getDiagnosisOptions()
 ]);
@@ -347,6 +347,15 @@ onClose();
                         options={patients}
                         value={formData.patient_id}
                         onChange={(val) => handleSelectChange('patient_id', val)}
+                        onSearch={async (term) => {
+                          if (term && term.length >= 2) {
+                            const res = await getPatients(term);
+                            if (res.data) setPatients(res.data);
+                          } else if (!term) {
+                            const res = await getPatients('');
+                            if (res.data) setPatients(res.data);
+                          }
+                        }}
                         placeholder="Cari pasien (RM - Nama)..."
                         disabled={!!recordData}
                       />
