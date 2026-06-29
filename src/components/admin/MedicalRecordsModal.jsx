@@ -492,7 +492,7 @@ onClose();
               </div>
 
               {/* 7. INFORMASI TERAPIS */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-xl overflow-visible" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Informasi Terapis" icon={UserCog} isExpanded={expandedSections.therapist} onToggle={() => toggleSection('therapist')} color="#64748b" />
                 {expandedSections.therapist && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
