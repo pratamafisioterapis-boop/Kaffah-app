@@ -1,8 +1,5 @@
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import OwnerBookingCalendar from '@/components/owner/OwnerBookingCalendar';
-import OwnerAppointmentList from '@/components/owner/OwnerAppointmentList';
-import { Calendar, List } from 'lucide-react';
 
 const AppointmentPage = () => {
   return (
