@@ -81,25 +81,6 @@ const OwnerDailyRecap = () => {
 
   return (
     <div className="space-y-6">
-      {/* Tools Section - Only Delete now */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex-1 w-full">
-            <h3 className="text-red-800 font-semibold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" /> Area Pemilik: Hapus Masal
-            </h3>
-            <p className="text-sm text-red-600 mb-3">Hapus data rekap harian secara permanen.</p>
-            <Button 
-              variant="destructive" 
-              onClick={() => setDeleteDialogOpen(true)}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-              size="sm"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Hapus Berdasarkan Tanggal
-            </Button>
-          </div>
-      </div>
-
       {/* Re-use the Admin Component for viewing/managing individual items */}
       <DailyRecap />
 

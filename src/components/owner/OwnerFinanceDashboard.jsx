@@ -268,43 +268,42 @@ const OwnerFinanceDashboard = () => {
     setActiveFormType(type);
     setIsFormOpen(true);
   };
-  return <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 p-4 md:p-8 space-y-8 font-sans text-slate-900">
+  return <div className="w-full space-y-6 font-sans text-slate-900">
 
-      {/* Header Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 md:p-6 shadow-xl sticky top-2 z-30">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5 text-emerald-400" />
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+              <Wallet className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Kaffah Physiotherapy</p>
-              <h1 className="text-white text-xl font-bold leading-tight">Accounting System</h1>
-              <p className="text-slate-400 text-xs mt-0.5">Manage finances, analytics & reporting</p>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Accounting System</h2>
+              <p className="text-sm text-slate-400 mt-0.5">Manage finances, analytics & reporting</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
+              <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
               <input
                 type="date"
                 value={dateRange.startDate}
                 onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px]"
+                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
               />
-              <span className="text-slate-500 shrink-0">–</span>
+              <span className="text-white/30 shrink-0">–</span>
               <input
                 type="date"
                 value={dateRange.endDate}
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px]"
+                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
               />
             </div>
             <button
               onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-              className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/15 transition-colors text-slate-400 hover:text-white shrink-0"
+              className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors text-slate-300 hover:text-white shrink-0"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />

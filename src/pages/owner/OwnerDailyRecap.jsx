@@ -266,8 +266,24 @@ const OwnerDailyRecap = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan harian klinik</p></div>
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Rekap Harian</h2>
+            <p className="text-sm text-slate-400 mt-0.5">Kelola data kunjungan dan pendapatan harian klinik</p>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan harian klinik</p></div>
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                 <div className="flex items-center px-2 text-xs font-medium text-slate-500"><Calendar className="w-3.5 h-3.5 mr-1.5" />Periode:</div>

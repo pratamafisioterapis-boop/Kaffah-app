@@ -911,81 +911,89 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 space-y-8 animate-in fade-in zoom-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-          <Settings className="w-8 h-8 text-slate-700" />
-          Pengaturan Sistem
-        </h1>
-        <p className="text-slate-500 mt-2">Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi.</p>
+    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+
+      {/* Hero Banner */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+            <Settings className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Pengaturan Sistem</h2>
+            <p className="text-sm text-slate-400 mt-0.5">Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi</p>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="admin" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 bg-slate-100 p-1 rounded-xl h-auto gap-1">
-          <TabsTrigger value="admin" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <Users className="w-3 h-3" /> Admin & Staff
+        <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <TabsTrigger value="admin" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <Users className="w-3.5 h-3.5" /> Admin & Staff
           </TabsTrigger>
-          <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <MessageCircle className="w-3 h-3" /> WhatsApp
+          <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
-          <TabsTrigger value="accounting_cats" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <BookOpen className="w-3 h-3" /> Akunting
+          <TabsTrigger value="accounting_cats" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <BookOpen className="w-3.5 h-3.5" /> Akunting
           </TabsTrigger>
-          <TabsTrigger value="media_assets" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <ImageIcon className="w-3 h-3" /> Media
+          <TabsTrigger value="media_assets" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <ImageIcon className="w-3.5 h-3.5" /> Media
           </TabsTrigger>
-          
-          <TabsTrigger value="diagnosis_service" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <FolderTree className="w-3 h-3" /> Diagnosa & Layanan
+          <TabsTrigger value="diagnosis_service" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <FolderTree className="w-3.5 h-3.5" /> Diagnosa & Layanan
           </TabsTrigger>
-
-          <TabsTrigger value="source" className="data-[state=active]:bg-white rounded-lg py-2">Sumber</TabsTrigger>
-          <TabsTrigger value="type" className="data-[state=active]:bg-white rounded-lg py-2">Tipe Pasien</TabsTrigger>
-          <TabsTrigger value="package" className="data-[state=active]:bg-white rounded-lg py-2">Tipe Paket</TabsTrigger>
-          <TabsTrigger value="payment" className="data-[state=active]:bg-white rounded-lg py-2">Pembayaran</TabsTrigger>
-          {/* Discount Type tab */}
-          <TabsTrigger value="discount" className="data-[state=active]:bg-white rounded-lg py-2 flex gap-1 items-center justify-center">
-             <Tag className="w-3 h-3" /> Jenis Diskon
+          <TabsTrigger value="source" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
+            Sumber
+          </TabsTrigger>
+          <TabsTrigger value="type" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
+            Tipe Pasien
+          </TabsTrigger>
+          <TabsTrigger value="package" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
+            Tipe Paket
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
+            Pembayaran
+          </TabsTrigger>
+          <TabsTrigger value="discount" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <Tag className="w-3.5 h-3.5" /> Jenis Diskon
           </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
-            <TabsContent value="admin">
-              <AdminManager />
-            </TabsContent>
-
-            <TabsContent value="whatsapp_settings">
-              <WhatsAppSettings />
-            </TabsContent>
-
-            <TabsContent value="accounting_cats">
-              <AccountingCategoryManager />
-            </TabsContent>
-
-            <TabsContent value="media_assets" className="space-y-6">
-              <MediaAssetManager onUploadSuccess={handleUploadSuccess} />
-              <MediaAssetGallery key={reloadGallery} />
-            </TabsContent>
-
-            <TabsContent value="diagnosis_service">
-              <DiagnosisServiceManager />
-            </TabsContent>
-
-            <TabsContent value="source">
-              <OptionManager title="Sumber Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />
-            </TabsContent>
-            <TabsContent value="type">
-              <OptionManager title="Kategori Tipe Pasien" description="Kategori pasien (Normal, Homecare, dll)." category="patient_type" />
-            </TabsContent>
-            <TabsContent value="package">
-              <OptionManager title="Tipe Paket" description="Jenis paket perawatan." category="tipe_paket" />
-            </TabsContent>
-            <TabsContent value="payment">
-              <OptionManager title="Metode Pembayaran" description="Opsi pembayaran." category="payment_method" />
-            </TabsContent>
-            <TabsContent value="discount">
-              <DiscountTypeManager />
-            </TabsContent>
+          <TabsContent value="admin">
+            <AdminManager />
+          </TabsContent>
+          <TabsContent value="whatsapp_settings">
+            <WhatsAppSettings />
+          </TabsContent>
+          <TabsContent value="accounting_cats">
+            <AccountingCategoryManager />
+          </TabsContent>
+          <TabsContent value="media_assets" className="space-y-6">
+            <MediaAssetManager onUploadSuccess={handleUploadSuccess} />
+            <MediaAssetGallery key={reloadGallery} />
+          </TabsContent>
+          <TabsContent value="diagnosis_service">
+            <DiagnosisServiceManager />
+          </TabsContent>
+          <TabsContent value="source">
+            <OptionManager title="Sumber Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />
+          </TabsContent>
+          <TabsContent value="type">
+            <OptionManager title="Kategori Tipe Pasien" description="Kategori pasien (Normal, Homecare, dll)." category="patient_type" />
+          </TabsContent>
+          <TabsContent value="package">
+            <OptionManager title="Tipe Paket" description="Jenis paket perawatan." category="tipe_paket" />
+          </TabsContent>
+          <TabsContent value="payment">
+            <OptionManager title="Metode Pembayaran" description="Opsi pembayaran." category="payment_method" />
+          </TabsContent>
+          <TabsContent value="discount">
+            <DiscountTypeManager />
+          </TabsContent>
         </div>
       </Tabs>
     </div>
