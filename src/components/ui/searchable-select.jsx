@@ -212,7 +212,7 @@ const SearchableSelect = ({
       </div>
 
       {open && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100">
           {isLoading ? (
              <div className="p-4 flex items-center justify-center text-slate-500 text-sm">
                <Loader2 className="w-4 h-4 animate-spin mr-2 text-blue-500" />
