@@ -533,7 +533,7 @@ const pwaNavItems = useMemo(() => {
 
       <main className={cn(
         "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
-        isPWA && role === 'therapist' ? "pt-0" : "pt-0"
+        isPWA && (role === 'therapist' || role === 'admin') ? "pt-0" : "pt-0"
       )}>
 
         {/* Header khusus PWA Therapist */}
@@ -598,7 +598,7 @@ const pwaNavItems = useMemo(() => {
 
         <div className={cn(
           "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
-          isPWA && (role === 'therapist' || role === 'owner') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
+          isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
            {children}
         </div>

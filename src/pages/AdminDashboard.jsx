@@ -825,19 +825,7 @@ const AdminDashboard = () => {
     { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' }, 
     { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
   ];
-const isPWA =
-  window.matchMedia('(display-mode: standalone)').matches ||
-  window.navigator.standalone === true ||
-  document.referrer.includes('android-app://');
-  // MODE PWA ADMIN TANPA SIDEBAR
-if (isPWA) {
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <AdminAppointmentBooking />
-    </div>
-  );
-}
-  return (
+return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
       <Routes>
         <Route path="/" element={<AdminDashboardHome />} />
