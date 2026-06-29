@@ -227,15 +227,11 @@ const OwnerBookingCalendar = () => {
                 <PopoverTrigger asChild>
                 <Button 
   variant="outline" 
-  className="flex-1 min-w-0 max-w-full overflow-hidden justify-start text-left font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0"
+  className="flex-1 min-w-0 max-w-full overflow-hidden justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0 px-1"
 >
-  <CalendarIcon className="mr-2 h-4 w-4 text-slate-500 shrink-0" />
-
-  <span className="text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
-    {window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
-      ? format(date, "EEE, dd MMM yyyy", { locale: idLocale })
-      : format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })
-    }
+  <CalendarIcon className="mr-1.5 h-4 w-4 text-slate-500 shrink-0" />
+  <span className="text-xs leading-tight truncate">
+    {format(date, "dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>
                 </PopoverTrigger>
