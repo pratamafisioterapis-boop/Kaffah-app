@@ -231,7 +231,7 @@ const OwnerBookingCalendar = () => {
 >
   <CalendarIcon className="mr-1.5 h-4 w-4 text-slate-500 shrink-0" />
   <span className="text-xs leading-tight truncate">
-    {format(date, "dd MMM yyyy", { locale: idLocale })}
+    {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>
                 </PopoverTrigger>
