@@ -15,6 +15,7 @@ import ImportSummaryModal from '@/components/owner/ImportSummaryModal';
 import { validatePatientId } from '@/lib/validationHelpers';
 
 const DailyEvaluationReadOnly = () => {
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
@@ -132,12 +133,14 @@ const DailyEvaluationReadOnly = () => {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex-1"><h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />Daftar Evaluasi Harian (SOAP)</h2><p className="text-sm text-slate-500 mt-1">Pantau perkembangan pasien melalui catatan SOAP dari terapis.</p></div>
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!isPWA && (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                 <Button variant="outline" onClick={handleImportClick} disabled={isImporting} size="sm" className="w-full sm:w-auto"><Upload className="w-4 h-4 mr-2" />{isImporting ? 'Importing...' : 'Import CSV'}</Button>
                 <Button onClick={handleExport} disabled={isExporting} size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-white"><Download className="w-4 h-4 mr-2" />{isExporting ? 'Exporting...' : 'Export CSV'}</Button>
-             </div>
-             <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Cari nama pasien atau No RM..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500 h-9" /></div>
+              </div>
+            )}
+            <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Cari nama pasien atau No RM..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500 h-9" /></div>
           </div>
         </div>
 

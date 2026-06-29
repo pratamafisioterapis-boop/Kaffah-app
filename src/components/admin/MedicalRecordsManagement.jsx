@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 
 const MedicalRecordsManagement = () => {
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -412,6 +413,81 @@ const handleViewRecord = (record) => {
         </div>
       )}
 
+      {/* CARD LAYOUT PWA */}
+      {isPWA ? (
+        <div className="space-y-3">
+          {sortedRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
+                <FileText className="w-5 h-5 text-slate-300" />
+              </div>
+              <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
+              <button onClick={handleOpenCreateModal} className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+                Buat sekarang
+              </button>
+            </div>
+          ) : (
+            sortedRecords.map((record) => {
+              const statusLabel = getStatusLabel(record);
+              const isCompleted = statusLabel?.toLowerCase() === 'completed' || statusLabel?.toLowerCase() === 'selesai';
+              return (
+                <div key={record.id} onClick={() => handleViewRecord(record)}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
+                  {/* Baris 1: Avatar + Nama + Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
+                        style={{ background: '#eef2ff', color: '#4f46e5' }}>
+                        {(record.patient?.full_name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm leading-tight">{record.patient?.full_name || 'Unknown'}</p>
+                        <p className="text-xs font-mono text-indigo-500 mt-0.5">{record.patient?.medical_record_number || '-'}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0" style={{
+                      background: isCompleted ? '#f0fdf4' : '#fffbeb',
+                      color: isCompleted ? '#059669' : '#d97706',
+                      border: `1px solid ${isCompleted ? '#bbf7d0' : '#fde68a'}`
+                    }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+
+                  {/* Baris 2: Tanggal + Terapis */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-2">
+                    <span>{format(new Date(record.record_date), 'dd MMM yyyy')}</span>
+                    {record.therapist_name && (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                          style={{ background: '#f0fdf4', color: '#059669' }}>
+                          {record.therapist_name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="truncate max-w-[120px]">{record.therapist_name.split(',')[0]}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Aksi */}
+                  <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleOpenEditModal(record)}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-semibold"
+                      style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe' }}>
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button onClick={() => handleDelete(record.id)}
+                      className="flex items-center justify-center w-8 h-8 rounded-xl"
+                      style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+      /* TABLE DESKTOP */
       <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-left" style={{ fontSize: '12px' }}>
@@ -536,6 +612,7 @@ const handleViewRecord = (record) => {
           </table>
         </div>
       </div>
+      )}
 
       <MedicalRecordsModal
   key={selectedRecord?.id || 'create'}
