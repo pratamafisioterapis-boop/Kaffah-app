@@ -54,6 +54,10 @@ const HeroClock = () => {
 const AdminDashboardHome = () => {
   const location = useLocation(); 
   const today = new Date().toISOString().split('T')[0];
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
   const [slotData, setSlotData] = useState({
   total: 0,
   filled: 0
@@ -63,18 +67,22 @@ const [therapistStats, setTherapistStats] = useState([]);
 const [trendPatients, setTrendPatients] = useState([]);
 const [topDiagnoses, setTopDiagnoses] = useState([]);
 const [topServices, setTopServices] = useState([]);
-  // Initialize state from localStorage or default to current date
+  // Initialize state from localStorage if already set, otherwise default to 1st - end of current month
   const [dateRange, setDateRange] = useState(() => {
     const savedRange = localStorage.getItem('adminDashboardDateRange');
     if (savedRange) {
       try {
-        return JSON.parse(savedRange);
+        const parsed = JSON.parse(savedRange);
+        if (parsed?.startDate && parsed?.endDate) {
+          return parsed;
+        }
       } catch (e) {}
     }
 
+    const now = new Date();
     return {
-      startDate: today,
-      endDate: today,
+      startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
+      endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
     };
   });
 
@@ -399,7 +407,8 @@ setTrendPatients(trendArray);
       
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
 
-        {/* ===== HERO BANNER ===== */}
+        {/* ===== HERO BANNER — sembunyikan di PWA ===== */}
+        {!isPWA && (
         <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
           <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
@@ -436,6 +445,37 @@ setTrendPatients(trendArray);
             </div>
           </div>
         </div>
+        )}
+
+        {/* ===== Compact Header & Date Filter khusus PWA ===== */}
+        {isPWA && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">Admin Dashboard</h2>
+              <p className="text-xs text-slate-500">Pusat kendali operasional klinik</p>
+            </div>
+            <span className="text-xs font-mono font-semibold text-slate-500">
+              {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            />
+            <span className="text-slate-300">–</span>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            />
+          </div>
+        </div>
+        )}
         {/* ===== END HERO BANNER ===== */}
 
         <Tabs defaultValue="operational" className="w-full space-y-6">

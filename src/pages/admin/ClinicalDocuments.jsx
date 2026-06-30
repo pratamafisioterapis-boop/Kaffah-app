@@ -5,6 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ClinicalDocuments = () => {
   const [activeTab, setActiveTab] = useState("resume-medis");
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
 
   return (
     <>
@@ -14,7 +18,8 @@ const ClinicalDocuments = () => {
       </Helmet>
 
       <div className="space-y-6 animate-in fade-in duration-500">
-        {/* Hero Banner */}
+        {/* Hero Banner — sembunyikan di PWA */}
+        {!isPWA && (
         <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
           <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
@@ -28,6 +33,7 @@ const ClinicalDocuments = () => {
             </div>
           </div>
         </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1">

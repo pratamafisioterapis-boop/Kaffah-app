@@ -16,6 +16,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const ListViewAppointments = ({ appointments, onEditClick, therapists = [], loading }) => {
   const { role } = useAuth();
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [therapistFilter, setTherapistFilter] = useState('all');
@@ -131,7 +135,8 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
          </div>
       </div>
 
-      {/* Table */}
+      {/* Table — desktop / browser biasa */}
+      {!isPWA && (
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
          <div className="overflow-x-auto">
             <Table>
@@ -213,6 +218,62 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
             </Table>
          </div>
       </div>
+      )}
+
+      {/* Card List — khusus PWA / mobile */}
+      {isPWA && (
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+         {loading ? (
+            <div className="h-24 flex items-center justify-center text-sm text-slate-500">Loading appointments...</div>
+         ) : sortedAppointments.length === 0 ? (
+            <div className="h-24 flex items-center justify-center text-sm text-slate-500">No appointments found matching filters.</div>
+         ) : (
+            sortedAppointments.map((app) => (
+               <div
+                  key={app.id}
+                  onClick={() => onEditClick(app)}
+                  className="p-4 active:bg-slate-50 cursor-pointer space-y-2"
+               >
+                  <div className="flex items-start justify-between gap-2">
+                     <div className="flex flex-col">
+                        <span className="font-semibold text-sm text-slate-900">
+                           {format(new Date(app.appointment_date), 'dd MMM yyyy', { locale: idLocale })}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                           {formatTimeIndonesia(app.appointment_date)} ({app.duration_minutes || 60}m)
+                        </span>
+                     </div>
+                     <span className={getStatusBadge(app.status)}>{app.status}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                     <div className="font-medium text-sm text-slate-800 flex items-center gap-1.5">
+                        {app.patient?.full_name || app.guest_name || 'Nama tidak tersedia'}
+                        <Lock className="w-3 h-3 text-slate-300 shrink-0" />
+                     </div>
+                  </div>
+                  <div className="text-xs text-slate-500">{app.patient?.phone || app.guest_phone || '-'}</div>
+
+                  <div className="flex items-center justify-between pt-1">
+                     <div className="flex items-center gap-2">
+                        {app.therapist?.avatar_url ? (
+                           <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" />
+                        ) : (
+                           <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                              <User className="w-3 h-3 text-slate-400" />
+                           </div>
+                        )}
+                        <span className="text-xs text-slate-600">{app.therapist?.name || 'Unassigned'}</span>
+                     </div>
+                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); onEditClick(app); }}>
+                        <Edit className="w-4 h-4 text-slate-500" />
+                     </Button>
+                  </div>
+               </div>
+            ))
+         )}
+      </div>
+      )}
     </div>
   );
 };

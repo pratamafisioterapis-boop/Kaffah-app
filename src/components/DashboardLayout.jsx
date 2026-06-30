@@ -238,9 +238,54 @@ const pwaNavItems = useMemo(() => {
   if (role === 'admin') {
     return [
       {
+        label: 'Dashboard',
+        path: '/admin',
+        icon: 'Home'
+      },
+      {
         label: 'Appointments',
         path: '/admin/appointments',
         icon: 'Calendar'
+      },
+      {
+        label: 'Daily Recaps',
+        path: '/admin/daily-recap',
+        icon: 'FileText'
+      },
+      {
+        label: 'Package Recaps',
+        path: '/admin/package-recaps',
+        icon: 'Package'
+      },
+      {
+        label: 'Database Patients',
+        path: '/admin/database-patients',
+        icon: 'Database'
+      },
+      {
+        label: 'Medical Records',
+        path: '/admin/medical-records',
+        icon: 'Activity'
+      },
+      {
+        label: 'Physiotherapist Management',
+        path: '/admin/physiotherapist-management',
+        icon: 'Users'
+      },
+      {
+        label: 'Follow Up Management',
+        path: '/admin/follow-up-management',
+        icon: 'MessageSquare'
+      },
+      {
+        label: 'Clinical Documents',
+        path: '/admin/clinical-documents',
+        icon: 'FileText'
+      },
+      {
+        label: 'Accounting System',
+        path: '/admin/accounting',
+        icon: 'DollarSign'
       }
     ];
   }
@@ -558,8 +603,8 @@ const pwaNavItems = useMemo(() => {
           </header>
         )}
 
-        {/* Header khusus PWA Owner */}
-        {isPWA && role === 'owner' && (
+        {/* Header khusus PWA Admin */}
+        {isPWA && role === 'admin' && (
           <header className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
             <div className="flex items-center gap-3">
               <Button
@@ -571,24 +616,23 @@ const pwaNavItems = useMemo(() => {
                 <Menu className="h-5 w-5" />
               </Button>
               <h1 className="text-base font-bold text-slate-800 truncate">
-                {location.pathname.includes('/dashboard') ? 'Dashboard'
+                {location.pathname === '/admin' ? 'Dashboard'
                   : location.pathname.includes('/appointments') ? 'Appointments'
                   : location.pathname.includes('/daily-recap') ? 'Daily Recaps'
                   : location.pathname.includes('/package-recaps') ? 'Package Recaps'
                   : location.pathname.includes('/database-patients') ? 'Database Patients'
                   : location.pathname.includes('/medical-records') ? 'Medical Records'
-                  : location.pathname.includes('/therapist-management') ? 'Therapist Management'
                   : location.pathname.includes('/physiotherapist-management') ? 'Therapist Management'
-                  : location.pathname.includes('/finance-dashboard') ? 'Accounting System'
+                  : location.pathname.includes('/follow-up-management') ? 'Follow Up'
+                  : location.pathname.includes('/clinical-documents') ? 'Clinical Documents'
                   : location.pathname.includes('/accounting') ? 'Accounting System'
-                  : location.pathname.includes('/settings') ? 'Setup'
-                  : 'Owner'}
+                  : 'Admin'}
               </h1>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                <span className="text-xs font-semibold text-slate-600">Owner</span>
+                <span className="text-xs font-semibold text-slate-600">Admin</span>
               </div>
             </div>
           </header>

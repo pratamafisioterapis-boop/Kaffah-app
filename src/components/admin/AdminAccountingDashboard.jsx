@@ -17,6 +17,11 @@ import AdminIncomeEditModal from './accounting/AdminIncomeEditModal';
 import AdminIncomeDeleteConfirmationModal from './accounting/AdminIncomeDeleteConfirmationModal';
 
 const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
+
   const [dateRange, setDateRange] = useState(propDateRange || {
     startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd')
@@ -142,7 +147,8 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
   return (
     <div className="space-y-6 w-full font-sans">
-      {/* Hero Banner */}
+      {/* Hero Banner — sembunyikan di PWA */}
+      {!isPWA && (
       <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
@@ -179,6 +185,30 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
           </div>
         </div>
       </div>
+      )}
+
+      {/* Filter compact khusus PWA */}
+      {isPWA && (
+        <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+          <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+          <input
+            type="date"
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+          />
+          <span className="text-slate-300">–</span>
+          <input
+            type="date"
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+          />
+          <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg h-8 shrink-0">
+            <Filter className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex flex-wrap gap-2">

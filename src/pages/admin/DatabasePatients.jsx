@@ -8,6 +8,10 @@ import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
 
 const AdminDatabasePatients = () => {
+    const isPWA =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true ||
+        document.referrer.includes('android-app://');
     const { toast } = useToast();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -118,7 +122,8 @@ const AdminDatabasePatients = () => {
 
     return (
         <div className="space-y-6">
-            {/* Hero Banner */}
+            {/* Hero Banner — sembunyikan di PWA */}
+            {!isPWA && (
             <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
               <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
@@ -144,6 +149,7 @@ const AdminDatabasePatients = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Patient Table Component */}
             <CenteredPatientTable 
