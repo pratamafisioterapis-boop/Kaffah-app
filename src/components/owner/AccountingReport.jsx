@@ -19,6 +19,10 @@ import 'jspdf-autotable';
 import { useToast } from '@/components/ui/use-toast';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
+    const isPWA =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.includes('android-app://');
     const isIncome = type === 'income';
     const accentColor = isIncome ? '#059669' : '#e11d48';
     const accentLight = isIncome ? '#f0fdf4' : '#fff1f2';
@@ -51,7 +55,48 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                 </div>
             </div>
 
-            {/* Thead */}
+            {/* PWA: Card List */}
+            {isPWA ? (
+                <div style={{ borderTop: `1px solid ${accentMid}`, maxHeight: '320px', overflowY: 'auto' }}>
+                    {data.length === 0 ? (
+                        <div style={{ padding: '28px 16px', textAlign: 'center', color: '#cbd5e1' }}>
+                            <div style={{ fontSize: '13px' }}>Tidak ada data</div>
+                        </div>
+                    ) : (
+                        data.map((item, idx) => (
+                            <div key={idx} className="px-4 py-3"
+                                style={{
+                                    background: idx % 2 === 0 ? 'white' : accentLight + '80',
+                                    borderBottom: '1px solid #f1f5f9'
+                                }}>
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                    {columns[0] && (
+                                        <span className="text-xs font-semibold text-slate-700">
+                                            {columns[0].render ? columns[0].render(item) : item[columns[0].accessor]}
+                                        </span>
+                                    )}
+                                    <span className="text-sm font-bold tabular-nums shrink-0" style={{ color: accentColor }}>
+                                        Rp {fmt(item.amount)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {columns.slice(1).map((col, cIdx) => {
+                                        const val = col.render ? col.render(item) : item[col.accessor];
+                                        if (!val || val === '-') return null;
+                                        return (
+                                            <span key={cIdx} className="text-[10px] px-2 py-0.5 rounded-md"
+                                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                                                {col.header}: {val}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+            /* Desktop: Table */
             <div className="overflow-x-auto" style={{ borderTop: `1px solid ${accentMid}` }}>
                 <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
                     <thead>
@@ -102,6 +147,7 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                     </table>
                 </div>
             </div>
+            )}
         </div>
     );
 };

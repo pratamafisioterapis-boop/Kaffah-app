@@ -18,6 +18,7 @@ import {
   getAdminExpenses, getPatientIncomeFromPackages
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
+import { cn } from '@/lib/utils';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -38,6 +39,10 @@ const formatFull = (amount) => {
 };
 
 const RevenueOverview = ({ dateRange }) => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -260,15 +265,18 @@ const RevenueOverview = ({ dateRange }) => {
 
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl"
         style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
-        <div className="flex items-center gap-2 mr-1">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#0d9488' }}>
+        <div className={cn("flex items-center gap-2 mr-1", isPWA && "w-full")}>
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#0d9488' }}>
             <Plus className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
         </div>
         <button
           onClick={() => { setActiveFormType('expenditure'); setIsFormOpen(true); }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            isPWA && "flex-1"
+          )}
           style={{ background: '#e11d48' }}
         >
           <TrendingDown className="w-3.5 h-3.5" />
@@ -276,7 +284,10 @@ const RevenueOverview = ({ dateRange }) => {
         </button>
         <button
           onClick={() => { setActiveFormType('income'); setIsFormOpen(true); }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            isPWA && "flex-1"
+          )}
           style={{ background: '#059669' }}
         >
           <TrendingUp className="w-3.5 h-3.5" />
@@ -303,8 +314,8 @@ const RevenueOverview = ({ dateRange }) => {
           <div className="flex flex-col">
             <div>
               <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-2">Financial Health Overview</p>
-              <div className="flex items-center gap-3 mb-3">
-                <h2 className="text-4xl md:text-5xl font-black">
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black">
                   {metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}
                 </h2>
                 <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
@@ -357,9 +368,9 @@ const RevenueOverview = ({ dateRange }) => {
               <DollarSign className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
-          <p className="text-4xl md:text-5xl font-black leading-none text-emerald-600">{formatShortCurrency(metrics.totalRevenue)}</p>
+          <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-emerald-600 break-words">{formatShortCurrency(metrics.totalRevenue)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Total Revenue</p>
-          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.totalRevenue)}</p>
+          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
         </div>
 
         <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 md:p-6 ${
@@ -373,9 +384,9 @@ const RevenueOverview = ({ dateRange }) => {
               Margin {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
             </span>
           </div>
-          <p className={`text-4xl md:text-5xl font-black leading-none ${metrics.netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
+          <p className={`text-3xl sm:text-4xl md:text-5xl font-black leading-none break-words ${metrics.netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Net Profit</p>
-          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.netProfit)}</p>
+          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-rose-100 border-l-4 border-l-rose-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
@@ -387,9 +398,9 @@ const RevenueOverview = ({ dateRange }) => {
               Ratio {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
             </span>
           </div>
-          <p className="text-4xl md:text-5xl font-black leading-none text-rose-600">{formatShortCurrency(metrics.totalExpenses)}</p>
+          <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-rose-600 break-words">{formatShortCurrency(metrics.totalExpenses)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Total Pengeluaran</p>
-          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(metrics.totalExpenses)}</p>
+          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.totalExpenses)}</p>
         </div>
       </div>
       {/* ── Dana Paket ── */}
@@ -411,8 +422,8 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-          <div className="bg-amber-50 rounded-xl p-4">
-            <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none">{formatFull(danaPacket.total)}</p>
+          <div className="bg-amber-50 rounded-xl p-4 min-w-0">
+            <p className="text-xl sm:text-2xl md:text-3xl font-black text-amber-600 leading-none break-words">{formatFull(danaPacket.total)}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-4">

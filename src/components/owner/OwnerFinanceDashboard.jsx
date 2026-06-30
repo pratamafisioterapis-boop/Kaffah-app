@@ -61,6 +61,11 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
 
 // --- Reusable Table Component ---
 const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, accentColor = '#64748b' }) => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
@@ -79,6 +84,45 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
       </div>
     );
   }
+  // PWA: Card List
+  if (isPWA) {
+    return (
+      <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        {data.map((row, rowIdx) => (
+          <div key={row.id || rowIdx} className="px-4 py-3"
+            style={{ background: rowIdx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              {columns[0] && (
+                <span className="text-xs font-semibold text-slate-700">
+                  {columns[0].render ? columns[0].render(row) : row[columns[0].accessor]}
+                </span>
+              )}
+              {showDelete && (
+                <button onClick={() => onDelete && onDelete(row.id)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {columns.slice(1).map((col, cIdx) => {
+                const val = col.render ? col.render(row) : row[col.accessor];
+                if (!val || val === '-') return null;
+                return (
+                  <span key={cIdx} className="text-[10px] px-2 py-0.5 rounded-md"
+                    style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    {col.header !== 'Jumlah' ? `${col.header}: ` : ''}{val}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       <div className="overflow-x-auto">

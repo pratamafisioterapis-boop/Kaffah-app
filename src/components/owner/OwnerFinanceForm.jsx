@@ -12,6 +12,10 @@ import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
 
 const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -150,7 +154,7 @@ if (
     <form onSubmit={handleSubmit} className="space-y-4">
 
       {/* Tanggal + Jumlah */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className={isPWA ? "flex flex-col gap-3" : "grid grid-cols-2 gap-3"}>
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600">Tanggal</label>
           <Input type="date" name="date" value={formData.date} onChange={handleChange} required

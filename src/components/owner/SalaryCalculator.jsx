@@ -31,6 +31,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   useEffect(() => {
   console.log('DATE RANGE UPDATED:', dateRange);
 }, [dateRange]);
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
   const { toast } = useToast();
   
   // Data State
@@ -336,15 +340,15 @@ const endDateStr = dateRange?.endDate;
         </div>
 
         {/* Summary komponen gaji */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: 'Gaji Pokok', value: fmt(d.baseSalary), color: '#4f46e5', bg: '#eef2ff' },
             { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: fmt(d.transportAllowance), color: '#0891b2', bg: '#ecfeff' },
             { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
           ].map(({ label, value, color, bg }) => (
-            <div key={label} className="rounded-xl p-4" style={{ background: bg }}>
+            <div key={label} className="rounded-xl p-4 min-w-0" style={{ background: bg }}>
               <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
-              <div className="text-base font-bold" style={{ color }}>{value}</div>
+              <div className="text-base font-bold break-words" style={{ color }}>{value}</div>
             </div>
           ))}
         </div>
@@ -385,6 +389,50 @@ const endDateStr = dateRange?.endDate;
 
               {/* Drill-down: list sesi per tipe pasien */}
               {selectedPatientType === type && (
+                isPWA ? (
+                  <div style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
+                    {info.sessions.map((s, i) => (
+                      <div key={i} className="px-4 py-3" style={{ borderBottom: '1px solid #f1f0ff', background: i % 2 === 0 ? 'white' : '#faf9ff' }}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-xs font-semibold text-slate-700">{s.patientName}</span>
+                          <span className="text-sm font-bold shrink-0" style={{ color: '#059669' }}>{fmt(s.amount)}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
+                            {fmtDate(s.date)}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
+                            {s.packageName}
+                          </span>
+                          {s.isPackage && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                              {s.totalSessions} sesi
+                            </span>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                            Nominal paket: {fmt(s.pkgNominal)}
+                          </span>
+                        </div>
+                        {s.discountType && s.discountType !== 'none' && s.discountValue > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="line-through text-slate-400 text-[10px]">
+                              {s.discountType === 'percentage'
+                                ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
+                                : fmt(s.rawAmount + s.discountValue)}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
+                              {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
+                      <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>Subtotal:</span>
+                      <span className="font-bold text-sm" style={{ color: '#059669' }}>{fmt(info.totalAmount)}</span>
+                    </div>
+                  </div>
+                ) : (
                 <div style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
                   <table className="w-full" style={{ fontSize: '11px' }}>
                     <thead>
@@ -439,6 +487,7 @@ const endDateStr = dateRange?.endDate;
                     </tfoot>
                   </table>
                 </div>
+                )
               )}
             </div>
           ))}
@@ -467,49 +516,109 @@ const endDateStr = dateRange?.endDate;
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+      <div className="flex flex-col gap-2.5 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
           <Calendar className="w-3.5 h-3.5" />
           Periode:
         </div>
-        <input
-          type="date"
-          value={dateRange?.startDate || ''}
-          onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-          className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white"
-          style={{ colorScheme: 'light' }}
-        />
-        <span className="text-slate-300 text-sm">–</span>
-        <input
-          type="date"
-          value={dateRange?.endDate || ''}
-          onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-          className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white"
-          style={{ colorScheme: 'light' }}
-        />
-        <button
-          onClick={handlePeriodeIni}
-          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
-          style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
-        >
-          Periode Ini
-        </button>
-        <button
-          onClick={handleCalculateAll}
-          disabled={calculatingAll || !therapists.length}
-          className="ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
-          style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed', minWidth: '130px', justifyContent: 'center' }}
-        >
-          {calculatingAll
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
-            : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
-          }
-        </button>
+        <div className="flex items-center gap-2 w-full">
+          <input
+            type="date"
+            value={dateRange?.startDate || ''}
+            onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+            style={{ colorScheme: 'light' }}
+          />
+          <span className="text-slate-300 text-sm shrink-0">–</span>
+          <input
+            type="date"
+            value={dateRange?.endDate || ''}
+            onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+            style={{ colorScheme: 'light' }}
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full">
+          <button
+            onClick={handlePeriodeIni}
+            className="text-xs px-3 py-2 rounded-lg font-semibold transition-all flex-1"
+            style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
+          >
+            Periode Ini
+          </button>
+          <button
+            onClick={handleCalculateAll}
+            disabled={calculatingAll || !therapists.length}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex-1"
+            style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
+          >
+            {calculatingAll
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
+              : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
+            }
+          </button>
+        </div>
       </div>
 
       {/* Table */}
       {allResults.length > 0 ? (
         <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
+          {isPWA ? (
+            <div>
+              {allResults.map((r, idx) => (
+                <button
+                  key={r.id}
+                  onClick={() => { setSelectedTherapistDetail(r); setSelectedPatientType(null); }}
+                  className="w-full text-left px-4 py-3"
+                  style={{ background: idx % 2 === 0 ? 'white' : '#faf9ff', borderBottom: '1px solid #f1f0ff' }}
+                >
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                      style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
+                      {idx + 1}
+                    </span>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                      style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                      {r.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <span className="font-semibold flex-1 truncate" style={{ color: '#7c3aed' }}>{r.name}</span>
+                    <div className="font-bold text-sm shrink-0" style={{ color: '#059669' }}>{fmt(r.total)}</div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                      style={{
+                        background: r.salaryType === 'Full Salary' ? '#ecfdf5' : '#eff6ff',
+                        color: r.salaryType === 'Full Salary' ? '#059669' : '#2563eb',
+                        border: `1px solid ${r.salaryType === 'Full Salary' ? '#bbf7d0' : '#bfdbfe'}`
+                      }}>
+                      {r.salaryType}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                      {r.sessionCount} sesi
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                      {r.attendanceDays} hari kerja
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                      Pokok: {fmtShort(r.baseSalary)}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                      Transport: {fmtShort(r.transportAllowance)}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                      Komisi: {fmtShort(r.commission)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+              <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
+                <span className="font-bold text-xs" style={{ color: '#7c3aed' }}>Total Seluruh Gaji:</span>
+                <span className="font-bold text-sm" style={{ color: '#059669' }}>
+                  {fmt(allResults.reduce((s, r) => s + r.total, 0))}
+                </span>
+              </div>
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -582,22 +691,23 @@ const endDateStr = dateRange?.endDate;
               </tfoot>
             </table>
           </div>
+          )}
 
           {/* Summary strip */}
-          <div className="grid grid-cols-3" style={{ borderTop: '1px solid #ede9fe', background: '#faf9ff' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: '1px solid #ede9fe', background: '#faf9ff' }}>
             {[
               { label: 'Total Terapis', value: `${allResults.length} orang`, icon: User },
               { label: 'Total Sesi', value: `${allResults.reduce((s, r) => s + r.sessionCount, 0)} sesi`, icon: TrendingUp },
               { label: 'Total Payroll', value: fmt(allResults.reduce((s, r) => s + r.total, 0)), icon: Wallet },
             ].map(({ label, value, icon: Icon }, i) => (
-              <div key={label} className="flex items-center gap-3 px-5 py-3"
-                style={{ borderRight: i < 2 ? '1px solid #ede9fe' : 'none' }}>
+              <div key={label} className="flex items-center gap-3 px-5 py-3 min-w-0"
+                style={{ borderRight: !isPWA && i < 2 ? '1px solid #ede9fe' : 'none', borderBottom: isPWA && i < 2 ? '1px solid #ede9fe' : 'none' }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#ede9fe' }}>
                   <Icon className="w-3.5 h-3.5" style={{ color: '#7c3aed' }} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-[10px] font-medium" style={{ color: '#a78bfa' }}>{label}</div>
-                  <div className="text-sm font-bold text-slate-700">{value}</div>
+                  <div className="text-sm font-bold text-slate-700 break-words">{value}</div>
                 </div>
               </div>
             ))}
