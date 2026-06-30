@@ -711,6 +711,23 @@ const pwaNavItems = useMemo(() => {
                     </button>
                   );
                 })}
+
+                {/* Pemisah + Tombol Logout */}
+                <div className="w-full h-px bg-slate-200 my-0.5" />
+                <button
+                  onClick={() => {
+                    setIsFabOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-2 shrink-0"
+                >
+                  <span className="text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap bg-white text-red-500 border-red-200">
+                    Keluar Aplikasi
+                  </span>
+                  <span className="w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0 bg-white border-red-200">
+                    <LogOut className="w-4 h-4 text-red-500" />
+                  </span>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
