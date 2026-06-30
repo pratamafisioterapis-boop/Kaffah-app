@@ -432,23 +432,23 @@ combinedExpenses.sort((a, b) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#eef2ff' }}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
             <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
           </div>
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Laporan Akuntansi Lengkap</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-slate-800 truncate">Laporan Akuntansi Lengkap</h2>
+            <p className="text-xs text-slate-400 mt-0.5 truncate">
               Periode: {formatDate(dateRange.startDate)} s/d {formatDate(dateRange.endDate)}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleExportPDF} variant="outline" className="h-8 px-3 text-xs border-slate-200 text-slate-600 hover:bg-slate-50">
+          <Button onClick={handleExportPDF} variant="outline" className="h-8 px-3 text-xs border-slate-200 text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             PDF
           </Button>
-          <Button onClick={handleExportExcel} variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+          <Button onClick={handleExportExcel} variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             Excel
           </Button>
@@ -456,7 +456,7 @@ combinedExpenses.sort((a, b) => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Total Pemasukan', value: totalIncome, icon: TrendingUp, bg: '#f0fdf4', iconBg: '#dcfce7', color: '#16a34a' },
           { label: 'Total Pengeluaran', value: totalExpenses, icon: TrendingDown, bg: '#fff1f2', iconBg: '#ffe4e6', color: '#e11d48' },
@@ -465,13 +465,13 @@ combinedExpenses.sort((a, b) => {
             iconBg: netProfit >= 0 ? '#dbeafe' : '#fef3c7',
             color: netProfit >= 0 ? '#2563eb' : '#d97706' },
         ].map(({ label, value, icon: Icon, bg, iconBg, color }) => (
-          <div key={label} className="rounded-xl p-4 flex items-center gap-3" style={{ background: bg }}>
+          <div key={label} className="rounded-xl p-4 flex items-center gap-3 min-w-0" style={{ background: bg }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: iconBg }}>
               <Icon className="w-5 h-5" style={{ color }} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium truncate" style={{ color }}>{label}</p>
-              <p className="text-lg font-bold leading-tight" style={{ color }}>
+              <p className="text-base sm:text-lg font-bold leading-tight break-words" style={{ color }}>
                 Rp {new Intl.NumberFormat('id-ID').format(value)}
               </p>
             </div>

@@ -333,60 +333,70 @@ const OwnerFinanceDashboard = () => {
       </Dialog>
 
       {/* Custom Tab Navigation */}
-      <div className="flex overflow-x-auto gap-2 pb-1" style={{ scrollbarWidth: 'none' }}>
-        {[
-          { key: 'accounting_report',   label: 'Accounting Report',  icon: FileBarChart, active: 'bg-emerald-500 text-white shadow-emerald-200/60', inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600' },
-          { key: 'salary_calculator',   label: 'Salary Calculator',  icon: Calculator,   active: 'bg-violet-500 text-white shadow-violet-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600' },
-          { key: 'owner',               label: 'Owner Accounting',   icon: Briefcase,    active: 'bg-teal-500 text-white shadow-teal-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600' },
-          { key: 'admin',               label: 'Admin Accounting',   icon: ShieldCheck,  active: 'bg-orange-500 text-white shadow-orange-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600' },
-          { key: 'package_funds',       label: 'Dana Paket',         icon: Package,      active: 'bg-cyan-500 text-white shadow-cyan-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600' },
-        ].map(({ key, label, icon: Icon, active, inactive }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
-          >
-            <Icon className="w-3.5 h-3.5 shrink-0" />
-            {label}
-          </button>
-        ))}
+      <div className="relative">
+        <div className="flex overflow-x-auto gap-2 pb-1" style={{ scrollbarWidth: 'none' }}>
+          {[
+            { key: 'accounting_report',   label: 'Accounting Report',  icon: FileBarChart, active: 'bg-emerald-500 text-white shadow-emerald-200/60', inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600' },
+            { key: 'salary_calculator',   label: 'Salary Calculator',  icon: Calculator,   active: 'bg-violet-500 text-white shadow-violet-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600' },
+            { key: 'owner',               label: 'Owner Accounting',   icon: Briefcase,    active: 'bg-teal-500 text-white shadow-teal-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600' },
+            { key: 'admin',               label: 'Admin Accounting',   icon: ShieldCheck,  active: 'bg-orange-500 text-white shadow-orange-200/60',  inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600' },
+            { key: 'package_funds',       label: 'Dana Paket',         icon: Package,      active: 'bg-cyan-500 text-white shadow-cyan-200/60',      inactive: 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600' },
+          ].map(({ key, label, icon: Icon, active, inactive }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
+            >
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </div>
+        {isPWA && (
+          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-slate-50 to-transparent" />
+        )}
       </div>
 
       {/* Quick Action Widget — PWA: date filter masuk sini */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
         {isPWA && (
-          <div className="flex items-center gap-1.5 bg-white/80 border border-teal-200 rounded-xl px-3 py-2 w-full">
-            <span className="text-teal-700 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="text-xs bg-transparent border-0 outline-none text-slate-700 font-medium flex-1"
-            />
-            <span className="text-slate-400 shrink-0">–</span>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="text-xs bg-transparent border-0 outline-none text-slate-700 font-medium flex-1"
-            />
-            <button
-              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-              className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 shrink-0"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex flex-col gap-2 w-full">
+            <span className="text-teal-700 text-[10px] font-bold uppercase tracking-wider">Periode</span>
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="text-xs bg-white border border-teal-200 rounded-lg px-2 py-2 outline-none text-slate-700 font-medium flex-1 min-w-0"
+              />
+              <span className="text-slate-400 shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="text-xs bg-white border border-teal-200 rounded-lg px-2 py-2 outline-none text-slate-700 font-medium flex-1 min-w-0"
+              />
+              <button
+                onClick={() => { fetchOwnerData(); fetchAdminData(); }}
+                className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 shrink-0"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
-        <div className="flex items-center gap-2 mr-1">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#14b8a6', opacity: 0.85 }}>
+        <div className={cn("flex items-center gap-2", isPWA ? "mr-1 mt-1 w-full" : "mr-1")}>
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#14b8a6', opacity: 0.85 }}>
             <DollarSign className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
         </div>
         <button
           onClick={() => openForm('expenditure')}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            isPWA ? "flex-1" : ""
+          )}
           style={{ background: '#e11d48' }}
         >
           <TrendingDown className="w-3.5 h-3.5" />
@@ -394,7 +404,10 @@ const OwnerFinanceDashboard = () => {
         </button>
         <button
           onClick={() => openForm('income')}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            isPWA ? "flex-1" : ""
+          )}
           style={{ background: '#059669' }}
         >
           <TrendingUp className="w-3.5 h-3.5" />
