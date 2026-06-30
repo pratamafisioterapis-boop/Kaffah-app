@@ -585,63 +585,6 @@ const pwaNavItems = useMemo(() => {
         isPWA && (role === 'therapist' || role === 'admin') ? "pt-0" : "pt-0"
       )}>
 
-        {/* Header khusus PWA Therapist */}
-        {isPWA && role === 'therapist' && (
-          <header className="sticky top-0 z-50 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-slate-600 hover:bg-slate-100 rounded-xl shrink-0"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <h1 className="text-base font-bold text-slate-800 truncate">
-              {location.pathname === '/therapist' ? 'Dashboard'
-                : location.pathname.includes('/booking') ? 'Booking Calendar'
-                : location.pathname.includes('/appointments') ? 'Daftar Appointment'
-                : location.pathname.includes('/records/new') ? 'Buat SOAP'
-                : location.pathname.includes('/records') ? 'Evaluasi Pasien'
-                : 'Therapist'}
-            </h1>
-          </header>
-        )}
-
-        {/* Header khusus PWA Admin */}
-        {isPWA && role === 'admin' && (
-          <header className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-slate-600 hover:bg-slate-100 rounded-xl shrink-0"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <h1 className="text-base font-bold text-slate-800 truncate">
-                {location.pathname === '/admin' ? 'Dashboard'
-                  : location.pathname.includes('/appointments') ? 'Appointments'
-                  : location.pathname.includes('/daily-recap') ? 'Daily Recaps'
-                  : location.pathname.includes('/package-recaps') ? 'Package Recaps'
-                  : location.pathname.includes('/database-patients') ? 'Database Patients'
-                  : location.pathname.includes('/medical-records') ? 'Medical Records'
-                  : location.pathname.includes('/physiotherapist-management') ? 'Therapist Management'
-                  : location.pathname.includes('/follow-up-management') ? 'Follow Up'
-                  : location.pathname.includes('/clinical-documents') ? 'Clinical Documents'
-                  : location.pathname.includes('/accounting') ? 'Accounting System'
-                  : 'Admin'}
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                <span className="text-xs font-semibold text-slate-600">Admin</span>
-              </div>
-            </div>
-          </header>
-        )}
-
         {/* Header normal dihapus - digantikan hero banner di masing-masing halaman */}
 
         <div className={cn(
