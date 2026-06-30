@@ -652,47 +652,50 @@ const pwaNavItems = useMemo(() => {
         </div>
       </main>
 
-      {/* Floating Action Button + Grid Menu (scrollable) — khusus PWA */}
+      {/* Floating Action Button — pill list 1 kolom, semua menu, scrollable — khusus PWA */}
       {isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') && (
         <div className="fixed right-4 bottom-6 z-[80] flex flex-col items-end gap-3">
           <AnimatePresence>
             {isFabOpen && (
               <motion.div
-                key="fab-grid-card"
-                initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                key="fab-menu"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
                 transition={{ duration: 0.18 }}
-                className="w-[270px] max-h-[55vh] overflow-y-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-3.5"
+                className="flex flex-col items-end gap-3 max-h-[55vh] overflow-y-auto pr-1 pb-1"
               >
-                <p className="text-[11px] font-semibold text-slate-400 mb-2.5 px-0.5">Semua menu</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {finalNavItems.map((item, idx) => {
-                    const Icon = iconMap[item.icon] || Home;
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          if (item.onClick) { item.onClick(); } else { navigate(item.path); }
-                          setIsFabOpen(false);
-                        }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl transition-colors",
-                          isActive ? "bg-blue-50" : "bg-slate-50"
-                        )}
-                      >
-                        <Icon className={cn("w-[17px] h-[17px]", isActive ? "text-blue-600" : "text-slate-500")} />
-                        <span className={cn(
-                          "text-[9.5px] text-center leading-tight",
-                          isActive ? "text-blue-600 font-medium" : "text-slate-600"
-                        )}>
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {finalNavItems.map((item, idx) => {
+                  const Icon = iconMap[item.icon] || Home;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (item.onClick) { item.onClick(); } else { navigate(item.path); }
+                        setIsFabOpen(false);
+                      }}
+                      className="flex items-center gap-2 shrink-0"
+                    >
+                      <span className={cn(
+                        "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap",
+                        isActive
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-700 border-slate-200"
+                      )}>
+                        {item.label}
+                      </span>
+                      <span className={cn(
+                        "w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0",
+                        isActive
+                          ? "bg-blue-600 border-blue-600"
+                          : "bg-white border-slate-200"
+                      )}>
+                        <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-slate-600")} />
+                      </span>
+                    </button>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
