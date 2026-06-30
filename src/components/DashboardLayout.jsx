@@ -663,7 +663,7 @@ const pwaNavItems = useMemo(() => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 12 }}
                 transition={{ duration: 0.18 }}
-                className="flex flex-col items-end gap-3 max-h-[55vh] overflow-y-auto pr-1 pb-1"
+                className="flex flex-col items-end gap-3 max-h-[38vh] overflow-y-auto pr-1 pb-1"
               >
                 {finalNavItems.map((item, idx) => {
                   const Icon = iconMap[item.icon] || Home;
