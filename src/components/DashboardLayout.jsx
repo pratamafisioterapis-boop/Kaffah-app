@@ -654,6 +654,21 @@ const pwaNavItems = useMemo(() => {
 
       {/* Floating Action Button — pill list 1 kolom, semua menu, scrollable — khusus PWA */}
       {isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') && (
+        <>
+          <AnimatePresence>
+            {isFabOpen && (
+              <motion.div
+                key="fab-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setIsFabOpen(false)}
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75]"
+              />
+            )}
+          </AnimatePresence>
+
         <div className="fixed right-4 bottom-6 z-[80] flex flex-col items-end gap-3">
           <AnimatePresence>
             {isFabOpen && (
@@ -710,6 +725,7 @@ const pwaNavItems = useMemo(() => {
             <Plus className="w-5 h-5 text-white" />
           </button>
         </div>
+        </>
       )}
     </div>
   );
