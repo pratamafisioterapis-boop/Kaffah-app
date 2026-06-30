@@ -347,8 +347,8 @@ const headerColorMap = {
 };
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
+      <div className={cn("flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3", isPWA && "gap-2")}>
+        <div className="min-w-0">
           <h2 className="text-xl font-semibold text-slate-800">Manajemen Terapis & Akun</h2>
           <p className="text-sm text-slate-500">Kelola profil, akun login, dan status fisioterapis.</p>
         </div>
@@ -384,7 +384,7 @@ const headerColorMap = {
                   </div>
                 </div>
                 
-                <div className="absolute top-4 right-4 flex gap-2">
+                <div className={cn("absolute top-4 right-4 flex", isPWA ? "gap-1.5" : "gap-2")}>
                    <div className="bg-white/90 backdrop-blur rounded-full p-1 flex items-center shadow-sm">
                       <Switch 
                          checked={therapist.is_active} 
@@ -567,7 +567,7 @@ const headerColorMap = {
                 <h4 className="font-semibold text-emerald-800 flex items-center gap-2">
                    <UserPlus className="w-4 h-4" /> Pengaturan Gaji
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-3 gap-4"}>
                     <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600">Tipe Skema Gaji</label>
                        <Select 
@@ -754,7 +754,7 @@ const headerColorMap = {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-             <div className="grid grid-cols-2 gap-4">
+             <div className={isPWA ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-4"}>
                <div>
                  <label className="text-xs font-medium text-slate-500">Dari Tanggal</label>
                  <Input type="date" value={newTimeOff.start_date} onChange={(e) => setNewTimeOff({...newTimeOff, start_date: e.target.value})} />
