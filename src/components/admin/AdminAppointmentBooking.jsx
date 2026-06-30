@@ -391,35 +391,51 @@ const handleViewHistory = async (patientId) => {
           <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {[...therapists]
   .sort((a, b) => {
-    const slotsA = schedulesMap[a.id] || [];
-    const slotsB = schedulesMap[b.id] || [];
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const selectedStr = format(date, 'yyyy-MM-dd');
+    const isToday = selectedStr === todayStr;
 
-    // Cek apakah semua slot terisi (full)
-    const isFullA = slotsA.length > 0 && slotsA.every(s => s.status === 'terisi');
-    const isFullB = slotsB.length > 0 && slotsB.every(s => s.status === 'terisi');
+    const getSortKey = (therapist) => {
+      const slots = schedulesMap[therapist.id] || [];
+      const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
 
-    // Tidak ada jadwal → paling belakang
-    const noScheduleA = slotsA.length === 0;
-    const noScheduleB = slotsB.length === 0;
+      // Group 3: Tidak ada jadwal / cuti / non_active
+      if (
+        slots.length === 0 ||
+        ['tidak_ada_jadwal', 'cuti', 'non_active'].includes(leaveStatus)
+      ) {
+        return { group: 3, time: '99:99' };
+      }
 
-    if (noScheduleA && !noScheduleB) return 1;
-    if (!noScheduleA && noScheduleB) return -1;
+      // Group 2: Full booked (semua slot terisi)
+      const allFull = slots.every(s => s.status === 'terisi');
+      if (allFull) {
+        return { group: 2, time: '99:99' };
+      }
 
-    // Full → sebelum tidak ada jadwal tapi sesudah yang masih ada slot
-    if (isFullA && !isFullB) return 1;
-    if (!isFullA && isFullB) return -1;
-
-    // Sama-sama full atau sama-sama tidak full → urutkan berdasarkan slot paling awal
-    const getFirstSlot = (slots) => {
-      if (slots.length === 0) return "99:99";
-      const aktifSlots = slots.filter(s => s.status === 'aktif');
-      const sorted = [...(aktifSlots.length > 0 ? aktifSlots : slots)].sort((x, y) =>
+      // Ambil slot aktif paling awal
+      const aktifSlots = slots.filter(s => s.status === 'aktif' || !s.status);
+      const sorted = [...aktifSlots].sort((x, y) =>
         (x.slot_start_time || '').localeCompare(y.slot_start_time || '')
       );
-      return sorted[0]?.slot_start_time || '99:99';
+      const firstSlot = sorted[0]?.slot_start_time || '99:99';
+
+      // Group 1: Hari ini dan jam slot sudah lewat
+      if (isToday && firstSlot < currentTime) {
+        return { group: 1, time: firstSlot };
+      }
+
+      // Group 0: Slot masih akan datang / bukan hari ini
+      return { group: 0, time: firstSlot };
     };
 
-    return getFirstSlot(slotsA).localeCompare(getFirstSlot(slotsB));
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+
+    if (keyA.group !== keyB.group) return keyA.group - keyB.group;
+    return keyA.time.localeCompare(keyB.time);
   })
   .map((therapist) => {
             const slots = schedulesMap[therapist.id] || [];
