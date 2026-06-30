@@ -354,36 +354,7 @@ const pwaNavItems = useMemo(() => {
   [pwaNavItems, role]
 );
 
-  // Menu cepat untuk Floating Action Button (FAB) khusus PWA
-  const fabQuickItems = useMemo(() => {
-    if (role === 'admin') {
-      return [
-        { label: 'Dashboard', path: '/admin', icon: 'Home' },
-        { label: 'Appointments', path: '/admin/appointments', icon: 'Calendar' },
-        { label: 'Daily Recaps', path: '/admin/daily-recap', icon: 'FileText' },
-        { label: 'Database Patients', path: '/admin/database-patients', icon: 'Database' },
-        { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
-      ];
-    }
-    if (role === 'owner') {
-      return [
-        { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
-        { label: 'Appointments', path: '/owner/appointments', icon: 'Calendar' },
-        { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'FileText' },
-        { label: 'Database Patients', path: '/owner/database-patients', icon: 'Database' },
-        { label: 'Accounting System', path: '/owner/accounting', icon: 'DollarSign' },
-      ];
-    }
-    if (role === 'therapist') {
-      return [
-        { label: 'Dashboard', path: '/therapist', icon: 'Home' },
-        { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' },
-        { label: 'Daftar Appointment', path: '/therapist/appointments', icon: 'ClipboardList' },
-        { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
-      ];
-    }
-    return [];
-  }, [role]);
+  
 
   useEffect(() => {
     const newExpanded = {};
@@ -681,47 +652,47 @@ const pwaNavItems = useMemo(() => {
         </div>
       </main>
 
-      {/* Floating Action Button — khusus PWA */}
-      {isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') && fabQuickItems.length > 0 && (
+      {/* Floating Action Button + Grid Menu (scrollable) — khusus PWA */}
+      {isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') && (
         <div className="fixed right-4 bottom-6 z-[80] flex flex-col items-end gap-3">
           <AnimatePresence>
             {isFabOpen && (
               <motion.div
-                key="fab-menu"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
+                key="fab-grid-card"
+                initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.95 }}
                 transition={{ duration: 0.18 }}
-                className="flex flex-col items-end gap-3"
+                className="w-[270px] max-h-[55vh] overflow-y-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-3.5"
               >
-                {fabQuickItems.map((item, idx) => {
-                  const Icon = iconMap[item.icon] || Home;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => { navigate(item.path); setIsFabOpen(false); }}
-                      className="flex items-center gap-2"
-                    >
-                      <span className={cn(
-                        "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border",
-                        isActive
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-slate-700 border-slate-200"
-                      )}>
-                        {item.label}
-                      </span>
-                      <span className={cn(
-                        "w-9 h-9 rounded-full flex items-center justify-center shadow-md border",
-                        isActive
-                          ? "bg-blue-600 border-blue-600"
-                          : "bg-white border-slate-200"
-                      )}>
-                        <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-slate-600")} />
-                      </span>
-                    </button>
-                  );
-                })}
+                <p className="text-[11px] font-semibold text-slate-400 mb-2.5 px-0.5">Semua menu</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {finalNavItems.map((item, idx) => {
+                    const Icon = iconMap[item.icon] || Home;
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (item.onClick) { item.onClick(); } else { navigate(item.path); }
+                          setIsFabOpen(false);
+                        }}
+                        className={cn(
+                          "flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl transition-colors",
+                          isActive ? "bg-blue-50" : "bg-slate-50"
+                        )}
+                      >
+                        <Icon className={cn("w-[17px] h-[17px]", isActive ? "text-blue-600" : "text-slate-500")} />
+                        <span className={cn(
+                          "text-[9.5px] text-center leading-tight",
+                          isActive ? "text-blue-600 font-medium" : "text-slate-600"
+                        )}>
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -729,7 +700,7 @@ const pwaNavItems = useMemo(() => {
           <button
             onClick={() => setIsFabOpen(prev => !prev)}
             className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform",
+              "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform shrink-0",
               isFabOpen ? "bg-slate-900 rotate-45" : "bg-blue-600"
             )}
           >
