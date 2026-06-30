@@ -116,12 +116,7 @@ switch (role) {
 
   case 'admin':
 case 'clinic_admin':
-  navigate(
-    isPWA
-      ? '/admin/appointment-booking'
-      : '/admin',
-    { replace: true }
-  );
+  navigate('/admin', { replace: true });
   break;
 
   case 'therapist':
