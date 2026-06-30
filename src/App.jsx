@@ -25,7 +25,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
+
 
 // Loading Component
 const LoadingFallback = () => (
@@ -171,15 +171,9 @@ function App() {
                 
                 {/* Protected Routes */}
                 <Route
-                  path="/admin/appointment-booking"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'owner', 'super_admin']}>
-                       <div className="min-h-screen bg-slate-50 p-6">
-                          <AdminAppointmentBooking />
-                       </div>
-                    </ProtectedRoute>
-                  }
-                />
+  path="/admin/appointment-booking"
+  element={<Navigate to="/admin/appointments" replace />}
+/>
 
                 <Route 
                   path="/owner/therapist/:therapistId/schedule-settings" 
