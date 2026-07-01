@@ -8,10 +8,7 @@ import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
 
 const AdminDatabasePatients = () => {
-    const isPWA =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true ||
-        document.referrer.includes('android-app://');
+   
     const { toast } = useToast();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -122,24 +119,24 @@ const AdminDatabasePatients = () => {
 
     return (
         <div className="space-y-6">
-            {/* Hero Banner — sembunyikan di PWA */}
-            {!isPWA && (
-            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
+            {/* Hero Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl">
+              <div className="absolute -top-8 -right-8 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
-                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Database Pasien</h2>
-                    <p className="text-sm text-slate-400 mt-0.5">Total {pagination.totalItems} pasien terdaftar dalam sistem</p>
+                    <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
+                    <h1 className="text-lg md:text-2xl font-bold tracking-tight">Database Pasien</h1>
+                    <p className="text-slate-400 text-xs mt-1">Total {pagination.totalItems} pasien terdaftar dalam sistem.</p>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto">
                   <Button onClick={handleRefresh} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                     Refresh Data
                   </Button>
@@ -149,7 +146,6 @@ const AdminDatabasePatients = () => {
                 </div>
               </div>
             </div>
-            )}
 
             {/* Patient Table Component */}
             <CenteredPatientTable 
