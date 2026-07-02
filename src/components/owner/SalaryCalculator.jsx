@@ -181,15 +181,8 @@ const endDateStr = dateRange?.endDate;
   const calcOneTherapist = async (therapist) => {
     const salaryScheme = therapist.salary_scheme || 'full_salary';
 
-    let startDateStr, endDateStr;
-    if (salaryScheme === 'full_salary') {
-      const now = new Date();
-      startDateStr = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
-      endDateStr = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
-    } else {
-      startDateStr = dateRange?.startDate;
-      endDateStr = dateRange?.endDate;
-    }
+    const startDateStr = dateRange?.startDate;
+    const endDateStr = dateRange?.endDate;
 
     // Fetch recaps dengan data pasien & package tracking
     const { data: rawRecaps } = await supabase
