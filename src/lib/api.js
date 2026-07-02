@@ -1956,32 +1956,56 @@ export const fetchTotalPackages = async (startDate, endDate) => {
   }, 'fetchTotalPackages');
 };
 export const createBulkMedicalRecords = async () => ({ data: [] });
+// Pastikan token auth masih fresh sebelum menulis; kalau gagal karena
+// 0 baris (RLS menolak akibat sesi lama), refresh sesi lalu coba sekali lagi.
+const ensureFreshSessionThenWrite = async (writeFn) => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData?.session;
+
+  if (!session || (session.expires_at && session.expires_at * 1000 < Date.now() + 60000)) {
+    await supabase.auth.refreshSession();
+  }
+
+  let result = await writeFn();
+
+  if (result.error?.code === 'PGRST116') {
+    await supabase.auth.refreshSession();
+    result = await writeFn();
+  }
+
+  return result;
+};
+
 export const setDailyRecapStartTime = async (recapId) => {
   return safeQuery(async () => {
-    return await supabase
-      .from('daily_recaps')
-      .update({
-        start_time: new Date().toISOString(),
-        status: 'ongoing', // 🔥 TAMBAHAN PENTING
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', recapId)
-      .select()
-      .single();
+    return await ensureFreshSessionThenWrite(() =>
+      supabase
+        .from('daily_recaps')
+        .update({
+          start_time: new Date().toISOString(),
+          status: 'ongoing', // 🔥 TAMBAHAN PENTING
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', recapId)
+        .select()
+        .single()
+    );
   }, 'setDailyRecapStartTime', { retry: true });
 };
 export const setDailyRecapEndTime = async (recapId) => {
   return safeQuery(async () => {
-    return await supabase
-      .from('daily_recaps')
-      .update({
-        end_time: new Date().toISOString(),
-        status: 'completed', // 🔥 TAMBAHAN
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', recapId)
-      .select()
-      .single();
+    return await ensureFreshSessionThenWrite(() =>
+      supabase
+        .from('daily_recaps')
+        .update({
+          end_time: new Date().toISOString(),
+          status: 'completed', // 🔥 TAMBAHAN
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', recapId)
+        .select()
+        .single()
+    );
   }, 'setDailyRecapEndTime', { retry: true });
 };
 // ============================================

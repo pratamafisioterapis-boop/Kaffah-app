@@ -24,6 +24,7 @@ export const handleSupabaseError = (error, context = 'Unknown Context') => {
   const isAuthError = 
     errorCode === '401' || 
     errorCode === 'PGRST301' || 
+    errorCode === 'PGRST116' || 
     errorMessage.toLowerCase().includes('jwt') ||
     errorMessage.toLowerCase().includes('unauthorized');
 
