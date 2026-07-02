@@ -25,7 +25,7 @@ const FollowUpManagementPage = () => {
     const fetchQueue = useCallback(async () => {
         setError(null);
         try {
-            const { data, success, error: apiError } = await getFollowUpQueue('pending');
+            const { data, success, error: apiError } = await getFollowUpQueue(null);
             
             if (success) {
                 setQueueItems(data || []);

@@ -355,30 +355,29 @@ const FollowUpManagement = () => {
 };
 
   // Filter queues based on new categories
-  const bookingQueue = queueData.filter(q =>
-  ['booking_appointment', 'booking_appointment_therapist'].includes(q.follow_up_type) &&
-  ['pending', 'failed'].includes(q.status)
-);
+  // Urutan tampil: pending & failed dulu, lalu sent/completed, cancelled paling bawah
+const statusRank = { pending: 0, failed: 1, sent: 2, completed: 2, cancelled: 3 };
+const byStatus = (a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
 
-const postTreatmentQueue = queueData.filter(q =>
-  q.follow_up_type === 'follow_up' &&
-  ['pending', 'failed'].includes(q.status)
-);
+const bookingQueue = queueData
+  .filter(q => ['booking_appointment', 'booking_appointment_therapist'].includes(q.follow_up_type))
+  .sort(byStatus);
 
-const expiryQueue = queueData.filter(q =>
-  q.follow_up_type === 'package_expiry' &&
-  ['pending', 'failed'].includes(q.status)
-);
+const postTreatmentQueue = queueData
+  .filter(q => q.follow_up_type === 'follow_up')
+  .sort(byStatus);
 
-const reminderQueue = queueData.filter(q =>
-  ['therapy_reminder', 'reminder_therapist_h10'].includes(q.follow_up_type) &&
-  ['pending', 'failed'].includes(q.status)
-);
+const expiryQueue = queueData
+  .filter(q => q.follow_up_type === 'package_expiry')
+  .sort(byStatus);
 
-const birthdayQueue = queueData.filter(q =>
-  q.follow_up_type === 'birthday_greeting' &&
-  ['pending', 'failed'].includes(q.status)
-);
+const reminderQueue = queueData
+  .filter(q => ['therapy_reminder', 'reminder_therapist_h10'].includes(q.follow_up_type))
+  .sort(byStatus);
+
+const birthdayQueue = queueData
+  .filter(q => q.follow_up_type === 'birthday_greeting')
+  .sort(byStatus);
 
   // Render Grid Card Component
   const QueueCard = ({ item }) => {

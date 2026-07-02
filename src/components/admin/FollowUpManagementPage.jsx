@@ -220,7 +220,6 @@ const handleGenerate = async (type) => {
   item =>
     item &&
     item.follow_up_type === activeTab &&
-    ['pending', 'failed'].includes(item.status) &&
     item.scheduled_date?.split('T')[0] === today
 );
 const displayItems =
@@ -252,7 +251,6 @@ const getCount = (type) => {
     i =>
       i &&
       i.follow_up_type === type &&
-      ['pending', 'failed'].includes(i.status) &&
       i.scheduled_date?.split('T')[0] === today
   ).length;
 };
