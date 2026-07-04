@@ -291,8 +291,6 @@ export const getFollowUpQueue = async (status = null, type = null) => {
     // FILTER STATUS
     if (status) {
       query = query.eq('status', status);
-    } else {
-      query = query.in('status', ['pending', 'failed']);
     }
 
     // FILTER TYPE
