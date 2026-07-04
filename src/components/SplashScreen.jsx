@@ -117,6 +117,11 @@ export default function SplashScreen({ onDone }) {
           <>
             <p className="text-white/60 text-sm font-medium">{greeting}</p>
             <h1 className="text-white text-3xl font-black mt-1 leading-tight">{name}</h1>
+            {roleLabel && (
+              <span className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                {roleLabel}
+              </span>
+            )}
           </>
         )}
 
