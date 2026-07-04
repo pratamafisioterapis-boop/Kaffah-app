@@ -596,15 +596,6 @@ const pwaNavItems = useMemo(() => {
         {renderSidebarContent()}
       </aside>
 
-      {!(isPWA && ['therapist', 'owner', 'admin'].includes(role)) && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-50 w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      )}
-
       <main className={cn(
         "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
         isPWA && (role === 'therapist' || role === 'admin') ? "pt-0" : "pt-0"
@@ -621,7 +612,7 @@ const pwaNavItems = useMemo(() => {
       </main>
 
       {/* Floating Action Button — pill list 1 kolom, semua menu, scrollable — khusus PWA */}
-      {isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') && (
+      {(role === 'therapist' || role === 'owner' || role === 'admin') && (
         <>
           <AnimatePresence>
             {isFabOpen && (
@@ -632,12 +623,12 @@ const pwaNavItems = useMemo(() => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setIsFabOpen(false)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75]"
+                className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75]"
               />
             )}
           </AnimatePresence>
 
-        <div className="fixed right-4 bottom-6 z-[80] flex flex-col items-end gap-3">
+        <div className="lg:hidden fixed right-4 bottom-6 z-[80] flex flex-col items-end gap-3">
           <AnimatePresence>
             {isFabOpen && (
               <motion.div
