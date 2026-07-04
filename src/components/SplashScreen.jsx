@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { supabase } from "@/lib/customSupabaseClient";
 
 const dailyQuotes = [
   "🤲 Semoga Allah mudahkan setiap ikhtiar hari ini.",
@@ -51,6 +52,18 @@ export default function SplashScreen({ onDone }) {
   const { userDetails, clinicName } = useAuth();
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchLogo = async () => {
+      if (!userDetails?.clinic_id) return;
+      const { data } = await supabase.from('clinics').select('logo_url').eq('id', userDetails.clinic_id).single();
+      if (active) setLogoUrl(data?.logo_url || null);
+    };
+    fetchLogo();
+    return () => { active = false; };
+  }, [userDetails?.clinic_id]);
 
   const greeting = getGreeting();
   const quote = getTodayQuote();
@@ -89,8 +102,8 @@ export default function SplashScreen({ onDone }) {
         {/* Logo */}
         <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4">
           <img
-            src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
-            alt="Kaffah Logo"
+            src={logoUrl || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
+            alt={clinicName || "Clinic Logo"}
             className="w-full h-full object-cover"
           />
         </div>
