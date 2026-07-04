@@ -16,6 +16,7 @@ import GlobalDateRangeFilter from '@/components/shared/GlobalDateRangeFilter';
 import SalaryCalculator from '@/components/owner/SalaryCalculator';
 import PackageHistory from '@/components/owner/PackageHistory'; 
 import PackageFunds from '@/components/owner/PackageFunds';
+import FixedCostManager from '@/components/owner/FixedCostManager';
 import { formatTime } from '@/lib/dateFormatHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -402,65 +403,6 @@ const OwnerFinanceDashboard = () => {
         )}
       </div>
 
-      {/* Quick Action Widget — PWA: date filter masuk sini */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
-        {isPWA && (
-          <div className="flex flex-col gap-2 w-full">
-            <span className="text-teal-700 text-[10px] font-bold uppercase tracking-wider">Periode</span>
-            <div className="flex items-center gap-2 w-full">
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs bg-white border border-teal-200 rounded-lg px-2 py-2 outline-none text-slate-700 font-medium flex-1 min-w-0"
-              />
-              <span className="text-slate-400 shrink-0">–</span>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs bg-white border border-teal-200 rounded-lg px-2 py-2 outline-none text-slate-700 font-medium flex-1 min-w-0"
-              />
-              <button
-                onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-                className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 shrink-0"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-        <div className={cn("flex items-center gap-2", isPWA ? "mr-1 mt-1 w-full" : "mr-1")}>
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#14b8a6', opacity: 0.85 }}>
-            <DollarSign className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
-        </div>
-        <button
-          onClick={() => openForm('expenditure')}
-          className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
-            isPWA ? "flex-1" : ""
-          )}
-          style={{ background: '#e11d48' }}
-        >
-          <TrendingDown className="w-3.5 h-3.5" />
-          + Pengeluaran
-        </button>
-        <button
-          onClick={() => openForm('income')}
-          className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
-            isPWA ? "flex-1" : ""
-          )}
-          style={{ background: '#059669' }}
-        >
-          <TrendingUp className="w-3.5 h-3.5" />
-          + Pemasukan
-        </button>
-        <span className="text-[11px] text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah tab</span>
-      </div>
-
       <AnimatePresence mode="wait">
         
         {/* --- ACCOUNTING REPORT SECTION --- */}
@@ -514,6 +456,7 @@ const OwnerFinanceDashboard = () => {
               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
               <SubTabButton isActive={activeOwnerTab === 'bank'} onClick={() => setActiveOwnerTab('bank')} label="Akun Bank" icon={Building} color="blue" />
               <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} color="cyan" />
+              <SubTabButton isActive={activeOwnerTab === 'fixed_cost'} onClick={() => setActiveOwnerTab('fixed_cost')} label="Fixed Cost" icon={Wallet} color="blue" />
             </div>
 
             <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
@@ -646,6 +589,12 @@ const OwnerFinanceDashboard = () => {
                         <span className="font-bold tabular-nums text-slate-700">{formatCurrency(row.amount)}</span>
                       )},
                     ]} />
+                </div>
+              )}
+
+              {activeOwnerTab === 'fixed_cost' && (
+                <div className="p-5">
+                  <FixedCostManager />
                 </div>
               )}
             </div>

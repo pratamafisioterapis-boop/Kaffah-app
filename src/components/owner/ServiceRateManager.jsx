@@ -1,0 +1,231 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, Trash2, Edit2, Loader2, AlertCircle, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
+
+const ServiceRateManager = () => {
+  const { toast } = useToast();
+  const [rates, setRates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRate, setEditingRate] = useState(null);
+  const [form, setForm] = useState({ service_name: '', rate: '' });
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingRate, setDeletingRate] = useState(null);
+
+  const fetchRates = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('service_rates')
+      .select('*')
+      .order('service_name', { ascending: true });
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat tarif jasa.' });
+    } else {
+      setRates(data || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchRates(); }, []);
+
+  const openAdd = () => {
+    setEditingRate(null);
+    setForm({ service_name: '', rate: '' });
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (item) => {
+    setEditingRate(item);
+    setForm({ service_name: item.service_name, rate: item.rate });
+    setIsFormOpen(true);
+  };
+
+  const openDelete = (item) => {
+    setDeletingRate(item);
+    setIsDeleteOpen(true);
+  };
+
+  const handleSave = async () => {
+    const name = form.service_name.trim();
+    const rateValue = parseFloat(form.rate) || 0;
+    if (!name) {
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Nama tipe pasien/layanan wajib diisi.' });
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      if (editingRate) {
+        const { data, error } = await supabase
+          .from('service_rates')
+          .update({ service_name: name, rate: rateValue })
+          .eq('id', editingRate.id)
+          .select()
+          .single();
+        if (error) throw error;
+        setRates(prev => prev.map(r => r.id === editingRate.id ? data : r));
+        toast({ title: 'Berhasil', description: 'Tarif diperbarui.' });
+      } else {
+        const { data, error } = await supabase
+          .from('service_rates')
+          .insert({ service_name: name, rate: rateValue })
+          .select()
+          .single();
+        if (error) throw error;
+        setRates(prev => [...prev, data]);
+        toast({ title: 'Berhasil', description: 'Tarif ditambahkan.' });
+      }
+      setIsFormOpen(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Gagal Menyimpan', description: error.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingRate) return;
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase.from('service_rates').delete().eq('id', deletingRate.id);
+      if (error) throw error;
+      setRates(prev => prev.filter(r => r.id !== deletingRate.id));
+      toast({ title: 'Terhapus', description: 'Tarif dihapus.' });
+      setIsDeleteOpen(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Gagal Menghapus', description: error.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Tarif Jasa Terapis per Tipe Pasien</h2>
+          <p className="text-sm text-slate-500">Nilai insentif yang diterima terapis untuk setiap tipe pasien/layanan. Nama harus sama/mirip dengan Tipe Pasien di Setup.</p>
+        </div>
+        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Tarif
+        </Button>
+      </div>
+
+      <div className="p-6">
+        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
+          ) : rates.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <p>Belum ada tarif jasa yang tersedia.</p>
+              <Button variant="link" onClick={openAdd} className="text-blue-600 mt-2">Tambahkan tarif pertama</Button>
+            </div>
+          ) : (
+            rates.map((item) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <Wallet className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <span className="font-medium text-slate-700">{item.service_name}</span>
+                    <p className="text-xs text-emerald-600 font-semibold mt-0.5">{formatCurrency(item.rate)} / sesi</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(item)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader><DialogTitle>{editingRate ? 'Edit' : 'Tambah'} Tarif Jasa</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Nama Tipe Pasien/Layanan</label>
+              <Input
+                value={form.service_name}
+                onChange={(e) => setForm({ ...form, service_name: e.target.value })}
+                placeholder="Contoh: DUA KELUHAN"
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Insentif per Sesi (Rp)</label>
+              <Input
+                type="number"
+                value={form.rate}
+                onChange={(e) => setForm({ ...form, rate: e.target.value })}
+                placeholder="Contoh: 50000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
+            <Button onClick={handleSave} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+              {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Modal */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Konfirmasi Hapus
+            </DialogTitle>
+            <DialogDescription>
+              Hapus tarif "{deletingRate?.service_name}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Batal</Button>
+            <Button onClick={handleDelete} disabled={isProcessing} className="bg-red-600 hover:bg-red-700">
+              {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ServiceRateManager;

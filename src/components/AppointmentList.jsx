@@ -51,8 +51,17 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
 
         if (aptError) throw aptError;
 
-        const dateObj = new Date(apt.appointment_date);
-        const startTime = dateObj.toISOString().substring(11, 16); // HH:mm
+        const startTime = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Makassar',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(new Date(apt.appointment_date)); // HH:mm (WITA)
+
+        const slotDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Makassar',
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        }).format(new Date(apt.appointment_date)); // yyyy-MM-dd (WITA)
 
         // 2️⃣ Hapus daily_recaps by appointment_id
         const { error: delError } = await supabase
@@ -63,7 +72,7 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
         if (delError) throw delError;
 
         // 3️⃣ Fallback orphan recap
-        const recapDate = apt.appointment_date.split('T')[0];
+        const recapDate = slotDate;
         await supabase
           .from('daily_recaps')
           .delete()
@@ -71,11 +80,12 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
           .eq('recap_date', recapDate)
           .is('appointment_id', null);
 
-        // 4️⃣ 🔓 BUKA SLOT YANG SESUAI JAM
+        // 4️⃣ 🔓 BUKA SLOT YANG SESUAI JAM & TANGGAL
         const { error: slotError } = await supabase
           .from('therapist_slots')
           .update({ is_available: true })
           .eq('therapist_id', apt.therapist_id)
+          .eq('slot_date', slotDate)
           .eq('slot_start_time', startTime);
 
         if (slotError) throw slotError;

@@ -179,42 +179,38 @@ const today = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric', month: '2-digit', day: '2-digit'
 }).format(new Date());
 
-// Langsung query dari tabel appointments/schedules lebih reliable
-// daripada RPC yang field-nya tidak pasti
-const { data: slotData, error: slotError } = await supabase
-  .from('therapist_schedules')
-  .select('therapist_id, id')
-  .eq('day_of_week', new Date().getDay())
-  .eq('is_active', true);
+// 🔥 Gunakan RPC yang sama persis dengan halaman Appointments
+// agar konsisten (tabel therapist_schedules tidak memperhitungkan
+// override/pengecualian jadwal untuk tanggal spesifik)
+const { data: rpcData } = await supabase.rpc(
+  'get_available_slots_with_status_by_date',
+  { p_date: today }
+);
 
-// Fallback: coba RPC jika tabel schedules tidak ada
 let slotCountMap = {};
+(rpcData || []).forEach(slot => {
+  const tid = slot.therapist_id || slot.therapistId || slot.therapist;
+  if (!tid) return;
+  slotCountMap[tid] = (slotCountMap[tid] || 0) + 1;
+});
 
-if (slotError || !slotData) {
-  // Gunakan RPC sebagai fallback
-  const { data: rpcData } = await supabase.rpc(
-    'get_available_slots_with_status_by_date',
-    { p_date: today }
-  );
-  
-  (rpcData || []).forEach(slot => {
-    // Coba semua kemungkinan nama field
-    const tid = slot.therapist_id || slot.therapistId || slot.therapist;
-    if (!tid) return;
-    slotCountMap[tid] = (slotCountMap[tid] || 0) + 1;
-  });
-} else {
-  (slotData || []).forEach(s => {
-    const tid = s.therapist_id;
-    if (!tid) return;
-    slotCountMap[tid] = (slotCountMap[tid] || 0) + 1;
-  });
-}
+// 🔥 Cek terapis yang sedang cuti/sakit pada tanggal hari ini
+const { data: timeOffData } = await supabase
+  .from('therapist_time_off')
+  .select('therapist_id, reason')
+  .lte('start_date', today)
+  .gte('end_date', today);
 
-// Inject total_slots ke therapist
+const leaveMap = {};
+(timeOffData || []).forEach(t => {
+  leaveMap[t.therapist_id] = (t.reason || '').toLowerCase().includes('sakit') ? 'sakit' : 'cuti';
+});
+
+// Inject total_slots & leave_status ke therapist
 const enrichedTherapists = activeTherapistsOnly.map(t => ({
   ...t,
-  total_slots: slotCountMap[t.id] || 0
+  total_slots: slotCountMap[t.id] || 0,
+  leave_status: leaveMap[t.id] || null
 }));
 
 setTherapists(enrichedTherapists);

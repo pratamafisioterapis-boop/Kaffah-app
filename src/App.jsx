@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useState } from 'react';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import SplashScreen from "@/components/SplashScreen";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -136,6 +137,7 @@ function App() {
     <ErrorBoundary>
       <AuthErrorBoundary>
         <AuthProvider>
+          <ThemeProvider>
 
   
 
@@ -253,6 +255,7 @@ function App() {
             </Suspense>
           </Router>
           <Toaster />
+        </ThemeProvider>
         </AuthProvider>
       </AuthErrorBoundary>
     </ErrorBoundary>

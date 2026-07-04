@@ -15,10 +15,11 @@ import {
 } from 'recharts';
 import {
   getOwnerIncome, getOwnerExpenditures, getAdminIncome,
-  getAdminExpenses, getPatientIncomeFromPackages
+  getAdminExpenses, getPatientIncomeFromPackages, getServiceRates
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
+import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -60,27 +61,29 @@ const RevenueOverview = ({ dateRange }) => {
     nonPkgRecaps: [],
     pkgRecaps: [],
   });
+  const [serviceRates, setServiceRates] = useState([]);
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
         getPatientIncomeFromPackages(dateRange),
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
         supabase.from('daily_recaps')
-          .select('therapist_name, amount')
+          .select('therapist_name, amount, patient_type')
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('therapist_name, package_tracking!inner(nominal, total_sessions)')
+          .select('therapist_name, patient_type, package_tracking!inner(nominal, total_sessions)')
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
+        getServiceRates(),
       ]);
 // Fetch dana paket aktif
       const { data: activePkgs } = await supabase
@@ -109,6 +112,7 @@ const RevenueOverview = ({ dateRange }) => {
         nonPkgRecaps: nonPkgRecaps?.data || [],
         pkgRecaps: pkgRecaps?.data || [],
       });
+      setServiceRates(serviceRatesRes?.data || []);
     } catch (error) {
       console.error('Error fetching finance overview:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat data finance.' });
@@ -217,6 +221,31 @@ const RevenueOverview = ({ dateRange }) => {
       .map(([name, revenue]) => ({ name: name.split(',')[0], fullName: name, revenue: Math.round(revenue) }))
       .sort((a, b) => b.revenue - a.revenue);
   }, [data.nonPkgRecaps, data.pkgRecaps]);
+  // ── BEP Inputs: avg revenue & avg insentif terapis per pasien/sesi periode ini ──
+  const bepInputs = useMemo(() => {
+    const allSessions = [
+      ...(data.nonPkgRecaps || []).map(r => ({ patient_type: r.patient_type || '', amount: Number(r.amount) || 0 })),
+      ...(data.pkgRecaps || []).map(r => ({
+        patient_type: r.patient_type || '',
+        amount: r.package_tracking ? Number(r.package_tracking.nominal) / Number(r.package_tracking.total_sessions) : 0,
+      })),
+    ];
+    const totalSessionsInPeriod = allSessions.length;
+    const avgRevenuePerPatient = totalSessionsInPeriod > 0 ? metrics.totalRevenue / totalSessionsInPeriod : 0;
+
+    const totalIncentive = allSessions.reduce((sum, s) => {
+      const typeLabel = (s.patient_type || '').toUpperCase();
+      const matched = serviceRates.find(r => {
+        const svc = (r.service_name || '').toUpperCase();
+        return svc === typeLabel || svc.includes(typeLabel) || typeLabel.includes(svc);
+      });
+      return sum + (Number(matched?.rate) || 0);
+    }, 0);
+    const avgIncentivePerPatient = totalSessionsInPeriod > 0 ? totalIncentive / totalSessionsInPeriod : 0;
+
+    return { totalSessionsInPeriod, avgRevenuePerPatient, avgIncentivePerPatient };
+  }, [data.nonPkgRecaps, data.pkgRecaps, serviceRates, metrics.totalRevenue]);
+
   // ── Alerts ──
   const alerts = useMemo(() => {
     const items = [];
@@ -359,6 +388,13 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Break Even Point ── */}
+      <BreakEvenPointWidget
+        avgRevenuePerPatient={bepInputs.avgRevenuePerPatient}
+        avgIncentivePerPatient={bepInputs.avgIncentivePerPatient}
+        totalPatientsInPeriod={bepInputs.totalSessionsInPeriod}
+      />
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">

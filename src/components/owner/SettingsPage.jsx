@@ -19,6 +19,9 @@ import {
   updateOperationalOption, 
   deleteOperationalOption
 } from '@/lib/api';
+import { Palette, Wallet } from 'lucide-react';
+import DesignStyleManager from '@/components/owner/DesignStyleManager';
+import ServiceRateManager from '@/components/owner/ServiceRateManager';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -970,6 +973,12 @@ const SettingsPage = () => {
           <TabsTrigger value="discount" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Tag className="w-3.5 h-3.5" /> Jenis Diskon
           </TabsTrigger>
+          <TabsTrigger value="design_style" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <Palette className="w-3.5 h-3.5" /> Tampilan
+          </TabsTrigger>
+          <TabsTrigger value="service_rates" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <Wallet className="w-3.5 h-3.5" /> Tarif Jasa
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -1006,6 +1015,12 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="discount">
             <DiscountTypeManager />
+          </TabsContent>
+          <TabsContent value="design_style">
+            <DesignStyleManager />
+          </TabsContent>
+          <TabsContent value="service_rates">
+            <ServiceRateManager />
           </TabsContent>
         </div>
       </Tabs>

@@ -405,7 +405,7 @@ const pwaNavItems = useMemo(() => {
 
   // Converted to standard function rendering to avoid unmount/remount on parent render
   const renderSidebarContent = () => (
-    <div className="flex flex-col h-full bg-slate-900 text-white shadow-2xl relative overflow-hidden">
+    <div className="flex flex-col h-full text-white shadow-2xl relative overflow-hidden" style={{ background: 'var(--app-sidebar-bg, #0f172a)' }}>
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
          <div className="absolute top-[-10%] right-[-20%] w-[200px] h-[200px] bg-blue-600/20 rounded-full blur-[60px]" />
          <div className="absolute bottom-[10%] left-[-10%] w-[150px] h-[150px] bg-cyan-500/10 rounded-full blur-[50px]" />
@@ -430,7 +430,7 @@ const pwaNavItems = useMemo(() => {
           <h2 className="text-xl font-bold text-white tracking-tight leading-none">
             {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-slate-700 align-middle" />}
           </h2>
-          <p className="text-[10px] text-blue-300 font-bold tracking-[0.1em] uppercase mt-1">CLINIC MANAGEMENT</p>
+          <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>CLINIC MANAGEMENT</p>
         </div>
       </div>
       
@@ -473,9 +473,14 @@ const pwaNavItems = useMemo(() => {
                     cn(
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden",
                       linkActive || (isActive && item.path !== `/${role}`)
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/30" 
+                        ? "text-white shadow-lg" 
                         : "text-slate-400 hover:text-white hover:bg-white/5"
                     )
+                  }
+                  style={({ isActive: linkActive }) =>
+                    linkActive || (isActive && item.path !== `/${role}`)
+                      ? { background: 'var(--app-accent, #2563eb)' }
+                      : undefined
                   }
                 >
                   {({ isActive: linkActive }) => {
@@ -510,14 +515,15 @@ const pwaNavItems = useMemo(() => {
                             cn(
                               "block px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
                               isActive 
-                                ? "text-blue-400 bg-blue-500/10" 
+                                ? "bg-white/5" 
                                 : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
                             )
                           }
+                          style={({ isActive }) => isActive ? { color: 'var(--app-accent, #60a5fa)' } : undefined}
                         >
                           {({ isActive }) => (
                             <div className="flex items-center gap-2">
-                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "bg-blue-400" : "bg-slate-600")} />
+                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-slate-600")} style={isActive ? { background: 'var(--app-accent, #60a5fa)' } : undefined} />
                               {subItem.label}
                             </div>
                           )}
@@ -562,7 +568,7 @@ const pwaNavItems = useMemo(() => {
   );
 
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 font-sans">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50" style={{ fontFamily: 'var(--app-font, inherit)' }}>
       <AnimatePresence>
         {isSidebarOpen && (
           <>
@@ -654,17 +660,17 @@ const pwaNavItems = useMemo(() => {
                       <span className={cn(
                         "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap",
                         isActive
-                          ? "bg-blue-600 text-white border-blue-600"
+                          ? "text-white"
                           : "bg-white text-slate-700 border-slate-200"
-                      )}>
+                      )} style={isActive ? { background: 'var(--app-accent, #2563eb)', borderColor: 'var(--app-accent, #2563eb)' } : undefined}>
                         {item.label}
                       </span>
                       <span className={cn(
                         "w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0",
                         isActive
-                          ? "bg-blue-600 border-blue-600"
+                          ? "border-transparent"
                           : "bg-white border-slate-200"
-                      )}>
+                      )} style={isActive ? { background: 'var(--app-accent, #2563eb)' } : undefined}>
                         <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-slate-600")} />
                       </span>
                     </button>
@@ -695,8 +701,9 @@ const pwaNavItems = useMemo(() => {
             onClick={() => setIsFabOpen(prev => !prev)}
             className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform shrink-0",
-              isFabOpen ? "bg-slate-900 rotate-45" : "bg-blue-600"
+              isFabOpen ? "bg-slate-900 rotate-45" : ""
             )}
+            style={!isFabOpen ? { background: 'var(--app-accent, #2563eb)' } : undefined}
           >
             <Plus className="w-5 h-5 text-white" />
           </button>

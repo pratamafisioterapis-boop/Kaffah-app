@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Zap, Stethoscope, X } from 'lucide-react';
+import { Check, Zap, Stethoscope, X, CalendarOff } from 'lucide-react';
 
 const isPWA = (() => {
   try {
@@ -21,6 +21,7 @@ const TherapistStatusCards = ({
 
     if (!therapist.is_active) return { label: 'Non Aktif', icon: X, color: 'bg-slate-400', ring: 'ring-slate-200', text: 'text-slate-600', badge: 'bg-slate-100 text-slate-600', bar: 'bg-slate-400', percentage, sessions, totalSlots };
     if (therapist.leave_status && ['cuti','sakit'].includes(therapist.leave_status.toLowerCase())) return { label: therapist.leave_status, icon: Stethoscope, color: 'bg-slate-500', ring: 'ring-slate-200', text: 'text-slate-600', badge: 'bg-slate-100 text-slate-600', bar: 'bg-slate-400', percentage, sessions, totalSlots };
+    if (totalSlots === 0) return { label: 'Tidak Ada Jadwal', icon: CalendarOff, color: 'bg-slate-400', ring: 'ring-slate-200', text: 'text-slate-500', badge: 'bg-slate-100 text-slate-500', bar: 'bg-slate-300', percentage, sessions, totalSlots };
     if (percentage > 75) return { label: 'Busy', icon: Zap, color: 'bg-amber-500', ring: 'ring-amber-200', text: 'text-amber-600', badge: 'bg-amber-50 text-amber-700', bar: 'bg-amber-500', percentage, sessions, totalSlots };
     return { label: 'Available', icon: Check, color: 'bg-emerald-500', ring: 'ring-emerald-200', text: 'text-emerald-600', badge: 'bg-emerald-50 text-emerald-700', bar: 'bg-emerald-500', percentage, sessions, totalSlots };
   };
