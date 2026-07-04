@@ -12,8 +12,10 @@ import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings } from '@/lib/api';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const InvoiceModal = ({ isOpen, onClose, data }) => {
+  const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
   const componentRef                       = useRef();
   const { toast }                          = useToast();
@@ -273,12 +275,13 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       }
 
       // 4. Siapkan pesan caption
+      const clinicName = detailData?.clinic?.name || 'Kaffah Physiotherapy';
       const caption =
         `Berikut *Kwitansi Terapi* hari ini.\n\n` +
-        `Terima kasih telah mempercayakan pemulihan di *Kaffah Physiotherapy*.\n` +
+        `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
         `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
         `*Salam Sehat,*\n` +
-        `Kaffah Physiotherapy`;
+        `${clinicName}`;
 
       // 5. Panggil SQL function send_invoice_whatsapp via RPC
       // → Request ke Wablas dilakukan dari DATABASE bukan browser → bebas CORS
