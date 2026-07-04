@@ -46,7 +46,15 @@ const PatientDetailModal = ({
     // Fetch options for additional info dropdown
     useEffect(() => {
         const fetchOptions = async () => {
-            const { data } = await supabase.from('patient_info_options').select('*').eq('is_active', true);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData?.session?.user?.id;
+            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+            const { data } = await supabase
+                .from('patient_info_options')
+                .select('*')
+                .eq('is_active', true)
+                .eq('clinic_id', userRow?.clinic_id);
             if (data) setInfoOptions(data);
         };
         fetchOptions();

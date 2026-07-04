@@ -11,8 +11,9 @@ const PackageRecapsOwner = () => {
         { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'ClipboardList' },
         { label: 'Package Recaps', path: '/owner/package-recaps', icon: 'Package' }, // Explicitly added
         { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
-        { label: 'Physiotherapist Management', path: '/owner/therapist-management', icon: 'Users' },
-        { label: 'Accounting System', path: '/owner/finance-dashboard', icon: 'DollarSign' },
+        { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'MessageSquare' },
+        { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
+        { label: 'Accounting System', path: '/owner/accounting', icon: 'DollarSign' },
         { label: 'Setup', path: '/owner/settings', icon: 'Settings' }
     ];
 
