@@ -8,27 +8,28 @@ import { supabase } from '@/lib/customSupabaseClient';
  */
 export const generateMedicalRecordNumber = async () => {
     try {
-        // Fetch the last created patient's RM number
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
         const { data, error } = await supabase
             .from('patients')
             .select('medical_record_number')
-            .order('created_at', { ascending: false }) // Assuming created_at or id is a good proxy for sequence
+            .eq('clinic_id', userRow?.clinic_id)
+            .order('created_at', { ascending: false })
             .limit(1)
             .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        if (error && error.code !== 'PGRST116') {
             console.error("Error fetching last RM:", error);
-            return 'RM00001'; // Fallback
+            return 'RM00001';
         }
 
         if (!data || !data.medical_record_number) {
             return 'RM00001';
         }
 
-        // Extract number part
-        const lastRm = data.medical_record_number;
-        const numberPart = lastRm.replace(/\D/g, ''); // Remove non-digits
-        
+        const numberPart = data.medical_record_number.replace(/\D/g, '');
         if (!numberPart) return 'RM00001';
 
         const nextNumber = parseInt(numberPart, 10) + 1;
