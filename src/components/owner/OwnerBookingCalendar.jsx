@@ -13,6 +13,7 @@ import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useToast } from '@/components/ui/use-toast';
 
 import { 
   getActivePhysiotherapists,  
@@ -28,9 +29,11 @@ import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailMo
 
 const OwnerBookingCalendar = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   
   // Data State
   const [therapists, setTherapists] = useState([]);
@@ -43,7 +46,14 @@ const OwnerBookingCalendar = () => {
 
   useEffect(() => {
     loadInitialData();
+    loadWaSettings();
   }, []);
+
+  const loadWaSettings = async () => {
+    const { data } = await supabase.from('wa_settings').select('id, enabled').single();
+    if (data) setIsBablastEnabled(data.enabled);
+  };
+
 
   useEffect(() => {
     if (therapists.length > 0) {
@@ -201,7 +211,44 @@ const OwnerBookingCalendar = () => {
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
           <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
         </div>
-        
+
+        <div className="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shrink-0">
+          <span className="text-sm font-medium text-slate-700">WaAuto</span>
+          <button
+            onClick={async () => {
+              const { data: current } = await supabase.from('wa_settings').select('id, enabled').single();
+              if (!current) return;
+              const newValue = !current.enabled;
+              const { data, error } = await supabase
+                .from('wa_settings')
+                .update({
+                  enabled: newValue,
+                  updated_at: new Date().toISOString(),
+                  ...(newValue && { last_enabled_at: new Date().toISOString() })
+                })
+                .eq('id', current.id)
+                .select()
+                .single();
+              if (!error && data) {
+                setIsBablastEnabled(data.enabled);
+                toast({
+                  title: data.enabled ? 'Bablast Aktif' : 'Bablast Nonaktif',
+                  description: data.enabled ? 'WhatsApp otomatis diaktifkan' : 'WhatsApp otomatis dimatikan'
+                });
+              }
+            }}
+            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+              isBablastEnabled ? 'bg-green-500' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+                isBablastEnabled ? 'translate-x-8' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
         <div className="flex items-center gap-2 w-full min-w-0 overflow-hidden">
             <Button 
                 variant="outline" 
