@@ -3283,6 +3283,26 @@ export const createTherapistAccount = async (payload, password) => {
     if (authError) {
       // Tetap return data meski auth gagal — data terapis sudah tersimpan
       console.warn('Auth user creation failed:', authError);
+    } else {
+      // 3️⃣ Perbaiki role & clinic_id di public.users (trigger DB default-nya 'patient')
+      const { data: updatedTherapist } = await supabase
+        .from('physiotherapists')
+        .select('user_id')
+        .eq('id', data.id)
+        .single();
+
+      if (updatedTherapist?.user_id) {
+        await supabase
+          .from('users')
+          .update({
+            role: 'therapist',
+            clinic_id: payload.clinic_id,
+            full_name: payload.name,
+            phone: payload.phone || null,
+            is_active: true
+          })
+          .eq('id', updatedTherapist.user_id);
+      }
     }
 
     return { data, error: null };
