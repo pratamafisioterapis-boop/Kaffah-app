@@ -11,7 +11,9 @@ import {
   Phone,
   Send,
   Loader2,
-  CalendarCheck
+  CalendarCheck,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
@@ -26,8 +28,19 @@ const FollowUpCard = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const displayMessage = interpolateTemplate(item.message_content, item);
+
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(displayMessage);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Gagal menyalin pesan:', err);
+    }
+  };
 
   // ==============================
   // Guest Detection
@@ -455,6 +468,16 @@ const packageRisk = getPackageRisk();
     Selesai
   </Button>
 
+
+  <Button
+    size="sm"
+    variant="ghost"
+    className="rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+    onClick={handleCopyMessage}
+    title="Salin pesan"
+  >
+    {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+  </Button>
 
   <Button
     size="sm"
