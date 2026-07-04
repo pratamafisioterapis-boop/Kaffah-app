@@ -7,6 +7,7 @@ import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager'
 import BadgeManager from '@/components/owner/BadgeManager';
 import { CalendarClock, Users, Target, CalendarOff, Shield } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const dayNames = [
   "Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"
@@ -52,7 +53,7 @@ const PhysiotherapistManagementPage = () => {
             <Users className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
             <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Physiotherapist Management</h2>
             <p className="text-sm text-slate-400 mt-0.5">Manage therapists, schedules, and performance targets</p>
           </div>

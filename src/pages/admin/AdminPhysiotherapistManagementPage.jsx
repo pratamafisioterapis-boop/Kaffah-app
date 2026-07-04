@@ -4,6 +4,7 @@ import TherapistManager from '@/components/owner/TherapistManager';
 import TherapistScheduleManager from '@/components/owner/TherapistScheduleManager';
 import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager';
 import { Users, CalendarClock, CalendarOff } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const AdminPhysiotherapistManagementPage = () => {
   const isPWA =
@@ -22,7 +23,7 @@ const AdminPhysiotherapistManagementPage = () => {
             <Users className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-white`} />
           </div>
           <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>Kaffah Physiotherapy</p>
+            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Physiotherapist Management</h2>
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola terapis, jadwal, dan cuti</p>
           </div>

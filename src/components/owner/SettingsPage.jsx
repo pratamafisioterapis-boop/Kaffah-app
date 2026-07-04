@@ -39,6 +39,8 @@ import MediaAssetManager from '@/components/owner/MediaAssetManager';
 import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
 import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
+import AccountClinicManager from '@/components/owner/AccountClinicManager';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // --- Dedicated Discount Type Manager ---
 const DiscountTypeManager = () => {
@@ -921,7 +923,7 @@ const SettingsPage = () => {
             <Settings className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
             <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Pengaturan Sistem</h2>
             <p className="text-sm text-slate-400 mt-0.5">Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi</p>
           </div>
@@ -930,6 +932,9 @@ const SettingsPage = () => {
 
       <Tabs defaultValue="admin" className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <TabsTrigger value="account_clinic" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <UserCog className="w-3.5 h-3.5" /> Akun & Klinik
+          </TabsTrigger>
           <TabsTrigger value="admin" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Users className="w-3.5 h-3.5" /> Admin & Staff
           </TabsTrigger>
@@ -963,6 +968,9 @@ const SettingsPage = () => {
         </TabsList>
 
         <div className="mt-6">
+          <TabsContent value="account_clinic">
+            <AccountClinicManager />
+          </TabsContent>
           <TabsContent value="admin">
             <AdminManager />
           </TabsContent>

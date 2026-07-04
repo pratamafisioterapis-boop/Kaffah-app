@@ -48,7 +48,7 @@ const getTodayQuote = () => {
 };
 
 export default function SplashScreen({ onDone }) {
-  const { userDetails } = useAuth();
+  const { userDetails, clinicName } = useAuth();
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -96,7 +96,7 @@ export default function SplashScreen({ onDone }) {
         </div>
 
         {/* Clinic name */}
-        <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
+        <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">{clinicName || 'Kaffah Physiotherapy'}</p>
 
         {/* Divider */}
         <div className="w-12 h-px bg-white/20 my-4" />

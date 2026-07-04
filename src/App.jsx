@@ -19,6 +19,7 @@ const FollowUpManagementPage = React.lazy(() => import('@/pages/admin/FollowUpMa
 
 // Dashboard Imports
 const OwnerDashboard = React.lazy(() => import('@/pages/OwnerDashboard'));
+const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard'));
 const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
 const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
 import DashboardLayout from '@/components/DashboardLayout';
@@ -207,8 +208,16 @@ function App() {
                 <Route
                   path="/owner/*"
                   element={
-                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                    <ProtectedRoute allowedRoles={['owner']}>
                       <OwnerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/super-admin/*"
+                  element={
+                    <ProtectedRoute allowedRoles={['super_admin']}>
+                      <SuperAdminDashboard />
                     </ProtectedRoute>
                   }
                 />

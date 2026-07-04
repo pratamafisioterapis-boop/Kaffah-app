@@ -31,6 +31,7 @@ import InvoiceModal from '@/components/admin/InvoiceModal';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const getTherapistName = (recap) => {
   if (recap.therapist_name && recap.therapist_name !== '-') {
@@ -446,7 +447,7 @@ const getPremiumPastelBadge = (text) => {
               </svg>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Rekap Harian</h2>
               <p className="text-sm text-slate-400 mt-0.5">Kelola data kunjungan dan pendapatan</p>
             </div>

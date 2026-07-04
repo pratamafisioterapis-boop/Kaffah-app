@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Calendar, List } from 'lucide-react';
 import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
 import AppointmentManagement from '@/components/admin/AppointmentManagement';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const AppointmentsPage = () => {
   const isPWA =
@@ -23,7 +24,7 @@ const AppointmentsPage = () => {
             </svg>
           </div>
           <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>Kaffah Physiotherapy</p>
+            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Appointments</h2>
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola jadwal booking kalender dan janji temu pasien</p>
           </div>

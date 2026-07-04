@@ -56,7 +56,17 @@ useEffect(() => {
 }, []);
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, userDetails } = useAuth();
+  const [clinicInfo, setClinicInfo] = useState(null);
+
+  useEffect(() => {
+    const fetchClinicInfo = async () => {
+      if (!userDetails?.clinic_id) return;
+      const { data } = await supabase.from('clinics').select('name, logo_url').eq('id', userDetails.clinic_id).single();
+      if (data) setClinicInfo(data);
+    };
+    fetchClinicInfo();
+  }, [userDetails]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -404,17 +414,23 @@ const pwaNavItems = useMemo(() => {
       <div className="flex items-center gap-4 px-6 py-8 relative z-10 border-b border-white/10 flex-shrink-0">
         <div className="relative">
            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 overflow-hidden">
-             <img 
-  src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
-  alt="Kaffah Physiotherapy Logo"
-  className="w-full h-full object-contain p-1"
-/>
+             {clinicInfo ? (
+               <img 
+                 src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
+                 alt={clinicInfo.name || "Clinic Logo"}
+                 className="w-full h-full object-contain p-1"
+               />
+             ) : (
+               <div className="w-full h-full animate-pulse bg-slate-200" />
+             )}
            </div>
            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight leading-none">Kaffah</h2>
-          <p className="text-[10px] text-blue-300 font-bold tracking-[0.1em] uppercase mt-1">PHYSIOTHERAPY</p>
+          <h2 className="text-xl font-bold text-white tracking-tight leading-none">
+            {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-slate-700 align-middle" />}
+          </h2>
+          <p className="text-[10px] text-blue-300 font-bold tracking-[0.1em] uppercase mt-1">CLINIC MANAGEMENT</p>
         </div>
       </div>
       

@@ -1499,7 +1499,6 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
 
   }, 'getPatientIncomeFromPackages', { retry: true });
 };
-export const createAdminAccount = async () => ({ data: {} });
 export const getOwnerReceivables = async () => {
   return safeQuery(async () => {
     const { data, error } = await supabase
@@ -2925,8 +2924,65 @@ export const deleteOperationalOption = async (id) => {
     return { success: true, error: null };
   }, 'deleteOperationalOption');
 };
-export const getAdmins = async () => ({ data: [] });
-export const getCurrentClinic = async () => ({ data: {} });
+export const getCurrentClinic = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: null };
+
+    const { data: userRow, error: userErr } = await supabase
+      .from('users')
+      .select('clinic_id')
+      .eq('id', userId)
+      .single();
+    if (userErr || !userRow?.clinic_id) return { data: null };
+
+    const { data, error } = await supabase
+      .from('clinics')
+      .select('*')
+      .eq('id', userRow.clinic_id)
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getCurrentClinic');
+};
+
+export const getAdmins = async () => {
+  return safeQuery(async () => {
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .in('role', ['admin', 'clinic_admin'])
+      .eq('clinic_id', clinicData.id)
+      .order('created_at', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getAdmins');
+};
+
+export const createAdminAccount = async (payload, password) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const res = await fetch('https://dqkejdamagvlhqvxaqej.supabase.co/functions/v1/admin-create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData?.session?.access_token}` },
+      body: JSON.stringify({
+        email: payload.email,
+        password,
+        full_name: payload.full_name,
+        phone: payload.phone,
+        role: payload.role,
+        clinic_id: payload.clinic_id,
+      }),
+    });
+    const result = await res.json();
+    if (!res.ok) return { error: { message: result.error || 'Gagal membuat akun' } };
+    return { data: result, error: null };
+  }, 'createAdminAccount');
+};
 export const getBadgesByOwner = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();

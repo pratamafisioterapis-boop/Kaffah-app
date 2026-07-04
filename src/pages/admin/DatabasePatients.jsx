@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Database, Plus } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
@@ -131,7 +132,7 @@ const AdminDatabasePatients = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">Kaffah Physiotherapy</p>
+                    <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
                     <h1 className="text-lg md:text-2xl font-bold tracking-tight">Database Pasien</h1>
                     <p className="text-slate-400 text-xs mt-1">Total {pagination.totalItems} pasien terdaftar dalam sistem.</p>
                   </div>

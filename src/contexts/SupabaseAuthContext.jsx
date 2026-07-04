@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [clinicName, setClinicName] = useState(null);
   const isPWA = useMemo(() => {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -347,6 +348,17 @@ export const AuthProvider = ({ children }) => {
   const role = useMemo(() => {
     return userDetails?.role || user?.user_metadata?.role || 'guest';
   }, [userDetails, user]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchClinicName = async () => {
+      if (!userDetails?.clinic_id) { if (active) setClinicName(null); return; }
+      const { data } = await supabase.from('clinics').select('name').eq('id', userDetails.clinic_id).single();
+      if (active) setClinicName(data?.name || null);
+    };
+    fetchClinicName();
+    return () => { active = false; };
+  }, [userDetails?.clinic_id]);
   useEffect(() => {
   listenForegroundNotifications();
 }, []);
@@ -362,6 +374,7 @@ useEffect(() => {
     user,
     session,
     userDetails,
+    clinicName,
     role,
     loading,
     isOnline,
@@ -369,7 +382,7 @@ useEffect(() => {
     signIn,
     signOut,
     refreshSession
-  }), [user, session, userDetails, role, loading, isOnline, signUp, signIn, signOut, refreshSession]);
+  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession]);
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

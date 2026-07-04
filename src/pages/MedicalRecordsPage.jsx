@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagement';
 import DailyEvaluationReadOnly from '@/components/admin/DailyEvaluationReadOnly';
 import { FileText, Stethoscope } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const MedicalRecordsPage = () => {
   const isPWA =
@@ -22,7 +23,7 @@ const MedicalRecordsPage = () => {
             <FileText className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+            <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
             <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Medical Records & Evaluation</h2>
             <p className="text-sm text-slate-400 mt-0.5">Pusat data rekam medis pasien dan evaluasi SOAP</p>
           </div>

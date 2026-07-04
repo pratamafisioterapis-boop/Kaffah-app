@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 
 const FollowUpManagement = () => {

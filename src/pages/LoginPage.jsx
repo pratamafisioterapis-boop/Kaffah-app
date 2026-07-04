@@ -74,7 +74,8 @@ const LoginPage = () => {
           const metaRole = user.user_metadata?.role;
           if (metaRole) {
              console.log("[LoginPage] Using metadata role:", metaRole);
-             if (metaRole === 'owner' || metaRole === 'super_admin') navigate('/owner', { replace: true });
+             if (metaRole === 'super_admin') navigate('/super-admin', { replace: true });
+             else if (metaRole === 'owner') navigate('/owner', { replace: true });
              else if (metaRole === 'admin' || metaRole === 'clinic_admin') navigate('/admin', { replace: true });
              else navigate('/therapist', { replace: true });
              return;
@@ -82,6 +83,14 @@ const LoginPage = () => {
 
           console.warn("[LoginPage] Account profile not fully initialized.");
           setAuthError("Account profile not fully initialized. Please contact administrator.");
+          setIsRedirecting(false);
+          return;
+        }
+
+        if (userProfile.is_active === false) {
+          console.warn("[LoginPage] Account is inactive:", user.id);
+          await signOut();
+          setAuthError("Akun Anda telah dinonaktifkan. Silakan hubungi administrator.");
           setIsRedirecting(false);
           return;
         }
@@ -106,8 +115,11 @@ const isPWA =
 
 // Standard role-based redirect
 switch (role) {
-  case 'owner':
   case 'super_admin':
+    navigate('/super-admin', { replace: true });
+    break;
+
+  case 'owner':
     navigate(
       isPWA ? '/owner/dashboard' : '/owner',
       { replace: true }

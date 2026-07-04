@@ -10,6 +10,7 @@ import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const FollowUpManagementPage = () => {
 

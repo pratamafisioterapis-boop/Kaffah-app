@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const FollowUpManagementPage = () => {
     const [queueItems, setQueueItems] = useState([]);
@@ -152,7 +153,7 @@ const FollowUpManagementPage = () => {
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">Kaffah Physiotherapy</p>
+                    <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
                     <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Follow Up Management</h2>
                     <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan WhatsApp otomatis hari ini</p>
                   </div>
