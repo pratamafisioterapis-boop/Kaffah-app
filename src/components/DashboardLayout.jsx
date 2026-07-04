@@ -596,6 +596,15 @@ const pwaNavItems = useMemo(() => {
         {renderSidebarContent()}
       </aside>
 
+      {!(isPWA && ['therapist', 'owner', 'admin'].includes(role)) && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="lg:hidden fixed top-4 left-4 z-50 w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
+
       <main className={cn(
         "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
         isPWA && (role === 'therapist' || role === 'admin') ? "pt-0" : "pt-0"
