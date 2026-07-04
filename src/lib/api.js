@@ -2874,11 +2874,16 @@ export const getPatientInfoOptions = async () => {
 
 export const createPatientInfoOption = async (label) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('patient_info_options')
       .insert({
         label: label.trim(),
-        is_active: true
+        is_active: true,
+        clinic_id: userRow?.clinic_id
       })
       .select()
       .single();

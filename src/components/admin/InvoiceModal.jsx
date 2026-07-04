@@ -70,13 +70,24 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
     }
 
     let physioData = null;
+    let clinicData = null;
     if (recap.therapist_id) {
       const { data: physio } = await supabase
         .from('physiotherapists')
-        .select('name, signature_url, stamp_url')
+        .select('name, signature_url, stamp_url, clinic_id')
         .eq('id', recap.therapist_id)
         .single();
-      if (physio) physioData = physio;
+      if (physio) {
+        physioData = physio;
+        if (physio.clinic_id) {
+          const { data: clinic } = await supabase
+            .from('clinics')
+            .select('name, address, phone, email, logo_url')
+            .eq('id', physio.clinic_id)
+            .single();
+          if (clinic) clinicData = clinic;
+        }
+      }
     }
 
     setDetailData({
@@ -84,6 +95,7 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       therapist_name: physioData?.name || recap.therapist_name || '-',
       signature_url:  physioData?.signature_url || null,
       stamp_url:      physioData?.stamp_url     || null,
+      clinic: clinicData,
     });
   };
 
@@ -362,12 +374,14 @@ const handleSendManualWA = async () => {
       );
     }
 
+    const clinicName = detailData?.clinic?.name || 'Kaffah Physiotherapy';
+
     const message =
       `Berikut *Kwitansi Terapi* hari ini.\n\n` +
-      `Terima kasih telah mempercayakan pemulihan di *Kaffah Physiotherapy*.\n` +
+      `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
       `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
       `*Salam Sehat,*\n` +
-      `Kaffah Physiotherapy\n\n` +
+      `${clinicName}\n\n` +
       `Lihat kwitansi:\n${fileUrl}`;
 
     const formattedPhone =

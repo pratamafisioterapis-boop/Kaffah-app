@@ -83,7 +83,8 @@ const TherapistManager = () => {
       show_on_landing: false,
       show_on_booking: false,
       badges: [], // Array of badge IDs
-      theme_color: ''
+      theme_color: '',
+      signature_url: ''
     };
   }
 
@@ -151,7 +152,8 @@ const TherapistManager = () => {
         show_on_landing: therapist.show_on_landing || false,
         show_on_booking: therapist.show_on_booking || false,
         badges: Array.isArray(therapist.badges) ? therapist.badges : [],
-        theme_color: therapist.theme_color || ''
+        theme_color: therapist.theme_color || '',
+        signature_url: therapist.signature_url || ''
       });
       setPassword(''); 
     } else {
@@ -516,6 +518,19 @@ const headerColorMap = {
                     <Upload className="w-6 h-6 text-white" />
                   </div>
                   <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
+                </div>
+                <div className="space-y-1 w-full">
+                  <label className="text-[10px] font-medium text-slate-500">Tanda Tangan</label>
+                  {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-10 mx-auto object-contain border rounded bg-slate-50 mb-1" />}
+                  <input type="file" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    setUploading(true);
+                    const { url, error } = await uploadTherapistPhoto(file);
+                    if (url) setFormData(prev => ({ ...prev, signature_url: url }));
+                    else toast({ variant: "destructive", title: "Upload Gagal", description: error.message });
+                    setUploading(false);
+                  }} className="text-[10px] w-full" disabled={uploading} />
                 </div>
               </div>
 

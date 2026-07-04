@@ -42,7 +42,7 @@ const checked = (val) => payment === val ? '☑' : '☐';
           boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
           marginBottom: '30px'
         }}>
-          <img src="/logo.png" alt="logo" style={{ width: '85px' }} />
+          <img src={data?.clinic?.logo_url || '/logo.png'} alt="logo" style={{ width: '85px' }} />
         </div>
 
         <div style={{ textAlign: 'center', color: '#fff', padding: '0 18px' }}>
@@ -53,7 +53,7 @@ const checked = (val) => payment === val ? '☑' : '☐';
   marginBottom: '18px',
   lineHeight: '1.4'
 }}>
-  KAFFAH<br />PHYSIOTHERAPY
+  {(data?.clinic?.name || 'KAFFAH PHYSIOTHERAPY').toUpperCase()}
 </p>
 
           <p style={{ 
@@ -61,9 +61,7 @@ const checked = (val) => payment === val ? '☑' : '☐';
   lineHeight: '1.8',
   marginTop: '6px'
 }}>
-            Jl. Telindung, Perumnas Blok 1<br />
-            RT.07 No.71 Batu Ampar<br />
-            Balikpapan
+            {data?.clinic?.address || 'Jl. Telindung, Perumnas Blok 1, RT.07 No.71 Batu Ampar, Balikpapan'}
           </p>
 
           <div style={{
@@ -74,10 +72,10 @@ const checked = (val) => payment === val ? '☑' : '☐';
           }} />
 
           <p style={{ fontSize: '11px' }}>
-            Kaffah.physiotherapy@gmail.com
+            {data?.clinic?.email || 'kaffah.physiotherapy@gmail.com'}
           </p>
           <p style={{ fontSize: '11px' }}>
-            0852-4596-5745
+            {data?.clinic?.phone || '0852-4596-5745'}
           </p>
         </div>
       </div>
@@ -317,7 +315,7 @@ const checked = (val) => payment === val ? '☑' : '☐';
   justifyContent: 'center'
 }}>
   <img 
-    src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/assets-invoice/logo/logo.png"
+    src={data?.clinic?.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/assets-invoice/logo/logo.png"}
     style={{ 
       width: '110px',
       opacity: 0.25
