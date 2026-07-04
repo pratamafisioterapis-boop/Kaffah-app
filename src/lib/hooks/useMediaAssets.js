@@ -10,9 +10,14 @@ export const useMediaAssets = () => {
   const fetchAssets = async () => {
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
       const { data, error } = await supabase
         .from('media_assets')
         .select('*')
+        .eq('clinic_id', userRow?.clinic_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -31,10 +36,15 @@ export const useMediaAssets = () => {
 
   const getLogoImage = async () => {
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
       // Priority 1: Check for 'logo' category
       let { data } = await supabase
         .from('media_assets')
         .select('file_url')
+        .eq('clinic_id', userRow?.clinic_id)
         .ilike('category', 'logo')
         .limit(1)
         .maybeSingle();

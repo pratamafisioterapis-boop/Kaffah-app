@@ -140,7 +140,11 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
 
     const fetchTemplate = async () => {
         setLoading(true);
-        const { data } = await supabase.from('wa_templates').select('*').eq('category', categoryId).maybeSingle();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+        const { data } = await supabase.from('wa_templates').select('*').eq('category', categoryId).eq('clinic_id', userRow?.clinic_id).maybeSingle();
         if (data) {
             setTemplate(data.template_text);
             setIsEnabled(data.is_enabled);
@@ -151,17 +155,22 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
     const handleSave = async () => {
   setSaving(true);
 
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
   const payload = {
     category: categoryId,
     template_text: template,
     placeholders: availablePlaceholders,
     is_enabled: isEnabled,
+    clinic_id: userRow?.clinic_id,
     updated_at: new Date().toISOString()
   };
 
   const { error } = await supabase
     .from('wa_templates')
-    .upsert(payload, { onConflict: 'category' });
+    .upsert(payload, { onConflict: 'category,clinic_id' });
 
   if (error) {
     toast({

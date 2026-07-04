@@ -15,6 +15,7 @@ import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
 import DatabasePatients from '@/pages/owner/DatabasePatients'; // Updated Import
 import PhysiotherapistManagementPage from '@/pages/PhysiotherapistManagementPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
+import OwnerFollowUpManagementPage from '@/components/admin/FollowUpManagementPage';
 
 // Components
 import SettingsPage from '@/components/owner/SettingsPage';
@@ -407,6 +408,7 @@ const OwnerDashboard = () => {
     { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'FileText' },
     { label: 'Database Patients', path: '/owner/database-patients', icon: 'Database' },
     { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
+    { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
     { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
     { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
     { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
@@ -428,6 +430,7 @@ const OwnerDashboard = () => {
         {/* Other Existing Routes */}
         <Route path="/physiotherapist-management" element={<PhysiotherapistManagementPage />} />
         <Route path="/medical-records" element={<MedicalRecordsPage />} />
+        <Route path="/follow-up-management" element={<OwnerFollowUpManagementPage />} />
         
         {/* Functional Pages */}
         <Route path="/accounting" element={<OwnerFinanceDashboardComponent />} />

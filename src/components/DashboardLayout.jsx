@@ -233,7 +233,7 @@ const isPWA =
         };
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      } else if (role === 'owner') {
-         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Physiotherapist Management', 'Accounting System', 'Setup'];
+         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Accounting System', 'Setup'];
          const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;

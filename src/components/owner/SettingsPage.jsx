@@ -64,10 +64,15 @@ const DiscountTypeManager = () => {
     setLoading(true);
     console.log("🔄 Fetching discount types...");
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
       const { data, error } = await supabase
         .from('operational_options')
         .select('id, category, label, is_active, created_at')
         .eq('category', 'discount_type')
+        .eq('clinic_id', userRow?.clinic_id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;

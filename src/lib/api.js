@@ -821,10 +821,15 @@ export const getServiceOptions = async (term) => {
 export async function getOperationalOptionsByCategory(category, searchTerm = '') {
   return safeQuery(async () => {
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
       let query = supabase
         .from('operational_options')
         .select('id, label, category, parent_id')
         .eq('category', category)
+        .eq('clinic_id', userRow?.clinic_id)
         .eq('is_active', true);
 
       if (searchTerm) {
@@ -858,10 +863,15 @@ export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCa
 export const getDiscountTypeOptions = async (term) => getOperationalOptionsByCategory('discount_type', term);
 
 export const getAllRecapOptions = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
   const { data, error } = await supabase
     .from('operational_options')
     .select('id, label')
-    .eq('is_active', true); // opsional tapi bagus
+    .eq('clinic_id', userRow?.clinic_id)
+    .eq('is_active', true);
 
   return { data, error };
 };
@@ -1184,14 +1194,23 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
 };
 export const getAccountingCategories = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_categories')
       .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: true });
   }, 'getAccountingCategories', { retry: true });
 };
 export const getAccountingSubcategories = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_subcategories')
       .select(`
@@ -1201,6 +1220,7 @@ export const getAccountingSubcategories = async () => {
           category_name
         )
       `)
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: true });
   }, 'getAccountingSubcategories', { retry: true });
 };
@@ -2809,10 +2829,15 @@ export const getInvoiceSettings = async () => {
 };
 export const getOperationalOptions = async (category) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('operational_options')
       .select('*')
       .eq('category', category)
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: true });
     if (error) return { error };
     return { data, error: null };
@@ -2832,9 +2857,14 @@ export const getAdditionalInfoOptions = async () => {
 export const generateNickname = async () => ({ data: '' });
 export const getPatientInfoOptions = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('patient_info_options')
       .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: true });
     if (error) return { error };
     return { data, error: null };
