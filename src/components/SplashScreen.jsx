@@ -67,7 +67,7 @@ export default function SplashScreen({ onDone }) {
 
   const greeting = getGreeting();
   const quote = getTodayQuote();
-  const name = userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || 'Selamat Datang';
+  const name = userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || '';
   const role = userDetails?.role;
   const roleLabel = role === 'owner' ? 'Pemilik Klinik' : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
 
@@ -108,19 +108,12 @@ export default function SplashScreen({ onDone }) {
           />
         </div>
 
-        {/* Clinic name */}
-        <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">{clinicName || 'Kaffah Physiotherapy'}</p>
-
-        {/* Divider */}
-        <div className="w-12 h-px bg-white/20 my-4" />
-
         {/* Greeting */}
-        <p className="text-white/60 text-sm font-medium">{greeting}</p>
-        <h1 className="text-white text-3xl font-black mt-1 leading-tight">{name}</h1>
-        {roleLabel && (
-          <span className="mt-2 text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-            {roleLabel}
-          </span>
+        {userDetails && (
+          <>
+            <p className="text-white/60 text-sm font-medium">{greeting}</p>
+            <h1 className="text-white text-3xl font-black mt-1 leading-tight">{name}</h1>
+          </>
         )}
 
         {/* Quote */}
