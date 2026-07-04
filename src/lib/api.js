@@ -298,9 +298,12 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       query = query.eq('follow_up_type', type);
     }
 
+    // Hanya tampilkan data hari ini
+    const today = new Date().toISOString().split('T')[0];
+    query = query.eq('scheduled_date', today);
+
     // ORDER
     query = query
-      .order('scheduled_date', { ascending: true })
       .order('scheduled_time', { ascending: true });
 
     const { data: queueData, error: queueError } = await query;
