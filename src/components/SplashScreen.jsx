@@ -101,11 +101,15 @@ export default function SplashScreen({ onDone }) {
 
         {/* Logo */}
         <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4">
-          <img
-            src={logoUrl || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
-            alt={clinicName || "Clinic Logo"}
-            className="w-full h-full object-cover"
-          />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={clinicName || "Clinic Logo"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full animate-pulse bg-white/10" />
+          )}
         </div>
 
         {/* Greeting */}
