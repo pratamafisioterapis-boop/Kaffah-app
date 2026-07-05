@@ -123,8 +123,11 @@ const handleGenerate = async (type) => {
         break;
 
       case 'therapy_reminder':
-      case 'reminder_therapist_h10':
         functionName = 'generate_therapy_reminder_today';
+        break;
+
+      case 'reminder_therapist_h10':
+        functionName = 'send_reminder_therapist_h10';
         break;
 
       case 'birthday_greeting':
