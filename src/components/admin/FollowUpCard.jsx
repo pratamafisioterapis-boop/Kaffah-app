@@ -59,7 +59,12 @@ const patientName =
     ? `Physio ${therapistName}`
     : (
         isGuest
-          ? item.guest_name || item.message_content?.match(/pagi\s+(?:ka\s+|kak\s+|mas\s+|mba\s+|ibu\s+|pak\s+)?([A-Za-z]+)/i)?.[1] || 'Tamu'
+          ? item.guest_name ||
+            item.message_content?.match(/pagi\s+(?:ka|kak|mas|mba|ibu|pak)\s+([A-Za-z]+)/i)?.[1] ||
+            item.message_content?.match(/pagi\s+([A-Za-z]+)/i)?.[1] ||
+            item.message_content?.match(/Jadwal\s+(?:ka|kak|mas|mba|ibu|pak|bapak|an\.?)\s+([A-Za-z]+)/i)?.[1] ||
+            item.phone_number ||
+            'Tamu'
           : item.patient?.full_name || 'Pasien'
       );
 
@@ -254,7 +259,7 @@ const packageRisk = getPackageRisk();
                 >
                   {patientName}
                 </h3>
-                {isGuest && (
+                {isGuest && item.follow_up_type !== 'reminder_therapist_h10' && (
                   <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
                     Pasien Baru
                   </span>
