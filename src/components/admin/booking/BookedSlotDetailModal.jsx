@@ -360,6 +360,11 @@ useEffect(() => {
     <p className="font-medium text-slate-800">
       {appointment.patient?.full_name || appointment.guest_name || 'Tidak diketahui'}
     </p>
+    {(appointment.patient?.phone || appointment.guest_phone) && (
+      <p className="text-sm text-slate-500 mt-0.5">
+        {appointment.patient?.phone || appointment.guest_phone}
+      </p>
+    )}
   </div>
 </div>
         <div className="flex items-start gap-3">
@@ -367,6 +372,9 @@ useEffect(() => {
           <div>
             <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Terapis</p>
             <p className="font-medium text-slate-800">{appointment.therapist?.name || 'Tidak diketahui'}</p>
+            {appointment.therapist?.phone && (
+              <p className="text-sm text-slate-500 mt-0.5">{appointment.therapist.phone}</p>
+            )}
           </div>
         </div>
 

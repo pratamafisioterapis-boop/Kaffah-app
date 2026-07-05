@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import { Button } from '@/components/ui/button';
 import { Download, Bell } from 'lucide-react';
-import { subscribeUserToPush } from '@/lib/pwaUtils';
+import { registerPushNotifications } from '@/lib/pushNotifications';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -46,8 +46,8 @@ const PWAInstallPrompt = () => {
   };
 
   const handleEnableNotifications = async () => {
-    const sub = await subscribeUserToPush(user?.id);
-    if (sub) {
+    const token = await registerPushNotifications(user?.id);
+    if (token) {
       toast({
         title: "Notifikasi Aktif",
         description: "Anda akan menerima notifikasi untuk update penting."

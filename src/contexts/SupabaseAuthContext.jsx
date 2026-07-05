@@ -359,17 +359,18 @@ export const AuthProvider = ({ children }) => {
     fetchClinicName();
     return () => { active = false; };
   }, [userDetails?.clinic_id]);
+  const foregroundListenerAttached = useRef(false);
+
   useEffect(() => {
-  listenForegroundNotifications();
-}, []);
-useEffect(() => {
-  if (!user?.id) return;
+    if (foregroundListenerAttached.current) return;
+    foregroundListenerAttached.current = true;
+    listenForegroundNotifications();
+  }, []);
 
-  
-
-  registerPushNotifications(user.id);
-
-}, [user]);
+  useEffect(() => {
+    if (!user?.id) return;
+    registerPushNotifications(user.id);
+  }, [user?.id]);
   const value = useMemo(() => ({
     user,
     session,
