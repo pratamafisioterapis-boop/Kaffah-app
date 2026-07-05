@@ -59,7 +59,7 @@ const patientName =
     ? `Physio ${therapistName}`
     : (
         isGuest
-          ? item.guest_name || 'Guest'
+          ? item.guest_name || item.message_content?.match(/pagi\s+(?:ka\s+|kak\s+|mas\s+|mba\s+|ibu\s+|pak\s+)?([A-Za-z]+)/i)?.[1] || 'Tamu'
           : item.patient?.full_name || 'Pasien'
       );
 
