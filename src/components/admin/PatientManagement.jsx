@@ -92,9 +92,11 @@ const PatientManagement = () => {
           if (newPatient) {
             // Non-blocking notification
             sendPushNotification({
+              user_id: user?.id,
               title: "Pasien Baru",
               body: `${newPatient.full_name} telah ditambahkan ke sistem.`,
-              url: "/admin/patients"
+              appointment_date: null,
+              appointment_id: null
             }).catch(err => console.warn("Push notification failed", err));
           }
         }

@@ -2665,10 +2665,14 @@ export const getRecentFollowUpLogs = async () => {
 export const sendPushNotification = async (payload) => {
   return safeQuery(async () => {
 
-    console.log('PUSH NOTIFICATION:', payload);
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      body: payload
+    });
+
+    if (error) return { error };
 
     return {
-      data: true,
+      data,
       success: true,
       error: null
     };
