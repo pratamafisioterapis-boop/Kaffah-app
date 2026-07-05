@@ -28,10 +28,11 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
       .from('wa_schedule_config')
       .select('*')
       .eq('category', category)
-      .maybeSingle();
+      .order('updated_at', { ascending: false })
+      .limit(1);
     
-    if (data) {
-        setConfig(data);
+    if (data && data.length > 0) {
+        setConfig(data[0]);
     } else {
         // Defaults based on category
         const defaults = {
@@ -95,22 +96,34 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
            )}
 
            {category === 'follow_up' && (
-               <div className="flex items-center gap-3">
-                   <Label>Kirim setelah</Label>
-                   <Input 
-                      type="number" 
-                      className="w-20" 
-                      min="1" max="30"
-                      value={config.timing_value?.days || 3}
-                      onChange={(e) => setConfig({...config, timing_value: { days: parseInt(e.target.value) }})}
-                   />
-                   <Label>hari sejak kunjungan terakhir.</Label>
+               <div className="space-y-3">
+                   <div className="flex items-center gap-3">
+                       <Label>Kirim setelah</Label>
+                       <Input 
+                          type="number" 
+                          className="w-20" 
+                          min="1" max="30"
+                          value={config.timing_value?.days || 3}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, days: parseInt(e.target.value) }})}
+                       />
+                       <Label>hari sejak kunjungan terakhir.</Label>
+                   </div>
+                   <div className="flex items-center gap-3">
+                       <Label>Jam Kirim ke Watzpad (WITA)</Label>
+                       <Input 
+                          type="time" 
+                          className="w-32"
+                          value={config.timing_value?.send_time || "07:00"}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, send_time: e.target.value }})}
+                       />
+                       <span className="text-xs text-slate-500">Pesan follow up dikirim otomatis pada jam ini</span>
+                   </div>
                </div>
            )}
 
            {category === 'package_expiry' && (
                <div className="space-y-3">
-                   <Label>Kirim peringatan pada:</Label>
+                   <Label>Generate peringatan pada:</Label>
                    <div className="flex flex-wrap gap-4">
                        {[7, 3, 1].map(day => (
                            <div key={day} className="flex items-center space-x-2">
@@ -122,7 +135,7 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
                                       const updated = checked 
                                         ? [...current, day] 
                                         : current.filter(d => d !== day);
-                                      setConfig({...config, timing_value: { days_before: updated }});
+                                      setConfig({...config, timing_value: { ...config.timing_value, days_before: updated }});
                                   }}
                                />
                                <label htmlFor={`h-${day}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -131,20 +144,45 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
                            </div>
                        ))}
                    </div>
+                   <div className="flex items-center gap-3">
+                       <Label>Jam Generate (WITA)</Label>
+                       <Input 
+                          type="time" 
+                          className="w-32"
+                          value={config.timing_value?.time || "08:00"}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, time: e.target.value }})}
+                       />
+                       <span className="text-xs text-slate-500">Pesan masuk antrian pada jam ini, kirim manual</span>
+                   </div>
                </div>
            )}
 
            {(category === 'therapy_reminder' || category === 'birthday') && (
-               <div className="flex items-center gap-3">
-                   <Label>Waktu Pengiriman (WIB)</Label>
-                   <Input 
-                      type="time" 
-                      className="w-32"
-                      value={config.timing_value?.time || "09:00"}
-                      onChange={(e) => setConfig({...config, timing_value: { time: e.target.value }})}
-                   />
+               <div className="space-y-3">
+                   <div className="flex items-center gap-3">
+                       <Label>Jam Generate Pesan (WITA)</Label>
+                       <Input 
+                          type="time" 
+                          className="w-32"
+                          value={config.timing_value?.time || "06:00"}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, time: e.target.value }})}
+                       />
+                       <span className="text-xs text-slate-500">Pesan dibuat & masuk antrian pada jam ini</span>
+                   </div>
+                   <div className="flex items-center gap-3">
+                       <Label>Jam Kirim ke Watzpad (WITA)</Label>
+                       <Input 
+                          type="time" 
+                          className="w-32"
+                          value={config.timing_value?.send_time || "07:00"}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, send_time: e.target.value }})}
+                       />
+                       <span className="text-xs text-slate-500">Pesan dikirim otomatis via WhatsApp pada jam ini</span>
+                   </div>
                </div>
            )}
+
+           
        </div>
 
        <div className="pt-2">

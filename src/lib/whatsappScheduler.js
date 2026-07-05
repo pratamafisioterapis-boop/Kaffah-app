@@ -168,15 +168,35 @@ const filteredQueue = (queue || []).filter(item =>
       return;
     }
 
-    console.log(`🚀 [Scheduler] Mengirim ${dueItems.length} pesan...`);
+    console.log(`🚀 [Scheduler] Mengirim ${dueItems.length} pesan dengan delay 30 detik per follow_up_type...`);
 
-    for (const item of dueItems) {
-      try {
-        await sendFollowUpWhatsApp(item.id);
-        console.log(`✅ Terkirim: ${item.id} → ${item.phone_number}`);
-      } catch (err) {
-        console.error(`❌ Gagal kirim item ${item.id}:`, err);
+    // Kelompokkan per follow_up_type agar delay per tipe, tidak campur
+    const grouped = dueItems.reduce((acc, item) => {
+      const key = item.follow_up_type;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    for (const [type, items] of Object.entries(grouped)) {
+      console.log(`📨 [Scheduler] Tipe "${type}" — ${items.length} pesan, delay 30s antar pesan`);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          await sendFollowUpWhatsApp(item.id);
+          console.log(`✅ [${type}] ${i + 1}/${items.length} Terkirim: ${item.phone_number}`);
+        } catch (err) {
+          console.error(`❌ [${type}] Gagal kirim item ${item.id}:`, err);
+        }
+        // Delay 30 detik antar pesan, kecuali pesan terakhir di tipe ini
+        if (i < items.length - 1) {
+          console.log(`⏳ [${type}] Menunggu 30 detik sebelum pesan berikutnya...`);
+          await delay(30000);
+        }
       }
+      console.log(`✅ [Scheduler] Tipe "${type}" selesai.`);
     }
 
     console.log('✅ [Scheduler] Queue Processing Complete');
