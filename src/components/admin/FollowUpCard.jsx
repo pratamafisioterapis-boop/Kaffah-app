@@ -68,7 +68,7 @@ const patientName =
     ? item.phone_number || '-'
     : (
         isGuest
-          ? item.guest_phone || '-'
+          ? item.guest_phone || item.phone_number || '-'
           : item.phone_number || item.patient?.phone || '-'
       );
 
@@ -247,12 +247,19 @@ const packageRisk = getPackageRisk();
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h3
-                className="font-semibold text-slate-900 truncate"
-                title={patientName}
-              >
-                {patientName}
-              </h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3
+                  className="font-semibold text-slate-900 truncate"
+                  title={patientName}
+                >
+                  {patientName}
+                </h3>
+                {isGuest && (
+                  <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
+                    Pasien Baru
+                  </span>
+                )}
+              </div>
 
               <div className="flex flex-col items-end gap-1">
 

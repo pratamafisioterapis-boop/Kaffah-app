@@ -220,7 +220,10 @@ const handleGenerate = async (type) => {
     timeZone: 'Asia/Makassar'
   });
 
-  const filteredItems = queueItems.filter(
+  const statusRank = { pending: 0, failed: 1, sent: 2, completed: 2, cancelled: 3 };
+const byStatus = (a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
+
+const filteredItems = queueItems.filter(
   item =>
     item &&
     item.follow_up_type === activeTab &&
@@ -249,7 +252,7 @@ const displayItems =
         return Number(sessionsB) - Number(sessionsA);
 
       })
-    : filteredItems;
+    : [...filteredItems].sort(byStatus);
 const getCount = (type) => {
   return queueItems.filter(
     i =>
