@@ -7,7 +7,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import {
   DollarSign, TrendingUp, TrendingDown,
-  AlertTriangle, RefreshCw, Loader2, Plus
+  AlertTriangle, RefreshCw, Loader2, Plus,
+  QrCode, Wallet, Landmark, Package, HelpCircle
 } from 'lucide-react';
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
@@ -22,6 +23,23 @@ import { cn } from '@/lib/utils';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
+
+const getPaymentMethodStyle = (method = '') => {
+  const key = method.toLowerCase();
+  if (key.includes('qris')) {
+    return { icon: QrCode, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', accent: 'border-l-emerald-500' };
+  }
+  if (key.includes('cash') || key.includes('tunai')) {
+    return { icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', accent: 'border-l-amber-500' };
+  }
+  if (key.includes('transfer') || key.includes('bank')) {
+    return { icon: Landmark, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', accent: 'border-l-indigo-500' };
+  }
+  if (key.includes('paket') || key.includes('package')) {
+    return { icon: Package, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100', accent: 'border-l-violet-500' };
+  }
+  return { icon: HelpCircle, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-100', accent: 'border-l-slate-300' };
+};
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
@@ -50,6 +68,7 @@ const RevenueOverview = ({ dateRange }) => {
   const [activeFormType, setActiveFormType] = useState('expenditure');
   const [refreshing, setRefreshing] = useState(false);
   const [danaPacket, setDanaPacket] = useState({ total: 0, sisaSesi: 0, jumlahPaket: 0 });
+  const [paymentMethodMap, setPaymentMethodMap] = useState({});
   const [data, setData] = useState({
     ownerIncome: [],
     adminIncome: [],
@@ -74,12 +93,12 @@ const RevenueOverview = ({ dateRange }) => {
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
         supabase.from('daily_recaps')
-          .select('therapist_name, amount, patient_type')
+          .select('therapist_name, amount, patient_type, payment_method')
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('therapist_name, patient_type, package_tracking!inner(nominal, total_sessions)')
+          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, package_tracking!inner(nominal, total_sessions)')
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
@@ -101,6 +120,16 @@ const RevenueOverview = ({ dateRange }) => {
         sisaSesi,
         jumlahPaket: (activePkgs || []).length
       });
+
+      // Fetch label metode pembayaran
+      const { data: paymentMethods } = await supabase
+        .from('operational_options')
+        .select('id, label')
+        .eq('category', 'payment_method');
+      const pmMap = {};
+      (paymentMethods || []).forEach(pm => { pmMap[pm.id] = pm.label; });
+      setPaymentMethodMap(pmMap);
+
       setData({
         ownerIncome: ownerInc?.data || [],
         adminIncome: adminInc?.data || [],
@@ -221,6 +250,33 @@ const RevenueOverview = ({ dateRange }) => {
       .map(([name, revenue]) => ({ name: name.split(',')[0], fullName: name, revenue: Math.round(revenue) }))
       .sort((a, b) => b.revenue - a.revenue);
   }, [data.nonPkgRecaps, data.pkgRecaps]);
+
+  // ── Pemasukan per Metode Pembayaran ──
+  const paymentMethodBreakdown = useMemo(() => {
+    // Murni ambil dari kolom amount apa adanya (tidak dibagi rata sesi paket).
+    // Sesi paket yang amount-nya 0 (karena sudah lunas di sesi pertama) otomatis tidak dihitung.
+    const allRecaps = [...(data.nonPkgRecaps || []), ...(data.pkgRecaps || [])];
+
+    const map = {};
+    allRecaps.forEach(r => {
+      const amount = Number(r.amount) || 0;
+      if (amount <= 0) return;
+      const raw = r.payment_method;
+      const label = paymentMethodMap[raw] || raw || 'Tidak Diketahui';
+      map[label] = (map[label] || 0) + amount;
+    });
+
+    const total = Object.values(map).reduce((s, v) => s + v, 0);
+    return Object.entries(map)
+      .map(([method, amount], i) => ({
+        method,
+        amount: Math.round(amount),
+        pct: total > 0 ? Math.round((amount / total) * 100) : 0,
+        color: COLORS[i % COLORS.length],
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [data.nonPkgRecaps, data.pkgRecaps, paymentMethodMap]);
+
   // ── BEP Inputs: avg revenue & avg insentif terapis per pasien/sesi periode ini ──
   const bepInputs = useMemo(() => {
     const allSessions = [
@@ -504,6 +560,45 @@ const RevenueOverview = ({ dateRange }) => {
                   <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Pemasukan per Metode Pembayaran ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
+            </p>
+          </div>
+        </div>
+
+        {paymentMethodBreakdown.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3 md:gap-4">
+            {paymentMethodBreakdown.map((pm, i) => {
+              const style = getPaymentMethodStyle(pm.method);
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} border-l-4 ${style.accent} bg-white p-4 shadow-sm hover:shadow-md transition-all`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-9 h-9 rounded-xl ${style.bg} flex items-center justify-center`}>
+                      <style.icon className={`w-4 h-4 ${style.color}`} />
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.color}`}>
+                      {pm.pct}%
+                    </span>
+                  </div>
+                  <p className={`text-lg font-black leading-none ${style.color}`}>{formatFull(pm.amount)}</p>
+                  <p className="text-xs text-slate-400 font-medium mt-1.5 truncate">{pm.method}</p>
                 </div>
               );
             })}
