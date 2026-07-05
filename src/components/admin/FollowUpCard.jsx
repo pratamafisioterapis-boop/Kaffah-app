@@ -270,6 +270,10 @@ const packageRisk = getPackageRisk();
       ${
         item.status === 'failed'
           ? 'bg-red-100 text-red-700 border-red-200'
+          : item.status === 'completed' || item.status === 'sent'
+          ? 'bg-green-100 text-green-700 border-green-200'
+          : item.status === 'cancelled'
+          ? 'bg-slate-100 text-slate-500 border-slate-200'
           : 'bg-yellow-100 text-yellow-700 border-yellow-200'
       }
     `}
@@ -280,6 +284,10 @@ const packageRisk = getPackageRisk();
           ${
             item.status === 'failed'
               ? 'bg-red-500'
+              : item.status === 'completed' || item.status === 'sent'
+              ? 'bg-green-500'
+              : item.status === 'cancelled'
+              ? 'bg-slate-400'
               : 'bg-yellow-500'
           }
         `}
@@ -287,6 +295,12 @@ const packageRisk = getPackageRisk();
 
       {item.status === 'failed'
         ? 'Failed'
+        : item.status === 'completed'
+        ? 'Completed'
+        : item.status === 'sent'
+        ? 'Sent'
+        : item.status === 'cancelled'
+        ? 'Cancelled'
         : 'Pending'}
     </div>
   </Badge>
