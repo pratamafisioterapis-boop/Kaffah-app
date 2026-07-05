@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailMo
 
 const OwnerBookingCalendar = () => {
   const navigate = useNavigate();
+  const { userDetails } = useAuth();
   const { toast } = useToast();
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,12 @@ const OwnerBookingCalendar = () => {
   }, []);
 
   const loadWaSettings = async () => {
-    const { data } = await supabase.from('wa_settings').select('id, enabled').single();
+    if (!userDetails?.clinic_id) return;
+    const { data } = await supabase
+      .from('wa_settings')
+      .select('id, enabled')
+      .eq('clinic_id', userDetails.clinic_id)
+      .maybeSingle();
     if (data) setIsBablastEnabled(data.enabled);
   };
 
@@ -216,19 +223,40 @@ const OwnerBookingCalendar = () => {
           <span className="text-sm font-medium text-slate-700">WaAuto</span>
           <button
             onClick={async () => {
-              const { data: current } = await supabase.from('wa_settings').select('id, enabled').single();
-              if (!current) return;
-              const newValue = !current.enabled;
-              const { data, error } = await supabase
+              if (!userDetails?.clinic_id) return;
+
+              const { data: current } = await supabase
                 .from('wa_settings')
-                .update({
-                  enabled: newValue,
-                  updated_at: new Date().toISOString(),
-                  ...(newValue && { last_enabled_at: new Date().toISOString() })
-                })
-                .eq('id', current.id)
-                .select()
-                .single();
+                .select('id, enabled')
+                .eq('clinic_id', userDetails.clinic_id)
+                .maybeSingle();
+
+              let result;
+              if (current) {
+                const newValue = !current.enabled;
+                result = await supabase
+                  .from('wa_settings')
+                  .update({
+                    enabled: newValue,
+                    updated_at: new Date().toISOString(),
+                    ...(newValue && { last_enabled_at: new Date().toISOString() })
+                  })
+                  .eq('id', current.id)
+                  .select()
+                  .single();
+              } else {
+                result = await supabase
+                  .from('wa_settings')
+                  .insert({
+                    clinic_id: userDetails.clinic_id,
+                    enabled: true,
+                    last_enabled_at: new Date().toISOString()
+                  })
+                  .select()
+                  .single();
+              }
+
+              const { data, error } = result;
               if (!error && data) {
                 setIsBablastEnabled(data.enabled);
                 toast({

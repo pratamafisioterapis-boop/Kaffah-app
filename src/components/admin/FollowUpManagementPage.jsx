@@ -20,6 +20,7 @@ const FollowUpManagementPage = () => {
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [isChatAIEnabled, setIsChatAIEnabled] = useState(false);
 
+  const { userDetails } = useAuth();
   const { toast } = useToast();
 
   // ===============================
@@ -45,13 +46,16 @@ const FollowUpManagementPage = () => {
     const fetchSettings = async () => {
 
       // Bablast
-      const { data: waSetting } = await supabase
-        .from('wa_settings')
-        .select('id, enabled')
-        .single();
+      if (userDetails?.clinic_id) {
+        const { data: waSetting } = await supabase
+          .from('wa_settings')
+          .select('id, enabled')
+          .eq('clinic_id', userDetails.clinic_id)
+          .maybeSingle();
 
-      if (waSetting) {
-        setIsBablastEnabled(waSetting.enabled);
+        if (waSetting) {
+          setIsBablastEnabled(waSetting.enabled);
+        }
       }
 
       // Chat AI
@@ -167,32 +171,46 @@ const handleGenerate = async (type) => {
 };
   const handleToggleBablast = async () => {
 
+  if (!userDetails?.clinic_id) return;
+
   const { data: current } = await supabase
     .from('wa_settings')
     .select('id, enabled')
-    .single();
+    .eq('clinic_id', userDetails.clinic_id)
+    .maybeSingle();
 
-  if (!current) return;
+  let data, error;
 
-  const newValue = !current.enabled;
+  if (current) {
+    const newValue = !current.enabled;
+    const payload = newValue
+      ? {
+          enabled: true,
+          last_enabled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      : {
+          enabled: false,
+          updated_at: new Date().toISOString()
+        };
 
-  const payload = newValue
-    ? {
+    ({ data, error } = await supabase
+      .from('wa_settings')
+      .update(payload)
+      .eq('id', current.id)
+      .select()
+      .single());
+  } else {
+    ({ data, error } = await supabase
+      .from('wa_settings')
+      .insert({
+        clinic_id: userDetails.clinic_id,
         enabled: true,
-        last_enabled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString() // 🔥 TAMBAH INI
-      }
-    : {
-        enabled: false,
-        updated_at: new Date().toISOString() // 🔥 TAMBAH INI
-      };
-
-  const { data, error } = await supabase
-    .from('wa_settings')
-    .update(payload)
-    .eq('id', current.id)
-    .select()
-    .single();
+        last_enabled_at: new Date().toISOString()
+      })
+      .select()
+      .single());
+  }
 
   if (!error && data) {
     setIsBablastEnabled(data.enabled);

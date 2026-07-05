@@ -63,10 +63,13 @@ const formattedDate = date
   loadInitialData();
 
   const fetchWASettings = async () => {
+    if (!userDetails?.clinic_id) return;
+
     const { data } = await supabase
       .from('wa_settings')
       .select('enabled')
-      .single();
+      .eq('clinic_id', userDetails.clinic_id)
+      .maybeSingle();
 
     if (data) {
       setIsBablastEnabled(data.enabled);
@@ -262,29 +265,45 @@ const handleViewHistory = async (patientId) => {
   <button
     onClick={async () => {
 
-  // ambil current row
+  if (!userDetails?.clinic_id) return;
+
+  // ambil current row KHUSUS klinik ini
   const { data: current } = await supabase
     .from('wa_settings')
     .select('id, enabled')
-    .single();
+    .eq('clinic_id', userDetails.clinic_id)
+    .maybeSingle();
 
-  if (!current) return;
+  let result;
 
-  const newValue = !current.enabled;
-
-  const { data, error } = await supabase
-    .from('wa_settings')
-    .update({
-      enabled: newValue,
-      updated_at: new Date().toISOString(),
-
-      ...(newValue && {
+  if (current) {
+    const newValue = !current.enabled;
+    result = await supabase
+      .from('wa_settings')
+      .update({
+        enabled: newValue,
+        updated_at: new Date().toISOString(),
+        ...(newValue && {
+          last_enabled_at: new Date().toISOString()
+        })
+      })
+      .eq('id', current.id)
+      .select()
+      .single();
+  } else {
+    // belum ada row untuk klinik ini -> buat baru
+    result = await supabase
+      .from('wa_settings')
+      .insert({
+        clinic_id: userDetails.clinic_id,
+        enabled: true,
         last_enabled_at: new Date().toISOString()
       })
-    })
-    .eq('id', current.id)
-    .select()
-    .single();
+      .select()
+      .single();
+  }
+
+  const { data, error } = result;
 
   if (!error && data) {
 
