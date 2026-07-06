@@ -113,15 +113,15 @@ const DailyRecap = ({ hideControls = false }) => {
     };
 
     try {
-      const saved = localStorage.getItem("global_date_range");
+      const saved = localStorage.getItem("admin_daily_recap_date_range");
       if (saved) {
         const parsed = JSON.parse(saved);
-
-        // Ambil hari ini lagi (biar auto reset jam 00:01)
-      return {
-  start: parsed.startDate,
-  end: parsed.endDate
-};
+        if (parsed.startDate && parsed.endDate) {
+          return {
+            start: parsed.startDate,
+            end: parsed.endDate
+          };
+        }
       }
     } catch (e) { }
 
@@ -181,7 +181,7 @@ useEffect(() => {
   }, []);
 
   useEffect(() => { setCurrentPage(1); if (queryDateRange?.start && queryDateRange?.end) { localStorage.setItem(
-  "global_date_range",
+  "admin_daily_recap_date_range",
   JSON.stringify({
     startDate: queryDateRange.start,
     endDate: queryDateRange.end
@@ -215,8 +215,8 @@ useEffect(() => {
       .toISOString()
       .split('T')[0];
 
-    // 🔥 HANYA RESET kalau filter = today
-    if (activeFilter === 'today' && !localStorage.getItem("global_date_range")) {
+    // 🔥 HANYA RESET kalau filter = today, terlepas dari localStorage
+    if (activeFilter === 'today') {
       if (
         dateRange.start !== todayMakassar ||
         dateRange.end !== todayMakassar
