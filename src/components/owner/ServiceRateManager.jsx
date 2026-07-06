@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,8 @@ const formatCurrency = (value) =>
 
 const ServiceRateManager = () => {
   const { toast } = useToast();
+  const { userDetails } = useAuth();
+  const clinicId = userDetails?.clinic_id;
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,10 +34,12 @@ const ServiceRateManager = () => {
   const [deletingRate, setDeletingRate] = useState(null);
 
   const fetchRates = async () => {
+    if (!clinicId) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
       .from('service_rates')
       .select('*')
+      .eq('clinic_id', clinicId)
       .order('service_name', { ascending: true });
     if (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat tarif jasa.' });
@@ -44,7 +49,7 @@ const ServiceRateManager = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchRates(); }, []);
+  useEffect(() => { fetchRates(); }, [clinicId]);
 
   const openAdd = () => {
     setEditingRate(null);
@@ -85,7 +90,7 @@ const ServiceRateManager = () => {
       } else {
         const { data, error } = await supabase
           .from('service_rates')
-          .insert({ service_name: name, rate: rateValue })
+          .insert({ service_name: name, rate: rateValue, clinic_id: clinicId })
           .select()
           .single();
         if (error) throw error;
