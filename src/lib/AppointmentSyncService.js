@@ -43,17 +43,35 @@ const AppointmentSyncService = {
         
         const { data: existingRecap } = await supabase
           .from('daily_recaps')
-          .select('id')
+          .select('id, start_time')
           .eq('appointment_id', appointment.id)
           .maybeSingle();
 
         if (existingRecap) {
-          // UPDATE existing recap with new date (Simplest way to "move" it)
-          // Task says "DELETE old daily recap, CREATE/UPDATE daily recap". 
-          // Updating is safer to preserve other data like diagnosis if entered.
           const newDate = new Date(appointment.appointment_date);
           const dateStr = newDate.toISOString().split('T')[0];
-          const timeStr = newDate.toISOString(); 
+
+          // Tanggal "hari ini" versi WITA, dipakai untuk cek apakah tanggal baru sudah lewat/hari ini
+          const todayWITA = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Makassar', year: 'numeric', month: '2-digit', day: '2-digit'
+          }).format(new Date());
+
+          if (dateStr > todayWITA && !existingRecap.start_time) {
+            // Tanggal baru masih di masa depan & sesi belum pernah dimulai:
+            // hapus recap-nya sekarang, biar generate_today_daily_recaps() yang bikin ulang
+            // otomatis pas hari-H tiba (recap tidak boleh nongol sebelum waktunya).
+            const { error: deleteError } = await supabase
+              .from('daily_recaps')
+              .delete()
+              .eq('id', existingRecap.id);
+
+            if (deleteError) throw deleteError;
+            return { success: true, message: "Rescheduled ke masa depan: recap lama dihapus, akan dibuat otomatis pada hari-H." };
+          }
+
+          // Tanggal baru = hari ini (atau sudah lewat), atau sesi sudah pernah dimulai:
+          // update seperti biasa
+          const timeStr = newDate.toISOString();
 
           const { error: updateError } = await supabase
             .from('daily_recaps')
