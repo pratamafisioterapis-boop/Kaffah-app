@@ -248,7 +248,16 @@ setFormData({
         setLoadingPatients(true);
         try {
             const { data } = await getPatients(term);
-            setPatientOptions(Array.isArray(data) ? data : []);
+            const newOptions = Array.isArray(data) ? data : [];
+
+            // 🔥 MERGE + HINDARI DUPLIKAT (jangan replace, biar opsi yg sudah ter-inject/dipilih gak hilang)
+            setPatientOptions(prev => {
+                const merged = [
+                    ...newOptions,
+                    ...prev.filter(p => !newOptions.some(n => n.value === p.value))
+                ];
+                return merged;
+            });
         } catch (e) { 
             console.error(e); 
             setPatientOptions([]);
@@ -322,6 +331,40 @@ setFormData({
             ]);
             
             setPatientOptions(Array.isArray(patientsData.data) ? patientsData.data : []);
+
+            // 🔥 FIX PATIENT (UUID vs LABEL mismatch) - inject Pemilik Paket & Pasien Aktual
+            if (mode === 'edit' && initialData) {
+                setPatientOptions(prev => {
+                    let merged = [...prev];
+
+                    if (initialData.patient_id) {
+                        const existsOwner = merged.some(opt => opt.value === initialData.patient_id);
+                        if (!existsOwner) {
+                            const ownerName = initialData.patients?.full_name || initialData.patient_name || 'Tidak diketahui';
+                            const ownerRM = initialData.patients?.medical_record_number || 'RM';
+                            merged.push({
+                                value: initialData.patient_id,
+                                label: `${ownerRM} - ${ownerName}`
+                            });
+                        }
+                    }
+
+                    if (initialData.actual_patient_id) {
+                        const existsActual = merged.some(opt => opt.value === initialData.actual_patient_id);
+                        if (!existsActual) {
+                            const actualName = initialData.actual_patients?.full_name || initialData.actual_patient_name || 'Tidak diketahui';
+                            const actualRM = initialData.actual_patients?.medical_record_number || 'RM';
+                            merged.push({
+                                value: initialData.actual_patient_id,
+                                label: `${actualRM} - ${actualName}`
+                            });
+                        }
+                    }
+
+                    return merged;
+                });
+            }
+
             setServiceOptions(Array.isArray(services?.data || services) ? (services?.data || services) : []);
             
             // 🔥 FIX SERVICE (ID vs LABEL mismatch)

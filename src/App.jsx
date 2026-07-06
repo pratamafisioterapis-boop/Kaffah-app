@@ -23,10 +23,12 @@ const OwnerDashboard = React.lazy(() => import('@/pages/OwnerDashboard'));
 const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard'));
 const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
 const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
+const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
 import DashboardLayout from '@/components/DashboardLayout';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
+import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 
 
 // Loading Component
@@ -246,6 +248,15 @@ function App() {
                     <ProtectedRoute allowedRoles={['therapist', 'physiotherapist']}>
                       <TherapistDashboard />
                     </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/rotasi/*"
+                  element={
+                    <RotasiProtectedRoute>
+                      <RotasiApp />
+                    </RotasiProtectedRoute>
                   }
                 />
                 

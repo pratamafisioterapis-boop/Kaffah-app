@@ -69,6 +69,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Rotasi Jadwal admin status...");
+          const { data: rotasiAdmin } = await supabase
+            .from('rotasi_admins')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (rotasiAdmin) {
+            console.log("[LoginPage] Rotasi admin detected, redirecting.");
+            navigate('/rotasi', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Validating fallback metadata role...");
           // Fallback: Check metadata
           const metaRole = user.user_metadata?.role;
@@ -84,6 +97,19 @@ const LoginPage = () => {
           console.warn("[LoginPage] Account profile not fully initialized.");
           setAuthError("Account profile not fully initialized. Please contact administrator.");
           setIsRedirecting(false);
+          return;
+        }
+
+        console.log("[LoginPage] Checking Rotasi Jadwal admin status...");
+        const { data: rotasiAdmin } = await supabase
+          .from('rotasi_admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (rotasiAdmin) {
+          console.log("[LoginPage] Rotasi admin detected, redirecting.");
+          navigate('/rotasi', { replace: true });
           return;
         }
 
