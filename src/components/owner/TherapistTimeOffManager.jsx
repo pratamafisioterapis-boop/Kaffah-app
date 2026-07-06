@@ -27,10 +27,10 @@ const TherapistTimeOffManager = () => {
     }
   };
 
-  const therapistOptions = therapists.map(t => ({
-    value: t.id,
-    label: t.name
-  }));
+  const getInitials = (name) => {
+    if (!name) return 'TH';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
 
   const handleSuccess = () => {
     // Triggers a refresh in the TherapistTimeOffList component
@@ -39,19 +39,9 @@ const TherapistTimeOffManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-         <div>
-            <h2 className="text-xl font-bold text-slate-800">Manajemen Cuti Terapis</h2>
-            <p className="text-sm text-slate-500">Kelola izin dan hari libur fisioterapis</p>
-         </div>
-         <div className="w-full sm:w-[300px]">
-            <SearchableSelect 
-               options={therapistOptions}
-               value={selectedTherapist?.id}
-               onChange={(val) => setSelectedTherapist(therapists.find(t => t.id === val))}
-               placeholder="Pilih Terapis..."
-            />
-         </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+         <h2 className="text-xl font-bold text-slate-800">Manajemen Cuti Terapis</h2>
+         <p className="text-sm text-slate-500">Kelola izin dan hari libur fisioterapis</p>
       </div>
 
       {error && (
@@ -61,10 +51,35 @@ const TherapistTimeOffManager = () => {
         </Alert>
       )}
 
+      {/* Cards Terapis - pilih langsung tanpa dropdown */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {therapists.map((t) => {
+          const isActive = selectedTherapist?.id === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setSelectedTherapist(t)}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center ${
+                isActive
+                  ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200'
+                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${
+                isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {getInitials(t.name)}
+              </div>
+              <span className="text-sm font-medium text-slate-700 truncate w-full">{t.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {!selectedTherapist ? (
          <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
             <User className="w-16 h-16 mb-4 opacity-30" />
-            <p className="font-medium">Silakan pilih terapis terlebih dahulu untuk melihat dan menambah cuti</p>
+            <p className="font-medium">Silakan pilih salah satu card terapis di atas untuk melihat dan menambah cuti</p>
          </div>
       ) : (
          <div className="grid lg:grid-cols-3 gap-8">

@@ -271,22 +271,39 @@ const TherapistScheduleManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-0 z-10">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <CalendarClock className="w-5 h-5 text-blue-600" />
-            Manajemen Jadwal
-          </h2>
-          <p className="text-sm text-slate-500">Pilih terapis untuk melihat dan mengatur jadwal</p>
-        </div>
-        <div className="w-full sm:w-[300px]">
-          <SearchableSelect 
-             options={therapistOptions}
-             value={selectedTherapist?.id}
-             onChange={(val) => setSelectedTherapist(therapists.find(t => t.id === val))}
-             placeholder="Cari Terapis..."
-          />
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-0 z-10">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <CalendarClock className="w-5 h-5 text-blue-600" />
+          Manajemen Jadwal
+        </h2>
+        <p className="text-sm text-slate-500">Pilih terapis untuk melihat dan mengatur jadwal</p>
+      </div>
+
+      {/* Cards Terapis - pilih langsung tanpa dropdown */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {therapists.map((t) => {
+          const isActive = selectedTherapist?.id === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setSelectedTherapist(t)}
+              className={cn(
+                "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center",
+                isActive
+                  ? "border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+              )}
+            >
+              <div className={cn(
+                "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm",
+                isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+              )}>
+                {getInitials(t.name)}
+              </div>
+              <span className="text-sm font-medium text-slate-700 truncate w-full">{t.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {!selectedTherapist ? (

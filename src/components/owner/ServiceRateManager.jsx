@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit2, Loader2, AlertCircle, Wallet } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, AlertCircle, Wallet, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { getPatientTypeOptions } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,10 @@ const ServiceRateManager = () => {
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [patientTypes, setPatientTypes] = useState([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [typeRateInputs, setTypeRateInputs] = useState({});
+  const [savingTypeLabel, setSavingTypeLabel] = useState(null);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRate, setEditingRate] = useState(null);
@@ -49,7 +54,61 @@ const ServiceRateManager = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchRates(); }, [clinicId]);
+  const fetchPatientTypes = async () => {
+    setLoadingTypes(true);
+    const { data } = await getPatientTypeOptions();
+    setPatientTypes(data || []);
+    setLoadingTypes(false);
+  };
+
+  useEffect(() => { fetchRates(); fetchPatientTypes(); }, [clinicId]);
+
+  // Gabungkan Tipe Pasien (dari Setup) dengan tarif yang sudah pernah diisi
+  const mergedTypeRates = useMemo(() => {
+    return patientTypes.map((pt) => {
+      const match = rates.find(
+        (r) => (r.service_name || '').trim().toLowerCase() === (pt.label || '').trim().toLowerCase()
+      );
+      return { key: pt.id, label: pt.label, rateRow: match || null };
+    });
+  }, [patientTypes, rates]);
+
+  // Tarif yang namanya tidak cocok dengan Tipe Pasien manapun (input manual/lama)
+  const customRates = useMemo(() => {
+    const typeLabels = patientTypes.map((pt) => (pt.label || '').trim().toLowerCase());
+    return rates.filter((r) => !typeLabels.includes((r.service_name || '').trim().toLowerCase()));
+  }, [rates, patientTypes]);
+
+  const handleQuickSave = async (label, rateRow) => {
+    const inputValue = typeRateInputs[label];
+    const rateValue = parseFloat(inputValue) || 0;
+    setSavingTypeLabel(label);
+    try {
+      if (rateRow) {
+        const { data, error } = await supabase
+          .from('service_rates')
+          .update({ rate: rateValue })
+          .eq('id', rateRow.id)
+          .select()
+          .single();
+        if (error) throw error;
+        setRates((prev) => prev.map((r) => (r.id === rateRow.id ? data : r)));
+      } else {
+        const { data, error } = await supabase
+          .from('service_rates')
+          .insert({ service_name: label, rate: rateValue, clinic_id: clinicId })
+          .select()
+          .single();
+        if (error) throw error;
+        setRates((prev) => [...prev, data]);
+      }
+      toast({ title: 'Berhasil', description: `Tarif "${label}" disimpan.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Gagal Menyimpan', description: error.message });
+    } finally {
+      setSavingTypeLabel(null);
+    }
+  };
 
   const openAdd = () => {
     setEditingRate(null);
@@ -134,44 +193,99 @@ const ServiceRateManager = () => {
         </Button>
       </div>
 
-      <div className="p-6">
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-          {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
-          ) : rates.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-              <p>Belum ada tarif jasa yang tersedia.</p>
-              <Button variant="link" onClick={openAdd} className="text-blue-600 mt-2">Tambahkan tarif pertama</Button>
+      <div className="p-6 space-y-6">
+        {/* Tarif berdasarkan Tipe Pasien (Setup) */}
+        <div>
+          <h3 className="text-sm font-semibold text-slate-600 mb-3">Tipe Pasien (dari Setup)</h3>
+          {loadingTypes ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
+          ) : patientTypes.length === 0 ? (
+            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-sm">
+              Belum ada Tipe Pasien di Setup. Tambahkan dulu di tab "Tipe Pasien".
             </div>
           ) : (
-            rates.map((item) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                    <Wallet className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700">{item.service_name}</span>
-                    <p className="text-xs text-emerald-600 font-semibold mt-0.5">{formatCurrency(item.rate)} / sesi</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(item)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+              {mergedTypeRates.map(({ key, label, rateRow }) => {
+                const currentValue = typeRateInputs[label] !== undefined
+                  ? typeRateInputs[label]
+                  : (rateRow?.rate ?? '');
+                const isSaving = savingTypeLabel === label;
+                return (
+                  <motion.div
+                    key={key}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                        <Wallet className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-medium text-slate-700 truncate block">{label}</span>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {rateRow ? `${formatCurrency(rateRow.rate)} / sesi` : 'Belum diatur'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Input
+                        type="number"
+                        value={currentValue}
+                        onChange={(e) => setTypeRateInputs((prev) => ({ ...prev, [label]: e.target.value }))}
+                        placeholder="Rp 0"
+                        className="w-32 h-9 text-sm"
+                      />
+                      <Button
+                        size="icon"
+                        onClick={() => handleQuickSave(label, rateRow)}
+                        disabled={isSaving}
+                        className="h-9 w-9 bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           )}
         </div>
+
+        {/* Tarif kustom (nama tidak cocok dengan Tipe Pasien manapun) */}
+        {customRates.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-slate-600 mb-3">Tarif Kustom Lainnya</h3>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+              {customRates.map((item) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                      <Wallet className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-700">{item.service_name}</span>
+                      <p className="text-xs text-emerald-600 font-semibold mt-0.5">{formatCurrency(item.rate)} / sesi</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(item)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}

@@ -232,6 +232,11 @@ const TherapistTargetManager = () => {
    label: t.name
 }));
 
+  const getInitials = (name) => {
+    if (!name) return 'TH';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -340,13 +345,30 @@ const TherapistTargetManager = () => {
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Terapis</label>
-                <SearchableSelect 
-                   options={therapistOptions}
-                   value={formData.therapist_id}
-                   onChange={(val) => setFormData({...formData, therapist_id: val})}
-                   disabled={!!editingTarget}
-                   placeholder="Pilih Terapis (Ketik untuk mencari)..."
-                />
+                <div className={`grid grid-cols-3 sm:grid-cols-4 gap-2 p-2 border rounded-md bg-slate-50 max-h-48 overflow-y-auto ${editingTarget ? 'opacity-60 pointer-events-none' : ''}`}>
+                  {therapists.map((t) => {
+                    const isActive = formData.therapist_id === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, therapist_id: t.id })}
+                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all text-center ${
+                          isActive
+                            ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
+                          isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {getInitials(t.name)}
+                        </div>
+                        <span className="text-xs font-medium text-slate-700 truncate w-full">{t.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
