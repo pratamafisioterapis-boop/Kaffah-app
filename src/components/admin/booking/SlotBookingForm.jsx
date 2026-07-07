@@ -228,8 +228,8 @@ setPackageInfo(pkg);
 action_by: user?.id,
   action_by_name: userDetails?.full_name,
   action_by_role: userDetails?.role,
-  // 🔥 TAMBAHAN
-  p_disable_whatsapp: !isBablastEnabled
+  // Homecare: matikan edge function WA, frontend yang handle sendiri
+  p_disable_whatsapp: !isBablastEnabled || formData.is_homecare
 });
 
       if (!result || result.error) throw result?.error || new Error("Gagal menyimpan jadwal");

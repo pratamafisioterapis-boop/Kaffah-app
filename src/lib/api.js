@@ -584,7 +584,11 @@ console.log("PAYLOAD RPC FINAL", payload);
 
     supabase.functions
   .invoke("process-booking-whatsapp-now", {
-    body: { is_homecare: params.p_is_homecare ?? false }
+    body: {
+      appointment_id: data,
+      is_homecare: params.p_is_homecare ?? false,
+      disable_whatsapp: params.p_disable_whatsapp ?? false,
+    }
   })
   .then(() => {})
   .catch(() => {});
