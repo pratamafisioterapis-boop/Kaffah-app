@@ -51,6 +51,11 @@ const S = {
     padding: '4px 10px', background: '#fef2f2', color: '#dc2626',
     border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
   },
+  pagerBtn: {
+    padding: '6px 10px', minWidth: 34, background: '#fff', color: '#334155',
+    border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer', fontSize: 13,
+    fontWeight: 500, transition: 'all 0.15s', lineHeight: 1,
+  },
   th: {
     padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#64748b',
     fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap',
@@ -79,10 +84,12 @@ const FL = ({ label, required, children }) => (
 // ─── main component ───────────────────────────────────────────────────────────
 const RotasiPatients = () => {
   const [patients, setPatients] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [insuranceTypes, setInsuranceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
@@ -99,59 +106,44 @@ const RotasiPatients = () => {
   const [editId, setEditId] = useState(null);
 
   // ─── fetch ─────────────────────────────────────────────────────────────────
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchInsuranceTypes(); }, []);
+  useEffect(() => { fetchPatients(); }, [page, pageSize, sortKey, sortDir, search]);
 
-  const fetchAll = async () => {
+  const fetchInsuranceTypes = async () => {
+    const { data } = await supabase.from('rotasi_insurance_types').select('id, name').order('name', { ascending: true });
+    if (data) setInsuranceTypes(data);
+  };
+
+  const fetchPatients = async () => {
     setLoading(true);
-    const [pRes, iRes] = await Promise.all([
-      supabase
-        .from('rotasi_patients')
-        .select('id, name, is_active, birth_date, medical_record_number, bpjs_number, therapy_start_date, diagnosis, insurance_type_id, rotasi_insurance_types(name)')
-        .order('name', { ascending: true }),
-      supabase.from('rotasi_insurance_types').select('id, name').order('name', { ascending: true }),
-    ]);
-    if (!pRes.error) setPatients(pRes.data || []);
-    if (!iRes.error) setInsuranceTypes(iRes.data || []);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('rotasi_patients')
+      .select('id, name, is_active, birth_date, medical_record_number, bpjs_number, therapy_start_date, diagnosis, insurance_type_id, rotasi_insurance_types(name)', { count: 'exact' })
+      .order(sortKey === 'insurance' ? 'name' : sortKey === 'age' ? 'birth_date' : sortKey, { ascending: sortDir === 'asc' })
+      .range(from, to);
+
+    if (search.trim()) {
+      query = query.or(`name.ilike.%${search.trim()}%,medical_record_number.ilike.%${search.trim()}%,diagnosis.ilike.%${search.trim()}%`);
+    }
+
+    const { data, error, count } = await query;
+    if (!error) {
+      setPatients(data || []);
+      setTotalCount(count || 0);
+    }
     setLoading(false);
   };
 
-  // ─── sort + filter + paginate ───────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return patients.filter((p) =>
-      !q ||
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.medical_record_number || '').toLowerCase().includes(q) ||
-      (p.diagnosis || '').toLowerCase().includes(q)
-    );
-  }, [patients, search]);
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      let va, vb;
-      if (sortKey === 'age') {
-        va = calcAge(a.birth_date) ?? -1;
-        vb = calcAge(b.birth_date) ?? -1;
-      } else if (sortKey === 'insurance') {
-        va = a.rotasi_insurance_types?.name || '';
-        vb = b.rotasi_insurance_types?.name || '';
-      } else if (sortKey === 'is_active') {
-        va = a.is_active ? 1 : 0;
-        vb = b.is_active ? 1 : 0;
-      } else {
-        va = (a[sortKey] || '').toString().toLowerCase();
-        vb = (b[sortKey] || '').toString().toLowerCase();
-      }
-      if (va < vb) return sortDir === 'asc' ? -1 : 1;
-      if (va > vb) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filtered, sortKey, sortDir]);
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paginated = sorted.slice((page - 1) * pageSize, page * pageSize);
+  // ─── derived ───────────────────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginated = patients; // sudah di-server-side\
 
   const handleSort = (key) => {
+    // kolom age dan insurance tidak bisa di-sort server-side dengan mudah, skip
+    if (key === 'age' || key === 'insurance' || key === 'is_active') return;
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(key); setSortDir('asc'); }
     setPage(1);
@@ -247,12 +239,18 @@ const RotasiPatients = () => {
       </div>
 
       <div style={{ display: 'flex', gap: 10, margin: '20px 0 12px', alignItems: 'center' }}>
-        <input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Cari pasien..."
-          style={{ ...S.inputBase, maxWidth: 340 }}
-        />
+        <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Cari nama, No. RM, diagnosis..."
+            style={{ ...S.inputBase, maxWidth: 300 }}
+          />
+          <button type="submit" style={{ ...S.btnPrimary, padding: '9px 14px', background: '#475569' }}>Cari</button>
+          {search && (
+            <button type="button" onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }} style={{ ...S.btnSecondary }}>✕ Reset</button>
+          )}
+        </form>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12, color: '#94a3b8' }}>Baris per halaman:</span>
           <select
@@ -267,7 +265,8 @@ const RotasiPatients = () => {
 
       {!loading && (
         <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 10px' }}>
-          Menampilkan {sorted.length === 0 ? 0 : Math.min((page - 1) * pageSize + 1, sorted.length)}–{Math.min(page * pageSize, sorted.length)} dari {sorted.length} pasien
+          Menampilkan {totalCount === 0 ? 0 : Math.min((page - 1) * pageSize + 1, totalCount)}–{Math.min(page * pageSize, totalCount)} dari <strong>{totalCount.toLocaleString('id-ID')}</strong> pasien
+          {search && <span style={{ color: '#2563eb' }}> · hasil pencarian "{search}"</span>}
         </p>
       )}
 
@@ -337,23 +336,99 @@ const RotasiPatients = () => {
         </div>
       )}
 
-      {!loading && totalPages > 1 && (
-        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 16 }}>
-          <button onClick={() => setPage(1)} disabled={page === 1} style={S.btnSecondary}>«</button>
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={S.btnSecondary}>‹</button>
-          {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-            const pg = Math.max(1, Math.min(totalPages - 6, page - 3)) + i;
-            return pg <= totalPages ? (
-              <button key={pg} onClick={() => setPage(pg)} style={{
-                ...S.btnSecondary,
-                background: page === pg ? '#2563eb' : '#f1f5f9',
-                color: page === pg ? '#fff' : '#334155',
-                border: page === pg ? '1px solid #2563eb' : '1px solid #e2e8f0',
-              }}>{pg}</button>
-            ) : null;
-          })}
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={S.btnSecondary}>›</button>
-          <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={S.btnSecondary}>»</button>
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, flexWrap: 'wrap', gap: 12 }}>
+          {/* Info halaman */}
+          <span style={{ fontSize: 13, color: '#94a3b8' }}>
+            Halaman <strong style={{ color: '#334155' }}>{page}</strong> dari <strong style={{ color: '#334155' }}>{totalPages}</strong>
+          </span>
+
+          {/* Navigasi */}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {/* First */}
+            <button
+              onClick={() => setPage(1)} disabled={page === 1}
+              style={{ ...S.pagerBtn, opacity: page === 1 ? 0.4 : 1 }}
+              title="Halaman pertama"
+            >«</button>
+            {/* Prev */}
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+              style={{ ...S.pagerBtn, opacity: page === 1 ? 0.4 : 1 }}
+              title="Sebelumnya"
+            >‹</button>
+
+            {/* Page numbers dengan ellipsis */}
+            {(() => {
+              const items = [];
+              const delta = 2;
+              const left = page - delta;
+              const right = page + delta;
+              let last = 0;
+              for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                  if (last && i - last > 1) {
+                    items.push(
+                      <span key={`e${i}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: 13 }}>…</span>
+                    );
+                  }
+                  items.push(
+                    <button
+                      key={i}
+                      onClick={() => setPage(i)}
+                      style={{
+                        ...S.pagerBtn,
+                        minWidth: 36,
+                        background: page === i ? '#2563eb' : '#fff',
+                        color: page === i ? '#fff' : '#334155',
+                        border: page === i ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                        fontWeight: page === i ? 700 : 500,
+                        boxShadow: page === i ? '0 1px 4px rgba(37,99,235,0.25)' : 'none',
+                      }}
+                    >{i}</button>
+                  );
+                  last = i;
+                }
+              }
+              return items;
+            })()}
+
+            {/* Next */}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              style={{ ...S.pagerBtn, opacity: page === totalPages ? 0.4 : 1 }}
+              title="Selanjutnya"
+            >›</button>
+            {/* Last */}
+            <button
+              onClick={() => setPage(totalPages)} disabled={page === totalPages}
+              style={{ ...S.pagerBtn, opacity: page === totalPages ? 0.4 : 1 }}
+              title="Halaman terakhir"
+            >»</button>
+          </div>
+
+          {/* Jump to page */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: '#94a3b8' }}>Ke halaman:</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              defaultValue={page}
+              key={page}
+              onBlur={(e) => {
+                const v = parseInt(e.target.value);
+                if (v >= 1 && v <= totalPages) setPage(v);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const v = parseInt(e.target.value);
+                  if (v >= 1 && v <= totalPages) setPage(v);
+                }
+              }}
+              style={{ ...S.inputBase, width: 60, textAlign: 'center', padding: '6px 8px' }}
+            />
+          </div>
         </div>
       )}
 
