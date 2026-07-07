@@ -3,9 +3,15 @@ import { supabase } from '@/lib/customSupabaseClient';
 
 const RotasiTherapists = () => {
   const [therapists, setTherapists] = useState([]);
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: '',
+    profesi: '',
+    tanggal_bergabung: '',
+  });
 
   const fetchTherapists = async () => {
     setLoading(true);
@@ -21,19 +27,32 @@ const RotasiTherapists = () => {
     fetchTherapists();
   }, []);
 
+  const openAddModal = () => {
+    setAddForm({ name: '', profesi: '', tanggal_bergabung: '' });
+    setAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setAddModalOpen(false);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = addForm.name.trim();
     if (!trimmed) return;
     setSaving(true);
     const { data, error } = await supabase
       .from('rotasi_therapists')
-      .insert({ name: trimmed })
+      .insert({
+        name: trimmed,
+        profesi: addForm.profesi.trim() || null,
+        tanggal_bergabung: addForm.tanggal_bergabung || null,
+      })
       .select()
       .single();
     if (!error) {
       setTherapists((prev) => [...prev, data]);
-      setName('');
+      setAddModalOpen(false);
     }
     setSaving(false);
   };
@@ -63,22 +82,10 @@ const RotasiTherapists = () => {
         Kelola terapis yang ikut dalam rotasi jadwal. Nonaktifkan terapis yang sedang cuti/libur.
       </p>
 
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nama terapis baru..."
-          style={{
-            flex: 1,
-            padding: '10px 12px',
-            borderRadius: 8,
-            border: '1px solid #cbd5e1',
-            fontSize: 14,
-          }}
-        />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
         <button
-          type="submit"
-          disabled={saving}
+          type="button"
+          onClick={openAddModal}
           style={{
             padding: '10px 18px',
             borderRadius: 8,
@@ -89,9 +96,125 @@ const RotasiTherapists = () => {
             cursor: 'pointer',
           }}
         >
-          Tambah
+          + Tambah Terapis
         </button>
-      </form>
+      </div>
+
+      {addModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+          }}
+          onClick={closeAddModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: 24,
+              width: '100%',
+              maxWidth: 420,
+            }}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginTop: 0, marginBottom: 16 }}>
+              Tambah Terapis
+            </h2>
+            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
+                  Nama Terapis
+                </label>
+                <input
+                  value={addForm.name}
+                  onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 14,
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
+                  Profesi
+                </label>
+                <input
+                  value={addForm.profesi}
+                  onChange={(e) => setAddForm((f) => ({ ...f, profesi: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 14,
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
+                  Tanggal Bergabung
+                </label>
+                <input
+                  type="date"
+                  value={addForm.tanggal_bergabung}
+                  onChange={(e) => setAddForm((f) => ({ ...f, tanggal_bergabung: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 14,
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    background: '#fff',
+                    color: '#334155',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#fff',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {saving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <p>Memuat...</p>

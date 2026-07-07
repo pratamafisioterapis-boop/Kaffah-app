@@ -7,6 +7,7 @@ const navItems = [
   { to: '/rotasi/riwayat', label: 'Riwayat' },
   { to: '/rotasi/pasien', label: 'Pasien' },
   { to: '/rotasi/terapis', label: 'Terapis' },
+  { to: '/rotasi/setup', label: 'Setup' },
 ];
 
 const RotasiLayout = ({ children }) => {
