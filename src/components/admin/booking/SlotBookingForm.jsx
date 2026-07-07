@@ -17,6 +17,7 @@ import {
   createRecurringAppointmentSafe,
   extendPackage
 } from '@/lib/api';
+import { generateBookingHomecareMessage } from '@/lib/whatsappFollowUpService';
 import { format, isValid, addDays, isBefore, startOfDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -232,7 +233,38 @@ action_by: user?.id,
 });
 
       if (!result || result.error) throw result?.error || new Error("Gagal menyimpan jadwal");
-      
+
+      // Kirim WA homecare ke pasien langsung setelah booking (hanya jika WaAuto aktif)
+      if (formData.is_homecare && isBablastEnabled) {
+        try {
+          let patientPhone = null;
+          let patientObj = null;
+
+          if (formData.patient_type === 'registered' && formData.patient_id) {
+            const { data: pd } = await getPatientById(formData.patient_id);
+            patientPhone = pd?.phone || null;
+            patientObj = pd;
+          } else if (formData.patient_type === 'guest' && formData.guest_phone) {
+            patientPhone = formData.guest_phone;
+            patientObj = { full_name: formData.guest_name, nickname: '', phone: formData.guest_phone };
+          }
+
+          if (patientPhone && patientObj) {
+            const apptObj = {
+              appointment_date: `${format(date, 'yyyy-MM-dd')}T${slot.slot_start_time.substring(0, 5)}:00`,
+              therapist: therapist,
+            };
+            const message = await generateBookingHomecareMessage(patientObj, apptObj);
+            let phone = patientPhone.replace(/\D/g, '');
+            if (phone.startsWith('0')) phone = '62' + phone.slice(1);
+            else if (!phone.startsWith('62')) phone = '62' + phone;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+          }
+        } catch (waErr) {
+          console.warn('[HomecareWA] Gagal kirim WA homecare:', waErr);
+        }
+      }
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {

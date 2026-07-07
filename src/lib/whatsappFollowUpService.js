@@ -49,6 +49,24 @@ export const generateBookingMessage = async (patient, appointment) => {
   });
 };
 
+export const generateBookingHomecareMessage = async (patient, appointment) => {
+  let template = await getTemplate('booking_homecare');
+  if (!template) {
+    template = "Terima kasih sudah melakukan booking layanan homecare di Kaffah Physiotherapy 🤍\nJadwal [nickname] sudah tercatat untuk [hari_booking], [tanggal] pukul [jam] di lokasi yang telah disepakati.\n\nUntuk layanan homecare, pembayaran mohon dilakukan maksimal H-1 sebelum jadwal terapi melalui transfer ke:\na.n KAFFAH PHYSIOTHERAPY\nNo. Rek: 3030399993\n\nMohon melakukan pembayaran sebelum jadwal sesi berjalan sesuai waktu yang telah disepakati 🙏\n\nSalam sehat,\nKaffah Physiotherapy";
+  }
+
+  return fillTemplate(template, {
+    sapaan: getSalutation(patient),
+    nama: patient.full_name,
+    nickname: patient.nickname || `Ka ${patient.full_name}`,
+    tanggal: format(new Date(appointment.appointment_date), 'dd MMMM yyyy', { locale: idLocale }),
+    jam: format(new Date(appointment.appointment_date), 'HH:mm'),
+    hari_booking: calculateDayNameIndonesia(appointment.appointment_date),
+    terapis: appointment.therapist?.name || 'Terapis Kami',
+    layanan: 'Homecare',
+  });
+};
+
 export const generateFollowUpMessage = async (patient, lastAppointment) => {
   let template = await getTemplate('follow_up');
   if (!template) {
@@ -79,6 +97,57 @@ export const generatePackageExpiryMessage = async (patient, pkg) => {
     hari_expiry: expiryDate ? calculateDayNameIndonesia(expiryDate) : '-'
   });
 };
+
+// ─── Kirim pesan via Watzap API ───────────────────────────────────────────────
+const sendViaWatzap = async (phone, message) => {
+  const { data: wa } = await supabase
+    .from('wa_settings')
+    .select('api_key, number_key')
+    .single();
+
+  if (!wa?.api_key || !wa?.number_key) {
+    console.warn('[Watzap] api_key / number_key tidak ditemukan di wa_settings');
+    return { success: false };
+  }
+
+  let normalized = phone.replace(/\D/g, '');
+  if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
+  else if (!normalized.startsWith('62')) normalized = '62' + normalized;
+
+  const res = await fetch('https://api.watzap.id/v1/waba_send_message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: wa.api_key,
+      number_key: wa.number_key,
+      phone_no: normalized,
+      message,
+    }),
+  });
+
+  const result = await res.json();
+  return result;
+};
+
+// ─── Therapy Reminder Homecare ────────────────────────────────────────────────
+export const generateTherapyReminderHomecareMessage = (patient, appointment) => {
+  const nickname = patient.nickname || `Ka ${patient.full_name}`;
+  const jam = format(new Date(appointment.appointment_date), 'HH:mm');
+  const hari = calculateDayNameIndonesia(appointment.appointment_date);
+  const terapis = appointment.therapist?.name || 'Terapis Kami';
+
+  return `Selamat Pagi ${nickname} 👋\nMengingatkan jadwal terapi homecare Anda *hari ini* (${hari}) pukul *${jam}*.\nTerapis kami *${terapis}* akan datang ke lokasi Anda sesuai alamat yang telah disepakati.\n\nSalam sehat,\nKaffah Physiotherapy`;
+};
+
+export const sendTherapyReminderHomecare = async (patient, appointment) => {
+  const phone = patient.phone;
+  if (!phone) return { success: false, error: 'Nomor telepon pasien tidak ada' };
+
+  const message = generateTherapyReminderHomecareMessage(patient, appointment);
+  return await sendViaWatzap(phone, message);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const generateTherapyReminderMessage = async (patient, appointment) => {
   let template = await getTemplate('therapy_reminder');
