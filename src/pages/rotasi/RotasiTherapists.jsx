@@ -39,7 +39,7 @@ const RotasiTherapists = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const EMPTY_FORM = { name: '', profesi: '', tanggal_bergabung: '', level: 'junior' };
+  const EMPTY_FORM = { name: '', profesi: '', tanggal_bergabung: '' };
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
@@ -81,7 +81,6 @@ const RotasiTherapists = () => {
       name: t.name || '',
       profesi: t.profesi || '',
       tanggal_bergabung: t.tanggal_bergabung || '',
-      level: t.level || 'junior',
     });
     setEditId(t.id);
     setModalMode('edit');
@@ -99,7 +98,6 @@ const RotasiTherapists = () => {
       name: trimmed,
       profesi: form.profesi.trim() || null,
       tanggal_bergabung: form.tanggal_bergabung || null,
-      level: form.level || 'junior',
     };
 
     if (modalMode === 'add') {
@@ -185,10 +183,10 @@ const RotasiTherapists = () => {
                 {/* Avatar */}
                 <div style={{
                   width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                  background: t.level === 'senior' ? '#fef3c7' : '#e0e7ff',
+                  background: '#e0e7ff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 800, fontSize: 15,
-                  color: t.level === 'senior' ? '#92400e' : '#3730a3',
+                  color: '#3730a3',
                 }}>
                   {(t.name || '?').charAt(0).toUpperCase()}
                 </div>
@@ -196,14 +194,6 @@ const RotasiTherapists = () => {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{t.name}</span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                      background: t.level === 'senior' ? '#fef3c7' : '#e0e7ff',
-                      color: t.level === 'senior' ? '#92400e' : '#3730a3',
-                      textTransform: 'uppercase', letterSpacing: 0.5,
-                    }}>
-                      {t.level === 'senior' ? 'Senior' : 'Junior'}
-                    </span>
                     <span style={{
                       fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
                       background: t.is_active !== false ? '#dcfce7' : '#f1f5f9',
@@ -290,27 +280,14 @@ const RotasiTherapists = () => {
                 </select>
               </FL>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <FL label="Level">
-                  <select
-                    value={form.level}
-                    onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
-                    style={S.inputBase}
-                  >
-                    <option value="junior">Junior</option>
-                    <option value="senior">Senior</option>
-                  </select>
-                </FL>
-
-                <FL label="Tanggal Bergabung">
-                  <input
-                    type="date"
-                    value={form.tanggal_bergabung}
-                    onChange={(e) => setForm((f) => ({ ...f, tanggal_bergabung: e.target.value }))}
-                    style={S.inputBase}
-                  />
-                </FL>
-              </div>
+              <FL label="Tanggal Bergabung">
+                <input
+                  type="date"
+                  value={form.tanggal_bergabung}
+                  onChange={(e) => setForm((f) => ({ ...f, tanggal_bergabung: e.target.value }))}
+                  style={S.inputBase}
+                />
+              </FL>
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
                 <button type="button" onClick={closeModal} style={S.btnSecondary}>Batal</button>
