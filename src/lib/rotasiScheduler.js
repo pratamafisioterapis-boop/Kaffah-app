@@ -12,8 +12,8 @@
  * 4. 1 terapis cuma bisa pegang 1 pasien per Sesi (tidak dobel dalam sesi yang sama).
  * 5. Pasien tidak boleh dapat terapis yang sama dengan kunjungan terakhir sebelumnya
  *    (dicek dari riwayat, termasuk riwayat awal yang diinput manual).
- * 6. Terapis senior diusahakan mendapat pasien LEBIH SEDIKIT dibanding junior dalam
- *    satu hari (bukan jaminan mutlak, tapi diprioritaskan lewat pembobotan beban).
+ * 6. Beban harian terapis berbanding terbalik dengan lama bergabung: semakin lama bergabung,
+ *    semakin sedikit beban yang diberikan. Dihitung dari selisih hari sejak tanggal_bergabung.
  * 7. Kalau di satu sesi benar-benar tidak ada terapis tersisa untuk seorang pasien,
  *    pasien itu masuk daftar `unassigned` (tidak dipaksakan) supaya admin tahu dan
  *    bisa pindahkan pasien itu ke sesi lain secara manual.
@@ -38,7 +38,7 @@ const isWithinWorkingHours = (ranges, slotMinutes) => {
 
 /**
  * @param {Array<{id: string, name: string}>} patients
- * @param {Array<{id: string, name: string, level?: string}>} therapists
+ * @param {Array<{id: string, name: string, tanggal_bergabung?: string}>} therapists
  * @param {Object<string, string>} lastVisitMap - patientId -> therapistId kunjungan terakhir
  * @param {Object<string, string>} patientSlotMap - patientId -> globalSlotId (Sesi) atau null
  * @param {Array<{id: string, start_time: string, label: string}>} globalSlots - daftar Sesi hari itu
@@ -125,11 +125,21 @@ export function generateSchedule({
         violated = true;
       }
 
-      // Prioritaskan beban harian paling sedikit; senior diberi bobot tambahan
-      // supaya pada beban setara, junior yang dipilih dulu (senior < junior secara total).
+      // Prioritaskan beban harian paling sedikit.
+      // Terapis yang lebih lama bergabung (tanggal_bergabung lebih awal) mendapat
+      // bobot beban tambahan sehingga lebih jarang dipilih saat beban setara.
+      const today = Date.now();
+      const seniorityBias = (th) => {
+        if (!th.tanggal_bergabung) return 0;
+        const joinMs = new Date(th.tanggal_bergabung).getTime();
+        if (isNaN(joinMs)) return 0;
+        const daysJoined = (today - joinMs) / (1000 * 60 * 60 * 24);
+        // Setiap 365 hari bergabung menambah bias 0.5 (maks 2.0)
+        return Math.min(2.0, (daysJoined / 365) * 0.5);
+      };
       candidates.sort((a, b) => {
-        const loadA = dailyLoad[a.id] + (a.level === 'senior' ? 0.5 : 0);
-        const loadB = dailyLoad[b.id] + (b.level === 'senior' ? 0.5 : 0);
+        const loadA = dailyLoad[a.id] + seniorityBias(a);
+        const loadB = dailyLoad[b.id] + seniorityBias(b);
         return loadA - loadB;
       });
 

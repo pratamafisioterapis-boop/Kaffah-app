@@ -20,6 +20,13 @@ const RotasiDailySchedule = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [showPatientSuggestions, setShowPatientSuggestions] = useState(false);
   const searchInputRef = useRef(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  // State untuk modal riwayat terapis sebelumnya
+  const [historyModal, setHistoryModal] = useState(null); // { patientId, patientName }
+  const [historySelections, setHistorySelections] = useState(['', '', '']); // maks 3 sesi
+  const [historySaving, setHistorySaving] = useState(false);
 
   useEffect(() => {
     loadStatic();
@@ -41,6 +48,7 @@ const RotasiDailySchedule = () => {
   const loadForDate = async (d) => {
     setLoading(true);
     setMessage(null);
+    setConfirmed(false);
     const [{ data: list }, { data: sched }, { data: gslots }] = await Promise.all([
       supabase.from('rotasi_daily_list').select('patient_id, global_slot_id').eq('visit_date', d),
       supabase.from('rotasi_schedule').select('*').eq('visit_date', d),
@@ -117,6 +125,17 @@ const RotasiDailySchedule = () => {
       setAddPatientId('');
       setPatientSearch('');
       setShowPatientSuggestions(false);
+      // Cek apakah pasien sudah punya riwayat; jika belum, tawarkan input riwayat awal
+      const { data: existing } = await supabase
+        .from('rotasi_schedule')
+        .select('id')
+        .eq('patient_id', patientId)
+        .limit(1);
+      if (!existing || existing.length === 0) {
+        const patient = allPatients.find((p) => p.id === patientId);
+        setHistorySelections(['', '', '']);
+        setHistoryModal({ patientId, patientName: patient?.name || '' });
+      }
     } else {
       window.alert('Gagal menambah pasien: ' + error.message);
     }
@@ -161,6 +180,30 @@ const RotasiDailySchedule = () => {
     } else {
       window.alert('Gagal memindahkan slot: ' + error.message);
     }
+  };
+
+  const handleSaveHistory = async () => {
+    if (!historyModal) return;
+    const filled = historySelections.filter((id) => id);
+    if (filled.length === 0) { setHistoryModal(null); return; }
+    setHistorySaving(true);
+    // Simpan sebagai riwayat fiktif dengan visit_date mundur (null-date workaround)
+    // Kita pakai tanggal dummy: hari ini - 999, - 998, - 997 agar terurut
+    const base = new Date(date);
+    const rows = filled.map((therapistId, i) => ({
+      visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
+      patient_id: historyModal.patientId,
+      therapist_id: therapistId,
+      slot_number: 0,
+      constraint_violated: false,
+    }));
+    const { error } = await supabase.from('rotasi_schedule').insert(rows);
+    if (error) window.alert('Gagal menyimpan riwayat: ' + error.message);
+    setHistoryModal(null);
+    setHistorySelections(['', '', '']);
+    setHistorySaving(false);
   };
 
   const handleGenerate = async () => {
@@ -255,6 +298,22 @@ const RotasiDailySchedule = () => {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleConfirm = async () => {
+    if (!window.confirm(`Konfirmasi jadwal ${new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}?\n\nSetelah dikonfirmasi, jadwal ini akan masuk ke Riwayat dan tidak bisa digenerate ulang.`)) return;
+    setConfirming(true);
+    const { error } = await supabase
+      .from('rotasi_schedule')
+      .update({ confirmed: true })
+      .eq('visit_date', date);
+    if (!error) {
+      setConfirmed(true);
+      setMessage({ type: 'success', text: 'Jadwal berhasil dikonfirmasi dan masuk ke Riwayat.' });
+    } else {
+      window.alert('Gagal konfirmasi: ' + error.message);
+    }
+    setConfirming(false);
   };
 
   const scheduleBySlot = useMemo(() => {
@@ -557,6 +616,46 @@ const RotasiDailySchedule = () => {
         <p style={{ color: '#94a3b8' }}>Belum ada jadwal untuk tanggal ini. Klik "Generate Jadwal Otomatis" di atas.</p>
       ) : (
         <div>
+          {/* Banner konfirmasi */}
+          {confirmed ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 18px', borderRadius: 10, marginBottom: 16,
+              background: '#f0fdf4', border: '1px solid #bbf7d0',
+            }}>
+              <span style={{ fontSize: 20 }}>✅</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#15803d' }}>Jadwal sudah dikonfirmasi</div>
+                <div style={{ fontSize: 12, color: '#16a34a' }}>Data ini sudah tercatat di Riwayat Jadwal.</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              padding: '12px 18px', borderRadius: 10, marginBottom: 16,
+              background: '#fffbeb', border: '1px solid #fde68a', flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 20 }}>⏳</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#92400e' }}>Jadwal belum dikonfirmasi</div>
+                  <div style={{ fontSize: 12, color: '#b45309' }}>Pastikan pembagian terapis sudah benar, lalu klik Konfirmasi untuk menyimpan ke Riwayat.</div>
+                </div>
+              </div>
+              <button
+                onClick={handleConfirm}
+                disabled={confirming}
+                style={{
+                  padding: '9px 20px', borderRadius: 8, border: 'none',
+                  background: '#2563eb', color: '#fff', fontWeight: 700,
+                  fontSize: 13, cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                {confirming ? 'Mengkonfirmasi...' : '✓ Konfirmasi Jadwal'}
+              </button>
+            </div>
+          )}
+
           {violatedCount > 0 && (
             <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
               ⚠️ {violatedCount} pasien terpaksa mendapat terapis yang sama dengan kunjungan sebelumnya (tidak ada opsi lain yang memungkinkan pada hari ini).
@@ -597,6 +696,73 @@ const RotasiDailySchedule = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+    {/* ── Modal Riwayat Terapis Sebelumnya ── */}
+      {historyModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setHistoryModal(null); }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 440,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+          }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 6px' }}>Riwayat Terapis Sebelumnya</h2>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>
+              <strong>{historyModal.patientName}</strong> belum punya riwayat. Isi terapis yang pernah menangani sebelumnya (opsional, maks 3 sesi terakhir).
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#94a3b8', width: 60, flexShrink: 0 }}>
+                    Sesi {i === 0 ? 'terakhir' : i === 1 ? 'ke-2' : 'ke-3'}
+                  </span>
+                  <select
+                    value={historySelections[i]}
+                    onChange={(e) => setHistorySelections((prev) => {
+                      const next = [...prev];
+                      next[i] = e.target.value;
+                      return next;
+                    })}
+                    style={{
+                      flex: 1, padding: '8px 10px', borderRadius: 8,
+                      border: '1px solid #e2e8f0', fontSize: 13, background: '#fff',
+                    }}
+                  >
+                    <option value="">-- Tidak diisi --</option>
+                    {therapists.map((th) => (
+                      <option key={th.id} value={th.id}>{th.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setHistoryModal(null)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0',
+                  background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                }}
+              >
+                Lewati
+              </button>
+              <button
+                onClick={handleSaveHistory}
+                disabled={historySaving}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, border: 'none',
+                  background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                }}
+              >
+                {historySaving ? 'Menyimpan...' : 'Simpan Riwayat'}
+              </button>
+            </div>
           </div>
         </div>
       )}
