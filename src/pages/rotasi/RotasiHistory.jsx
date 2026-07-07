@@ -24,16 +24,20 @@ const RotasiHistory = () => {
     load();
   }, []);
 
+  const [globalSlotsData, setGlobalSlotsData] = useState([]);
+
   const load = async () => {
     setLoading(true);
-    const [{ data: sched }, { data: pts }, { data: ths }] = await Promise.all([
+    const [{ data: sched }, { data: pts }, { data: ths }, { data: gslots }] = await Promise.all([
       supabase.from('rotasi_schedule').select('*').eq('confirmed', true).order('visit_date', { ascending: false }),
       supabase.from('rotasi_patients').select('id, name, medical_record_number'),
       supabase.from('rotasi_therapists').select('id, name'),
+      supabase.from('rotasi_global_slots').select('slot_date, start_time, label').order('slot_date').order('start_time'),
     ]);
     setAllSchedule(sched || []);
     setPatients(pts || []);
     setTherapists(ths || []);
+    setGlobalSlotsData(gslots || []);
     setLoading(false);
   };
 
@@ -54,6 +58,25 @@ const RotasiHistory = () => {
     therapists.forEach((t, i) => { m[t.id] = THERAPIST_COLORS[i % THERAPIST_COLORS.length]; });
     return m;
   }, [therapists]);
+
+  // Map: "visit_date|slot_number" -> start_time jam
+  const slotTimeMap = useMemo(() => {
+    const m = {};
+    // Kelompokkan slot per tanggal, urut berdasarkan start_time
+    const byDate = {};
+    globalSlotsData.forEach((s) => {
+      if (!byDate[s.slot_date]) byDate[s.slot_date] = [];
+      byDate[s.slot_date].push(s);
+    });
+    Object.entries(byDate).forEach(([date, slots]) => {
+      slots.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+      slots.forEach((s, idx) => {
+        // slot_number dimulai dari 1
+        m[`${date}|${idx + 1}`] = s.start_time ? s.start_time.slice(0, 5) : null;
+      });
+    });
+    return m;
+  }, [globalSlotsData]);
 
   const groupedByDate = useMemo(() => {
     const realSchedule = allSchedule.filter((s) => s.slot_number !== 0);
@@ -339,13 +362,20 @@ const RotasiHistory = () => {
                                         </div>
                                       )}
                                     </div>
-                                    <span style={{
-                                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                                      background: 'rgba(255,255,255,0.7)', color: col.text,
-                                      border: `1px solid ${col.border}`, flexShrink: 0,
-                                    }}>
-                                      Sesi {r.slot_number}
-                                    </span>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                      <div style={{
+                                        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                                        background: 'rgba(255,255,255,0.7)', color: col.text,
+                                        border: `1px solid ${col.border}`,
+                                      }}>
+                                        Sesi {r.slot_number}
+                                      </div>
+                                      {slotTimeMap[`${date}|${r.slot_number}`] && (
+                                        <div style={{ fontSize: 10, color: col.text, opacity: 0.6, marginTop: 2, textAlign: 'center' }}>
+                                          {slotTimeMap[`${date}|${r.slot_number}`]}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}
