@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ─── helpers ────────────────────────────────────────────────────────────────
 const calcAge = (birthDate) => {
   if (!birthDate) return null;
   const diff = Date.now() - new Date(birthDate).getTime();
@@ -15,21 +15,21 @@ const fmtDate = (d) => {
   return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
-const SORT_COLS = [
-  { key: 'rm_number',       label: 'No. RM' },
-  { key: 'name',            label: 'Nama Pasien' },
-  { key: 'birth_date',      label: 'Tgl Lahir' },
-  { key: 'age',             label: 'Usia' },
-  { key: 'diagnosis',       label: 'Diagnosis' },
-  { key: 'tgl_awal_terapi', label: 'Tgl Awal Terapi' },
-  { key: 'no_bpjs',         label: 'No. Bpjs' },
-  { key: 'insurance',       label: 'Eselon' },
-  { key: 'is_active',       label: 'Status' },
-];
-
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-// ── styles ────────────────────────────────────────────────────────────────────
+const SORT_COLS = [
+  { key: 'medical_record_number', label: 'No. RM' },
+  { key: 'name',                  label: 'Nama Pasien' },
+  { key: 'birth_date',            label: 'Tgl Lahir' },
+  { key: 'age',                   label: 'Usia' },
+  { key: 'diagnosis',             label: 'Diagnosis' },
+  { key: 'therapy_start_date',    label: 'Tgl Awal Terapi' },
+  { key: 'bpjs_number',           label: 'No. Bpjs' },
+  { key: 'insurance',             label: 'Eselon' },
+  { key: 'is_active',             label: 'Status' },
+];
+
+// ─── styles ──────────────────────────────────────────────────────────────────
 const S = {
   inputBase: {
     padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8,
@@ -67,7 +67,6 @@ const S = {
   },
 };
 
-// ── field label helper ────────────────────────────────────────────────────────
 const FL = ({ label, required, children }) => (
   <div style={{ marginBottom: 14 }}>
     <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>
@@ -77,54 +76,52 @@ const FL = ({ label, required, children }) => (
   </div>
 );
 
-// ── main component ────────────────────────────────────────────────────────────
+// ─── main component ───────────────────────────────────────────────────────────
 const RotasiPatients = () => {
   const [patients, setPatients] = useState([]);
   const [insuranceTypes, setInsuranceTypes] = useState([]);
-  const [diagnoses, setDiagnoses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // table state
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  // modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
+  const [modalMode, setModalMode] = useState('add');
   const [saving, setSaving] = useState(false);
   const EMPTY_FORM = {
-    rm_number: '', name: '', birth_date: '', diagnosis: '',
-    tgl_awal_terapi: '', no_bpjs: '', insurance_type_id: '', is_active: true,
+    medical_record_number: '', name: '', birth_date: '', diagnosis: '',
+    therapy_start_date: '', bpjs_number: '', insurance_type_id: '', is_active: true,
   };
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
 
-  // ── fetch ──────────────────────────────────────────────────────────────────
+  // ─── fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setLoading(true);
-    const [pRes, iRes, dRes] = await Promise.all([
-      supabase.from('rotasi_patients').select('*, rotasi_insurance_types(name)').order('name'),
-      supabase.from('rotasi_insurance_types').select('id, name').order('name'),
-      supabase.from('rotasi_diagnoses').select('id, name').order('name'),
+    const [pRes, iRes] = await Promise.all([
+      supabase
+        .from('rotasi_patients')
+        .select('id, name, is_active, birth_date, medical_record_number, bpjs_number, therapy_start_date, diagnosis, insurance_type_id, rotasi_insurance_types(name)')
+        .order('name', { ascending: true }),
+      supabase.from('rotasi_insurance_types').select('id, name').order('name', { ascending: true }),
     ]);
     if (!pRes.error) setPatients(pRes.data || []);
     if (!iRes.error) setInsuranceTypes(iRes.data || []);
-    if (!dRes.error) setDiagnoses(dRes.data || []);
     setLoading(false);
   };
 
-  // ── sort + filter + paginate ──────────────────────────────────────────────
+  // ─── sort + filter + paginate ───────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return patients.filter((p) =>
       !q ||
       (p.name || '').toLowerCase().includes(q) ||
-      (p.rm_number || '').toLowerCase().includes(q) ||
+      (p.medical_record_number || '').toLowerCase().includes(q) ||
       (p.diagnosis || '').toLowerCase().includes(q)
     );
   }, [patients, search]);
@@ -165,7 +162,7 @@ const RotasiPatients = () => {
     return <span style={{ marginLeft: 3 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  // ── modal helpers ─────────────────────────────────────────────────────────
+  // ─── modal ──────────────────────────────────────────────────────────────────
   const openAdd = () => {
     setForm(EMPTY_FORM);
     setEditId(null);
@@ -175,12 +172,12 @@ const RotasiPatients = () => {
 
   const openEdit = (p) => {
     setForm({
-      rm_number: p.rm_number || '',
+      medical_record_number: p.medical_record_number || '',
       name: p.name || '',
       birth_date: p.birth_date || '',
       diagnosis: p.diagnosis || '',
-      tgl_awal_terapi: p.tgl_awal_terapi || '',
-      no_bpjs: p.no_bpjs || '',
+      therapy_start_date: p.therapy_start_date || '',
+      bpjs_number: p.bpjs_number || '',
       insurance_type_id: p.insurance_type_id || '',
       is_active: p.is_active !== false,
     });
@@ -197,11 +194,11 @@ const RotasiPatients = () => {
     setSaving(true);
     const payload = {
       name: form.name.trim(),
-      rm_number: form.rm_number.trim() || null,
+      medical_record_number: form.medical_record_number.trim() || null,
       birth_date: form.birth_date || null,
       diagnosis: form.diagnosis.trim() || null,
-      tgl_awal_terapi: form.tgl_awal_terapi || null,
-      no_bpjs: form.no_bpjs.trim() || null,
+      therapy_start_date: form.therapy_start_date || null,
+      bpjs_number: form.bpjs_number.trim() || null,
       insurance_type_id: form.insurance_type_id || null,
       is_active: form.is_active,
     };
@@ -210,16 +207,16 @@ const RotasiPatients = () => {
       const { data, error } = await supabase
         .from('rotasi_patients')
         .insert(payload)
-        .select('*, rotasi_insurance_types(name)')
+        .select('id, name, is_active, birth_date, medical_record_number, bpjs_number, therapy_start_date, diagnosis, insurance_type_id, rotasi_insurance_types(name)')
         .single();
-      if (!error) { setPatients((prev) => [...prev, data]); closeModal(); }
+      if (!error) { setPatients((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name))); closeModal(); }
       else window.alert('Gagal menyimpan: ' + error.message);
     } else {
       const { data, error } = await supabase
         .from('rotasi_patients')
         .update(payload)
         .eq('id', editId)
-        .select('*, rotasi_insurance_types(name)')
+        .select('id, name, is_active, birth_date, medical_record_number, bpjs_number, therapy_start_date, diagnosis, insurance_type_id, rotasi_insurance_types(name)')
         .single();
       if (!error) {
         setPatients((prev) => prev.map((p) => (p.id === editId ? data : p)));
@@ -236,10 +233,9 @@ const RotasiPatients = () => {
     else window.alert('Gagal menghapus: ' + error.message);
   };
 
-  // ── render ─────────────────────────────────────────────────────────────────
+  // ─── render ─────────────────────────────────────────────────────────────────
   return (
     <div>
-      {/* header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Data Pasien</h1>
@@ -250,7 +246,6 @@ const RotasiPatients = () => {
         <button onClick={openAdd} style={S.btnPrimary}>+ Tambah Pasien</button>
       </div>
 
-      {/* search + page size */}
       <div style={{ display: 'flex', gap: 10, margin: '20px 0 12px', alignItems: 'center' }}>
         <input
           value={search}
@@ -270,14 +265,12 @@ const RotasiPatients = () => {
         </div>
       </div>
 
-      {/* count */}
       {!loading && (
         <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 10px' }}>
-          Menampilkan {Math.min((page - 1) * pageSize + 1, sorted.length)}–{Math.min(page * pageSize, sorted.length)} dari {sorted.length} pasien
+          Menampilkan {sorted.length === 0 ? 0 : Math.min((page - 1) * pageSize + 1, sorted.length)}–{Math.min(page * pageSize, sorted.length)} dari {sorted.length} pasien
         </p>
       )}
 
-      {/* table */}
       {loading ? (
         <p style={{ color: '#94a3b8' }}>Memuat...</p>
       ) : (
@@ -304,17 +297,23 @@ const RotasiPatients = () => {
                 paginated.map((p) => {
                   const age = calcAge(p.birth_date);
                   return (
-                    <tr key={p.id} style={{ background: '#fff' }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                    <tr
+                      key={p.id}
+                      style={{ background: '#fff' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
                     >
-                      <td style={S.td}><span style={{ fontFamily: 'monospace', color: '#2563eb', fontWeight: 600 }}>{p.rm_number || '-'}</span></td>
+                      <td style={S.td}>
+                        <span style={{ fontFamily: 'monospace', color: '#2563eb', fontWeight: 600 }}>
+                          {p.medical_record_number || '-'}
+                        </span>
+                      </td>
                       <td style={{ ...S.td, fontWeight: 600 }}>{p.name}</td>
                       <td style={S.td}>{fmtDate(p.birth_date)}</td>
                       <td style={S.td}>{age != null ? `${age} th` : '-'}</td>
                       <td style={S.td}>{p.diagnosis || '-'}</td>
-                      <td style={S.td}>{fmtDate(p.tgl_awal_terapi)}</td>
-                      <td style={S.td}>{p.no_bpjs || '-'}</td>
+                      <td style={S.td}>{fmtDate(p.therapy_start_date)}</td>
+                      <td style={S.td}>{p.bpjs_number || '-'}</td>
                       <td style={S.td}>{p.rotasi_insurance_types?.name || '-'}</td>
                       <td style={S.td}>
                         <span style={{
@@ -338,7 +337,6 @@ const RotasiPatients = () => {
         </div>
       )}
 
-      {/* pagination */}
       {!loading && totalPages > 1 && (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 16 }}>
           <button onClick={() => setPage(1)} disabled={page === 1} style={S.btnSecondary}>«</button>
@@ -378,8 +376,8 @@ const RotasiPatients = () => {
               </FL>
               <FL label="No. RM">
                 <input
-                  value={form.rm_number}
-                  onChange={(e) => setForm((f) => ({ ...f, rm_number: e.target.value }))}
+                  value={form.medical_record_number}
+                  onChange={(e) => setForm((f) => ({ ...f, medical_record_number: e.target.value }))}
                   placeholder="Nomor rekam medis"
                   style={S.inputBase}
                 />
@@ -396,8 +394,8 @@ const RotasiPatients = () => {
                 <FL label="Tgl Awal Terapi">
                   <input
                     type="date"
-                    value={form.tgl_awal_terapi}
-                    onChange={(e) => setForm((f) => ({ ...f, tgl_awal_terapi: e.target.value }))}
+                    value={form.therapy_start_date}
+                    onChange={(e) => setForm((f) => ({ ...f, therapy_start_date: e.target.value }))}
                     style={S.inputBase}
                   />
                 </FL>
@@ -408,17 +406,13 @@ const RotasiPatients = () => {
                   onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))}
                   placeholder="Contoh: F80.1 - GBE"
                   style={S.inputBase}
-                  list="diag-list"
                 />
-                <datalist id="diag-list">
-                  {diagnoses.map((d) => <option key={d.id} value={d.name} />)}
-                </datalist>
               </FL>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <FL label="No. BPJS">
                   <input
-                    value={form.no_bpjs}
-                    onChange={(e) => setForm((f) => ({ ...f, no_bpjs: e.target.value }))}
+                    value={form.bpjs_number}
+                    onChange={(e) => setForm((f) => ({ ...f, bpjs_number: e.target.value }))}
                     placeholder="Nomor BPJS"
                     style={S.inputBase}
                   />
@@ -446,7 +440,6 @@ const RotasiPatients = () => {
                   <option value="false">Nonaktif</option>
                 </select>
               </FL>
-
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
                 <button type="button" onClick={closeModal} style={S.btnSecondary}>Batal</button>
                 <button type="submit" disabled={saving} style={S.btnPrimary}>
