@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const TABS = [
@@ -6,6 +6,7 @@ const TABS = [
   { key: 'profesi', label: 'Profesi' },
   { key: 'diagnosa', label: 'Diagnosa' },
   { key: 'slot', label: 'Slot Aktif Terapis' },
+  { key: 'slot_global', label: 'Slot Global' },
   { key: 'cuti', label: 'Cuti / Ijin Terapis' },
 ];
 
@@ -44,6 +45,7 @@ const RotasiSetup = () => {
       {activeTab === 'profesi' && <ProfesiSection />}
       {activeTab === 'diagnosa' && <DiagnosaSection />}
       {activeTab === 'slot' && <SlotSection />}
+      {activeTab === 'slot_global' && <SlotGlobalSection />}
       {activeTab === 'cuti' && <CutiSection />}
     </div>
   );
@@ -111,13 +113,23 @@ const EselonSection = () => {
         prev.map((it) => (it.id === id ? data : it)).sort((a, b) => a.name.localeCompare(b.name))
       );
       setEditingId(null);
+    } else {
+      console.error('Gagal update eselon:', error);
+      window.alert('Gagal menyimpan perubahan: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Hapus data eselon ini?')) return;
+    if (!window.confirm('Hapus data eselon ini? Semua pasien yang masih memakai eselon ini akan otomatis dikosongkan (bukan ikut terhapus).')) return;
+    await supabase.from('rotasi_patient_insurance_types').delete().eq('insurance_type_id', id);
+    await supabase.from('rotasi_patients').update({ insurance_type_id: null }).eq('insurance_type_id', id);
     const { error } = await supabase.from('rotasi_insurance_types').delete().eq('id', id);
-    if (!error) setItems((prev) => prev.filter((it) => it.id !== id));
+    if (!error) {
+      setItems((prev) => prev.filter((it) => it.id !== id));
+    } else {
+      console.error('Gagal hapus eselon:', error);
+      window.alert('Gagal menghapus data: ' + error.message);
+    }
   };
 
   return (
@@ -384,44 +396,62 @@ const DiagnosaSection = () => (
 
 const SlotSection = () => {
   const [items, setItems] = useState([]);
+  const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ label: '', start_time: '', end_time: '', sort_order: 0 });
+  const [form, setForm] = useState({ therapist_id: '', start_time: '', end_time: '' });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ label: '', start_time: '', end_time: '', sort_order: 0 });
+  const [editForm, setEditForm] = useState({ therapist_id: '', start_time: '', end_time: '' });
 
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('rotasi_slots')
       .select('*')
-      .order('sort_order', { ascending: true });
+      .order('start_time', { ascending: true });
     if (!error) setItems(data || []);
     setLoading(false);
   };
 
+  const fetchTherapists = async () => {
+    const { data, error } = await supabase
+      .from('rotasi_therapists')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name', { ascending: true });
+    if (!error) setTherapists(data || []);
+  };
+
   useEffect(() => {
     fetchItems();
+    fetchTherapists();
   }, []);
+
+  const therapistMap = useMemo(() => {
+    const map = {};
+    therapists.forEach((t) => { map[t.id] = t.name; });
+    return map;
+  }, [therapists]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const trimmed = form.label.trim();
-    if (!trimmed || !form.start_time || !form.end_time) return;
+    if (!form.therapist_id || !form.start_time || !form.end_time) return;
     setSaving(true);
     const { data, error } = await supabase
       .from('rotasi_slots')
       .insert({
-        label: trimmed,
+        therapist_id: form.therapist_id,
+        label: therapistMap[form.therapist_id] || '-',
         start_time: form.start_time,
         end_time: form.end_time,
-        sort_order: Number(form.sort_order) || 0,
       })
       .select()
       .single();
     if (!error) {
-      setItems((prev) => [...prev, data].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
-      setForm({ label: '', start_time: '', end_time: '', sort_order: 0 });
+      setItems((prev) => [...prev, data].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')));
+      setForm({ therapist_id: '', start_time: '', end_time: '' });
+    } else {
+      window.alert('Gagal menambah jam kerja: ' + error.message);
     }
     setSaving(false);
   };
@@ -441,10 +471,9 @@ const SlotSection = () => {
   const startEdit = (item) => {
     setEditingId(item.id);
     setEditForm({
-      label: item.label || '',
+      therapist_id: item.therapist_id || '',
       start_time: item.start_time || '',
       end_time: item.end_time || '',
-      sort_order: item.sort_order ?? 0,
     });
   };
 
@@ -453,29 +482,30 @@ const SlotSection = () => {
   };
 
   const handleUpdate = async (id) => {
-    const trimmed = editForm.label.trim();
-    if (!trimmed) return;
+    if (!editForm.therapist_id || !editForm.start_time || !editForm.end_time) return;
     const { data, error } = await supabase
       .from('rotasi_slots')
       .update({
-        label: trimmed,
-        start_time: editForm.start_time || null,
-        end_time: editForm.end_time || null,
-        sort_order: Number(editForm.sort_order) || 0,
+        therapist_id: editForm.therapist_id,
+        label: therapistMap[editForm.therapist_id] || '-',
+        start_time: editForm.start_time,
+        end_time: editForm.end_time,
       })
       .eq('id', id)
       .select()
       .single();
     if (!error) {
       setItems((prev) =>
-        prev.map((it) => (it.id === id ? data : it)).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        prev.map((it) => (it.id === id ? data : it)).sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
       );
       setEditingId(null);
+    } else {
+      window.alert('Gagal menyimpan perubahan: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Hapus slot ini?')) return;
+    if (!window.confirm('Hapus jam kerja ini?')) return;
     const { error } = await supabase.from('rotasi_slots').delete().eq('id', id);
     if (!error) setItems((prev) => prev.filter((it) => it.id !== id));
   };
@@ -483,12 +513,16 @@ const SlotSection = () => {
   return (
     <div>
       <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input
-          value={form.label}
-          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-          placeholder="Nama slot (mis. Sesi Pagi)..."
-          style={inputStyle}
-        />
+        <select
+          value={form.therapist_id}
+          onChange={(e) => setForm((f) => ({ ...f, therapist_id: e.target.value }))}
+          style={{ ...inputStyle, width: 200, flex: 'none' }}
+        >
+          <option value="">-- Pilih Terapis --</option>
+          {therapists.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
         <input
           type="time"
           value={form.start_time}
@@ -501,13 +535,6 @@ const SlotSection = () => {
           onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
           style={{ ...inputStyle, width: 130, flex: 'none' }}
         />
-        <input
-          type="number"
-          value={form.sort_order}
-          onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
-          placeholder="Urutan"
-          style={{ ...inputStyle, width: 90, flex: 'none' }}
-        />
         <button type="submit" disabled={saving} style={btnPrimaryStyle}>
           Tambah
         </button>
@@ -516,16 +543,15 @@ const SlotSection = () => {
       {loading ? (
         <p>Memuat...</p>
       ) : items.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>Belum ada slot.</p>
+        <p style={{ color: '#94a3b8' }}>Belum ada jam kerja terapis.</p>
       ) : (
         <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                <th style={thStyle}>Nama Slot</th>
+                <th style={thStyle}>Terapis</th>
                 <th style={thStyle}>Jam Mulai</th>
                 <th style={thStyle}>Jam Selesai</th>
-                <th style={thStyle}>Urutan</th>
                 <th style={thStyle}>Status</th>
                 <th style={{ ...thStyle, textAlign: 'right' }}>Aksi</th>
               </tr>
@@ -536,11 +562,16 @@ const SlotSection = () => {
                   {editingId === item.id ? (
                     <>
                       <td style={tdStyle}>
-                        <input
-                          value={editForm.label}
-                          onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
-                          style={inputStyle}
-                        />
+                        <select
+                          value={editForm.therapist_id}
+                          onChange={(e) => setEditForm((f) => ({ ...f, therapist_id: e.target.value }))}
+                          style={{ ...inputStyle, width: 180 }}
+                        >
+                          <option value="">-- Pilih Terapis --</option>
+                          {therapists.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
                       </td>
                       <td style={tdStyle}>
                         <input
@@ -558,14 +589,6 @@ const SlotSection = () => {
                           style={{ ...inputStyle, width: 120 }}
                         />
                       </td>
-                      <td style={tdStyle}>
-                        <input
-                          type="number"
-                          value={editForm.sort_order}
-                          onChange={(e) => setEditForm((f) => ({ ...f, sort_order: e.target.value }))}
-                          style={{ ...inputStyle, width: 70 }}
-                        />
-                      </td>
                       <td style={tdStyle}>-</td>
                       <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => handleUpdate(item.id)} style={btnSaveStyle}>Simpan</button>
@@ -574,10 +597,9 @@ const SlotSection = () => {
                     </>
                   ) : (
                     <>
-                      <td style={{ ...tdStyle, fontWeight: 600 }}>{item.label}</td>
+                      <td style={{ ...tdStyle, fontWeight: 600 }}>{therapistMap[item.therapist_id] || '-'}</td>
                       <td style={tdStyle}>{item.start_time || '-'}</td>
                       <td style={tdStyle}>{item.end_time || '-'}</td>
-                      <td style={tdStyle}>{item.sort_order ?? 0}</td>
                       <td style={tdStyle}>
                         <span
                           onClick={() => toggleActive(item)}
@@ -610,6 +632,394 @@ const SlotSection = () => {
   );
 };
 
+const DEFAULT_SESSIONS = [
+  { label: 'Sesi I', start_time: '08:00', capacity: 3 },
+  { label: 'Sesi II', start_time: '08:30', capacity: 3 },
+  { label: 'Sesi III', start_time: '09:00', capacity: 3 },
+  { label: 'Sesi IV', start_time: '10:00', capacity: 3 },
+  { label: 'Sesi V', start_time: '10:30', capacity: 3 },
+  { label: 'Sesi VI', start_time: '11:00', capacity: 3 },
+  { label: 'Sesi VII', start_time: '14:00', capacity: 3 },
+  { label: 'Sesi VIII', start_time: '14:30', capacity: 3 },
+  { label: 'Sesi IX', start_time: '15:00', capacity: 3 },
+];
+
+const SlotGlobalSection = () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
+  const [fillingDefault, setFillingDefault] = useState(false);
+  const [copyForm, setCopyForm] = useState({ from_date: '', to_date: '' });
+  const [copying, setCopying] = useState(false);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rotasi_global_slots')
+      .select('*')
+      .order('slot_date', { ascending: true });
+    if (!error) setItems(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const sortItems = (list) =>
+    [...list].sort((a, b) => {
+      const ka = `${a.slot_date || ''} ${a.start_time || ''}`;
+      const kb = `${b.slot_date || ''} ${b.start_time || ''}`;
+      return ka.localeCompare(kb);
+    });
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const trimmed = form.label.trim();
+    if (!trimmed || !form.slot_date) return;
+    setSaving(true);
+    const { data, error } = await supabase
+      .from('rotasi_global_slots')
+      .upsert(
+        {
+          slot_date: form.slot_date,
+          label: trimmed,
+          start_time: form.start_time || null,
+          end_time: form.end_time || null,
+          capacity: form.capacity ? Number(form.capacity) : null,
+        },
+        { onConflict: 'slot_date,label' }
+      )
+      .select()
+      .single();
+    if (!error) {
+      setItems((prev) => sortItems([...prev.filter((it) => it.id !== data.id), data]));
+      setForm({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
+    } else {
+      window.alert('Gagal menambah slot global: ' + error.message);
+    }
+    setSaving(false);
+  };
+
+  const handleFillDefault = async () => {
+    if (!form.slot_date) {
+      window.alert('Pilih tanggal dulu di form Tambah sebelum isi 9 sesi default.');
+      return;
+    }
+    if (!window.confirm(`Isi 9 sesi default (Sesi I - IX) untuk tanggal ${form.slot_date}?`)) return;
+    setFillingDefault(true);
+    const rows = DEFAULT_SESSIONS.map((s) => ({
+      slot_date: form.slot_date,
+      label: s.label,
+      start_time: s.start_time,
+      end_time: null,
+      capacity: s.capacity,
+    }));
+    const { data, error } = await supabase
+      .from('rotasi_global_slots')
+      .upsert(rows, { onConflict: 'slot_date,label' })
+      .select();
+    if (!error) {
+      const ids = (data || []).map((d) => d.id);
+      setItems((prev) => sortItems([...prev.filter((it) => !ids.includes(it.id)), ...(data || [])]));
+    } else {
+      window.alert('Gagal mengisi 9 sesi default: ' + error.message);
+    }
+    setFillingDefault(false);
+  };
+
+  const handleCopy = async () => {
+    if (!copyForm.from_date || !copyForm.to_date) {
+      window.alert('Isi tanggal asal dan tanggal tujuan untuk menyalin slot.');
+      return;
+    }
+    if (copyForm.from_date === copyForm.to_date) {
+      window.alert('Tanggal asal dan tujuan tidak boleh sama.');
+      return;
+    }
+    setCopying(true);
+    const { data: source, error: sourceErr } = await supabase
+      .from('rotasi_global_slots')
+      .select('label, start_time, end_time, capacity')
+      .eq('slot_date', copyForm.from_date);
+    if (sourceErr) {
+      window.alert('Gagal mengambil data slot dari tanggal asal: ' + sourceErr.message);
+      setCopying(false);
+      return;
+    }
+    if (!source || source.length === 0) {
+      window.alert('Tidak ada slot global di tanggal asal tersebut.');
+      setCopying(false);
+      return;
+    }
+    const rows = source.map((s) => ({
+      slot_date: copyForm.to_date,
+      label: s.label,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      capacity: s.capacity,
+    }));
+    const { data, error } = await supabase
+      .from('rotasi_global_slots')
+      .upsert(rows, { onConflict: 'slot_date,label' })
+      .select();
+    if (!error) {
+      const ids = (data || []).map((d) => d.id);
+      setItems((prev) => sortItems([...prev.filter((it) => !ids.includes(it.id)), ...(data || [])]));
+      setCopyForm({ from_date: '', to_date: '' });
+    } else {
+      window.alert('Gagal menyalin slot: ' + error.message);
+    }
+    setCopying(false);
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditForm({
+      slot_date: item.slot_date || '',
+      label: item.label || '',
+      start_time: item.start_time || '',
+      end_time: item.end_time || '',
+      capacity: item.capacity ?? '',
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleUpdate = async (id) => {
+    const trimmed = editForm.label.trim();
+    if (!trimmed || !editForm.slot_date) return;
+    const { data, error } = await supabase
+      .from('rotasi_global_slots')
+      .update({
+        slot_date: editForm.slot_date,
+        label: trimmed,
+        start_time: editForm.start_time || null,
+        end_time: editForm.end_time || null,
+        capacity: editForm.capacity ? Number(editForm.capacity) : null,
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error) {
+      setItems((prev) => sortItems(prev.map((it) => (it.id === id ? data : it))));
+      setEditingId(null);
+    } else {
+      window.alert('Gagal menyimpan perubahan: ' + error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Hapus slot global ini?')) return;
+    const { error } = await supabase.from('rotasi_global_slots').delete().eq('id', id);
+    if (!error) {
+      setItems((prev) => prev.filter((it) => it.id !== id));
+    } else {
+      window.alert('Gagal menghapus data: ' + error.message);
+    }
+  };
+
+  const formatTanggal = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  return (
+    <div>
+      <p style={{ color: '#64748b', marginTop: 0, marginBottom: 16, fontSize: 13 }}>
+        Slot global berlaku untuk seluruh klinik pada tanggal tertentu (bukan per terapis). Tambahkan satu-satu per tanggal.
+      </p>
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <input
+            type="date"
+            value={form.slot_date}
+            onChange={(e) => setForm((f) => ({ ...f, slot_date: e.target.value }))}
+            style={{ ...inputStyle, width: 150, flex: 'none' }}
+          />
+          {form.slot_date && (
+            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(form.slot_date)}</span>
+          )}
+        </div>
+        <input
+          value={form.label}
+          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+          placeholder="Nama slot (mis. Sesi Pagi)..."
+          style={inputStyle}
+        />
+        <input
+          type="time"
+          value={form.start_time}
+          onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
+          style={{ ...inputStyle, width: 130, flex: 'none' }}
+        />
+        <input
+          type="time"
+          value={form.end_time}
+          onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
+          style={{ ...inputStyle, width: 130, flex: 'none' }}
+        />
+        <input
+          type="number"
+          value={form.capacity}
+          onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
+          placeholder="Kapasitas"
+          style={{ ...inputStyle, width: 100, flex: 'none' }}
+        />
+        <button type="submit" disabled={saving} style={btnPrimaryStyle}>
+          Tambah
+        </button>
+        <button
+          type="button"
+          onClick={handleFillDefault}
+          disabled={fillingDefault}
+          style={{ ...btnPrimaryStyle, background: '#16a34a' }}
+        >
+          {fillingDefault ? 'Mengisi...' : 'Isi 9 Sesi Default (I-IX)'}
+        </button>
+      </form>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Salin slot dari tanggal lain:</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <input
+            type="date"
+            value={copyForm.from_date}
+            onChange={(e) => setCopyForm((f) => ({ ...f, from_date: e.target.value }))}
+            style={{ ...inputStyle, width: 150, flex: 'none' }}
+            placeholder="Dari tanggal"
+          />
+          {copyForm.from_date && (
+            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(copyForm.from_date)}</span>
+          )}
+        </div>
+        <span style={{ fontSize: 13, color: '#94a3b8' }}>ke</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <input
+            type="date"
+            value={copyForm.to_date}
+            onChange={(e) => setCopyForm((f) => ({ ...f, to_date: e.target.value }))}
+            style={{ ...inputStyle, width: 150, flex: 'none' }}
+            placeholder="Ke tanggal"
+          />
+          {copyForm.to_date && (
+            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(copyForm.to_date)}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={copying}
+          style={btnPrimaryStyle}
+        >
+          {copying ? 'Menyalin...' : 'Salin'}
+        </button>
+      </div>
+
+      {loading ? (
+        <p>Memuat...</p>
+      ) : items.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>Belum ada slot global.</p>
+      ) : (
+        <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={thStyle}>Tanggal</th>
+                <th style={thStyle}>Nama Slot</th>
+                <th style={thStyle}>Jam Mulai</th>
+                <th style={thStyle}>Jam Selesai</th>
+                <th style={thStyle}>Kapasitas</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id} style={{ borderTop: '1px solid #e2e8f0' }}>
+                  {editingId === item.id ? (
+                    <>
+                      <td style={tdStyle}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <input
+                            type="date"
+                            value={editForm.slot_date}
+                            onChange={(e) => setEditForm((f) => ({ ...f, slot_date: e.target.value }))}
+                            style={{ ...inputStyle, width: 140 }}
+                          />
+                          {editForm.slot_date && (
+                            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(editForm.slot_date)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          value={editForm.label}
+                          onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="time"
+                          value={editForm.start_time}
+                          onChange={(e) => setEditForm((f) => ({ ...f, start_time: e.target.value }))}
+                          style={{ ...inputStyle, width: 120 }}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="time"
+                          value={editForm.end_time}
+                          onChange={(e) => setEditForm((f) => ({ ...f, end_time: e.target.value }))}
+                          style={{ ...inputStyle, width: 120 }}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="number"
+                          value={editForm.capacity}
+                          onChange={(e) => setEditForm((f) => ({ ...f, capacity: e.target.value }))}
+                          style={{ ...inputStyle, width: 90 }}
+                        />
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => handleUpdate(item.id)} style={btnSaveStyle}>Simpan</button>
+                        <button onClick={cancelEdit} style={btnCancelStyle}>Batal</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ ...tdStyle, fontWeight: 600 }}>{formatTanggal(item.slot_date)}</td>
+                      <td style={tdStyle}>{item.label}</td>
+                      <td style={tdStyle}>{item.start_time || '-'}</td>
+                      <td style={tdStyle}>{item.end_time || '-'}</td>
+                      <td style={tdStyle}>{item.capacity ?? '-'}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => startEdit(item)} style={btnEditStyle}>Edit</button>
+                        <button onClick={() => handleDelete(item.id)} style={btnDeleteStyle}>Hapus</button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CutiSection = () => {
   const [items, setItems] = useState([]);
   const [therapists, setTherapists] = useState([]);
@@ -625,7 +1035,7 @@ const CutiSection = () => {
     const [leaveRes, therapistRes, slotRes] = await Promise.all([
       supabase.from('rotasi_therapist_leave').select('*').order('leave_date', { ascending: false }),
       supabase.from('rotasi_therapists').select('id, name').order('name', { ascending: true }),
-      supabase.from('rotasi_slots').select('id, label').order('sort_order', { ascending: true }),
+      supabase.from('rotasi_slots').select('id, label').order('start_time', { ascending: true }),
     ]);
     if (!leaveRes.error) setItems(leaveRes.data || []);
     if (!therapistRes.error) setTherapists(therapistRes.data || []);

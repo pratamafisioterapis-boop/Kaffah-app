@@ -1,17 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-const RotasiTherapists = () => {
-  const [therapists, setTherapists] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+const openAddModal = () => {
+    setAddForm({ name: '', profesi: '', tanggal_bergabung: '' });
+    setAddModalOpen(true);
+  };
 
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState({
-    name: '',
-    profesi: '',
-    tanggal_bergabung: '',
-  });
+  const closeAddModal = () => {
+    setAddModalOpen(false);
+  };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    const trimmed = addForm.name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    const { data, error } = await supabase
+      .from('rotasi_therapists')
+      .insert({
+        name: trimmed,
+        profesi: addForm.profesi.trim() || null,
+        tanggal_bergabung: addForm.tanggal_bergabung || null,
+      })
+      .select()
+      .single();
+    if (!error) {
+      setTherapists((prev) => [...prev, data]);
+      setAddModalOpen(false);
+    }
+    setSaving(false);
+  };
+  const [professions, setProfessions] = useState([]);
 
   const fetchTherapists = async () => {
     setLoading(true);
@@ -23,8 +42,17 @@ const RotasiTherapists = () => {
     setLoading(false);
   };
 
+  const fetchProfessions = async () => {
+    const { data, error } = await supabase
+      .from('rotasi_professions')
+      .select('id, name')
+      .order('name', { ascending: true });
+    if (!error) setProfessions(data || []);
+  };
+
   useEffect(() => {
     fetchTherapists();
+    fetchProfessions();
   }, []);
 
   const openAddModal = () => {
@@ -148,7 +176,7 @@ const RotasiTherapists = () => {
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
                   Profesi
                 </label>
-                <input
+                <select
                   value={addForm.profesi}
                   onChange={(e) => setAddForm((f) => ({ ...f, profesi: e.target.value }))}
                   style={{
@@ -158,70 +186,18 @@ const RotasiTherapists = () => {
                     border: '1px solid #cbd5e1',
                     fontSize: 14,
                     boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
-                  Tanggal Bergabung
-                </label>
-                <input
-                  type="date"
-                  value={addForm.tanggal_bergabung}
-                  onChange={(e) => setAddForm((f) => ({ ...f, tanggal_bergabung: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <button
-                  type="button"
-                  onClick={closeAddModal}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
                     background: '#fff',
-                    color: '#334155',
-                    cursor: 'pointer',
                   }}
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {saving ? 'Menyimpan...' : 'Simpan'}
-                </button>
+                  <option value="">Pilih profesi...</option>
+                  {professions.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <p>Memuat...</p>
-      ) : therapists.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>Belum ada terapis. Tambahkan minimal 2 terapis untuk mulai membuat jadwal.</p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {therapists.map((t) => (
             <div
               key={t.id}
@@ -281,6 +257,47 @@ const RotasiTherapists = () => {
             </div>
           ))}
         </div>
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    background: '#fff',
+                    color: '#334155',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#fff',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {saving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p>Memuat...</p>
+      ) : therapists.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>Belum ada terapis. Tambahkan minimal 2 terapis untuk mulai membuat jadwal.</p>
+      ) : (
+        
       )}
     </div>
   );
