@@ -1,132 +1,102 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-const RotasiTherapists = () => {
-  const [therapists, setTherapists] = useState([]);
-  const [professions, setProfessions] = useState([]);
+const RotasiPatients = () => {
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState({
-    name: '',
-    profesi: '',
-    tanggal_bergabung: '',
-    level: 'junior',
-  });
-
+  const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    profesi: '',
-    tanggal_bergabung: '',
-    level: 'junior',
-  });
+  const [editForm, setEditForm] = useState({ name: '', diagnosa: '', profesi: '', insurance_type_id: '', notes: '' });
   const [editSaving, setEditSaving] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', diagnosa: '', profesi: '', insurance_type_id: '', notes: '' });
+  const [addSaving, setAddSaving] = useState(false);
+  const [insuranceTypes, setInsuranceTypes] = useState([]);
 
-  const fetchTherapists = async () => {
+  useEffect(() => {
+    fetchPatients();
+    fetchInsuranceTypes();
+  }, []);
+
+  const fetchPatients = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('rotasi_therapists')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (!error) setTherapists(data || []);
+      .from('rotasi_patients')
+      .select('*, rotasi_insurance_types(name)')
+      .order('name', { ascending: true });
+    if (!error) setPatients(data || []);
     setLoading(false);
   };
 
-  const fetchProfessions = async () => {
-    const { data, error } = await supabase
-      .from('rotasi_professions')
+  const fetchInsuranceTypes = async () => {
+    const { data } = await supabase
+      .from('rotasi_insurance_types')
       .select('id, name')
       .order('name', { ascending: true });
-    if (!error) setProfessions(data || []);
-  };
-
-  useEffect(() => {
-    fetchTherapists();
-    fetchProfessions();
-  }, []);
-
-  const openAddModal = () => {
-    setAddForm({ name: '', profesi: '', tanggal_bergabung: '', level: 'junior' });
-    setAddModalOpen(true);
-  };
-
-  const closeAddModal = () => {
-    setAddModalOpen(false);
+    if (data) setInsuranceTypes(data);
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     const trimmed = addForm.name.trim();
     if (!trimmed) return;
-    setSaving(true);
+    setAddSaving(true);
     const { data, error } = await supabase
-      .from('rotasi_therapists')
+      .from('rotasi_patients')
       .insert({
         name: trimmed,
+        diagnosa: addForm.diagnosa.trim() || null,
         profesi: addForm.profesi.trim() || null,
-        tanggal_bergabung: addForm.tanggal_bergabung || null,
-        level: addForm.level || 'junior',
+        insurance_type_id: addForm.insurance_type_id || null,
+        notes: addForm.notes.trim() || null,
       })
-      .select()
+      .select('*, rotasi_insurance_types(name)')
       .single();
     if (!error) {
-      setTherapists((prev) => [...prev, data]);
-      setAddModalOpen(false);
+      setPatients((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setAddForm({ name: '', diagnosa: '', profesi: '', insurance_type_id: '', notes: '' });
+    } else {
+      window.alert('Gagal menambah pasien: ' + error.message);
     }
-    setSaving(false);
-  };
-
-  const toggleActive = async (t) => {
-    const { data, error } = await supabase
-      .from('rotasi_therapists')
-      .update({ is_active: !t.is_active })
-      .eq('id', t.id)
-      .select()
-      .single();
-    if (!error) {
-      setTherapists((prev) => prev.map((th) => (th.id === t.id ? data : th)));
-    }
+    setAddSaving(false);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Hapus terapis ini?')) return;
-    const { error } = await supabase.from('rotasi_therapists').delete().eq('id', id);
-    if (!error) setTherapists((prev) => prev.filter((t) => t.id !== id));
+    if (!window.confirm('Hapus pasien ini?')) return;
+    const { error } = await supabase.from('rotasi_patients').delete().eq('id', id);
+    if (!error) setPatients((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const startEdit = (t) => {
-    setEditingId(t.id);
+  const startEdit = (p) => {
+    setEditingId(p.id);
     setEditForm({
-      name: t.name || '',
-      profesi: t.profesi || '',
-      tanggal_bergabung: t.tanggal_bergabung || '',
-      level: t.level || 'junior',
+      name: p.name || '',
+      diagnosa: p.diagnosa || '',
+      profesi: p.profesi || '',
+      insurance_type_id: p.insurance_type_id || '',
+      notes: p.notes || '',
     });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
+  const cancelEdit = () => setEditingId(null);
 
   const handleUpdate = async (id) => {
     const trimmed = editForm.name.trim();
     if (!trimmed) return;
     setEditSaving(true);
     const { data, error } = await supabase
-      .from('rotasi_therapists')
+      .from('rotasi_patients')
       .update({
         name: trimmed,
+        diagnosa: editForm.diagnosa.trim() || null,
         profesi: editForm.profesi.trim() || null,
-        tanggal_bergabung: editForm.tanggal_bergabung || null,
-        level: editForm.level || 'junior',
+        insurance_type_id: editForm.insurance_type_id || null,
+        notes: editForm.notes.trim() || null,
       })
       .eq('id', id)
-      .select()
+      .select('*, rotasi_insurance_types(name)')
       .single();
     if (!error) {
-      setTherapists((prev) => prev.map((th) => (th.id === id ? data : th)));
+      setPatients((prev) => prev.map((p) => (p.id === id ? data : p)));
       setEditingId(null);
     } else {
       window.alert('Gagal menyimpan perubahan: ' + error.message);
@@ -134,324 +104,204 @@ const RotasiTherapists = () => {
     setEditSaving(false);
   };
 
+  const filtered = patients.filter((p) =>
+    p.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div>
-      <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Data Terapis</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Data Pasien</h1>
       <p style={{ color: '#64748b', marginTop: 0, marginBottom: 24 }}>
-        Kelola terapis yang ikut dalam rotasi jadwal. Nonaktifkan terapis yang sedang cuti/libur.
+        Kelola daftar pasien yang ikut dalam rotasi jadwal terapi.
       </p>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-        <button
-          type="button"
-          onClick={openAddModal}
-          style={{
-            padding: '10px 18px',
-            borderRadius: 8,
-            border: 'none',
-            background: '#2563eb',
-            color: '#fff',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
+      {/* Form Tambah */}
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          value={addForm.name}
+          onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+          placeholder="Nama pasien baru..."
+          style={inputStyle}
+          required
+        />
+        <input
+          value={addForm.diagnosa}
+          onChange={(e) => setAddForm((f) => ({ ...f, diagnosa: e.target.value }))}
+          placeholder="Diagnosa (opsional)"
+          style={{ ...inputStyle, maxWidth: 180 }}
+        />
+        <input
+          value={addForm.profesi}
+          onChange={(e) => setAddForm((f) => ({ ...f, profesi: e.target.value }))}
+          placeholder="Profesi (opsional)"
+          style={{ ...inputStyle, maxWidth: 150 }}
+        />
+        <select
+          value={addForm.insurance_type_id}
+          onChange={(e) => setAddForm((f) => ({ ...f, insurance_type_id: e.target.value }))}
+          style={{ ...inputStyle, maxWidth: 160 }}
         >
-          + Tambah Terapis
+          <option value="">-- Eselon --</option>
+          {insuranceTypes.map((it) => (
+            <option key={it.id} value={it.id}>{it.name}</option>
+          ))}
+        </select>
+        <button type="submit" disabled={addSaving} style={btnPrimaryStyle}>
+          {addSaving ? 'Menyimpan...' : 'Tambah'}
         </button>
-      </div>
+      </form>
 
-      {addModalOpen && (
-        
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-          }}
-          onClick={closeAddModal}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#fff',
-              borderRadius: 12,
-              padding: 24,
-              width: '100%',
-              maxWidth: 420,
-            }}
-          >
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginTop: 0, marginBottom: 16 }}>
-              Tambah Terapis
-            </h2>
-            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
-                  Nama Terapis
-                </label>
-                <input
-                  value={addForm.name}
-                  onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
-                  Profesi
-                </label>
-                <select
-                  value={addForm.profesi}
-                  onChange={(e) => setAddForm((f) => ({ ...f, profesi: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    boxSizing: 'border-box',
-                    background: '#fff',
-                  }}
-                >
-                  <option value="">Pilih profesi...</option>
-                  {professions.map((p) => (
-                    <option key={p.id} value={p.name}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
-                  Tanggal Bergabung
-                </label>
-                <input
-                  type="date"
-                  value={addForm.tanggal_bergabung}
-                  onChange={(e) => setAddForm((f) => ({ ...f, tanggal_bergabung: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
-                  Level
-                </label>
-                <select
-                  value={addForm.level}
-                  onChange={(e) => setAddForm((f) => ({ ...f, level: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <option value="junior">Junior</option>
-                  <option value="senior">Senior</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <button
-                  type="button"
-                  onClick={closeAddModal}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    background: '#fff',
-                    color: '#334155',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {saving ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Search */}
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Cari pasien..."
+        style={{ ...inputStyle, marginBottom: 16, maxWidth: 300 }}
+      />
 
       {loading ? (
         <p>Memuat...</p>
-      ) : therapists.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>Belum ada terapis. Tambahkan minimal 2 terapis untuk mulai membuat jadwal.</p>
+      ) : filtered.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>
+          {patients.length === 0 ? 'Belum ada data pasien.' : 'Tidak ada hasil pencarian.'}
+        </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {therapists.map((t) => (
-            <div
-              key={t.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 16px',
-                background: '#fff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 10,
-                flexWrap: 'wrap',
-                gap: 10,
-              }}
-            >
-              {editingId === t.id ? (
-                <>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-                    <input
-                      value={editForm.name}
-                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                      placeholder="Nama"
-                      style={{ flex: 1, minWidth: 140, padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13 }}
-                    />
-                    <select
-                      value={editForm.profesi}
-                      onChange={(e) => setEditForm((f) => ({ ...f, profesi: e.target.value }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, background: '#fff' }}
-                    >
-                      <option value="">Pilih profesi...</option>
-                      {professions.map((p) => (
-                        <option key={p.id} value={p.name}>{p.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={editForm.level}
-                      onChange={(e) => setEditForm((f) => ({ ...f, level: e.target.value }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13 }}
-                    >
-                      <option value="junior">Junior</option>
-                      <option value="senior">Senior</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => handleUpdate(t.id)}
-                      disabled={editSaving}
-                      style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #bbf7d0', background: '#fff', color: '#15803d', cursor: 'pointer' }}
-                    >
-                      Simpan
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', color: '#334155', cursor: 'pointer' }}
-                    >
-                      Batal
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 999,
-                        background: t.is_active ? '#22c55e' : '#cbd5e1',
-                      }}
-                    />
-                    <span style={{ fontWeight: 600 }}>{t.name}</span>
-                    {t.profesi && (
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>({t.profesi})</span>
-                    )}
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 999,
-                        background: t.level === 'senior' ? '#fef3c7' : '#e0e7ff',
-                        color: t.level === 'senior' ? '#92400e' : '#3730a3',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {t.level === 'senior' ? 'Senior' : 'Junior'}
-                    </span>
-                    {!t.is_active && (
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>(nonaktif)</span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => startEdit(t)}
-                      style={{
-                        fontSize: 12,
-                        padding: '6px 10px',
-                        borderRadius: 6,
-                        border: '1px solid #bfdbfe',
-                        background: '#fff',
-                        color: '#1d4ed8',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => toggleActive(t)}
-                      style={{
-                        fontSize: 12,
-                        padding: '6px 10px',
-                        borderRadius: 6,
-                        border: '1px solid #cbd5e1',
-                        background: '#fff',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {t.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(t.id)}
-                      style={{
-                        fontSize: 12,
-                        padding: '6px 10px',
-                        borderRadius: 6,
-                        border: '1px solid #fecaca',
-                        background: '#fff',
-                        color: '#dc2626',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
+        <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={thStyle}>Nama Pasien</th>
+                <th style={thStyle}>Diagnosa</th>
+                <th style={thStyle}>Profesi</th>
+                <th style={thStyle}>Eselon</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p.id} style={{ borderTop: '1px solid #e2e8f0' }}>
+                  {editingId === p.id ? (
+                    <>
+                      <td style={tdStyle}>
+                        <input
+                          value={editForm.name}
+                          onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          value={editForm.diagnosa}
+                          onChange={(e) => setEditForm((f) => ({ ...f, diagnosa: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          value={editForm.profesi}
+                          onChange={(e) => setEditForm((f) => ({ ...f, profesi: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <select
+                          value={editForm.insurance_type_id}
+                          onChange={(e) => setEditForm((f) => ({ ...f, insurance_type_id: e.target.value }))}
+                          style={inputStyle}
+                        >
+                          <option value="">-- Eselon --</option>
+                          {insuranceTypes.map((it) => (
+                            <option key={it.id} value={it.id}>{it.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => handleUpdate(p.id)} disabled={editSaving} style={btnPrimaryStyle}>
+                          {editSaving ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                        <button onClick={cancelEdit} style={btnEditStyle}>Batal</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ ...tdStyle, fontWeight: 600 }}>{p.name}</td>
+                      <td style={tdStyle}>{p.diagnosa || '-'}</td>
+                      <td style={tdStyle}>{p.profesi || '-'}</td>
+                      <td style={tdStyle}>{p.rotasi_insurance_types?.name || '-'}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => startEdit(p)} style={btnEditStyle}>Edit</button>
+                        <button onClick={() => handleDelete(p.id)} style={btnDeleteStyle}>Hapus</button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 };
 
-export default RotasiTherapists;
+const inputStyle = {
+  padding: '8px 12px',
+  border: '1px solid #e2e8f0',
+  borderRadius: 8,
+  fontSize: 13,
+  outline: 'none',
+  flex: 1,
+  minWidth: 140,
+};
+
+const btnPrimaryStyle = {
+  padding: '8px 16px',
+  background: '#2563eb',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontWeight: 600,
+  fontSize: 13,
+  whiteSpace: 'nowrap',
+};
+
+const btnEditStyle = {
+  padding: '5px 12px',
+  background: '#f1f5f9',
+  color: '#334155',
+  border: '1px solid #e2e8f0',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: 12,
+  fontWeight: 600,
+  marginRight: 4,
+};
+
+const btnDeleteStyle = {
+  padding: '5px 12px',
+  background: '#fef2f2',
+  color: '#dc2626',
+  border: '1px solid #fecaca',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: 12,
+  fontWeight: 600,
+};
+
+const thStyle = {
+  padding: '10px 14px',
+  textAlign: 'left',
+  fontWeight: 700,
+  color: '#64748b',
+  fontSize: 12,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+};
+
+const tdStyle = {
+  padding: '10px 14px',
+  color: '#1e293b',
+};
+
+export default RotasiPatients;

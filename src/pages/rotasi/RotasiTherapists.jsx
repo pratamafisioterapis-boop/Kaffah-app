@@ -1,35 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-const openAddModal = () => {
-    setAddForm({ name: '', profesi: '', tanggal_bergabung: '' });
-    setAddModalOpen(true);
-  };
-
-  const closeAddModal = () => {
-    setAddModalOpen(false);
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const trimmed = addForm.name.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    const { data, error } = await supabase
-      .from('rotasi_therapists')
-      .insert({
-        name: trimmed,
-        profesi: addForm.profesi.trim() || null,
-        tanggal_bergabung: addForm.tanggal_bergabung || null,
-      })
-      .select()
-      .single();
-    if (!error) {
-      setTherapists((prev) => [...prev, data]);
-      setAddModalOpen(false);
-    }
-    setSaving(false);
-  };
+const RotasiTherapists = () => {
+  const [therapists, setTherapists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', profesi: '', tanggal_bergabung: '' });
+  const [saving, setSaving] = useState(false);
   const [professions, setProfessions] = useState([]);
 
   const fetchTherapists = async () => {
@@ -197,7 +174,48 @@ const openAddModal = () => {
                   ))}
                 </select>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    background: '#fff',
+                    color: '#334155',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#fff',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {saving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p>Memuat...</p>
+      ) : therapists.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>Belum ada terapis. Tambahkan minimal 2 terapis untuk mulai membuat jadwal.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {therapists.map((t) => (
             <div
               key={t.id}
@@ -257,47 +275,6 @@ const openAddModal = () => {
             </div>
           ))}
         </div>
-                <button
-                  type="button"
-                  onClick={closeAddModal}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    background: '#fff',
-                    color: '#334155',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {saving ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <p>Memuat...</p>
-      ) : therapists.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>Belum ada terapis. Tambahkan minimal 2 terapis untuk mulai membuat jadwal.</p>
-      ) : (
-        
       )}
     </div>
   );
