@@ -32,7 +32,7 @@ const isWithinWorkingHours = (ranges, slotMinutes) => {
     const start = timeToMinutes(r.start_time);
     const end = timeToMinutes(r.end_time);
     if (start == null || end == null) return true;
-    return slotMinutes >= start && slotMinutes < end;
+    return slotMinutes >= start && slotMinutes <= end;
   });
 };
 
@@ -99,7 +99,12 @@ export function generateSchedule({
       isWithinWorkingHours(therapistWorkingHours[th.id], slotMinutes)
     );
     if (eligible.length === 0) {
-      eligible = [...activeTherapists];
+      const allHaveNoHours = activeTherapists.every(
+        (th) => !therapistWorkingHours[th.id] || therapistWorkingHours[th.id].length === 0
+      );
+      if (allHaveNoHours) {
+        eligible = [...activeTherapists];
+      }
     }
 
     const usedInThisSlot = new Set();
