@@ -1025,10 +1025,10 @@ const CutiSection = () => {
   const [therapists, setTherapists] = useState([]);
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ therapist_id: '', leave_date: '', slot_id: '', reason: '' });
+  const [form, setForm] = useState({ therapist_id: '', leave_date: '', tipe: 'seharian', start_time: '', end_time: '', reason: '' });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ therapist_id: '', leave_date: '', slot_id: '', reason: '' });
+  const [editForm, setEditForm] = useState({ therapist_id: '', leave_date: '', tipe: 'seharian', start_time: '', end_time: '', reason: '' });
 
   const fetchAll = async () => {
     setLoading(true);
@@ -1053,31 +1053,46 @@ const CutiSection = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.therapist_id || !form.leave_date) return;
+    if (form.tipe === 'parsial' && (!form.start_time || !form.end_time)) return;
     setSaving(true);
     const { data, error } = await supabase
       .from('rotasi_therapist_leave')
       .insert({
         therapist_id: form.therapist_id,
         leave_date: form.leave_date,
-        slot_id: form.slot_id || null,
-        reason: form.reason.trim() || null,
+        slot_id: null,
+        reason: form.tipe === 'parsial'
+          ? `Parsial ${form.start_time}–${form.end_time}${form.reason.trim() ? ' | ' + form.reason.trim() : ''}`
+          : form.reason.trim() || null,
       })
       .select()
       .single();
     if (!error) {
       setItems((prev) => [data, ...prev]);
-      setForm({ therapist_id: '', leave_date: '', slot_id: '', reason: '' });
+      setForm({ therapist_id: '', leave_date: '', tipe: 'seharian', start_time: '', end_time: '', reason: '' });
     }
     setSaving(false);
   };
 
   const startEdit = (item) => {
+    const isParsial = item.reason && item.reason.startsWith('Parsial ');
+    let tipe = 'seharian';
+    let start_time = '';
+    let end_time = '';
+    let reason = item.reason || '';
+    if (isParsial) {
+      tipe = 'parsial';
+      const match = item.reason.match(/^Parsial (\d{2}:\d{2})–(\d{2}:\d{2})(?:\s\|\s(.*))?$/);
+      if (match) { start_time = match[1]; end_time = match[2]; reason = match[3] || ''; }
+    }
     setEditingId(item.id);
     setEditForm({
       therapist_id: item.therapist_id || '',
       leave_date: item.leave_date || '',
-      slot_id: item.slot_id || '',
-      reason: item.reason || '',
+      tipe,
+      start_time,
+      end_time,
+      reason,
     });
   };
 
@@ -1087,13 +1102,16 @@ const CutiSection = () => {
 
   const handleUpdate = async (id) => {
     if (!editForm.therapist_id || !editForm.leave_date) return;
+    if (editForm.tipe === 'parsial' && (!editForm.start_time || !editForm.end_time)) return;
     const { data, error } = await supabase
       .from('rotasi_therapist_leave')
       .update({
         therapist_id: editForm.therapist_id,
         leave_date: editForm.leave_date,
-        slot_id: editForm.slot_id || null,
-        reason: editForm.reason.trim() || null,
+        slot_id: null,
+        reason: editForm.tipe === 'parsial'
+          ? `Parsial ${editForm.start_time}–${editForm.end_time}${editForm.reason.trim() ? ' | ' + editForm.reason.trim() : ''}`
+          : editForm.reason.trim() || null,
       })
       .eq('id', id)
       .select()
@@ -1130,15 +1148,31 @@ const CutiSection = () => {
           style={{ ...inputStyle, width: 150, flex: 'none' }}
         />
         <select
-          value={form.slot_id}
-          onChange={(e) => setForm((f) => ({ ...f, slot_id: e.target.value }))}
-          style={{ ...inputStyle, width: 150, flex: 'none' }}
+          value={form.tipe}
+          onChange={(e) => setForm((f) => ({ ...f, tipe: e.target.value, start_time: '', end_time: '' }))}
+          style={{ ...inputStyle, width: 130, flex: 'none' }}
         >
-          <option value="">Seharian</option>
-          {slots.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
-          ))}
+          <option value="seharian">Seharian</option>
+          <option value="parsial">Parsial</option>
         </select>
+        {form.tipe === 'parsial' && (
+          <>
+            <input
+              type="time"
+              value={form.start_time}
+              onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
+              style={{ ...inputStyle, width: 120, flex: 'none' }}
+              placeholder="Jam mulai"
+            />
+            <input
+              type="time"
+              value={form.end_time}
+              onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
+              style={{ ...inputStyle, width: 120, flex: 'none' }}
+              placeholder="Jam selesai"
+            />
+          </>
+        )}
         <input
           value={form.reason}
           onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
@@ -1193,15 +1227,29 @@ const CutiSection = () => {
                       </td>
                       <td style={tdStyle}>
                         <select
-                          value={editForm.slot_id}
-                          onChange={(e) => setEditForm((f) => ({ ...f, slot_id: e.target.value }))}
-                          style={inputStyle}
+                          value={editForm.tipe}
+                          onChange={(e) => setEditForm((f) => ({ ...f, tipe: e.target.value, start_time: '', end_time: '' }))}
+                          style={{ ...inputStyle, width: 110 }}
                         >
-                          <option value="">Seharian</option>
-                          {slots.map((s) => (
-                            <option key={s.id} value={s.id}>{s.label}</option>
-                          ))}
+                          <option value="seharian">Seharian</option>
+                          <option value="parsial">Parsial</option>
                         </select>
+                        {editForm.tipe === 'parsial' && (
+                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                            <input
+                              type="time"
+                              value={editForm.start_time}
+                              onChange={(e) => setEditForm((f) => ({ ...f, start_time: e.target.value }))}
+                              style={{ ...inputStyle, width: 110 }}
+                            />
+                            <input
+                              type="time"
+                              value={editForm.end_time}
+                              onChange={(e) => setEditForm((f) => ({ ...f, end_time: e.target.value }))}
+                              style={{ ...inputStyle, width: 110 }}
+                            />
+                          </div>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <input
