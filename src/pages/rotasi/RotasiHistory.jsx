@@ -10,6 +10,8 @@ const THERAPIST_COLORS = [
   { bg: '#fef9c3', border: '#fde68a', text: '#854d0e', avatar: '#eab308' },
 ];
 
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
 const RotasiHistory = () => {
   const [allSchedule, setAllSchedule] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -150,12 +152,14 @@ const RotasiHistory = () => {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Riwayat Jadwal</h1>
-        <p style={{ color: '#64748b', margin: '4px 0 0' }}>
-          Jadwal yang sudah dikonfirmasi. Klik tanggal untuk melihat detail pembagian terapis.
-        </p>
+    <div style={{ maxWidth: isPWA ? '100%' : undefined }}>
+      <div style={{ marginBottom: isPWA ? 12 : 20 }}>
+        <h1 style={{ fontSize: isPWA ? 18 : 22, fontWeight: 800, margin: 0 }}>Riwayat Jadwal</h1>
+        {!isPWA && (
+          <p style={{ color: '#64748b', margin: '4px 0 0' }}>
+            Jadwal yang sudah dikonfirmasi. Klik tanggal untuk melihat detail pembagian terapis.
+          </p>
+        )}
       </div>
 
       {!loading && groupedByDate.length > 0 && (
