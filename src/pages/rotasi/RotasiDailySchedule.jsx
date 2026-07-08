@@ -28,6 +28,13 @@ const RotasiDailySchedule = () => {
   const [historySelections, setHistorySelections] = useState(['', '', '']); // maks 3 sesi
   const [historySaving, setHistorySaving] = useState(false);
 
+  // Modal cek/edit riwayat dari kartu jadwal
+  const [historyViewModal, setHistoryViewModal] = useState(null); // { patientId, patientName }
+  const [historyViewData, setHistoryViewData] = useState([]); // [{id, visit_date, therapist_id, therapist_name}]
+  const [historyViewLoading, setHistoryViewLoading] = useState(false);
+  const [historyViewEditing, setHistoryViewEditing] = useState({}); // { [rowId]: therapistId }
+  const [historyViewSaving, setHistoryViewSaving] = useState(false);
+
   useEffect(() => {
     loadStatic();
   }, []);
@@ -37,11 +44,26 @@ const RotasiDailySchedule = () => {
   }, [date]);
 
   const loadStatic = async () => {
-    const [{ data: pts }, { data: ths }] = await Promise.all([
-      supabase.from('rotasi_patients').select('*').order('name'),
+    // Ambil semua pasien dengan pagination karena bisa > 1000
+    let allPts = [];
+    let from = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data: batch, error } = await supabase
+        .from('rotasi_patients')
+        .select('*')
+        .order('name')
+        .range(from, from + batchSize - 1);
+      if (error || !batch || batch.length === 0) break;
+      allPts = [...allPts, ...batch];
+      if (batch.length < batchSize) break;
+      from += batchSize;
+    }
+
+    const [{ data: ths }] = await Promise.all([
       supabase.from('rotasi_therapists').select('*').eq('is_active', true).order('created_at'),
     ]);
-    setAllPatients(pts || []);
+    setAllPatients(allPts);
     setTherapists(ths || []);
   };
 
@@ -144,6 +166,70 @@ const RotasiDailySchedule = () => {
   const handleAddPatient = async () => {
     if (!addPatientId) return;
     await insertPatientToSlot(addPatientId, selectedSlotId);
+  };
+
+  const openHistoryView = async (patientId, patientName) => {
+    setHistoryViewModal({ patientId, patientName });
+    setHistoryViewEditing({});
+    setHistoryViewLoading(true);
+    const { data } = await supabase
+      .from('rotasi_schedule')
+      .select('id, visit_date, therapist_id')
+      .eq('patient_id', patientId)
+      .lt('visit_date', date)
+      .order('visit_date', { ascending: false })
+      .limit(3);
+    const therapistMap2 = {};
+    therapists.forEach((t) => { therapistMap2[t.id] = t.name; });
+    const mapped = (data || []).map((r) => ({ ...r, therapist_name: therapistMap2[r.therapist_id] || '-' }));
+    setHistoryViewData(mapped);
+    // Set editing dengan nilai existing dari DB sebagai initial value
+    const initEditing = {};
+    mapped.forEach((r) => { initEditing[r.id] = r.therapist_id || ''; });
+    setHistoryViewEditing(initEditing);
+    setHistoryViewLoading(false);
+  };
+
+  const handleSaveHistoryView = async () => {
+    setHistoryViewSaving(true);
+    const therapistMap2 = {};
+    therapists.forEach((t) => { therapistMap2[t.id] = t.name; });
+
+    const deletedIds = [];
+    for (const [rowId, newTherapistId] of Object.entries(historyViewEditing)) {
+      if (!newTherapistId) {
+        // therapist_id NOT NULL — hapus row jika dikosongkan
+        await supabase.from('rotasi_schedule').delete().eq('id', rowId);
+        deletedIds.push(rowId);
+      } else {
+        await supabase
+          .from('rotasi_schedule')
+          .update({ therapist_id: newTherapistId })
+          .eq('id', rowId);
+      }
+    }
+
+    // Update state lokal
+    setHistoryViewData((prev) =>
+      prev
+        .filter((r) => !deletedIds.includes(r.id))
+        .map((r) => {
+          if (r.id in historyViewEditing && historyViewEditing[r.id]) {
+            const newId = historyViewEditing[r.id];
+            return { ...r, therapist_id: newId, therapist_name: therapistMap2[newId] || '-' };
+          }
+          return r;
+        })
+    );
+
+    // Sync editing state — hapus deleted rows
+    setHistoryViewEditing((prev) => {
+      const next = { ...prev };
+      deletedIds.forEach((id) => delete next[id]);
+      return next;
+    });
+
+    setHistoryViewSaving(false);
   };
 
   const handleSlotCardClick = (slotId) => {
@@ -277,14 +363,50 @@ const RotasiDailySchedule = () => {
         constraint_violated: r.constraint_violated,
       }));
 
-      await supabase.from('rotasi_schedule').delete().eq('visit_date', date);
+      // Hapus hanya baris yang BELUM dikonfirmasi dan tidak ada di jadwal hari ini
+      // Baris confirmed = true TIDAK PERNAH disentuh
+      const patientIdsToday = rows.map((r) => r.patient_id);
+      const { data: existingRows } = await supabase
+        .from('rotasi_schedule')
+        .select('id, patient_id, confirmed')
+        .eq('visit_date', date);
+
+      const toDelete = (existingRows || [])
+        .filter((r) => !r.confirmed && !patientIdsToday.includes(r.patient_id))
+        .map((r) => r.id);
+      if (toDelete.length > 0) {
+        await supabase.from('rotasi_schedule').delete().in('id', toDelete);
+      }
+
+      // Hanya insert/update baris yang BELUM dikonfirmasi
+      // Baris confirmed = true dibiarkan apa adanya
+      const confirmedPatientIds = new Set(
+        (existingRows || []).filter((r) => r.confirmed).map((r) => r.patient_id)
+      );
+      const rowsToUpsert = rows.filter((r) => !confirmedPatientIds.has(r.patient_id));
+
+      if (rowsToUpsert.length === 0) {
+        const { data: allExisting } = await supabase
+          .from('rotasi_schedule')
+          .select('*')
+          .eq('visit_date', date);
+        setSchedule(allExisting || []);
+        return;
+      }
+
       const { data: inserted, error: insErr } = await supabase
         .from('rotasi_schedule')
-        .insert(rows)
+        .upsert(rowsToUpsert, { onConflict: 'visit_date,patient_id', ignoreDuplicates: false })
         .select();
       if (insErr) throw insErr;
 
-      setSchedule(inserted || []);
+      // Merge: baris confirmed yang tidak diubah + baris baru hasil upsert
+      const { data: allAfter } = await supabase
+        .from('rotasi_schedule')
+        .select('*')
+        .eq('visit_date', date);
+      setSchedule(allAfter || []);
+
       if (unassigned.length > 0) {
         setMessage({
           type: 'error',
@@ -683,9 +805,15 @@ const RotasiDailySchedule = () => {
                       >
                         <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>{th.name}</div>
                         {row ? (
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>
-                            {patientMap[row.patient_id]?.name || '-'}
-                            {row.constraint_violated && <span style={{ marginLeft: 6 }}>⚠️</span>}
+                          <div>
+                            <div
+                              onClick={() => openHistoryView(row.patient_id, patientMap[row.patient_id]?.name || '-')}
+                              style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}
+                              title="Klik untuk lihat riwayat 3 sesi terakhir"
+                            >
+                              {patientMap[row.patient_id]?.name || '-'}
+                              {row.constraint_violated && <span style={{ marginLeft: 6 }}>⚠️</span>}
+                            </div>
                           </div>
                         ) : (
                           <div style={{ fontSize: 13, color: '#cbd5e1' }}>-</div>
@@ -699,6 +827,64 @@ const RotasiDailySchedule = () => {
           </div>
         </div>
       )}
+    {/* ── Modal Cek/Edit Riwayat 3 Sesi Terakhir ── */}
+      {historyViewModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setHistoryViewModal(null); }}
+        >
+          <div style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>Riwayat 3 Sesi Terakhir</h2>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>
+              <strong>{historyViewModal.patientName}</strong>
+            </p>
+
+            {historyViewLoading ? (
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>Memuat riwayat...</p>
+            ) : historyViewData.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>Belum ada riwayat sesi sebelumnya.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {historyViewData.map((row, i) => (
+                  <div key={row.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8', width: 80, flexShrink: 0 }}>
+                      {i === 0 ? 'Sesi terakhir' : `Sesi ke-${i + 1}`}<br />
+                      <span style={{ fontFamily: 'monospace', fontSize: 10 }}>{row.visit_date}</span>
+                    </span>
+                    <select
+                      value={historyViewEditing[row.id] ?? ''}
+                      onChange={(e) => setHistoryViewEditing((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                      style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, background: '#fff' }}
+                    >
+                      <option value="">-- Kosongkan --</option>
+                      {therapists.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setHistoryViewModal(null)}
+                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+              >
+                Tutup
+              </button>
+              <button
+                onClick={handleSaveHistoryView}
+                disabled={historyViewSaving}
+                style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+              >
+                {historyViewSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     {/* ── Modal Riwayat Terapis Sebelumnya ── */}
       {historyModal && (
         <div

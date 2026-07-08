@@ -234,6 +234,23 @@ action_by: user?.id,
 
       if (!result || result.error) throw result?.error || new Error("Gagal menyimpan jadwal");
 
+      // Homecare: hapus entry booking_appointment dari follow_up_queue yg dibuat edge function,
+      // ganti dengan kirim template homecare langsung
+      if (formData.is_homecare) {
+        // Tunggu sebentar agar edge function sempat insert ke follow_up_queue
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Hapus entry booking_appointment yang salah untuk appointment ini
+        const appointmentId = result?.data?.id;
+        if (appointmentId) {
+          await supabase
+            .from('follow_up_queue')
+            .delete()
+            .eq('source_id', appointmentId)
+            .eq('follow_up_type', 'booking_appointment');
+        }
+      }
+
       // Kirim WA homecare ke pasien langsung setelah booking (hanya jika WaAuto aktif)
       if (formData.is_homecare && isBablastEnabled) {
         try {
@@ -255,10 +272,31 @@ action_by: user?.id,
               therapist: therapist,
             };
             const message = await generateBookingHomecareMessage(patientObj, apptObj);
+
+            // Kirim via Watzap API
             let phone = patientPhone.replace(/\D/g, '');
             if (phone.startsWith('0')) phone = '62' + phone.slice(1);
             else if (!phone.startsWith('62')) phone = '62' + phone;
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+
+            const { data: waSettings } = await supabase
+              .from('wa_settings')
+              .select('api_key, number_key')
+              .single();
+
+            if (waSettings?.api_key && waSettings?.number_key) {
+              await fetch('https://api.watzap.id/v1/waba_send_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  api_key: waSettings.api_key,
+                  number_key: waSettings.number_key,
+                  phone_no: phone,
+                  message,
+                }),
+              });
+            } else {
+              console.warn('[HomecareWA] api_key / number_key tidak ditemukan di wa_settings');
+            }
           }
         } catch (waErr) {
           console.warn('[HomecareWA] Gagal kirim WA homecare:', waErr);

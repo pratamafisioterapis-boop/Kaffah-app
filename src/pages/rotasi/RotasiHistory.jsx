@@ -28,14 +28,30 @@ const RotasiHistory = () => {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: sched }, { data: pts }, { data: ths }, { data: gslots }] = await Promise.all([
+
+    // Ambil pasien dengan pagination karena > 1000
+    let allPts = [];
+    let from = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data: batch } = await supabase
+        .from('rotasi_patients')
+        .select('id, name, medical_record_number')
+        .range(from, from + batchSize - 1);
+      if (!batch || batch.length === 0) break;
+      allPts = [...allPts, ...batch];
+      if (batch.length < batchSize) break;
+      from += batchSize;
+    }
+
+    const [{ data: sched }, { data: ths }, { data: gslots }] = await Promise.all([
       supabase.from('rotasi_schedule').select('*').eq('confirmed', true).order('visit_date', { ascending: false }),
-      supabase.from('rotasi_patients').select('id, name, medical_record_number'),
       supabase.from('rotasi_therapists').select('id, name'),
       supabase.from('rotasi_global_slots').select('slot_date, start_time, label').order('slot_date').order('start_time'),
     ]);
+
     setAllSchedule(sched || []);
-    setPatients(pts || []);
+    setPatients(allPts);
     setTherapists(ths || []);
     setGlobalSlotsData(gslots || []);
     setLoading(false);
