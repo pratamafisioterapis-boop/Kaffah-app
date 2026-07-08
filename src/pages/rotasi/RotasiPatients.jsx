@@ -90,6 +90,7 @@ const RotasiPatients = () => {
 
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const searchTimeout = React.useRef(null);
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
@@ -105,13 +106,34 @@ const RotasiPatients = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
 
+  // State modal riwayat terapi
+  const [historyPatient, setHistoryPatient] = useState(null); // { id, name }
+  const [historyData, setHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyEditing, setHistoryEditing] = useState({});
+  const [historySaving, setHistorySaving] = useState(false);
+  const [allTherapists, setAllTherapists] = useState([]);
+
   // ─── fetch ─────────────────────────────────────────────────────────────────
-  useEffect(() => { fetchInsuranceTypes(); }, []);
+  useEffect(() => {
+    fetchInsuranceTypes();
+    fetchDiagnoses();
+    supabase.from('rotasi_therapists').select('id, name').eq('is_active', true).order('name').then(({ data }) => {
+      if (data) setAllTherapists(data);
+    });
+  }, []);
   useEffect(() => { fetchPatients(); }, [page, pageSize, sortKey, sortDir, search]);
+
+  const [diagnoses, setDiagnoses] = useState([]);
 
   const fetchInsuranceTypes = async () => {
     const { data } = await supabase.from('rotasi_insurance_types').select('id, name').order('name', { ascending: true });
     if (data) setInsuranceTypes(data);
+  };
+
+  const fetchDiagnoses = async () => {
+    const { data } = await supabase.from('rotasi_diagnoses').select('id, name').order('name', { ascending: true });
+    if (data) setDiagnoses(data);
   };
 
   const fetchPatients = async () => {
@@ -180,6 +202,44 @@ const RotasiPatients = () => {
 
   const closeModal = () => { setModalOpen(false); setSaving(false); };
 
+  const openHistory = async (p) => {
+    setHistoryPatient({ id: p.id, name: p.name });
+    setHistoryEditing({});
+    setHistoryLoading(true);
+    const { data } = await supabase
+      .from('rotasi_schedule')
+      .select('id, visit_date, therapist_id')
+      .eq('patient_id', p.id)
+      .order('visit_date', { ascending: false })
+      .limit(3);
+    const mapped = (data || []).map((r) => ({ ...r }));
+    setHistoryData(mapped);
+    const initEditing = {};
+    mapped.forEach((r) => { initEditing[r.id] = r.therapist_id || ''; });
+    setHistoryEditing(initEditing);
+    setHistoryLoading(false);
+  };
+
+  const saveHistory = async () => {
+    setHistorySaving(true);
+    const deletedIds = [];
+    for (const [rowId, newTherapistId] of Object.entries(historyEditing)) {
+      if (!newTherapistId) {
+        await supabase.from('rotasi_schedule').delete().eq('id', rowId);
+        deletedIds.push(rowId);
+      } else {
+        await supabase.from('rotasi_schedule').update({ therapist_id: newTherapistId }).eq('id', rowId);
+      }
+    }
+    setHistoryData((prev) => prev.filter((r) => !deletedIds.includes(r.id)));
+    setHistoryEditing((prev) => {
+      const next = { ...prev };
+      deletedIds.forEach((id) => delete next[id]);
+      return next;
+    });
+    setHistorySaving(false);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
@@ -242,13 +302,25 @@ const RotasiPatients = () => {
         <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} style={{ display: 'flex', gap: 8 }}>
           <input
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              clearTimeout(searchTimeout.current);
+              searchTimeout.current = setTimeout(() => {
+                setSearch(val);
+                setPage(1);
+              }, 350);
+            }}
             placeholder="Cari nama, No. RM, diagnosis..."
             style={{ ...S.inputBase, maxWidth: 300 }}
           />
-          <button type="submit" style={{ ...S.btnPrimary, padding: '9px 14px', background: '#475569' }}>Cari</button>
-          {search && (
-            <button type="button" onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }} style={{ ...S.btnSecondary }}>✕ Reset</button>
+          {searchInput && (
+            <button type="button" onClick={() => {
+              setSearch('');
+              setSearchInput('');
+              setPage(1);
+              clearTimeout(searchTimeout.current);
+            }} style={{ ...S.btnSecondary }}>✕ Reset</button>
           )}
         </form>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -307,7 +379,17 @@ const RotasiPatients = () => {
                           {p.medical_record_number || '-'}
                         </span>
                       </td>
-                      <td style={{ ...S.td, fontWeight: 600 }}>{p.name}</td>
+                      <td style={{ ...S.td, fontWeight: 600 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {p.name}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openHistory(p); }}
+                            style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                          >
+                            📋 Riwayat
+                          </button>
+                        </div>
+                      </td>
                       <td style={S.td}>{fmtDate(p.birth_date)}</td>
                       <td style={S.td}>{age != null ? `${age} th` : '-'}</td>
                       <td style={S.td}>{p.diagnosis || '-'}</td>
@@ -433,6 +515,57 @@ const RotasiPatients = () => {
       )}
 
       {/* ── MODAL ── */}
+      {/* Modal Riwayat Terapi */}
+      {historyPatient && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setHistoryPatient(null); }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.18)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>Riwayat 3 Sesi Terakhir</h2>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}><strong>{historyPatient.name}</strong></p>
+
+            {historyLoading ? (
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>Memuat...</p>
+            ) : historyData.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>Belum ada riwayat sesi terapi.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {historyData.map((row, i) => (
+                  <div key={row.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8', width: 90, flexShrink: 0 }}>
+                      {i === 0 ? 'Sesi terakhir' : `Sesi ke-${i + 1}`}<br />
+                      <span style={{ fontFamily: 'monospace', fontSize: 10 }}>{row.visit_date}</span>
+                    </span>
+                    <select
+                      value={historyEditing[row.id] ?? ''}
+                      onChange={(e) => setHistoryEditing((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                      style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, background: '#fff' }}
+                    >
+                      <option value="">-- Kosongkan --</option>
+                      {allTherapists.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setHistoryPatient(null)}
+                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                Tutup
+              </button>
+              {historyData.length > 0 && (
+                <button onClick={saveHistory} disabled={historySaving}
+                  style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  {historySaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalOpen && (
         <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div style={S.modal}>
@@ -476,12 +609,16 @@ const RotasiPatients = () => {
                 </FL>
               </div>
               <FL label="Diagnosis">
-                <input
+                <select
                   value={form.diagnosis}
                   onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))}
-                  placeholder="Contoh: F80.1 - GBE"
                   style={S.inputBase}
-                />
+                >
+                  <option value="">-- Pilih Diagnosis --</option>
+                  {diagnoses.map((d) => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
               </FL>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <FL label="No. BPJS">

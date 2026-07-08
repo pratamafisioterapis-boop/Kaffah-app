@@ -153,10 +153,31 @@ const RotasiDailySchedule = () => {
         .select('id')
         .eq('patient_id', patientId)
         .limit(1);
+      const patient = allPatients.find((p) => p.id === patientId);
+      // Ambil riwayat 3 sesi terakhir dari DB (ada atau tidak)
+      const { data: recentHistory } = await supabase
+        .from('rotasi_schedule')
+        .select('id, therapist_id, visit_date')
+        .eq('patient_id', patientId)
+        .order('visit_date', { ascending: false })
+        .limit(3);
+
       if (!existing || existing.length === 0) {
-        const patient = allPatients.find((p) => p.id === patientId);
-        setHistorySelections(['', '', '']);
+        // Pasien baru: tampilkan modal riwayat, pre-fill dari DB jika ada
+        const prefilled = ['', '', ''];
+        (recentHistory || []).forEach((r, i) => {
+          if (i < 3) prefilled[i] = r.therapist_id || '';
+        });
+        setHistorySelections(prefilled);
         setHistoryModal({ patientId, patientName: patient?.name || '' });
+      } else if (recentHistory && recentHistory.length > 0) {
+        // Pasien sudah punya riwayat: tampilkan modal juga agar bisa diperiksa/update
+        const prefilled = ['', '', ''];
+        recentHistory.forEach((r, i) => {
+          if (i < 3) prefilled[i] = r.therapist_id || '';
+        });
+        setHistorySelections(prefilled);
+        setHistoryModal({ patientId, patientName: patient?.name || '', existingHistoryIds: recentHistory.map((r) => r.id) });
       }
     } else {
       window.alert('Gagal menambah pasien: ' + error.message);
@@ -270,23 +291,47 @@ const RotasiDailySchedule = () => {
 
   const handleSaveHistory = async () => {
     if (!historyModal) return;
-    const filled = historySelections.filter((id) => id);
-    if (filled.length === 0) { setHistoryModal(null); return; }
     setHistorySaving(true);
-    // Simpan sebagai riwayat fiktif dengan visit_date mundur (null-date workaround)
-    // Kita pakai tanggal dummy: hari ini - 999, - 998, - 997 agar terurut
+    const existingIds = historyModal.existingHistoryIds || [];
     const base = new Date(date);
-    const rows = filled.map((therapistId, i) => ({
-      visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-      patient_id: historyModal.patientId,
-      therapist_id: therapistId,
-      slot_number: 0,
-      constraint_violated: false,
-    }));
-    const { error } = await supabase.from('rotasi_schedule').insert(rows);
-    if (error) window.alert('Gagal menyimpan riwayat: ' + error.message);
+
+    if (existingIds.length > 0) {
+      // Update baris yang sudah ada
+      for (let i = 0; i < existingIds.length; i++) {
+        const newTherapistId = historySelections[i];
+        if (!newTherapistId) {
+          await supabase.from('rotasi_schedule').delete().eq('id', existingIds[i]);
+        } else {
+          await supabase.from('rotasi_schedule').update({ therapist_id: newTherapistId }).eq('id', existingIds[i]);
+        }
+      }
+      // Kalau ada slot baru yang diisi (lebih dari existing), insert
+      for (let i = existingIds.length; i < 3; i++) {
+        if (historySelections[i]) {
+          await supabase.from('rotasi_schedule').insert({
+            visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            patient_id: historyModal.patientId,
+            therapist_id: historySelections[i],
+            slot_number: 0,
+            constraint_violated: false,
+          });
+        }
+      }
+    } else {
+      // Pasien benar-benar baru, insert semua yang diisi
+      const filled = historySelections.map((id, i) => id ? {
+        visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        patient_id: historyModal.patientId,
+        therapist_id: id,
+        slot_number: 0,
+        constraint_violated: false,
+      } : null).filter(Boolean);
+      if (filled.length > 0) {
+        const { error } = await supabase.from('rotasi_schedule').insert(filled);
+        if (error) window.alert('Gagal menyimpan riwayat: ' + error.message);
+      }
+    }
+
     setHistoryModal(null);
     setHistorySelections(['', '', '']);
     setHistorySaving(false);
