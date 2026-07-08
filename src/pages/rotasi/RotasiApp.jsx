@@ -6,6 +6,7 @@ import RotasiHistory from './RotasiHistory';
 import RotasiPatients from './RotasiPatients';
 import RotasiTherapists from './RotasiTherapists';
 import RotasiSetup from './RotasiSetup';
+import RotasiTemplateWA from './RotasiTemplateWA';
 
 const RotasiApp = () => {
   return (
@@ -17,6 +18,7 @@ const RotasiApp = () => {
         <Route path="/pasien" element={<RotasiPatients />} />
         <Route path="/terapis" element={<RotasiTherapists />} />
         <Route path="/setup" element={<RotasiSetup />} />
+        <Route path="/template-wa" element={<RotasiTemplateWA />} />
       </Routes>
     </RotasiLayout>
   );

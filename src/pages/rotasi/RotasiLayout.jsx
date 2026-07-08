@@ -3,11 +3,12 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const NAV = [
-  { to: '/rotasi/jadwal',  label: 'Jadwal',  icon: '📅', full: 'Jadwal Hari Ini' },
-  { to: '/rotasi/riwayat', label: 'Riwayat', icon: '📋', full: 'Riwayat'         },
-  { to: '/rotasi/pasien',  label: 'Pasien',  icon: '👤', full: 'Pasien'          },
-  { to: '/rotasi/terapis', label: 'Terapis', icon: '🏥', full: 'Terapis'         },
-  { to: '/rotasi/setup',   label: 'Setup',   icon: '⚙️', full: 'Setup'           },
+  { to: '/rotasi/jadwal',      label: 'Jadwal',    icon: '📅', full: 'Jadwal Hari Ini' },
+  { to: '/rotasi/riwayat',     label: 'Riwayat',   icon: '📋', full: 'Riwayat'         },
+  { to: '/rotasi/pasien',      label: 'Pasien',    icon: '👤', full: 'Pasien'          },
+  { to: '/rotasi/terapis',     label: 'Terapis',   icon: '🏥', full: 'Terapis'         },
+  { to: '/rotasi/template-wa', label: 'Template',  icon: '💬', full: 'Template WA'     },
+  { to: '/rotasi/setup',       label: 'Setup',     icon: '⚙️', full: 'Setup'           },
 ];
 
 const CSS = `
