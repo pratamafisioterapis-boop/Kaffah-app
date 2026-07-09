@@ -48,7 +48,7 @@ const AdminDashboardMetrics = ({ dateRange }) => {
       // 1. Fetch Daily Recaps
       const { data: recaps, error: recapsError } = await supabase
         .from('daily_recaps')
-        .select('id, patient_id, is_package_purchase, patient_type')
+        .select('id, patient_id, patient_type, package_type, amount')
         .gte('recap_date', dateRange.startDate)
         .lte('recap_date', dateRange.endDate);
 
@@ -92,13 +92,16 @@ const AdminDashboardMetrics = ({ dateRange }) => {
           totalFreeCount++;
         }
 
-        // Logic for Paket vs Non Paket based on sales (amount > 0)
-        // Note: Total Sesi counts ALL recaps, regardless of amount
-        if (recap.is_package_purchase === true) {
-  totalPaketCount++;
-} else {
-  totalNonPaketCount++;
-}
+        // Total Paket = package_type punya session_count > 1 DAN amount > 0 (bayar awal sesi)
+        const pkgLabel = normalize(recap.package_type || '');
+        const sessionCount = pkgLabel ? (packageSessionMap[pkgLabel] ?? 1) : 1;
+
+        if (sessionCount > 1 && parseFloat(recap.amount || 0) > 0) {
+          totalPaketCount++;
+        } else if (sessionCount <= 1) {
+          // Total Non Paket = package_type session_count = 1 (sesi tunggal / visit)
+          totalNonPaketCount++;
+        }
       });
 
       setMetrics({
