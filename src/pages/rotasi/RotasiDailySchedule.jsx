@@ -403,6 +403,7 @@ const RotasiDailySchedule = () => {
             therapist_id: historySelections[i],
             slot_number: 0,
             constraint_violated: false,
+            confirmed: true,
           });
         }
       }
@@ -414,6 +415,7 @@ const RotasiDailySchedule = () => {
         therapist_id: id,
         slot_number: 0,
         constraint_violated: false,
+        confirmed: true,
       } : null).filter(Boolean);
       if (filled.length > 0) {
         const { error } = await supabase.from('rotasi_schedule').insert(filled);
