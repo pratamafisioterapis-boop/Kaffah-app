@@ -449,6 +449,7 @@ const RotasiDailySchedule = () => {
           .select('patient_id, therapist_id, visit_date')
           .in('patient_id', dailyListIds)
           .lt('visit_date', date)
+          .eq('confirmed', true)
           .order('visit_date', { ascending: false }),
         supabase
           .from('rotasi_slots')
