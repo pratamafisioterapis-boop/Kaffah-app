@@ -191,6 +191,105 @@ const StatusBadge = ({ status }) => {
   return null;
 };
 
+// --- UnmatchedRecapPicker ---------------------------------------------------
+
+const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, matchedRecapIds = new Set() }) => {
+  React.useEffect(() => { onLoad(); }, []);
+
+  // Filter tanggal sesuai tipe transaksi
+  const relevantDates = new Set();
+  if (row.tipe === 'qris') {
+    // QRIS: hanya tanggal transaksi (dari deskripsi QR)
+    if (row.tgl_transaksi) relevantDates.add(row.tgl_transaksi);
+  } else if (row.tipe === 'transfer') {
+    // Transfer: tgl_masuk rekening sampai 3 hari setelahnya
+    const base = new Date(row.tgl_masuk + 'T12:00:00');
+    for (let d = 0; d <= 3; d++) {
+      const dt = new Date(base);
+      dt.setDate(dt.getDate() + d);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      relevantDates.add(`${y}-${m}-${day}`);
+    }
+  }
+  const candidates = allRecaps.filter(r => relevantDates.has(r.recap_date) && Number(r.amount) > 0);
+
+  if (!allRecaps.length) {
+    return <p className="text-xs text-slate-400 py-2">Memuat data recap...</p>;
+  }
+
+  if (!candidates.length) {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-amber-700">Pilih transaksi daily recap yang cocok:</p>
+        <p className="text-xs text-slate-400">Tidak ada recap di tanggal {row.tgl_masuk} / {row.tgl_transaksi}.</p>
+        <p className="text-xs text-slate-400">Cari di panel "Semua Transaksi Daily Recap" di bawah.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-amber-700">Pilih transaksi daily recap yang cocok dengan mutasi Rp {Number(row.nominal || row.amount).toLocaleString('id-ID')}:</p>
+      <div className="rounded-lg border overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-amber-50 border-b text-amber-800 uppercase tracking-wide">
+              <th className="px-3 py-2 text-left w-8">✓</th>
+              <th className="px-3 py-2 text-left">Pasien</th>
+              <th className="px-3 py-2 text-left">Tgl</th>
+              <th className="px-3 py-2 text-left">Metode</th>
+              <th className="px-3 py-2 text-left">Status</th>
+              <th className="px-3 py-2 text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {candidates.map(recap => {
+              const isChecked = mutasiChecks[recap.id]?.is_checked || false;
+              const isAlreadyMatched = matchedRecapIds.has(recap.id);
+              return (
+                <tr
+                  key={recap.id}
+                  onClick={() => onCheck(recap, !isChecked)}
+                  className={cn('border-b cursor-pointer transition-colors',
+                    isChecked ? 'bg-green-50' :
+                    isAlreadyMatched ? 'bg-blue-50/50' :
+                    'hover:bg-amber-50'
+                  )}
+                >
+                  <td className="px-3 py-2">
+                    <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center', isChecked ? 'bg-green-500 border-green-500' : 'border-slate-300')}>
+                      {isChecked && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 font-medium text-slate-800">{recap.patient_name}</td>
+                  <td className="px-3 py-2 text-slate-500">{recap.recap_date}</td>
+                  <td className="px-3 py-2 text-slate-500">{recap.payment_method || '-'}</td>
+                  <td className="px-3 py-2">
+                    {isChecked ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        <CheckCircle2 className="w-3 h-3" /> Dipilih
+                      </span>
+                    ) : isAlreadyMatched ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        ✓ Auto match
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right font-bold text-slate-800">{formatRp(recap.amount)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 // --- MonthStatusGrid ---------------------------------------------------------
 
 const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
@@ -289,7 +388,96 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedIdx, setExpandedIdx] = useState(null);
 
-  // Debit EDC states
+  // Check transaksi manual states
+  const [allRecapsForPeriod, setAllRecapsForPeriod] = useState([]);
+  const [showAllRecaps, setShowAllRecaps] = useState(false);
+  const [loadingAllRecaps, setLoadingAllRecaps] = useState(false);
+  const [mutasiChecks, setMutasiChecks] = useState({});
+
+  const loadAllRecapsForPeriod = useCallback(async () => {
+    if (!savedTransactions.length && !csvRows.length) return;
+    setLoadingAllRecaps(true);
+    try {
+      const txList = savedTransactions.length > 0 ? savedTransactions : csvRows.map(r => ({
+        tgl_masuk: r.masukDateStr,
+        tgl_transaksi: r.qrisTrxDateStr || r.masukDateStr,
+      }));
+      const allDates = [
+        ...txList.map(r => r.tgl_masuk),
+        ...txList.map(r => r.tgl_transaksi),
+      ].filter(Boolean).sort();
+      const minDate = allDates[0];
+      const maxDate = allDates[allDates.length - 1];
+
+      const { data: recaps } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
+        .gte('recap_date', minDate)
+        .lte('recap_date', maxDate)
+        .not('amount', 'is', null)
+        .gt('amount', 0)
+        .order('recap_date');
+
+      const allIds = (recaps || []).flatMap(r => [r.patient_id, r.actual_patient_id]).filter(Boolean);
+      let patientMap = {};
+      if (allIds.length > 0) {
+        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+        (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
+      }
+
+      const enriched = (recaps || []).map(r => ({
+        ...r,
+        patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-',
+      }));
+      setAllRecapsForPeriod(enriched);
+
+      // Load existing checks untuk mutasi_csv
+      const recapIds = enriched.map(r => r.id);
+      if (recapIds.length > 0) {
+        const { data: checks } = await supabase
+          .from('bsi_reconciliation_checks')
+          .select('*')
+          .eq('source_type', 'mutasi_csv')
+          .in('daily_recap_id', recapIds);
+        const checkMap = {};
+        (checks || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
+        setMutasiChecks(checkMap);
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    } finally {
+      setLoadingAllRecaps(false);
+    }
+  }, [savedTransactions, csvRows, toast]);
+
+  const handleMutasiCheck = useCallback(async (recap, isChecked) => {
+    const existing = mutasiChecks[recap.id];
+    const matchedMutasi = reconciled.find(r => r.matchedRecap?.id === recap.id);
+    const mutasiTxId = matchedMutasi ? (savedTransactions.find(s =>
+      s.tgl_masuk === matchedMutasi.tgl_masuk && Math.round(Number(s.nominal)) === Math.round(Number(matchedMutasi.nominal || matchedMutasi.amount))
+    )?.id || null) : null;
+
+    if (existing) {
+      const { data } = await supabase
+        .from('bsi_reconciliation_checks')
+        .update({ is_checked: isChecked, checked_by: user?.id, checked_at: isChecked ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+        .eq('id', existing.id).select().single();
+      if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
+    } else {
+      const { data } = await supabase
+        .from('bsi_reconciliation_checks')
+        .insert({
+          source_type: 'mutasi_csv',
+          mutasi_transaction_id: mutasiTxId,
+          daily_recap_id: recap.id,
+          is_checked: isChecked,
+          checked_by: user?.id,
+          checked_at: isChecked ? new Date().toISOString() : null,
+        }).select().single();
+      if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
+    }
+  }, [mutasiChecks, reconciled, savedTransactions, user]);
+
   const [debitEntries, setDebitEntries] = useState([]);
   const [debitParsing, setDebitParsing] = useState(false);
   const [debitLoadingRecaps, setDebitLoadingRecaps] = useState(false);
@@ -559,14 +747,23 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
               recapAmt >= mutasiAmt && recapAmt <= mutasiAmt + 15000;
           });
         } else if (row.tipe === 'debit') {
-          candidates = debitRecaps.filter(r => {
-            const recapAmt = Math.round(Number(r.amount));
-            return !usedIds.has(r.id) && recapAmt >= mutasiAmt && recapAmt <= mutasiAmt + 20000;
-          });
+          // Debit tidak dicocokan di CSV — pakai tab Debit EDC
+          candidates = [];
         } else if (row.tipe === 'transfer') {
+          // Transfer: cocokkan di tgl_masuk rekening sampai 3 hari setelahnya
+          const baseDate = new Date(tglMasuk + 'T12:00:00');
+          const transferDates = new Set();
+          for (let d = 0; d <= 3; d++) {
+            const dt = new Date(baseDate);
+            dt.setDate(dt.getDate() + d);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const day = String(dt.getDate()).padStart(2, '0');
+            transferDates.add(`${y}-${m}-${day}`);
+          }
           candidates = transferRecaps.filter(r => {
             const recapAmt = Math.round(Number(r.amount));
-            return !usedIds.has(r.id) && recapAmt === mutasiAmt && r.recap_date === tglMasuk;
+            return !usedIds.has(r.id) && recapAmt === mutasiAmt && transferDates.has(r.recap_date);
           });
         }
 
@@ -1012,21 +1209,18 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 <CardContent className="pt-4">
                   <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">Total</p>
                   <p className="text-2xl font-bold text-slate-800 mt-1">{summary.total}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{formatRp(summary.totalAmt)}</p>
                 </CardContent>
               </Card>
               <Card className="border-green-200 bg-green-50">
                 <CardContent className="pt-4">
                   <p className="text-xs text-green-700 uppercase font-semibold tracking-wide">Cocok</p>
                   <p className="text-2xl font-bold text-green-700 mt-1">{summary.matched}</p>
-                  <p className="text-xs text-green-600 mt-0.5">{formatRp(summary.matchedAmt)}</p>
                 </CardContent>
               </Card>
               <Card className="border-red-200 bg-red-50">
                 <CardContent className="pt-4">
                   <p className="text-xs text-red-700 uppercase font-semibold tracking-wide">Belum Cocok</p>
                   <p className="text-2xl font-bold text-red-700 mt-1">{summary.unmatched}</p>
-                  <p className="text-xs text-red-600 mt-0.5">{formatRp(summary.unmatchedAmt)}</p>
                 </CardContent>
               </Card>
               <Card className="border-slate-200">
@@ -1107,12 +1301,18 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                   <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
                                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} Lihat recap
                                   </button>
+                                ) : row.tipe === 'debit' ? (
+                                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                                    <CreditCard className="w-3.5 h-3.5" /> Lihat tab Debit EDC
+                                  </span>
                                 ) : (
-                                  <span className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Tidak ditemukan</span>
+                                  <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800">
+                                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} Pilih manual
+                                  </button>
                                 )}
                               </td>
                             </tr>
-                            {isExpanded && row.matchedRecap && (
+                            {isExpanded && row.status === 'matched' && row.matchedRecap && (
                               <tr className="bg-green-50 border-b">
                                 <td colSpan={7} className="px-4 py-3">
                                   <div className="flex flex-wrap gap-4 text-sm">
@@ -1121,6 +1321,20 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                     <div><span className="text-slate-500 text-xs uppercase font-semibold">Metode</span><p className="font-semibold text-slate-800">{row.matchedRecap.payment_method}</p></div>
                                     <div><span className="text-slate-500 text-xs uppercase font-semibold">Nominal Recap</span><p className="font-semibold text-green-700">{formatRp(row.matchedRecap.amount)}</p></div>
                                   </div>
+                                </td>
+                              </tr>
+                            )}
+                            {isExpanded && row.status === 'unmatched' && row.tipe !== 'debit' && (
+                              <tr className="border-b bg-amber-50/50">
+                                <td colSpan={7} className="px-4 py-3">
+                                  <UnmatchedRecapPicker
+                                    row={row}
+                                    allRecaps={allRecapsForPeriod}
+                                    mutasiChecks={mutasiChecks}
+                                    onCheck={handleMutasiCheck}
+                                    onLoad={() => { if (!allRecapsForPeriod.length) loadAllRecapsForPeriod(); }}
+                                    matchedRecapIds={new Set(reconciled.filter(r => r.matchedRecap).map(r => r.matchedRecap.id))}
+                                  />
                                 </td>
                               </tr>
                             )}
@@ -1136,6 +1350,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
               </CardContent>
             </Card>
           )}
+
+          
 
           {/* Saved transactions preview (before reconcile) */}
           {reconciled.length === 0 && savedTransactions.length > 0 && (
