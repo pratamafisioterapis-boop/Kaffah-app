@@ -204,7 +204,7 @@ const RotasiDailySchedule = () => {
       .from('rotasi_schedule')
       .select('id, visit_date, therapist_id')
       .eq('patient_id', patientId)
-      .lt('visit_date', date)
+      .eq('confirmed', true)
       .order('visit_date', { ascending: false })
       .limit(3);
     const therapistMap2 = {};
