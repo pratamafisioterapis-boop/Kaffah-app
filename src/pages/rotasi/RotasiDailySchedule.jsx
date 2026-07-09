@@ -431,6 +431,8 @@ const RotasiDailySchedule = () => {
   const handleGenerate = async () => {
     setGenerating(true);
     setMessage(null);
+    console.log('[Generate] Mulai generate untuk tanggal:', date);
+    console.log('[Generate] dailyListIds:', dailyListIds);
     try {
       if (therapists.length === 0) {
         throw new Error('Belum ada terapis aktif. Tambahkan terapis dulu di menu Terapis.');
@@ -461,6 +463,9 @@ const RotasiDailySchedule = () => {
           .eq('leave_date', date),
       ]);
 
+      console.log('[Generate] history:', history, 'histErr:', histErr);
+      console.log('[Generate] workingHours:', workingHoursRows, 'whErr:', whErr);
+      console.log('[Generate] leave:', leaveRows, 'leaveErr:', leaveErr);
       if (histErr) throw histErr;
       if (whErr) throw whErr;
       if (leaveErr) throw leaveErr;
@@ -558,7 +563,7 @@ const RotasiDailySchedule = () => {
         setMessage({ type: 'success', text: 'Jadwal berhasil dibuat.' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: `ERROR: ${err.message} | Stack: ${err.stack?.split('\n')[1] || ''}` });
     } finally {
       setGenerating(false);
     }
