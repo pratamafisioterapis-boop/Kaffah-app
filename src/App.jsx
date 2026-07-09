@@ -7,15 +7,19 @@ import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/customSupabaseClient';
-import PackageRecapsAdmin from '@/pages/admin/PackageRecaps';
-// Import Pages
+import DashboardLayout from '@/components/DashboardLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
+
+// Lazy Pages
 const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
 const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
 const PublicBookingPage = React.lazy(() => import('@/pages/PublicBookingPage'));
 const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
-import TherapistScheduleSettingsPage from '@/pages/owner/TherapistScheduleSettings';
+const TherapistScheduleSettingsPage = React.lazy(() => import('@/pages/owner/TherapistScheduleSettings'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
+const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
 const FollowUpManagementPage = React.lazy(() => import('@/pages/admin/FollowUpManagementPage'));
 
 // Dashboard Imports
@@ -24,11 +28,6 @@ const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard
 const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
 const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
 const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
-import DashboardLayout from '@/components/DashboardLayout';
-
-// Components
-import ProtectedRoute from '@/components/ProtectedRoute';
-import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 
 
 // Loading Component

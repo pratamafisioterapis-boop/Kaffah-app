@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import BSIMutasiReconciliation from '@/pages/owner/BSIMutasiReconciliation';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,7 +49,16 @@ import {
   fetchAllTherapists,
   fetchTodaySessionsPerTherapist
 } from '@/lib/api';
-
+const BSIMutasiReconciliation = React.lazy(() =>
+  import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
+    default: () => (
+      <div style={{ padding: 24, background: '#fef2f2', border: '2px solid #ef4444', borderRadius: 12, margin: 16 }}>
+        <h2 style={{ color: '#dc2626', fontWeight: 'bold', marginBottom: 8 }}>❌ Gagal Load BSIMutasiReconciliation</h2>
+        <pre style={{ color: '#7f1d1d', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{err?.toString()}{'\n'}{err?.stack}</pre>
+      </div>
+    )
+  }))
+);
 // Helper to safely extract numeric values
 const safeExtractNumber = (response) => {
   if (typeof response === 'number') return response;
@@ -442,7 +450,11 @@ const OwnerDashboard = () => {
         <Route path="/patients" element={<Navigate to="/owner/database-patients" replace />} />
         <Route path="/packages" element={<Navigate to="/owner/database-patients" replace />} />
         
-        <Route path="/bsi-reconciliation" element={<BSIMutasiReconciliation />} />
+        <Route path="/bsi-reconciliation" element={
+          <React.Suspense fallback={<div style={{ padding: 24 }}>⏳ Memuat Rekonsiliasi BSI...</div>}>
+            <BSIMutasiReconciliation />
+          </React.Suspense>
+        } />
 
         {/* Catch-all */}
         <Route path="/dashboard/*" element={<Navigate to="/owner/dashboard" replace />} />

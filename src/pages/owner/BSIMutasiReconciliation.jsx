@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   Upload, FileText, AlertTriangle, CheckCircle2, XCircle,
   QrCode, CreditCard, ArrowLeftRight, Search, RefreshCw,
-  ChevronDown, ChevronUp, Info, Calendar, CloudUpload,
-  CheckCircle, Clock, Trash2
+  ChevronDown, ChevronUp, Info, Calendar, UploadCloud,
+  CheckCircle, Clock, Trash2, FilePlus2, FileSearch2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -127,6 +127,55 @@ const generateMonthList = () => {
 
 const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
+// Parse PDF teks EDC BSI
+const parseDebitEDCPdf = async (file) => {
+  // Load pdf.js via script tag jika belum ada
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(item => item.str).join(' ') + '\n';
+  }
+
+  console.log('PDF Text:', fullText);
+
+  // Extract Report Date (format DDMMYYYY)
+  const dateMatch = fullText.match(/Report\s*Date\s+(\d{2})(\d{2})(\d{4})/i);
+  let reportDate = null;
+  if (dateMatch) {
+    const [, dd, mm, yyyy] = dateMatch;
+    reportDate = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Extract Sales Volume Total
+  const salesMatch = fullText.match(/Sales\s*Volume\s+Total\s+([\d,]+\.?\d*)/i);
+  let salesVolume = 0;
+  if (salesMatch) {
+    salesVolume = parseFloat(salesMatch[1].replace(/,/g, '')) || 0;
+  }
+
+  // Extract Account Name
+  const accountMatch = fullText.match(/BANK\s+SYARIAH\s+INDO[A-Z]*/i);
+  const accountName = accountMatch ? accountMatch[0] : 'BSI EDC';
+
+  return { reportDate, salesVolume, accountName, rawText: fullText };
+};
+
 // --- Sub-components ----------------------------------------------------------
 
 const TypeBadge = ({ tipe }) => {
@@ -240,15 +289,21 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedIdx, setExpandedIdx] = useState(null);
 
-  // Tab: 'upload' | 'check'
+  // Debit EDC states
+  const [debitEntries, setDebitEntries] = useState([]);
+  const [debitParsing, setDebitParsing] = useState(false);
+  const [debitLoadingRecaps, setDebitLoadingRecaps] = useState(false);
+  const [debitRecaps, setDebitRecaps] = useState({}); // { settlement_id: [recap, ...] }
+  const [debitChecks, setDebitChecks] = useState({}); // { recap_id: check_record }
+  const [debitFilterMonth, setDebitFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  // Tab: 'upload' | 'check' | 'debit'
   const [activeTab, setActiveTab] = useState(readOnly ? 'check' : 'upload');
 
-  // Load month status on mount
-  useEffect(() => {
-    loadMonthStatus();
-  }, []);
-
-  const loadMonthStatus = async () => {
+  const loadMonthStatus = useCallback(async () => {
     // Get all transactions grouped by tahun-bulan
     const { data, error } = await supabase
       .from('bsi_mutasi_transactions')
@@ -296,7 +351,12 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     });
 
     setUploadedMonths(result);
-  };
+  }, []);
+
+  // Load month status on mount
+  useEffect(() => {
+    loadMonthStatus();
+  }, [loadMonthStatus]);
 
   // Load transactions for selected month
   useEffect(() => {
@@ -548,6 +608,148 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     setExpandedIdx(null);
   };
 
+  // Handle Debit EDC PDF upload
+  const loadDebitSettlements = useCallback(async () => {
+    const [year, month] = debitFilterMonth.split('-').map(Number);
+    const { data } = await supabase
+      .from('bsi_debit_settlements')
+      .select('*')
+      .eq('tahun', year)
+      .eq('bulan', month)
+      .order('report_date');
+    setDebitEntries(data || []);
+  }, [debitFilterMonth]);
+
+  // Load debit settlements saat bulan berubah
+  useEffect(() => {
+    loadDebitSettlements();
+  }, [loadDebitSettlements]);
+
+  const handleDebitPdfUpload = useCallback(async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    e.target.value = '';
+    setDebitParsing(true);
+    for (const file of files) {
+      try {
+        const result = await parseDebitEDCPdf(file);
+        if (!result.reportDate || !result.salesVolume) {
+          toast({ variant: 'destructive', title: `Gagal parse: ${file.name}`, description: 'Tidak ditemukan Report Date atau Sales Volume.' });
+          continue;
+        }
+        const reportDateObj = new Date(result.reportDate + 'T12:00:00');
+        const bulan = reportDateObj.getMonth() + 1;
+        const tahun = reportDateObj.getFullYear();
+
+        // Simpan ke DB
+        const { data: saved, error } = await supabase
+          .from('bsi_debit_settlements')
+          .insert({
+            report_date: result.reportDate,
+            sales_volume: result.salesVolume,
+            account_name: result.accountName,
+            file_name: file.name,
+            bulan,
+            tahun,
+            uploaded_by: user?.id || null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        toast({ title: `✅ ${file.name}`, description: `Tgl: ${result.reportDate} | Rp ${result.salesVolume.toLocaleString('id-ID')} — tersimpan` });
+        await loadDebitSettlements();
+      } catch (err) {
+        toast({ variant: 'destructive', title: `Error: ${file.name}`, description: err.message });
+      }
+    }
+    setDebitParsing(false);
+  }, [toast, user]);
+
+  const handleRemoveDebitEntry = async (id) => {
+    if (!confirm('Hapus data settlement ini?')) return;
+    await supabase.from('bsi_debit_settlements').delete().eq('id', id);
+    await loadDebitSettlements();
+  };
+
+  const loadDebitRecapsForSettlement = useCallback(async (settlement) => {
+    setDebitLoadingRecaps(true);
+    const validDates = [];
+    for (let d = 0; d <= 10; d++) {
+      const dt = new Date(settlement.report_date + 'T12:00:00');
+      dt.setDate(dt.getDate() - d);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      validDates.push(`${y}-${m}-${day}`);
+    }
+
+    const DEBIT_UUID = '879709f1-9be0-4d2e-8006-a927ea96ff22';
+    const { data: recaps } = await supabase
+      .from('daily_recaps')
+      .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
+      .in('recap_date', validDates)
+      .not('amount', 'is', null)
+      .gt('amount', 0);
+
+    const debitRecapsOnly = (recaps || []).filter(r => {
+      const pm = (r.payment_method || '').toLowerCase();
+      return pm.includes('debit') || r.payment_method === DEBIT_UUID;
+    });
+
+    const allIds = debitRecapsOnly.map(r => r.patient_id).concat(debitRecapsOnly.map(r => r.actual_patient_id)).filter(Boolean);
+    let patientMap = {};
+    if (allIds.length > 0) {
+      const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+      (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
+    }
+
+    const enriched = debitRecapsOnly.map(r => ({
+      ...r,
+      patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-',
+    }));
+
+    setDebitRecaps(prev => ({ ...prev, [settlement.id]: enriched }));
+
+    // Load existing checks untuk settlement ini
+    const { data: checks } = await supabase
+      .from('bsi_reconciliation_checks')
+      .select('*')
+      .eq('debit_settlement_id', settlement.id);
+    const checkMap = {};
+    (checks || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
+    setDebitChecks(prev => ({ ...prev, ...checkMap }));
+
+    setDebitLoadingRecaps(false);
+  }, []);
+
+  const handleDebitCheck = useCallback(async (settlement, recap, isChecked) => {
+    const existingCheck = debitChecks[recap.id];
+    if (existingCheck) {
+      // Update
+      const { data } = await supabase
+        .from('bsi_reconciliation_checks')
+        .update({ is_checked: isChecked, checked_by: user?.id, checked_at: isChecked ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+        .eq('id', existingCheck.id)
+        .select().single();
+      if (data) setDebitChecks(prev => ({ ...prev, [recap.id]: data }));
+    } else {
+      // Insert
+      const { data } = await supabase
+        .from('bsi_reconciliation_checks')
+        .insert({
+          source_type: 'debit_settlement',
+          debit_settlement_id: settlement.id,
+          daily_recap_id: recap.id,
+          is_checked: isChecked,
+          checked_by: user?.id,
+          checked_at: isChecked ? new Date().toISOString() : null,
+        })
+        .select().single();
+      if (data) setDebitChecks(prev => ({ ...prev, [recap.id]: data }));
+    }
+  }, [debitChecks, user]);
+
   // Summary
   const summary = React.useMemo(() => {
     const matched = reconciled.filter(r => r.status === 'matched').length;
@@ -632,7 +834,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             )}
           >
-            <CloudUpload className="w-4 h-4 inline mr-1.5" />
+            <UploadCloud className="w-4 h-4 inline mr-1.5" />
             Upload CSV
           </button>
         )}
@@ -647,6 +849,18 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         >
           <CheckCircle2 className="w-4 h-4 inline mr-1.5" />
           Check Transaksi
+        </button>
+        <button
+          onClick={() => setActiveTab('debit')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'debit'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          )}
+        >
+          <CreditCard className="w-4 h-4 inline mr-1.5" />
+          Debit EDC
         </button>
       </div>
 
@@ -667,7 +881,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 {csvRows.length > 0 && (
                   <>
                     <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                      {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
+                      {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
                       Simpan ke Database
                     </Button>
                     <Button variant="outline" onClick={handleReset} className="gap-2">
@@ -964,6 +1178,164 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             <div className="text-center py-12 text-slate-400">
               <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p>Pilih bulan di grid atas untuk mulai crosscheck.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* -- DEBIT EDC TAB -- */}
+      {activeTab === 'debit' && (
+        <div className="space-y-4">
+          {/* Header: filter bulan + upload */}
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+                <label className={cn(
+                  'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 border-dashed transition-all text-sm font-medium',
+                  debitParsing ? 'border-blue-300 bg-blue-50 text-blue-400 cursor-not-allowed' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-600'
+                )}>
+                  {debitParsing ? <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" /> : <FilePlus2 className="w-4 h-4 text-blue-500" />}
+                  {debitParsing ? 'Memproses PDF...' : 'Upload PDF Settlement Debit'}
+                  <input type="file" accept=".pdf" multiple className="hidden" onChange={handleDebitPdfUpload} disabled={debitParsing} />
+                </label>
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Upload PDF "Ringkasan Tagihan" EDC BSI. Data transaksi akan tersimpan ke database.</p>
+            </CardContent>
+          </Card>
+
+          {/* Daftar settlement per bulan */}
+          {debitEntries.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Belum ada data settlement debit untuk bulan ini.</p>
+              <p className="text-xs mt-1 text-slate-300">Upload PDF untuk mulai.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {debitEntries.map(entry => {
+                const recapsForEntry = debitRecaps[entry.id] || null;
+                const checkedRecaps = recapsForEntry ? recapsForEntry.filter(r => debitChecks[r.id]?.is_checked) : [];
+                const totalChecked = checkedRecaps.reduce((s, r) => s + Number(r.amount), 0);
+                const isLoaded = recapsForEntry !== null;
+                const selisih = Math.round(entry.sales_volume) - Math.round(totalChecked);
+
+                return (
+                  <Card key={entry.id} className={cn('border-2', 
+                    checkedRecaps.length > 0 && selisih === 0 ? 'border-green-300' :
+                    checkedRecaps.length > 0 ? 'border-amber-300' : 'border-slate-200'
+                  )}>
+                    <CardContent className="pt-4 pb-4">
+                      {/* Header settlement */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                          {checkedRecaps.length > 0 && selisih === 0
+                            ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                            : <CreditCard className="w-4 h-4 text-blue-400 shrink-0" />}
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">{entry.file_name}</p>
+                            <p className="text-xs text-slate-400">{entry.account_name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="text-right">
+                            <p className="text-xs text-slate-500">Tgl Masuk Rekening</p>
+                            <p className="text-sm font-bold text-slate-800">{entry.report_date}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-500">Sales Volume (PDF)</p>
+                            <p className="text-sm font-bold text-slate-800">{formatRp(entry.sales_volume)}</p>
+                          </div>
+                          {checkedRecaps.length > 0 && (
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500">Total Dicentang</p>
+                              <p className={cn("text-sm font-bold", selisih === 0 ? 'text-green-600' : 'text-amber-600')}>{formatRp(totalChecked)}</p>
+                            </div>
+                          )}
+                          {checkedRecaps.length > 0 && selisih !== 0 && (
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500">Selisih</p>
+                              <p className="text-sm font-bold text-red-600">{formatRp(Math.abs(selisih))}</p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm" variant="outline"
+                              onClick={() => !isLoaded ? loadDebitRecapsForSettlement(entry) : setDebitRecaps(prev => { const n = {...prev}; delete n[entry.id]; return n; })}
+                              className="text-xs gap-1"
+                            >
+                              {debitLoadingRecaps ? <RefreshCw className="w-3 h-3 animate-spin" /> : <FileSearch2 className="w-3 h-3" />}
+                              {isLoaded ? 'Tutup' : 'Lihat Recap'}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleRemoveDebitEntry(entry.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabel recap debit — muncul saat diklik "Lihat Recap" */}
+                      {isLoaded && (
+                        <div className="mt-3 border rounded-xl overflow-hidden">
+                          <div className="bg-slate-50 px-4 py-2 flex items-center justify-between">
+                            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                              Transaksi Debit Daily Recap (10 hari sebelum {entry.report_date})
+                            </p>
+                            <p className="text-xs text-slate-400">{recapsForEntry.length} transaksi ditemukan</p>
+                          </div>
+                          {recapsForEntry.length === 0 ? (
+                            <div className="px-4 py-6 text-center text-slate-400 text-xs">
+                              Tidak ada transaksi debit di daily recap dalam 10 hari sebelum tanggal ini.
+                            </div>
+                          ) : (
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b text-xs text-slate-500 uppercase tracking-wide">
+                                  <th className="px-4 py-2 text-left w-10">✓</th>
+                                  <th className="px-4 py-2 text-left">Pasien</th>
+                                  <th className="px-4 py-2 text-left">Tgl Transaksi</th>
+                                  <th className="px-4 py-2 text-right">Nominal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {recapsForEntry.map(recap => {
+                                  const isChecked = debitChecks[recap.id]?.is_checked || false;
+                                  return (
+                                    <tr
+                                      key={recap.id}
+                                      className={cn('border-b transition-colors cursor-pointer hover:bg-slate-50',
+                                        isChecked ? 'bg-green-50' : ''
+                                      )}
+                                      onClick={() => handleDebitCheck(entry, recap, !isChecked)}
+                                    >
+                                      <td className="px-4 py-2.5">
+                                        <div className={cn(
+                                          'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
+                                          isChecked ? 'bg-green-500 border-green-500' : 'border-slate-300'
+                                        )}>
+                                          {isChecked && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-2.5 text-xs font-medium text-slate-800">{recap.patient_name}</td>
+                                      <td className="px-4 py-2.5 text-xs text-slate-500">{recap.recap_date}</td>
+                                      <td className="px-4 py-2.5 text-right text-xs font-bold text-slate-800">{formatRp(recap.amount)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                              <tfoot>
+                                <tr className="bg-slate-50 border-t">
+                                  <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-slate-600">Total dicentang</td>
+                                  <td className="px-4 py-2 text-right text-xs font-bold text-green-700">{formatRp(totalChecked)}</td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
