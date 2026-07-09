@@ -384,21 +384,23 @@ setFormData({
             }
 
             setDiagnosisOptions(Array.isArray(diagnoses?.data || diagnoses) ? (diagnoses?.data || diagnoses) : []);
-            const patientTypeArr = Array.isArray(pTypes?.data || pTypes) ? (pTypes?.data || pTypes) : [];
-setPatientTypeOptions(patientTypeArr);
+            const HIDDEN_PATIENT_TYPES = ['registered', 'guest'];
+            const patientTypeArr = (Array.isArray(pTypes?.data || pTypes) ? (pTypes?.data || pTypes) : [])
+              .filter(opt => !HIDDEN_PATIENT_TYPES.includes((opt.label || '').toLowerCase()));
+            setPatientTypeOptions(patientTypeArr);
 
-// 🔥 FIX: inject patient_type existing sebagai option jika berupa label (bukan UUID)
-if (mode === 'edit' && initialData?.patient_type) {
-    const existingType = initialData.patient_type;
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingType);
-    if (!isUUID) {
-        setPatientTypeOptions(prev => {
-            const exists = prev.some(opt => opt.value === existingType || opt.label === existingType);
-            if (exists) return prev;
-            return [...prev, { value: existingType, label: existingType }];
-        });
-    }
-}
+            // 🔥 FIX: inject patient_type existing sebagai option jika berupa label (bukan UUID)
+            if (mode === 'edit' && initialData?.patient_type) {
+                const existingType = initialData.patient_type;
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingType);
+                if (!isUUID && !HIDDEN_PATIENT_TYPES.includes(existingType.toLowerCase())) {
+                    setPatientTypeOptions(prev => {
+                        const exists = prev.some(opt => opt.value === existingType || opt.label === existingType);
+                        if (exists) return prev;
+                        return [...prev, { value: existingType, label: existingType }];
+                    });
+                }
+            }
             const rawPackages = Array.isArray(pkgs?.data || pkgs) ? (pkgs?.data || pkgs) : [];
 
             setPackageOptions(
@@ -449,8 +451,10 @@ if (mode === 'edit' && initialData?.patient_type) {
                     });
                 };
             
-                // ✅ FIELD YANG KOSONG KEMARIN
-                inject(setPatientTypeOptions, initialData.patient_type);
+                // ✅ FIELD YANG KOSONG KEMARIN (skip hidden types)
+                if (!HIDDEN_PATIENT_TYPES.includes((initialData.patient_type || '').toLowerCase())) {
+                    inject(setPatientTypeOptions, initialData.patient_type);
+                }
                 inject(setServiceOptions, initialData.service_type);
                 inject(setPaymentMethodOptions, initialData.payment_method);
             

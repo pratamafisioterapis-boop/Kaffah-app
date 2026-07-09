@@ -103,6 +103,7 @@ const OwnerDailyRecap = () => {
 
   const [dateErrors, setDateErrors] = useState({ start: '', end: '' });
   const [queryDateRange, setQueryDateRange] = useState(dateRange);
+  const [activeFilter, setActiveFilter] = useState('');
 
   const [limit, setLimit] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
@@ -286,6 +287,12 @@ const OwnerDailyRecap = () => {
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan harian klinik</p></div>
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+             <div className="flex gap-1.5">
+                <Button variant={activeFilter === 'today' ? 'default' : 'outline'} className={activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''} size="sm" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }}>Hari Ini</Button>
+                <Button variant={activeFilter === 'week' ? 'default' : 'outline'} className={activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''} size="sm" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Minggu Ini</Button>
+                <Button variant={activeFilter === 'month' ? 'default' : 'outline'} className={activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''} size="sm" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Bulan Ini</Button>
+                <Button variant={activeFilter === 'period' ? 'default' : 'outline'} className={activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''} size="sm" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Periode Ini</Button>
+             </div>
              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                 <div className="flex items-center px-2 text-xs font-medium text-slate-500"><Calendar className="w-3.5 h-3.5 mr-1.5" />Periode:</div>
                 <div className="relative">

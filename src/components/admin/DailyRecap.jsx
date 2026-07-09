@@ -551,6 +551,37 @@ const end = formatLocal(lastDay);
                 >
                   Bulan Ini
                 </Button>
+
+                <Button
+  variant={activeFilter === 'period' ? 'default' : 'outline'}
+  className={activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
+  size="sm"
+                  onClick={() => {
+                    const now = new Date();
+                    const formatLocal = (date) => {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      return `${y}-${m}-${d}`;
+                    };
+                    let start, end;
+                    if (now.getDate() >= 28) {
+                      start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28));
+                      end = formatLocal(new Date(now.getFullYear(), now.getMonth() + 1, 27));
+                    } else {
+                      start = formatLocal(new Date(now.getFullYear(), now.getMonth() - 1, 28));
+                      end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27));
+                    }
+                    setActiveFilter('period');
+                    setDateRange({ start, end });
+                    setDateRangeDisplay({
+                      start: displayDateID(start),
+                      end: displayDateID(end)
+                    });
+                  }}
+                >
+                  Periode Ini
+                </Button>
               </div>
             </div>
             {/* Filter Tanggal + Refresh + Terapis + Search */}

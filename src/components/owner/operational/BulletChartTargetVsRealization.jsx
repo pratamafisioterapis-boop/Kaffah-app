@@ -101,8 +101,6 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
         .lte('recap_date', fetchEnd);
 
       if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
-
-      if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
       console.log(`Fetched ${recaps?.length || 0} recaps.`);
 
       // 4. Calculate Realization Per Target
@@ -138,14 +136,14 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       const chartData = filteredTargets.map(target => {
          const targetStart = startOfDay(target.parsedStart);
          const targetEnd = endOfDay(target.parsedEnd);
-         const excludedTypes = target.excluded_patient_types || [];
+         const excludedTypes = [...(target.excluded_patient_types || []), 'registered', 'guest'];
 
          const actualCount = recaps.filter(r => {
             // Match pakai therapist_id (lebih reliable dari nama)
             if (r.therapist_id !== target.therapist_id) return false;
 
             // Filter excluded patient types
-            if (excludedTypes.length > 0 && excludedTypes.includes(r.patient_type)) return false;
+            if (excludedTypes.includes(r.patient_type)) return false;
 
             // Date check
             const rDate = parseISO(r.recap_date);
