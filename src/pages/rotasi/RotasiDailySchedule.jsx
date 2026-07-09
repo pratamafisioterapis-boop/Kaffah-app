@@ -398,7 +398,7 @@ const RotasiDailySchedule = () => {
       for (let i = existingIds.length; i < 3; i++) {
         if (historySelections[i]) {
           await supabase.from('rotasi_schedule').insert({
-            visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            visit_date: new Date(base.getTime() - (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             patient_id: historyModal.patientId,
             therapist_id: historySelections[i],
             slot_number: 0,
@@ -409,7 +409,7 @@ const RotasiDailySchedule = () => {
     } else {
       // Pasien benar-benar baru, insert semua yang diisi
       const filled = historySelections.map((id, i) => id ? {
-        visit_date: new Date(base.getTime() - (999 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        visit_date: new Date(base.getTime() - (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         patient_id: historyModal.patientId,
         therapist_id: id,
         slot_number: 0,
