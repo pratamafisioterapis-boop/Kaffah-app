@@ -159,13 +159,17 @@ const RotasiDailySchedule = () => {
         .from('rotasi_schedule')
         .select('id')
         .eq('patient_id', patientId)
+        .eq('confirmed', true)
+        .eq('cancelled', false)
         .limit(1);
       const patient = allPatients.find((p) => p.id === patientId);
-      // Ambil riwayat 3 sesi terakhir dari DB (ada atau tidak)
+      // Ambil riwayat 3 sesi terakhir dari DB (hanya yang sudah confirmed, ada atau tidak)
       const { data: recentHistory } = await supabase
         .from('rotasi_schedule')
         .select('id, therapist_id, visit_date')
         .eq('patient_id', patientId)
+        .eq('confirmed', true)
+        .eq('cancelled', false)
         .order('visit_date', { ascending: false })
         .limit(3);
 
@@ -332,6 +336,8 @@ const RotasiDailySchedule = () => {
             .from('rotasi_schedule')
             .select('id, therapist_id, visit_date')
             .eq('patient_id', closingReplaceId)
+            .eq('confirmed', true)
+            .eq('cancelled', false)
             .order('visit_date', { ascending: false })
             .limit(3);
 
