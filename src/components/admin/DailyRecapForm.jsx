@@ -488,6 +488,7 @@ const selectedDiagnosisLabels = diagnoses
 
 const selectedServiceLabel = services.find(s => s.value === formData.service_type)?.label || '';
 const selectedPatientTypeLabel = patientTypes.find(p => p.value === formData.patient_type)?.label || '';
+const selectedPaymentMethodLabel = paymentMethods.find(p => p.value === formData.payment_method)?.label || formData.payment_method || '';
 
 const selectedPackage = packageTypes.find(
   p => String(p.value) === String(formData.package_type_id)
@@ -517,7 +518,7 @@ therapist_id: formData.therapist_id,
 therapist_name: therapistName,
 amount_original: parseFloat(formData.amount) || 0,
 amount: parseFloat(formData.amount) || 0,
-payment_method: formData.payment_method,
+payment_method: selectedPaymentMethodLabel,
 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
 discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
 discount_label: formData.discount_label || null

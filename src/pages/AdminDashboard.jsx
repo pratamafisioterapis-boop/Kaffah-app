@@ -1,4 +1,4 @@
-
+import AdminCheckTransaksi from '@/pages/admin/AdminCheckTransaksi';
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
   CartesianGrid
 } from 'recharts';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/customSupabaseClient';
 // Import Pages/Components
 import DailyRecap from '@/components/admin/DailyRecap';
 import FollowUpManagementPage from '@/components/admin/FollowUpManagementPage'; 
@@ -30,7 +30,6 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
-import AdminAppointmentBooking from '@/components/admin/AdminAppointmentBooking';
 const HeroClock = () => {
   const [now, setNow] = React.useState(new Date());
   React.useEffect(() => {
@@ -837,6 +836,7 @@ const AdminDashboard = () => {
     { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
     { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' }, 
     { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
+    { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
   ];
 return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
@@ -861,6 +861,7 @@ return (
         
         {/* Accounting Route */}
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
+        <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
 
         {/* Redirects for legacy routes */}
         <Route path="/patients" element={<Navigate to="/admin/database-patients" replace />} />
