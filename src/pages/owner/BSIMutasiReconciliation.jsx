@@ -251,7 +251,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
               return (
                 <tr
                   key={recap.id}
-                  onClick={() => onCheck(recap, !isChecked)}
+                  onClick={() => onCheck(recap, !isChecked, row)}
                   className={cn('border-b cursor-pointer transition-colors',
                     isChecked ? 'bg-green-50' :
                     isAlreadyMatched ? 'bg-blue-50/50' :
@@ -450,17 +450,47 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     }
   }, [savedTransactions, csvRows, toast]);
 
-  const handleMutasiCheck = useCallback(async (recap, isChecked) => {
+  const handleMutasiCheck = useCallback(async (recap, isChecked, targetMutasiRow) => {
+    // targetMutasiRow = baris mutasi CSV yang sedang dibuka picker-nya
     const existing = mutasiChecks[recap.id];
-    const matchedMutasi = reconciled.find(r => r.matchedRecap?.id === recap.id);
-    const mutasiTxId = matchedMutasi ? (savedTransactions.find(s =>
-      s.tgl_masuk === matchedMutasi.tgl_masuk && Math.round(Number(s.nominal)) === Math.round(Number(matchedMutasi.nominal || matchedMutasi.amount))
-    )?.id || null) : null;
+
+    // Cari apakah recap ini sudah di-assign ke mutasi lain (auto-match atau manual)
+    const currentAssignment = reconciled.find(r => r.matchedRecap?.id === recap.id);
+    const isAutoMatched = !!currentAssignment;
+
+    // Jika isChecked=true dan recap sudah ada di auto-match mutasi lain → konfirmasi
+    if (isChecked && isAutoMatched && currentAssignment) {
+      const confirmMsg = `"${recap.patient_name}" saat ini sudah cocok otomatis dengan mutasi ${formatRp(currentAssignment.nominal || currentAssignment.amount)} (${currentAssignment.tgl_masuk}).\n\nYakin ingin memindahkan ke mutasi ${formatRp(targetMutasiRow?.nominal || targetMutasiRow?.amount)} ini?`;
+      if (!window.confirm(confirmMsg)) return;
+
+      // Hapus auto-match lama dari reconciled (update state lokal)
+      // Tandai recap ini sebagai "manual override" dengan hapus dari reconciled
+      setReconciled(prev => prev.map(r => {
+        if (r.matchedRecap?.id === recap.id) {
+          return { ...r, status: 'unmatched', matchedRecap: null, manualOverridden: true };
+        }
+        return r;
+      }));
+    }
+
+    // Cari mutasi_transaction_id dari targetMutasiRow
+    const mutasiTxId = targetMutasiRow
+      ? (savedTransactions.find(s =>
+          s.tgl_masuk === targetMutasiRow.tgl_masuk &&
+          Math.round(Number(s.nominal)) === Math.round(Number(targetMutasiRow.nominal || targetMutasiRow.amount))
+        )?.id || null)
+      : null;
 
     if (existing) {
       const { data } = await supabase
         .from('bsi_reconciliation_checks')
-        .update({ is_checked: isChecked, checked_by: user?.id, checked_at: isChecked ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+        .update({
+          is_checked: isChecked,
+          mutasi_transaction_id: isChecked ? mutasiTxId : null,
+          checked_by: user?.id,
+          checked_at: isChecked ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', existing.id).select().single();
       if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
     } else {
@@ -475,6 +505,93 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           checked_at: isChecked ? new Date().toISOString() : null,
         }).select().single();
       if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
+    }
+
+    // Update status baris mutasi target menjadi matched jika ada recap yang dipilih
+    if (targetMutasiRow) {
+      setReconciled(prev => prev.map(r => {
+        const isSameRow = r.tgl_masuk === targetMutasiRow.tgl_masuk &&
+          Math.round(Number(r.nominal || r.amount)) === Math.round(Number(targetMutasiRow.nominal || targetMutasiRow.amount)) &&
+          r.tipe === targetMutasiRow.tipe &&
+          r.deskripsi === targetMutasiRow.deskripsi;
+
+        if (!isSameRow) return r;
+
+        if (!isChecked) {
+          // Jika uncheck — cek apakah masih ada recap lain yang dipilih untuk mutasi ini
+          const remainingChecked = Object.entries({...mutasiChecks, [recap.id]: { is_checked: false }})
+            .filter(([, v]) => v?.is_checked)
+            .map(([k]) => k);
+          // Kalau tidak ada yang tersisa, kembalikan ke unmatched
+          const newManualRecaps = (r.manualRecaps || []).filter(mr => mr.id !== recap.id);
+          if (newManualRecaps.length === 0) {
+            return { ...r, status: 'unmatched', matchedRecap: null, manualRecaps: [] };
+          }
+          return { ...r, manualRecaps: newManualRecaps, matchedRecap: newManualRecaps[0] };
+        }
+
+        // Jika check — tambahkan recap ke manualRecaps
+        const existingManual = r.manualRecaps || [];
+        const alreadyIn = existingManual.find(mr => mr.id === recap.id);
+        const newManualRecaps = alreadyIn ? existingManual : [...existingManual, {
+          id: recap.id,
+          recap_date: recap.recap_date,
+          amount: recap.amount,
+          payment_method: recap.payment_method || '-',
+          patient_name: recap.patient_name || '-',
+        }];
+        return {
+          ...r,
+          status: 'matched',
+          matchedRecap: newManualRecaps[0], // tetap simpan 1 untuk kompatibilitas
+          manualRecaps: newManualRecaps,
+          isManualMatch: true,
+        };
+      }));
+    }
+
+    // Jika recap dipindahkan dari auto-match, coba auto-match ulang mutasi yang ditinggalkan
+    if (isChecked && isAutoMatched && currentAssignment) {
+      const orphanedMutasi = currentAssignment;
+      const orphanedAmt = Math.round(Number(orphanedMutasi.nominal || orphanedMutasi.amount));
+      const orphanedDate = orphanedMutasi.tgl_transaksi || orphanedMutasi.tgl_masuk;
+
+      // Cari recap lain di tanggal yang sama dengan nominal yang sama yang belum dipakai
+      const { data: candidates } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
+        .eq('recap_date', orphanedDate)
+        .eq('amount', orphanedAmt)
+        .not('id', 'eq', recap.id);
+
+      if (candidates && candidates.length > 0) {
+        // Cek apakah kandidat sudah dipakai di mutasiChecks
+        const usedRecapIds = new Set(
+          Object.entries(mutasiChecks)
+            .filter(([, v]) => v?.is_checked)
+            .map(([k]) => k)
+        );
+        const freeCandidate = candidates.find(c => !usedRecapIds.has(c.id));
+        if (freeCandidate) {
+          // Auto-assign kembali ke mutasi yang ditinggalkan
+          setReconciled(prev => prev.map(r => {
+            if (r === orphanedMutasi || (r.tgl_masuk === orphanedMutasi.tgl_masuk && Math.round(Number(r.nominal || r.amount)) === orphanedAmt)) {
+              return {
+                ...r,
+                status: 'matched',
+                matchedRecap: {
+                  id: freeCandidate.id,
+                  recap_date: freeCandidate.recap_date,
+                  amount: freeCandidate.amount,
+                  payment_method: freeCandidate.payment_method,
+                  patient_name: '-',
+                }
+              };
+            }
+            return r;
+          }));
+        }
+      }
     }
   }, [mutasiChecks, reconciled, savedTransactions, user]);
 
@@ -1312,21 +1429,54 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                 )}
                               </td>
                             </tr>
-                            {isExpanded && row.status === 'matched' && row.matchedRecap && (
+                            {isExpanded && row.status === 'matched' && row.matchedRecap && !row._editMode && (
                               <tr className="bg-green-50 border-b">
                                 <td colSpan={7} className="px-4 py-3">
-                                  <div className="flex flex-wrap gap-4 text-sm">
-                                    <div><span className="text-slate-500 text-xs uppercase font-semibold">Pasien</span><p className="font-semibold text-slate-800">{row.matchedRecap.patient_name}</p></div>
-                                    <div><span className="text-slate-500 text-xs uppercase font-semibold">Tgl Daily Recap</span><p className="font-semibold text-slate-800">{row.matchedRecap.recap_date}</p></div>
-                                    <div><span className="text-slate-500 text-xs uppercase font-semibold">Metode</span><p className="font-semibold text-slate-800">{row.matchedRecap.payment_method}</p></div>
-                                    <div><span className="text-slate-500 text-xs uppercase font-semibold">Nominal Recap</span><p className="font-semibold text-green-700">{formatRp(row.matchedRecap.amount)}</p></div>
+                                  <div className="flex flex-col gap-3">
+                                    {/* Tampil semua recap yang match */}
+                                    {(row.manualRecaps || [row.matchedRecap]).map((mr, i) => (
+                                      <div key={mr.id || i} className="flex flex-wrap gap-4 text-sm">
+                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Pasien</span><p className="font-semibold text-slate-800">{mr.patient_name}</p></div>
+                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Tgl Daily Recap</span><p className="font-semibold text-slate-800">{mr.recap_date}</p></div>
+                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Metode</span><p className="font-semibold text-slate-800">{mr.payment_method}</p></div>
+                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Nominal Recap</span><p className="font-semibold text-green-700">{formatRp(mr.amount)}</p></div>
+                                      </div>
+                                    ))}
+                                    {/* Total jika lebih dari 1 */}
+                                    {row.manualRecaps && row.manualRecaps.length > 1 && (
+                                      <div className="flex justify-between items-center pt-2 border-t border-green-200">
+                                        <span className="text-xs font-semibold text-green-700">Total ({row.manualRecaps.length} transaksi)</span>
+                                        <span className="text-sm font-bold text-green-700">{formatRp(row.manualRecaps.reduce((s, mr) => s + Number(mr.amount), 0))}</span>
+                                      </div>
+                                    )}
+                                    {row.tipe !== 'debit' && (
+                                      <div className="flex justify-end">
+                                        <button
+                                          onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: true} : r))}
+                                          className="text-xs text-amber-600 hover:text-amber-800 flex items-center gap-1 border border-amber-300 rounded px-2 py-1 bg-white"
+                                        >
+                                          ✏️ Ubah Match
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
                             )}
-                            {isExpanded && row.status === 'unmatched' && row.tipe !== 'debit' && (
+                            {isExpanded && (row.status === 'unmatched' || row._editMode) && row.tipe !== 'debit' && (
                               <tr className="border-b bg-amber-50/50">
                                 <td colSpan={7} className="px-4 py-3">
+                                  {row._editMode && (
+                                    <div className="mb-2 flex items-center justify-between">
+                                      <p className="text-xs text-amber-700 font-semibold">Mode Edit — pilih ulang transaksi yang cocok:</p>
+                                      <button
+                                        onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: false} : r))}
+                                        className="text-xs text-slate-500 hover:text-slate-700"
+                                      >
+                                        Batal
+                                      </button>
+                                    </div>
+                                  )}
                                   <UnmatchedRecapPicker
                                     row={row}
                                     allRecaps={allRecapsForPeriod}
