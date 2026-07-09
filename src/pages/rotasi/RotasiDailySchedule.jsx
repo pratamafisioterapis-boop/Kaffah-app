@@ -35,6 +35,12 @@ const RotasiDailySchedule = () => {
   const [historyViewEditing, setHistoryViewEditing] = useState({}); // { [rowId]: therapistId }
   const [historyViewSaving, setHistoryViewSaving] = useState(false);
 
+  // State untuk modal cancel pasien (setelah jadwal dikonfirmasi)
+  const [cancelModal, setCancelModal] = useState(null); // { patientId, patientName, scheduleId }
+  const [cancelReplaceId, setCancelReplaceId] = useState('');
+  const [cancelReplaceSearch, setCancelReplaceSearch] = useState('');
+  const [cancelSaving, setCancelSaving] = useState(false);
+
   useEffect(() => {
     loadStatic();
   }, []);
@@ -70,10 +76,9 @@ const RotasiDailySchedule = () => {
   const loadForDate = async (d) => {
     setLoading(true);
     setMessage(null);
-    setConfirmed(false);
     const [{ data: list }, { data: sched }, { data: gslots }] = await Promise.all([
       supabase.from('rotasi_daily_list').select('patient_id, global_slot_id').eq('visit_date', d),
-      supabase.from('rotasi_schedule').select('*').eq('visit_date', d),
+      supabase.from('rotasi_schedule').select('*').eq('visit_date', d).eq('cancelled', false),
       supabase.from('rotasi_global_slots').select('*').eq('slot_date', d).order('start_time', { ascending: true }),
     ]);
     setDailyListIds((list || []).map((r) => r.patient_id));
@@ -85,6 +90,8 @@ const RotasiDailySchedule = () => {
     setSchedule(sched || []);
     setGlobalSlots(gslots || []);
     setSelectedSlotId('');
+    const isConfirmed = (sched || []).some((r) => r.confirmed === true);
+    setConfirmed(isConfirmed);
     setLoading(false);
   };
 
@@ -276,6 +283,88 @@ const RotasiDailySchedule = () => {
     setSchedule((prev) => prev.filter((s) => s.patient_id !== patientId));
   };
 
+  const handleCancelPatient = async () => {
+    if (!cancelModal) return;
+    if (!window.confirm(`Batalkan kunjungan ${cancelModal.patientName} dari jadwal ini? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setCancelSaving(true);
+    try {
+      const cancelledSlotId = dailySlotMap[cancelModal.patientId] || null;
+
+      // 1. Hapus row riwayat pasien A di tanggal ini (cancelled = true tidak cukup, riwayat harus bersih)
+      await supabase
+        .from('rotasi_schedule')
+        .delete()
+        .eq('id', cancelModal.scheduleId);
+
+      // 2. Hapus dari rotasi_daily_list
+      await supabase
+        .from('rotasi_daily_list')
+        .delete()
+        .eq('visit_date', date)
+        .eq('patient_id', cancelModal.patientId);
+
+      // 3. Update state lokal
+      setSchedule((prev) => prev.filter((s) => s.id !== cancelModal.scheduleId));
+      setDailyListIds((prev) => prev.filter((id) => id !== cancelModal.patientId));
+      setDailySlotMap((prev) => {
+        const next = { ...prev };
+        delete next[cancelModal.patientId];
+        return next;
+      });
+
+      const closingModal = { ...cancelModal };
+      const closingReplaceId = cancelReplaceId;
+      setCancelModal(null);
+      setCancelReplaceId('');
+      setCancelReplaceSearch('');
+
+      // 4. Kalau ada pasien pengganti, tambahkan ke list lalu cek riwayatnya
+      if (closingReplaceId) {
+        const { error: listErr } = await supabase
+          .from('rotasi_daily_list')
+          .upsert({ visit_date: date, patient_id: closingReplaceId, global_slot_id: cancelledSlotId }, { onConflict: 'visit_date,patient_id' });
+        if (!listErr) {
+          setDailyListIds((prev) => [...prev, closingReplaceId]);
+          setDailySlotMap((prev) => ({ ...prev, [closingReplaceId]: cancelledSlotId }));
+
+          // Cek apakah pasien pengganti punya riwayat
+          const { data: recentHistory } = await supabase
+            .from('rotasi_schedule')
+            .select('id, therapist_id, visit_date')
+            .eq('patient_id', closingReplaceId)
+            .order('visit_date', { ascending: false })
+            .limit(3);
+
+          const patient = allPatients.find((p) => p.id === closingReplaceId);
+          const prefilled = ['', '', ''];
+          (recentHistory || []).forEach((r, i) => {
+            if (i < 3) prefilled[i] = r.therapist_id || '';
+          });
+
+          if (!recentHistory || recentHistory.length === 0) {
+            // Pasien belum punya riwayat sama sekali → tampilkan modal riwayat
+            setHistorySelections(prefilled);
+            setHistoryModal({
+              patientId: closingReplaceId,
+              patientName: patient?.name || '',
+              existingHistoryIds: [],
+              afterCancelSlotId: cancelledSlotId,
+            });
+            setMessage({ type: 'success', text: `${closingModal.patientName} dibatalkan. ${patient?.name} ditambahkan sebagai pengganti. Isi riwayat lalu generate ulang.` });
+          } else {
+            // Sudah ada riwayat → langsung tanpa modal
+            setMessage({ type: 'success', text: `${closingModal.patientName} dibatalkan. ${patient?.name} ditambahkan sebagai pengganti. Silakan generate ulang jadwal.` });
+          }
+        }
+      } else {
+        setMessage({ type: 'success', text: `Kunjungan ${closingModal.patientName} berhasil dibatalkan.` });
+      }
+    } catch (err) {
+      window.alert('Gagal membatalkan: ' + err.message);
+    }
+    setCancelSaving(false);
+  };
+
   const handleMovePatientSlot = async (patientId, newSlotId) => {
     const { error } = await supabase
       .from('rotasi_daily_list')
@@ -408,33 +497,37 @@ const RotasiDailySchedule = () => {
         constraint_violated: r.constraint_violated,
       }));
 
-      // Hapus hanya baris yang BELUM dikonfirmasi dan tidak ada di jadwal hari ini
-      // Baris confirmed = true TIDAK PERNAH disentuh
-      const patientIdsToday = rows.map((r) => r.patient_id);
+      // Ambil semua baris existing hari ini
       const { data: existingRows } = await supabase
         .from('rotasi_schedule')
-        .select('id, patient_id, confirmed')
+        .select('id, patient_id, confirmed, cancelled')
         .eq('visit_date', date);
 
+      // Patient ID yang sudah confirmed dan TIDAK cancelled = tidak boleh diubah sama sekali
+      const lockedPatientIds = new Set(
+        (existingRows || [])
+          .filter((r) => r.confirmed && !r.cancelled)
+          .map((r) => r.patient_id)
+      );
+
+      // Hanya upsert baris untuk pasien yang TIDAK locked
+      const rowsToUpsert = rows.filter((r) => !lockedPatientIds.has(r.patient_id));
+
+      // Hapus baris tidak confirmed + tidak cancelled yang tidak ada di list hari ini
+      const patientIdsToday = rows.map((r) => r.patient_id);
       const toDelete = (existingRows || [])
-        .filter((r) => !r.confirmed && !patientIdsToday.includes(r.patient_id))
+        .filter((r) => !r.confirmed && !r.cancelled && !patientIdsToday.includes(r.patient_id))
         .map((r) => r.id);
       if (toDelete.length > 0) {
         await supabase.from('rotasi_schedule').delete().in('id', toDelete);
       }
 
-      // Hanya insert/update baris yang BELUM dikonfirmasi
-      // Baris confirmed = true dibiarkan apa adanya
-      const confirmedPatientIds = new Set(
-        (existingRows || []).filter((r) => r.confirmed).map((r) => r.patient_id)
-      );
-      const rowsToUpsert = rows.filter((r) => !confirmedPatientIds.has(r.patient_id));
-
       if (rowsToUpsert.length === 0) {
         const { data: allExisting } = await supabase
           .from('rotasi_schedule')
           .select('*')
-          .eq('visit_date', date);
+          .eq('visit_date', date)
+          .eq('cancelled', false);
         setSchedule(allExisting || []);
         return;
       }
@@ -445,11 +538,12 @@ const RotasiDailySchedule = () => {
         .select();
       if (insErr) throw insErr;
 
-      // Merge: baris confirmed yang tidak diubah + baris baru hasil upsert
+      // Ambil ulang semua baris (exclude cancelled)
       const { data: allAfter } = await supabase
         .from('rotasi_schedule')
         .select('*')
-        .eq('visit_date', date);
+        .eq('visit_date', date)
+        .eq('cancelled', false);
       setSchedule(allAfter || []);
 
       if (unassigned.length > 0) {
@@ -704,12 +798,28 @@ const RotasiDailySchedule = () => {
                           <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {patientMap[id]?.name || '...'}
                           </span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRemovePatient(id); }}
-                            style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700, marginLeft: 8, flexShrink: 0 }}
-                          >
-                            ×
-                          </button>
+                          {confirmed ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const sched = schedule.find((s) => s.patient_id === id);
+                                setCancelModal({ patientId: id, patientName: patientMap[id]?.name || id, scheduleId: sched?.id });
+                                setCancelReplaceId('');
+                                setCancelReplaceSearch('');
+                              }}
+                              title="Batalkan kunjungan pasien ini"
+                              style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: 700, marginLeft: 8, flexShrink: 0 }}
+                            >
+                              ✕
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemovePatient(id); }}
+                              style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700, marginLeft: 8, flexShrink: 0 }}
+                            >
+                              ×
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -850,7 +960,7 @@ const RotasiDailySchedule = () => {
                       >
                         <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>{th.name}</div>
                         {row ? (
-                          <div>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
                             <div
                               onClick={() => openHistoryView(row.patient_id, patientMap[row.patient_id]?.name || '-')}
                               style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}
@@ -859,6 +969,20 @@ const RotasiDailySchedule = () => {
                               {patientMap[row.patient_id]?.name || '-'}
                               {row.constraint_violated && <span style={{ marginLeft: 6 }}>⚠️</span>}
                             </div>
+                            {confirmed && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCancelModal({ patientId: row.patient_id, patientName: patientMap[row.patient_id]?.name || '-', scheduleId: row.id });
+                                  setCancelReplaceId('');
+                                  setCancelReplaceSearch('');
+                                }}
+                                title="Batalkan kunjungan pasien ini"
+                                style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: 700, fontSize: 14, padding: 0, flexShrink: 0, lineHeight: 1 }}
+                              >
+                                ✕
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div style={{ fontSize: 13, color: '#cbd5e1' }}>-</div>
@@ -992,6 +1116,83 @@ const RotasiDailySchedule = () => {
                 }}
               >
                 {historySaving ? 'Menyimpan...' : 'Simpan Riwayat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    {/* Modal Cancel Pasien */}
+      {cancelModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(15,23,42,0.18)' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>Batalkan Kunjungan</div>
+            <p style={{ fontSize: 14, color: '#64748b', marginTop: 0, marginBottom: 20 }}>
+              Pasien <strong>{cancelModal.patientName}</strong> akan dihapus dari jadwal hari ini.
+            </p>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>Pasien Pengganti (opsional)</div>
+              <input
+                value={cancelReplaceSearch}
+                onChange={(e) => {
+                  setCancelReplaceSearch(e.target.value);
+                  setCancelReplaceId('');
+                }}
+                placeholder="Cari nama pasien pengganti..."
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, boxSizing: 'border-box', outline: 'none' }}
+              />
+              {cancelReplaceSearch.trim() && (
+                <div style={{ marginTop: 4, border: '1px solid #e2e8f0', borderRadius: 8, maxHeight: 160, overflowY: 'auto', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                  {allPatients
+                    .filter((p) =>
+                      p.id !== cancelModal.patientId &&
+                      !dailyListIds.includes(p.id) &&
+                      p.name.toLowerCase().includes(cancelReplaceSearch.toLowerCase())
+                    )
+                    .slice(0, 8)
+                    .map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => { setCancelReplaceId(p.id); setCancelReplaceSearch(p.name); }}
+                        style={{
+                          padding: '9px 14px', cursor: 'pointer', fontSize: 13,
+                          background: cancelReplaceId === p.id ? '#eff6ff' : 'transparent',
+                          color: '#0f172a',
+                        }}
+                      >
+                        {p.name}
+                      </div>
+                    ))}
+                  {allPatients.filter((p) =>
+                    p.id !== cancelModal.patientId &&
+                    !dailyListIds.includes(p.id) &&
+                    p.name.toLowerCase().includes(cancelReplaceSearch.toLowerCase())
+                  ).length === 0 && (
+                    <div style={{ padding: '9px 14px', fontSize: 13, color: '#94a3b8' }}>Tidak ada pasien ditemukan</div>
+                  )}
+                </div>
+              )}
+              {cancelReplaceId && (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
+                  ✓ {patientMap[cancelReplaceId]?.name} dipilih sebagai pengganti
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setCancelModal(null); setCancelReplaceId(''); setCancelReplaceSearch(''); }}
+                disabled={cancelSaving}
+                style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+              >
+                Tutup
+              </button>
+              <button
+                onClick={handleCancelPatient}
+                disabled={cancelSaving}
+                style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                {cancelSaving ? 'Memproses...' : 'Batalkan Kunjungan'}
               </button>
             </div>
           </div>
