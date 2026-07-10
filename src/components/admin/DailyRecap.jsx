@@ -3,9 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square, 
-  ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3
+  ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3, CreditCard
 } from 'lucide-react';
-import { getDailyRecaps, getPhysiotherapists } from '@/lib/api';
+import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -64,7 +64,7 @@ const renderPatientName = (recap) => {
   );
 };
 
-const DailyRecap = ({ hideControls = false }) => {
+const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const location = useLocation();
   const { toast } = useToast();
   const isMounted = useRef(true);
@@ -74,6 +74,9 @@ const DailyRecap = ({ hideControls = false }) => {
   const [recaps, setRecaps] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [selectedTherapist, setSelectedTherapist] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
   const therapistOptions = useMemo(() => {
   const map = new Map();
 
@@ -180,6 +183,40 @@ useEffect(() => {
     fetchOptions();
   }, []);
 
+  useEffect(() => {
+    if (!showPaymentFilter) return;
+    const fetchPaymentMethods = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+      const { data } = await supabase
+        .from('operational_options')
+        .select('id, label')
+        .eq('category', 'payment_method')
+        .eq('clinic_id', userRow?.clinic_id)
+        .eq('is_active', true);
+      setPaymentMethodOptions(data || []);
+    };
+    fetchPaymentMethods();
+  }, [showPaymentFilter]);
+
+  useEffect(() => {
+    if (!showPaymentFilter) return;
+    const fetchTotal = async () => {
+      if (!queryDateRange.start || !queryDateRange.end) return;
+      const { data } = await getDailyRecapsTotalAmount({
+        startDate: queryDateRange.start,
+        endDate: queryDateRange.end,
+        search: debouncedSearch,
+        therapistId: selectedTherapist || null,
+        paymentMethod: selectedPaymentMethod || null,
+      });
+      if (isMounted.current) setTotalAmount(data || 0);
+    };
+    fetchTotal();
+  }, [showPaymentFilter, queryDateRange, debouncedSearch, selectedTherapist, selectedPaymentMethod]);
+
   useEffect(() => { setCurrentPage(1); if (queryDateRange?.start && queryDateRange?.end) { localStorage.setItem(
   "admin_daily_recap_date_range",
   JSON.stringify({
@@ -205,7 +242,8 @@ useEffect(() => {
   debouncedSearch, 
   sortConfig, 
   lastSyncTime, 
-  selectedTherapist
+  selectedTherapist,
+  selectedPaymentMethod
 ]);
   useEffect(() => {
   const interval = setInterval(() => {
@@ -241,6 +279,7 @@ useEffect(() => {
   endDate: queryDateRange.end,
   search: debouncedSearch,
   therapistId: selectedTherapist || null, // 🔥 TAMBAH INI
+  paymentMethod: showPaymentFilter ? (selectedPaymentMethod || null) : null,
   limit,
   offset: (currentPage - 1) * limit,
   sort: sortConfig
@@ -274,7 +313,7 @@ end_time: r.end_time,
     } finally { 
       if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist, selectedPaymentMethod]);
 
   const handleRowClick = (recap) => {
     setSelectedRecap(recap);
@@ -676,6 +715,26 @@ const end = formatLocal(lastDay);
     </svg>
   </div>
 </div>
+            {showPaymentFilter && (
+              <>
+                <div className="flex items-center px-3 h-9 rounded-md bg-emerald-50 border border-emerald-200 shrink-0">
+                    <span className="text-xs font-bold text-emerald-700 whitespace-nowrap">Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                </div>
+                <div className="relative">
+                    <CreditCard className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+                    <select
+                        value={selectedPaymentMethod}
+                        onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
+                        className={`h-9 rounded-md pl-9 pr-8 text-sm appearance-none cursor-pointer border ${selectedPaymentMethod ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'}`}
+                    >
+                        <option value="">Semua Metode</option>
+                        {paymentMethodOptions.map((pm) => (
+                            <option key={pm.id} value={pm.label}>{pm.label}</option>
+                        ))}
+                    </select>
+                </div>
+              </>
+            )}
             <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={cn(isPWA ? "w-full" : "w-[180px]")} />
               </div>
             </div>

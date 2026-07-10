@@ -1029,6 +1029,7 @@ export const getDailyRecaps = async ({
   endDate, 
   search = '', 
   therapistId = null, // 🔥 TAMBAH INI
+  paymentMethod = null,
   limit = 20, 
   offset = 0, 
   sort = { key: 'recap_date', direction: 'desc' } 
@@ -1094,6 +1095,10 @@ export const getDailyRecaps = async ({
     if (therapistId) {
   query = query.eq('therapist_id', therapistId);
 }
+
+    if (paymentMethod) {
+  query = query.eq('payment_method', paymentMethod);
+}
  
     if (search && search.trim()) {
       const q = search.trim();
@@ -1127,6 +1132,33 @@ export const getDailyRecaps = async ({
  
     return { data: enrichedData, count, error: null };
   }, 'getDailyRecaps', { retry: true });
+};
+
+export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
+  return safeQuery(async () => {
+    let query = supabase.from('daily_recaps').select('amount');
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+    if (therapistId) query = query.eq('therapist_id', therapistId);
+    if (paymentMethod) query = query.eq('payment_method', paymentMethod);
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
+      const foundIds = foundPatients?.map(p => p.id) || [];
+      if (foundIds.length > 0) {
+        query = query.or(`patient_id.in.(${foundIds.join(',')}),actual_patient_id.in.(${foundIds.join(',')}),guest_name.ilike.%${q}%`);
+      } else {
+        query = query.ilike('guest_name', `%${q}%`);
+      }
+    }
+
+    const { data, error } = await query;
+    if (error) return { error };
+    const total = (data || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    return { data: total, error: null };
+  }, 'getDailyRecapsTotalAmount', { retry: true });
 };
 
 // ============================================

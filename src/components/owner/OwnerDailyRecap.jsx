@@ -102,7 +102,7 @@ const OwnerDailyRecap = () => {
         </div>
       )}
       {/* Re-use the Admin Component for viewing/managing individual items */}
-      <DailyRecap />
+      <DailyRecap showPaymentFilter />
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
