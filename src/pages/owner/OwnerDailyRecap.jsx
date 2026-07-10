@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3
+  Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -78,6 +78,9 @@ const OwnerDailyRecap = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
 
   // Date Pickers
   const [showStartCalendar, setShowStartCalendar] = useState(false);
@@ -131,6 +134,18 @@ const OwnerDailyRecap = () => {
     fetchOptions();
   }, []);
 
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      const { data } = await supabase
+        .from('operational_options')
+        .select('id, label')
+        .eq('category', 'payment_method')
+        .eq('is_active', true);
+      setPaymentMethodOptions(data || []);
+    };
+    fetchPaymentMethods();
+  }, []);
+
   useEffect(() => { setCurrentPage(1); if (queryDateRange?.start) localStorage.setItem("dailyRecapDateFilter", JSON.stringify(queryDateRange)); }, [queryDateRange]);
   useEffect(() => { const timer = setTimeout(() => { setDebouncedSearch(searchTerm); setCurrentPage(1); }, 500); return () => clearTimeout(timer); }, [searchTerm]);
   
@@ -141,7 +156,7 @@ const OwnerDailyRecap = () => {
     }
   }, [dateRange, dateErrors]);
 
-  useEffect(() => { fetchRecaps(); }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, lastSyncTime]);
+  useEffect(() => { fetchRecaps(); }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, lastSyncTime, selectedPaymentMethod]);
 
   const fetchRecaps = useCallback(async () => {
     if (!queryDateRange.start || !queryDateRange.end) return;
@@ -157,6 +172,10 @@ const OwnerDailyRecap = () => {
             `, { count: 'exact' })
             .gte('recap_date', queryDateRange.start)
             .lte('recap_date', queryDateRange.end);
+
+      if (selectedPaymentMethod) {
+        query = query.eq('payment_method', selectedPaymentMethod);
+      }
 
       if (debouncedSearch.trim()) {
         const q = debouncedSearch.trim();
@@ -200,7 +219,42 @@ const OwnerDailyRecap = () => {
     } finally { 
         if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, selectedPaymentMethod]);
+
+  const fetchTotalAmount = useCallback(async () => {
+    if (!queryDateRange.start || !queryDateRange.end) return;
+    try {
+      let query = supabase
+        .from('daily_recaps')
+        .select('amount')
+        .gte('recap_date', queryDateRange.start)
+        .lte('recap_date', queryDateRange.end);
+
+      if (selectedPaymentMethod) {
+        query = query.eq('payment_method', selectedPaymentMethod);
+      }
+
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.trim();
+        const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
+        const foundIds = foundPatients?.map(p => p.id) || [];
+        if (foundIds.length > 0) {
+          query = query.or(`patient_id.in.(${foundIds.join(',')}),actual_patient_id.in.(${foundIds.join(',')}),guest_name.ilike.%${q}%`);
+        } else {
+          query = query.ilike('guest_name', `%${q}%`);
+        }
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      const sum = (data || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      if (isMounted.current) setTotalAmount(sum);
+    } catch (err) {
+      console.error("❌ Error fetching total amount", err);
+    }
+  }, [queryDateRange, debouncedSearch, selectedPaymentMethod]);
+
+  useEffect(() => { fetchTotalAmount(); }, [fetchTotalAmount]);
 
   const handleStartTime = async (e, recapId) => {
       e.stopPropagation();
@@ -305,6 +359,22 @@ const OwnerDailyRecap = () => {
                     {showEndCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(val) => { setDateRange(p => ({...p, end: val})); setDateRangeDisplay(p => ({...p, end: displayDateID(val)})); setShowEndCalendar(false); }} onClose={() => setShowEndCalendar(false)} /></div>)}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => fetchRecaps()} className="h-8"><RefreshCcw className="w-3.5 h-3.5" /></Button>
+                <div className="flex items-center px-3 h-8 rounded-md bg-emerald-50 border border-emerald-200">
+                    <span className="text-xs font-bold text-emerald-700">Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                </div>
+            </div>
+            <div className="relative">
+                <CreditCard className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+                <select
+                    value={selectedPaymentMethod}
+                    onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
+                    className={`h-9 rounded-md pl-9 pr-8 text-xs appearance-none cursor-pointer border ${selectedPaymentMethod ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'}`}
+                >
+                    <option value="">Semua Metode Pembayaran</option>
+                    {paymentMethodOptions.map((pm) => (
+                        <option key={pm.id} value={pm.label}>{pm.label}</option>
+                    ))}
+                </select>
             </div>
             <div className="relative"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px] h-9 pl-9 text-xs" /></div>
             <Button onClick={handleAddClick} className="gap-2 bg-blue-600 hover:bg-blue-700 h-9"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>

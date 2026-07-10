@@ -265,7 +265,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
                   </td>
                   <td className="px-3 py-2 font-medium text-slate-800">{recap.patient_name}</td>
                   <td className="px-3 py-2 text-slate-500">{recap.recap_date}</td>
-                  <td className="px-3 py-2 text-slate-500">{recap.payment_method || '-'}</td>
+                  <td className="px-3 py-2 text-slate-500">{resolvePaymentMethodLabel(recap.payment_method)}</td>
                   <td className="px-3 py-2">
                     {isChecked ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -425,9 +425,18 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
 
+      const { data: paymentMethodOpts } = await supabase
+        .from('operational_options')
+        .select('id, label')
+        .eq('category', 'payment_method');
+      const pmMap = {};
+      (paymentMethodOpts || []).forEach(pm => { pmMap[pm.id] = pm.label; });
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
       const enriched = (recaps || []).map(r => ({
         ...r,
         patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-',
+        payment_method: uuidRe.test(r.payment_method || '') ? (pmMap[r.payment_method] || r.payment_method) : r.payment_method,
       }));
       setAllRecapsForPeriod(enriched);
 

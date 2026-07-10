@@ -922,11 +922,18 @@ setFormData({
                 ? (patientTypeOptions.find(o => o.value === formData.patient_type)?.label || formData.patient_type)
                 : formData.patient_type;
 
+            // Resolve payment_method: jika UUID → cari label-nya, jika sudah label → pakai langsung
+            const isPaymentUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.payment_method || '');
+            const resolvedPaymentMethod = isPaymentUUID
+                ? (paymentMethodOptions.find(o => o.value === formData.payment_method)?.label || formData.payment_method)
+                : formData.payment_method;
+
             const payload = {
                 ...formData,
                 recap_date: isoDate,
                 therapist_name: therapistName,
                 patient_type: resolvedPatientType,
+                payment_method: resolvedPaymentMethod,
                 diagnosis: Array.isArray(formData.diagnosis) && formData.diagnosis.length > 0
   ? formData.diagnosis.map(d => {
       if (typeof d === 'string') return d; // kalau sudah UUID
