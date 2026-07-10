@@ -90,7 +90,7 @@ const RotasiDailySchedule = () => {
     setSchedule(sched || []);
     setGlobalSlots(gslots || []);
     setSelectedSlotId('');
-    const isConfirmed = (sched || []).some((r) => r.confirmed === true);
+    const isConfirmed = (sched || []).length > 0 && (sched || []).every((r) => r.confirmed === true);
     setConfirmed(isConfirmed);
     setLoading(false);
   };
