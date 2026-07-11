@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { generateSchedule } from '@/lib/rotasiScheduler';
+import RotasiPwaStyles from './RotasiPwaStyles';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
@@ -22,6 +23,7 @@ const RotasiDailySchedule = () => {
   const searchInputRef = useRef(null);
   const [confirmed, setConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // State untuk modal riwayat terapis sebelumnya
   const [historyModal, setHistoryModal] = useState(null); // { patientId, patientName }
@@ -78,7 +80,7 @@ const RotasiDailySchedule = () => {
     setMessage(null);
     const [{ data: list }, { data: sched }, { data: gslots }] = await Promise.all([
       supabase.from('rotasi_daily_list').select('patient_id, global_slot_id').eq('visit_date', d),
-      supabase.from('rotasi_schedule').select('*').eq('visit_date', d).eq('cancelled', false),
+      supabase.from('rotasi_schedule').select('*').eq('visit_date', d).eq('cancelled', false).neq('slot_number', 0),
       supabase.from('rotasi_global_slots').select('*').eq('slot_date', d).order('start_time', { ascending: true }),
     ]);
     setDailyListIds((list || []).map((r) => r.patient_id));
@@ -363,12 +365,85 @@ const RotasiDailySchedule = () => {
           }
         }
       } else {
-        setMessage({ type: 'success', text: `Kunjungan ${closingModal.patientName} berhasil dibatalkan.` });
+        // Cek apakah masih ada pasien lain hari ini yang belum dikonfirmasi —
+        // kalau ada, terapis yang baru kosong ini bisa ikut dirotasi ulang (beban lebih ringan, Rule 3)
+        const remainingPatientIds = dailyListIds.filter((id) => id !== cancelModal.patientId);
+        const stillPendingCount = remainingPatientIds.filter((id) => {
+          const row = schedule.find((s) => s.patient_id === id);
+          return !row || !row.confirmed;
+        }).length;
+        setMessage({
+          type: 'success',
+          text: stillPendingCount > 0
+            ? `Kunjungan ${closingModal.patientName} berhasil dibatalkan. Slot terapisnya sekarang kosong dan bebannya lebih ringan — klik "Generate Jadwal Otomatis" lagi supaya ${stillPendingCount} pasien lain yang belum dikonfirmasi hari ini ikut dirotasi ulang dengan mempertimbangkan slot kosong tersebut.`
+            : `Kunjungan ${closingModal.patientName} berhasil dibatalkan.`,
+        });
       }
     } catch (err) {
       window.alert('Gagal membatalkan: ' + err.message);
     }
     setCancelSaving(false);
+  };
+
+  // Pindahkan pasien dari terapis lain di slot yang sama ke terapis yang kosong,
+  // supaya beban merata (Rule 3). Diprioritaskan dari terapis PALING SENIOR dulu.
+  const handleRebalanceSlot = async (rowsInSlot, emptyTherapistId) => {
+    const candidates = rowsInSlot.filter((r) => r.therapist_id !== emptyTherapistId);
+    if (candidates.length === 0) {
+      window.alert('Tidak ada pasien lain di slot ini yang bisa dipindahkan.');
+      return;
+    }
+
+    // Ambil riwayat kunjungan terakhir tiap kandidat, supaya tidak melanggar
+    // Rule 1 (jangan sama dengan terapis kunjungan terakhirnya).
+    const candidatePatientIds = candidates.map((r) => r.patient_id);
+    const { data: history } = await supabase
+      .from('rotasi_schedule')
+      .select('patient_id, therapist_id, visit_date')
+      .in('patient_id', candidatePatientIds)
+      .lt('visit_date', date)
+      .eq('confirmed', true)
+      .order('visit_date', { ascending: false });
+    const lastVisitMap = {};
+    (history || []).forEach((row) => {
+      if (!lastVisitMap[row.patient_id]) lastVisitMap[row.patient_id] = row.therapist_id;
+    });
+
+    const safeCandidates = candidates.filter((r) => lastVisitMap[r.patient_id] !== emptyTherapistId);
+    const pool = safeCandidates.length > 0 ? safeCandidates : candidates;
+    const violatesRule1 = safeCandidates.length === 0;
+
+    const therapistMap2 = {};
+    therapists.forEach((t) => { therapistMap2[t.id] = t; });
+
+    // Urutkan: terapis paling senior (tanggal_bergabung paling awal) diprioritaskan
+    // untuk "dilepas" pasiennya duluan, sesuai Rule 3.
+    const sorted = [...pool].sort((a, b) => {
+      const ta = therapistMap2[a.therapist_id]?.tanggal_bergabung || '9999-12-31';
+      const tb = therapistMap2[b.therapist_id]?.tanggal_bergabung || '9999-12-31';
+      return ta.localeCompare(tb);
+    });
+
+    const chosen = sorted[0];
+    const fromName = therapistMap2[chosen.therapist_id]?.name || '-';
+    const toName = therapistMap2[emptyTherapistId]?.name || '-';
+    const patientName = patientMap[chosen.patient_id]?.name || '-';
+
+    if (!window.confirm(
+      `Pindahkan ${patientName} dari ${fromName} ke ${toName} di slot ini?` +
+      (violatesRule1 ? '\n\n⚠️ Semua kandidat di slot ini pernah ditangani terapis tujuan pada kunjungan terakhirnya — tetap lanjutkan?' : '')
+    )) return;
+
+    const { error } = await supabase
+      .from('rotasi_schedule')
+      .update({ therapist_id: emptyTherapistId, constraint_violated: violatesRule1 })
+      .eq('id', chosen.id);
+    if (!error) {
+      setSchedule((prev) => prev.map((s) => (s.id === chosen.id ? { ...s, therapist_id: emptyTherapistId, constraint_violated: violatesRule1 } : s)));
+      setMessage({ type: 'success', text: `${patientName} berhasil dipindahkan dari ${fromName} ke ${toName}.` });
+    } else {
+      window.alert('Gagal memindahkan: ' + error.message);
+    }
   };
 
   const handleMovePatientSlot = async (patientId, newSlotId) => {
@@ -492,6 +567,20 @@ const RotasiDailySchedule = () => {
 
       const leaveTherapistIds = new Set((leaveRows || []).map((r) => r.therapist_id));
 
+      // Ambil assignment yang SUDAH confirmed hari ini (termasuk slot lain yang tidak sedang diedit),
+      // supaya perhitungan beban & "sudah dipakai di slot ini" akurat, bukan simulasi ulang.
+      const { data: confirmedRowsToday } = await supabase
+        .from('rotasi_schedule')
+        .select('patient_id, therapist_id')
+        .eq('visit_date', date)
+        .eq('confirmed', true)
+        .eq('cancelled', false)
+        .neq('slot_number', 0);
+      const lockedAssignments = {};
+      (confirmedRowsToday || []).forEach((r) => {
+        lockedAssignments[r.patient_id] = r.therapist_id;
+      });
+
       const patientsToday = dailyListIds.map((id) => patientMap[id]).filter(Boolean);
       const { assignments, unassigned } = generateSchedule({
         patients: patientsToday,
@@ -501,6 +590,7 @@ const RotasiDailySchedule = () => {
         globalSlots,
         therapistWorkingHours,
         leaveTherapistIds,
+        lockedAssignments,
       });
 
       const rows = assignments.map((r) => ({
@@ -511,11 +601,12 @@ const RotasiDailySchedule = () => {
         constraint_violated: r.constraint_violated,
       }));
 
-      // Ambil semua baris existing hari ini
+      // Ambil semua baris existing hari ini (exclude placeholder riwayat slot_number=0)
       const { data: existingRows } = await supabase
         .from('rotasi_schedule')
         .select('id, patient_id, confirmed, cancelled')
-        .eq('visit_date', date);
+        .eq('visit_date', date)
+        .neq('slot_number', 0);
 
       // Patient ID yang sudah confirmed dan TIDAK cancelled = tidak boleh diubah sama sekali
       const lockedPatientIds = new Set(
@@ -541,7 +632,8 @@ const RotasiDailySchedule = () => {
           .from('rotasi_schedule')
           .select('*')
           .eq('visit_date', date)
-          .eq('cancelled', false);
+          .eq('cancelled', false)
+          .neq('slot_number', 0);
         setSchedule(allExisting || []);
         return;
       }
@@ -552,12 +644,13 @@ const RotasiDailySchedule = () => {
         .select();
       if (insErr) throw insErr;
 
-      // Ambil ulang semua baris (exclude cancelled)
+      // Ambil ulang semua baris (exclude cancelled dan exclude placeholder riwayat slot_number=0)
       const { data: allAfter } = await supabase
         .from('rotasi_schedule')
         .select('*')
         .eq('visit_date', date)
-        .eq('cancelled', false);
+        .eq('cancelled', false)
+        .neq('slot_number', 0);
       setSchedule(allAfter || []);
 
       if (unassigned.length > 0) {
@@ -576,7 +669,7 @@ const RotasiDailySchedule = () => {
   };
 
   const handleConfirm = async () => {
-    if (!window.confirm(`Konfirmasi jadwal ${new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}?\n\nSetelah dikonfirmasi, jadwal ini akan masuk ke Riwayat dan tidak bisa digenerate ulang.`)) return;
+    setShowConfirmModal(false);
     setConfirming(true);
     const { error } = await supabase
       .from('rotasi_schedule')
@@ -619,6 +712,7 @@ const RotasiDailySchedule = () => {
 
   return (
     <div>
+      <RotasiPwaStyles />
       <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Jadwal Harian</h1>
       <p style={{ color: '#64748b', marginTop: 0, marginBottom: 24 }}>
         Input pasien yang datang hari ini, lalu sistem otomatis membagi ke terapis.
@@ -644,7 +738,7 @@ const RotasiDailySchedule = () => {
           boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 6 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a', letterSpacing: -0.2 }}>
             Booking Pasien per Slot
           </h3>
@@ -934,7 +1028,7 @@ const RotasiDailySchedule = () => {
                 </div>
               </div>
               <button
-                onClick={handleConfirm}
+                onClick={() => setShowConfirmModal(true)}
                 disabled={confirming}
                 style={{
                   padding: '9px 20px', borderRadius: 8, border: 'none',
@@ -960,7 +1054,7 @@ const RotasiDailySchedule = () => {
                     ? `${slotInfo.label}${slotInfo.start_time ? ` • ${slotInfo.start_time}` : ''}`
                     : 'Belum Ditentukan Slot'}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${therapists.length}, 1fr)`, gap: 12 }}>
+                <div className="rotasi-therapist-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${therapists.length}, 1fr)`, gap: 12 }}>
                   {therapists.map((th) => {
                     const row = rows.find((r) => r.therapist_id === th.id);
                     return (
@@ -998,6 +1092,17 @@ const RotasiDailySchedule = () => {
                               </button>
                             )}
                           </div>
+                        ) : confirmed && rows.length > 0 ? (
+                          <button
+                            onClick={() => handleRebalanceSlot(rows, th.id)}
+                            title="Pindahkan salah satu pasien dari terapis lain di slot ini ke sini"
+                            style={{
+                              fontSize: 11, border: 'none', background: 'none', color: '#2563eb',
+                              cursor: 'pointer', fontWeight: 700, padding: 0, textAlign: 'left',
+                            }}
+                          >
+                            🔄 Isi dari terapis lain
+                          </button>
                         ) : (
                           <div style={{ fontSize: 13, color: '#cbd5e1' }}>-</div>
                         )}
@@ -1013,10 +1118,11 @@ const RotasiDailySchedule = () => {
     {/* ── Modal Cek/Edit Riwayat 3 Sesi Terakhir ── */}
       {historyViewModal && (
         <div
+          className="rotasi-modal-overlay"
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={(e) => { if (e.target === e.currentTarget) setHistoryViewModal(null); }}
         >
-          <div style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+          <div className="rotasi-modal-card" style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>Riwayat 3 Sesi Terakhir</h2>
             <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>
               <strong>{historyViewModal.patientName}</strong>
@@ -1068,16 +1174,68 @@ const RotasiDailySchedule = () => {
         </div>
       )}
 
+    {/* ── Modal Konfirmasi Jadwal ── */}
+      {showConfirmModal && (
+        <div
+          className="rotasi-modal-overlay"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirmModal(false); }}
+        >
+          <div className="rotasi-modal-card" style={{
+            background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 420,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 12, background: '#eff6ff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 14,
+            }}>
+              📅
+            </div>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 8px', color: '#0f172a' }}>
+              Konfirmasi Jadwal {new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}?
+            </h2>
+            <p style={{ fontSize: 13.5, color: '#64748b', margin: '0 0 24px', lineHeight: 1.6 }}>
+              Setelah dikonfirmasi, jadwal ini akan masuk ke <strong>Riwayat</strong> dan tidak bisa digenerate ulang.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: '9px 18px', borderRadius: 8, border: '1px solid #e2e8f0',
+                  background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={confirming}
+                style={{
+                  padding: '9px 20px', borderRadius: 8, border: 'none',
+                  background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                }}
+              >
+                {confirming ? 'Mengkonfirmasi...' : '✓ Ya, Konfirmasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     {/* ── Modal Riwayat Terapis Sebelumnya ── */}
       {historyModal && (
         <div
+          className="rotasi-modal-overlay"
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setHistoryModal(null); }}
         >
-          <div style={{
+          <div className="rotasi-modal-card" style={{
             background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 440,
             boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
           }}>
@@ -1137,8 +1295,8 @@ const RotasiDailySchedule = () => {
       )}
     {/* Modal Cancel Pasien */}
       {cancelModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(15,23,42,0.18)' }}>
+        <div className="rotasi-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div className="rotasi-modal-card" style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(15,23,42,0.18)' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>Batalkan Kunjungan</div>
             <p style={{ fontSize: 14, color: '#64748b', marginTop: 0, marginBottom: 20 }}>
               Pasien <strong>{cancelModal.patientName}</strong> akan dihapus dari jadwal hari ini.

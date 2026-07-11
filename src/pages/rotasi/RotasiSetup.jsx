@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import RotasiPwaStyles from './RotasiPwaStyles';
 
 const TABS = [
   { key: 'eselon', label: 'Eselon' },
@@ -15,6 +16,7 @@ const RotasiSetup = () => {
 
   return (
     <div>
+      <RotasiPwaStyles />
       <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Setup</h1>
       <p style={{ color: '#64748b', marginTop: 0, marginBottom: 24 }}>
         Kelola data master: Eselon, Profesi, Diagnosa, Slot Aktif Terapis, dan Cuti/Ijin Terapis.
@@ -644,23 +646,34 @@ const DEFAULT_SESSIONS = [
   { label: 'Sesi IX', start_time: '15:00', capacity: 3 },
 ];
 
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
 const SlotGlobalSection = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Form tambah/edit manual (satu slot, satu tanggal) - opsional, disembunyikan by default
   const [form, setForm] = useState({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
   const [saving, setSaving] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
-  const [fillingDefault, setFillingDefault] = useState(false);
-  const [copyForm, setCopyForm] = useState({ from_date: '', to_date: '' });
-  const [copying, setCopying] = useState(false);
+
+  // Terapkan default 9 sesi ke rentang tanggal, otomatis hanya Senin-Jumat
+  const [applyRange, setApplyRange] = useState({ from_date: '', to_date: '' });
+  const [applying, setApplying] = useState(false);
+
+  const [deletingDate, setDeletingDate] = useState(null);
+  const [expandedDates, setExpandedDates] = useState(() => new Set());
+  const [visibleCount, setVisibleCount] = useState(8);
 
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('rotasi_global_slots')
       .select('*')
-      .order('slot_date', { ascending: true });
+      .order('slot_date', { ascending: true })
+      .order('start_time', { ascending: true });
     if (!error) setItems(data || []);
     setLoading(false);
   };
@@ -669,19 +682,58 @@ const SlotGlobalSection = () => {
     fetchItems();
   }, []);
 
-  const sortItems = (list) =>
-    [...list].sort((a, b) => {
-      const ka = `${a.slot_date || ''} ${a.start_time || ''}`;
-      const kb = `${b.slot_date || ''} ${b.start_time || ''}`;
-      return ka.localeCompare(kb);
-    });
+  const formatTanggal = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '-';
+    return `${DAY_NAMES[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
+  const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+
+  const handleApplyWeekdayDefault = async () => {
+    if (!applyRange.from_date || !applyRange.to_date) {
+      window.alert('Isi tanggal mulai dan tanggal selesai dulu.');
+      return;
+    }
+    if (applyRange.from_date > applyRange.to_date) {
+      window.alert('Tanggal mulai harus sebelum tanggal selesai.');
+      return;
+    }
+    const start = new Date(applyRange.from_date + 'T00:00:00');
+    const end = new Date(applyRange.to_date + 'T00:00:00');
+    const rows = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (isWeekend(d)) continue;
+      const dateStr = d.toISOString().split('T')[0];
+      DEFAULT_SESSIONS.forEach((s) => {
+        rows.push({ slot_date: dateStr, label: s.label, start_time: s.start_time, end_time: null, capacity: s.capacity });
+      });
+    }
+    if (rows.length === 0) {
+      window.alert('Rentang tanggal itu tidak mengandung hari kerja Senin-Jumat.');
+      return;
+    }
+    if (!window.confirm(`Terapkan 9 sesi default ke ${rows.length / 9} hari kerja (Senin-Jumat) dari ${formatTanggal(applyRange.from_date)} sampai ${formatTanggal(applyRange.to_date)}?`)) return;
+    setApplying(true);
+    const { error } = await supabase
+      .from('rotasi_global_slots')
+      .upsert(rows, { onConflict: 'slot_date,label' });
+    if (!error) {
+      await fetchItems();
+      setApplyRange({ from_date: '', to_date: '' });
+    } else {
+      window.alert('Gagal menerapkan default: ' + error.message);
+    }
+    setApplying(false);
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     const trimmed = form.label.trim();
     if (!trimmed || !form.slot_date) return;
     setSaving(true);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('rotasi_global_slots')
       .upsert(
         {
@@ -692,88 +744,14 @@ const SlotGlobalSection = () => {
           capacity: form.capacity ? Number(form.capacity) : null,
         },
         { onConflict: 'slot_date,label' }
-      )
-      .select()
-      .single();
+      );
     if (!error) {
-      setItems((prev) => sortItems([...prev.filter((it) => it.id !== data.id), data]));
+      await fetchItems();
       setForm({ slot_date: '', label: '', start_time: '', end_time: '', capacity: '' });
     } else {
       window.alert('Gagal menambah slot global: ' + error.message);
     }
     setSaving(false);
-  };
-
-  const handleFillDefault = async () => {
-    if (!form.slot_date) {
-      window.alert('Pilih tanggal dulu di form Tambah sebelum isi 9 sesi default.');
-      return;
-    }
-    if (!window.confirm(`Isi 9 sesi default (Sesi I - IX) untuk tanggal ${form.slot_date}?`)) return;
-    setFillingDefault(true);
-    const rows = DEFAULT_SESSIONS.map((s) => ({
-      slot_date: form.slot_date,
-      label: s.label,
-      start_time: s.start_time,
-      end_time: null,
-      capacity: s.capacity,
-    }));
-    const { data, error } = await supabase
-      .from('rotasi_global_slots')
-      .upsert(rows, { onConflict: 'slot_date,label' })
-      .select();
-    if (!error) {
-      const ids = (data || []).map((d) => d.id);
-      setItems((prev) => sortItems([...prev.filter((it) => !ids.includes(it.id)), ...(data || [])]));
-    } else {
-      window.alert('Gagal mengisi 9 sesi default: ' + error.message);
-    }
-    setFillingDefault(false);
-  };
-
-  const handleCopy = async () => {
-    if (!copyForm.from_date || !copyForm.to_date) {
-      window.alert('Isi tanggal asal dan tanggal tujuan untuk menyalin slot.');
-      return;
-    }
-    if (copyForm.from_date === copyForm.to_date) {
-      window.alert('Tanggal asal dan tujuan tidak boleh sama.');
-      return;
-    }
-    setCopying(true);
-    const { data: source, error: sourceErr } = await supabase
-      .from('rotasi_global_slots')
-      .select('label, start_time, end_time, capacity')
-      .eq('slot_date', copyForm.from_date);
-    if (sourceErr) {
-      window.alert('Gagal mengambil data slot dari tanggal asal: ' + sourceErr.message);
-      setCopying(false);
-      return;
-    }
-    if (!source || source.length === 0) {
-      window.alert('Tidak ada slot global di tanggal asal tersebut.');
-      setCopying(false);
-      return;
-    }
-    const rows = source.map((s) => ({
-      slot_date: copyForm.to_date,
-      label: s.label,
-      start_time: s.start_time,
-      end_time: s.end_time,
-      capacity: s.capacity,
-    }));
-    const { data, error } = await supabase
-      .from('rotasi_global_slots')
-      .upsert(rows, { onConflict: 'slot_date,label' })
-      .select();
-    if (!error) {
-      const ids = (data || []).map((d) => d.id);
-      setItems((prev) => sortItems([...prev.filter((it) => !ids.includes(it.id)), ...(data || [])]));
-      setCopyForm({ from_date: '', to_date: '' });
-    } else {
-      window.alert('Gagal menyalin slot: ' + error.message);
-    }
-    setCopying(false);
   };
 
   const startEdit = (item) => {
@@ -787,14 +765,12 @@ const SlotGlobalSection = () => {
     });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
+  const cancelEdit = () => setEditingId(null);
 
   const handleUpdate = async (id) => {
     const trimmed = editForm.label.trim();
     if (!trimmed || !editForm.slot_date) return;
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('rotasi_global_slots')
       .update({
         slot_date: editForm.slot_date,
@@ -803,11 +779,9 @@ const SlotGlobalSection = () => {
         end_time: editForm.end_time || null,
         capacity: editForm.capacity ? Number(editForm.capacity) : null,
       })
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', id);
     if (!error) {
-      setItems((prev) => sortItems(prev.map((it) => (it.id === id ? data : it))));
+      await fetchItems();
       setEditingId(null);
     } else {
       window.alert('Gagal menyimpan perubahan: ' + error.message);
@@ -815,206 +789,220 @@ const SlotGlobalSection = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Hapus slot global ini?')) return;
+    if (!window.confirm('Hapus slot ini?')) return;
     const { error } = await supabase.from('rotasi_global_slots').delete().eq('id', id);
-    if (!error) {
-      setItems((prev) => prev.filter((it) => it.id !== id));
-    } else {
-      window.alert('Gagal menghapus data: ' + error.message);
-    }
+    if (!error) setItems((prev) => prev.filter((it) => it.id !== id));
+    else window.alert('Gagal menghapus data: ' + error.message);
   };
 
-  const formatTanggal = (dateStr) => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '-';
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
+  const handleDeleteDate = async (dateStr) => {
+    if (!window.confirm(`Hapus semua slot pada ${formatTanggal(dateStr)}?`)) return;
+    setDeletingDate(dateStr);
+    const { error } = await supabase.from('rotasi_global_slots').delete().eq('slot_date', dateStr);
+    if (!error) setItems((prev) => prev.filter((it) => it.slot_date !== dateStr));
+    else window.alert('Gagal menghapus data: ' + error.message);
+    setDeletingDate(null);
   };
+
+  const toggleDate = (dateStr) => {
+    setExpandedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr);
+      else next.add(dateStr);
+      return next;
+    });
+  };
+
+  const groups = useMemo(() => {
+    const byDate = {};
+    items.forEach((it) => {
+      if (!byDate[it.slot_date]) byDate[it.slot_date] = [];
+      byDate[it.slot_date].push(it);
+    });
+    return Object.entries(byDate)
+      .map(([date, rows]) => ({ date, rows: [...rows].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [items]);
+
+  const visibleGroups = groups.slice(0, visibleCount);
 
   return (
     <div>
-      <p style={{ color: '#64748b', marginTop: 0, marginBottom: 16, fontSize: 13 }}>
-        Slot global berlaku untuk seluruh klinik pada tanggal tertentu (bukan per terapis). Tambahkan satu-satu per tanggal.
-      </p>
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* ── Panel: Terapkan Default Mingguan ── */}
+      <div style={{
+        background: 'linear-gradient(135deg,#eff6ff,#f5f3ff)', border: '1px solid #dbeafe',
+        borderRadius: 14, padding: 20, marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 18 }}>📆</span>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1e293b' }}>Terapkan Default 9 Sesi ke Hari Kerja (Senin–Jumat)</h3>
+        </div>
+        <p style={{ fontSize: 12.5, color: '#64748b', margin: '4px 0 14px' }}>
+          Pilih rentang tanggal. Sistem otomatis mengisi Sesi I–IX ke setiap hari Senin sampai Jumat di rentang itu (Sabtu &amp; Minggu dilewati).
+        </p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Dari tanggal</label>
+            <input
+              type="date"
+              value={applyRange.from_date}
+              onChange={(e) => setApplyRange((f) => ({ ...f, from_date: e.target.value }))}
+              style={{ ...inputStyle, width: 160, flex: 'none' }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Sampai tanggal</label>
+            <input
+              type="date"
+              value={applyRange.to_date}
+              onChange={(e) => setApplyRange((f) => ({ ...f, to_date: e.target.value }))}
+              style={{ ...inputStyle, width: 160, flex: 'none' }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyWeekdayDefault}
+            disabled={applying}
+            style={{ ...btnPrimaryStyle, background: '#16a34a', padding: '10px 20px' }}
+          >
+            {applying ? 'Menerapkan...' : '✓ Terapkan ke Senin–Jumat'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Toggle form manual ── */}
+      <button
+        type="button"
+        onClick={() => setShowManualForm((v) => !v)}
+        style={{
+          border: 'none', background: 'none', color: '#2563eb', fontWeight: 700, fontSize: 13,
+          cursor: 'pointer', padding: 0, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6,
+        }}
+      >
+        {showManualForm ? '▾' : '▸'} Tambah / edit slot manual (satu per satu)
+      </button>
+
+      {showManualForm && (
+        <form onSubmit={handleAdd} className="rotasi-slot-form" style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
           <input
             type="date"
             value={form.slot_date}
             onChange={(e) => setForm((f) => ({ ...f, slot_date: e.target.value }))}
             style={{ ...inputStyle, width: 150, flex: 'none' }}
           />
-          {form.slot_date && (
-            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(form.slot_date)}</span>
-          )}
-        </div>
-        <input
-          value={form.label}
-          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-          placeholder="Nama slot (mis. Sesi Pagi)..."
-          style={inputStyle}
-        />
-        <input
-          type="time"
-          value={form.start_time}
-          onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
-          style={{ ...inputStyle, width: 130, flex: 'none' }}
-        />
-        <input
-          type="time"
-          value={form.end_time}
-          onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
-          style={{ ...inputStyle, width: 130, flex: 'none' }}
-        />
-        <input
-          type="number"
-          value={form.capacity}
-          onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
-          placeholder="Kapasitas"
-          style={{ ...inputStyle, width: 100, flex: 'none' }}
-        />
-        <button type="submit" disabled={saving} style={btnPrimaryStyle}>
-          Tambah
-        </button>
-        <button
-          type="button"
-          onClick={handleFillDefault}
-          disabled={fillingDefault}
-          style={{ ...btnPrimaryStyle, background: '#16a34a' }}
-        >
-          {fillingDefault ? 'Mengisi...' : 'Isi 9 Sesi Default (I-IX)'}
-        </button>
-      </form>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Salin slot dari tanggal lain:</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <input
-            type="date"
-            value={copyForm.from_date}
-            onChange={(e) => setCopyForm((f) => ({ ...f, from_date: e.target.value }))}
-            style={{ ...inputStyle, width: 150, flex: 'none' }}
-            placeholder="Dari tanggal"
+            value={form.label}
+            onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+            placeholder="Nama slot (mis. Sesi Pagi)..."
+            style={inputStyle}
           />
-          {copyForm.from_date && (
-            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(copyForm.from_date)}</span>
-          )}
-        </div>
-        <span style={{ fontSize: 13, color: '#94a3b8' }}>ke</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <input
-            type="date"
-            value={copyForm.to_date}
-            onChange={(e) => setCopyForm((f) => ({ ...f, to_date: e.target.value }))}
-            style={{ ...inputStyle, width: 150, flex: 'none' }}
-            placeholder="Ke tanggal"
+            type="time"
+            value={form.start_time}
+            onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
+            style={{ ...inputStyle, width: 130, flex: 'none' }}
           />
-          {copyForm.to_date && (
-            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(copyForm.to_date)}</span>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={handleCopy}
-          disabled={copying}
-          style={btnPrimaryStyle}
-        >
-          {copying ? 'Menyalin...' : 'Salin'}
-        </button>
-      </div>
+          <input
+            type="time"
+            value={form.end_time}
+            onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
+            style={{ ...inputStyle, width: 130, flex: 'none' }}
+          />
+          <input
+            type="number"
+            value={form.capacity}
+            onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
+            placeholder="Kapasitas"
+            style={{ ...inputStyle, width: 100, flex: 'none' }}
+          />
+          <button type="submit" disabled={saving} style={btnPrimaryStyle}>
+            {saving ? 'Menyimpan...' : 'Tambah'}
+          </button>
+        </form>
+      )}
 
+      {/* ── List, dikelompokkan per tanggal, accordion ── */}
       {loading ? (
-        <p>Memuat...</p>
-      ) : items.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>Belum ada slot global.</p>
+        <p style={{ color: '#94a3b8' }}>Memuat...</p>
+      ) : groups.length === 0 ? (
+        <p style={{ color: '#94a3b8' }}>Belum ada slot global. Terapkan default di atas untuk memulai.</p>
       ) : (
-        <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#f8fafc' }}>
-                <th style={thStyle}>Tanggal</th>
-                <th style={thStyle}>Nama Slot</th>
-                <th style={thStyle}>Jam Mulai</th>
-                <th style={thStyle}>Jam Selesai</th>
-                <th style={thStyle}>Kapasitas</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} style={{ borderTop: '1px solid #e2e8f0' }}>
-                  {editingId === item.id ? (
-                    <>
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <input
-                            type="date"
-                            value={editForm.slot_date}
-                            onChange={(e) => setEditForm((f) => ({ ...f, slot_date: e.target.value }))}
-                            style={{ ...inputStyle, width: 140 }}
-                          />
-                          {editForm.slot_date && (
-                            <span style={{ fontSize: 11, color: '#64748b' }}>{formatTanggal(editForm.slot_date)}</span>
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {visibleGroups.map(({ date, rows }) => {
+              const isOpen = expandedDates.has(date);
+              return (
+                <div key={date} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+                  <div
+                    onClick={() => toggleDate(date)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 16px', cursor: 'pointer', background: isOpen ? '#f8fafc' : '#fff',
+                      flexWrap: 'wrap', gap: 8,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 13, color: '#94a3b8', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform .15s', display: 'inline-block' }}>▸</span>
+                      <span style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>{formatTanggal(date)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 999, padding: '2px 9px' }}>
+                        {rows.length} slot
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteDate(date); }}
+                      disabled={deletingDate === date}
+                      style={{ ...btnDeleteStyle, opacity: deletingDate === date ? 0.5 : 1 }}
+                    >
+                      {deletingDate === date ? 'Menghapus...' : 'Hapus Semua'}
+                    </button>
+                  </div>
+
+                  {isOpen && (
+                    <div style={{ padding: '4px 16px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid #f1f5f9' }}>
+                      {rows.map((item) => (
+                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                          {editingId === item.id ? (
+                            <>
+                              <input value={editForm.label} onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))} style={{ ...inputStyle, width: 130 }} />
+                              <input type="time" value={editForm.start_time} onChange={(e) => setEditForm((f) => ({ ...f, start_time: e.target.value }))} style={{ ...inputStyle, width: 110 }} />
+                              <input type="time" value={editForm.end_time} onChange={(e) => setEditForm((f) => ({ ...f, end_time: e.target.value }))} style={{ ...inputStyle, width: 110 }} />
+                              <input type="number" value={editForm.capacity} onChange={(e) => setEditForm((f) => ({ ...f, capacity: e.target.value }))} style={{ ...inputStyle, width: 80 }} />
+                              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                                <button onClick={() => handleUpdate(item.id)} style={btnSaveStyle}>Simpan</button>
+                                <button onClick={cancelEdit} style={btnCancelStyle}>Batal</button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', minWidth: 80 }}>{item.label}</span>
+                              <span style={{ fontSize: 12.5, color: '#475569' }}>{item.start_time || '-'}{item.end_time ? ` – ${item.end_time}` : ''}</span>
+                              <span style={{ fontSize: 11, color: '#94a3b8' }}>kapasitas {item.capacity ?? '-'}</span>
+                              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                                <button onClick={() => startEdit(item)} style={btnEditStyle}>Edit</button>
+                                <button onClick={() => handleDelete(item.id)} style={btnDeleteStyle}>Hapus</button>
+                              </div>
+                            </>
                           )}
                         </div>
-                      </td>
-                      <td style={tdStyle}>
-                        <input
-                          value={editForm.label}
-                          onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
-                          style={inputStyle}
-                        />
-                      </td>
-                      <td style={tdStyle}>
-                        <input
-                          type="time"
-                          value={editForm.start_time}
-                          onChange={(e) => setEditForm((f) => ({ ...f, start_time: e.target.value }))}
-                          style={{ ...inputStyle, width: 120 }}
-                        />
-                      </td>
-                      <td style={tdStyle}>
-                        <input
-                          type="time"
-                          value={editForm.end_time}
-                          onChange={(e) => setEditForm((f) => ({ ...f, end_time: e.target.value }))}
-                          style={{ ...inputStyle, width: 120 }}
-                        />
-                      </td>
-                      <td style={tdStyle}>
-                        <input
-                          type="number"
-                          value={editForm.capacity}
-                          onChange={(e) => setEditForm((f) => ({ ...f, capacity: e.target.value }))}
-                          style={{ ...inputStyle, width: 90 }}
-                        />
-                      </td>
-                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button onClick={() => handleUpdate(item.id)} style={btnSaveStyle}>Simpan</button>
-                        <button onClick={cancelEdit} style={btnCancelStyle}>Batal</button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td style={{ ...tdStyle, fontWeight: 600 }}>{formatTanggal(item.slot_date)}</td>
-                      <td style={tdStyle}>{item.label}</td>
-                      <td style={tdStyle}>{item.start_time || '-'}</td>
-                      <td style={tdStyle}>{item.end_time || '-'}</td>
-                      <td style={tdStyle}>{item.capacity ?? '-'}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button onClick={() => startEdit(item)} style={btnEditStyle}>Edit</button>
-                        <button onClick={() => handleDelete(item.id)} style={btnDeleteStyle}>Hapus</button>
-                      </td>
-                    </>
+                      ))}
+                    </div>
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {visibleCount < groups.length && (
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <button
+                onClick={() => setVisibleCount((v) => v + 8)}
+                style={{ ...btnPrimaryStyle, background: '#fff', color: '#2563eb', border: '1px solid #dbeafe' }}
+              >
+                Tampilkan {Math.min(8, groups.length - visibleCount)} tanggal lagi ({groups.length - visibleCount} tersisa)
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

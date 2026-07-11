@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import RotasiPwaStyles from './RotasiPwaStyles';
 
 const S = {
   inputBase: {
@@ -142,8 +143,9 @@ const RotasiTherapists = () => {
 
   return (
     <div>
+      <RotasiPwaStyles />
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+      <div className="rotasi-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Data Terapis</h1>
           <p style={{ color: '#64748b', margin: '4px 0 0' }}>
@@ -250,8 +252,8 @@ const RotasiTherapists = () => {
 
       {/* ── MODAL Tambah / Edit ── */}
       {modalOpen && (
-        <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div style={S.modal}>
+        <div className="rotasi-modal-overlay" style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="rotasi-modal-card" style={S.modal}>
             <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 20px' }}>
               {modalMode === 'add' ? '+ Tambah Terapis' : 'Edit Terapis'}
             </h2>

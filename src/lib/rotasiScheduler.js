@@ -54,6 +54,7 @@ export function generateSchedule({
   globalSlots = [],
   therapistWorkingHours = {},
   leaveTherapistIds = new Set(),
+  lockedAssignments = {}, // patientId -> therapistId yang SUDAH confirmed, tidak boleh diubah/disimulasikan ulang
 }) {
   if (!therapists || therapists.length === 0) {
     throw new Error('Minimal 1 terapis aktif diperlukan untuk membuat jadwal.');
@@ -109,11 +110,27 @@ export function generateSchedule({
 
     const usedInThisSlot = new Set();
 
-    const withHistory = groupPatients.filter((p) => lastVisitMap[p.id]);
-    const withoutHistory = groupPatients.filter((p) => !lastVisitMap[p.id]);
-    const orderedPatients = [...withHistory, ...withoutHistory];
+    const lockedPatients = groupPatients.filter((p) => lockedAssignments[p.id]);
+    const withHistory = groupPatients.filter((p) => !lockedAssignments[p.id] && lastVisitMap[p.id]);
+    const withoutHistory = groupPatients.filter((p) => !lockedAssignments[p.id] && !lastVisitMap[p.id]);
+    const orderedPatients = [...lockedPatients, ...withHistory, ...withoutHistory];
 
     orderedPatients.forEach((patient) => {
+      // Pasien yang assignment-nya sudah confirmed: pakai terapis aslinya apa adanya,
+      // cuma dipakai untuk "menandai" beban & slot terpakai, tidak disimulasikan ulang.
+      const lockedTherapistId = lockedAssignments[patient.id];
+      if (lockedTherapistId) {
+        usedInThisSlot.add(lockedTherapistId);
+        dailyLoad[lockedTherapistId] = (dailyLoad[lockedTherapistId] || 0) + 1;
+        assignments.push({
+          patient_id: patient.id,
+          therapist_id: lockedTherapistId,
+          slot_number: slotIdx + 1,
+          constraint_violated: false,
+        });
+        return;
+      }
+
       const avoidId = lastVisitMap[patient.id];
 
       let candidates = eligible.filter(

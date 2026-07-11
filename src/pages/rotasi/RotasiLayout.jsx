@@ -86,6 +86,9 @@ const CSS = `
   .r-table-wrap { border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; overflow-x: auto; }
   .r-page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   .r-filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .r-therapist-grid { display: grid; gap: 12px; }
+  .r-two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .r-inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   @media (max-width: 768px) {
     .rotasi-sidebar { display: none; }
     .rotasi-topbar { display: flex; }
@@ -93,6 +96,12 @@ const CSS = `
     .rotasi-main { margin-left: 0 !important; padding: 68px 16px 76px; }
     .r-modal { padding: 20px 16px; border-radius: 14px; max-width: 100%; }
     .r-page-title { font-size: 19px; }
+    .r-overlay { align-items: flex-end; padding: 0; }
+    .r-modal { width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; }
+    .r-therapist-grid { grid-template-columns: 1fr !important; }
+    .r-two-col-grid { grid-template-columns: 1fr !important; }
+    .r-inline-form { flex-direction: column; align-items: stretch; }
+    .r-inline-form input, .r-inline-form select, .r-inline-form button { width: 100% !important; }
   }
   @media (min-width: 769px) and (max-width: 1024px) {
     :root { --sidebar-w: 200px; }

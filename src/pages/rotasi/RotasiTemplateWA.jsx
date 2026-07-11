@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import RotasiPwaStyles from './RotasiPwaStyles';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
@@ -65,7 +66,7 @@ const RotasiTemplateWA = () => {
   const loadForDate = async (d) => {
     setLoading(true);
     const [{ data: sched }, { data: slots }, { data: gslots }] = await Promise.all([
-      supabase.from('rotasi_schedule').select('*').eq('visit_date', d),
+      supabase.from('rotasi_schedule').select('*').eq('visit_date', d).eq('cancelled', false).neq('slot_number', 0),
       supabase.from('rotasi_daily_list').select('patient_id, global_slot_id').eq('visit_date', d),
       supabase.from('rotasi_global_slots').select('*').eq('slot_date', d).order('start_time', { ascending: true }),
     ]);
@@ -168,6 +169,7 @@ const RotasiTemplateWA = () => {
 
   return (
     <div>
+      <RotasiPwaStyles />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Template WA</h1>
@@ -216,7 +218,7 @@ const RotasiTemplateWA = () => {
           ⚠️ Belum ada jadwal terkonfirmasi atau tergenerate untuk tanggal ini.
         </div>
       ) : (
-        <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div className="rotasi-two-col" style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           {/* Preview */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

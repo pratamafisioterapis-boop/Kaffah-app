@@ -232,7 +232,7 @@ const RotasiHistory = () => {
                 }}
               >
                 {/* Header baris tanggal */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '14px 18px', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '14px 18px', gap: 12, flexWrap: 'wrap' }}>
                   {/* Tanggal */}
                   <div
                     style={{
@@ -329,10 +329,8 @@ const RotasiHistory = () => {
                 {/* Detail expand: kolom per terapis */}
                 {isOpen && (
                   <div style={{ borderTop: '1px solid #f1f5f9', padding: 18 }}>
-                    <div style={{
-                      display: 'grid',
+                    <div className="r-therapist-grid" style={{
                       gridTemplateColumns: `repeat(${Math.min(therapistIds.length, 3)}, 1fr)`,
-                      gap: 12,
                     }}>
                       {therapistIds.map((tid) => {
                         const col = therapistColorMap[tid] || THERAPIST_COLORS[0];

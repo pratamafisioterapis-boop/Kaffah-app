@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import RotasiPwaStyles from './RotasiPwaStyles';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const calcAge = (birthDate) => {
@@ -206,13 +207,37 @@ const RotasiPatients = () => {
     setHistoryPatient({ id: p.id, name: p.name });
     setHistoryEditing({});
     setHistoryLoading(true);
-    const { data } = await supabase
-      .from('rotasi_schedule')
-      .select('id, visit_date, therapist_id')
-      .eq('patient_id', p.id)
-      .order('visit_date', { ascending: false })
-      .limit(3);
-    const mapped = (data || []).map((r) => ({ ...r }));
+    const [{ data }, { data: gslots }] = await Promise.all([
+      supabase
+        .from('rotasi_schedule')
+        .select('id, visit_date, therapist_id, slot_number, confirmed')
+        .eq('patient_id', p.id)
+        .eq('cancelled', false)
+        .eq('confirmed', true)
+        .order('visit_date', { ascending: false }),
+      supabase
+        .from('rotasi_global_slots')
+        .select('slot_date, start_time'),
+    ]);
+
+    // Bangun peta "tanggal|urutan sesi" -> jam mulai, sama seperti di RotasiHistory.jsx
+    const byDate = {};
+    (gslots || []).forEach((s) => {
+      if (!byDate[s.slot_date]) byDate[s.slot_date] = [];
+      byDate[s.slot_date].push(s);
+    });
+    const slotTimeMap = {};
+    Object.entries(byDate).forEach(([date, slots]) => {
+      slots.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+      slots.forEach((s, idx) => {
+        slotTimeMap[`${date}|${idx + 1}`] = s.start_time ? s.start_time.slice(0, 5) : null;
+      });
+    });
+
+    const mapped = (data || []).map((r) => ({
+      ...r,
+      display_time: r.slot_number ? slotTimeMap[`${r.visit_date}|${r.slot_number}`] : null,
+    }));
     setHistoryData(mapped);
     const initEditing = {};
     mapped.forEach((r) => { initEditing[r.id] = r.therapist_id || ''; });
@@ -288,7 +313,8 @@ const RotasiPatients = () => {
   // ─── render ─────────────────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+      <RotasiPwaStyles />
+      <div className="rotasi-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Data Pasien</h1>
           <p style={{ color: '#64748b', margin: '4px 0 0' }}>
@@ -298,7 +324,7 @@ const RotasiPatients = () => {
         <button onClick={openAdd} style={S.btnPrimary}>+ Tambah Pasien</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, margin: '20px 0 12px', alignItems: 'center' }}>
+      <div className="rotasi-toolbar" style={{ display: 'flex', gap: 10, margin: '20px 0 12px', alignItems: 'center', flexWrap: 'wrap' }}>
         <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} style={{ display: 'flex', gap: 8 }}>
           <input
             value={searchInput}
@@ -517,23 +543,26 @@ const RotasiPatients = () => {
       {/* ── MODAL ── */}
       {/* Modal Riwayat Terapi */}
       {historyPatient && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        <div className="rotasi-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={(e) => { if (e.target === e.currentTarget) setHistoryPatient(null); }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.18)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>Riwayat 3 Sesi Terakhir</h2>
-            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}><strong>{historyPatient.name}</strong></p>
+          <div className="rotasi-modal-card" style={{ background: '#fff', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.18)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>Riwayat Seluruh Sesi Terapi</h2>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}><strong>{historyPatient.name}</strong> · {historyData.length} sesi tercatat</p>
 
             {historyLoading ? (
               <p style={{ color: '#94a3b8', fontSize: 13 }}>Memuat...</p>
             ) : historyData.length === 0 ? (
               <p style={{ color: '#94a3b8', fontSize: 13 }}>Belum ada riwayat sesi terapi.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, maxHeight: 360, overflowY: 'auto', paddingRight: 4 }}>
                 {historyData.map((row, i) => (
-                  <div key={row.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div key={row.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: row.confirmed ? '#f8fafc' : '#fffbeb', borderRadius: 8, border: `1px solid ${row.confirmed ? '#e2e8f0' : '#fde68a'}` }}>
                     <span style={{ fontSize: 11, color: '#94a3b8', width: 90, flexShrink: 0 }}>
-                      {i === 0 ? 'Sesi terakhir' : `Sesi ke-${i + 1}`}<br />
+                      Sesi ke-{historyData.length - i}<br />
                       <span style={{ fontFamily: 'monospace', fontSize: 10 }}>{row.visit_date}</span>
+                      {row.display_time && (
+                        <><br /><span style={{ fontSize: 10 }}>{row.display_time}</span></>
+                      )}
                     </span>
                     <select
                       value={historyEditing[row.id] ?? ''}
@@ -567,8 +596,8 @@ const RotasiPatients = () => {
       )}
 
       {modalOpen && (
-        <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div style={S.modal}>
+        <div className="rotasi-modal-overlay" style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="rotasi-modal-card" style={S.modal}>
             <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 20px' }}>
               {modalMode === 'add' ? '+ Tambah Pasien' : 'Edit Pasien'}
             </h2>
@@ -590,7 +619,7 @@ const RotasiPatients = () => {
                   style={S.inputBase}
                 />
               </FL>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="rotasi-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <FL label="Tanggal Lahir">
                   <input
                     type="date"
@@ -620,7 +649,7 @@ const RotasiPatients = () => {
                   ))}
                 </select>
               </FL>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="rotasi-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <FL label="No. BPJS">
                   <input
                     value={form.bpjs_number}
