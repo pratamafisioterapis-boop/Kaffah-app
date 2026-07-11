@@ -10,6 +10,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
+import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
@@ -28,6 +29,7 @@ const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard
 const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
 const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
 const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
+const PemilihApp = React.lazy(() => import('@/pages/pemilih/PemilihApp'));
 
 
 // Loading Component
@@ -256,6 +258,15 @@ function App() {
                     <RotasiProtectedRoute>
                       <RotasiApp />
                     </RotasiProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/pemilih/*"
+                  element={
+                    <PemilihProtectedRoute>
+                      <PemilihApp />
+                    </PemilihProtectedRoute>
                   }
                 />
                 

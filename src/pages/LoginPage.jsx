@@ -82,6 +82,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Pemilih admin status...");
+          const { data: pemilihAdminFallback } = await supabase
+            .from('pemilih_admins')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (pemilihAdminFallback) {
+            console.log("[LoginPage] Pemilih admin detected, redirecting.");
+            navigate('/pemilih', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Validating fallback metadata role...");
           // Fallback: Check metadata
           const metaRole = user.user_metadata?.role;
@@ -110,6 +123,19 @@ const LoginPage = () => {
         if (rotasiAdmin) {
           console.log("[LoginPage] Rotasi admin detected, redirecting.");
           navigate('/rotasi', { replace: true });
+          return;
+        }
+
+        console.log("[LoginPage] Checking Pemilih admin status...");
+        const { data: pemilihAdmin } = await supabase
+          .from('pemilih_admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (pemilihAdmin) {
+          console.log("[LoginPage] Pemilih admin detected, redirecting.");
+          navigate('/pemilih', { replace: true });
           return;
         }
 
