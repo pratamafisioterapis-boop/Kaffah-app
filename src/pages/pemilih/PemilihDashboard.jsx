@@ -157,18 +157,38 @@ const PemilihDashboard = () => {
           <CardHeader title="Sebaran Data Pemilih per Kelurahan" subtitle="Distribusi jumlah data tercatat di tiap kelurahan" />
           <div style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={perKelurahan} margin={{ top: 5, right: 10, left: -10, bottom: 50 }}>
+              <BarChart data={perKelurahan} margin={{ top: 5, right: 10, left: -10, bottom: 50 }} barCategoryGap="30%" maxBarSize={64}>
+                <defs>
+                  <linearGradient id="gradPendukung" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#15803d" />
+                  </linearGradient>
+                  <linearGradient id="gradSimpatisan" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" />
+                    <stop offset="100%" stopColor="#1d4ed8" />
+                  </linearGradient>
+                  <linearGradient id="gradTidakMendukung" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f87171" />
+                    <stop offset="100%" stopColor="#b91c1c" />
+                  </linearGradient>
+                  <linearGradient id="gradBelumDiketahui" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#b45309" />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f3" />
-                <XAxis dataKey="nama" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 10.5, fill: '#6b7280' }} height={70} axisLine={{ stroke: '#e8e9ec' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="nama" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 10.5, fill: '#6b7280', fontWeight: 500 }} height={70} axisLine={{ stroke: '#e8e9ec' }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   cursor={{ fill: '#fafafa' }}
                   contentStyle={{ borderRadius: 14, fontSize: 12, border: '1px solid #e8e9ec', boxShadow: '0 12px 32px rgba(16,24,40,0.12)', padding: '10px 14px' }}
+                  labelStyle={{ fontWeight: 700, color: '#1a1d29', marginBottom: 4 }}
                 />
-                <Bar dataKey="pendukung" stackId="a" fill="#16a34a" name="Pendukung" />
-                <Bar dataKey="simpatisan" stackId="a" fill="#2563eb" name="Simpatisan" />
-                <Bar dataKey="tidak_mendukung" stackId="a" fill="#dc2626" name="Tidak Mendukung" />
-                <Bar dataKey="belum_diketahui" stackId="a" fill="#d97706" name="Belum Diketahui" radius={[6, 6, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} iconType="circle" iconSize={8} />
+                <Bar dataKey="pendukung" stackId="a" fill="url(#gradPendukung)" name="Pendukung" />
+                <Bar dataKey="simpatisan" stackId="a" fill="url(#gradSimpatisan)" name="Simpatisan" />
+                <Bar dataKey="tidak_mendukung" stackId="a" fill="url(#gradTidakMendukung)" name="Tidak Mendukung" />
+                <Bar dataKey="belum_diketahui" stackId="a" fill="url(#gradBelumDiketahui)" name="Belum Diketahui" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -203,16 +223,37 @@ const PemilihDashboard = () => {
         {perKelurahan.length === 0 ? (
           <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data kelurahan.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-            {perKelurahan.map((w) => (
-              <div key={w.nama} style={{
-                border: '1px solid #e8e9ec', borderRadius: 12, padding: '14px 16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1d29' }}>{w.nama}</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{w.total}</span>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+            {perKelurahan.map((w, i) => {
+              const maxTotal = perKelurahan[0].total || 1;
+              const pct = Math.max(6, (w.total / maxTotal) * 100);
+              const rankColors = ['#dc2626', '#d97706', '#2563eb'];
+              const rankColor = rankColors[i] || '#94a3b8';
+              return (
+                <div key={w.nama} className="p-card-hover" style={{
+                  position: 'relative', borderRadius: 16, padding: '18px 18px 16px',
+                  background: 'linear-gradient(150deg, #ffffff 0%, #fafbfc 100%)',
+                  border: '1px solid #eceef1', overflow: 'hidden',
+                  boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
+                }}>
+                  <div style={{ position: 'absolute', top: -18, right: -18, width: 70, height: 70, borderRadius: '50%', background: `radial-gradient(circle, ${rankColor}22, transparent 70%)` }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 7, background: rankColor + '1a', color: rankColor,
+                      fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{i + 1}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1d29' }}>{w.nama}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 12, position: 'relative', zIndex: 1 }}>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: '#1a1d29', letterSpacing: '-0.02em' }}>{w.total}</span>
+                    <span style={{ fontSize: 11.5, color: '#9ca3af', fontWeight: 500 }}>pemilih</span>
+                  </div>
+                  <div style={{ marginTop: 12, height: 6, borderRadius: 4, background: '#f1f2f4', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+                    <div style={{ width: pct + '%', height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
