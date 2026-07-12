@@ -246,8 +246,9 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
           </thead>
           <tbody>
             {candidates.map(recap => {
-              const isChecked = mutasiChecks[recap.id]?.is_checked || false;
-              const isAlreadyMatched = matchedRecapIds.has(recap.id);
+              const checkRecord = mutasiChecks[recap.id];
+              const isChecked = !!checkRecord?.is_checked && checkRecord?.mutasi_transaction_id === row.id;
+              const isAlreadyMatched = matchedRecapIds.has(recap.id) && !isChecked;
               return (
                 <tr
                   key={recap.id}
@@ -263,9 +264,14 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
                       {isChecked && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
                     </div>
                   </td>
-                  <td className="px-3 py-2 font-medium text-slate-800">{recap.patient_name}</td>
+                  <td className="px-3 py-2 font-medium text-slate-800">
+                    {recap.patient_name}
+                    {recap.kind === 'admin_income' && (
+                      <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 align-middle">Pemasukan Lain</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-slate-500">{recap.recap_date}</td>
-                  <td className="px-3 py-2 text-slate-500">{resolvePaymentMethodLabel(recap.payment_method)}</td>
+                  <td className="px-3 py-2 text-slate-500">{recap.payment_method}</td>
                   <td className="px-3 py-2">
                     {isChecked ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -394,7 +400,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [loadingAllRecaps, setLoadingAllRecaps] = useState(false);
   const [mutasiChecks, setMutasiChecks] = useState({});
 
-  const loadAllRecapsForPeriod = useCallback(async () => {
+ const loadAllRecapsForPeriod = useCallback(async () => {
     if (!savedTransactions.length && !csvRows.length) return;
     setLoadingAllRecaps(true);
     try {
@@ -409,14 +415,23 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const minDate = allDates[0];
       const maxDate = allDates[allDates.length - 1];
 
-      const { data: recaps } = await supabase
-        .from('daily_recaps')
-        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
-        .gte('recap_date', minDate)
-        .lte('recap_date', maxDate)
-        .not('amount', 'is', null)
-        .gt('amount', 0)
-        .order('recap_date');
+      const [{ data: recaps }, { data: adminIncomes }] = await Promise.all([
+        supabase
+          .from('daily_recaps')
+          .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+          .gte('recap_date', minDate)
+          .lte('recap_date', maxDate)
+          .not('amount', 'is', null)
+          .gt('amount', 0)
+          .order('recap_date'),
+        supabase
+          .from('admin_income')
+          .select('id, date, amount, category, sub_category, description')
+          .gte('date', minDate)
+          .lte('date', maxDate)
+          .gt('amount', 0)
+          .order('date'),
+      ]);
 
       const allIds = (recaps || []).flatMap(r => [r.patient_id, r.actual_patient_id]).filter(Boolean);
       let patientMap = {};
@@ -433,25 +448,46 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       (paymentMethodOpts || []).forEach(pm => { pmMap[pm.id] = pm.label; });
       const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-      const enriched = (recaps || []).map(r => ({
+      const enrichedRecaps = (recaps || []).map(r => ({
         ...r,
-        patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-',
+        kind: 'recap',
+        patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-',
         payment_method: uuidRe.test(r.payment_method || '') ? (pmMap[r.payment_method] || r.payment_method) : r.payment_method,
       }));
+
+      const enrichedAdminIncome = (adminIncomes || []).map(r => ({
+        id: r.id,
+        recap_date: r.date,
+        amount: r.amount,
+        kind: 'admin_income',
+        patient_name: (r.sub_category || r.category || 'Pemasukan Lainnya') + (r.description ? ` - ${r.description}` : ''),
+        payment_method: 'Pemasukan Lainnya',
+      }));
+
+      const enriched = [...enrichedRecaps, ...enrichedAdminIncome];
       setAllRecapsForPeriod(enriched);
 
-      // Load existing checks untuk mutasi_csv
-      const recapIds = enriched.map(r => r.id);
+      // Load existing checks untuk mutasi_csv (daily recap maupun pemasukan lainnya)
+      const recapIds = enrichedRecaps.map(r => r.id);
+      const adminIncomeIds = enrichedAdminIncome.map(r => r.id);
+      const checkMap = {};
       if (recapIds.length > 0) {
-        const { data: checks } = await supabase
+        const { data: checks1 } = await supabase
           .from('bsi_reconciliation_checks')
           .select('*')
           .eq('source_type', 'mutasi_csv')
           .in('daily_recap_id', recapIds);
-        const checkMap = {};
-        (checks || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
-        setMutasiChecks(checkMap);
+        (checks1 || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
       }
+      if (adminIncomeIds.length > 0) {
+        const { data: checks2 } = await supabase
+          .from('bsi_reconciliation_checks')
+          .select('*')
+          .eq('source_type', 'mutasi_csv')
+          .in('admin_income_id', adminIncomeIds);
+        (checks2 || []).forEach(c => { checkMap[c.admin_income_id] = c; });
+      }
+      setMutasiChecks(checkMap);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Error', description: err.message });
     } finally {
@@ -462,34 +498,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const handleMutasiCheck = useCallback(async (recap, isChecked, targetMutasiRow) => {
     // targetMutasiRow = baris mutasi CSV yang sedang dibuka picker-nya
     const existing = mutasiChecks[recap.id];
+    const mutasiTxId = targetMutasiRow?.id || null;
+    const isAdminIncome = recap.kind === 'admin_income';
 
-    // Cari apakah recap ini sudah di-assign ke mutasi lain (auto-match atau manual)
-    const currentAssignment = reconciled.find(r => r.matchedRecap?.id === recap.id);
-    const isAutoMatched = !!currentAssignment;
-
-    // Jika isChecked=true dan recap sudah ada di auto-match mutasi lain → konfirmasi
-    if (isChecked && isAutoMatched && currentAssignment) {
-      const confirmMsg = `"${recap.patient_name}" saat ini sudah cocok otomatis dengan mutasi ${formatRp(currentAssignment.nominal || currentAssignment.amount)} (${currentAssignment.tgl_masuk}).\n\nYakin ingin memindahkan ke mutasi ${formatRp(targetMutasiRow?.nominal || targetMutasiRow?.amount)} ini?`;
-      if (!window.confirm(confirmMsg)) return;
-
-      // Hapus auto-match lama dari reconciled (update state lokal)
-      // Tandai recap ini sebagai "manual override" dengan hapus dari reconciled
-      setReconciled(prev => prev.map(r => {
-        if (r.matchedRecap?.id === recap.id) {
-          return { ...r, status: 'unmatched', matchedRecap: null, manualOverridden: true };
-        }
-        return r;
-      }));
-    }
-
-    // Cari mutasi_transaction_id dari targetMutasiRow
-    const mutasiTxId = targetMutasiRow
-      ? (savedTransactions.find(s =>
-          s.tgl_masuk === targetMutasiRow.tgl_masuk &&
-          Math.round(Number(s.nominal)) === Math.round(Number(targetMutasiRow.nominal || targetMutasiRow.amount))
-        )?.id || null)
-      : null;
-
+    // Simpan/update record checklist di database (1 recap/pemasukan = 1 record, repoint ke mutasi baru)
     if (existing) {
       const { data } = await supabase
         .from('bsi_reconciliation_checks')
@@ -508,7 +520,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .insert({
           source_type: 'mutasi_csv',
           mutasi_transaction_id: mutasiTxId,
-          daily_recap_id: recap.id,
+          daily_recap_id: isAdminIncome ? null : recap.id,
+          admin_income_id: isAdminIncome ? recap.id : null,
           is_checked: isChecked,
           checked_by: user?.id,
           checked_at: isChecked ? new Date().toISOString() : null,
@@ -516,93 +529,49 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
     }
 
-    // Update status baris mutasi target menjadi matched jika ada recap yang dipilih
-    if (targetMutasiRow) {
-      setReconciled(prev => prev.map(r => {
-        const isSameRow = r.tgl_masuk === targetMutasiRow.tgl_masuk &&
-          Math.round(Number(r.nominal || r.amount)) === Math.round(Number(targetMutasiRow.nominal || targetMutasiRow.amount)) &&
-          r.tipe === targetMutasiRow.tipe &&
-          r.deskripsi === targetMutasiRow.deskripsi;
+    // Lepas recap dari baris manapun yang masih menyimpannya, lalu pasang ke baris target
+    setReconciled(prev => prev.map(r => {
+      const isTargetRow = targetMutasiRow?.id ? r.id === targetMutasiRow.id : r === targetMutasiRow;
+      const hasThisRecap = r.matchedRecap?.id === recap.id || (r.manualRecaps || []).some(mr => mr.id === recap.id);
 
-        if (!isSameRow) return r;
-
-        if (!isChecked) {
-          // Jika uncheck — cek apakah masih ada recap lain yang dipilih untuk mutasi ini
-          const remainingChecked = Object.entries({...mutasiChecks, [recap.id]: { is_checked: false }})
-            .filter(([, v]) => v?.is_checked)
-            .map(([k]) => k);
-          // Kalau tidak ada yang tersisa, kembalikan ke unmatched
-          const newManualRecaps = (r.manualRecaps || []).filter(mr => mr.id !== recap.id);
-          if (newManualRecaps.length === 0) {
-            return { ...r, status: 'unmatched', matchedRecap: null, manualRecaps: [] };
-          }
-          return { ...r, manualRecaps: newManualRecaps, matchedRecap: newManualRecaps[0] };
+      if (hasThisRecap && !isTargetRow) {
+        const remaining = (r.manualRecaps || []).filter(mr => mr.id !== recap.id);
+        if (remaining.length === 0) {
+          return { ...r, status: 'unmatched', matchedRecap: null, manualRecaps: [], isManualMatch: false };
         }
-
-        // Jika check — tambahkan recap ke manualRecaps
-        const existingManual = r.manualRecaps || [];
-        const alreadyIn = existingManual.find(mr => mr.id === recap.id);
-        const newManualRecaps = alreadyIn ? existingManual : [...existingManual, {
-          id: recap.id,
-          recap_date: recap.recap_date,
-          amount: recap.amount,
-          payment_method: recap.payment_method || '-',
-          patient_name: recap.patient_name || '-',
-        }];
-        return {
-          ...r,
-          status: 'matched',
-          matchedRecap: newManualRecaps[0], // tetap simpan 1 untuk kompatibilitas
-          manualRecaps: newManualRecaps,
-          isManualMatch: true,
-        };
-      }));
-    }
-
-    // Jika recap dipindahkan dari auto-match, coba auto-match ulang mutasi yang ditinggalkan
-    if (isChecked && isAutoMatched && currentAssignment) {
-      const orphanedMutasi = currentAssignment;
-      const orphanedAmt = Math.round(Number(orphanedMutasi.nominal || orphanedMutasi.amount));
-      const orphanedDate = orphanedMutasi.tgl_transaksi || orphanedMutasi.tgl_masuk;
-
-      // Cari recap lain di tanggal yang sama dengan nominal yang sama yang belum dipakai
-      const { data: candidates } = await supabase
-        .from('daily_recaps')
-        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
-        .eq('recap_date', orphanedDate)
-        .eq('amount', orphanedAmt)
-        .not('id', 'eq', recap.id);
-
-      if (candidates && candidates.length > 0) {
-        // Cek apakah kandidat sudah dipakai di mutasiChecks
-        const usedRecapIds = new Set(
-          Object.entries(mutasiChecks)
-            .filter(([, v]) => v?.is_checked)
-            .map(([k]) => k)
-        );
-        const freeCandidate = candidates.find(c => !usedRecapIds.has(c.id));
-        if (freeCandidate) {
-          // Auto-assign kembali ke mutasi yang ditinggalkan
-          setReconciled(prev => prev.map(r => {
-            if (r === orphanedMutasi || (r.tgl_masuk === orphanedMutasi.tgl_masuk && Math.round(Number(r.nominal || r.amount)) === orphanedAmt)) {
-              return {
-                ...r,
-                status: 'matched',
-                matchedRecap: {
-                  id: freeCandidate.id,
-                  recap_date: freeCandidate.recap_date,
-                  amount: freeCandidate.amount,
-                  payment_method: freeCandidate.payment_method,
-                  patient_name: '-',
-                }
-              };
-            }
-            return r;
-          }));
-        }
+        return { ...r, status: 'matched', matchedRecap: remaining[0], manualRecaps: remaining };
       }
-    }
-  }, [mutasiChecks, reconciled, savedTransactions, user]);
+
+      if (!isTargetRow) return r;
+
+      if (!isChecked) {
+        const remaining = (r.manualRecaps || []).filter(mr => mr.id !== recap.id);
+        if (remaining.length === 0) {
+          return { ...r, status: 'unmatched', matchedRecap: null, manualRecaps: [], isManualMatch: false };
+        }
+        return { ...r, status: 'matched', matchedRecap: remaining[0], manualRecaps: remaining };
+      }
+
+      const existingManual = r.manualRecaps || [];
+      const alreadyIn = existingManual.find(mr => mr.id === recap.id);
+      const newManualRecaps = alreadyIn ? existingManual : [...existingManual, {
+        id: recap.id,
+        recap_date: recap.recap_date,
+        amount: recap.amount,
+        payment_method: recap.payment_method || '-',
+        patient_name: recap.patient_name || '-',
+        kind: recap.kind || 'recap',
+      }];
+      return {
+        ...r,
+        status: 'matched',
+        matchedRecap: newManualRecaps[0],
+        manualRecaps: newManualRecaps,
+        isManualMatch: true,
+        _editMode: false,
+      };
+    }));
+  }, [mutasiChecks, user]);
 
   const [debitEntries, setDebitEntries] = useState([]);
   const [debitParsing, setDebitParsing] = useState(false);
@@ -824,7 +793,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
       const { data: recaps, error } = await supabase
         .from('daily_recaps')
-        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
+        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
         .gte('recap_date', minDate)
         .lte('recap_date', maxDate)
         .not('amount', 'is', null)
@@ -844,7 +813,61 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
 
-      const getPatientName = (r) => patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-';
+      const getPatientName = (r) => patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-';
+
+      const txIds = txList.map(r => r.id).filter(Boolean);
+      let manualMatchesByTxId = {};
+      if (txIds.length > 0) {
+        const { data: checks } = await supabase
+          .from('bsi_reconciliation_checks')
+          .select('mutasi_transaction_id, daily_recap_id, admin_income_id')
+          .eq('source_type', 'mutasi_csv')
+          .eq('is_checked', true)
+          .in('mutasi_transaction_id', txIds);
+
+        const recapById = {};
+        (recaps || []).forEach(r => { recapById[r.id] = r; });
+
+        const adminIncomeCheckIds = (checks || []).map(c => c.admin_income_id).filter(Boolean);
+        let adminIncomeById = {};
+        if (adminIncomeCheckIds.length > 0) {
+          const { data: adminIncomes } = await supabase
+            .from('admin_income')
+            .select('id, date, amount, category, sub_category, description')
+            .in('id', [...new Set(adminIncomeCheckIds)]);
+          (adminIncomes || []).forEach(a => { adminIncomeById[a.id] = a; });
+        }
+
+        (checks || []).forEach(c => {
+          let entry = null;
+          if (c.daily_recap_id) {
+            const dr = recapById[c.daily_recap_id];
+            if (!dr) return;
+            entry = {
+              id: dr.id,
+              recap_date: dr.recap_date,
+              amount: dr.amount,
+              payment_method: dr.payment_method,
+              patient_name: getPatientName(dr),
+              kind: 'recap',
+            };
+          } else if (c.admin_income_id) {
+            const ai = adminIncomeById[c.admin_income_id];
+            if (!ai) return;
+            entry = {
+              id: ai.id,
+              recap_date: ai.date,
+              amount: ai.amount,
+              payment_method: 'Pemasukan Lainnya',
+              patient_name: (ai.sub_category || ai.category || 'Pemasukan Lainnya') + (ai.description ? ` - ${ai.description}` : ''),
+              kind: 'admin_income',
+            };
+          }
+          if (!entry) return;
+          if (!manualMatchesByTxId[c.mutasi_transaction_id]) manualMatchesByTxId[c.mutasi_transaction_id] = [];
+          manualMatchesByTxId[c.mutasi_transaction_id].push(entry);
+        });
+      }
 
       const QRIS_UUID = '09768d17-6bfa-4d0e-bee2-81d9cb156838';
       const DEBIT_UUID = '879709f1-9be0-4d2e-8006-a927ea96ff22';
@@ -858,8 +881,13 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const transferRecaps = (recaps || []).filter(r => isTransfer(r.payment_method));
 
       const usedIds = new Set();
+      // Recap/pemasukan lain yang sudah dipesan untuk match manual di baris manapun tidak boleh diambil auto-match baris lain
+      Object.values(manualMatchesByTxId).forEach(list => {
+        (list || []).forEach(mr => usedIds.add(mr.id));
+      });
 
       const result = txList.map(row => {
+
         let matched = null;
         let candidates = [];
         const mutasiAmt = Math.round(Number(row.nominal || row.amount));
@@ -896,6 +924,17 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         if (candidates.length > 0) {
           matched = candidates[0];
           usedIds.add(matched.id);
+        }
+
+        const manualRecaps = row.id ? manualMatchesByTxId[row.id] : null;
+        if (manualRecaps && manualRecaps.length > 0) {
+          return {
+            ...row,
+            status: 'matched',
+            matchedRecap: manualRecaps[0],
+            manualRecaps,
+            isManualMatch: true,
+          };
         }
 
         return {
@@ -1010,7 +1049,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     const DEBIT_UUID = '879709f1-9be0-4d2e-8006-a927ea96ff22';
     const { data: recaps } = await supabase
       .from('daily_recaps')
-      .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id')
+      .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
       .in('recap_date', validDates)
       .not('amount', 'is', null)
       .gt('amount', 0);
@@ -1029,7 +1068,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
     const enriched = debitRecapsOnly.map(r => ({
       ...r,
-      patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || '-',
+      patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-',
     }));
 
     setDebitRecaps(prev => ({ ...prev, [settlement.id]: enriched }));
@@ -1492,7 +1531,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                     mutasiChecks={mutasiChecks}
                                     onCheck={handleMutasiCheck}
                                     onLoad={() => { if (!allRecapsForPeriod.length) loadAllRecapsForPeriod(); }}
-                                    matchedRecapIds={new Set(reconciled.filter(r => r.matchedRecap).map(r => r.matchedRecap.id))}
+                                    matchedRecapIds={new Set(reconciled.flatMap(r => (r.manualRecaps && r.manualRecaps.length ? r.manualRecaps.map(mr => mr.id) : (r.matchedRecap ? [r.matchedRecap.id] : []))))}
                                   />
                                 </td>
                               </tr>
