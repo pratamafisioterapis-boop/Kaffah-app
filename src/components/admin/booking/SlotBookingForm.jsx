@@ -118,7 +118,7 @@ useEffect(() => {
 
   if (!val) return;
 
-  const selectedPatient = patients.find(p => p.id === val);
+  const selectedPatient = filteredPatients.find(p => p.id === val) || patients.find(p => p.id === val);
   if (selectedPatient) {
     setPatientSearchTerm(selectedPatient.full_name);
   }
@@ -456,9 +456,12 @@ action_by: user?.id,
   setFilteredPatients(patients);
   setShowDropdown(true);
 }}
-              className="pl-9"
+              className={cn("pl-9", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
               disabled={isLeave || loading}
             />
+            {formData.patient_id && (
+              <CheckCircle className="absolute right-3 top-2.5 h-4 w-4 text-green-500" />
+            )}
           </div>
           {showDropdown && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto">

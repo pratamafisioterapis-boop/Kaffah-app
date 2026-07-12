@@ -190,6 +190,33 @@ const PemilihDashboard = () => {
         </div>
       </div>
 
+      <div className="p-card" style={{ padding: 24, marginBottom: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 9, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Users size={15} color="#2563eb" />
+          </div>
+          <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Total Pemilih per Kelurahan</h3>
+        </div>
+        <p style={{ margin: '4px 0 18px 38px', fontSize: 11.5, color: '#9ca3af' }}>
+          Jumlah total data pemilih tercatat di tiap kelurahan, diurutkan dari terbanyak.
+        </p>
+        {perKelurahan.length === 0 ? (
+          <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data kelurahan.</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {perKelurahan.map((w) => (
+              <div key={w.nama} style={{
+                border: '1px solid #e8e9ec', borderRadius: 12, padding: '14px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1d29' }}>{w.nama}</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{w.total}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="p-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

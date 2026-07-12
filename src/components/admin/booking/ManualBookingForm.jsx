@@ -508,6 +508,7 @@ const handleConfirmRecurring = async () => {
    onChange={async (e) => {
   const value = e.target.value;
   setPatientSearch(value);
+  setFormData(prev => ({ ...prev, patient_id: '' }));
 
   try {
     const { data } = await getPatients(value || '');
@@ -517,7 +518,11 @@ const handleConfirmRecurring = async () => {
     console.error(err);
   }
 }}
+    className={cn(formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
   />
+  {formData.patient_id && (
+    <CheckCircle className="absolute right-3 top-2.5 h-4 w-4 text-green-500" />
+  )}
 
   {showDropdown && (
     <div className="absolute z-50 w-full bg-white border rounded mt-1 max-h-48 overflow-auto shadow">

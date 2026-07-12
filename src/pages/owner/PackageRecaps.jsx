@@ -14,6 +14,7 @@ const PackageRecapsOwner = () => {
         { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'MessageSquare' },
         { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
         { label: 'Accounting System', path: '/owner/accounting', icon: 'DollarSign' },
+        { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
         { label: 'Setup', path: '/owner/settings', icon: 'Settings' }
     ];
 
