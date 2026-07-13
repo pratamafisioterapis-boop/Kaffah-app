@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, CheckCircle2, UserPlus, Users, Search, Phone, Calendar, MessageCircle, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -115,39 +115,47 @@ Terimakasih Atas Perhatiannya
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="w-full max-w-3xl mx-auto px-4 py-10"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="w-full max-w-3xl mx-auto px-4 py-2 sm:py-4"
     >
-      <Button variant="ghost" onClick={onBack} className="mb-6 text-[#1e3a8a]">
+      <Button variant="ghost" onClick={onBack} className="mb-4 sm:mb-6 pl-0 text-[#1e3a8a] hover:bg-transparent">
         <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
       </Button>
 
-      <Card className="rounded-2xl shadow-2xl overflow-hidden border">
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-blue-600 p-6 text-white">
-          <h2 className="text-2xl font-bold">Data Pasien</h2>
-          <p className="text-blue-100 text-sm">
-            Pilih jenis pasien
-          </p>
+      <Card className="rounded-3xl shadow-[0_20px_60px_-25px_rgba(30,58,138,0.25)] overflow-hidden border border-slate-100">
+        <div className="bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] p-6 sm:p-8 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Data Pasien</h2>
+              <p className="text-blue-100 text-sm mt-0.5">
+                Pilih jenis pasien untuk melanjutkan
+              </p>
+            </div>
+          </div>
         </div>
 
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-6 sm:p-8 space-y-7 sm:space-y-8">
 
           {/* MODE SELECTOR */}
-          <div className="grid grid-cols-2 bg-slate-100 rounded-xl p-1">
+          <div className="grid grid-cols-2 bg-slate-100 rounded-2xl p-1.5 gap-1">
             <button
               onClick={() => {
                 setMode('new');
                 setFoundPatient(null);
                 setNotFound(false);
               }}
-              className={`rounded-lg py-3 text-sm font-semibold transition ${
+              className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${
                 mode === 'new'
-                  ? 'bg-white shadow text-[#1e3a8a]'
-                  : 'text-slate-500'
+                  ? 'bg-white shadow-md text-[#1e3a8a]'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Pasien Baru
+              <UserPlus className="w-4 h-4" /> Pasien Baru
             </button>
 
             <button
@@ -156,35 +164,37 @@ Terimakasih Atas Perhatiannya
                 setFoundPatient(null);
                 setNotFound(false);
               }}
-              className={`rounded-lg py-3 text-sm font-semibold transition ${
+              className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${
                 mode === 'old'
-                  ? 'bg-white shadow text-[#1e3a8a]'
-                  : 'text-slate-500'
+                  ? 'bg-white shadow-md text-[#1e3a8a]'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Pasien Lama
+              <Users className="w-4 h-4" /> Pasien Lama
             </button>
           </div>
 
           {/* PASIEN LAMA */}
           {mode === 'old' && (
-            <div className="space-y-6 bg-slate-50 p-6 rounded-xl border">
+            <div className="space-y-5 sm:space-y-6 bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200">
               <div>
-                <Label>Nama Belakang</Label>
+                <Label className="text-sm font-semibold text-slate-700 mb-1.5 block">Nama Belakang</Label>
                 <Input
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
+                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
                 />
               </div>
 
               <div>
-                <Label>Tanggal Lahir</Label>
+                <Label className="text-sm font-semibold text-slate-700 mb-1.5 block">Tanggal Lahir</Label>
                 <Input
                   type="date"
                   name="birth_date"
                   value={formData.birth_date}
                   onChange={handleChange}
+                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
                 />
                 {formData.birth_date && (
                   <p className="text-sm text-slate-500 mt-2">
@@ -197,19 +207,22 @@ Terimakasih Atas Perhatiannya
                 type="button"
                 onClick={handleSearchOldPatient}
                 disabled={searching}
-                className="w-full h-11 bg-blue-600 hover:bg-blue-700"
+                className="w-full h-11 rounded-xl bg-[#1e3a8a] hover:bg-[#172554] gap-2 font-semibold"
               >
+                <Search className="w-4 h-4" />
                 {searching ? "Mencari..." : "Cari Data Pasien"}
               </Button>
 
               {foundPatient && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                  <CheckCircle2 className="text-green-600" />
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
                   <div>
-                    <p className="font-semibold text-green-700">
+                    <p className="font-semibold text-emerald-700 text-sm">
                       Pasien Terverifikasi
                     </p>
-                    <p className="text-green-600 text-sm">
+                    <p className="text-emerald-600 text-sm">
                       {foundPatient.full_name}
                     </p>
                   </div>
@@ -217,22 +230,22 @@ Terimakasih Atas Perhatiannya
               )}
 
               {notFound && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                  <p className="text-red-600 font-semibold">
-                    Data tidak ditemukan
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-3">
+                  <p className="text-red-600 font-semibold flex items-center gap-2 text-sm">
+                    <AlertTriangle className="w-4 h-4" /> Data tidak ditemukan
                   </p>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 rounded-xl border-slate-200"
                       onClick={() => setMode('new')}
                     >
                       Daftar Pasien Baru
                     </Button>
 
                     <Button
-                      className="flex-1 bg-red-600 hover:bg-red-700"
+                      className="flex-1 rounded-xl bg-red-600 hover:bg-red-700"
                       onClick={handleContactAdmin}
                     >
                       Hubungi Admin
@@ -245,34 +258,43 @@ Terimakasih Atas Perhatiannya
 
           {/* FORM */}
           {(mode === 'new' || foundPatient) && (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
               {mode === 'new' && (
   <>
     <div>
-      <Label>Nama Lengkap Pasien</Label>
+      <Label className="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+        <UserPlus className="w-3.5 h-3.5 text-[#1e3a8a]" /> Nama Lengkap Pasien
+      </Label>
       <Input
         name="full_name"
         value={formData.full_name}
         onChange={handleChange}
+        className="h-11 sm:h-12 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
       />
     </div>
                   <div>
-                    <Label>Nomor WhatsApp</Label>
+                    <Label className="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-[#1e3a8a]" /> Nomor WhatsApp
+                    </Label>
                     <Input
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
+                      className="h-11 sm:h-12 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
                     />
                   </div>
 
                   <div>
-                    <Label>Tanggal Lahir</Label>
+                    <Label className="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#1e3a8a]" /> Tanggal Lahir
+                    </Label>
                     <Input
                       type="date"
                       name="birth_date"
                       value={formData.birth_date}
                       onChange={handleChange}
+                      className="h-11 sm:h-12 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
                     />
                     {formData.birth_date && (
                       <p className="text-sm text-slate-500 mt-2">
@@ -284,20 +306,27 @@ Terimakasih Atas Perhatiannya
               )}
 
               <div>
-                <Label>Keluhan</Label>
+                <Label className="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-[#1e3a8a]" /> Keluhan
+                </Label>
                 <Textarea
                   name="complaint"
                   value={formData.complaint}
                   onChange={handleChange}
+                  className="rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40 min-h-[100px]"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-12 text-lg font-semibold rounded-xl bg-[#1e3a8a] hover:bg-[#172554]"
+                className="w-full h-12 sm:h-13 text-base sm:text-lg font-bold rounded-full bg-[#1e3a8a] hover:bg-[#172554] shadow-lg shadow-blue-900/20 hover:shadow-xl transition-all hover:-translate-y-0.5"
               >
                 Lanjut ke Konfirmasi
               </Button>
+
+              <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Data Anda tersimpan aman dan rahasia
+              </p>
             </form>
           )}
 

@@ -54,23 +54,26 @@ Terima kasih.`;
 
   return (
     <motion.div
-      className="w-full max-w-5xl mx-auto px-4 py-12 md:py-20"
+      className="w-full max-w-5xl mx-auto px-4 py-8 sm:py-14 md:py-20"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
-      <div className="text-center mb-12 space-y-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+      <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4">
+        <div className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e3a8a] text-xs font-bold tracking-wide uppercase px-3.5 py-1.5 rounded-full mb-1">
+          <Check className="w-3.5 h-3.5" /> Langkah 1 dari 5
+        </div>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
           Pilih Jenis Treatment
         </h2>
-        <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+        <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
           Silakan pilih jenis layanan sesuai dengan kebutuhan Anda sebelum melanjutkan proses booking.
         </p>
       </div>
 
-      {/* ================== SERVICE CARDS (TIDAK DIUBAH) ================== */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+      {/* ================== SERVICE CARDS (LOGIC TIDAK DIUBAH) ================== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 mb-10 sm:mb-14">
         {/* Card 1 */}
         <motion.div
           variants={cardVariants}
@@ -78,30 +81,33 @@ Terima kasih.`;
           whileTap="tap"
           onClick={() => handleCardClick('physiotherapy')}
           className={cn(
-            "relative cursor-pointer rounded-2xl border-2 p-8 transition-all duration-300 overflow-hidden group",
+            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group",
             selectedId === 'physiotherapy'
-              ? "border-[#1e3a8a] bg-[#dbeafe] shadow-xl shadow-blue-900/10"
-              : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg"
+              ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
+              : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
           )}
         >
-          <div className="flex items-start justify-between mb-6">
+          {selectedId === 'physiotherapy' && (
+            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 rounded-full blur-2xl" />
+          )}
+          <div className="flex items-start justify-between mb-5 sm:mb-6 relative z-10">
             <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center transition-colors",
+              "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm",
               selectedId === 'physiotherapy'
-                ? "bg-[#1e3a8a] text-white"
+                ? "bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6] text-white shadow-lg shadow-blue-900/20"
                 : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
             )}>
-              <Stethoscope className="w-8 h-8" />
+              <Stethoscope className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             {selectedId === 'physiotherapy' && (
-              <div className="bg-[#1e3a8a] rounded-full p-1">
-                <Check className="w-5 h-5 text-white" />
+              <div className="bg-[#1e3a8a] rounded-full p-1.5 shadow-md">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             )}
           </div>
 
           <h3 className={cn(
-            "text-2xl font-bold mb-3",
+            "text-xl sm:text-2xl font-bold mb-2.5 sm:mb-3 tracking-tight",
             selectedId === 'physiotherapy'
               ? "text-[#1e3a8a]"
               : "text-slate-900"
@@ -109,11 +115,11 @@ Terima kasih.`;
             Physiotherapy Treatment
           </h3>
 
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <p className="text-slate-500 text-sm sm:text-base mb-5 sm:mb-6 leading-relaxed">
             Layanan fisioterapi klinis berbasis assessment untuk nyeri, cedera, gangguan gerak, saraf terjepit, stroke, dan rehabilitasi pasca operasi.
           </p>
 
-          <ul className="space-y-3">
+          <ul className="space-y-2.5 sm:space-y-3">
             {[
               "Konsultasi",
               "Assessment klinis menyeluruh",
@@ -124,13 +130,15 @@ Terima kasih.`;
               "Home programs & Edukasi"
             ].map((feature, idx) => (
               <li key={idx} className="flex items-start gap-3 text-slate-700">
-                <Check className={cn(
-                  "w-5 h-5 mt-0.5 shrink-0",
+                <span className={cn(
+                  "flex items-center justify-center w-5 h-5 rounded-full mt-0.5 shrink-0",
                   selectedId === 'physiotherapy'
-                    ? "text-blue-700"
-                    : "text-green-500"
-                )} />
-                <span className="font-medium">{feature}</span>
+                    ? "bg-blue-100 text-[#1e3a8a]"
+                    : "bg-emerald-50 text-emerald-600"
+                )}>
+                  <Check className="w-3.5 h-3.5" />
+                </span>
+                <span className="font-medium text-sm sm:text-base">{feature}</span>
               </li>
             ))}
           </ul>
@@ -143,30 +151,33 @@ Terima kasih.`;
           whileTap="tap"
           onClick={() => handleCardClick('recovery')}
           className={cn(
-            "relative cursor-pointer rounded-2xl border-2 p-8 transition-all duration-300 overflow-hidden group",
+            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group",
             selectedId === 'recovery'
-              ? "border-[#1e3a8a] bg-[#dbeafe] shadow-xl shadow-blue-900/10"
-              : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg"
+              ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
+              : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
           )}
         >
-          <div className="flex items-start justify-between mb-6">
+          {selectedId === 'recovery' && (
+            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 rounded-full blur-2xl" />
+          )}
+          <div className="flex items-start justify-between mb-5 sm:mb-6 relative z-10">
             <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center transition-colors",
+              "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm",
               selectedId === 'recovery'
-                ? "bg-[#1e3a8a] text-white"
+                ? "bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6] text-white shadow-lg shadow-blue-900/20"
                 : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
             )}>
-              <Zap className="w-8 h-8" />
+              <Zap className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             {selectedId === 'recovery' && (
-              <div className="bg-[#1e3a8a] rounded-full p-1">
-                <Check className="w-5 h-5 text-white" />
+              <div className="bg-[#1e3a8a] rounded-full p-1.5 shadow-md">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             )}
           </div>
 
           <h3 className={cn(
-            "text-2xl font-bold mb-3",
+            "text-xl sm:text-2xl font-bold mb-2.5 sm:mb-3 tracking-tight",
             selectedId === 'recovery'
               ? "text-[#1e3a8a]"
               : "text-slate-900"
@@ -174,11 +185,11 @@ Terima kasih.`;
             Recovery Treatment
           </h3>
 
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <p className="text-slate-500 text-sm sm:text-base mb-5 sm:mb-6 leading-relaxed">
             Layanan pemulihan untuk mengurangi kelelahan otot dan mempercepat recovery.
           </p>
 
-          <ul className="space-y-3">
+          <ul className="space-y-2.5 sm:space-y-3">
             {[
               "Konsultasi",
               "Pemeriksaan otot",
@@ -189,13 +200,15 @@ Terima kasih.`;
               "Edukasi mandiri"
             ].map((feature, idx) => (
               <li key={idx} className="flex items-start gap-3 text-slate-700">
-                <Check className={cn(
-                  "w-5 h-5 mt-0.5 shrink-0",
+                <span className={cn(
+                  "flex items-center justify-center w-5 h-5 rounded-full mt-0.5 shrink-0",
                   selectedId === 'recovery'
-                    ? "text-blue-700"
-                    : "text-green-500"
-                )} />
-                <span className="font-medium">{feature}</span>
+                    ? "bg-blue-100 text-[#1e3a8a]"
+                    : "bg-emerald-50 text-emerald-600"
+                )}>
+                  <Check className="w-3.5 h-3.5" />
+                </span>
+                <span className="font-medium text-sm sm:text-base">{feature}</span>
               </li>
             ))}
           </ul>
@@ -207,19 +220,19 @@ Terima kasih.`;
         variants={subtleFade}
         initial="hidden"
         animate="visible"
-        className="mb-14 relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50 border border-emerald-200 p-8 shadow-sm"
+        className="mb-10 sm:mb-14 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50 border border-emerald-100 p-6 sm:p-8 shadow-[0_20px_50px_-25px_rgba(5,150,105,0.3)]"
       >
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-200/30 rounded-full blur-3xl"></div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold tracking-wide text-emerald-600 uppercase mb-2">
+            <p className="text-xs sm:text-sm font-bold tracking-wider text-emerald-600 uppercase mb-2">
               Exclusive Service
             </p>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">
+            <h4 className="text-lg sm:text-xl font-bold text-slate-900 mb-2.5 sm:mb-3 tracking-tight">
               Layanan Fisioterapi Homecare
             </h4>
-            <p className="text-slate-600 leading-relaxed">
+            <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
               Untuk reservasi layanan fisioterapi homecare, kami sarankan menghubungi 
               Admin Kaffah Physiotherapy secara langsung agar penjadwalan dapat disesuaikan 
               dengan kebutuhan dan ketersediaan terapis.
@@ -228,7 +241,7 @@ Terima kasih.`;
 
           <button
             onClick={handleWhatsAppClick}
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3 rounded-full text-sm font-semibold shadow-lg transition-all duration-300 hover:scale-105"
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 sm:px-7 py-3 rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/15 transition-all duration-300 hover:scale-105 shrink-0"
           >
             <MessageCircle className="w-4 h-4" />
             Hubungi Admin via WhatsApp
@@ -242,9 +255,9 @@ Terima kasih.`;
           onClick={handleContinue}
           disabled={!selectedId}
           className={cn(
-            "h-14 px-10 text-lg font-bold rounded-xl transition-all duration-300 flex items-center gap-2",
+            "h-13 sm:h-14 px-8 sm:px-10 text-base sm:text-lg font-bold rounded-full transition-all duration-300 flex items-center gap-2",
             selectedId
-              ? "bg-[#1e3a8a] hover:bg-[#172554] text-white shadow-lg shadow-blue-900/20 transform hover:-translate-y-1"
+              ? "bg-[#1e3a8a] hover:bg-[#172554] text-white shadow-lg shadow-blue-900/20 transform hover:-translate-y-1 hover:shadow-xl"
               : "bg-slate-200 text-slate-400 cursor-not-allowed"
           )}
         >
