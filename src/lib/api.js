@@ -1862,6 +1862,121 @@ export const createAdminExpense = async (payload) => {
     return { data, success: true, error: null };
   }, 'createAdminExpense');
 };
+// ==================== INVENTORY / STOK GUDANG ====================
+
+export const getInventoryItems = async ({ activeOnly = true } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase.from('inventory_items').select('*').order('item_name', { ascending: true });
+    if (activeOnly) query = query.eq('is_active', true);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getInventoryItems');
+};
+
+export const createInventoryItem = async (payload) => {
+  return safeQuery(async () => {
+    const quantity = Number(payload.quantity) || 0;
+    const totalPrice = Number(payload.total_price) || 0;
+    const pricePerUnit = quantity > 0 ? totalPrice / quantity : 0;
+
+    const { data: item, error } = await supabase
+      .from('inventory_items')
+      .insert({
+        item_name: payload.item_name,
+        unit: payload.unit,
+        current_stock: quantity,
+        price_per_unit: pricePerUnit,
+        minimum_stock: payload.minimum_stock || 0,
+        created_by: payload.created_by || null
+      })
+      .select()
+      .single();
+    if (error) return { error };
+
+    if (quantity > 0) {
+      await supabase.from('inventory_stock_ins').insert({
+        item_id: item.id,
+        quantity,
+        total_price: totalPrice,
+        unit_price: pricePerUnit,
+        purchase_date: payload.purchase_date || new Date().toISOString().slice(0, 10),
+        notes: 'Stok awal',
+        created_by: payload.created_by || null
+      });
+    }
+    return { data: item, success: true, error: null };
+  }, 'createInventoryItem');
+};
+
+export const updateInventoryItem = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .update({
+        item_name: payload.item_name,
+        unit: payload.unit,
+        minimum_stock: payload.minimum_stock,
+        is_active: payload.is_active,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateInventoryItem');
+};
+
+export const deleteInventoryItem = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('inventory_items').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteInventoryItem');
+};
+
+export const restockInventoryItem = async ({ item_id, quantity, total_price, purchase_date, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('restock_inventory_item', {
+      p_item_id: item_id,
+      p_quantity: Number(quantity),
+      p_total_price: Number(total_price),
+      p_purchase_date: purchase_date || new Date().toISOString().slice(0, 10),
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'restockInventoryItem');
+};
+
+export const takeInventoryStock = async ({ item_id, quantity, taken_date, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('take_inventory_stock', {
+      p_item_id: item_id,
+      p_quantity: Number(quantity),
+      p_taken_date: taken_date || new Date().toISOString().slice(0, 10),
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'takeInventoryStock');
+};
+
+export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('inventory_stock_outs')
+      .select('*, inventory_items ( item_name, unit )')
+      .order('taken_date', { ascending: false });
+    if (startDate) query = query.gte('taken_date', startDate);
+    if (endDate) query = query.lte('taken_date', endDate);
+    if (itemId) query = query.eq('item_id', itemId);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getInventoryStockOuts');
+};
 export const deleteAdminIncome = async (id) => {
   return safeQuery(async () => {
     const { error } = await supabase

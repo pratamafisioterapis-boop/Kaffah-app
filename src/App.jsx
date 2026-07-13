@@ -21,6 +21,8 @@ const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
 const TherapistScheduleSettingsPage = React.lazy(() => import('@/pages/owner/TherapistScheduleSettings'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
 const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
+const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
+const InventoryTakeOutPage = React.lazy(() => import('@/pages/admin/InventoryTakeOut'));
 const FollowUpManagementPage = React.lazy(() => import('@/pages/admin/FollowUpManagementPage'));
 
 // Dashboard Imports
@@ -200,6 +202,15 @@ function App() {
                 />
 
                 <Route
+                  path="/owner/inventory"
+                  element={
+                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                      <InventoryStockPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
                   path="/follow-up"
                   element={
                     <ProtectedRoute allowedRoles={['admin', 'owner', 'super_admin']}>
@@ -231,6 +242,14 @@ function App() {
   element={
     <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
       <PackageRecapsAdmin />
+    </ProtectedRoute>
+  }
+/>
+                <Route
+  path="/admin/inventory-takeout"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+      <InventoryTakeOutPage />
     </ProtectedRoute>
   }
 />

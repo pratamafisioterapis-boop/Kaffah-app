@@ -417,6 +417,7 @@ const OwnerDashboard = () => {
     { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
     { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
     { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
+    { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
     { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
     { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
   ];

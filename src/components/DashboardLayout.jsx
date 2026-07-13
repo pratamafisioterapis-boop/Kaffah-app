@@ -7,7 +7,7 @@ import {
   Home, Calendar, Users, Settings, LogOut, Activity, Briefcase, 
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
-  MessageSquare, Plus
+  MessageSquare, Plus, Boxes
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -28,7 +28,8 @@ const iconMap = {
   ClipboardList,
   Database,
   DollarSign,
-  MessageSquare
+  MessageSquare,
+  Boxes
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -226,14 +227,14 @@ const isPWA =
      });
 
      if (role === 'admin') {
-        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System'];
+        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang'];
         const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
         };
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      } else if (role === 'owner') {
-         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Accounting System', 'Rekonsiliasi BSI', 'Setup'];
+         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Setup'];
          const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
@@ -268,6 +269,11 @@ const pwaNavItems = useMemo(() => {
         label: 'Package Recaps',
         path: '/admin/package-recaps',
         icon: 'Package'
+      },
+      {
+        label: 'Ambil Barang Gudang',
+        path: '/admin/inventory-takeout',
+        icon: 'Boxes'
       },
       {
         label: 'Database Patients',
@@ -323,6 +329,11 @@ const pwaNavItems = useMemo(() => {
         label: 'Package Recaps',
         path: '/owner/package-recaps',
         icon: 'Package'
+      },
+      {
+        label: 'Stok Barang',
+        path: '/owner/inventory',
+        icon: 'Boxes'
       },
       {
         label: 'Database Patients',
