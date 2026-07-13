@@ -945,7 +945,10 @@ setFormData({
                 discount_value: parseFloat(formData.discount_value) || 0,
                 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
                 package_type_id: formData.package_type_id || null,
-                package_type: formData.package_type || null
+                package_type: formData.package_type || null,
+                // FIX: kirim package_tracking_id eksplisit agar link ke instance paket
+                // tidak pernah "menghilang" tanpa disengaja saat recap diedit
+                package_tracking_id: selectedPackage?.id || null
             };
 
             let result;
