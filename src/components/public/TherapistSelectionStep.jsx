@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, UserX, Stethoscope, Check } from 'lucide-react';
+import { ArrowLeft, UserX, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TherapistSelectionCard from './TherapistSelectionCard';
 
@@ -53,10 +53,6 @@ const TherapistSelectionStep = ({
           Kembali ke Pilihan Treatment
         </Button>
 
-        <div className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e3a8a] text-xs font-bold tracking-wide uppercase px-3.5 py-1.5 rounded-full mb-3 sm:mb-4">
-          <Check className="w-3.5 h-3.5" /> Langkah 2 dari 5
-        </div>
-        
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2.5 sm:mb-3 tracking-tight">
           Pilih Fisioterapis
         </h2>

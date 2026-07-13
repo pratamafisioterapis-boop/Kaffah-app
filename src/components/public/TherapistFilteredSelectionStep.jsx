@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TherapistProfileCard from '@/components/public/TherapistProfileCard';
 
@@ -20,10 +20,6 @@ const TherapistFilteredSelectionStep = ({ therapists, selectedTreatment, selecte
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Kembali
         </Button>
-
-        <div className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e3a8a] text-xs font-bold tracking-wide uppercase px-3.5 py-1.5 rounded-full mb-3 sm:mb-4">
-          <Check className="w-3.5 h-3.5" /> Langkah 2 dari 5
-        </div>
 
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 tracking-tight">Pilih Fisioterapis</h2>
         <p className="text-slate-500 text-base sm:text-lg leading-relaxed">

@@ -54,16 +54,13 @@ Terima kasih.`;
 
   return (
     <motion.div
-      className="w-full max-w-5xl mx-auto px-4 py-8 sm:py-14 md:py-20"
+      className="w-full max-w-5xl mx-auto px-4 pt-8 sm:pt-14 md:pt-20 pb-28 sm:pb-14 md:pb-20"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
       <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4">
-        <div className="inline-flex items-center gap-1.5 bg-blue-50 text-[#1e3a8a] text-xs font-bold tracking-wide uppercase px-3.5 py-1.5 rounded-full mb-1">
-          <Check className="w-3.5 h-3.5" /> Langkah 1 dari 5
-        </div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
           Pilih Jenis Treatment
         </h2>
@@ -81,7 +78,7 @@ Terima kasih.`;
           whileTap="tap"
           onClick={() => handleCardClick('physiotherapy')}
           className={cn(
-            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group",
+            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group h-full flex flex-col",
             selectedId === 'physiotherapy'
               ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
               : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
@@ -119,7 +116,7 @@ Terima kasih.`;
             Layanan fisioterapi klinis berbasis assessment untuk nyeri, cedera, gangguan gerak, saraf terjepit, stroke, dan rehabilitasi pasca operasi.
           </p>
 
-          <ul className="space-y-2.5 sm:space-y-3">
+          <ul className="space-y-2.5 sm:space-y-3 mt-auto pt-2">
             {[
               "Konsultasi",
               "Assessment klinis menyeluruh",
@@ -151,7 +148,7 @@ Terima kasih.`;
           whileTap="tap"
           onClick={() => handleCardClick('recovery')}
           className={cn(
-            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group",
+            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group h-full flex flex-col",
             selectedId === 'recovery'
               ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
               : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
@@ -189,7 +186,7 @@ Terima kasih.`;
             Layanan pemulihan untuk mengurangi kelelahan otot dan mempercepat recovery.
           </p>
 
-          <ul className="space-y-2.5 sm:space-y-3">
+          <ul className="space-y-2.5 sm:space-y-3 mt-auto pt-2">
             {[
               "Konsultasi",
               "Pemeriksaan otot",
@@ -249,13 +246,14 @@ Terima kasih.`;
         </div>
       </motion.div>
 
-      <div className="flex justify-center">
+      {/* Desktop/tablet inline CTA */}
+      <div className="hidden sm:flex justify-center">
         <Button
           size="lg"
           onClick={handleContinue}
           disabled={!selectedId}
           className={cn(
-            "h-13 sm:h-14 px-8 sm:px-10 text-base sm:text-lg font-bold rounded-full transition-all duration-300 flex items-center gap-2",
+            "h-14 px-10 text-lg font-bold rounded-full transition-all duration-300 flex items-center gap-2",
             selectedId
               ? "bg-[#1e3a8a] hover:bg-[#172554] text-white shadow-lg shadow-blue-900/20 transform hover:-translate-y-1 hover:shadow-xl"
               : "bg-slate-200 text-slate-400 cursor-not-allowed"
@@ -263,6 +261,31 @@ Terima kasih.`;
         >
           Lanjutkan <ArrowRight className="w-5 h-5" />
         </Button>
+      </div>
+
+      {/* Mobile: always-visible sticky action bar so patients never have to hunt for the continue button */}
+      <div
+        className={cn(
+          "sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-4 py-3 shadow-[0_-10px_30px_-10px_rgba(15,23,42,0.15)] transition-transform duration-300",
+          selectedId ? "translate-y-0" : "translate-y-full pointer-events-none"
+        )}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Dipilih</p>
+            <p className="text-sm font-bold text-[#1e3a8a] truncate capitalize">
+              {selectedId === 'physiotherapy' ? 'Physiotherapy Treatment' : selectedId === 'recovery' ? 'Recovery Treatment' : ''}
+            </p>
+          </div>
+          <Button
+            onClick={handleContinue}
+            disabled={!selectedId}
+            className="h-12 px-6 rounded-full bg-[#1e3a8a] hover:bg-[#172554] text-white font-bold shrink-0 flex items-center gap-1.5 shadow-lg shadow-blue-900/20"
+          >
+            Lanjutkan <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
