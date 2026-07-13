@@ -5,7 +5,7 @@ import { calculateDayNameIndonesia } from './whatsappService';
 // Batas maksimal jam yang ditampilkan ke pasien.
 // Kalau jam kosong sebenarnya lebih banyak dari ini, kita cuma tampilkan
 // sebagian yang disebar (pagi/siang/sore) supaya tidak kelihatan sepi.
-const MAX_SHOWN_SLOTS = 3;
+const MAX_SHOWN_SLOTS = 4;
 
 const pickSpreadSlots = (slots, max) => {
   if (slots.length <= max) return slots;
@@ -20,6 +20,8 @@ const pickSpreadSlots = (slots, max) => {
     .sort((a, b) => a - b)
     .map(idx => slots[idx]);
 };
+
+// ─── MODE: PER TERAPIS ─────────────────────────────────────────────────────
 
 export const getTherapistSlotSummary = (allSlots = [], maxShown = MAX_SHOWN_SLOTS) => {
   const available = allSlots
@@ -58,6 +60,50 @@ export const generateBookingAvailabilityMessage = ({ clinicName, date, therapist
   });
 
   body += `Silakan pilih jam yang sesuai, atau infokan preferensi jam Anda, nanti kami bantu carikan jadwal yang paling pas 🙏\n\n${clinicName || 'Kaffah Physiotherapy'}`;
+
+  return body.trim();
+};
+
+// ─── MODE: GLOBAL (TANPA NAMA TERAPIS) ─────────────────────────────────────
+
+export const getGlobalSlotSummary = (allSlotLists = [], maxShown = MAX_SHOWN_SLOTS) => {
+  const uniqueTimes = new Set();
+
+  allSlotLists.forEach(slots => {
+    slots
+      .filter(s => s.status === 'aktif')
+      .forEach(s => uniqueTimes.add(s.slot_start_time));
+  });
+
+  const sortedTimes = [...uniqueTimes].sort();
+
+  if (sortedTimes.length === 0) return null;
+
+  const asObjects = sortedTimes.map(t => ({ slot_start_time: t }));
+  const shown = pickSpreadSlots(asObjects, maxShown);
+
+  return {
+    totalAvailable: sortedTimes.length,
+    shownSlots: shown,
+    isTruncated: sortedTimes.length > shown.length
+  };
+};
+
+export const generateGlobalAvailabilityMessage = ({ clinicName, date, globalSummary }) => {
+  const hari = calculateDayNameIndonesia(date);
+  const tanggal = format(new Date(date), 'dd MMMM yyyy', { locale: idLocale });
+
+  if (!globalSummary) {
+    return `Mohon maaf, untuk hari ${hari}, ${tanggal} jadwal kami sudah penuh 🙏\nBoleh infokan tanggal lain, nanti kami carikan jadwal terbaik untuk Anda.`;
+  }
+
+  let body = `Berikut jadwal yang tersedia untuk hari ${hari}, ${tanggal}:\n\n`;
+
+  body += globalSummary.shownSlots
+    .map(s => `🕒 ${s.slot_start_time.slice(0, 5)}`)
+    .join('\n');
+
+  body += `\n\nSilakan pilih jam yang sesuai, atau infokan preferensi jam Anda, nanti kami bantu carikan jadwal yang paling pas 🙏\n\n${clinicName || 'Kaffah Physiotherapy'}`;
 
   return body.trim();
 };

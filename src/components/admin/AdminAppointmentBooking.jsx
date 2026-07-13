@@ -110,7 +110,7 @@ const formattedDate = date
       supabase.removeChannel(leaveChannel);
       supabase.removeChannel(appChannel);
     };
-  }, [date]);
+  }, [date, therapists]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -173,6 +173,9 @@ const formattedDate = date
             status: s.status
           };
 
+          if (!newSchedulesMap[s.therapist_id]) {
+            newSchedulesMap[s.therapist_id] = [];
+          }
           newSchedulesMap[s.therapist_id].push(slotObj);
         });
         Object.keys(newSchedulesMap).forEach((therapistId) => {
@@ -626,6 +629,7 @@ const handleViewHistory = async (patientId) => {
         date={date}
         therapists={therapists}
         schedulesMap={schedulesMap}
+        therapistLeaveStatus={therapistLeaveStatus}
       />
 
     </div>

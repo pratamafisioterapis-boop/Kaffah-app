@@ -488,6 +488,7 @@ const OwnerBookingCalendar = () => {
         date={date}
         therapists={therapists}
         schedulesMap={schedulesMap}
+        therapistLeaveStatus={therapistLeaveStatus}
       />
     </div>
   );
