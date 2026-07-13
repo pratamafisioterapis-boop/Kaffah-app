@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -27,6 +27,7 @@ import TherapistCard from '@/components/admin/booking/TherapistCard';
 import SlotBookingForm from '@/components/admin/booking/SlotBookingForm';
 import ManualBookingForm from '@/components/admin/booking/ManualBookingForm';
 import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailModal';
+import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
 
 const OwnerBookingCalendar = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const OwnerBookingCalendar = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   // Data State
   const [therapists, setTherapists] = useState([]);
@@ -342,6 +344,17 @@ const OwnerBookingCalendar = () => {
                 <ChevronRight className="w-4 h-4" />
             </Button>
             </div>
+
+            {/* Tombol Template Jadwal */}
+            <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => setShowTemplateModal(true)}
+                title="Copy Template Jadwal Tersedia"
+            >
+                <ClipboardList className="h-4 w-4" />
+            </Button>
         </div>
       </div>
 
@@ -468,6 +481,14 @@ const OwnerBookingCalendar = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ScheduleTemplateModal
+        open={showTemplateModal}
+        onOpenChange={setShowTemplateModal}
+        date={date}
+        therapists={therapists}
+        schedulesMap={schedulesMap}
+      />
     </div>
   );
 };

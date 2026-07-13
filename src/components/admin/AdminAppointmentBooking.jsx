@@ -4,7 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ import TherapistCard from './booking/TherapistCard';
 import SlotBookingForm from './booking/SlotBookingForm';
 import ManualBookingForm from './booking/ManualBookingForm';
 import BookedSlotDetailModal from './booking/BookedSlotDetailModal';
+import ScheduleTemplateModal from './booking/ScheduleTemplateModal';
 
 const AdminAppointmentBooking = () => {
   const { user, userDetails } = useAuth();
@@ -55,6 +57,7 @@ const AdminAppointmentBooking = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 const [patientHistory, setPatientHistory] = useState([]);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 const formattedDate = date
   ? format(date, "EEE, dd MMM yy", { locale: idLocale })
   : '';
@@ -388,6 +391,17 @@ const handleViewHistory = async (patientId) => {
   </Button>
 
 </div>
+
+      {/* Tombol Template Jadwal */}
+      <Button
+        variant="outline"
+        size="icon"
+        className="shrink-0"
+        onClick={() => setShowTemplateModal(true)}
+        title="Copy Template Jadwal Tersedia"
+      >
+        <ClipboardList className="h-4 w-4" />
+      </Button>
     </div>
   </div>
 </div>
@@ -605,6 +619,14 @@ const handleViewHistory = async (patientId) => {
 )}
                        </DialogContent>
       </Dialog>
+
+      <ScheduleTemplateModal
+        open={showTemplateModal}
+        onOpenChange={setShowTemplateModal}
+        date={date}
+        therapists={therapists}
+        schedulesMap={schedulesMap}
+      />
 
     </div>
   );
