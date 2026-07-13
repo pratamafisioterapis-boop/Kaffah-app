@@ -42,6 +42,7 @@ const OwnerBookingCalendar = () => {
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
+  const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null); 
@@ -172,6 +173,22 @@ const OwnerBookingCalendar = () => {
           });
       }
 
+      // 4️⃣ CEK LANGSUNG THERAPIST_TIME_OFF (agar hari tanpa slot tetap ketahuan cuti/libur)
+      const reasonMap = {};
+      const { data: timeOffRows } = await supabase
+        .from('therapist_time_off')
+        .select('therapist_id, reason')
+        .lte('start_date', dateStr)
+        .gte('end_date', dateStr);
+
+      (timeOffRows || []).forEach(row => {
+        const reasonLower = (row.reason || '').toLowerCase();
+        statusMap[row.therapist_id] = reasonLower.includes('mingguan')
+          ? 'libur_mingguan'
+          : 'cuti';
+        reasonMap[row.therapist_id] = row.reason || '';
+      });
+
       // === LOGGING END ===
       console.log('[OwnerBookingCalendar] === MAPPING RESULT ===');
       console.log('[OwnerBookingCalendar] Schedules Map:', newSchedulesMap);
@@ -179,6 +196,7 @@ const OwnerBookingCalendar = () => {
       
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
+      setTherapistLeaveReason(reasonMap);
 
     } catch (error) {
       console.error('[OwnerBookingCalendar] fetchDayData ERROR:', error);
@@ -395,6 +413,7 @@ const OwnerBookingCalendar = () => {
                 appointments={therapistApps}
                 date={date}
                 leaveStatus={leaveStatus}
+                leaveReason={therapistLeaveReason[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}

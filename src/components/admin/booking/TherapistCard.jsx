@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, CalendarOff } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,8 @@ const TherapistCard = ({
   onAppointmentClick,
   onPatientClick,
   date, 
-  leaveStatus = 'aktif'
+  leaveStatus = 'aktif',
+  leaveReason = ''
 }) => {
   
   // Safety check for therapist data
@@ -34,7 +35,8 @@ const TherapistCard = ({
       );
   }
 
-  const isLeave = ['cuti', 'non_active'].includes(leaveStatus);
+  const isLeave = ['cuti', 'non_active', 'libur_mingguan'].includes(leaveStatus);
+  const isWeeklyOff = leaveStatus === 'libur_mingguan';
   const isNoSchedule = leaveStatus === 'tidak_ada_jadwal';
   const isFullBooked = leaveStatus === 'full_booked';
   const shouldGrayScale =
@@ -91,12 +93,13 @@ const TherapistCard = ({
         // 🔥 SOFT GLOW BORDER
         "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20",
 
-        shouldGrayScale && "bg-slate-100"
+        shouldGrayScale && "bg-slate-100",
+        isWeeklyOff && "ring-2 ring-violet-300"
       )}>
         <CardHeader className={cn(
   "relative py-4 md:py-6 px-3 md:px-5 border-b text-white",
   "bg-gradient-to-br backdrop-blur-xl",
-  "from-slate-800/90 to-slate-900/90",
+  isWeeklyOff ? "from-violet-800/90 to-violet-950/90" : "from-slate-800/90 to-slate-900/90",
   "border-white/10"
 )}>
 
@@ -160,13 +163,18 @@ const TherapistCard = ({
 
                 {(isLeave || isFullBooked) && (
           <span className={cn(
-            "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border",
+            "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border flex items-center gap-1",
             isFullBooked
               ? "bg-red-100 text-red-700 border-red-200"
+              : isWeeklyOff
+              ? "bg-violet-100 text-violet-700 border-violet-300"
               : "bg-gray-200 text-gray-700 border-gray-300"
           )}>
+            {isWeeklyOff && <CalendarOff className="w-3 h-3" />}
             {leaveStatus === 'non_active'
               ? 'NON-ACTIVE'
+              : isWeeklyOff
+              ? (leaveReason || 'LIBUR MINGGUAN')
               : leaveStatus.toUpperCase().replace(/_/g, ' ')}
           </span>
         )}
