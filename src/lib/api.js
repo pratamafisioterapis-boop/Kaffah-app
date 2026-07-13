@@ -1866,11 +1866,20 @@ export const createAdminExpense = async (payload) => {
 
 export const getInventoryItems = async ({ activeOnly = true } = {}) => {
   return safeQuery(async () => {
-    let query = supabase.from('inventory_items').select('*').order('item_name', { ascending: true });
+    let query = supabase.from('inventory_items').select('*');
     if (activeOnly) query = query.eq('is_active', true);
     const { data, error } = await query;
     if (error) return { error };
-    return { data, success: true, error: null };
+
+    // Urutkan alfabetis, tapi barang dengan stok habis (0 atau kurang) ditaruh paling bawah
+    const sorted = (data || []).slice().sort((a, b) => {
+      const aEmpty = Number(a.current_stock) <= 0;
+      const bEmpty = Number(b.current_stock) <= 0;
+      if (aEmpty !== bEmpty) return aEmpty ? 1 : -1;
+      return a.item_name.localeCompare(b.item_name, 'id-ID');
+    });
+
+    return { data: sorted, success: true, error: null };
   }, 'getInventoryItems');
 };
 

@@ -64,6 +64,24 @@ const InventoryTakeOutForm = ({ onSuccess }) => {
           <Input type="date" value={form.taken_date} onChange={(e) => setForm({ ...form, taken_date: e.target.value })} />
         </div>
       </div>
+
+      {selectedItem && ['Liter', 'Kg'].includes(selectedItem.unit) && (
+        <div className="space-y-2">
+          <Label className="text-xs text-slate-500">
+            Atau isi dalam {selectedItem.unit === 'Liter' ? 'mL' : 'Gram'} (otomatis dikonversi ke {selectedItem.unit})
+          </Label>
+          <Input
+            type="number"
+            step="1"
+            min="0"
+            placeholder={selectedItem.unit === 'Liter' ? 'Misal: 500' : 'Misal: 250'}
+            onChange={(e) => {
+              const smallUnitValue = Number(e.target.value) || 0;
+              setForm({ ...form, quantity: smallUnitValue > 0 ? String(smallUnitValue / 1000) : '' });
+            }}
+          />
+        </div>
+      )}
       <div className="space-y-2">
         <Label>Catatan (opsional)</Label>
         <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Misal: isi ulang botol dispenser" />
