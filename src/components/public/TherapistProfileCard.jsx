@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Award, ArrowRight } from 'lucide-react';
+import { User, Award, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
 const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButton = false }) => {
   const navigate = useNavigate();
   const [showBioModal, setShowBioModal] = useState(false);
-  
+
   const bioText = therapist.bio || 'Profesional berpengalaman dalam menangani berbagai kondisi muskuloskeletal dan rehabilitasi fisik.';
   const isLongBio = bioText.length > 100;
 
@@ -38,23 +38,24 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.02 }}
-        transition={{ duration: 0.2 }}
+        whileHover={{ scale: 1.015 }}
+        transition={{ duration: 0.25 }}
         className={`
-          relative group overflow-hidden rounded-xl border-2 transition-all duration-300 h-full flex flex-col
+          relative group overflow-hidden rounded-2xl transition-all duration-300 h-full flex flex-col
           ${isSelected
-            ? 'border-blue-500 bg-gradient-to-b from-blue-50 to-white shadow-xl ring-2 ring-blue-200' 
-            : 'border-white bg-white/60 hover:border-blue-200 hover:shadow-lg backdrop-blur-sm'
+            ? 'border border-[#b8935f]/40 bg-gradient-to-b from-[#0f1e3d]/[0.03] to-white shadow-[0_25px_60px_-25px_rgba(15,30,61,0.4)] ring-1 ring-[#b8935f]/30'
+            : 'border border-slate-200/70 bg-white shadow-[0_10px_30px_-20px_rgba(15,30,61,0.15)] hover:border-[#0f1e3d]/15 hover:shadow-[0_20px_45px_-22px_rgba(15,30,61,0.25)]'
           }
         `}
       >
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-all duration-300 pointer-events-none z-0" />
-        
+        {isSelected && (
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#b8935f] via-[#0f1e3d] to-[#b8935f]" />
+        )}
+
         {/* Top Section */}
         <div className="p-6 pb-2 flex flex-col items-center text-center relative z-10">
           <div className="relative mb-4">
-            <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-blue-500 to-teal-400 shadow-md">
+            <div className={`w-24 h-24 rounded-full p-1 shadow-md ${isSelected ? 'bg-gradient-to-tr from-[#0f1e3d] to-[#b8935f]' : 'bg-gradient-to-tr from-slate-200 to-slate-100'}`}>
               <Avatar className="w-full h-full border-2 border-white">
                 <AvatarImage src={therapist.avatar_url} className="object-cover" />
                 <AvatarFallback className="bg-slate-100 text-slate-400">
@@ -63,20 +64,25 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
               </Avatar>
             </div>
             {isSelected && (
-              <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-full shadow-lg border-2 border-white animate-in zoom-in">
+              <div className="absolute -bottom-2 -right-2 bg-[#0f1e3d] text-[#e8c98a] p-1.5 rounded-full shadow-lg border-2 border-white animate-in zoom-in">
                 <Award className="w-4 h-4" />
               </div>
             )}
           </div>
 
-          <h3 className="font-bold text-lg text-slate-900 mb-1">{therapist.name}</h3>
-          <p className="text-blue-600 font-medium text-sm">{therapist.specialization || 'Fisioterapis'}</p>
+          <div className="inline-flex items-center gap-1 mb-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#b8935f]" />
+            <span className="text-[10px] font-bold tracking-[0.12em] text-[#b8935f] uppercase">Certified Therapist</span>
+          </div>
+
+          <h3 className="font-bold text-lg text-[#0f1e3d] mb-1">{therapist.name}</h3>
+          <p className="text-slate-500 font-medium text-sm">{therapist.specialization || 'Fisioterapis'}</p>
 
           {/* Badges */}
           {Array.isArray(therapist.badges) && therapist.badges.length > 0 && (
             <div className="flex flex-wrap gap-1.5 justify-center mt-3">
               {therapist.badges.map((badge, idx) => (
-                <span 
+                <span
                   key={idx}
                   className="text-[10px] px-2 py-0.5 rounded-full font-semibold border border-black/5"
                   style={{ backgroundColor: badge.color }}
@@ -88,9 +94,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
           )}
         </div>
 
-        {/* Bio Section with Dialog Trigger */}
+        {/* Bio Section */}
         <div className="px-6 flex-grow relative z-10 flex flex-col items-center w-full">
-          <div className="bg-slate-50/80 rounded-lg p-3 w-full mb-5 flex-grow">
+          <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 w-full mb-5 flex-grow">
             <div className="cursor-help" onClick={(e) => isLongBio && handleOpenBio(e)}>
               <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed text-center">
                 {bioText}
@@ -99,8 +105,8 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
 
             {isLongBio && (
               <div className="mt-2 text-center">
-                <button 
-                  className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline transition-all font-medium cursor-pointer"
+                <button
+                  className="text-[11px] text-[#0f1e3d] hover:text-[#b8935f] hover:underline transition-all font-semibold cursor-pointer"
                   onClick={handleOpenBio}
                 >
                   Lihat selengkapnya…
@@ -110,12 +116,15 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
           </div>
         </div>
 
-        {/* Button Section - Conditionally Rendered */}
+        {/* Button Section */}
         {showSelectButton && (
           <div className="p-6 pt-0 mt-auto relative z-10">
-            <Button 
-              variant={isSelected ? "default" : "outline"} 
-              className={`w-full rounded-lg transition-all ${isSelected ? 'bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200' : 'hover:border-blue-300 hover:text-blue-600'}`}
+            <Button
+              className={`w-full rounded-xl transition-all font-semibold ${
+                isSelected
+                  ? 'bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white shadow-md shadow-[#0f1e3d]/25'
+                  : 'bg-white border border-slate-200 text-[#0f1e3d] hover:border-[#b8935f]/40 hover:bg-[#0f1e3d]/[0.02]'
+              }`}
               onClick={handleAction}
             >
               {isSelected ? 'Terapis Terpilih' : 'Pilih Terapis Ini'}
@@ -128,9 +137,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
       {/* Bio Modal Dialog */}
       <Dialog open={showBioModal} onOpenChange={setShowBioModal}>
         <DialogContent className="max-w-md p-0 overflow-hidden bg-white border-none rounded-2xl">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-center">
-             <div className="w-24 h-24 rounded-full p-1 bg-white/20 shadow-xl mx-auto mb-4">
-                <Avatar className="w-full h-full border-4 border-blue-200">
+          <div className="bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] p-6 text-center">
+             <div className="w-24 h-24 rounded-full p-1 bg-white/10 shadow-xl mx-auto mb-4 ring-1 ring-[#b8935f]/40">
+                <Avatar className="w-full h-full border-4 border-white/20">
                   <AvatarImage src={therapist.avatar_url} className="object-cover" />
                   <AvatarFallback className="bg-slate-100 text-slate-400">
                     <User className="w-10 h-10" />
@@ -138,9 +147,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
                 </Avatar>
              </div>
              <DialogTitle className="text-white text-xl font-bold mb-1">{therapist.name}</DialogTitle>
-             <p className="text-blue-100 font-medium">{therapist.specialization || 'Fisioterapis'}</p>
+             <p className="text-[#e8c98a] font-medium text-sm">{therapist.specialization || 'Fisioterapis'}</p>
           </div>
-          
+
           <div className="p-6">
              <div className="bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100 text-slate-600 text-sm leading-relaxed text-justify shadow-sm">
                 {bioText}
@@ -151,7 +160,7 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">Keahlian & Sertifikasi</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {therapist.badges.map((badge, idx) => (
-                    <span 
+                    <span
                       key={idx}
                       className="text-xs px-3 py-1 rounded-full font-medium border shadow-sm"
                       style={{ backgroundColor: badge.color, borderColor: 'rgba(0,0,0,0.05)' }}
@@ -162,9 +171,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
                 </div>
               </div>
             )}
-             
-             <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-6 font-bold text-base shadow-lg hover:shadow-blue-200/50 transition-all"
+
+             <Button
+                className="w-full bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] rounded-xl py-6 font-bold text-base shadow-lg hover:shadow-[#0f1e3d]/30 transition-all"
                 onClick={(e) => {
                    setShowBioModal(false);
                    handleAction(e);

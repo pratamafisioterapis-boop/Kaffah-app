@@ -57,7 +57,7 @@ const HeroSection = () => {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="h-12 px-8 text-lg border-kaffah-navy text-kaffah-navy hover:bg-blue-50 gap-2">
                   <MessageCircle className="w-5 h-5" />
                   Konsultasi Dulu

@@ -79,7 +79,7 @@ const Navbar = () => {
                 </Link>
             )
           ))}
-          <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer">
+          <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
              <Button variant={showBackground ? "secondary" : "outline"} className={`gap-2 ${!showBackground && 'border-kaffah-navy text-kaffah-navy hover:bg-kaffah-navy hover:text-white'}`}>
               <MessageCircle className="w-4 h-4" /> Konsultasi WA
             </Button>
@@ -129,7 +129,7 @@ const Navbar = () => {
                 )
               ))}
               <div className="h-px bg-white/10 my-2" />
-              <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
                     <MessageCircle className="w-4 h-4" /> Konsultasi WhatsApp
                 </Button>

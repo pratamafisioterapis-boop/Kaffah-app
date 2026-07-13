@@ -89,7 +89,7 @@ Terimakasih Atas Perhatiannya
     `.trim();
 
     const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/6285245965745?text=${encoded}`, '_blank');
+    window.open(`https://wa.me/6281233339435?text=${encoded}`, '_blank');
   };
 
   const handleSubmit = (e) => {

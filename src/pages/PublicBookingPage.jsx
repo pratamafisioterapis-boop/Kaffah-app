@@ -257,7 +257,7 @@ const appointmentDate = `${dateStr}T${timePart}:00`;
           // 4. Redirect to WhatsApp
           const message = `Halo Admin Kaffah Physiotherapy,\nSaya ingin konfirmasi booking:\n\nNama: ${patientData.full_name}\nLayanan: ${serviceName}\nTerapis: ${therapist.name}\nTanggal: ${format(selectedDate, 'dd MMM yyyy')}\nJam: ${selectedSlot.time}\n\nMohon diproses. Terima kasih.`;
           const encodedMessage = encodeURIComponent(message);
-          window.open(`https://wa.me/6285245965745?text=${encodedMessage}`, '_blank');
+          window.open(`https://wa.me/6281233339435?text=${encodedMessage}`, '_blank');
 
       } catch (error) {
           console.error("Booking Error:", error);

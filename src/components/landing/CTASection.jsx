@@ -32,7 +32,7 @@ const CTASection = () => {
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>
                     </Link>
-                    <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer">
+                    <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
                          <Button variant="outline" className="h-14 px-10 text-lg border-white/20 bg-white/5 text-white hover:bg-white/10 rounded-full backdrop-blur-sm gap-2">
                             <MessageCircle className="w-5 h-5" />
                             Konsultasi via WhatsApp

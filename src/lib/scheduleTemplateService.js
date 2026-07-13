@@ -59,7 +59,7 @@ export const generateBookingAvailabilityMessage = ({ clinicName, date, therapist
     body += '\n\n';
   });
 
-  body += `Silakan pilih jam yang sesuai, atau infokan preferensi jam Anda, nanti kami bantu carikan jadwal yang paling pas 🙏\n\n${clinicName || 'Kaffah Physiotherapy'}`;
+  body += `\n${clinicName || 'Kaffah Physiotherapy'}`;
 
   return body.trim();
 };
@@ -103,7 +103,7 @@ export const generateGlobalAvailabilityMessage = ({ clinicName, date, globalSumm
     .map(s => `🕒 ${s.slot_start_time.slice(0, 5)}`)
     .join('\n');
 
-  body += `\n\nSilakan pilih jam yang sesuai, atau infokan preferensi jam Anda, nanti kami bantu carikan jadwal yang paling pas 🙏\n\n${clinicName || 'Kaffah Physiotherapy'}`;
+  body += `\n\n${clinicName || 'Kaffah Physiotherapy'}`;
 
   return body.trim();
 };

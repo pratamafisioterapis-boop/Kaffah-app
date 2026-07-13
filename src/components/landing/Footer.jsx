@@ -48,9 +48,9 @@ const Footer = () => {
                 <span>Jl. Telindung, Perumnas Blok 1 RT. 07 NO. 71, Batu Ampar, Balikpapan Utara</span>
               </li>
               <li>
-                <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-kaffah-blue transition-colors">
+                <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-kaffah-blue transition-colors">
                   <Phone className="w-5 h-5 text-kaffah-blue flex-shrink-0" />
-                  <span>+62 852 4596 5745</span>
+                  <span>+62 812 3333 9435</span>
                 </a>
               </li>
               <li>

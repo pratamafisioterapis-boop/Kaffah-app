@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Stethoscope, Zap, Check, ArrowRight, MessageCircle } from 'lucide-react';
+import { Stethoscope, Zap, Check, ArrowRight, MessageCircle, Crown, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,7 @@ Mohon informasi terkait jadwal yang tersedia dan prosedur booking.
 Terima kasih.`;
 
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/6285245965745?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/6281233339435?text=${encodedMessage}`, '_blank');
   };
 
   const containerVariants = {
@@ -43,8 +43,8 @@ Terima kasih.`;
   };
 
   const cardVariants = {
-    hover: { scale: 1.02, transition: { duration: 0.2 } },
-    tap: { scale: 0.98, transition: { duration: 0.1 } }
+    hover: { scale: 1.015, transition: { duration: 0.25 } },
+    tap: { scale: 0.985, transition: { duration: 0.1 } }
   };
 
   const subtleFade = {
@@ -52,16 +52,55 @@ Terima kasih.`;
     visible: { opacity: 1, y: 0, transition: { delay: 0.2, duration: 0.5 } }
   };
 
+  const services = [
+    {
+      id: 'physiotherapy',
+      icon: Stethoscope,
+      title: 'Physiotherapy Treatment',
+      desc: 'Layanan fisioterapi klinis berbasis assessment untuk nyeri, cedera, gangguan gerak, saraf terjepit, stroke, dan rehabilitasi pasca operasi.',
+      features: [
+        'Konsultasi',
+        'Assessment klinis menyeluruh',
+        'Program terapi personal',
+        'Modalitas therapy',
+        'Manual therapy',
+        'Exercise therapy',
+        'Home programs & Edukasi'
+      ]
+    },
+    {
+      id: 'recovery',
+      icon: Zap,
+      title: 'Recovery Treatment',
+      desc: 'Layanan pemulihan untuk mengurangi kelelahan otot dan mempercepat recovery.',
+      features: [
+        'Konsultasi',
+        'Pemeriksaan otot',
+        'Sport massage',
+        'Manual muscle release',
+        'Stretching',
+        'Recovery pump',
+        'Edukasi mandiri'
+      ]
+    }
+  ];
+
   return (
     <motion.div
-      className="w-full max-w-5xl mx-auto px-4 pt-8 sm:pt-14 md:pt-20 pb-28 sm:pb-14 md:pb-20"
+      className="w-full max-w-5xl mx-auto px-4 pt-8 sm:pt-14 md:pt-20 pb-28"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
       <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0f1e3d]/5 border border-[#0f1e3d]/10">
+          <Crown className="w-3.5 h-3.5 text-[#b8935f]" />
+          <span className="text-[11px] sm:text-xs font-bold tracking-[0.15em] text-[#0f1e3d] uppercase">
+            Kaffah Premium Care
+          </span>
+        </div>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0f1e3d] tracking-tight">
           Pilih Jenis Treatment
         </h2>
         <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -69,147 +108,84 @@ Terima kasih.`;
         </p>
       </div>
 
-      {/* ================== SERVICE CARDS (LOGIC TIDAK DIUBAH) ================== */}
+      {/* ================== SERVICE CARDS ================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 mb-10 sm:mb-14">
-        {/* Card 1 */}
-        <motion.div
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-          onClick={() => handleCardClick('physiotherapy')}
-          className={cn(
-            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group h-full flex flex-col",
-            selectedId === 'physiotherapy'
-              ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
-              : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
-          )}
-        >
-          {selectedId === 'physiotherapy' && (
-            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 rounded-full blur-2xl" />
-          )}
-          <div className="flex items-start justify-between mb-5 sm:mb-6 relative z-10">
-            <div className={cn(
-              "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm",
-              selectedId === 'physiotherapy'
-                ? "bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6] text-white shadow-lg shadow-blue-900/20"
-                : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
-            )}>
-              <Stethoscope className="w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
-            {selectedId === 'physiotherapy' && (
-              <div className="bg-[#1e3a8a] rounded-full p-1.5 shadow-md">
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {services.map((service) => {
+          const Icon = service.icon;
+          const isActive = selectedId === service.id;
+          return (
+            <motion.div
+              key={service.id}
+              variants={cardVariants}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => handleCardClick(service.id)}
+              className={cn(
+                "relative cursor-pointer rounded-[28px] p-7 sm:p-9 transition-all duration-300 overflow-hidden group h-full flex flex-col",
+                "border bg-white",
+                isActive
+                  ? "border-[#b8935f]/40 shadow-[0_30px_70px_-25px_rgba(15,30,61,0.45)] ring-1 ring-[#b8935f]/30"
+                  : "border-slate-200/70 shadow-[0_10px_35px_-20px_rgba(15,30,61,0.15)] hover:border-[#0f1e3d]/15 hover:shadow-[0_25px_60px_-25px_rgba(15,30,61,0.3)]"
+              )}
+            >
+              {/* Subtle premium backdrop */}
+              <div className={cn(
+                "absolute inset-0 opacity-0 transition-opacity duration-500",
+                isActive && "opacity-100"
+              )}>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0f1e3d]/[0.03] via-transparent to-[#b8935f]/[0.05]" />
+                <div className="absolute -top-24 -right-24 w-56 h-56 bg-[#b8935f]/10 rounded-full blur-3xl" />
               </div>
-            )}
-          </div>
 
-          <h3 className={cn(
-            "text-xl sm:text-2xl font-bold mb-2.5 sm:mb-3 tracking-tight",
-            selectedId === 'physiotherapy'
-              ? "text-[#1e3a8a]"
-              : "text-slate-900"
-          )}>
-            Physiotherapy Treatment
-          </h3>
+              {isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#b8935f] via-[#0f1e3d] to-[#b8935f]" />
+              )}
 
-          <p className="text-slate-500 text-sm sm:text-base mb-5 sm:mb-6 leading-relaxed">
-            Layanan fisioterapi klinis berbasis assessment untuk nyeri, cedera, gangguan gerak, saraf terjepit, stroke, dan rehabilitasi pasca operasi.
-          </p>
-
-          <ul className="space-y-2.5 sm:space-y-3 mt-auto pt-2">
-            {[
-              "Konsultasi",
-              "Assessment klinis menyeluruh",
-              "Program terapi personal",
-              "Modalitas therapy",
-              "Manual therapy", 
-              "Exercise therapy",
-              "Home programs & Edukasi"
-            ].map((feature, idx) => (
-              <li key={idx} className="flex items-start gap-3 text-slate-700">
-                <span className={cn(
-                  "flex items-center justify-center w-5 h-5 rounded-full mt-0.5 shrink-0",
-                  selectedId === 'physiotherapy'
-                    ? "bg-blue-100 text-[#1e3a8a]"
-                    : "bg-emerald-50 text-emerald-600"
+              <div className="flex items-start justify-between mb-6 sm:mb-7 relative z-10">
+                <div className={cn(
+                  "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300",
+                  isActive
+                    ? "bg-gradient-to-br from-[#0f1e3d] to-[#1e3a8a] text-[#e8c98a] shadow-lg shadow-[#0f1e3d]/30"
+                    : "bg-[#0f1e3d]/5 text-[#0f1e3d] group-hover:bg-[#0f1e3d]/10"
                 )}>
-                  <Check className="w-3.5 h-3.5" />
-                </span>
-                <span className="font-medium text-sm sm:text-base">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-
-        {/* Card 2 */}
-        <motion.div
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-          onClick={() => handleCardClick('recovery')}
-          className={cn(
-            "relative cursor-pointer rounded-3xl border p-6 sm:p-8 transition-all duration-300 overflow-hidden group h-full flex flex-col",
-            selectedId === 'recovery'
-              ? "border-[#1e3a8a] bg-gradient-to-br from-blue-50 to-white shadow-[0_25px_60px_-20px_rgba(30,58,138,0.35)] ring-1 ring-[#1e3a8a]/20"
-              : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-[0_20px_50px_-25px_rgba(30,58,138,0.25)]"
-          )}
-        >
-          {selectedId === 'recovery' && (
-            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 rounded-full blur-2xl" />
-          )}
-          <div className="flex items-start justify-between mb-5 sm:mb-6 relative z-10">
-            <div className={cn(
-              "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm",
-              selectedId === 'recovery'
-                ? "bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6] text-white shadow-lg shadow-blue-900/20"
-                : "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
-            )}>
-              <Zap className="w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
-            {selectedId === 'recovery' && (
-              <div className="bg-[#1e3a8a] rounded-full p-1.5 shadow-md">
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
+                </div>
+                {isActive && (
+                  <div className="bg-[#0f1e3d] rounded-full p-1.5 shadow-md ring-2 ring-[#b8935f]/40">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#e8c98a]" />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <h3 className={cn(
-            "text-xl sm:text-2xl font-bold mb-2.5 sm:mb-3 tracking-tight",
-            selectedId === 'recovery'
-              ? "text-[#1e3a8a]"
-              : "text-slate-900"
-          )}>
-            Recovery Treatment
-          </h3>
+              <h3 className={cn(
+                "text-xl sm:text-2xl font-bold mb-2.5 sm:mb-3 tracking-tight relative z-10",
+                isActive ? "text-[#0f1e3d]" : "text-slate-900"
+              )}>
+                {service.title}
+              </h3>
 
-          <p className="text-slate-500 text-sm sm:text-base mb-5 sm:mb-6 leading-relaxed">
-            Layanan pemulihan untuk mengurangi kelelahan otot dan mempercepat recovery.
-          </p>
+              <p className="text-slate-500 text-sm sm:text-base mb-6 leading-relaxed relative z-10">
+                {service.desc}
+              </p>
 
-          <ul className="space-y-2.5 sm:space-y-3 mt-auto pt-2">
-            {[
-              "Konsultasi",
-              "Pemeriksaan otot",
-              "Sport massage",
-              "Manual muscle release",
-              "Stretching",
-              "Recovery pump",
-              "Edukasi mandiri"
-            ].map((feature, idx) => (
-              <li key={idx} className="flex items-start gap-3 text-slate-700">
-                <span className={cn(
-                  "flex items-center justify-center w-5 h-5 rounded-full mt-0.5 shrink-0",
-                  selectedId === 'recovery'
-                    ? "bg-blue-100 text-[#1e3a8a]"
-                    : "bg-emerald-50 text-emerald-600"
-                )}>
-                  <Check className="w-3.5 h-3.5" />
-                </span>
-                <span className="font-medium text-sm sm:text-base">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
+              <div className="h-px bg-slate-100 mb-5 relative z-10" />
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-auto relative z-10">
+                {service.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-slate-600">
+                    <span className={cn(
+                      "flex items-center justify-center w-4.5 h-4.5 rounded-full shrink-0",
+                      isActive ? "text-[#b8935f]" : "text-[#0f1e3d]/40"
+                    )}>
+                      <Check className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="font-medium text-xs sm:text-sm leading-snug">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* ================== PREMIUM HOMECARE NOTICE ================== */}
@@ -217,28 +193,32 @@ Terima kasih.`;
         variants={subtleFade}
         initial="hidden"
         animate="visible"
-        className="mb-10 sm:mb-14 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50 border border-emerald-100 p-6 sm:p-8 shadow-[0_20px_50px_-25px_rgba(5,150,105,0.3)]"
+        className="mb-10 sm:mb-14 relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0f1e3d] via-[#132348] to-[#0f1e3d] p-7 sm:p-9 shadow-[0_30px_70px_-25px_rgba(15,30,61,0.5)]"
       >
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#b8935f]/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#1e3a8a]/20 rounded-full blur-3xl" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <p className="text-xs sm:text-sm font-bold tracking-wider text-emerald-600 uppercase mb-2">
-              Exclusive Service
-            </p>
-            <h4 className="text-lg sm:text-xl font-bold text-slate-900 mb-2.5 sm:mb-3 tracking-tight">
+            <div className="inline-flex items-center gap-1.5 mb-3">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#b8935f]" />
+              <p className="text-[11px] sm:text-xs font-bold tracking-[0.15em] text-[#b8935f] uppercase">
+                Exclusive Service
+              </p>
+            </div>
+            <h4 className="text-lg sm:text-xl font-bold text-white mb-2.5 sm:mb-3 tracking-tight">
               Layanan Fisioterapi Homecare
             </h4>
-            <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
-              Untuk reservasi layanan fisioterapi homecare, kami sarankan menghubungi 
-              Admin Kaffah Physiotherapy secara langsung agar penjadwalan dapat disesuaikan 
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Untuk reservasi layanan fisioterapi homecare, kami sarankan menghubungi
+              Admin Kaffah Physiotherapy secara langsung agar penjadwalan dapat disesuaikan
               dengan kebutuhan dan ketersediaan terapis.
             </p>
           </div>
 
           <button
             onClick={handleWhatsAppClick}
-            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 sm:px-7 py-3 rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/15 transition-all duration-300 hover:scale-105 shrink-0"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#b8935f] to-[#d4b378] hover:from-[#a8825a] hover:to-[#c4a368] text-[#0f1e3d] px-6 sm:px-7 py-3 rounded-full text-sm font-bold shadow-lg shadow-[#b8935f]/20 transition-all duration-300 hover:scale-105 shrink-0"
           >
             <MessageCircle className="w-4 h-4" />
             Hubungi Admin via WhatsApp
@@ -246,45 +226,32 @@ Terima kasih.`;
         </div>
       </motion.div>
 
-      {/* Desktop/tablet inline CTA */}
-      <div className="hidden sm:flex justify-center">
-        <Button
-          size="lg"
-          onClick={handleContinue}
-          disabled={!selectedId}
-          className={cn(
-            "h-14 px-10 text-lg font-bold rounded-full transition-all duration-300 flex items-center gap-2",
-            selectedId
-              ? "bg-[#1e3a8a] hover:bg-[#172554] text-white shadow-lg shadow-blue-900/20 transform hover:-translate-y-1 hover:shadow-xl"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
-          )}
-        >
-          Lanjutkan <ArrowRight className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Mobile: always-visible sticky action bar so patients never have to hunt for the continue button */}
+      {/* ================== UNIFIED FLOATING CTA (selalu fixed, tidak perlu scroll) ================== */}
       <div
         className={cn(
-          "sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-4 py-3 shadow-[0_-10px_30px_-10px_rgba(15,23,42,0.15)] transition-transform duration-300",
-          selectedId ? "translate-y-0" : "translate-y-full pointer-events-none"
+          "fixed bottom-0 left-0 right-0 z-40 transition-all duration-300",
+          selectedId ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
         )}
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Dipilih</p>
-            <p className="text-sm font-bold text-[#1e3a8a] truncate capitalize">
-              {selectedId === 'physiotherapy' ? 'Physiotherapy Treatment' : selectedId === 'recovery' ? 'Recovery Treatment' : ''}
-            </p>
-          </div>
-          <Button
-            onClick={handleContinue}
-            disabled={!selectedId}
-            className="h-12 px-6 rounded-full bg-[#1e3a8a] hover:bg-[#172554] text-white font-bold shrink-0 flex items-center gap-1.5 shadow-lg shadow-blue-900/20"
+        <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-15px_40px_-15px_rgba(15,30,61,0.2)]">
+          <div
+            className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
           >
-            Lanjutkan <ArrowRight className="w-4 h-4" />
-          </Button>
+            <div className="min-w-0">
+              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Layanan Dipilih</p>
+              <p className="text-sm sm:text-base font-bold text-[#0f1e3d] truncate">
+                {selectedId === 'physiotherapy' ? 'Physiotherapy Treatment' : selectedId === 'recovery' ? 'Recovery Treatment' : ''}
+              </p>
+            </div>
+            <Button
+              onClick={handleContinue}
+              disabled={!selectedId}
+              className="h-12 sm:h-14 px-6 sm:px-10 rounded-full bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white font-bold shrink-0 flex items-center gap-2 shadow-lg shadow-[#0f1e3d]/30 text-sm sm:text-lg"
+            >
+              Lanjutkan <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -292,3 +259,4 @@ Terima kasih.`;
 };
 
 export default TreatmentSelectionStep;
+  

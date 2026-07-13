@@ -4063,3 +4063,186 @@ export const updateServiceRate = async (id, rate) => {
     return { data, error: null };
   }, 'updateServiceRate');
 };
+// ============================================
+// ADMIN DAILY CHECKLIST
+// ============================================
+
+// --- OWNER SETUP: kelola master list checklist ---
+export const getAdminChecklistItemsSetup = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase
+      .from('admin_checklist_items')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getAdminChecklistItemsSetup', { retry: true });
+};
+
+export const createAdminChecklistItem = async (title, description = '') => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data: existing } = await supabase
+      .from('admin_checklist_items')
+      .select('sort_order')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextOrder = (existing?.sort_order ?? -1) + 1;
+
+    const { data, error } = await supabase
+      .from('admin_checklist_items')
+      .insert({
+        clinic_id: userRow?.clinic_id,
+        title: title.trim(),
+        description: description?.trim() || null,
+        sort_order: nextOrder,
+        is_active: true
+      })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'createAdminChecklistItem');
+};
+
+export const updateAdminChecklistItem = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('admin_checklist_items')
+      .update({
+        ...payload,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updateAdminChecklistItem');
+};
+
+export const deleteAdminChecklistItem = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase
+      .from('admin_checklist_items')
+      .delete()
+      .eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteAdminChecklistItem');
+};
+
+export const reorderAdminChecklistItem = async (id, direction, currentList) => {
+  return safeQuery(async () => {
+    const idx = currentList.findIndex(i => i.id === id);
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (idx === -1 || targetIdx < 0 || targetIdx >= currentList.length) {
+      return { data: null, error: null };
+    }
+    const current = currentList[idx];
+    const target = currentList[targetIdx];
+
+    await supabase.from('admin_checklist_items').update({ sort_order: target.sort_order }).eq('id', current.id);
+    await supabase.from('admin_checklist_items').update({ sort_order: current.sort_order }).eq('id', target.id);
+
+    return { data: true, error: null };
+  }, 'reorderAdminChecklistItem');
+};
+
+// --- ADMIN DASHBOARD: checklist harian ---
+export const getTodayAdminChecklist = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const { data: items, error: itemsError } = await supabase
+      .from('admin_checklist_items')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (itemsError) return { error: itemsError };
+
+    const { data: completions, error: compError } = await supabase
+      .from('admin_checklist_completions')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .eq('checklist_date', todayStr);
+    if (compError) return { error: compError };
+
+    const compMap = (completions || []).reduce((acc, c) => {
+      acc[c.item_id] = c;
+      return acc;
+    }, {});
+
+    const merged = (items || []).map(item => ({
+      ...item,
+      is_done: compMap[item.id]?.is_done || false,
+      completed_at: compMap[item.id]?.completed_at || null
+    }));
+
+    return { data: merged, error: null };
+  }, 'getTodayAdminChecklist', { retry: true });
+};
+
+export const toggleAdminChecklistItem = async (itemId, isDone) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('admin_checklist_completions')
+      .upsert({
+        clinic_id: userRow?.clinic_id,
+        item_id: itemId,
+        checklist_date: todayStr,
+        is_done: isDone,
+        completed_by: isDone ? userId : null,
+        completed_at: isDone ? new Date().toISOString() : null
+      }, { onConflict: 'item_id,checklist_date' })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'toggleAdminChecklistItem');
+};
+export const updateAdminChecklistNote = async (itemId, note) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('admin_checklist_completions')
+      .upsert({
+        clinic_id: userRow?.clinic_id,
+        item_id: itemId,
+        checklist_date: todayStr,
+        note: note?.trim() || null
+      }, { onConflict: 'item_id,checklist_date' })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updateAdminChecklistNote');
+};

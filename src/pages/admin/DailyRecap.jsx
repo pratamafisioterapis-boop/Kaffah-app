@@ -483,7 +483,12 @@ const getPremiumPastelBadge = (text) => {
                      </td>
                      <td className="px-5 py-4 text-center text-blue-600 font-semibold">{packageLabel}</td>
                      <td className="px-5 py-4 text-center text-slate-600">{recap.display_therapist_name}</td>
-                     <td className="px-5 py-4 text-center font-semibold text-slate-800 whitespace-nowrap">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</td>
+                     <td className="px-5 py-4 text-center whitespace-nowrap">
+                       <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
+                       {recap.payment_method && (
+                         <div className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
+                       )}
+                     </td>
                      <td className="px-5 py-4 text-center">
                        {recap.end_time ? (
                          <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-lg">Selesai</Badge>

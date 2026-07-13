@@ -436,7 +436,12 @@ const OwnerDailyRecap = () => {
                             {recap.display_therapist_name}
                         </td>
 
-                        <td className="px-4 py-3 text-center">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="font-medium text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
+                          {recap.payment_method && (
+                            <div className="text-[10px] text-slate-400 font-normal mt-0.5 capitalize">{recap.payment_method}</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-center">
                             {recap.end_time ? <Badge className="bg-green-100 text-green-800 border-0">Selesai</Badge> : 
                              recap.start_time ? <Badge className="bg-blue-100 text-blue-800 border-0">Berlangsung</Badge> : 

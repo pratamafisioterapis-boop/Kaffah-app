@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import AdminChecklistManager from '@/components/owner/AdminChecklistManager';
 import { motion } from 'framer-motion';
 import { 
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle, 
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree
+  FileText, Upload, X, Tag, FolderTree, ListChecks
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -979,6 +980,9 @@ const SettingsPage = () => {
           <TabsTrigger value="service_rates" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Wallet className="w-3.5 h-3.5" /> Tarif Jasa
           </TabsTrigger>
+          <TabsTrigger value="admin_checklist" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <ListChecks className="w-3.5 h-3.5" /> Checklist Admin
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -1021,6 +1025,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="service_rates">
             <ServiceRateManager />
+          </TabsContent>
+          <TabsContent value="admin_checklist">
+            <AdminChecklistManager />
           </TabsContent>
         </div>
       </Tabs>

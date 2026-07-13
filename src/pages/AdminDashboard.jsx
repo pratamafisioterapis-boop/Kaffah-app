@@ -24,6 +24,7 @@ import FollowUpManagementPage from '@/components/admin/FollowUpManagementPage';
 import AdminAccountingDashboard from '@/components/admin/AdminAccountingDashboard';
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
+import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
 // Consolidated Pages
 import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
 import AppointmentsPage from '@/pages/AppointmentsPage';
@@ -472,6 +473,10 @@ setTrendPatients(trendArray);
                <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Today's Overview</h3>
                <TodaysOverviewWidget />
              </div>
+
+             {/* Daily Admin Checklist */}
+             <AdminDailyChecklistWidget />
+
 {/* Slot Utilization */}
 <div className="space-y-3">
   <h3 className="text-lg font-semibold text-slate-800 tracking-tight">

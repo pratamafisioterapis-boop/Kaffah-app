@@ -56,7 +56,7 @@ const LocationSection = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 mb-1">WhatsApp</h3>
-                  <a href="https://wa.me/6285245965745" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-kaffah-blue transition-colors font-medium block">
+                  <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-kaffah-blue transition-colors font-medium block">
                     +62 852 4596 5745
                   </a>
                 </div>
