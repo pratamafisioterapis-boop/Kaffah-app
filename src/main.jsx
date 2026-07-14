@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { AppointmentStateProvider } from '@/contexts/AppointmentStateContext';
+
+alert("DEPLOY CHECK: versi kode terbaru AKTIF - " + new Date().toISOString());
 // Global Error Handler for non-React errors (e.g., syntax errors, script failures)
 window.onerror = function(message, source, lineno, colno, error) {
   console.error("GLOBAL ERROR CAUGHT:", message, source, lineno, colno, error);
