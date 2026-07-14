@@ -22,14 +22,16 @@ const SlotUtilizationChart = () => {
     const wita = new Date(now.getTime() + (offset * 60 * 60 * 1000));
     const today = wita.toISOString().split('T')[0];
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase.rpc(
       'get_available_slots_with_status_by_date',
-      { p_date: today }
+      { p_date: today, p_clinic_id: userRow?.clinic_id }
     );
 
     if (error) throw error;
-
-    const totalSlots = (data || []).length;
 
     const filled = (data || []).filter(
       s => s.status === 'terisi'
@@ -38,6 +40,9 @@ const SlotUtilizationChart = () => {
     const empty = (data || []).filter(
       s => s.status === 'aktif'
     ).length;
+
+    // 🔥 total kapasitas = terisi + kosong (exclude yang cuti)
+    const totalSlots = filled + empty;
 
     const utilization = totalSlots > 0
       ? Math.round((filled / totalSlots) * 100)

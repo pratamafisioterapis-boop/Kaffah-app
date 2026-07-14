@@ -100,9 +100,14 @@ const [topServices, setTopServices] = useState([]);
   // 🔥 AMBIL SLOT REAL DARI FUNCTION
 const today = new Date().toISOString().split('T')[0];
 
+const { data: sessionData } = await supabase.auth.getSession();
+const currentUserId = sessionData?.session?.user?.id;
+const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
 const { data: slotsData, error: slotError } = await supabase
   .rpc('get_available_slots_with_status_by_date', {
-    p_date: today
+    p_date: today,
+    p_clinic_id: currentUserRow?.clinic_id
   });
 
 if (slotError) {
@@ -118,6 +123,7 @@ const total = slotsData.length;
 const { data: filledAppointments, error: filledError } = await supabase
   .from('appointments')
   .select('id')
+  .eq('clinic_id', currentUserRow?.clinic_id)
   .gte('appointment_date', today + 'T00:00:00')
 .lte('appointment_date', today + 'T23:59:59')
   .neq('status', 'cancelled');
@@ -140,6 +146,7 @@ setSlotData({
     therapist_id,
     recap_date
   `)
+  .eq('clinic_id', currentUserRow?.clinic_id)
   .gte('recap_date', range.startDate)
   .lte('recap_date', range.endDate);
 
@@ -192,6 +199,7 @@ const { data: patientAppointments, error: patientError } = await supabase
   .from('daily_recaps')
   .select('patient_id, recap_date, service_type')
    .not('patient_id', 'is', null)
+   .eq('clinic_id', currentUserRow?.clinic_id)
   .gte('recap_date', range.startDate)
   .lte('recap_date', range.endDate);
 
@@ -288,6 +296,7 @@ const diagnosisMap = {};
 const { data: masterDiagnoses } = await supabase
   .from('operational_options')
   .select('id, label')
+  .eq('clinic_id', currentUserRow?.clinic_id)
   .eq('category', 'diagnosa');
 
 const diagnosisNameMap = {};
@@ -297,6 +306,7 @@ masterDiagnoses?.forEach(d => {
 const { data: diagnosisData } = await supabase
   .from('daily_recaps')
   .select('diagnosis')
+  .eq('clinic_id', currentUserRow?.clinic_id)
   .gte('recap_date', range.startDate)
   .lte('recap_date', range.endDate);
 
@@ -359,6 +369,7 @@ setTopDiagnoses(topDiagnosisArray);
 const { data: trendData, error: trendError } = await supabase
   .from('daily_recaps')
   .select('recap_date')
+  .eq('clinic_id', currentUserRow?.clinic_id)
   .gte('recap_date', range.startDate)
   .lte('recap_date', range.endDate);
 
@@ -370,12 +381,8 @@ if (trendError) {
 trendData.forEach(item => {
   if (!item.recap_date) return;
 
-  const date = new Date(item.recap_date);
-
-  // kelompokkan per 3 hari
-  const groupKey = Math.floor(date.getDate() / 3);
-
-  const key = `${date.getFullYear()}-${date.getMonth()}-${groupKey}`;
+  // 🔥 kelompokkan per tanggal asli (1 titik = 1 hari, bukan gabungan 3 hari)
+  const key = item.recap_date;
 
   if (!trendMap[key]) {
     trendMap[key] = {

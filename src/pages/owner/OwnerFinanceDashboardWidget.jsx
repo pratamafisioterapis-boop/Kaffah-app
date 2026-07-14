@@ -46,6 +46,11 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const clinicId = currentUserRow?.clinic_id;
+
       const [
         recapsRes,
         packageRes,
@@ -56,28 +61,34 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       ] = await Promise.all([
         supabase.from('daily_recaps')
           .select('recap_date, amount, therapist_name, patient_type, package_tracking_id')
+          .eq('clinic_id', clinicId)
           .gte('recap_date', startDate)
           .lte('recap_date', endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
           .select('recap_date, therapist_name, patient_type, package_tracking_id, package_tracking!inner(nominal, total_sessions)')
+          .eq('clinic_id', clinicId)
           .gte('recap_date', startDate)
           .lte('recap_date', endDate)
           .not('package_tracking_id', 'is', null),
         supabase.from('admin_income')
           .select('date, amount, category, description')
+          .eq('clinic_id', clinicId)
           .gte('date', startDate)
           .lte('date', endDate),
         supabase.from('owner_income')
           .select('date, amount, category, description')
+          .eq('clinic_id', clinicId)
           .gte('date', startDate)
           .lte('date', endDate),
-        supabase.from('admin_expenditures')
-          .select('date, amount, category, description')
-          .gte('date', startDate)
-          .lte('date', endDate),
+        supabase.from('admin_expenses') // 🔥 FIX: nama tabel benar (admin_expenditures kosong & tidak dipakai)
+          .select('date:transaction_date, amount, category, description')
+          .eq('clinic_id', clinicId)
+          .gte('transaction_date', startDate)
+          .lte('transaction_date', endDate),
         supabase.from('owner_expenditures')
           .select('date, amount, category, description')
+          .eq('clinic_id', clinicId)
           .gte('date', startDate)
           .lte('date', endDate),
       ]);

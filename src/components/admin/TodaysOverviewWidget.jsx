@@ -66,9 +66,14 @@ const TodaysOverviewWidget = () => {
       if (cancelError) throw cancelError;
 
       // 3. Total Slot Kosong (Empty Slots) Hari Ini - Menggunakan Function Database
+const { data: sessionData } = await supabase.auth.getSession();
+const currentUserId = sessionData?.session?.user?.id;
+const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
 const { data: slotData, error: slotError } = await supabase
   .rpc('get_available_slots_with_status_by_date', {
-    p_date: new Date().toISOString().split('T')[0]
+    p_date: new Date().toISOString().split('T')[0],
+    p_clinic_id: currentUserRow?.clinic_id
   });
 
 if (slotError) throw slotError;

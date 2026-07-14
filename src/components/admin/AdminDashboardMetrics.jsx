@@ -45,10 +45,15 @@ const AdminDashboardMetrics = ({ dateRange }) => {
     setError(null);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
       // 1. Fetch Daily Recaps
       const { data: recaps, error: recapsError } = await supabase
         .from('daily_recaps')
         .select('id, patient_id, patient_type, package_type, amount')
+        .eq('clinic_id', userRow?.clinic_id)
         .gte('recap_date', dateRange.startDate)
         .lte('recap_date', dateRange.endDate);
 
@@ -59,6 +64,7 @@ const AdminDashboardMetrics = ({ dateRange }) => {
       const { data: options, error: optionsError } = await supabase
         .from('operational_options')
         .select('label, session_count')
+        .eq('clinic_id', userRow?.clinic_id)
         .in('category', ['tipe_paket', 'package_type']);
 
       if (optionsError) throw optionsError;

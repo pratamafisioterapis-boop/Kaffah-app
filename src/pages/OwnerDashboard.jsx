@@ -189,12 +189,16 @@ const today = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric', month: '2-digit', day: '2-digit'
 }).format(new Date());
 
+const { data: sessionData } = await supabase.auth.getSession();
+const currentUserId = sessionData?.session?.user?.id;
+const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
 // 🔥 Gunakan RPC yang sama persis dengan halaman Appointments
 // agar konsisten (tabel therapist_schedules tidak memperhitungkan
 // override/pengecualian jadwal untuk tanggal spesifik)
 const { data: rpcData } = await supabase.rpc(
   'get_available_slots_with_status_by_date',
-  { p_date: today }
+  { p_date: today, p_clinic_id: currentUserRow?.clinic_id }
 );
 
 let slotCountMap = {};

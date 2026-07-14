@@ -53,12 +53,17 @@ const CapacityVsDemandChart = () => {
       
       const processedData = [];
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentClinicId = currentUserRow?.clinic_id;
+
 for (const day of days) {
   const dateStr = format(day, 'yyyy-MM-dd');
 
   const { data: slotData, error } = await supabase.rpc(
     'get_available_slots_with_status_by_date',
-    { p_date: dateStr }
+    { p_date: dateStr, p_clinic_id: currentClinicId }
   );
 
   if (error) {
@@ -66,8 +71,8 @@ for (const day of days) {
   continue;
 }
 
-  // 🔥 kapasitas = semua slot
-const capacity = (slotData || []).length;
+  // 🔥 kapasitas = slot yang benar-benar tersedia (exclude yang cuti)
+const capacity = (slotData || []).filter(s => s.status !== 'cuti').length;
 
 // 🔥 permintaan = slot terisi
 const demand = (slotData || []).filter(
@@ -197,6 +202,8 @@ setData(processedData);
                   tick={{ fontSize: 11, fill: '#94a3b8' }}
                   allowDecimals={false}
                   width={24}
+                  domain={[0, 'dataMax + 2']}
+                  tickCount={6}
                 />
                 <YAxis
                   yAxisId="right"
@@ -207,6 +214,7 @@ setData(processedData);
                   tick={{ fontSize: 11, fill: '#10b981' }}
                   tickFormatter={(v) => `${v}%`}
                   width={32}
+                  tickCount={6}
                 />
                 <Tooltip
                   cursor={{ fill: '#f8fafc', radius: 8 }}

@@ -63,9 +63,13 @@ const AdminAppointmentScheduler = () => {
   };
   
   const fetchSlots = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUserId = sessionData?.session?.user?.id;
+    const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
     const { data, error } = await supabase.rpc(
         'get_available_slots_with_status_by_date',
-        { p_date: formData.date }
+        { p_date: formData.date, p_clinic_id: currentUserRow?.clinic_id }
     );
 
     if (error) {

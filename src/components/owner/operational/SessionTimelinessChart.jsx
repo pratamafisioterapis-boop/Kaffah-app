@@ -25,6 +25,10 @@ const SessionTimelinessChart = ({ dateRange }) => {
       // Some recaps might not have appointment_id if created manually without appointment, 
       // but usually for timeliness we care about scheduled ones.
       // FIX: Use explicit foreign key to avoid ambiguity (PGRST201)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
       const { data: recaps, error: fetchError } = await supabase
         .from('daily_recaps')
         .select(`
@@ -37,6 +41,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
             duration_minutes
           )
         `)
+        .eq('clinic_id', currentUserRow?.clinic_id)
         .gte('recap_date', dateRange.startDate)
         .lte('recap_date', dateRange.endDate)
         .not('start_time', 'is', null)

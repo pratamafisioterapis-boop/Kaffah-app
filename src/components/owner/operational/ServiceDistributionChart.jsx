@@ -21,9 +21,14 @@ const ServiceDistributionChart = ({ dateRange }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
         let query = supabase
           .from('daily_recaps')
-          .select('service_type');
+          .select('service_type')
+          .eq('clinic_id', userRow?.clinic_id);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
         if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);

@@ -25,10 +25,15 @@ const TrendSessionChart = () => {
         const startDateStr = format(startDate, 'yyyy-MM-dd');
         const endDateStr = format(endDate, 'yyyy-MM-dd');
 
+        const { data: sessionData } = await supabase.auth.getSession();
+        const currentUserId = sessionData?.session?.user?.id;
+        const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
         // Fetch daily recaps for this range
         const { data: recaps, error: fetchError } = await supabase
           .from('daily_recaps')
           .select('recap_date')
+          .eq('clinic_id', currentUserRow?.clinic_id)
           .gte('recap_date', startDateStr)
           .lte('recap_date', endDateStr);
 
