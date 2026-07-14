@@ -9,11 +9,7 @@ export const registerPushNotifications = async (userId) => {
   try {
     if (!userId) return null;
 
-    alert("DEBUG 1: mulai registerPushNotifications, userId=" + userId);
-
     const permission = await Notification.requestPermission();
-
-    alert("DEBUG 2: permission = " + permission);
 
     if (permission !== "granted") {
       return null;
@@ -25,14 +21,10 @@ export const registerPushNotifications = async (userId) => {
       "/firebase-messaging-sw.js"
     );
 
-    alert("DEBUG 3: SW registered, scope = " + registration.scope);
-
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
-
-    alert("DEBUG 4: token = " + (token ? token.substring(0, 20) + "..." : "NULL/KOSONG"));
 
     if (!token) {
       return null;
@@ -52,15 +44,15 @@ export const registerPushNotifications = async (userId) => {
   );
 
     if (error) {
-      alert("DEBUG 5: FCM DB ERROR: " + JSON.stringify(error));
+      console.error("FCM DB ERROR:", error);
       return null;
     }
 
-    alert("DEBUG 6: FCM TOKEN SAVED SUKSES");
+    console.log("FCM TOKEN SAVED");
 
     return token;
   } catch (err) {
-    alert("DEBUG CATCH ERROR: " + err.message + " | " + JSON.stringify(err));
+    console.error("FCM ERROR:", err);
     return null;
   }
 };
