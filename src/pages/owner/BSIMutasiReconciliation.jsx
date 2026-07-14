@@ -1646,6 +1646,24 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .in('daily_recap_id', recapIds);
       const debitMatchedIds = new Set((debitChecksData || []).map(c => c.daily_recap_id));
 
+      // Untuk debit yang belum match, cek dulu apakah memang belum ada settlement EDC
+      // sama sekali yang meng-cover periode itu (window 10 hari setelah tgl recap) —
+      // supaya keterangannya jelas: "belum ada file di-upload" vs "settlement ada tapi
+      // kombinasi nominalnya belum pas".
+      const { data: allSettlementDates } = await supabase
+        .from('bsi_debit_settlements')
+        .select('report_date')
+        .order('report_date');
+      const settlementDatesSorted = (allSettlementDates || []).map(s => s.report_date);
+      const hasSettlementCovering = (recapDate) => {
+        const rd = new Date(recapDate + 'T12:00:00');
+        const windowEnd = new Date(rd.getTime() + 10 * 86400000);
+        return settlementDatesSorted.some(sd => {
+          const sdt = new Date(sd + 'T12:00:00');
+          return sdt >= rd && sdt <= windowEnd;
+        });
+      };
+
       // 7) Deteksi kasus "kurang mutasi": kalau jumlah recap QRIS (yang masih butuh auto-match,
       // sama tanggal + sama nominal) lebih banyak dari jumlah mutasi QRIS yang tersedia di
       // tanggal+nominal itu, salah satu recap PASTI tidak akan pernah ketemu pasangannya —
@@ -1682,7 +1700,11 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           if (!matched) reason = 'Tidak ada mutasi Transfer yang cocok (nominal + tanggal masuk)';
         } else if (isDebit(r.payment_method)) {
           matched = debitMatchedIds.has(r.id);
-          if (!matched) reason = 'Belum ter-Auto Match / dicentang manual di tab Debit EDC';
+          if (!matched) {
+            reason = hasSettlementCovering(r.recap_date)
+              ? '⚠️ Ada settlement EDC di periode ini, tapi kombinasi nominalnya belum pas — cek manual di tab Debit EDC.'
+              : '❌ Belum ada settlement EDC yang di-upload untuk periode 10 hari setelah tanggal ini — upload dulu file Yokke-nya di tab Debit EDC.';
+          }
         }
         return {
           id: r.id,
