@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, deleteToken, onMessage } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 import { supabase } from "@/lib/customSupabaseClient";
 
@@ -21,6 +21,14 @@ export const registerPushNotifications = async (userId) => {
       "/firebase-messaging-sw.js"
     );
 
+    // Buang token lama yang mungkin sudah UNREGISTERED di sisi Firebase,
+    // supaya getToken() dipaksa bikin subscription baru yang benar-benar fresh
+    try {
+      await deleteToken(messaging);
+    } catch (e) {
+      console.warn("deleteToken skipped:", e);
+    }
+
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
@@ -39,7 +47,7 @@ export const registerPushNotifications = async (userId) => {
       updated_at: new Date().toISOString(),
     },
     {
-      onConflict: "user_id",
+      onConflict: "user_id,token",
     }
   );
 

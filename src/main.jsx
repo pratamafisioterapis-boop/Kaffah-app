@@ -40,10 +40,19 @@ try {
     <p>${err.toString()}</p>
   </div>`;
 }
-// Register Service Worker (caching only — push subscription ditangani di SupabaseAuthContext via FCM)
+// Register Service Worker (caching + FCM push, satu file supaya tidak rebutan scope '/')
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Bersihkan registrasi /sw.js lama yang masih tersisa di device user
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => {
+        if (reg.active && reg.active.scriptURL.endsWith('/sw.js')) {
+          reg.unregister();
+        }
+      });
+    });
+
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
       .then((registration) => {
         console.log('SW registered:', registration.scope);
       })
