@@ -173,9 +173,119 @@ const parseDebitEDCPdf = async (file) => {
   const accountMatch = fullText.match(/BANK\s+SYARIAH\s+INDO[A-Z]*/i);
   const accountName = accountMatch ? accountMatch[0] : 'BSI EDC';
 
-  return { reportDate, salesVolume, accountName, rawText: fullText };
+  // Extract Net/MDR Amount kalau ada di teks PDF (opsional, tidak semua format punya ini eksplisit)
+  const nettMatch = fullText.match(/N(?:et|ett)\s*Amount\s+Total\s+([\d,]+\.?\d*)/i);
+  const netAmount = nettMatch ? (parseFloat(nettMatch[1].replace(/,/g, '')) || null) : null;
+  const mdrMatch = fullText.match(/MDR\s*(?:Amount)?\s+Total\s+([\d,]+\.?\d*)/i);
+  const mdrAmount = mdrMatch ? (parseFloat(mdrMatch[1].replace(/,/g, '')) || null) : null;
+
+  return { reportDate, salesVolume, mdrAmount, netAmount, accountName, rawText: fullText };
 };
 
+// Split satu baris CSV dengan benar (menangani angka yang dibungkus tanda kutip
+// dan mengandung koma, mis. "530,000.00")
+const splitCsvLine = (line) => {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+};
+
+// Parse CSV "Merchant Statement" EDC BSI (format kedua selain PDF)
+const parseDebitEDCCsv = (text) => {
+  const clean = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Baris: Report Date,10-07-2026,10-07-2026
+  let reportDate = null;
+  const reportDateLine = lines.find(l => l.toUpperCase().startsWith('REPORT DATE'));
+  if (reportDateLine) {
+    const cols = splitCsvLine(reportDateLine);
+    const m = (cols[1] || '').trim().match(/(\d{2})-(\d{2})-(\d{4})/);
+    if (m) reportDate = `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
+  // Baris: Group Name,KAFFAH PHYSIOTHERAPY,
+  let accountName = 'BSI EDC';
+  const groupNameLine = lines.find(l => l.toUpperCase().startsWith('GROUP NAME'));
+  if (groupNameLine) {
+    const cols = splitCsvLine(groupNameLine);
+    if (cols[1]?.trim()) accountName = cols[1].trim();
+  }
+
+  // Ambil baris TOTAL pertama (dari section DETAIL, sebelum SUMMARY GROUP).
+  // Kolom ke-23 (index 22) = AMOUNT (gross/sales volume), ke-25 (index 24) = MDR Amount,
+  // ke-26 (index 25) = NET AMOUNT — sesuai urutan header DETAIL.
+  let salesVolume = 0;
+  let mdrAmount = null;
+  let netAmount = null;
+  for (const line of lines) {
+    if (line.toUpperCase().startsWith('SUMMARY GROUP')) break;
+    if (line.toUpperCase().startsWith('TOTAL,')) {
+      const cols = splitCsvLine(line);
+      const amountStr = (cols[22] || '').replace(/,/g, '').trim();
+      salesVolume = parseFloat(amountStr) || 0;
+      const mdrStr = (cols[24] || '').replace(/,/g, '').trim();
+      mdrAmount = mdrStr ? (parseFloat(mdrStr) || null) : null;
+      const netStr = (cols[25] || '').replace(/,/g, '').trim();
+      netAmount = netStr ? (parseFloat(netStr) || null) : null;
+      break;
+    }
+  }
+
+  return { reportDate, salesVolume, mdrAmount, netAmount, accountName, rawText: clean };
+};
+// Cari kombinasi recap yang totalnya paling mendekati targetAmount (dalam toleransi)
+// Pakai DP subset-sum (0/1 knapsack) dengan satuan ratusan rupiah biar ringan.
+const findMatchingCombo = (recaps, targetAmount, toleranceRp = 5000) => {
+  const scale = 100;
+  const target = Math.round(targetAmount / scale);
+  const tol = Math.round(toleranceRp / scale);
+  const maxSum = target + tol;
+  const items = recaps.filter(r => Number(r.amount) > 0 && Math.round(Number(r.amount) / scale) <= maxSum);
+
+  const dp = new Array(maxSum + 1).fill(null); // dp[s] = { itemIdx, prevSum } | null
+  dp[0] = { itemIdx: -1, prevSum: -1 };
+  for (let i = 0; i < items.length; i++) {
+    const amt = Math.round(Number(items[i].amount) / scale);
+    if (amt <= 0) continue;
+    for (let s = maxSum; s >= amt; s--) {
+      if (dp[s - amt] && !dp[s]) {
+        dp[s] = { itemIdx: i, prevSum: s - amt };
+      }
+    }
+  }
+
+  let bestS = null;
+  let bestDiff = Infinity;
+  for (let s = Math.max(0, target - tol); s <= maxSum; s++) {
+    if (dp[s]) {
+      const diff = Math.abs(s - target);
+      if (diff < bestDiff) { bestDiff = diff; bestS = s; }
+    }
+  }
+  if (bestS === null || bestS === 0) return [];
+
+  const used = [];
+  let cur = bestS;
+  while (cur > 0 && dp[cur]) {
+    used.push(items[dp[cur].itemIdx]);
+    cur = dp[cur].prevSum;
+  }
+  return used;
+};
 // --- Sub-components ----------------------------------------------------------
 
 const TypeBadge = ({ tipe }) => {
@@ -296,6 +406,91 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
   );
 };
 
+// --- DebitSettlementDetail ---------------------------------------------------
+
+const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih }) => {
+  const [patients, setPatients] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data: checks } = await supabase
+        .from('bsi_reconciliation_checks')
+        .select('daily_recap_id')
+        .eq('source_type', 'debit_settlement')
+        .eq('debit_settlement_id', settlement.id)
+        .eq('is_checked', true);
+      const recapIds = (checks || []).map(c => c.daily_recap_id).filter(Boolean);
+      if (!recapIds.length) {
+        if (!cancelled) { setPatients([]); setLoading(false); }
+        return;
+      }
+      const { data: recaps } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, amount, patient_id, actual_patient_id, full_name, guest_name')
+        .in('id', recapIds);
+      const allIds = (recaps || []).flatMap(r => [r.patient_id, r.actual_patient_id]).filter(Boolean);
+      let patientMap = {};
+      if (allIds.length) {
+        const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+        (pts || []).forEach(p => { patientMap[p.id] = p.full_name; });
+      }
+      const enriched = (recaps || []).map(r => ({
+        ...r,
+        patient_name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-',
+      }));
+      if (!cancelled) { setPatients(enriched); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [settlement.id]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-4 text-sm">
+        <div><span className="text-slate-500 text-xs uppercase font-semibold">File Settlement</span><p className="font-semibold text-slate-800">{settlement.file_name}</p></div>
+        <div><span className="text-slate-500 text-xs uppercase font-semibold">Sales Volume</span><p className="font-semibold text-slate-800">{formatRp(settlement.sales_volume)}</p></div>
+        <div><span className="text-slate-500 text-xs uppercase font-semibold">MDR</span><p className="font-semibold text-slate-800">{settlement.mdr_amount != null ? formatRp(settlement.mdr_amount) : '-'}</p></div>
+        <div><span className="text-slate-500 text-xs uppercase font-semibold">Net Amount</span><p className="font-semibold text-green-700">{settlement.net_amount != null ? formatRp(settlement.net_amount) : '-'}</p></div>
+        <div>
+          <span className="text-slate-500 text-xs uppercase font-semibold">Masuk Rekening</span>
+          <p className={cn('font-semibold', selisih === 0 ? 'text-green-700' : selisih != null ? 'text-amber-600' : 'text-slate-800')}>
+            {formatRp(mutasiNominal)}{selisih != null && selisih !== 0 ? ` (selisih ${formatRp(Math.abs(selisih))})` : ''}
+          </p>
+        </div>
+      </div>
+      <div className="border-t pt-2">
+        <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Pasien yang sudah ter-Auto Match (dari tab Debit EDC)</p>
+        {loading ? (
+          <p className="text-xs text-slate-400">Memuat...</p>
+        ) : !patients?.length ? (
+          <p className="text-xs text-slate-400">Belum ada pasien yang di-Auto Match untuk settlement ini. Buka tab Debit EDC untuk cocokkan.</p>
+        ) : (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-slate-500 uppercase">
+                <th className="text-left py-1">Pasien</th>
+                <th className="text-left py-1">Tgl</th>
+                <th className="text-right py-1">Nominal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {patients.map(p => (
+                <tr key={p.id} className="border-t">
+                  <td className="py-1 font-medium text-slate-800">{p.patient_name}</td>
+                  <td className="py-1 text-slate-500">{p.recap_date}</td>
+                  <td className="py-1 text-right font-bold text-slate-800">{formatRp(p.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // --- MonthStatusGrid ---------------------------------------------------------
 
 const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
@@ -399,6 +594,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [showAllRecaps, setShowAllRecaps] = useState(false);
   const [loadingAllRecaps, setLoadingAllRecaps] = useState(false);
   const [mutasiChecks, setMutasiChecks] = useState({});
+  const [globalMatchedRecapIds, setGlobalMatchedRecapIds] = useState(new Set());
 
  const loadAllRecapsForPeriod = useCallback(async () => {
     if (!savedTransactions.length && !csvRows.length) return;
@@ -466,6 +662,33 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
       const enriched = [...enrichedRecaps, ...enrichedAdminIncome];
       setAllRecapsForPeriod(enriched);
+
+      // Hitung auto-match SECARA GLOBAL (lintas file bulan mutasi), bukan cuma dari
+      // reconciled bulan yang sedang dibuka. Perlu karena QRIS bisa tgl_transaksi di
+      // akhir bulan tapi tgl_masuk (jadi masuk file bulan) di awal bulan berikutnya.
+      const { data: allQrisTx } = await supabase
+        .from('bsi_mutasi_transactions')
+        .select('id, tgl_transaksi, nominal, tipe')
+        .eq('tipe', 'qris')
+        .gte('tgl_transaksi', minDate)
+        .lte('tgl_transaksi', maxDate);
+
+      const qrisRecapsForGlobal = enrichedRecaps.filter(r => (r.payment_method || '').toLowerCase().includes('qris'));
+      const globalUsedIds = new Set();
+      (allQrisTx || [])
+        .slice()
+        .sort((a, b) => (a.tgl_transaksi > b.tgl_transaksi ? 1 : -1))
+        .forEach(tx => {
+          const mutasiAmt = Math.round(Number(tx.nominal));
+          const match = qrisRecapsForGlobal.find(r =>
+            !globalUsedIds.has(r.id) &&
+            r.recap_date === tx.tgl_transaksi &&
+            Math.round(Number(r.amount)) >= mutasiAmt &&
+            Math.round(Number(r.amount)) <= mutasiAmt + 15000
+          );
+          if (match) globalUsedIds.add(match.id);
+        });
+      setGlobalMatchedRecapIds(globalUsedIds);
 
       // Load existing checks untuk mutasi_csv (daily recap maupun pemasukan lainnya)
       const recapIds = enrichedRecaps.map(r => r.id);
@@ -578,10 +801,22 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [debitLoadingRecaps, setDebitLoadingRecaps] = useState(false);
   const [debitRecaps, setDebitRecaps] = useState({}); // { settlement_id: [recap, ...] }
   const [debitChecks, setDebitChecks] = useState({}); // { recap_id: check_record }
+  const [debitRecapUsage, setDebitRecapUsage] = useState({}); // { recap_id: { settlementId, reportDate } } — dipakai settlement LAIN
   const [debitFilterMonth, setDebitFilterMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [autoMatchingId, setAutoMatchingId] = useState(null);
+
+  // Audit: recap mana yang belum match ke mutasi BSI / settlement EDC
+  const [recapAuditRange, setRecapAuditRange] = useState(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { start: toDateStr(startOfMonth), end: toDateStr(now) };
+  });
+  const [recapAuditResult, setRecapAuditResult] = useState(null);
+  const [recapAuditLoading, setRecapAuditLoading] = useState(false);
+  const [recapAuditFilter, setRecapAuditFilter] = useState('unmatched'); // 'unmatched' | 'all'
 
   // Tab: 'upload' | 'check' | 'debit'
   const [activeTab, setActiveTab] = useState(readOnly ? 'check' : 'upload');
@@ -661,7 +896,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .select('*')
         .eq('tahun', year)
         .eq('bulan', month)
-        .order('tgl_masuk'),
+        .order('tgl_masuk')
+        .order('id'),
       supabase
         .from('bsi_mutasi_uploads')
         .select('*')
@@ -705,13 +941,41 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const periodeStart = dates[0];
       const periodeEnd = dates[dates.length - 1];
 
+      // Cek transaksi yang sudah ada di rentang tanggal file ini, supaya tanggal
+      // yang overlap antar upload (mis. upload 1 s/d 10, lalu upload 10 s/d 30)
+      // tidak tersimpan dobel di tgl 10.
+      const { data: existingTx, error: existErr } = await supabase
+        .from('bsi_mutasi_transactions')
+        .select('tgl_masuk, waktu_transaksi, deskripsi, nominal')
+        .gte('tgl_masuk', periodeStart)
+        .lte('tgl_masuk', periodeEnd);
+
+      if (existErr) throw existErr;
+
+      const existingKeys = new Set(
+        (existingTx || []).map(t => `${t.tgl_masuk}|${t.waktu_transaksi}|${t.deskripsi}|${Math.round(Number(t.nominal))}`)
+      );
+
+      const newRows = csvRows.filter(r => {
+        const key = `${r.masukDateStr}|${r.waktuTransaksi}|${r.deskripsi}|${Math.round(Number(r.amount))}`;
+        return !existingKeys.has(key);
+      });
+      const skippedCount = csvRows.length - newRows.length;
+
+      if (newRows.length === 0) {
+        toast({ title: 'Tidak ada transaksi baru', description: `Semua ${csvRows.length} transaksi di file ini sudah ada di database (duplikat dilewati).` });
+        setCsvRows([]);
+        setFileName('');
+        return;
+      }
+
       // Insert upload record
       const { data: uploadRecord, error: upErr } = await supabase
         .from('bsi_mutasi_uploads')
         .insert({
           periode_start: periodeStart,
           periode_end: periodeEnd,
-          jumlah_transaksi: csvRows.length,
+          jumlah_transaksi: newRows.length,
           uploaded_by: user?.id || null,
           notes: fileName,
         })
@@ -721,7 +985,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       if (upErr) throw upErr;
 
       // Insert transactions in batches of 100
-      const txRows = csvRows.map(r => ({
+      const txRows = newRows.map(r => ({
         upload_id: uploadRecord.id,
         waktu_transaksi: r.waktuTransaksi,
         tgl_masuk: r.masukDateStr,
@@ -735,20 +999,31 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       }));
 
       const batchSize = 100;
+      let insertedCount = 0;
       for (let i = 0; i < txRows.length; i += batchSize) {
-        const { error } = await supabase
+        const { data: insertedBatch, error } = await supabase
           .from('bsi_mutasi_transactions')
-          .insert(txRows.slice(i, i + batchSize));
+          .upsert(txRows.slice(i, i + batchSize), {
+            onConflict: 'tgl_masuk,waktu_transaksi,deskripsi,nominal',
+            ignoreDuplicates: true,
+          })
+          .select('id');
         if (error) throw error;
+        insertedCount += (insertedBatch || []).length;
       }
 
-      toast({ title: 'Berhasil disimpan', description: `${csvRows.length} transaksi tersimpan ke database.` });
+      toast({
+        title: 'Berhasil disimpan',
+        description: skippedCount > 0
+          ? `${insertedCount} transaksi baru tersimpan, ${csvRows.length - insertedCount} transaksi duplikat dilewati.`
+          : `${insertedCount} transaksi tersimpan ke database.`,
+      });
       setCsvRows([]);
       setFileName('');
       await loadMonthStatus();
 
       // Auto-select month dari data yang baru disimpan
-      const firstRow = csvRows[0];
+      const firstRow = newRows[0];
       if (firstRow?.tahun && firstRow?.bulan) {
         const key = `${firstRow.tahun}-${String(firstRow.bulan).padStart(2, '0')}`;
         setSelectedMonth(key);
@@ -797,9 +1072,20 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .gte('recap_date', minDate)
         .lte('recap_date', maxDate)
         .not('amount', 'is', null)
-        .gt('amount', 0);
+        .gt('amount', 0)
+        .order('id');
 
       if (error) throw error;
+
+      // Ambil settlement Debit EDC (Yokke) di rentang tanggal yang sama, untuk dicocokkan
+      // langsung ke mutasi tipe 'debit' berdasarkan tanggal + net amount (1:1 per hari).
+      const { data: debitSettlements } = await supabase
+        .from('bsi_debit_settlements')
+        .select('id, report_date, sales_volume, net_amount, mdr_amount, account_name, file_name')
+        .gte('report_date', minDate)
+        .lte('report_date', maxDate);
+      const settlementsByDate = {};
+      (debitSettlements || []).forEach(s => { settlementsByDate[s.report_date] = s; });
 
       const allPatientIds = [...new Set([
         ...(recaps || []).map(r => r.patient_id),
@@ -887,22 +1173,38 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       });
 
       const result = txList.map(row => {
+        const tglMasuk = row.tgl_masuk;
+        const mutasiAmt = Math.round(Number(row.nominal || row.amount));
+
+        // Debit dicocokkan LANGSUNG ke settlement EDC (Yokke) berdasarkan tanggal —
+        // bukan ke daily recap — karena 1 report_date cuma boleh py 1 settlement
+        // (constraint DB). Detail pasien per settlement dilihat lewat tab Debit EDC.
+        if (row.tipe === 'debit') {
+          const settlement = settlementsByDate[tglMasuk];
+          if (!settlement) {
+            return { ...row, status: 'unmatched', matchedSettlement: null };
+          }
+          const net = settlement.net_amount != null ? Math.round(Number(settlement.net_amount)) : null;
+          return {
+            ...row,
+            status: 'matched',
+            matchedSettlement: settlement,
+            debitSelisih: net != null ? mutasiAmt - net : null,
+          };
+        }
 
         let matched = null;
         let candidates = [];
-        const mutasiAmt = Math.round(Number(row.nominal || row.amount));
         const tglTransaksi = row.tgl_transaksi;
-        const tglMasuk = row.tgl_masuk;
 
         if (row.tipe === 'qris') {
-          candidates = qrisRecaps.filter(r => {
-            const recapAmt = Math.round(Number(r.amount));
-            return !usedIds.has(r.id) && r.recap_date === tglTransaksi &&
-              recapAmt >= mutasiAmt && recapAmt <= mutasiAmt + 15000;
-          });
-        } else if (row.tipe === 'debit') {
-          // Debit tidak dicocokan di CSV — pakai tab Debit EDC
-          candidates = [];
+          candidates = qrisRecaps
+            .filter(r => {
+              const recapAmt = Math.round(Number(r.amount));
+              return !usedIds.has(r.id) && r.recap_date === tglTransaksi &&
+                recapAmt >= mutasiAmt && recapAmt <= mutasiAmt + 15000;
+            })
+            .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
         } else if (row.tipe === 'transfer') {
           // Transfer: cocokkan di tgl_masuk rekening sampai 3 hari setelahnya
           const baseDate = new Date(tglMasuk + 'T12:00:00');
@@ -987,6 +1289,50 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     loadDebitSettlements();
   }, [loadDebitSettlements]);
 
+  // Auto-match otomatis untuk semua settlement yang selisihnya belum 0, tiap kali
+  // daftar settlement bulan ini selesai dimuat — supaya sama seperti QRIS (langsung
+  // jalan sendiri tanpa perlu klik manual).
+  useEffect(() => {
+    if (!debitEntries.length) return;
+    let cancelled = false;
+    (async () => {
+      for (const entry of debitEntries) {
+        if (cancelled) return;
+        await handleAutoMatchDebit(entry, { silent: true });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debitEntries.map(e => e.id).join(',')]);
+
+  // Auto-match SEMUA settlement dari SEMUA bulan (bukan cuma bulan yang lagi difilter),
+  // sekali saja saat tab Debit EDC pertama kali dipakai. Ini penting karena kombinasi
+  // pasangan recap bisa menyeberang bulan (mis. settlement akhir Mei butuh recap dari
+  // akhir Mei juga, tapi kalau kamu cuma buka tab Juni, settlement itu nggak pernah
+  // ke-auto-match dan recap-nya keliatan "Belum dipakai" terus di tab lain).
+  const [globalDebitAutoMatchDone, setGlobalDebitAutoMatchDone] = useState(false);
+  useEffect(() => {
+    if (globalDebitAutoMatchDone) return;
+    let cancelled = false;
+    (async () => {
+      const { data: allEntries } = await supabase
+        .from('bsi_debit_settlements')
+        .select('*')
+        .order('report_date');
+      for (const entry of allEntries || []) {
+        if (cancelled) return;
+        await handleAutoMatchDebit(entry, { silent: true });
+      }
+      if (!cancelled) {
+        setGlobalDebitAutoMatchDone(true);
+        // Refresh tampilan bulan yang lagi dibuka, siapa tahu ikut kena update dari proses ini
+        await loadDebitSettlements();
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDebitPdfUpload = useCallback(async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -994,7 +1340,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     setDebitParsing(true);
     for (const file of files) {
       try {
-        const result = await parseDebitEDCPdf(file);
+        const ext = file.name.split('.').pop().toLowerCase();
+        const result = ext === 'csv'
+          ? parseDebitEDCCsv(await file.text())
+          : await parseDebitEDCPdf(file);
         if (!result.reportDate || !result.salesVolume) {
           toast({ variant: 'destructive', title: `Gagal parse: ${file.name}`, description: 'Tidak ditemukan Report Date atau Sales Volume.' });
           continue;
@@ -1009,6 +1358,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           .insert({
             report_date: result.reportDate,
             sales_volume: result.salesVolume,
+            mdr_amount: result.mdrAmount ?? null,
+            net_amount: result.netAmount ?? null,
             account_name: result.accountName,
             file_name: file.name,
             bulan,
@@ -1018,7 +1369,13 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') {
+            toast({ variant: 'destructive', title: `Duplikat: ${file.name}`, description: `Settlement tanggal ${result.reportDate} sudah ada di database, dilewati.` });
+            continue;
+          }
+          throw error;
+        }
         toast({ title: `✅ ${file.name}`, description: `Tgl: ${result.reportDate} | Rp ${result.salesVolume.toLocaleString('id-ID')} — tersimpan` });
         await loadDebitSettlements();
       } catch (err) {
@@ -1073,44 +1430,332 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
     setDebitRecaps(prev => ({ ...prev, [settlement.id]: enriched }));
 
-    // Load existing checks untuk settlement ini
+    // Load existing checks untuk settlement ini — key digabung settlement+recap supaya
+    // tidak nyampur status "sudah dicentang" antar settlement yang beda.
     const { data: checks } = await supabase
       .from('bsi_reconciliation_checks')
       .select('*')
+      .eq('source_type', 'debit_settlement')
       .eq('debit_settlement_id', settlement.id);
     const checkMap = {};
-    (checks || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
+    (checks || []).forEach(c => { checkMap[`${settlement.id}::${c.daily_recap_id}`] = c; });
     setDebitChecks(prev => ({ ...prev, ...checkMap }));
 
     setDebitLoadingRecaps(false);
+    return enriched;
+  }, []);
+
+  // Status "recap ini sudah dipakai di settlement mana" diambil GLOBAL (semua settlement
+  // sekaligus), bukan snapshot per-kartu — supaya kartu yang dibuka duluan tetap otomatis
+  // ter-update begitu kartu lain belakangan mencentang recap yang sama.
+  const refreshDebitRecapUsage = useCallback(async () => {
+    const { data } = await supabase
+      .from('bsi_reconciliation_checks')
+      .select('daily_recap_id, debit_settlement_id, bsi_debit_settlements(report_date)')
+      .eq('source_type', 'debit_settlement')
+      .eq('is_checked', true);
+    const usageMap = {};
+    (data || []).forEach(c => {
+      usageMap[c.daily_recap_id] = {
+        settlementId: c.debit_settlement_id,
+        reportDate: c.bsi_debit_settlements?.report_date || null,
+      };
+    });
+    setDebitRecapUsage(usageMap);
   }, []);
 
   const handleDebitCheck = useCallback(async (settlement, recap, isChecked) => {
-    const existingCheck = debitChecks[recap.id];
+    const key = `${settlement.id}::${recap.id}`;
+
+    // Selalu cek langsung ke database (bukan cuma state lokal) supaya tidak pernah
+    // insert baris dobel walau state React belum sempat sinkron — ini yang bikin
+    // dulu satu pasien bisa ke-insert 2-3x untuk settlement yang sama.
+    const { data: existingRows } = await supabase
+      .from('bsi_reconciliation_checks')
+      .select('*')
+      .eq('source_type', 'debit_settlement')
+      .eq('debit_settlement_id', settlement.id)
+      .eq('daily_recap_id', recap.id)
+      .limit(1);
+    const existingCheck = existingRows?.[0] || null;
+
     if (existingCheck) {
-      // Update
       const { data } = await supabase
         .from('bsi_reconciliation_checks')
         .update({ is_checked: isChecked, checked_by: user?.id, checked_at: isChecked ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
         .eq('id', existingCheck.id)
         .select().single();
-      if (data) setDebitChecks(prev => ({ ...prev, [recap.id]: data }));
-    } else {
-      // Insert
-      const { data } = await supabase
-        .from('bsi_reconciliation_checks')
-        .insert({
-          source_type: 'debit_settlement',
-          debit_settlement_id: settlement.id,
-          daily_recap_id: recap.id,
-          is_checked: isChecked,
-          checked_by: user?.id,
-          checked_at: isChecked ? new Date().toISOString() : null,
-        })
-        .select().single();
-      if (data) setDebitChecks(prev => ({ ...prev, [recap.id]: data }));
+      if (data) setDebitChecks(prev => ({ ...prev, [key]: data }));
+      await refreshDebitRecapUsage();
+      return;
     }
-  }, [debitChecks, user]);
+
+    const { data, error } = await supabase
+      .from('bsi_reconciliation_checks')
+      .insert({
+        source_type: 'debit_settlement',
+        debit_settlement_id: settlement.id,
+        daily_recap_id: recap.id,
+        is_checked: isChecked,
+        checked_by: user?.id,
+        checked_at: isChecked ? new Date().toISOString() : null,
+      })
+      .select().single();
+
+    // Kalau ternyata sudah ada duluan (race condition), constraint DB akan menolak —
+    // ambil ulang baris yang sudah ada lalu update, bukan gagal total.
+    if (error?.code === '23505') {
+      const { data: existing2 } = await supabase
+        .from('bsi_reconciliation_checks')
+        .select('*')
+        .eq('source_type', 'debit_settlement')
+        .eq('debit_settlement_id', settlement.id)
+        .eq('daily_recap_id', recap.id)
+        .single();
+      if (existing2) {
+        const { data: updated } = await supabase
+          .from('bsi_reconciliation_checks')
+          .update({ is_checked: isChecked, checked_by: user?.id, checked_at: isChecked ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+          .eq('id', existing2.id)
+          .select().single();
+        if (updated) setDebitChecks(prev => ({ ...prev, [key]: updated }));
+      }
+      await refreshDebitRecapUsage();
+      return;
+    }
+
+    if (data) setDebitChecks(prev => ({ ...prev, [key]: data }));
+    await refreshDebitRecapUsage();
+  }, [user, refreshDebitRecapUsage]);
+
+  const runRecapAudit = useCallback(async () => {
+    const { start, end } = recapAuditRange;
+    if (!start || !end) return;
+    setRecapAuditLoading(true);
+    try {
+      const QRIS_UUID = '09768d17-6bfa-4d0e-bee2-81d9cb156838';
+      const DEBIT_UUID = '879709f1-9be0-4d2e-8006-a927ea96ff22';
+      const TRANSFER_UUID = 'da9ccafc-d10c-41f3-8baf-17b84cddc77e';
+      const isQris = (pm) => pm === QRIS_UUID || (pm || '').toLowerCase().includes('qris');
+      const isDebit = (pm) => pm === DEBIT_UUID || (pm || '').toLowerCase().includes('debit');
+      const isTransfer = (pm) => pm === TRANSFER_UUID || (pm || '').toLowerCase().includes('transfer');
+
+      // 1) Semua daily recap non-tunai di rentang tanggal ini
+      const { data: recaps, error } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+        .gte('recap_date', start)
+        .lte('recap_date', end)
+        .not('amount', 'is', null)
+        .gt('amount', 0)
+        .order('id');
+      if (error) throw error;
+
+      const allPatientIds = [...new Set([
+        ...(recaps || []).map(r => r.patient_id),
+        ...(recaps || []).map(r => r.actual_patient_id),
+      ].filter(Boolean))];
+      let patientMap = {};
+      if (allPatientIds.length) {
+        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', allPatientIds);
+        (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
+      }
+      const getPatientName = (r) => patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-';
+
+      const qrisRecapsAll = (recaps || []).filter(r => isQris(r.payment_method));
+      const debitRecapsList = (recaps || []).filter(r => isDebit(r.payment_method));
+      const transferRecapsAll = (recaps || []).filter(r => isTransfer(r.payment_method));
+      const relevantRecaps = [...qrisRecapsAll, ...debitRecapsList, ...transferRecapsAll];
+      if (!relevantRecaps.length) {
+        setRecapAuditResult([]);
+        toast({ title: 'Tidak ada data', description: 'Tidak ada recap QRIS/Debit/Transfer di rentang tanggal ini.' });
+        return;
+      }
+      const recapIds = relevantRecaps.map(r => r.id);
+
+      // 2) Manual match yang sudah dikonfirmasi (source_type mutasi_csv) — dianggap SELESAI.
+      // Diambil di awal, sebelum recap/mutasi dipakai untuk auto-match, supaya recap dan
+      // mutasi yang sudah "habis dipakai" manual tidak ikut rebutan slot lagi.
+      const { data: manualChecks } = await supabase
+        .from('bsi_reconciliation_checks')
+        .select('daily_recap_id, mutasi_transaction_id')
+        .eq('source_type', 'mutasi_csv')
+        .eq('is_checked', true)
+        .in('daily_recap_id', recapIds);
+      const manualMatchedIds = new Set((manualChecks || []).map(c => c.daily_recap_id));
+      const manuallyClaimedMutasiIds = new Set((manualChecks || []).map(c => c.mutasi_transaction_id).filter(Boolean));
+
+      // Recap yang masih perlu dicariin pasangan otomatis = yang BELUM manual-matched
+      const qrisRecaps = qrisRecapsAll.filter(r => !manualMatchedIds.has(r.id));
+      const transferRecapsList = transferRecapsAll.filter(r => !manualMatchedIds.has(r.id));
+
+      // 3) Mutasi QRIS & Transfer yang relevan (window dilebarkan +5 hari biar QRIS yang
+      // baru masuk rekening beberapa hari setelah tgl transaksi tetap kebaca), dikurangi
+      // yang sudah "habis dipakai" manual match.
+      const widenedEnd = new Date(new Date(end + 'T12:00:00').getTime() + 5 * 86400000);
+      const { data: mutasiRows } = await supabase
+        .from('bsi_mutasi_transactions')
+        .select('id, tgl_masuk, tgl_transaksi, nominal, tipe')
+        .in('tipe', ['qris', 'transfer'])
+        .gte('tgl_masuk', start)
+        .lte('tgl_masuk', toDateStr(widenedEnd))
+        .order('id');
+
+      const qrisMutasi = (mutasiRows || []).filter(m => m.tipe === 'qris' && !manuallyClaimedMutasiIds.has(m.id));
+      const transferMutasi = (mutasiRows || []).filter(m => m.tipe === 'transfer' && !manuallyClaimedMutasiIds.has(m.id));
+
+      // 4) Auto-match QRIS: tiap mutasi cari 1 recap yang cocok (tanggal scan + nominal +0..+15rb).
+      // Diurutkan pakai id (deterministik) supaya hasilnya konsisten setiap kali dijalankan,
+      // dan tidak beda-beda dengan hasil di tab Check Transaksi.
+      const qrisRecapsSorted = qrisRecaps.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const qrisMatchedIds = new Set();
+      qrisMutasi
+        .slice()
+        .sort((a, b) => (a.tgl_transaksi !== b.tgl_transaksi ? (a.tgl_transaksi > b.tgl_transaksi ? 1 : -1) : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)))
+        .forEach(m => {
+          const mutasiAmt = Math.round(Number(m.nominal));
+          const match = qrisRecapsSorted.find(r =>
+            !qrisMatchedIds.has(r.id) && r.recap_date === m.tgl_transaksi &&
+            Math.round(Number(r.amount)) >= mutasiAmt && Math.round(Number(r.amount)) <= mutasiAmt + 15000
+          );
+          if (match) qrisMatchedIds.add(match.id);
+        });
+
+      // 5) Auto-match Transfer: nominal exact, tgl_masuk s/d +3 hari
+      const transferMatchedIds = new Set();
+      transferMutasi.forEach(m => {
+        const mutasiAmt = Math.round(Number(m.nominal));
+        const baseDate = new Date(m.tgl_masuk + 'T12:00:00');
+        const validDates = new Set();
+        for (let d = 0; d <= 3; d++) {
+          const dt = new Date(baseDate); dt.setDate(dt.getDate() + d);
+          validDates.add(toDateStr(dt));
+        }
+        const match = transferRecapsList.find(r =>
+          !transferMatchedIds.has(r.id) && Math.round(Number(r.amount)) === mutasiAmt && validDates.has(r.recap_date)
+        );
+        if (match) transferMatchedIds.add(match.id);
+      });
+
+      // 6) Debit: matched kalau sudah dicentang (is_checked) di settlement manapun
+      const { data: debitChecksData } = await supabase
+        .from('bsi_reconciliation_checks')
+        .select('daily_recap_id')
+        .eq('source_type', 'debit_settlement')
+        .eq('is_checked', true)
+        .in('daily_recap_id', recapIds);
+      const debitMatchedIds = new Set((debitChecksData || []).map(c => c.daily_recap_id));
+
+      // 7) Deteksi kasus "kurang mutasi": kalau jumlah recap QRIS (yang masih butuh auto-match,
+      // sama tanggal + sama nominal) lebih banyak dari jumlah mutasi QRIS yang tersedia di
+      // tanggal+nominal itu, salah satu recap PASTI tidak akan pernah ketemu pasangannya —
+      // bukan salah algoritma, tapi memang datanya kurang di mutasi rekening.
+      const bucketKey = (date, amt) => `${date}|${Math.floor(Math.round(amt) / 15000)}`; // toleransi 15rb selaras dgn matching
+      const recapBucketCount = {};
+      qrisRecaps.forEach(r => {
+        const k = bucketKey(r.recap_date, Number(r.amount));
+        recapBucketCount[k] = (recapBucketCount[k] || 0) + 1;
+      });
+      const mutasiBucketCount = {};
+      qrisMutasi.forEach(m => {
+        const k = bucketKey(m.tgl_transaksi, Number(m.nominal));
+        mutasiBucketCount[k] = (mutasiBucketCount[k] || 0) + 1;
+      });
+      const ambiguousBucket = (date, amt) => {
+        const k = bucketKey(date, amt);
+        return (recapBucketCount[k] || 0) > (mutasiBucketCount[k] || 0);
+      };
+
+      // 8) Susun hasil akhir
+      const result = relevantRecaps.map(r => {
+        let matched = false;
+        let reason = '';
+        if (isQris(r.payment_method)) {
+          matched = qrisMatchedIds.has(r.id) || manualMatchedIds.has(r.id);
+          if (!matched) {
+            reason = ambiguousBucket(r.recap_date, Number(r.amount))
+              ? `⚠️ Ada beberapa recap QRIS tgl ${r.recap_date} dengan nominal sekitar Rp${Number(r.amount).toLocaleString('id-ID')}, tapi mutasi QRIS yang cocok di tanggal+nominal itu lebih sedikit. Kemungkinan mutasinya belum ke-upload atau ada recap dobel — cek manual.`
+              : 'Tidak ada mutasi QRIS yang cocok (tanggal scan + nominal)';
+          }
+        } else if (isTransfer(r.payment_method)) {
+          matched = transferMatchedIds.has(r.id) || manualMatchedIds.has(r.id);
+          if (!matched) reason = 'Tidak ada mutasi Transfer yang cocok (nominal + tanggal masuk)';
+        } else if (isDebit(r.payment_method)) {
+          matched = debitMatchedIds.has(r.id);
+          if (!matched) reason = 'Belum ter-Auto Match / dicentang manual di tab Debit EDC';
+        }
+        return {
+          id: r.id,
+          recap_date: r.recap_date,
+          amount: r.amount,
+          tipe: isQris(r.payment_method) ? 'qris' : isDebit(r.payment_method) ? 'debit' : 'transfer',
+          patient_name: getPatientName(r),
+          matched,
+          reason,
+        };
+      }).sort((a, b) => (a.recap_date < b.recap_date ? -1 : a.recap_date > b.recap_date ? 1 : 0));
+
+      setRecapAuditResult(result);
+      const unmatchedCount = result.filter(r => !r.matched).length;
+      toast({ title: 'Audit selesai', description: `${unmatchedCount} dari ${result.length} recap belum ketemu pasangannya.` });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal audit', description: err.message });
+    } finally {
+      setRecapAuditLoading(false);
+    }
+  }, [recapAuditRange, toast]);
+  const handleAutoMatchDebit = useCallback(async (entry, { silent = false } = {}) => {
+    setAutoMatchingId(entry.id);
+    try {
+      const recapsForEntry = debitRecaps[entry.id] || await loadDebitRecapsForSettlement(entry);
+      if (!recapsForEntry || !recapsForEntry.length) {
+        if (!silent) toast({ variant: 'destructive', title: 'Tidak ada recap', description: 'Tidak ditemukan transaksi debit di daily recap untuk settlement ini.' });
+        return;
+      }
+
+      // Ambil SEMUA check debit_settlement yang sudah tercentang, di settlement manapun,
+      // supaya recap yang sudah dipakai settlement lain tidak diambil lagi.
+      const { data: existingChecks } = await supabase
+        .from('bsi_reconciliation_checks')
+        .select('id, daily_recap_id, debit_settlement_id, is_checked')
+        .eq('source_type', 'debit_settlement')
+        .in('daily_recap_id', recapsForEntry.map(r => r.id));
+
+      const usedElsewhere = new Set(
+        (existingChecks || [])
+          .filter(c => c.is_checked && c.debit_settlement_id !== entry.id)
+          .map(c => c.daily_recap_id)
+      );
+      // Match lama milik settlement INI SENDIRI dihitung ulang dari nol, bukan ditambah-tambah
+      const currentEntryChecked = (existingChecks || []).filter(c => c.is_checked && c.debit_settlement_id === entry.id);
+
+      const availableRecaps = recapsForEntry.filter(r => !usedElsewhere.has(r.id));
+      const combo = findMatchingCombo(availableRecaps, entry.sales_volume, 5000);
+      const comboIds = new Set(combo.map(r => r.id));
+
+      // Uncheck recap yang sebelumnya kepilih di settlement ini tapi tidak lagi terpakai
+      for (const c of currentEntryChecked) {
+        if (!comboIds.has(c.daily_recap_id)) {
+          const recap = recapsForEntry.find(r => r.id === c.daily_recap_id);
+          if (recap) await handleDebitCheck(entry, recap, false);
+        }
+      }
+      // Check recap hasil kombinasi terbaru
+      for (const recap of combo) {
+        await handleDebitCheck(entry, recap, true);
+      }
+
+      if (!combo.length) {
+        if (!silent) toast({ variant: 'destructive', title: 'Tidak ditemukan kombinasi', description: `Tidak ada kombinasi transaksi yang jumlahnya cocok dengan Rp ${Number(entry.sales_volume).toLocaleString('id-ID')}.` });
+        return;
+      }
+      if (!silent) toast({ title: 'Auto match selesai', description: `${combo.length} transaksi dicentang untuk settlement ${entry.report_date} (Rp ${combo.reduce((s, r) => s + Number(r.amount), 0).toLocaleString('id-ID')}).` });
+    } catch (err) {
+      if (!silent) toast({ variant: 'destructive', title: 'Gagal auto match', description: err.message });
+    } finally {
+      setAutoMatchingId(null);
+    }
+  }, [debitRecaps, loadDebitRecapsForSettlement, handleDebitCheck, toast]);
 
   // Summary
   const summary = React.useMemo(() => {
@@ -1232,6 +1877,18 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         >
           <CreditCard className="w-4 h-4 inline mr-1.5" />
           Debit EDC
+        </button>
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'audit'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          )}
+        >
+          <Search className="w-4 h-4 inline mr-1.5" />
+          Recap Belum Match
         </button>
       </div>
 
@@ -1486,6 +2143,13 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                 )}
                               </td>
                             </tr>
+                            {isExpanded && row.tipe === 'debit' && row.status === 'matched' && row.matchedSettlement && (
+                              <tr className="bg-green-50 border-b">
+                                <td colSpan={7} className="px-4 py-3">
+                                  <DebitSettlementDetail settlement={row.matchedSettlement} mutasiNominal={row.nominal || row.amount} selisih={row.debitSelisih} />
+                                </td>
+                              </tr>
+                            )}
                             {isExpanded && row.status === 'matched' && row.matchedRecap && !row._editMode && (
                               <tr className="bg-green-50 border-b">
                                 <td colSpan={7} className="px-4 py-3">
@@ -1540,7 +2204,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                     mutasiChecks={mutasiChecks}
                                     onCheck={handleMutasiCheck}
                                     onLoad={() => { if (!allRecapsForPeriod.length) loadAllRecapsForPeriod(); }}
-                                    matchedRecapIds={new Set(reconciled.flatMap(r => (r.manualRecaps && r.manualRecaps.length ? r.manualRecaps.map(mr => mr.id) : (r.matchedRecap ? [r.matchedRecap.id] : []))))}
+                                    matchedRecapIds={new Set([
+                                      ...globalMatchedRecapIds,
+                                      ...reconciled.flatMap(r => (r.manualRecaps && r.manualRecaps.length ? r.manualRecaps.map(mr => mr.id) : (r.matchedRecap ? [r.matchedRecap.id] : []))),
+                                    ])}
                                   />
                                 </td>
                               </tr>
@@ -1613,16 +2280,29 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           <Card>
             <CardContent className="pt-5">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+                <select
+                  value={debitFilterMonth}
+                  onChange={(e) => setDebitFilterMonth(e.target.value)}
+                  className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none min-w-[160px]"
+                >
+                  {generateMonthList().map(({ year, month }) => {
+                    const key = `${year}-${String(month).padStart(2, '0')}`;
+                    return <option key={key} value={key}>{MONTH_NAMES[month - 1]} {year}</option>;
+                  })}
+                </select>
                 <label className={cn(
                   'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 border-dashed transition-all text-sm font-medium',
                   debitParsing ? 'border-blue-300 bg-blue-50 text-blue-400 cursor-not-allowed' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-600'
                 )}>
                   {debitParsing ? <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" /> : <FilePlus2 className="w-4 h-4 text-blue-500" />}
-                  {debitParsing ? 'Memproses PDF...' : 'Upload PDF Settlement Debit'}
-                  <input type="file" accept=".pdf" multiple className="hidden" onChange={handleDebitPdfUpload} disabled={debitParsing} />
+                  {debitParsing ? 'Memproses File...' : 'Upload Settlement Debit (PDF/CSV)'}
+                  <input type="file" accept=".pdf,.csv" multiple className="hidden" onChange={handleDebitPdfUpload} disabled={debitParsing} />
                 </label>
               </div>
-              <p className="text-xs text-slate-400 mt-2">Upload PDF "Ringkasan Tagihan" EDC BSI. Data transaksi akan tersimpan ke database.</p>
+              <p className="text-xs text-slate-400 mt-2">
+                Menampilkan settlement bulan <strong>{MONTH_NAMES[parseInt(debitFilterMonth.split('-')[1]) - 1]} {debitFilterMonth.split('-')[0]}</strong>.
+                {' '}Upload PDF "Ringkasan Tagihan" atau CSV "Merchant Statement" EDC BSI. Bisa pilih banyak file sekaligus, boleh campur PDF & CSV.
+              </p>
             </CardContent>
           </Card>
 
@@ -1637,7 +2317,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             <div className="space-y-4">
               {debitEntries.map(entry => {
                 const recapsForEntry = debitRecaps[entry.id] || null;
-                const checkedRecaps = recapsForEntry ? recapsForEntry.filter(r => debitChecks[r.id]?.is_checked) : [];
+                const checkedRecaps = recapsForEntry ? recapsForEntry.filter(r => debitChecks[`${entry.id}::${r.id}`]?.is_checked) : [];
                 const totalChecked = checkedRecaps.reduce((s, r) => s + Number(r.amount), 0);
                 const isLoaded = recapsForEntry !== null;
                 const selisih = Math.round(entry.sales_volume) - Math.round(totalChecked);
@@ -1665,9 +2345,15 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             <p className="text-sm font-bold text-slate-800">{entry.report_date}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-slate-500">Sales Volume (PDF)</p>
+                            <p className="text-xs text-slate-500">Sales Volume</p>
                             <p className="text-sm font-bold text-slate-800">{formatRp(entry.sales_volume)}</p>
                           </div>
+                          {entry.net_amount != null && (
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500">Net Amount</p>
+                              <p className="text-sm font-bold text-emerald-700">{formatRp(entry.net_amount)}</p>
+                            </div>
+                          )}
                           {checkedRecaps.length > 0 && (
                             <div className="text-right">
                               <p className="text-xs text-slate-500">Total Dicentang</p>
@@ -1681,6 +2367,15 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             </div>
                           )}
                           <div className="flex gap-2">
+                            <Button
+                              size="sm" variant="outline"
+                              onClick={() => handleAutoMatchDebit(entry)}
+                              disabled={autoMatchingId === entry.id}
+                              className="text-xs gap-1 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                            >
+                              {autoMatchingId === entry.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                              Auto Match
+                            </Button>
                             <Button
                               size="sm" variant="outline"
                               onClick={() => !isLoaded ? loadDebitRecapsForSettlement(entry) : setDebitRecaps(prev => { const n = {...prev}; delete n[entry.id]; return n; })}
@@ -1716,19 +2411,27 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                   <th className="px-4 py-2 text-left w-10">✓</th>
                                   <th className="px-4 py-2 text-left">Pasien</th>
                                   <th className="px-4 py-2 text-left">Tgl Transaksi</th>
+                                  <th className="px-4 py-2 text-left">Status</th>
                                   <th className="px-4 py-2 text-right">Nominal</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {recapsForEntry.map(recap => {
-                                  const isChecked = debitChecks[recap.id]?.is_checked || false;
+                                  const isChecked = debitChecks[`${entry.id}::${recap.id}`]?.is_checked || false;
+                                  const usage = debitRecapUsage[recap.id];
+                                  const isUsedElsewhere = !!usage && usage.settlementId !== entry.id && !isChecked;
                                   return (
                                     <tr
                                       key={recap.id}
                                       className={cn('border-b transition-colors cursor-pointer hover:bg-slate-50',
-                                        isChecked ? 'bg-green-50' : ''
+                                        isChecked ? 'bg-green-50' : isUsedElsewhere ? 'bg-amber-50/60' : ''
                                       )}
-                                      onClick={() => handleDebitCheck(entry, recap, !isChecked)}
+                                      onClick={() => {
+                                        if (!isChecked && isUsedElsewhere) {
+                                          if (!confirm(`Pasien ini sudah dicentang di settlement tanggal ${usage.reportDate || '-'}. Pindahkan ke settlement ini?`)) return;
+                                        }
+                                        handleDebitCheck(entry, recap, !isChecked);
+                                      }}
                                     >
                                       <td className="px-4 py-2.5">
                                         <div className={cn(
@@ -1740,6 +2443,19 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                       </td>
                                       <td className="px-4 py-2.5 text-xs font-medium text-slate-800">{recap.patient_name}</td>
                                       <td className="px-4 py-2.5 text-xs text-slate-500">{recap.recap_date}</td>
+                                      <td className="px-4 py-2.5">
+                                        {isChecked ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                            <CheckCircle2 className="w-3 h-3" /> Dipilih di sini
+                                          </span>
+                                        ) : isUsedElsewhere ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                            ⚠ Sudah dipakai settlement {usage.reportDate || '-'}
+                                          </span>
+                                        ) : (
+                                          <span className="text-xs text-slate-400">Belum dipakai</span>
+                                        )}
+                                      </td>
                                       <td className="px-4 py-2.5 text-right text-xs font-bold text-slate-800">{formatRp(recap.amount)}</td>
                                     </tr>
                                   );
@@ -1747,7 +2463,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                               </tbody>
                               <tfoot>
                                 <tr className="bg-slate-50 border-t">
-                                  <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-slate-600">Total dicentang</td>
+                                  <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-slate-600">Total dicentang</td>
                                   <td className="px-4 py-2 text-right text-xs font-bold text-green-700">{formatRp(totalChecked)}</td>
                                 </tr>
                               </tfoot>
@@ -1760,6 +2476,100 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 );
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* -- AUDIT RECAP TAB -- */}
+      {activeTab === 'audit' && (
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="text-xs text-slate-500 block mb-1">Dari tanggal</label>
+                  <input type="date" value={recapAuditRange.start} onChange={e => setRecapAuditRange(prev => ({ ...prev, start: e.target.value }))} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 block mb-1">Sampai tanggal</label>
+                  <input type="date" value={recapAuditRange.end} onChange={e => setRecapAuditRange(prev => ({ ...prev, end: e.target.value }))} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none" />
+                </div>
+                <Button onClick={runRecapAudit} disabled={recapAuditLoading} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                  {recapAuditLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  Cek Recap
+                </Button>
+                {recapAuditResult && (
+                  <select value={recapAuditFilter} onChange={e => setRecapAuditFilter(e.target.value)} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none">
+                    <option value="unmatched">Tampilkan yang Belum Match saja</option>
+                    <option value="all">Tampilkan Semua</option>
+                  </select>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Cek daily recap (QRIS/Debit/Transfer) mana yang belum ketemu pasangannya di mutasi rekening BSI ataupun settlement EDC.</p>
+            </CardContent>
+          </Card>
+
+          {recapAuditResult && (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="border-slate-200">
+                  <CardContent className="pt-4">
+                    <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">Total Dicek</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-1">{recapAuditResult.length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="pt-4">
+                    <p className="text-xs text-green-700 uppercase font-semibold tracking-wide">Sudah Match</p>
+                    <p className="text-2xl font-bold text-green-700 mt-1">{recapAuditResult.filter(r => r.matched).length}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-red-200 bg-red-50">
+                  <CardContent className="pt-4">
+                    <p className="text-xs text-red-700 uppercase font-semibold tracking-wide">Belum Match</p>
+                    <p className="text-2xl font-bold text-red-700 mt-1">{recapAuditResult.filter(r => !r.matched).length}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                          <th className="text-left px-4 py-3 font-semibold">Tipe</th>
+                          <th className="text-left px-4 py-3 font-semibold">Tgl Recap</th>
+                          <th className="text-left px-4 py-3 font-semibold">Pasien</th>
+                          <th className="text-right px-4 py-3 font-semibold">Nominal</th>
+                          <th className="text-left px-4 py-3 font-semibold">Status</th>
+                          <th className="text-left px-4 py-3 font-semibold">Keterangan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recapAuditResult
+                          .filter(r => recapAuditFilter === 'all' || !r.matched)
+                          .map(r => (
+                            <tr key={r.id} className={cn('border-b', !r.matched ? 'bg-red-50/50' : '')}>
+                              <td className="px-4 py-3"><TypeBadge tipe={r.tipe} /></td>
+                              <td className="px-4 py-3 text-xs text-slate-700">{r.recap_date}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-slate-800">{r.patient_name}</td>
+                              <td className="px-4 py-3 text-right font-bold text-slate-800 text-xs">{formatRp(r.amount)}</td>
+                              <td className="px-4 py-3"><StatusBadge status={r.matched ? 'matched' : 'unmatched'} /></td>
+                              <td className="px-4 py-3 text-xs text-slate-500">{r.matched ? '-' : r.reason}</td>
+                            </tr>
+                          ))}
+                        {recapAuditResult.filter(r => recapAuditFilter === 'all' || !r.matched).length === 0 && (
+                          <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                            {recapAuditFilter === 'unmatched' ? '🎉 Semua recap sudah match!' : 'Tidak ada data.'}
+                          </td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
         </div>
       )}
