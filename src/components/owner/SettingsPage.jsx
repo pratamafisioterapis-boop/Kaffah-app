@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import AdminChecklistManager from '@/components/owner/AdminChecklistManager';
+import AdminChecklistHistory from '@/components/owner/AdminChecklistHistory';
 import { motion } from 'framer-motion';
 import { 
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle, 
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, ListChecks
+  FileText, Upload, X, Tag, FolderTree, ListChecks, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -983,6 +984,9 @@ const SettingsPage = () => {
           <TabsTrigger value="admin_checklist" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <ListChecks className="w-3.5 h-3.5" /> Checklist Admin
           </TabsTrigger>
+          <TabsTrigger value="admin_checklist_history" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <History className="w-3.5 h-3.5" /> Riwayat Checklist
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -1028,6 +1032,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="admin_checklist">
             <AdminChecklistManager />
+          </TabsContent>
+          <TabsContent value="admin_checklist_history">
+            <AdminChecklistHistory />
           </TabsContent>
         </div>
       </Tabs>

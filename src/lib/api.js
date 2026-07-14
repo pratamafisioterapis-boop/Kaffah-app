@@ -4246,3 +4246,63 @@ export const updateAdminChecklistNote = async (itemId, note) => {
     return { data, error: null };
   }, 'updateAdminChecklistNote');
 };
+// --- OWNER: riwayat & catatan checklist harian ---
+export const getAdminChecklistHistory = async (startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data: items, error: itemsError } = await supabase
+      .from('admin_checklist_items')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('sort_order', { ascending: true });
+    if (itemsError) return { error: itemsError };
+
+    const { data: completions, error: compError } = await supabase
+      .from('admin_checklist_completions')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .gte('checklist_date', startDate)
+      .lte('checklist_date', endDate)
+      .order('checklist_date', { ascending: false });
+    if (compError) return { error: compError };
+
+    const completedByIds = [...new Set((completions || []).map(c => c.completed_by).filter(Boolean))];
+    let usersMap = {};
+    if (completedByIds.length > 0) {
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .in('id', completedByIds);
+      usersMap = (usersData || []).reduce((acc, u) => {
+        acc[u.id] = u.full_name;
+        return acc;
+      }, {});
+    }
+
+    const itemsMap = (items || []).reduce((acc, i) => {
+      acc[i.id] = i;
+      return acc;
+    }, {});
+
+    const groupedByDate = (completions || []).reduce((acc, c) => {
+      const date = c.checklist_date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push({
+        ...c,
+        item_title: itemsMap[c.item_id]?.title || 'Task terhapus',
+        item_description: itemsMap[c.item_id]?.description || null,
+        completed_by_name: c.completed_by ? (usersMap[c.completed_by] || 'Admin') : null
+      });
+      return acc;
+    }, {});
+
+    const result = Object.keys(groupedByDate)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .map(date => ({ date, entries: groupedByDate[date] }));
+
+    return { data: result, error: null };
+  }, 'getAdminChecklistHistory', { retry: true });
+};
