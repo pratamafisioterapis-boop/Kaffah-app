@@ -4320,7 +4320,7 @@ export const getTodayAdminChecklist = async () => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
     const { data: items, error: itemsError } = await supabase
       .from('admin_checklist_items')
@@ -4358,7 +4358,7 @@ export const toggleAdminChecklistItem = async (itemId, isDone) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
     const { data, error } = await supabase
       .from('admin_checklist_completions')
@@ -4382,7 +4382,7 @@ export const updateAdminChecklistNote = async (itemId, note) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
     const { data, error } = await supabase
       .from('admin_checklist_completions')
