@@ -5,6 +5,17 @@ import { supabase } from "@/lib/customSupabaseClient";
 const VAPID_KEY =
   "BOXDIUQjh2T-88iUbT5_jGzVTJeFIdxmygdxjH7zy3Et9OkV5SDoHuShHpHvFizZiQZt4SMYfyj_UlBQH8hWycA";
 
+const DEVICE_ID_KEY = "fcm_device_id";
+
+const getDeviceId = () => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+};
+
 export const registerPushNotifications = async (userId) => {
   try {
     if (!userId) return null;
@@ -30,16 +41,19 @@ export const registerPushNotifications = async (userId) => {
       return null;
     }
 
+    const deviceId = getDeviceId();
+
     const { error } = await supabase
   .from("fcm_tokens")
   .upsert(
     {
       user_id: userId,
+      device_id: deviceId,
       token,
       updated_at: new Date().toISOString(),
     },
     {
-      onConflict: "user_id,token",
+      onConflict: "user_id,device_id",
     }
   );
 
