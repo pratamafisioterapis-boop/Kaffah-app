@@ -122,6 +122,27 @@ const OwnerDailyRecap = () => {
 
   useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('owner_daily_recaps_invoice_status')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'daily_recaps' },
+        (payload) => {
+          setRecaps(prev =>
+            prev.map(r =>
+              r.id === payload.new.id
+                ? { ...r, invoice_wa_status: payload.new.invoice_wa_status, invoice_wa_sent_at: payload.new.invoice_wa_sent_at }
+                : r
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   // 1. Fetch Options on Mount
   useEffect(() => {
     const fetchOptions = async () => {
