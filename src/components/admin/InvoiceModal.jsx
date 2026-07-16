@@ -146,6 +146,17 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
     data?.medical_record_number           ||
     'RM00000';
 
+  // ── Helper: Nama Pasien (dipakai untuk nama file PDF) ─────────────────────
+  const getPatientNameSlug = () => {
+    const name =
+      data?.patients?.full_name ||
+      data?.patient?.full_name  ||
+      data?.guest_name          ||
+      data?.patient_name        ||
+      'Pasien';
+    return name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  };
+
   // ── Helper: Invoice Number ────────────────────────────────────────────────
   const getInvoiceNumber = () => {
     const rm      = getMedicalRecordNumber();
@@ -229,7 +240,7 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       const [yr, mo, dy] = rawDate.split('-');
       const dateFormatted = `${dy}-${mo}-${yr.slice(2)}`;
 
-      pdf.save(`Rcpt_${rm}_${dateFormatted}.pdf`);
+      pdf.save(`Kwitansi_${getPatientNameSlug()}_${dateFormatted}.pdf`);
     } catch (err) {
       console.error('PDF Generation Error:', err);
       toast({ variant: "destructive", title: "Gagal Mengunduh", description: err.message });
@@ -264,7 +275,7 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
       const rawDate  = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');
       const dateFormatted = `${dy}-${mo}-${yr.slice(2)}`;
-      const fileName = `Rcpt_${rm}_${dateFormatted}.pdf`;
+      const fileName = `Kwitansi_${getPatientNameSlug()}_${dateFormatted}.pdf`;
 
       if (!fileUrl) {
         toast({ title: "Menyiapkan Invoice...", description: "Sedang generate dan upload PDF." });
@@ -361,7 +372,7 @@ const handleSendManualWA = async () => {
       `${dy}-${mo}-${yr.slice(2)}`;
 
     const fileName =
-      `Rcpt_${rm}_${dateFormatted}.pdf`;
+      `Kwitansi_${getPatientNameSlug()}_${dateFormatted}.pdf`;
 
     if (!fileUrl) {
 

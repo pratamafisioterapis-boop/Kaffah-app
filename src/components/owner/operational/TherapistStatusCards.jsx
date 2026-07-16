@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, Zap, Stethoscope, X, CalendarOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const isPWA = (() => {
   try {
@@ -28,6 +29,21 @@ const TherapistStatusCards = ({
 
   const getInitials = (name = '') =>
     name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+  const navigate = useNavigate();
+
+  // Urutan: Available (0) -> Busy (1) -> Tidak Ada Jadwal (2) -> Non Aktif (3) -> Cuti/Ijin (4, paling akhir)
+  const getPriority = (therapist) => {
+    if (therapist.leave_status && ['cuti', 'sakit'].includes(therapist.leave_status.toLowerCase())) return 4;
+    if (!therapist.is_active) return 3;
+    const totalSlots = therapist.total_slots || 0;
+    if (totalSlots === 0) return 2;
+    const sessions = therapistSessions[therapist.id] || 0;
+    const percentage = Math.round((sessions / totalSlots) * 100);
+    return percentage > 75 ? 1 : 0;
+  };
+
+  const sortedTherapists = [...therapists].sort((a, b) => getPriority(a) - getPriority(b));
 
   if (isLoading) {
     return (
@@ -58,13 +74,14 @@ const TherapistStatusCards = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-        {therapists.map((therapist) => {
+        {sortedTherapists.map((therapist) => {
           const { label, icon: Icon, color, ring, text, badge, bar, percentage, sessions, totalSlots } = getStatusData(therapist);
 
           return (
             <div
               key={therapist.id}
-              className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+              onClick={() => navigate('/owner/appointments')}
+              className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98]"
             >
               {/* ── Desktop: layout vertikal lebih besar ── */}
               {!isPWA ? (
