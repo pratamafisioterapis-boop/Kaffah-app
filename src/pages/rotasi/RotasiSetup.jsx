@@ -705,7 +705,7 @@ const SlotGlobalSection = () => {
     const rows = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       if (isWeekend(d)) continue;
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       DEFAULT_SESSIONS.forEach((s) => {
         rows.push({ slot_date: dateStr, label: s.label, start_time: s.start_time, end_time: null, capacity: s.capacity });
       });
