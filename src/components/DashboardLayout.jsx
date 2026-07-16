@@ -7,7 +7,7 @@ import {
   Home, Calendar, Users, Settings, LogOut, Activity, Briefcase, 
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
-  MessageSquare, Plus, Boxes
+  MessageSquare, Plus, Boxes, Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -29,7 +29,8 @@ const iconMap = {
   Database,
   DollarSign,
   MessageSquare,
-  Boxes
+  Boxes,
+  Wallet
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -354,6 +355,11 @@ const pwaNavItems = useMemo(() => {
         label: 'Accounting System',
         path: '/owner/accounting',
         icon: 'DollarSign'
+      },
+      {
+        label: 'Modal Awal',
+        path: '/owner/modal-awal',
+        icon: 'Wallet'
       },
       {
         label: 'Setup',

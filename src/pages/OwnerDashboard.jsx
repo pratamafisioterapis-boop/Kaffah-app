@@ -22,6 +22,7 @@ import SettingsPage from '@/components/owner/SettingsPage';
 import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
 import RevenueOverview from '@/components/owner/RevenueOverview';
+import ModalAwalManagement from '@/components/owner/ModalAwalManagement';
 
 
 
@@ -431,6 +432,7 @@ const OwnerDashboard = () => {
     { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
     { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
     { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
+    { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },
     { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
     { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
     { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
@@ -457,6 +459,7 @@ const OwnerDashboard = () => {
         
         {/* Functional Pages */}
         <Route path="/accounting" element={<OwnerFinanceDashboardComponent />} />
+        <Route path="/modal-awal" element={<ModalAwalManagement />} />
         <Route path="/daily-recap" element={<OwnerDailyRecap />} />
         <Route path="/settings" element={<SettingsPage />} />
         

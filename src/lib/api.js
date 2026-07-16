@@ -1714,6 +1714,113 @@ export const createOwnerIncome = async (payload) => {
     return { data, success: true, error: null };
   }, 'createOwnerIncome');
 };
+// ============================================
+// OWNER MODAL AWAL (INITIAL CAPITAL)
+// ============================================
+export const getOwnerInitialCapital = async ({ startDate, endDate } = {}) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    let query = supabase
+      .from('owner_initial_capital')
+      .select(`
+        *,
+        bank_account:bank_account_id (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate) query = query.lte('date', endDate);
+
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getOwnerInitialCapital', { retry: true });
+};
+
+export const createOwnerInitialCapital = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase
+      .from('owner_initial_capital')
+      .insert({
+        clinic_id: userRow?.clinic_id,
+        date: payload.date,
+        amount: payload.amount,
+        source: payload.source,
+        description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        created_by: userId || null,
+        created_at: new Date().toISOString()
+      })
+      .select(`
+        *,
+        bank_account:bank_account_id (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'createOwnerInitialCapital');
+};
+
+export const updateOwnerInitialCapital = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_initial_capital')
+      .update({
+        date: payload.date,
+        amount: payload.amount,
+        source: payload.source,
+        description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        bank_account:bank_account_id (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateOwnerInitialCapital');
+};
+
+export const deleteOwnerInitialCapital = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase
+      .from('owner_initial_capital')
+      .delete()
+      .eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteOwnerInitialCapital');
+};
+
 export const createOwnerReceivable = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
