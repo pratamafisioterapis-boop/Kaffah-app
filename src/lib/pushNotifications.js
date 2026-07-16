@@ -43,6 +43,15 @@ export const registerPushNotifications = async (userId) => {
 
     const deviceId = getDeviceId();
 
+    // Hapus token milik user LAIN yang kebetulan pakai device_id sama
+    // (device di-pakai gantian akun tanpa clear storage) supaya push
+    // tidak nyasar/dobel ke device ini
+    await supabase
+      .from("fcm_tokens")
+      .delete()
+      .eq("device_id", deviceId)
+      .neq("user_id", userId);
+
     const { error } = await supabase
   .from("fcm_tokens")
   .upsert(
