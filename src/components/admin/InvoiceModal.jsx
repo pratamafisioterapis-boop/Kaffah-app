@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
-const InvoiceModal = ({ isOpen, onClose, data }) => {
+const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
   const componentRef                       = useRef();
@@ -315,10 +315,20 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
   status === '200' ||
   rpcResult?.request_id
 ) {
+        await supabase
+          .from('daily_recaps')
+          .update({
+            invoice_wa_status: 'terkirim',
+            invoice_wa_sent_at: new Date().toISOString(),
+          })
+          .eq('id', data.id);
+
         toast({
           title: "✅ Invoice Terkirim",
-          description: `Invoice PDF berhasil dikirim via WhatsApp ke ${rawPhone}`,
+          description: `Invoice PDF berhasil dikirim via WhatsApp ke ${rawPhone}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
         });
+
+        onSent?.();
       } else if (rpcResult?.error) {
         throw new Error(rpcResult.error);
       } else {
@@ -330,6 +340,15 @@ const InvoiceModal = ({ isOpen, onClose, data }) => {
 
     } catch (err) {
       console.error("handleSendWA error:", err);
+
+      await supabase
+        .from('daily_recaps')
+        .update({
+          invoice_wa_status: 'gagal',
+          invoice_wa_sent_at: new Date().toISOString(),
+        })
+        .eq('id', data.id);
+
       toast({
         variant: "destructive",
         title: "Gagal Kirim WA",
@@ -401,10 +420,20 @@ const handleSendManualWA = async () => {
     const formattedPhone =
       rawPhone.replace(/^0/, '62');
 
+    await supabase
+      .from('daily_recaps')
+      .update({
+        invoice_wa_status: 'terkirim_manual',
+        invoice_wa_sent_at: new Date().toISOString(),
+      })
+      .eq('id', data.id);
+
     window.open(
       `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`,
       '_blank'
     );
+
+    onSent?.();
 
   } catch (err) {
 

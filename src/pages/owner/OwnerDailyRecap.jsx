@@ -24,6 +24,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
+import InvoiceModal from '@/components/admin/InvoiceModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const getTherapistName = (recap) => {
@@ -73,6 +74,8 @@ const OwnerDailyRecap = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedRecap, setSelectedRecap] = useState(null);
   const [modalMode, setModalMode] = useState('view');
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
 
   // Search & Sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -396,10 +399,11 @@ const OwnerDailyRecap = () => {
                 <th className="px-4 py-3 text-center">Nominal</th>
                 <th className="px-4 py-3 text-center">Status</th>
                 <th className="px-4 py-3 text-center min-w-[140px]">Waktu Sesi</th>
+                <th className="px-4 py-3 text-center">Invoice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loadingRecaps ? ( <tr><td colSpan={10} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-blue-500" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={10} className="p-8 text-center text-slate-500">
+              {loadingRecaps ? ( <tr><td colSpan={11} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-blue-500" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={11} className="p-8 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center py-6">
                        <Search className="w-8 h-8 text-slate-300 mb-2" />
                        <p>Tidak ada data rekap harian.</p>
@@ -469,6 +473,38 @@ const OwnerDailyRecap = () => {
                                 </div>
                             )}
                         </td>
+                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={parseFloat(recap.amount || 0) === 0}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                              onClick={() => {
+                                setSelectedInvoiceData(recap);
+                                setInvoiceModalOpen(true);
+                              }}
+                            >
+                              Invoice
+                            </Button>
+                            {recap.invoice_wa_status && (
+                              <span
+                                title={
+                                  recap.invoice_wa_status === 'gagal'
+                                    ? 'Gagal dikirim'
+                                    : 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
+                                }
+                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                                  recap.invoice_wa_status === 'gagal'
+                                    ? 'bg-red-50 text-red-600'
+                                    : 'bg-emerald-50 text-emerald-600'
+                                }`}
+                              >
+                                {recap.invoice_wa_status === 'gagal' ? '✕ Gagal' : '✓ Terkirim'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                       </motion.tr>
                    );
                 })
@@ -500,6 +536,13 @@ const OwnerDailyRecap = () => {
           onClose={() => setIsDetailModalOpen(false)}
           onEdit={handleEditFromDetail}
           onDelete={fetchRecaps}
+      />
+
+      <InvoiceModal
+        isOpen={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        data={selectedInvoiceData}
+        onSent={fetchRecaps}
       />
     </div>
   );

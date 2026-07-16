@@ -922,18 +922,36 @@ const end = formatLocal(lastDay);
                       )}
                     </td>
                     <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-  <Button
-  size="sm"
-  variant="outline"
-  disabled={parseFloat(recap.amount || 0) === 0}
-  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-  onClick={() => {
-    setSelectedInvoiceData(recap);
-    setInvoiceModalOpen(true);
-  }}
->
-  Invoice
-</Button>
+  <div className="flex flex-col items-center gap-1">
+    <Button
+    size="sm"
+    variant="outline"
+    disabled={parseFloat(recap.amount || 0) === 0}
+    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+    onClick={() => {
+      setSelectedInvoiceData(recap);
+      setInvoiceModalOpen(true);
+    }}
+  >
+    Invoice
+  </Button>
+    {recap.invoice_wa_status && (
+      <span
+        title={
+          recap.invoice_wa_status === 'gagal'
+            ? 'Gagal dikirim'
+            : 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
+        }
+        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+          recap.invoice_wa_status === 'gagal'
+            ? 'bg-red-50 text-red-600'
+            : 'bg-emerald-50 text-emerald-600'
+        }`}
+      >
+        {recap.invoice_wa_status === 'gagal' ? '✕ Gagal' : '✓ Terkirim'}
+      </span>
+    )}
+  </div>
 </td>
                   </motion.tr>
                  );
@@ -970,6 +988,7 @@ const end = formatLocal(lastDay);
   isOpen={invoiceModalOpen}
   onClose={() => setInvoiceModalOpen(false)}
   data={selectedInvoiceData}
+  onSent={fetchRecaps}
 />
     </div>
   );
