@@ -52,6 +52,16 @@ export const registerPushNotifications = async (userId) => {
       .eq("device_id", deviceId)
       .neq("user_id", userId);
 
+    // Hapus baris lain manapun yang kebetulan sudah pakai TOKEN FCM yang sama
+    // (browser bisa mengembalikan token identik walau device_id beda, mis.
+    // setelah reinstall PWA / clear storage) — supaya 1 token cuma terikat
+    // ke 1 user dan notifikasi tidak bocor ke akun/klinik lain
+    await supabase
+      .from("fcm_tokens")
+      .delete()
+      .eq("token", token)
+      .neq("user_id", userId);
+
     const { error } = await supabase
   .from("fcm_tokens")
   .upsert(
