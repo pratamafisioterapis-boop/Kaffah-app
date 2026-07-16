@@ -109,6 +109,7 @@ export function generateSchedule({
     }
 
     const usedInThisSlot = new Set();
+    const slotAssignmentStart = assignments.length;
 
     const lockedPatients = groupPatients.filter((p) => lockedAssignments[p.id]);
     const withHistory = groupPatients.filter((p) => !lockedAssignments[p.id] && lastVisitMap[p.id]);
@@ -175,6 +176,29 @@ export function generateSchedule({
         slot_number: slotIdx + 1,
         constraint_violated: violated,
       });
+    });
+
+    // Repair pass: kalau ada pasien yang "terpaksa" dapat terapis yang sama
+    // dengan kunjungan terakhirnya (constraint_violated), coba selesaikan
+    // dengan tukar terapis antar pasien lain di slot yang sama — supaya
+    // urutan pemrosesan tidak mengunci satu pasien ke pelanggaran padahal
+    // ada solusi lain lewat swap.
+    const slotAssignments = assignments.slice(slotAssignmentStart);
+    slotAssignments.forEach((viol) => {
+      if (!viol.constraint_violated) return;
+      const violAvoid = lastVisitMap[viol.patient_id];
+      const swapCandidate = slotAssignments.find((other) => {
+        if (other === viol) return false;
+        if (lockedAssignments[other.patient_id]) return false;
+        const otherAvoid = lastVisitMap[other.patient_id];
+        return other.therapist_id !== violAvoid && viol.therapist_id !== otherAvoid;
+      });
+      if (swapCandidate) {
+        const tmp = viol.therapist_id;
+        viol.therapist_id = swapCandidate.therapist_id;
+        swapCandidate.therapist_id = tmp;
+        viol.constraint_violated = false;
+      }
     });
   });
 

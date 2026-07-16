@@ -59,6 +59,16 @@ const BSIMutasiReconciliation = React.lazy(() =>
     )
   }))
 );
+const InsentifDokterConverter = React.lazy(() =>
+  import('@/pages/owner/InsentifDokterConverter').catch(err => ({
+    default: () => (
+      <div style={{ padding: 24, background: '#fef2f2', border: '2px solid #ef4444', borderRadius: 12, margin: 16 }}>
+        <h2 style={{ color: '#dc2626', fontWeight: 'bold', marginBottom: 8 }}>❌ Gagal Load InsentifDokterConverter</h2>
+        <pre style={{ color: '#7f1d1d', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{err?.toString()}{'\n'}{err?.stack}</pre>
+      </div>
+    )
+  }))
+);
 // Helper to safely extract numeric values
 const safeExtractNumber = (response) => {
   if (typeof response === 'number') return response;
@@ -423,6 +433,7 @@ const OwnerDashboard = () => {
     { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
     { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
     { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
+    { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
     { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
   ];
 
@@ -458,6 +469,12 @@ const OwnerDashboard = () => {
         <Route path="/bsi-reconciliation" element={
           <React.Suspense fallback={<div style={{ padding: 24 }}>⏳ Memuat Rekonsiliasi BSI...</div>}>
             <BSIMutasiReconciliation />
+          </React.Suspense>
+        } />
+
+        <Route path="/insentif-dokter" element={
+          <React.Suspense fallback={<div style={{ padding: 24 }}>⏳ Memuat Konversi Insentif Dokter...</div>}>
+            <InsentifDokterConverter />
           </React.Suspense>
         } />
 
