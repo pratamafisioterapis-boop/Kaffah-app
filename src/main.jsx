@@ -42,6 +42,15 @@ try {
 }
 // Register Service Worker (caching + FCM push, satu file supaya tidak rebutan scope '/')
 if ('serviceWorker' in navigator) {
+  let refreshing = false;
+
+  // Begitu SW baru ambil alih kontrol tab ini, reload otomatis 1x
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
     // Bersihkan registrasi /sw.js lama yang masih tersisa di device user
     navigator.serviceWorker.getRegistrations().then((regs) => {
@@ -55,6 +64,18 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/firebase-messaging-sw.js')
       .then((registration) => {
         console.log('SW registered:', registration.scope);
+
+        // Cek update tiap kali tab di-fokus lagi / dibuka lagi
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        });
+
+        // Cek update berkala tiap 60 detik selama tab terbuka
+        setInterval(() => {
+          registration.update();
+        }, 60 * 1000);
       })
       .catch((error) => {
         console.log('SW registration failed:', error);
