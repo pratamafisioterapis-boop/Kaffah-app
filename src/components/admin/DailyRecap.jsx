@@ -955,6 +955,7 @@ const end = formatLocal(lastDay);
   >
     Invoice
   </Button>
+    {parseFloat(recap.amount || 0) > 0 && (
     <span
       title={
         recap.invoice_wa_status === 'gagal'
@@ -977,6 +978,7 @@ const end = formatLocal(lastDay);
         ? '✓ Terkirim'
         : '● Belum Dikirim'}
     </span>
+    )}
   </div>
 </td>
                   </motion.tr>
