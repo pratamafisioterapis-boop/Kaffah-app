@@ -487,22 +487,28 @@ const OwnerDailyRecap = () => {
                             >
                               Invoice
                             </Button>
-                            {recap.invoice_wa_status && (
-                              <span
-                                title={
-                                  recap.invoice_wa_status === 'gagal'
-                                    ? 'Gagal dikirim'
-                                    : 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
-                                }
-                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                                  recap.invoice_wa_status === 'gagal'
-                                    ? 'bg-red-50 text-red-600'
-                                    : 'bg-emerald-50 text-emerald-600'
-                                }`}
-                              >
-                                {recap.invoice_wa_status === 'gagal' ? '✕ Gagal' : '✓ Terkirim'}
-                              </span>
-                            )}
+                            <span
+                              title={
+                                recap.invoice_wa_status === 'gagal'
+                                  ? 'Gagal dikirim'
+                                  : recap.invoice_wa_status
+                                  ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
+                                  : 'Invoice belum pernah dikirim ke WhatsApp pasien'
+                              }
+                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                                recap.invoice_wa_status === 'gagal'
+                                  ? 'bg-red-50 text-red-600'
+                                  : recap.invoice_wa_status
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : 'bg-amber-50 text-amber-600'
+                              }`}
+                            >
+                              {recap.invoice_wa_status === 'gagal'
+                                ? '✕ Gagal'
+                                : recap.invoice_wa_status
+                                ? '✓ Terkirim'
+                                : '● Belum Dikirim'}
+                            </span>
                           </div>
                         </td>
                       </motion.tr>
