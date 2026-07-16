@@ -481,11 +481,15 @@ export const getAvailableSlots = async (date, therapistId) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    let clinicId = PUBLIC_CLINIC_ID;
+    if (userId) {
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    }
 
     const { data, error } = await supabase.rpc('get_available_slots_with_status_by_date', { 
       p_date: date,
-      p_clinic_id: userRow?.clinic_id
+      p_clinic_id: clinicId
     });
     
     if (error) return { error };
@@ -702,13 +706,19 @@ export const getPhysiotherapists = async () => {
   }, 'getPhysiotherapists', { retry: true });
 };
 
+const PUBLIC_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a'; // fallback untuk halaman publik tanpa login
+
 export const getActivePhysiotherapists = async (filters = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    let clinicId = PUBLIC_CLINIC_ID;
+    if (userId) {
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    }
 
-    let query = supabase.from('physiotherapists').select('*').eq('is_active', true).eq('clinic_id', userRow?.clinic_id);
+    let query = supabase.from('physiotherapists').select('*').eq('is_active', true).eq('clinic_id', clinicId);
     
     if (filters.showOnBooking) {
       query = query.eq('show_on_booking', true);
