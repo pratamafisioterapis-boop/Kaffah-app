@@ -1084,6 +1084,9 @@ export const getDailyRecaps = async ({
   start_time,
   end_time,
   status,
+  invoice_wa_status,
+  invoice_wa_sent_at,
+  invoice_url,
  
   patients!patient_id(
     id,
