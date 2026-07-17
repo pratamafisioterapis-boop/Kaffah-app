@@ -276,35 +276,39 @@ const TherapistCard = ({
               {sortedAppointments.length > 0 ? (
                 sortedAppointments.map((app) => {
                   const timeString = formatTimeIndonesia(app.appointment_date) || "--:--";
-                  
+                  const isCancelled = app.status?.toLowerCase() === 'cancelled';
+
                   return (
-                    <div 
+                    <div
   key={app.id}
   className={cn(
-  "group flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-xl cursor-pointer border",
+  "group flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-xl border",
 
-  app.status?.toLowerCase() === 'cancelled'
-  ? "bg-red-100 border-red-400 grayscale-0 opacity-100"
+  isCancelled
+  ? "bg-red-100 border-red-400 cursor-not-allowed"
 
     : app.is_homecare
-    ? "bg-blue-100 border-blue-400"
+    ? "bg-blue-100 border-blue-400 cursor-pointer"
 
-    : "bg-white/70 backdrop-blur border-white/40",
+    : "bg-white/70 backdrop-blur border-white/40 cursor-pointer",
 
-  "shadow-sm hover:shadow-md",
-  "hover:-translate-y-[1px]",
-  "hover:bg-white",
-  "transition-all duration-200"
+  "shadow-sm transition-all duration-200",
+  !isCancelled && "hover:shadow-md hover:-translate-y-[1px] hover:bg-white"
 )}
 
-    
-                      onClick={() => onAppointmentClick(app)}
+
+                      onClick={isCancelled ? undefined : () => onAppointmentClick(app)}
                     >
                       <div className="shrink-0 font-mono text-[11px] md:text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
                           {timeString}
                        </div>
                        <div className="flex-1 min-w-0">
-                        <button
+                        {isCancelled ? (
+                          <p className="text-sm font-semibold text-slate-800 truncate">
+                            {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
+                          </p>
+                        ) : (
+                          <button
   type="button"
   onClick={(e) => {
     e.stopPropagation();
@@ -314,6 +318,7 @@ const TherapistCard = ({
 >
                             {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
                           </button>
+                        )}
                         <p className="text-[11px] text-slate-400 truncate">
                             {app.duration_minutes} min • {app.status}
                           </p>
