@@ -273,7 +273,7 @@ console.log({
         durationMinutes: matchedSlot ? matchedSlot.calculated_duration || 60 : 60,
         status: 'confirmed',
         notes: formData.notes,
-        is_homecare: isHomecare,
+        p_is_homecare: isHomecare,
         is_recurring: isRecurring,
         p_allow_overlap: true,
         patientId: formData.patient_type === 'registered' ? formData.patient_id : null,

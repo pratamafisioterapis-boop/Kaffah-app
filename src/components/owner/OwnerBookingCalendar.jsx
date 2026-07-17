@@ -9,7 +9,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar"; 
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -49,8 +50,6 @@ const OwnerBookingCalendar = () => {
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null); 
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [patientHistory, setPatientHistory] = useState([]); 
 
   useEffect(() => {
     loadInitialData();
@@ -214,6 +213,37 @@ const OwnerBookingCalendar = () => {
   // 🔁 Setelah booking / delete / edit berhasil
   const handleSuccess = () => {
     fetchDayData(date);
+  };
+
+  const handleViewHistory = async (patientId) => {
+    if (!patientId) {
+      toast({
+        variant: "destructive",
+        title: "Patient tidak ditemukan"
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        patient:patients(full_name),
+        therapist:physiotherapists(name)
+      `)
+      .eq('patient_id', patientId)
+      .order('appointment_date', { ascending: false });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal ambil history"
+      });
+      return;
+    }
+
+    setPatientHistory(data || []);
+    setShowHistoryModal(true);
   };
 
   // ❌ Tutup modal
@@ -508,11 +538,11 @@ const OwnerBookingCalendar = () => {
           )}
 
           {activeModal?.type === 'detail' && (
-             <BookedSlotDetailModal 
+            <>
+              <BookedSlotDetailModal
                 appointment={activeModal.data}
                 onClose={closeModal}
                 onSuccess={handleSuccess}
-                onViewHistory={handleViewHistory}
              />
           )}
         </DialogContent>
