@@ -91,7 +91,7 @@ const TherapistCard = ({
         "transition-all duration-300 ease-out",
 
         // 🔥 SOFT GLOW BORDER
-        "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20",
+        "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20 before:pointer-events-none",
 
         shouldGrayScale && "bg-slate-100",
         isWeeklyOff && "ring-2 ring-violet-300"
