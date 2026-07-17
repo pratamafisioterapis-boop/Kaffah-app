@@ -3,11 +3,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Home, Calendar, Users, Settings, LogOut, Activity, Briefcase, 
+import {
+  Home, Calendar, Users, Settings, LogOut, Activity, Briefcase,
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
-  MessageSquare, Plus, Boxes, Wallet
+  MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -30,7 +30,9 @@ const iconMap = {
   DollarSign,
   MessageSquare,
   Boxes,
-  Wallet
+  Wallet,
+  FileSearch,
+  FileSpreadsheet
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -327,16 +329,6 @@ const pwaNavItems = useMemo(() => {
         icon: 'ClipboardList'
       },
       {
-        label: 'Package Recaps',
-        path: '/owner/package-recaps',
-        icon: 'Package'
-      },
-      {
-        label: 'Stok Barang',
-        path: '/owner/inventory',
-        icon: 'Boxes'
-      },
-      {
         label: 'Database Patients',
         path: '/owner/database-patients',
         icon: 'Database'
@@ -345,6 +337,11 @@ const pwaNavItems = useMemo(() => {
         label: 'Medical Records',
         path: '/owner/medical-records',
         icon: 'Activity'
+      },
+      {
+        label: 'Follow Up Management',
+        path: '/owner/follow-up-management',
+        icon: 'MessageSquare'
       },
       {
         label: 'Physiotherapist Management',
@@ -360,6 +357,21 @@ const pwaNavItems = useMemo(() => {
         label: 'Modal Awal',
         path: '/owner/modal-awal',
         icon: 'Wallet'
+      },
+      {
+        label: 'Stok Barang',
+        path: '/owner/inventory',
+        icon: 'Boxes'
+      },
+      {
+        label: 'Rekonsiliasi BSI',
+        path: '/owner/bsi-reconciliation',
+        icon: 'FileSearch'
+      },
+      {
+        label: 'Konversi Insentif Dokter',
+        path: '/owner/insentif-dokter',
+        icon: 'FileSpreadsheet'
       },
       {
         label: 'Setup',
