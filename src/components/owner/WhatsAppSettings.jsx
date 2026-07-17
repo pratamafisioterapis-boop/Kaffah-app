@@ -87,6 +87,19 @@ const CATEGORIES = [
     ]
   },
   {
+    id: 'therapy_reminder_homecare',
+    label: 'Reminder Homecare',
+    placeholders: [
+      'sapaan',
+      'nickname',
+      'nama',
+      'jam',
+      'hari_booking',
+      'terapis',
+      'lokasi'
+    ]
+  },
+  {
     id: 'birthday',
     label: 'Ulang Tahun',
     placeholders: [
