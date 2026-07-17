@@ -48,7 +48,9 @@ const OwnerBookingCalendar = () => {
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
 
   // Modal State
-  const [activeModal, setActiveModal] = useState(null); 
+  const [activeModal, setActiveModal] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [patientHistory, setPatientHistory] = useState([]);
 
   useEffect(() => {
     loadInitialData();
