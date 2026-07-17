@@ -251,37 +251,6 @@ const OwnerBookingCalendar = () => {
     setActiveModal(null);
   };
 
-  const handleViewHistory = async (patientId) => {
-    if (!patientId) {
-      toast({
-        variant: "destructive",
-        title: "Patient tidak ditemukan"
-      });
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('appointments')
-      .select(`
-        *,
-        patient:patients(full_name),
-        therapist:physiotherapists(name)
-      `)
-      .eq('patient_id', patientId)
-      .order('appointment_date', { ascending: false });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Gagal ambil history"
-      });
-      return;
-    }
-
-    setPatientHistory(data || []);
-    setShowHistoryModal(true);
-  };
-
   // 🧠 Ambil status therapist utk modal
   const getModalLeaveStatus = () => {
     if (!activeModal?.data?.therapist?.id) return 'aktif';
@@ -538,11 +507,11 @@ const OwnerBookingCalendar = () => {
           )}
 
           {activeModal?.type === 'detail' && (
-            <>
-              <BookedSlotDetailModal
+             <BookedSlotDetailModal
                 appointment={activeModal.data}
                 onClose={closeModal}
                 onSuccess={handleSuccess}
+                onViewHistory={handleViewHistory}
              />
           )}
         </DialogContent>
