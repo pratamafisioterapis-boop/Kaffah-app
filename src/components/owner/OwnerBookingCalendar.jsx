@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
