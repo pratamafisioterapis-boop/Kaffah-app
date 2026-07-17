@@ -494,6 +494,7 @@ const handleViewHistory = async (patientId) => {
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
+                onPatientClick={handleViewHistory}
               />
             );
           })}
