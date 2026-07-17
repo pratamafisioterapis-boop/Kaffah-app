@@ -4,6 +4,7 @@ import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
@@ -48,6 +49,8 @@ const OwnerBookingCalendar = () => {
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null); 
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [patientHistory, setPatientHistory] = useState([]); 
 
   useEffect(() => {
     loadInitialData();
@@ -216,6 +219,37 @@ const OwnerBookingCalendar = () => {
   // ❌ Tutup modal
   const closeModal = () => {
     setActiveModal(null);
+  };
+
+  const handleViewHistory = async (patientId) => {
+    if (!patientId) {
+      toast({
+        variant: "destructive",
+        title: "Patient tidak ditemukan"
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        patient:patients(full_name),
+        therapist:physiotherapists(name)
+      `)
+      .eq('patient_id', patientId)
+      .order('appointment_date', { ascending: false });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal ambil history"
+      });
+      return;
+    }
+
+    setPatientHistory(data || []);
+    setShowHistoryModal(true);
   };
 
   // 🧠 Ambil status therapist utk modal
@@ -430,6 +464,7 @@ const OwnerBookingCalendar = () => {
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
+                onPatientClick={handleViewHistory}
               />
             );
           })}
@@ -477,8 +512,72 @@ const OwnerBookingCalendar = () => {
                 appointment={activeModal.data}
                 onClose={closeModal}
                 onSuccess={handleSuccess}
+                onViewHistory={handleViewHistory}
              />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Riwayat Appointment</DialogTitle>
+            <DialogDescription>
+              History appointment pasien
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-4">
+            {patientHistory.filter(item => item.status !== 'cancelled').length > 0 ? (
+              patientHistory
+                .filter(item => item.status !== 'cancelled')
+                .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
+                .map((item) => {
+                  const isUpcoming = new Date(item.appointment_date) > new Date();
+                  return (
+                    <div key={item.id} className="border rounded-xl p-4 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {item.patient?.full_name || '-'}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {item.therapist?.name || '-'}
+                          </p>
+                        </div>
+                        <Badge
+                          className={
+                            isUpcoming
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-200 text-slate-700'
+                          }
+                        >
+                          {isUpcoming ? 'Upcoming' : item.status || '-'}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-sm text-slate-600">
+                        {item.appointment_date
+                          ? format(
+                              new Date(item.appointment_date),
+                              'EEEE, dd MMMM yyyy HH:mm',
+                              { locale: idLocale }
+                            )
+                          : '-'}
+                      </div>
+                      {item.notes && (
+                        <div className="mt-2 text-sm italic text-slate-500">
+                          {item.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            ) : (
+              <div className="text-center text-slate-500 py-10">
+                Tidak ada history appointment
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
