@@ -3,11 +3,16 @@ import { Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Trash2, 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { parseInsentifDokterPdf, generateInsentifDokterExcel } from '@/utils/insentifDokterParser';
 
 const InsentifDokterConverter = () => {
   const { toast } = useToast();
   const fileInputRef = useRef(null);
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
 
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState([]); // array of { format, fileName, rows, summary, verification }
@@ -71,15 +76,21 @@ const InsentifDokterConverter = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          <FileSpreadsheet className="w-6 h-6 text-indigo-600" />
-          Konversi PDF Insentif Dokter ke Excel
-        </h2>
-        <p className="text-slate-500 mt-1">
-          Upload PDF "Perincian Insentif Dokter" (format PWTT/PWT atau BPJS Individu), sistem akan
-          membaca data dan mengubahnya ke Excel dengan data yang sama persis seperti di PDF asli.
-        </p>
+      {/* Hero Banner — desktop & PWA */}
+      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className={`relative flex items-center gap-4 ${isPWA ? 'px-4 py-4' : 'px-5 py-5 sm:px-7 sm:py-6'}`}>
+          <div className={`flex-shrink-0 ${isPWA ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg`}>
+            <FileSpreadsheet className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-white`} />
+          </div>
+          <div>
+            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
+            <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Konversi PDF Insentif Dokter ke Excel</h2>
+            <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>
+              Upload PDF "Perincian Insentif Dokter" (PWTT/PWT atau BPJS Individu) untuk dikonversi ke Excel
+            </p>
+          </div>
+        </div>
       </div>
 
       <Card>
