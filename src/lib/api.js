@@ -4465,7 +4465,8 @@ export const getTodayAdminChecklist = async () => {
     const merged = (items || []).map(item => ({
       ...item,
       is_done: compMap[item.id]?.is_done || false,
-      completed_at: compMap[item.id]?.completed_at || null
+      completed_at: compMap[item.id]?.completed_at || null,
+      note: compMap[item.id]?.note || ''
     }));
 
     return { data: merged, error: null };
