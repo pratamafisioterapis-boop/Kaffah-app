@@ -50,7 +50,7 @@ export const generateBookingMessage = async (patient, appointment) => {
 };
 
 export const generateBookingHomecareMessage = async (patient, appointment) => {
-  let template = await getTemplate('booking_homecare');
+  let template = await getTemplate('booking_appointment_homecare');
   if (!template) {
     template = "Terima kasih sudah melakukan booking layanan homecare di Kaffah Physiotherapy 🤍\nJadwal [nickname] sudah tercatat untuk [hari_booking], [tanggal] pukul [jam] di lokasi yang telah disepakati.\n\nUntuk layanan homecare, pembayaran mohon dilakukan maksimal H-1 sebelum jadwal terapi melalui transfer ke:\na.n KAFFAH PHYSIOTHERAPY\nNo. Rek: 3030399993\n\nMohon melakukan pembayaran sebelum jadwal sesi berjalan sesuai waktu yang telah disepakati 🙏\n\nSalam sehat,\nKaffah Physiotherapy";
   }
