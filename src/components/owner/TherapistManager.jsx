@@ -419,22 +419,20 @@ const headerColorMap = {
                 </div>
               </div>
 
-              <div className="px-5 pb-5 flex-1 flex flex-col">
-                <div className="flex items-end gap-3 -mt-8">
-                  <div className="w-16 h-16 rounded-full ring-4 ring-white bg-slate-100 overflow-hidden shrink-0 shadow-md">
-                    {therapist.avatar_url ? (
-                      <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-full h-full p-3.5 text-slate-400" />
-                    )}
+              <div className="relative px-5 pb-5 flex-1 flex flex-col">
+                <div className="absolute -top-8 left-5 w-16 h-16 rounded-full ring-4 ring-white bg-slate-100 overflow-hidden shadow-md">
+                  {therapist.avatar_url ? (
+                    <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-full h-full p-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="pl-[76px] min-h-[64px] flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-base text-slate-900 truncate">{therapist.name}</h3>
+                    {therapist.user_id && <Lock className="w-3 h-3 text-green-500 shrink-0" title="Akun Login Terhubung" />}
                   </div>
-                  <div className="min-w-0 pb-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-base text-slate-900 truncate">{therapist.name}</h3>
-                      {therapist.user_id && <Lock className="w-3 h-3 text-green-500 shrink-0" title="Akun Login Terhubung" />}
-                    </div>
-                    <p className="text-slate-500 text-xs font-medium truncate">{therapist.specialization}</p>
-                  </div>
+                  <p className="text-slate-500 text-xs font-medium truncate">{therapist.specialization}</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 mt-3">
