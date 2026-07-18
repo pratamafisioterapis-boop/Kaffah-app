@@ -1,6 +1,8 @@
 import React from 'react';
-import { Check, Zap, Stethoscope, X, CalendarOff } from 'lucide-react';
+import { Check, Zap, Stethoscope, X, CalendarOff, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 const isPWA = (() => {
   try {
@@ -9,10 +11,21 @@ const isPWA = (() => {
   } catch { return false; }
 })();
 
+const formatShortDate = (dateStr) => {
+  try {
+    return format(parseISO(dateStr), 'dd MMM', { locale: idLocale });
+  } catch {
+    return dateStr;
+  }
+};
+
 const TherapistStatusCards = ({
   therapists = [],
   therapistSessions = {},
-  isLoading = false
+  isLoading = false,
+  unfilledSoapCounts = {},
+  isLoadingSoap = false,
+  dateRange
 }) => {
 
   const getStatusData = (therapist) => {
@@ -76,7 +89,14 @@ const TherapistStatusCards = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">Status Terapis Hari Ini</h3>
+        <div>
+          <h3 className="text-base font-bold text-slate-800">Status Terapis Hari Ini</h3>
+          {dateRange?.startDate && dateRange?.endDate && (
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              SOAP belum diisi mengikuti periode: {formatShortDate(dateRange.startDate)} – {formatShortDate(dateRange.endDate)}
+            </p>
+          )}
+        </div>
         <span className="text-xs text-slate-400 font-medium">{therapists.length} terapis aktif</span>
       </div>
 
@@ -155,6 +175,26 @@ const TherapistStatusCards = ({
                         />
                       </div>
                     </div>
+
+                    {/* SOAP belum diisi */}
+                    <div
+                      className={`mt-3 flex items-center justify-between rounded-xl px-3 py-2 border ${
+                        unfilledSoapCounts[therapist.id] > 0
+                          ? 'bg-rose-50 border-rose-200'
+                          : 'bg-emerald-50 border-emerald-100'
+                      }`}
+                    >
+                      <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+                        unfilledSoapCounts[therapist.id] > 0 ? 'text-rose-600' : 'text-emerald-600'
+                      }`}>
+                        <AlertCircle className="w-3.5 h-3.5" /> SOAP belum diisi
+                      </span>
+                      <span className={`text-sm font-black ${
+                        unfilledSoapCounts[therapist.id] > 0 ? 'text-rose-700' : 'text-emerald-700'
+                      }`}>
+                        {isLoadingSoap ? '…' : (unfilledSoapCounts[therapist.id] || 0)}
+                      </span>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -193,6 +233,24 @@ const TherapistStatusCards = ({
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${bar}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
                     </div>
+                  </div>
+
+                  {/* SOAP belum diisi */}
+                  <div className={`mx-4 mb-3 flex items-center justify-between rounded-lg px-2.5 py-1.5 border ${
+                    unfilledSoapCounts[therapist.id] > 0
+                      ? 'bg-rose-50 border-rose-200'
+                      : 'bg-emerald-50 border-emerald-100'
+                  }`}>
+                    <span className={`flex items-center gap-1 text-[10px] font-semibold ${
+                      unfilledSoapCounts[therapist.id] > 0 ? 'text-rose-600' : 'text-emerald-600'
+                    }`}>
+                      <AlertCircle className="w-3 h-3" /> SOAP belum diisi
+                    </span>
+                    <span className={`text-xs font-black ${
+                      unfilledSoapCounts[therapist.id] > 0 ? 'text-rose-700' : 'text-emerald-700'
+                    }`}>
+                      {isLoadingSoap ? '…' : (unfilledSoapCounts[therapist.id] || 0)}
+                    </span>
                   </div>
                 </>
               )}
