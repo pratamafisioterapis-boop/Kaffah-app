@@ -927,7 +927,7 @@ export const getPatientActivePackage = async (patientId) => {
       .from('package_tracking')
       .select('*')
       .eq('patient_id', patientId)
-      .eq('status', 'aktif')
+      .in('status', ['aktif', 'diperpanjang'])
       .gt('sessions_remaining', 0)
       .order('start_date', { ascending: false }) // 🔥 FIX DI SINI
       .limit(1)
