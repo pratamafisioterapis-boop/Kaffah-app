@@ -9,14 +9,22 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const CONCURRENCY = 3;
 
+// Skala dipilih supaya sisi terpanjang ~1500px — cukup tajam untuk baca angka,
+// tapi tetap di bawah batas resolusi yang dipakai Claude vision (di atas itu
+// gambar cuma di-downscale ulang di sisi server, jadi kirim lebih besar tidak
+// menambah ketajaman, hanya menambah ukuran payload & waktu proses).
+const RENDER_SCALE = 1.8;
+
 const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
   const page = await pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: 2.2 });
+  const viewport = page.getViewport({ scale: RENDER_SCALE });
 
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   await page.render({ canvasContext: ctx, viewport }).promise;
 
   let finalCanvas = canvas;
@@ -31,7 +39,9 @@ const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
     finalCanvas = rotated;
   }
 
-  const dataUrl = finalCanvas.toDataURL('image/png');
+  // JPEG jauh lebih kecil dari PNG untuk halaman seperti ini (garis tabel +
+  // teks di atas latar putih), yang paling menentukan cepat/lambatnya OCR.
+  const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.88);
   return dataUrl.split(',')[1];
 };
 
@@ -95,17 +105,25 @@ const PemilihExtractPdf = () => {
         if (cancelRef.current) return;
         const idx = cursor++;
         const pageNumber = pageNumbers[idx];
-        try {
-          const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
-          if (cancelRef.current) return;
-          const { data, error } = await supabase.functions.invoke('pemilih-ocr-suara-pdf', {
-            body: { image_base64, media_type: 'image/png' },
-          });
-          if (error) throw new Error(error.message);
-          if (data?.error) throw new Error(data.error);
-          results.push({ pageNumber, ...(data?.data || { is_vote_table: false, rows: [], column_headers: [] }) });
-        } catch (err) {
-          results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: err.message });
+        let lastError = null;
+        let ok = false;
+        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+          try {
+            const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
+            if (cancelRef.current) return;
+            const { data, error } = await supabase.functions.invoke('pemilih-ocr-suara-pdf', {
+              body: { image_base64, media_type: 'image/jpeg' },
+            });
+            if (error) throw new Error(error.message);
+            if (data?.error) throw new Error(data.error);
+            results.push({ pageNumber, ...(data?.data || { is_vote_table: false, rows: [], column_headers: [] }) });
+            ok = true;
+          } catch (err) {
+            lastError = err.message;
+          }
+        }
+        if (!ok) {
+          results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: lastError });
         }
         setProgress((p) => ({ ...p, done: p.done + 1 }));
       }
@@ -261,10 +279,21 @@ const PemilihExtractPdf = () => {
         )}
 
         {!processing && pageResults.length > 0 && (
-          <p style={{ marginTop: 14, fontSize: 12, color: '#9ca3af' }}>
-            {pageResults.filter((r) => r.is_vote_table).length} dari {pageResults.length} halaman terbaca sebagai tabel suara.
-            {pageResults.some((r) => r.error) && ` ${pageResults.filter((r) => r.error).length} halaman gagal diproses.`}
-          </p>
+          <div style={{ marginTop: 14 }}>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+              {pageResults.filter((r) => r.is_vote_table).length} dari {pageResults.length} halaman terbaca sebagai tabel suara.
+              {pageResults.some((r) => r.error) && ` ${pageResults.filter((r) => r.error).length} halaman gagal diproses.`}
+            </p>
+            {pageResults.some((r) => r.error) && (
+              <div style={{ marginTop: 8, padding: 12, borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca' }}>
+                {[...new Set(pageResults.filter((r) => r.error).map((r) => r.error))].map((msg, i) => (
+                  <p key={i} style={{ margin: i ? '6px 0 0' : 0, fontSize: 11.5, color: '#991b1b' }}>
+                    Halaman {pageResults.filter((r) => r.error === msg).map((r) => r.pageNumber).join(', ')}: {msg}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
