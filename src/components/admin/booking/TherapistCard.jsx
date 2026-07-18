@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, CalendarOff } from 'lucide-react';
+import { Plus, CalendarOff, FileWarning } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,10 @@ const TherapistCard = ({
   onManualBooking,
   onAppointmentClick,
   onPatientClick,
-  date, 
+  date,
   leaveStatus = 'aktif',
-  leaveReason = ''
+  leaveReason = '',
+  soapStatus = null // { unfilled_count, threshold_count, period_days, locked }
 }) => {
   
   // Safety check for therapist data
@@ -188,6 +189,28 @@ const TherapistCard = ({
       <p className="text-xs md:text-sm text-white/80">
         {therapist.specialization || 'Fisioterapis'}
       </p>
+
+      {soapStatus && soapStatus.unfilled_count > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "flex items-center gap-1 mt-1.5 w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+              soapStatus.unfilled_count >= soapStatus.threshold_count
+                ? "bg-red-500/20 text-red-100 border-red-400/40"
+                : "bg-amber-500/20 text-amber-100 border-amber-400/40"
+            )}>
+              <FileWarning className="w-3 h-3 shrink-0" />
+              {soapStatus.unfilled_count} SOAP belum diisi
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              {soapStatus.unfilled_count} kunjungan belum diisi SOAP dalam {soapStatus.period_days} hari terakhir
+              {soapStatus.unfilled_count >= soapStatus.threshold_count ? ' (mencapai ambang kunci)' : ''}.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      )}
     </div>
 
   </div>
