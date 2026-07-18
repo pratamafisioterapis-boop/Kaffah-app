@@ -3244,6 +3244,22 @@ export const createPatient = async (payload) => {
     return { data, success: true, error: null };
   }, 'createPatient');
 };
+
+// Bulk-insert patients (Excel/CSV import). medical_record_number is
+// auto-generated per row by the DB trigger when omitted, and clinic_id is
+// auto-filled from the session, same as a single createPatient.
+export const bulkCreatePatients = async (rows) => {
+  return safeQuery(async () => {
+    if (!rows || rows.length === 0) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('patients')
+      .insert(rows)
+      .select('id, full_name, medical_record_number');
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'bulkCreatePatients');
+};
+
 export const updatePatient = async (id, payload) => {
   return safeQuery(async () => {
     const { data, error } = await supabase

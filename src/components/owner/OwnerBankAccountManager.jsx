@@ -685,24 +685,24 @@ const OwnerBankAccountManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
          <div>
            <h3 className="text-xl font-bold text-teal-900">Bank Accounts</h3>
            <p className="text-teal-700/70">Kelola rekening bank/kas owner &amp; potongan biaya per metode pembayaran.</p>
          </div>
-         <div className="flex gap-2">
+         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
            <Button
               variant="outline"
               onClick={() => setIsTransferDialogOpen(true)}
-              className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50"
+              className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 w-full sm:w-auto justify-center whitespace-nowrap"
            >
-             <ArrowLeftRight className="w-4 h-4 mr-2" /> Transfer Antar Bank
+             <ArrowLeftRight className="w-4 h-4 mr-2 shrink-0" /> Transfer Antar Bank
            </Button>
            <Button
               onClick={() => { setEditingAccount(null); setIsDialogOpen(true); }}
-              className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5"
+              className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 w-full sm:w-auto justify-center whitespace-nowrap"
            >
-             <Plus className="w-4 h-4 mr-2" /> Add Account
+             <Plus className="w-4 h-4 mr-2 shrink-0" /> Add Account
            </Button>
          </div>
       </div>

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Database, Plus } from 'lucide-react';
+import { Database, Plus, Upload } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
+import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
 
 const AdminDatabasePatients = () => {
-   
+
     const { toast } = useToast();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ const AdminDatabasePatients = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [isImportOpen, setIsImportOpen] = useState(false);
 
     // State for Table
     const [pagination, setPagination] = useState({
@@ -137,9 +139,12 @@ const AdminDatabasePatients = () => {
                     <p className="text-slate-400 text-xs mt-1">Total {pagination.totalItems} pasien terdaftar dalam sistem.</p>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto">
                   <Button onClick={handleRefresh} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                     Refresh Data
+                  </Button>
+                  <Button onClick={() => setIsImportOpen(true)} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
+                    <Upload className="w-4 h-4" /> Import Excel
                   </Button>
                   <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white gap-2">
                     <Plus className="w-4 h-4" /> Tambah Pasien
@@ -161,11 +166,18 @@ const AdminDatabasePatients = () => {
             />
 
             {/* Modal */}
-            <PatientModal 
-                isOpen={modalOpen} 
-                onClose={() => setModalOpen(false)} 
-                mode={modalMode} 
+            <PatientModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                mode={modalMode}
                 patient={selectedPatient}
+                onSuccess={handleRefresh}
+            />
+
+            {/* Import Excel Modal */}
+            <ImportPatientExcelModal
+                isOpen={isImportOpen}
+                onClose={() => setIsImportOpen(false)}
                 onSuccess={handleRefresh}
             />
         </div>
