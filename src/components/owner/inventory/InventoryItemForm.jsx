@@ -48,7 +48,7 @@ const InventoryItemForm = ({ onSuccess }) => {
         <Label htmlFor="item_name">Nama Barang</Label>
         <Input id="item_name" placeholder="Misal: Sabun Cuci Tangan" value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="unit">Satuan</Label>
           <select id="unit" className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
@@ -60,7 +60,7 @@ const InventoryItemForm = ({ onSuccess }) => {
           <Input id="quantity" type="number" step="0.01" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="total_price">Harga Total Pembelian (Rp)</Label>
           <Input id="total_price" type="number" min="0" placeholder="0" value={form.total_price} onChange={(e) => setForm({ ...form, total_price: e.target.value })} />

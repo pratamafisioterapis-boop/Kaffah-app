@@ -63,11 +63,6 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
 
 // --- Reusable Table Component ---
 const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, accentColor = '#64748b' }) => {
-  const isPWA =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://');
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
@@ -86,10 +81,10 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
       </div>
     );
   }
-  // PWA: Card List
-  if (isPWA) {
-    return (
-      <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+  return (
+    <>
+      {/* Mobile / PWA: Card List */}
+      <div className="sm:hidden overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         {data.map((row, rowIdx) => (
           <div key={row.id || rowIdx} className="px-4 py-3"
             style={{ background: rowIdx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
@@ -122,11 +117,9 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
           </div>
         ))}
       </div>
-    );
-  }
 
-  return (
-    <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      {/* Desktop: Table */}
+      <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       <div className="overflow-x-auto">
         <table className="w-full text-left" style={{ fontSize: '12px' }}>
           <thead>
@@ -166,7 +159,8 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

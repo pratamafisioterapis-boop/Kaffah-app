@@ -19,10 +19,6 @@ import 'jspdf-autotable';
 import { useToast } from '@/components/ui/use-toast';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
-    const isPWA =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true ||
-      document.referrer.includes('android-app://');
     const isIncome = type === 'income';
     const accentColor = isIncome ? '#059669' : '#e11d48';
     const accentLight = isIncome ? '#f0fdf4' : '#fff1f2';
@@ -55,9 +51,8 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                 </div>
             </div>
 
-            {/* PWA: Card List */}
-            {isPWA ? (
-                <div style={{ borderTop: `1px solid ${accentMid}`, maxHeight: '320px', overflowY: 'auto' }}>
+            {/* Mobile / PWA: Card List */}
+            <div className="sm:hidden" style={{ borderTop: `1px solid ${accentMid}`, maxHeight: '320px', overflowY: 'auto' }}>
                     {data.length === 0 ? (
                         <div style={{ padding: '28px 16px', textAlign: 'center', color: '#cbd5e1' }}>
                             <div style={{ fontSize: '13px' }}>Tidak ada data</div>
@@ -95,9 +90,9 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                         ))
                     )}
                 </div>
-            ) : (
-            /* Desktop: Table */
-            <div className="overflow-x-auto" style={{ borderTop: `1px solid ${accentMid}` }}>
+
+            {/* Desktop: Table */}
+            <div className="hidden sm:block overflow-x-auto" style={{ borderTop: `1px solid ${accentMid}` }}>
                 <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
                     <thead>
                         <tr style={{ background: '#f8fafc' }}>
@@ -147,7 +142,6 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                     </table>
                 </div>
             </div>
-            )}
         </div>
     );
 };

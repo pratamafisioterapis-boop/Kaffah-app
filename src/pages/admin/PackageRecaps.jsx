@@ -28,7 +28,6 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Shared Logic Component
 export const PackageRecapsContent = () => {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const { toast } = useToast();
     const [packages, setPackages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -379,8 +378,7 @@ export const PackageRecapsContent = () => {
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 
             {/* CARD LAYOUT PWA */}
-            {isPWA ? (
-                <div className="space-y-3">
+            <div className="sm:hidden space-y-3">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16">
                             <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
@@ -453,9 +451,8 @@ export const PackageRecapsContent = () => {
                         })
                     )}
                 </div>
-            ) : (
-            /* TABLE DESKTOP */
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            {/* TABLE DESKTOP */}
+            <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
@@ -523,8 +520,7 @@ export const PackageRecapsContent = () => {
                     </table>
                 </div>
             </div>
-            )}
-            
+
             {/* Bottom Pagination Controls */}
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 

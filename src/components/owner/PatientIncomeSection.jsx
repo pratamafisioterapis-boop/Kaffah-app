@@ -152,7 +152,56 @@ const PatientIncomeSection = () => {
                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
                className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm"
             >
-                <div className="overflow-x-auto">
+                {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+                <div className="sm:hidden divide-y divide-slate-100">
+                    {processedPackages.length === 0 ? (
+                        <p className="p-12 text-center text-slate-400 italic bg-slate-50/30">
+                            Belum ada data paket yang terekam (Total Sesi &gt; 1).
+                        </p>
+                    ) : (
+                        processedPackages.map((pkg) => (
+                            <div key={pkg.id} className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-slate-900 truncate">{pkg.patient?.full_name || 'Deleted User'}</p>
+                                        <p className="text-xs text-slate-500 font-mono">{pkg.patient?.rm_number || '-'}</p>
+                                    </div>
+                                    <div className="shrink-0">{getStatusBadge(pkg.status)}</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jenis Paket</p>
+                                        <p className="text-blue-700 font-medium">{pkg.package_name}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tanggal Beli</p>
+                                        <p className="flex items-center gap-1 text-slate-600">
+                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                            {pkg.start_date ? format(new Date(pkg.start_date), 'dd MMM yyyy', { locale: localeId }) : '-'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sesi Terpakai</p>
+                                        <p>
+                                            <span className="font-bold text-slate-700">{pkg.sessions_used}</span>
+                                            <span className="text-slate-400 mx-1">/</span>
+                                            <span className="text-slate-500">{pkg.total_sessions}</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sisa Sesi</p>
+                                        <p className={`font-bold ${pkg.sessions_remaining === 0 ? 'text-orange-500' : 'text-emerald-600'}`}>
+                                            {pkg.sessions_remaining}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop: tabel */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-600 font-semibold tracking-wider">
                             <tr>

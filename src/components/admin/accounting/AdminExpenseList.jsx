@@ -42,7 +42,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
 
   return (
     <div className="w-full space-y-4">
-      <div className="w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+      <div className="w-full rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden">
         {dataToRender.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
             <div className="bg-slate-100 p-4 rounded-full mb-3">
@@ -54,6 +54,79 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             </p>
           </div>
         ) : (
+          <>
+          {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+          <div className="sm:hidden divide-y divide-slate-100">
+            {dataToRender.map((ex, index) => (
+              <div key={ex.id || index} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-slate-700 font-medium text-sm">{formatDate(ex.transaction_date)}</p>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide mt-1.5">
+                      {ex.category || 'Uncategorized'}
+                    </span>
+                  </div>
+                  {(canEdit || canDelete) && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all hover:scale-105"
+                          onClick={() => onEdit && onEdit(ex)}
+                          title="Edit Pengeluaran"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all hover:scale-105"
+                          onClick={() => onDelete && onDelete(ex)}
+                          title="Hapus Pengeluaran"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sub Kategori</p>
+                    <p className="text-slate-600 uppercase font-medium tracking-wide">{ex.sub_category || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Akun Bank</p>
+                    <p className="text-slate-600">
+                      {ex.bank_account ? (
+                        <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">Tunai/Lain</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Deskripsi</p>
+                    <p className="text-slate-600">{ex.description || '-'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jumlah</p>
+                    <p className="font-bold text-rose-600 font-mono">Rp {parseFloat(ex.amount || 0).toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="p-4 flex items-center justify-between bg-slate-50 border-t border-slate-200">
+              <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total Pengeluaran</span>
+              <span className="text-rose-700 text-base font-bold font-mono">Rp {totalAmount.toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+
+          {/* Desktop: tabel */}
+          <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
@@ -134,6 +207,8 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                 </tr>
             </tfoot>
           </table>
+          </div>
+          </>
         )}
       </div>
     </div>

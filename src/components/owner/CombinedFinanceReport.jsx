@@ -46,7 +46,51 @@ const DetailedTable = ({ title, data, type }) => {
             </div>
             
             <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
+                {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+                <div className="sm:hidden divide-y divide-slate-100">
+                    {data.length === 0 ? (
+                        <div className="px-6 py-8 text-center text-slate-400">
+                            No data available for this period
+                        </div>
+                    ) : (
+                        data.map((item, idx) => (
+                            <div key={`${item.source}-${idx}`} className="p-4 space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="font-mono text-slate-600 text-sm">
+                                        {format(new Date(item.date), 'dd/MM/yyyy')}
+                                    </span>
+                                    <span className={cn(
+                                        "px-2 py-0.5 rounded text-xs font-bold border shrink-0",
+                                        item.source === 'Owner' ? "bg-purple-50 text-purple-700 border-purple-100" :
+                                        item.source === 'Admin' ? "bg-amber-50 text-amber-700 border-amber-100" :
+                                        "bg-blue-50 text-blue-700 border-blue-100"
+                                    )}>
+                                        {item.source}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Category</p>
+                                        <p className="text-slate-700 font-medium">{item.category || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Amount</p>
+                                        <p className={cn("font-bold", isIncome ? "text-emerald-600" : "text-rose-600")}>
+                                            {new Intl.NumberFormat('id-ID').format(item.amount)}
+                                        </p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Description</p>
+                                        <p className="text-slate-500">{item.description || '-'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop: tabel */}
+                <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50/80 text-xs uppercase text-slate-500 font-semibold border-b border-slate-200">
                             <tr>

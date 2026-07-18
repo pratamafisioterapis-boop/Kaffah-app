@@ -136,9 +136,8 @@ const formatTanggal = (date) => {
                 </div>
             </div>
 
-            {/* PWA CARD LAYOUT */}
-            {isPWA ? (
-                <div className="divide-y divide-slate-100">
+            {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+            <div className="sm:hidden divide-y divide-slate-100">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16">
                             <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
@@ -194,10 +193,10 @@ const formatTanggal = (date) => {
                             </div>
                         ))
                     )}
-                </div>
-            ) : (
-            /* DESKTOP TABLE */
-            <div className="relative overflow-x-auto">
+            </div>
+
+            {/* Desktop: tabel */}
+            <div className="hidden sm:block relative overflow-x-auto">
                 <Table>
                     <TableHeader className="bg-slate-50">
                         <TableRow>
@@ -272,7 +271,6 @@ const formatTanggal = (date) => {
                     </TableBody>
                 </Table>
             </div>
-            )}
 
             {/* Pagination */}
             <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white rounded-b-xl">
@@ -308,8 +306,7 @@ const formatTanggal = (date) => {
                             ) : (
                                 <>
                                     <p className="text-xs text-slate-500 mb-3">Total Kunjungan: <span className="font-semibold">{historyData.length}</span></p>
-                                    {isPWA ? (
-                                        <div className="space-y-3">
+                                        <div className="sm:hidden space-y-3">
                                             {historyData.map((item, i) => (
                                                 <div key={i} className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
                                                     <div className="flex items-center justify-between">
@@ -325,8 +322,7 @@ const formatTanggal = (date) => {
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : (
-                                        <div className="border rounded-lg overflow-hidden">
+                                        <div className="hidden sm:block border rounded-lg overflow-hidden">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-slate-100 text-xs text-slate-600 sticky top-0">
                                                     <tr>
@@ -352,7 +348,6 @@ const formatTanggal = (date) => {
                                                 </tbody>
                                             </table>
                                         </div>
-                                    )}
                                 </>
                             )}
                         </div>

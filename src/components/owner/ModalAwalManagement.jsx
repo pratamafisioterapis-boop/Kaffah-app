@@ -57,12 +57,6 @@ const ModalAwalManagement = () => {
   const { userDetails } = useAuth();
   const { toast } = useToast();
 
-  const isPWA =
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true ||
-      document.referrer.includes('android-app://'));
-
   const [items, setItems] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -297,9 +291,10 @@ const ModalAwalManagement = () => {
                   Tambahkan modal awal pertama
                 </Button>
               </div>
-            ) : isPWA ? (
-              // ── Mobile / PWA Card List ──
-              <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0' }}>
+            ) : (
+              <>
+              {/* ── Mobile / PWA Card List ── */}
+              <div className="sm:hidden overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0' }}>
                 {items.map((item, idx) => {
                   const style = sourceStyle(item.source);
                   return (
@@ -349,9 +344,8 @@ const ModalAwalManagement = () => {
                   );
                 })}
               </div>
-            ) : (
-              // ── Desktop Table ──
-              <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              {/* ── Desktop Table ── */}
+              <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left" style={{ fontSize: '12px' }}>
                     <thead>
@@ -418,6 +412,7 @@ const ModalAwalManagement = () => {
                   </table>
                 </div>
               </div>
+              </>
             )}
           </div>
         </div>

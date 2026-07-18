@@ -100,7 +100,53 @@ const FinanceReportSection = ({ dateRange }) => {
          </div>
          
          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-           <div className="overflow-x-auto">
+           {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+           <div className="sm:hidden divide-y divide-slate-100">
+             {items.length === 0 ? (
+               <div className="p-12 text-center text-slate-400 font-medium">No transactions found for this period</div>
+             ) : (
+               items.map((item, idx) => (
+                 <div key={idx} className="p-4 space-y-2">
+                   <div className="flex items-start justify-between gap-2">
+                     <div className="min-w-0">
+                       <p className="font-medium text-slate-700 text-sm">{format(new Date(item.date), 'dd/MM/yyyy')}</p>
+                       <p className="text-slate-400 font-mono text-xs">{formatTime(item.input_time)}</p>
+                     </div>
+                     <span className={cn(
+                       "px-2.5 py-1 rounded-md text-xs font-bold border shrink-0",
+                       item.source === 'Owner' ? "bg-purple-50 text-purple-700 border-purple-100" :
+                       item.source === 'Admin' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                       "bg-emerald-50 text-emerald-700 border-emerald-100"
+                     )}>
+                       {item.source}
+                     </span>
+                   </div>
+                   <div className="grid grid-cols-2 gap-2 text-xs">
+                     <div>
+                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Category</p>
+                       <p className="text-slate-700">{item.category}</p>
+                     </div>
+                     <div>
+                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Amount</p>
+                       <p className={cn(
+                         "font-bold tabular-nums",
+                         item.type === 'income' ? "text-emerald-600" : "text-rose-600"
+                       )}>
+                         {item.type === 'expense' ? '-' : '+'} {new Intl.NumberFormat('id-ID').format(item.amount)}
+                       </p>
+                     </div>
+                     <div className="col-span-2">
+                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Description</p>
+                       <p className="text-slate-500">{item.description || '-'}</p>
+                     </div>
+                   </div>
+                 </div>
+               ))
+             )}
+           </div>
+
+           {/* Desktop: tabel */}
+           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
@@ -123,7 +169,7 @@ const FinanceReportSection = ({ dateRange }) => {
                       <td className="px-6 py-4">
                         <span className={cn(
                           "px-2.5 py-1 rounded-md text-xs font-bold border",
-                          item.source === 'Owner' ? "bg-purple-50 text-purple-700 border-purple-100" : 
+                          item.source === 'Owner' ? "bg-purple-50 text-purple-700 border-purple-100" :
                           item.source === 'Admin' ? "bg-blue-50 text-blue-700 border-blue-100" :
                           "bg-emerald-50 text-emerald-700 border-emerald-100"
                         )}>

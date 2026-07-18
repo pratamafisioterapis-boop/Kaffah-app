@@ -1814,6 +1814,72 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     .filter(([, v]) => v === null)
     .map(([k]) => k);
 
+  // Konten detail baris "Hasil Rekonsiliasi" — dipakai bareng di tampilan tabel
+  // (desktop) maupun kartu (mobile) supaya logikanya tidak dobel.
+  const renderReconciledRowDetail = (row, idx) => (
+    <>
+      {row.tipe === 'debit' && row.status === 'matched' && row.matchedSettlement && (
+        <DebitSettlementDetail settlement={row.matchedSettlement} mutasiNominal={row.nominal || row.amount} selisih={row.debitSelisih} />
+      )}
+      {row.status === 'matched' && row.matchedRecap && !row._editMode && (
+        <div className="flex flex-col gap-3">
+          {/* Tampil semua recap yang match */}
+          {(row.manualRecaps || [row.matchedRecap]).map((mr, i) => (
+            <div key={mr.id || i} className="flex flex-wrap gap-4 text-sm">
+              <div><span className="text-slate-500 text-xs uppercase font-semibold">Pasien</span><p className="font-semibold text-slate-800">{mr.patient_name}</p></div>
+              <div><span className="text-slate-500 text-xs uppercase font-semibold">Tgl Daily Recap</span><p className="font-semibold text-slate-800">{mr.recap_date}</p></div>
+              <div><span className="text-slate-500 text-xs uppercase font-semibold">Metode</span><p className="font-semibold text-slate-800">{mr.payment_method}</p></div>
+              <div><span className="text-slate-500 text-xs uppercase font-semibold">Nominal Recap</span><p className="font-semibold text-green-700">{formatRp(mr.amount)}</p></div>
+            </div>
+          ))}
+          {/* Total jika lebih dari 1 */}
+          {row.manualRecaps && row.manualRecaps.length > 1 && (
+            <div className="flex justify-between items-center pt-2 border-t border-green-200">
+              <span className="text-xs font-semibold text-green-700">Total ({row.manualRecaps.length} transaksi)</span>
+              <span className="text-sm font-bold text-green-700">{formatRp(row.manualRecaps.reduce((s, mr) => s + Number(mr.amount), 0))}</span>
+            </div>
+          )}
+          {row.tipe !== 'debit' && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: true} : r))}
+                className="text-xs text-amber-600 hover:text-amber-800 flex items-center gap-1 border border-amber-300 rounded px-2 py-1 bg-white"
+              >
+                ✏️ Ubah Match
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {(row.status === 'unmatched' || row._editMode) && row.tipe !== 'debit' && (
+        <>
+          {row._editMode && (
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs text-amber-700 font-semibold">Mode Edit — pilih ulang transaksi yang cocok:</p>
+              <button
+                onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: false} : r))}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                Batal
+              </button>
+            </div>
+          )}
+          <UnmatchedRecapPicker
+            row={row}
+            allRecaps={allRecapsForPeriod}
+            mutasiChecks={mutasiChecks}
+            onCheck={handleMutasiCheck}
+            onLoad={() => { if (!allRecapsForPeriod.length) loadAllRecapsForPeriod(); }}
+            matchedRecapIds={new Set([
+              ...globalMatchedRecapIds,
+              ...reconciled.flatMap(r => (r.manualRecaps && r.manualRecaps.length ? r.manualRecaps.map(mr => mr.id) : (r.matchedRecap ? [r.matchedRecap.id] : []))),
+            ])}
+          />
+        </>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Hero Banner */}
@@ -1957,7 +2023,26 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 <CardTitle className="text-base">Preview Data ({csvRows.length} transaksi)</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto max-h-80">
+                {/* Mobile: kartu */}
+                <div className="sm:hidden divide-y max-h-80 overflow-y-auto">
+                  {csvRows.map((row, i) => (
+                    <div key={i} className="p-3 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <TypeBadge tipe={row.tipe} />
+                        <span className="text-xs font-bold text-slate-800">{formatRp(row.amount)}</span>
+                      </div>
+                      <div className="font-mono text-xs text-slate-600 break-words">{row.deskripsi}</div>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                        <span>Masuk: {row.masukDateStr}</span>
+                        {row.tipe === 'qris'
+                          ? <span className="text-emerald-700 font-medium">Trx: {row.qrisTrxDateStr}</span>
+                          : <span className="text-slate-400">Trx = masuk</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: tabel */}
+                <div className="hidden sm:block overflow-x-auto max-h-80">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-slate-50">
                       <tr className="border-b text-xs uppercase tracking-wide text-slate-600">
@@ -2117,7 +2202,64 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 <CardTitle className="text-base">Hasil Rekonsiliasi ({filtered.length} transaksi)</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Mobile: kartu — tampilkan field paling penting saja (Tipe, Tanggal,
+                    Deskripsi, Nominal, Status), sisanya (recap yang match / picker manual /
+                    detail settlement debit) tetap bisa dibuka lewat tombol Detail yang sama
+                    persis dengan yang dipakai tabel desktop. */}
+                <div className="sm:hidden divide-y divide-slate-100">
+                  {filtered.map((row, idx) => {
+                    const isExpanded = expandedIdx === idx;
+                    return (
+                      <div key={idx} className={cn(row.status === 'unmatched' ? 'bg-red-50/50' : '')}>
+                        <div className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <TypeBadge tipe={row.tipe} />
+                              <StatusBadge status={row.status} />
+                            </div>
+                            <span className="text-sm font-bold text-slate-800 whitespace-nowrap">{formatRp(row.nominal || row.amount)}</span>
+                          </div>
+                          <div>
+                            <div className="font-mono text-xs text-slate-700 break-words">{row.deskripsi}</div>
+                            {row.nama_pengirim && <div className="text-xs text-slate-500 mt-0.5">dari: {row.nama_pengirim}</div>}
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                            <span>Masuk: {row.tgl_masuk}</span>
+                            {row.tipe === 'qris'
+                              ? <span className="font-medium text-emerald-700">Trx: {row.tgl_transaksi}</span>
+                              : <span className="text-slate-400">Trx = masuk</span>}
+                          </div>
+                          <div>
+                            {row.status === 'matched' ? (
+                              <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} {isExpanded ? 'Tutup detail' : 'Lihat recap'}
+                              </button>
+                            ) : row.tipe === 'debit' ? (
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                <CreditCard className="w-3.5 h-3.5" /> Lihat tab Debit EDC
+                              </span>
+                            ) : (
+                              <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} {isExpanded ? 'Tutup detail' : 'Pilih manual'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="px-3 pb-3 bg-green-50/60 border-t border-slate-100 pt-3">
+                            {renderReconciledRowDetail(row, idx)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <div className="px-4 py-10 text-center text-slate-400 text-sm">Tidak ada transaksi yang sesuai filter.</div>
+                  )}
+                </div>
+
+                {/* Desktop: tabel penuh */}
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
@@ -2165,72 +2307,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                 )}
                               </td>
                             </tr>
-                            {isExpanded && row.tipe === 'debit' && row.status === 'matched' && row.matchedSettlement && (
-                              <tr className="bg-green-50 border-b">
+                            {isExpanded && (row.matchedSettlement || row.matchedRecap || row.status === 'unmatched' || row._editMode) && (
+                              <tr className={cn('border-b', row.status === 'unmatched' || row._editMode ? 'bg-amber-50/50' : 'bg-green-50')}>
                                 <td colSpan={7} className="px-4 py-3">
-                                  <DebitSettlementDetail settlement={row.matchedSettlement} mutasiNominal={row.nominal || row.amount} selisih={row.debitSelisih} />
-                                </td>
-                              </tr>
-                            )}
-                            {isExpanded && row.status === 'matched' && row.matchedRecap && !row._editMode && (
-                              <tr className="bg-green-50 border-b">
-                                <td colSpan={7} className="px-4 py-3">
-                                  <div className="flex flex-col gap-3">
-                                    {/* Tampil semua recap yang match */}
-                                    {(row.manualRecaps || [row.matchedRecap]).map((mr, i) => (
-                                      <div key={mr.id || i} className="flex flex-wrap gap-4 text-sm">
-                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Pasien</span><p className="font-semibold text-slate-800">{mr.patient_name}</p></div>
-                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Tgl Daily Recap</span><p className="font-semibold text-slate-800">{mr.recap_date}</p></div>
-                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Metode</span><p className="font-semibold text-slate-800">{mr.payment_method}</p></div>
-                                        <div><span className="text-slate-500 text-xs uppercase font-semibold">Nominal Recap</span><p className="font-semibold text-green-700">{formatRp(mr.amount)}</p></div>
-                                      </div>
-                                    ))}
-                                    {/* Total jika lebih dari 1 */}
-                                    {row.manualRecaps && row.manualRecaps.length > 1 && (
-                                      <div className="flex justify-between items-center pt-2 border-t border-green-200">
-                                        <span className="text-xs font-semibold text-green-700">Total ({row.manualRecaps.length} transaksi)</span>
-                                        <span className="text-sm font-bold text-green-700">{formatRp(row.manualRecaps.reduce((s, mr) => s + Number(mr.amount), 0))}</span>
-                                      </div>
-                                    )}
-                                    {row.tipe !== 'debit' && (
-                                      <div className="flex justify-end">
-                                        <button
-                                          onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: true} : r))}
-                                          className="text-xs text-amber-600 hover:text-amber-800 flex items-center gap-1 border border-amber-300 rounded px-2 py-1 bg-white"
-                                        >
-                                          ✏️ Ubah Match
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                            {isExpanded && (row.status === 'unmatched' || row._editMode) && row.tipe !== 'debit' && (
-                              <tr className="border-b bg-amber-50/50">
-                                <td colSpan={7} className="px-4 py-3">
-                                  {row._editMode && (
-                                    <div className="mb-2 flex items-center justify-between">
-                                      <p className="text-xs text-amber-700 font-semibold">Mode Edit — pilih ulang transaksi yang cocok:</p>
-                                      <button
-                                        onClick={() => setReconciled(prev => prev.map((r, i) => i === idx ? {...r, _editMode: false} : r))}
-                                        className="text-xs text-slate-500 hover:text-slate-700"
-                                      >
-                                        Batal
-                                      </button>
-                                    </div>
-                                  )}
-                                  <UnmatchedRecapPicker
-                                    row={row}
-                                    allRecaps={allRecapsForPeriod}
-                                    mutasiChecks={mutasiChecks}
-                                    onCheck={handleMutasiCheck}
-                                    onLoad={() => { if (!allRecapsForPeriod.length) loadAllRecapsForPeriod(); }}
-                                    matchedRecapIds={new Set([
-                                      ...globalMatchedRecapIds,
-                                      ...reconciled.flatMap(r => (r.manualRecaps && r.manualRecaps.length ? r.manualRecaps.map(mr => mr.id) : (r.matchedRecap ? [r.matchedRecap.id] : []))),
-                                    ])}
-                                  />
+                                  {renderReconciledRowDetail(row, idx)}
                                 </td>
                               </tr>
                             )}
@@ -2256,7 +2336,26 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 <CardTitle className="text-base">Transaksi Tersimpan ({savedTransactions.length})</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto max-h-80">
+                {/* Mobile: kartu */}
+                <div className="sm:hidden divide-y max-h-80 overflow-y-auto">
+                  {savedTransactions.map((row, i) => (
+                    <div key={i} className="p-3 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <TypeBadge tipe={row.tipe} />
+                        <span className="text-xs font-bold text-slate-800">{formatRp(row.nominal)}</span>
+                      </div>
+                      <div className="font-mono text-xs text-slate-600 break-words">{row.deskripsi}</div>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                        <span>Masuk: {row.tgl_masuk}</span>
+                        {row.tipe === 'qris'
+                          ? <span className="text-emerald-700 font-medium">Trx: {row.tgl_transaksi}</span>
+                          : <span className="text-slate-400">Trx = masuk</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: tabel */}
+                <div className="hidden sm:block overflow-x-auto max-h-80">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-slate-50">
                       <tr className="border-b text-xs uppercase tracking-wide text-slate-600">
@@ -2556,7 +2655,34 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
               <Card>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Mobile: kartu */}
+                  <div className="sm:hidden divide-y">
+                    {recapAuditResult
+                      .filter(r => recapAuditFilter === 'all' || !r.matched)
+                      .map(r => (
+                        <div key={r.id} className={cn('p-3 space-y-1.5', !r.matched ? 'bg-red-50/50' : '')}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <TypeBadge tipe={r.tipe} />
+                              <StatusBadge status={r.matched ? 'matched' : 'unmatched'} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-800">{formatRp(r.amount)}</span>
+                          </div>
+                          <div className="text-sm font-medium text-slate-800">{r.patient_name}</div>
+                          <div className="text-[11px] text-slate-500">{r.recap_date}</div>
+                          {!r.matched && r.reason && (
+                            <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">{r.reason}</div>
+                          )}
+                        </div>
+                      ))}
+                    {recapAuditResult.filter(r => recapAuditFilter === 'all' || !r.matched).length === 0 && (
+                      <div className="px-4 py-10 text-center text-slate-400 text-sm">
+                        {recapAuditFilter === 'unmatched' ? '🎉 Semua recap sudah match!' : 'Tidak ada data.'}
+                      </div>
+                    )}
+                  </div>
+                  {/* Desktop: tabel */}
+                  <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">

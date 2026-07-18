@@ -59,6 +59,11 @@ const renderPatientName = (recap) => {
 };
 
 const OwnerDailyRecap = () => {
+  const isPWA =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
+
   const { toast } = useToast();
   const isMounted = useRef(true);
   const { lastSyncTime } = useAppointmentState(); 
@@ -406,7 +411,131 @@ const OwnerDailyRecap = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+        <div className="sm:hidden divide-y divide-slate-100">
+          {loadingRecaps ? (
+            <div className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-blue-500" /></div>
+          ) : recaps.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+              <Search className="w-8 h-8 text-slate-300 mb-2" />
+              <p>Tidak ada data rekap harian.</p>
+            </div>
+          ) : (
+            recaps.map((recap) => {
+              const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+              const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
+              const packageLabel = recap.package_type || '-';
+
+              return (
+                <div key={recap.id} className="p-4 space-y-3 active:bg-slate-50" onClick={() => handleRowClick(recap)}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      {renderPatientName(recap)}
+                      <p className="text-[11px] text-slate-500 mt-0.5">{recap.date ? formatDateIndonesian(recap.date) : '-'}</p>
+                    </div>
+                    {recap.end_time ? <Badge className="bg-green-100 text-green-800 border-0 shrink-0">Selesai</Badge> :
+                     recap.start_time ? <Badge className="bg-blue-100 text-blue-800 border-0 shrink-0">Berlangsung</Badge> :
+                     <Badge variant="outline" className="text-slate-500 border-slate-200 shrink-0">Belum</Badge>}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">{renderDiagnoses(recap.diagnosis)}</div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Layanan</p>
+                      <Badge variant="outline" className="font-normal text-[10px]">{serviceLabel}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tipe Pasien</p>
+                      <Badge variant="outline" className="text-[10px] font-normal">{patientTypeLabel}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
+                      <p className="font-medium text-blue-600">{packageLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
+                      <p className="text-slate-700">{recap.display_therapist_name}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nominal</p>
+                      <p className="font-medium text-slate-800 text-sm">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</p>
+                      {recap.payment_method && (
+                        <p className="text-[10px] text-slate-400 font-normal capitalize">{recap.payment_method}</p>
+                      )}
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()} className="text-right">
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Waktu Sesi</p>
+                      {!recap.start_time ? (
+                        <Button size="sm" className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
+                          {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
+                        </Button>
+                      ) : !recap.end_time ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                            {formatTime(new Date(recap.start_time))}
+                          </div>
+                          <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
+                            {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-end bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                          <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.start_time))}</span>
+                          <span className="text-slate-400 text-[8px] leading-none">↓</span>
+                          <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.end_time))}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={parseFloat(recap.amount || 0) === 0}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => {
+                        setSelectedInvoiceData(recap);
+                        setInvoiceModalOpen(true);
+                      }}
+                    >
+                      Invoice
+                    </Button>
+                    <span
+                      title={
+                        recap.invoice_wa_status === 'gagal'
+                          ? 'Gagal dikirim'
+                          : recap.invoice_wa_status
+                          ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
+                          : 'Invoice belum pernah dikirim ke WhatsApp pasien'
+                      }
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                        recap.invoice_wa_status === 'gagal'
+                          ? 'bg-red-50 text-red-600'
+                          : recap.invoice_wa_status
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : 'bg-amber-50 text-amber-600'
+                      }`}
+                    >
+                      {recap.invoice_wa_status === 'gagal'
+                        ? '✕ Gagal'
+                        : recap.invoice_wa_status
+                        ? '✓ Terkirim'
+                        : '● Belum Dikirim'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: tabel */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-xs text-left whitespace-nowrap">
             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
               <tr>
