@@ -14,7 +14,7 @@ parseDateFromDisplay,
 validateDailyRecapForm
 } from '@/lib/dailyRecapHelpers';
 import { fetchPatients } from '@/lib/dailyRecapHelpers';
-import { getDiagnosisOptions } from '@/lib/api';
+import { getDiagnosisOptions, getBankAccounts, getBankAccountFees } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import DatePicker from '@/components/DatePicker';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,20 @@ import { useToast } from '@/components/ui/use-toast';
 
 // Helper functions for Package Type resolution
 const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+const computeFeePreview = (fees, bankAccountId, paymentMethod, amount) => {
+  if (!bankAccountId || !paymentMethod || !amount) return null;
+  const rule = (fees || []).find(f =>
+    f.bank_account_id === bankAccountId &&
+    f.is_active &&
+    (f.payment_method || '').toLowerCase() === paymentMethod.toLowerCase()
+  );
+  if (!rule) return null;
+  const fee = rule.fee_type === 'percentage'
+    ? Math.round((Number(amount) || 0) * rule.fee_value / 100)
+    : Math.min(rule.fee_value, Number(amount) || 0);
+  return { fee, net: (Number(amount) || 0) - fee, rule };
+};
 
 const resolvePackageTypeValue = (val, options) => {
 if (!val || !options || !options.length) return null;
@@ -51,6 +65,8 @@ const [patientTypes, setPatientTypes] = useState([]);
 const [packageTypes, setPackageTypes] = useState([]);
 const [paymentMethods, setPaymentMethods] = useState([]);
 const [discountOptions, setDiscountOptions] = useState([]);
+const [bankAccounts, setBankAccounts] = useState([]);
+const [bankFees, setBankFees] = useState([]);
 const [isLoadingData, setIsLoadingData] = useState(false);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [showDatePicker, setShowDatePicker] = useState(false);
@@ -70,6 +86,7 @@ package_type: '',
 therapist_id: '',
 amount: '',
 payment_method: '',
+bank_account_id: '',
 discount_type: 'none',
 discount_label: '',
 discount_value: ''
@@ -118,7 +135,7 @@ injectMissingPatient(initialData.actual_patient_id);
 const loadOptions = async () => {
 setIsLoadingData(true);
 try {
-const [pats, physios, diagOpts, servOpts, pTypes, pkgTypes, payMethods, discountOpts] = await Promise.all([
+const [pats, physios, diagOpts, servOpts, pTypes, pkgTypes, payMethods, discountOpts, bankRes, feesRes] = await Promise.all([
 fetchPatients(),
 fetchPhysiotherapists(),
 getDiagnosisOptions(),
@@ -126,7 +143,9 @@ fetchOperationalOptions(['service', 'layanan']),
 fetchOperationalOptions('patient_type'),
 fetchPackageTypes(),
 fetchOperationalOptions('payment_method'),
-fetchOperationalOptions('discount_type')
+fetchOperationalOptions('discount_type'),
+getBankAccounts(),
+getBankAccountFees()
 ]);
 setPatients(Array.isArray(pats) ? pats : []);
 setTherapists(Array.isArray(physios) ? physios : []);
@@ -137,6 +156,11 @@ const loadedPackageTypes = Array.isArray(pkgTypes) ? pkgTypes : [];
 setPackageTypes(loadedPackageTypes);
 setPaymentMethods(Array.isArray(payMethods) ? payMethods : []);
 setDiscountOptions(Array.isArray(discountOpts) ? discountOpts : []);
+setBankAccounts((bankRes?.data || []).map(acc => ({
+  label: `${acc.bank_name}${acc.account_number ? ' - ' + acc.account_number : ''}`,
+  value: acc.id
+})));
+setBankFees(feesRes?.data || []);
 if (mode === 'edit' && initialData) {
 // PATIENT
 if (initialData.patient_id && (initialData.patient_name || initialData.patients?.full_name)) {
@@ -281,6 +305,7 @@ package_type: '', // Preserve label
 therapist_id: data.therapist_id || '',
 amount: data.amount_original ?? originalAmount,
 payment_method: data.payment_method || '',
+bank_account_id: data.bank_account_id || '',
 discount_type: data.discount_type || 'none',
 discount_label: data.discount_label || '',
 discount_value: data.discount_value || ''
@@ -422,6 +447,8 @@ setPackageInfo(null);
 }
 };
 
+const feePreview = computeFeePreview(bankFees, formData.bank_account_id, formData.payment_method, formData.amount);
+
 const handlePatientChange = (val) => {
 setFormData(prev => ({
 ...prev,
@@ -519,6 +546,7 @@ therapist_name: therapistName,
 amount_original: parseFloat(formData.amount) || 0,
 amount: parseFloat(formData.amount) || 0,
 payment_method: selectedPaymentMethodLabel,
+bank_account_id: formData.bank_account_id || null,
 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
 discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
 discount_label: formData.discount_label || null
@@ -747,13 +775,29 @@ allowCreate={true}
 </div>
 <div className="space-y-2">
 <Label>Metode Pembayaran</Label>
-<SearchableSelect 
+<SearchableSelect
 options={paymentMethods}
 value={formData.payment_method}
 onChange={(val) => handleChange('payment_method', val)}
 allowCreate={true}
 />
 </div>
+</div>
+
+<div className="space-y-2">
+<Label>Akun Tujuan (Bank/Kas) <span className="text-slate-400 font-normal">(opsional)</span></Label>
+<SearchableSelect
+options={bankAccounts}
+value={formData.bank_account_id}
+onChange={(val) => handleChange('bank_account_id', val)}
+placeholder="Pilih akun bank/kas..."
+allowCreate={false}
+/>
+{feePreview && (
+<p className="text-xs text-amber-600">
+Potongan bank ({feePreview.rule.fee_type === 'percentage' ? `${feePreview.rule.fee_value}%` : `Rp${feePreview.rule.fee_value}`}): {new Intl.NumberFormat('id-ID').format(feePreview.fee)} &bull; Bersih diterima: Rp{new Intl.NumberFormat('id-ID').format(feePreview.net)}
+</p>
+)}
 </div>
 
 <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">

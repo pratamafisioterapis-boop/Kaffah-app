@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, Building, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
-import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import AccountingReport from '@/components/owner/AccountingReport';
 import PatientIncome from '@/components/owner/PatientIncome';
 import GlobalDateRangeFilter from '@/components/shared/GlobalDateRangeFilter';
@@ -448,7 +447,6 @@ const OwnerFinanceDashboard = () => {
             <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-xl overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
               <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
-              <SubTabButton isActive={activeOwnerTab === 'bank'} onClick={() => setActiveOwnerTab('bank')} label="Akun Bank" icon={Building} color="blue" />
               <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} color="cyan" />
               <SubTabButton isActive={activeOwnerTab === 'fixed_cost'} onClick={() => setActiveOwnerTab('fixed_cost')} label="Fixed Cost" icon={Wallet} color="blue" />
             </div>
@@ -527,21 +525,6 @@ const OwnerFinanceDashboard = () => {
                         <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
                       )},
                     ]} />
-                </div>
-              )}
-
-              {activeOwnerTab === 'bank' && (
-                <div className="p-5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#eff6ff' }}>
-                      <Building className="w-4 h-4" style={{ color: '#2563eb' }} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">Akun Bank</h3>
-                      <p className="text-xs text-slate-400">Kelola rekening bank owner</p>
-                    </div>
-                  </div>
-                  <OwnerBankAccountManager />
                 </div>
               )}
 
