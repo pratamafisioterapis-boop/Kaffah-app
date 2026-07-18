@@ -6,7 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal } from 'lucide-react';
-import { FEATURE_CATALOG } from '@/lib/featureCatalog';
+import { ROLES, ROLE_LABELS, getFeatureCatalogForRole } from '@/lib/featureCatalog';
+import { cn } from '@/lib/utils';
 
 const emptyForm = {
   id: null, name: '', address: '', phone: '', subscription_status: 'active',
@@ -30,6 +31,7 @@ const SuperAdminClinics = () => {
   const [editOwnerOpen, setEditOwnerOpen] = useState(false);
   const [editOwnerForm, setEditOwnerForm] = useState(emptyEditOwnerForm);
   const [savingOwnerEdit, setSavingOwnerEdit] = useState(false);
+  const [featureRoleTab, setFeatureRoleTab] = useState({}); // { [clinicId]: 'owner' | 'admin' | 'therapist' }
 
   const fetchClinics = async () => {
     setLoading(true);
@@ -171,19 +173,21 @@ const SuperAdminClinics = () => {
     else { toast({ title: 'Klinik dihapus' }); fetchClinics(); }
   };
 
-  const toggleFeature = async (clinic, featureKey) => {
-    const current = clinic.disabled_features || [];
-    const nextDisabled = current.includes(featureKey)
-      ? current.filter((k) => k !== featureKey)
-      : [...current, featureKey];
+  const toggleFeature = async (clinic, role, featureKey) => {
+    const currentByRole = clinic.disabled_features_by_role || {};
+    const currentForRole = currentByRole[role] || [];
+    const nextForRole = currentForRole.includes(featureKey)
+      ? currentForRole.filter((k) => k !== featureKey)
+      : [...currentForRole, featureKey];
+    const nextByRole = { ...currentByRole, [role]: nextForRole };
 
     // Optimistic update
-    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features: nextDisabled } : c)));
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features_by_role: nextByRole } : c)));
 
-    const { error } = await supabase.from('clinics').update({ disabled_features: nextDisabled }).eq('id', clinic.id);
+    const { error } = await supabase.from('clinics').update({ disabled_features_by_role: nextByRole }).eq('id', clinic.id);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal mengubah fitur', description: error.message });
-      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features: current } : c)));
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features_by_role: currentByRole } : c)));
     }
   };
 
@@ -280,18 +284,43 @@ const SuperAdminClinics = () => {
 
               <div className="pt-3 border-t border-slate-100">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 mb-2.5">
-                  <SlidersHorizontal className="w-3.5 h-3.5" /> Fitur Klinik
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> Fitur Klinik per Role
                 </p>
+                <div className="flex gap-1.5 mb-3">
+                  {ROLES.map((r) => {
+                    const activeRole = featureRoleTab[clinic.id] || 'owner';
+                    const isActive = activeRole === r;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setFeatureRoleTab((prev) => ({ ...prev, [clinic.id]: r }))}
+                        className={cn(
+                          "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                          isActive
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                        )}
+                      >
+                        {ROLE_LABELS[r]}
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
-                  {FEATURE_CATALOG.map((feature) => (
-                    <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                      <Checkbox
-                        checked={!(clinic.disabled_features || []).includes(feature.key)}
-                        onCheckedChange={() => toggleFeature(clinic, feature.key)}
-                      />
-                      {feature.label}
-                    </label>
-                  ))}
+                  {getFeatureCatalogForRole(featureRoleTab[clinic.id] || 'owner').map((feature) => {
+                    const activeRole = featureRoleTab[clinic.id] || 'owner';
+                    const disabledForRole = clinic.disabled_features_by_role?.[activeRole] || [];
+                    return (
+                      <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <Checkbox
+                          checked={!disabledForRole.includes(feature.key)}
+                          onCheckedChange={() => toggleFeature(clinic, activeRole, feature.key)}
+                        />
+                        {feature.label}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
