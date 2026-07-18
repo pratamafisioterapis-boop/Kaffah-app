@@ -134,7 +134,7 @@ const DatabasePatients = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
+                    <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{useAuth().clinicName || ''}</p>
                     <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Database Pasien</h2>
                     <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Total {pagination.totalItems} pasien terdaftar dalam sistem</p>
                   </div>

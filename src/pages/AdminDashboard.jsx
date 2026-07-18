@@ -428,7 +428,7 @@ setTrendPatients(trendArray);
                 </svg>
               </div>
               <div>
-                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
+                <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
                 <h1 className="text-lg md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
                 <p className="text-slate-400 text-xs mt-1">Pusat kendali operasional dan manajemen klinik.</p>
               </div>

@@ -21,18 +21,25 @@ const fillTemplate = (template, data) => {
   return message;
 };
 
-// Fetch template from DB
-const getTemplate = async (category) => {
+// Fetch template from DB, scoped to the patient's own clinic
+const getTemplate = async (category, clinicId) => {
   const { data } = await supabase
     .from('wa_templates')
     .select('template_text')
     .eq('category', category)
+    .eq('clinic_id', clinicId)
     .maybeSingle();
   return data?.template_text || '';
 };
 
+const getClinicName = async (clinicId) => {
+  if (!clinicId) return '';
+  const { data } = await supabase.from('clinics').select('name').eq('id', clinicId).maybeSingle();
+  return data?.name || '';
+};
+
 export const generateBookingMessage = async (patient, appointment) => {
-  let template = await getTemplate('booking_appointment');
+  let template = await getTemplate('booking_appointment', patient.clinic_id);
   if (!template) {
     // Fallback default
     template = "Halo [sapaan] [nama], booking appointment Anda pada hari [hari_booking], [tanggal] pukul [jam] dengan [terapis] untuk layanan [layanan] telah berhasil dibuat. Terima kasih.";
@@ -50,9 +57,10 @@ export const generateBookingMessage = async (patient, appointment) => {
 };
 
 export const generateBookingHomecareMessage = async (patient, appointment) => {
-  let template = await getTemplate('booking_appointment_homecare');
+  let template = await getTemplate('booking_appointment_homecare', patient.clinic_id);
   if (!template) {
-    template = "Terima kasih sudah melakukan booking layanan homecare di Kaffah Physiotherapy 🤍\nJadwal [nickname] sudah tercatat untuk [hari_booking], [tanggal] pukul [jam] di lokasi yang telah disepakati.\n\nUntuk layanan homecare, pembayaran mohon dilakukan maksimal H-1 sebelum jadwal terapi melalui transfer ke:\na.n KAFFAH PHYSIOTHERAPY\nNo. Rek: 3030399993\n\nMohon melakukan pembayaran sebelum jadwal sesi berjalan sesuai waktu yang telah disepakati 🙏\n\nSalam sehat,\nKaffah Physiotherapy";
+    const clinicName = await getClinicName(patient.clinic_id);
+    template = `Terima kasih sudah melakukan booking layanan homecare${clinicName ? ` di ${clinicName}` : ''} 🤍\nJadwal [nickname] sudah tercatat untuk [hari_booking], [tanggal] pukul [jam] di lokasi yang telah disepakati.\n\nMohon melakukan pembayaran sebelum jadwal sesi berjalan sesuai waktu yang telah disepakati 🙏\n\nSalam sehat,\n${clinicName}`;
   }
 
   return fillTemplate(template, {
@@ -68,7 +76,7 @@ export const generateBookingHomecareMessage = async (patient, appointment) => {
 };
 
 export const generateFollowUpMessage = async (patient, lastAppointment) => {
-  let template = await getTemplate('follow_up');
+  let template = await getTemplate('follow_up', patient.clinic_id);
   if (!template) {
      template = "Halo [sapaan] [nama], sudah beberapa hari sejak kunjungan terakhir Anda pada [tanggal_appointment_terakhir]. Bagaimana perkembangan kondisi Anda?";
   }
@@ -81,7 +89,7 @@ export const generateFollowUpMessage = async (patient, lastAppointment) => {
 };
 
 export const generatePackageExpiryMessage = async (patient, pkg) => {
-  let template = await getTemplate('package_expiry');
+  let template = await getTemplate('package_expiry', patient.clinic_id);
   if (!template) {
      template = "Halo [sapaan] [nama], paket [jenis_paket] Anda tersisa [sisa_sesi] sesi dan akan habis pada hari [hari_expiry], [tanggal_habis]. Segera jadwalkan sesi Anda.";
   }
@@ -130,30 +138,33 @@ const sendViaWatzap = async (phone, message) => {
 };
 
 // ─── Therapy Reminder Homecare ────────────────────────────────────────────────
-export const generateTherapyReminderHomecareMessage = (patient, appointment) => {
+export const generateTherapyReminderHomecareMessage = (patient, appointment, clinicName = '') => {
   const nickname = patient.nickname || `Ka ${patient.full_name}`;
   const jam = format(new Date(appointment.appointment_date), 'HH:mm');
   const hari = calculateDayNameIndonesia(appointment.appointment_date);
   const terapis = appointment.therapist?.name || 'Terapis Kami';
 
-  return `Selamat Pagi ${nickname} 👋\nMengingatkan jadwal terapi homecare Anda *hari ini* (${hari}) pukul *${jam}*.\nTerapis kami *${terapis}* akan datang ke lokasi Anda sesuai alamat yang telah disepakati.\n\nSalam sehat,\nKaffah Physiotherapy`;
+  return `Selamat Pagi ${nickname} 👋\nMengingatkan jadwal terapi homecare Anda *hari ini* (${hari}) pukul *${jam}*.\nTerapis kami *${terapis}* akan datang ke lokasi Anda sesuai alamat yang telah disepakati.\n\nSalam sehat,\n${clinicName}`;
 };
 
 export const sendTherapyReminderHomecare = async (patient, appointment) => {
   const phone = patient.phone;
   if (!phone) return { success: false, error: 'Nomor telepon pasien tidak ada' };
 
-  const message = generateTherapyReminderHomecareMessage(patient, appointment);
+  const clinicName = await getClinicName(patient.clinic_id);
+  const message = generateTherapyReminderHomecareMessage(patient, appointment, clinicName);
   return await sendViaWatzap(phone, message);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const generateTherapyReminderMessage = async (patient, appointment) => {
-  let template = await getTemplate('therapy_reminder');
+  let template = await getTemplate('therapy_reminder', patient.clinic_id);
   if (!template) {
       template = "Halo [sapaan] [nama], mengingatkan jadwal terapi Anda hari ini ([hari_booking]) pukul [jam_terapi] dengan [terapis] di [lokasi]. Sampai jumpa!";
   }
+
+  const clinicName = await getClinicName(patient.clinic_id);
 
   return fillTemplate(template, {
     sapaan: getSalutation(patient),
@@ -161,12 +172,12 @@ export const generateTherapyReminderMessage = async (patient, appointment) => {
     jam_terapi: format(new Date(appointment.appointment_date), 'HH:mm'),
     hari_booking: calculateDayNameIndonesia(appointment.appointment_date),
     terapis: appointment.therapist?.name || 'Terapis',
-    lokasi: 'Klinik Kaffah Care'
+    lokasi: clinicName
   });
 };
 
 export const generateBirthdayMessage = async (patient) => {
-  let template = await getTemplate('birthday');
+  let template = await getTemplate('birthday', patient.clinic_id);
   if (!template) {
       template = "Selamat Ulang Tahun [sapaan] [nama] yang ke-[umur_baru]! Semoga sehat selalu dan panjang umur.";
   }

@@ -20,7 +20,7 @@ const FollowUpManagementPage = () => {
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [isChatAIEnabled, setIsChatAIEnabled] = useState(false);
 
-  const { userDetails } = useAuth();
+  const { userDetails, clinicName } = useAuth();
   const { toast } = useToast();
 
   // ===============================
@@ -300,7 +300,7 @@ const isPWA =
             </svg>
           </div>
           <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>Kaffah Physiotherapy</p>
+            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-indigo-300 uppercase mb-1`}>{clinicName || ''}</p>
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Follow Up Management</h2>
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola antrian pesan WhatsApp otomatis</p>
           </div>

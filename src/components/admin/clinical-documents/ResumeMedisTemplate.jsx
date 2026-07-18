@@ -48,7 +48,7 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
           )}
           <div>
             <p style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px', margin: 0 }}>
-              {(clinic?.name || 'Kaffah Physiotherapy').toUpperCase()}
+              {(clinic?.name || '').toUpperCase()}
             </p>
             <p style={{ color: '#c7d2fe', fontSize: '10.5px', margin: '4px 0 0', lineHeight: 1.5, maxWidth: '320px' }}>
               {clinic?.address || '-'}

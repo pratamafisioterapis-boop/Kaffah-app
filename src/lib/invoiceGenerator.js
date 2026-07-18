@@ -2,44 +2,49 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 
-export const generateInvoicePDF = (recap, activePackage) => {
+export const generateInvoicePDF = (recap, activePackage, clinic = {}) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
 
+  const clinicName = clinic.name || '';
+  const clinicNameParts = clinicName.split(' ');
+  const clinicNameLine1 = clinicNameParts[0] || '';
+  const clinicNameLine2 = clinicNameParts.slice(1).join(' ');
+
   // --- 1. Blue Sidebar (Left) ---
   // Color: #1e3a8a (approx Tailwind blue-900)
-  doc.setFillColor(30, 58, 138); 
+  doc.setFillColor(30, 58, 138);
   doc.rect(0, 0, 60, pageHeight, 'F'); // Sidebar width 60mm
-  
+
   // Sidebar Content - Logo Area
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(32);
   doc.setFont('helvetica', 'bold');
-  
-  // Big "K" Logo simulation
-  doc.text("K", 30, 40, { align: 'center' });
-  
+
+  // Big initial-letter logo simulation
+  doc.text(clinicNameLine1.charAt(0).toUpperCase(), 30, 40, { align: 'center' });
+
   doc.setFontSize(14);
-  doc.text("KAFFAH", 30, 50, { align: 'center' });
+  doc.text(clinicNameLine1.toUpperCase(), 30, 50, { align: 'center' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text("PHYSIOTHERAPY", 30, 55, { align: 'center' });
+  doc.text(clinicNameLine2.toUpperCase(), 30, 55, { align: 'center' });
 
   // Sidebar Content - Company Info
   const sidebarContentY = 90;
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text("KAFFAH PHYSIOTHERAPY", 30, sidebarContentY, { align: 'center' });
-  
+  doc.text(clinicName.toUpperCase(), 30, sidebarContentY, { align: 'center' });
+
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  const address = "Jl. Telindung, Perumahan Blok 1\nRT.07 NO.71 Batu Ampar,\nBalikpapan Utara";
+  const address = clinic.address || '';
   doc.text(address, 30, sidebarContentY + 10, { align: 'center', lineHeightFactor: 1.5 });
 
-  doc.text("kaffah.physiotherapy@gmail.com", 30, sidebarContentY + 30, { align: 'center' });
-  doc.text("+62 852-4861-5745", 30, sidebarContentY + 35, { align: 'center' });
+  doc.text(clinic.email || '', 30, sidebarContentY + 30, { align: 'center' });
+  doc.text(clinic.phone || '', 30, sidebarContentY + 35, { align: 'center' });
 
   // --- 2. Main Content Area (Right Side) ---
   const contentStartX = 70; // Start after sidebar
@@ -257,7 +262,7 @@ export const generateInvoicePDF = (recap, activePackage) => {
   // Footer Note
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
-  doc.text("Thank you for trusting Kaffah Physiotherapy for your recovery.", contentStartX, pageHeight - 10);
+  doc.text(`Thank you for trusting ${clinicName} for your recovery.`, contentStartX, pageHeight - 10);
 
   return doc;
 };

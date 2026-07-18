@@ -59,7 +59,7 @@ export const generateBookingAvailabilityMessage = ({ clinicName, date, therapist
     body += '\n\n';
   });
 
-  body += `\n${clinicName || 'Kaffah Physiotherapy'}`;
+  body += `\n${clinicName || ''}`;
 
   return body.trim();
 };
@@ -103,7 +103,7 @@ export const generateGlobalAvailabilityMessage = ({ clinicName, date, globalSumm
     .map(s => `🕒 ${s.slot_start_time.slice(0, 5)}`)
     .join('\n');
 
-  body += `\n\n${clinicName || 'Kaffah Physiotherapy'}`;
+  body += `\n\n${clinicName || ''}`;
 
   return body.trim();
 };
