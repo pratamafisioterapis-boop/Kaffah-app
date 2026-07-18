@@ -16,6 +16,58 @@ const emptyForm = {
 const emptyOwnerForm = { full_name: '', email: '', password: '', phone: '' };
 const emptyEditOwnerForm = { id: null, full_name: '', phone: '' };
 
+// Reference clinic whose Diagnosa + Layanan (parent service) list is cloned
+// into every newly created clinic, so new owners start with a ready-made
+// list instead of an empty one. This is a one-time copy at creation time —
+// the cloned rows get fresh ids and belong to the new clinic, so editing
+// either clinic's list afterward never affects the other.
+const REFERENCE_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a'; // Kaffah Physiotherapy
+
+const seedDiagnosaFromReferenceClinic = async (targetClinicId) => {
+  const [{ data: services, error: servicesError }, { data: diagnoses, error: diagnosesError }] = await Promise.all([
+    supabase.from('operational_options').select('*').eq('clinic_id', REFERENCE_CLINIC_ID).eq('category', 'service'),
+    supabase.from('operational_options').select('*').eq('clinic_id', REFERENCE_CLINIC_ID).eq('category', 'diagnosa'),
+  ]);
+  if (servicesError) throw servicesError;
+  if (diagnosesError) throw diagnosesError;
+
+  const idMap = {};
+  const newServices = (services || []).map((s) => {
+    const newId = crypto.randomUUID();
+    idMap[s.id] = newId;
+    return {
+      id: newId,
+      category: s.category,
+      label: s.label,
+      is_active: s.is_active,
+      session_count: s.session_count,
+      validity_days: s.validity_days,
+      parent_id: null,
+      clinic_id: targetClinicId,
+    };
+  });
+
+  const newDiagnoses = (diagnoses || []).map((d) => ({
+    id: crypto.randomUUID(),
+    category: d.category,
+    label: d.label,
+    is_active: d.is_active,
+    session_count: d.session_count,
+    validity_days: d.validity_days,
+    parent_id: d.parent_id ? (idMap[d.parent_id] || null) : null,
+    clinic_id: targetClinicId,
+  }));
+
+  if (newServices.length) {
+    const { error } = await supabase.from('operational_options').insert(newServices);
+    if (error) throw error;
+  }
+  if (newDiagnoses.length) {
+    const { error } = await supabase.from('operational_options').insert(newDiagnoses);
+    if (error) throw error;
+  }
+};
+
 const SuperAdminClinics = () => {
   const { toast } = useToast();
   const [clinics, setClinics] = useState([]);
@@ -120,6 +172,18 @@ const SuperAdminClinics = () => {
       setSaving(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
       return;
+    }
+
+    if (newClinic.id !== REFERENCE_CLINIC_ID) {
+      try {
+        await seedDiagnosaFromReferenceClinic(newClinic.id);
+      } catch (err) {
+        toast({
+          variant: 'destructive',
+          title: 'Klinik dibuat, tapi gagal menyalin data Diagnosa & Layanan',
+          description: err.message,
+        });
+      }
     }
 
     try {
