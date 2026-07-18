@@ -31,28 +31,34 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
         padding: '40px 50px',
       }}
     >
-      {/* LETTERHEAD */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px', paddingBottom: '16px', borderBottom: '3px solid #0f172a', textAlign: 'center' }}>
-        {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '100px', height: '100px', objectFit: 'contain', flexShrink: 0 }} />}
+      {/* LETTERHEAD — logo pinned left, text truly centered on the page via a mirrored spacer column */}
+      <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr 96px', alignItems: 'center', gap: '16px', paddingBottom: '18px' }}>
         <div>
-          <p style={{ fontWeight: 800, fontSize: '17px', margin: 0, letterSpacing: '0.4px' }}>
+          {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />}
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>
             {(clinic?.name || 'Kaffah Physiotherapy').toUpperCase()}
           </p>
-          <p style={{ fontSize: '11px', color: '#475569', margin: '3px 0 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '11.5px', color: '#475569', margin: '6px 0 0', lineHeight: 1.6 }}>
             {clinic?.address || '-'}
           </p>
-          <p style={{ fontSize: '11px', color: '#475569', margin: '2px 0 0' }}>
+          <p style={{ fontSize: '11.5px', color: '#475569', margin: '2px 0 0' }}>
             {[clinic?.phone, clinic?.email].filter(Boolean).join('  •  ')}
           </p>
         </div>
+        <div />
       </div>
+      <div style={{ height: '3px', background: 'linear-gradient(90deg, #0f172a 0%, #4f46e5 50%, #0f172a 100%)', borderRadius: '2px' }} />
 
       {/* TITLE */}
       <div style={{ textAlign: 'center', marginTop: '32px' }}>
-        <p style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '0.8px', margin: 0, textDecoration: 'underline', textUnderlineOffset: '5px' }}>
+        <p style={{ fontSize: '10px', letterSpacing: '3px', color: '#4f46e5', fontWeight: 700, margin: 0 }}>DOKUMEN RESMI</p>
+        <p style={{ fontWeight: 800, fontSize: '19px', letterSpacing: '0.8px', margin: '8px 0 0' }}>
           SURAT KETERANGAN FISIOTERAPI
         </p>
-        <p style={{ fontSize: '12px', color: '#475569', margin: '6px 0 0' }}>
+        <div style={{ width: '64px', height: '3px', background: '#4f46e5', borderRadius: '2px', margin: '10px auto 0' }} />
+        <p style={{ fontSize: '12px', color: '#475569', margin: '12px 0 0' }}>
           No. {data?.document_number || '-'}
         </p>
       </div>
@@ -63,25 +69,21 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
           Yang bertanda tangan di bawah ini, fisioterapis di <strong>{clinic?.name || 'Kaffah Physiotherapy'}</strong>, dengan ini menerangkan bahwa:
         </p>
 
-        <div style={{ margin: '18px 0', paddingLeft: '24px' }}>
+        <div style={{ margin: '18px 0', padding: '18px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
           {[
             ['Nama', data?.patient_name || '-'],
             ['Usia', age != null ? `${age} Tahun` : '-'],
             ['Jenis Kelamin', data?.gender || '-'],
             ['Alamat', data?.address || '-'],
             ['Telepon', data?.phone || '-'],
+            ['Diagnosa', data?.diagnosa || '-'],
           ].map(([label, value]) => (
-            <div key={label} style={{ display: 'flex', fontSize: '13px', marginBottom: '6px' }}>
-              <span style={{ width: '150px' }}>{label}</span>
-              <span style={{ width: '16px' }}>:</span>
+            <div key={label} style={{ display: 'flex', fontSize: '13px', marginBottom: '7px' }}>
+              <span style={{ width: '150px', color: '#64748b' }}>{label}</span>
+              <span style={{ width: '16px', color: '#64748b' }}>:</span>
               <span style={{ fontWeight: 700 }}>{value}</span>
             </div>
           ))}
-          <div style={{ display: 'flex', fontSize: '13px', marginTop: '10px' }}>
-            <span style={{ width: '150px' }}>Diagnosa</span>
-            <span style={{ width: '16px' }}>:</span>
-            <span style={{ fontWeight: 700 }}>{data?.diagnosa || '-'}</span>
-          </div>
         </div>
 
         <p style={{ margin: 0 }}>
@@ -109,7 +111,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
             {clinic?.stamp_url && (
               <img
                 src={clinic.stamp_url}
-                style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '8px', maxHeight: '60px', maxWidth: '60px', objectFit: 'contain' }}
+                style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '-10px', maxHeight: '62px', maxWidth: '62px', objectFit: 'contain', opacity: 0.92 }}
               />
             )}
           </div>
