@@ -31,16 +31,9 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
         padding: '40px 50px',
       }}
     >
-      {clinic?.stamp_url && (
-        <img
-          src={clinic.stamp_url}
-          style={{ position: 'absolute', top: '340px', left: '50%', transform: 'translateX(-50%)', width: '160px', opacity: 0.08 }}
-        />
-      )}
-
       {/* LETTERHEAD */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '16px', borderBottom: '3px solid #0f172a' }}>
-        {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />}
+        {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '76px', height: '76px', objectFit: 'contain' }} />}
         <div>
           <p style={{ fontWeight: 800, fontSize: '17px', margin: 0, letterSpacing: '0.4px' }}>
             {(clinic?.name || 'Kaffah Physiotherapy').toUpperCase()}
@@ -104,14 +97,17 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
 
       {/* SIGNATURE */}
       <div style={{ marginTop: '56px', display: 'flex', justifyContent: 'flex-end' }}>
-        <div style={{ textAlign: 'center', width: '220px' }}>
+        <div style={{ textAlign: 'center', width: '250px' }}>
           <p style={{ fontSize: '13px', margin: 0 }}>
-            {(data?.tempat || clinic?.address?.split(',')[0] || 'Balikpapan')}, {formatDate(data?.document_date)}
+            {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
           </p>
           <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
-          <div style={{ height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '10px' }}>
+            {clinic?.stamp_url && (
+              <img src={clinic.stamp_url} style={{ maxHeight: '60px', maxWidth: '60px', objectFit: 'contain' }} />
+            )}
             {data?.therapist_signature_url && (
-              <img src={data.therapist_signature_url} style={{ maxHeight: '60px', maxWidth: '160px' }} />
+              <img src={data.therapist_signature_url} style={{ maxHeight: '60px', maxWidth: '130px' }} />
             )}
           </div>
           <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />

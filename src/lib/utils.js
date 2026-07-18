@@ -26,6 +26,21 @@ export function formatCurrency(amount) {
 }
 
 /**
+ * Normalizes patient gender values into Indonesian display labels.
+ * Data in the `patients` table is inconsistent ('L'/'P', 'male'/'female',
+ * 'Laki-laki'/'Perempuan'), so this maps all known variants.
+ * @param {string} raw - The raw gender value from the database
+ * @returns {string} 'Laki-laki', 'Perempuan', the raw value, or '-'
+ */
+export function normalizeGender(raw) {
+  if (!raw) return '-';
+  const v = String(raw).trim().toLowerCase();
+  if (['l', 'laki-laki', 'male', 'pria', 'm'].includes(v)) return 'Laki-laki';
+  if (['p', 'perempuan', 'female', 'wanita', 'f'].includes(v)) return 'Perempuan';
+  return raw;
+}
+
+/**
  * Validates if a given package type ID is a valid non-empty string.
  * @param {string} id - The ID to validate
  * @returns {boolean} True if valid
