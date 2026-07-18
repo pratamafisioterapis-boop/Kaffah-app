@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { cn } from '@/lib/utils';
+import { cn, formatTherapistPeriodLabel } from '@/lib/utils';
+import { format } from 'date-fns';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from '@/components/ui/dialog';
@@ -39,7 +40,7 @@ const TherapistSoapLockManager = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState({ enabled: false, threshold_count: 5, period_days: 7 });
+  const [settings, setSettings] = useState({ enabled: false, threshold_count: 5 });
 
   const [therapists, setTherapists] = useState([]);
   const [statusByTherapist, setStatusByTherapist] = useState({});
@@ -63,8 +64,7 @@ const TherapistSoapLockManager = () => {
     if (settingsRes.data) {
       setSettings({
         enabled: !!settingsRes.data.enabled,
-        threshold_count: settingsRes.data.threshold_count ?? 5,
-        period_days: settingsRes.data.period_days ?? 7
+        threshold_count: settingsRes.data.threshold_count ?? 5
       });
     }
 
@@ -85,8 +85,8 @@ const TherapistSoapLockManager = () => {
   };
 
   const handleSaveSettings = async () => {
-    if (settings.threshold_count < 1 || settings.period_days < 1) {
-      toast({ variant: 'destructive', title: 'Nilai tidak valid', description: 'Jumlah SOAP dan periode hari harus lebih dari 0.' });
+    if (settings.threshold_count < 1) {
+      toast({ variant: 'destructive', title: 'Nilai tidak valid', description: 'Jumlah SOAP harus lebih dari 0.' });
       return;
     }
     setSaving(true);
@@ -106,7 +106,6 @@ const TherapistSoapLockManager = () => {
       soap_lock_exempt: !!therapist.soap_lock_exempt,
       soap_lock_custom_enabled: !!therapist.soap_lock_custom_enabled,
       soap_lock_threshold_count: therapist.soap_lock_threshold_count ?? settings.threshold_count,
-      soap_lock_period_days: therapist.soap_lock_period_days ?? settings.period_days,
       soap_lock_manual_unlock: !!therapist.soap_lock_manual_unlock,
       soap_lock_manual_unlock_note: therapist.soap_lock_manual_unlock_note || ''
     });
@@ -124,8 +123,7 @@ const TherapistSoapLockManager = () => {
     const { error: overrideError } = await updateTherapistSoapLockOverride(editTherapist.id, {
       soap_lock_exempt: editForm.soap_lock_exempt,
       soap_lock_custom_enabled: editForm.soap_lock_custom_enabled,
-      soap_lock_threshold_count: editForm.soap_lock_custom_enabled ? (parseInt(editForm.soap_lock_threshold_count) || 5) : null,
-      soap_lock_period_days: editForm.soap_lock_custom_enabled ? (parseInt(editForm.soap_lock_period_days) || 7) : null
+      soap_lock_threshold_count: editForm.soap_lock_custom_enabled ? (parseInt(editForm.soap_lock_threshold_count) || 5) : null
     });
 
     const { error: unlockError } = await setTherapistManualUnlock(
@@ -189,34 +187,18 @@ const TherapistSoapLockManager = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-slate-600">Kunci jika SOAP kosong mencapai</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                value={settings.threshold_count}
-                onChange={(e) => setSettings(prev => ({ ...prev, threshold_count: parseInt(e.target.value) || 0 }))}
-                className="w-24"
-                disabled={saving}
-              />
-              <span className="text-sm text-slate-500">kunjungan</span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-slate-600">Dalam periode</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                value={settings.period_days}
-                onChange={(e) => setSettings(prev => ({ ...prev, period_days: parseInt(e.target.value) || 0 }))}
-                className="w-24"
-                disabled={saving}
-              />
-              <span className="text-sm text-slate-500">hari terakhir</span>
-            </div>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-slate-600">Kunci jika SOAP kosong mencapai</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={1}
+              value={settings.threshold_count}
+              onChange={(e) => setSettings(prev => ({ ...prev, threshold_count: parseInt(e.target.value) || 0 }))}
+              className="w-24"
+              disabled={saving}
+            />
+            <span className="text-sm text-slate-500">kunjungan, dalam Periode aktif terapis (diatur di kartu terapis masing-masing, tab Data Terapis)</span>
           </div>
         </div>
 
@@ -285,7 +267,9 @@ const TherapistSoapLockManager = () => {
                   <span>
                     <strong className={locked ? "text-red-600" : "text-slate-700"}>{status?.unfilled_count ?? 0}</strong> SOAP kosong
                     {status?.threshold_count ? ` / ambang ${status.threshold_count}` : ''}
-                    {status?.period_days ? ` (${status.period_days} hari terakhir)` : ''}
+                    {status?.period_start && status?.period_end
+                      ? ` (periode ${format(new Date(status.period_start), 'dd MMM')} - ${format(new Date(status.period_end), 'dd MMM')})`
+                      : ` (${formatTherapistPeriodLabel(t)})`}
                   </span>
                 </div>
 
@@ -341,25 +325,14 @@ const TherapistSoapLockManager = () => {
                 </div>
 
                 {editForm.soap_lock_custom_enabled && (
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="space-y-1">
-                      <Label className="text-[11px] text-slate-500">SOAP kosong</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={editForm.soap_lock_threshold_count}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_threshold_count: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[11px] text-slate-500">Periode (hari)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={editForm.soap_lock_period_days}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_period_days: e.target.value }))}
-                      />
-                    </div>
+                  <div className="space-y-1 pt-1">
+                    <Label className="text-[11px] text-slate-500">SOAP kosong (dihitung dalam Periode aktif terapis ini)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editForm.soap_lock_threshold_count}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_threshold_count: e.target.value }))}
+                    />
                   </div>
                 )}
               </div>

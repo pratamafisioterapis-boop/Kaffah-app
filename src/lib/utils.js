@@ -341,6 +341,55 @@ export function parseWorkingHours(json) {
 }
 
 /**
+ * Computes the actual calendar start/end date of the recurring monthly cycle
+ * that contains `referenceDate`, given a therapist's period_start_day/period_end_day
+ * (e.g. 28 -> 27). Mirrors the DB function `get_therapist_period_range` so
+ * frontend and backend agree on the same period without a round-trip.
+ * Handles cycles crossing a month boundary and clamps to each month's real day count.
+ * @param {Object} therapist - Therapist row (uses period_start_day/period_end_day, defaults 28/27)
+ * @param {Date} [referenceDate] - Date to resolve the containing cycle for (defaults to now)
+ * @returns {{startDate: Date, endDate: Date}}
+ */
+export function getTherapistPeriodRange(therapist, referenceDate = new Date()) {
+  const startDay = therapist?.period_start_day ?? 28;
+  const endDay = therapist?.period_end_day ?? 27;
+  const ref = new Date(referenceDate);
+  const refDay = ref.getDate();
+
+  const clampToMonth = (year, month, day) => {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return new Date(year, month, Math.min(day, lastDay));
+  };
+
+  let startMonth, endMonth;
+  if (startDay <= endDay) {
+    // Cycle stays within a single calendar month (e.g. 1 -> 31, 5 -> 20)
+    startMonth = refDay < startDay ? ref.getMonth() - 1 : ref.getMonth();
+    endMonth = startMonth;
+  } else {
+    // Cycle crosses a month boundary (e.g. 28 -> 27)
+    startMonth = refDay >= startDay ? ref.getMonth() : ref.getMonth() - 1;
+    endMonth = startMonth + 1;
+  }
+
+  return {
+    startDate: clampToMonth(ref.getFullYear(), startMonth, startDay),
+    endDate: clampToMonth(ref.getFullYear(), endMonth, endDay)
+  };
+}
+
+/**
+ * Human-readable label for a therapist's configured Period, e.g. "Tgl 28 - 27".
+ * @param {Object} therapist - Therapist row (uses period_start_day/period_end_day, defaults 28/27)
+ * @returns {string}
+ */
+export function formatTherapistPeriodLabel(therapist) {
+  const startDay = therapist?.period_start_day ?? 28;
+  const endDay = therapist?.period_end_day ?? 27;
+  return `Tgl ${startDay} - ${endDay}`;
+}
+
+/**
  * Calculates the total attendance days based on an array of payroll/attendance records.
  * @param {Array} records - Array of attendance records
  * @returns {number} Count of attendance days

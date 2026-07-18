@@ -23,6 +23,7 @@ import {
   getTherapistTargetProgress
 } from '@/lib/api';
 import { format } from 'date-fns';
+import { getTherapistPeriodRange } from '@/lib/utils';
 import SearchableSelect from '@/components/ui/searchable-select';
 
 const TherapistTargetManager = () => {
@@ -96,25 +97,33 @@ const TherapistTargetManager = () => {
       });
     } else {
       setEditingTarget(null);
-      const now = new Date();
-      let startPeriod, endPeriod;
-      if (now.getDate() >= 28) {
-        startPeriod = new Date(now.getFullYear(), now.getMonth(), 28);
-        endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 27);
-      } else {
-        startPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 28);
-        endPeriod = new Date(now.getFullYear(), now.getMonth(), 27);
-      }
+      // Default periode klinik (belum ada terapis terpilih); dihitung ulang
+      // otomatis begitu terapis dipilih di bawah, mengikuti Periode kartu terapisnya.
+      const { startDate, endDate } = getTherapistPeriodRange(null);
 
       setFormData({
         therapist_id: '',
-        start_date: format(startPeriod, 'yyyy-MM-dd'),
-        end_date: format(endPeriod, 'yyyy-MM-dd'),
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: format(endDate, 'yyyy-MM-dd'),
         target_visits: '',
         excluded_patient_types: ['FREE', 'KONSULTASI', 'HOMECARE', 'XTRATIME']
       });
     }
     setIsDialogOpen(true);
+  };
+
+  const handleSelectTherapist = (therapist) => {
+    setFormData(prev => {
+      const next = { ...prev, therapist_id: therapist.id };
+      // Auto-isi periode dari kartu terapis saat membuat target baru (bukan saat edit),
+      // supaya periode tidak perlu diketik manual lagi di sini.
+      if (!editingTarget) {
+        const { startDate, endDate } = getTherapistPeriodRange(therapist);
+        next.start_date = format(startDate, 'yyyy-MM-dd');
+        next.end_date = format(endDate, 'yyyy-MM-dd');
+      }
+      return next;
+    });
   };
 
   const validateForm = () => {
@@ -352,7 +361,7 @@ const TherapistTargetManager = () => {
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => setFormData({ ...formData, therapist_id: t.id })}
+                        onClick={() => handleSelectTherapist(t)}
                         className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all text-center ${
                           isActive
                             ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200'

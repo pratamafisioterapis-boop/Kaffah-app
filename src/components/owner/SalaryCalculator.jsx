@@ -17,9 +17,9 @@ import {
   getAllPhysiotherapists, getActivePhysiotherapists, getDailyRecaps, getTherapistSchedules, 
   getTherapistTimeOff, getOperationalOptions 
 } from '@/lib/api';
-import { 
-  calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, 
-  calculateTotalSalary, formatCurrency, cn 
+import {
+  calculateAttendanceDays, calculateFullSalary, calculateCustomSalary,
+  calculateTotalSalary, formatCurrency, cn, getTherapistPeriodRange
 } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -55,6 +55,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   
   // Custom Rates Input (for manual override or config)
   const [customRates, setCustomRates] = useState({});
+
+  // Periode diatur sekali di kartu terapis (Manajemen Terapis) dan dipakai otomatis
+  // di sini per terapis. Matikan untuk query manual pakai rentang tanggal bebas.
+  const [useAutoPeriod, setUseAutoPeriod] = useState(true);
 
   useEffect(() => {
     fetchInitialData();
@@ -96,8 +100,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       if (!therapist) throw new Error("Therapist not found");
 
       // Calculate Dates
-      const startDateStr = dateRange?.startDate;
-const endDateStr = dateRange?.endDate;
+      const { startDateStr, endDateStr } = getEffectiveRange(therapist);
 
       // Fetch Data
       const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
@@ -171,6 +174,16 @@ const endDateStr = dateRange?.endDate;
       setCustomRates(prev => ({ ...prev, [type]: value }));
   };
 
+  // Rentang efektif untuk satu terapis: mengikuti Periode yang diatur di kartu
+  // terapis (default), atau rentang tanggal manual jika useAutoPeriod dimatikan.
+  const getEffectiveRange = (therapist) => {
+    if (useAutoPeriod) {
+      const { startDate, endDate } = getTherapistPeriodRange(therapist);
+      return { startDateStr: format(startDate, 'yyyy-MM-dd'), endDateStr: format(endDate, 'yyyy-MM-dd') };
+    }
+    return { startDateStr: dateRange?.startDate, endDateStr: dateRange?.endDate };
+  };
+
   const handlePeriodeIni = () => {
     const today = new Date();
     const end = new Date(today.getFullYear(), today.getMonth(), 27);
@@ -181,8 +194,7 @@ const endDateStr = dateRange?.endDate;
   const calcOneTherapist = async (therapist) => {
     const salaryScheme = therapist.salary_scheme || 'full_salary';
 
-    const startDateStr = dateRange?.startDate;
-    const endDateStr = dateRange?.endDate;
+    const { startDateStr, endDateStr } = getEffectiveRange(therapist);
 
     // Fetch recaps dengan data pasien & package tracking
     const { data: rawRecaps } = await supabase
@@ -509,47 +521,66 @@ const endDateStr = dateRange?.endDate;
 
       {/* Controls */}
       <div className="flex flex-col gap-2.5 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-          <Calendar className="w-3.5 h-3.5" />
-          Periode:
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+            <Calendar className="w-3.5 h-3.5" />
+            Periode:
+          </div>
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer select-none" style={{ color: '#7c3aed' }}>
+            <input
+              type="checkbox"
+              checked={useAutoPeriod}
+              onChange={e => setUseAutoPeriod(e.target.checked)}
+              className="w-3.5 h-3.5"
+            />
+            Otomatis (dari kartu terapis)
+          </label>
         </div>
-        <div className="flex items-center gap-2 w-full">
-          <input
-            type="date"
-            value={dateRange?.startDate || ''}
-            onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
-            style={{ colorScheme: 'light' }}
-          />
-          <span className="text-slate-300 text-sm shrink-0">–</span>
-          <input
-            type="date"
-            value={dateRange?.endDate || ''}
-            onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
-            style={{ colorScheme: 'light' }}
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full">
-          <button
-            onClick={handlePeriodeIni}
-            className="text-xs px-3 py-2 rounded-lg font-semibold transition-all flex-1"
-            style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
-          >
-            Periode Ini
-          </button>
-          <button
-            onClick={handleCalculateAll}
-            disabled={calculatingAll || !therapists.length}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex-1"
-            style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
-          >
-            {calculatingAll
-              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
-              : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
-            }
-          </button>
-        </div>
+
+        {useAutoPeriod ? (
+          <div className="text-xs px-3 py-2 rounded-lg" style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}>
+            Setiap terapis dihitung memakai Periode masing-masing (diatur di kartu terapis, tab Data Terapis). Matikan toggle di atas untuk memakai rentang tanggal manual.
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="date"
+                value={dateRange?.startDate || ''}
+                onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+                style={{ colorScheme: 'light' }}
+              />
+              <span className="text-slate-300 text-sm shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange?.endDate || ''}
+                onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+                style={{ colorScheme: 'light' }}
+              />
+            </div>
+            <button
+              onClick={handlePeriodeIni}
+              className="text-xs px-3 py-2 rounded-lg font-semibold transition-all w-full"
+              style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
+            >
+              Periode Ini (28 - 27)
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={handleCalculateAll}
+          disabled={calculatingAll || !therapists.length}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all w-full"
+          style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
+        >
+          {calculatingAll
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
+            : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
+          }
+        </button>
       </div>
 
       {/* Table */}

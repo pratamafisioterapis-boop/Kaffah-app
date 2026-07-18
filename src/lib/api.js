@@ -3946,6 +3946,8 @@ export const savePhysiotherapist = async (payload) => {
         salary_scheme: payload.salary_scheme,
         base_salary: payload.base_salary,
         transport_per_day: payload.transport_per_day,
+        period_start_day: payload.period_start_day,
+        period_end_day: payload.period_end_day,
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
         badges: payload.badges || [],
@@ -3993,7 +3995,7 @@ export const getSoapLockSettings = async () => {
   }, 'getSoapLockSettings');
 };
 
-export const saveSoapLockSettings = async ({ enabled, threshold_count, period_days }) => {
+export const saveSoapLockSettings = async ({ enabled, threshold_count }) => {
   return safeQuery(async () => {
     const { data: clinic } = await getCurrentClinic();
     if (!clinic?.id) return { error: { message: 'Clinic tidak ditemukan' } };
@@ -4005,7 +4007,6 @@ export const saveSoapLockSettings = async ({ enabled, threshold_count, period_da
           clinic_id: clinic.id,
           enabled,
           threshold_count,
-          period_days,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'clinic_id' }
@@ -4035,8 +4036,7 @@ export const getClinicTherapistsSoapLockStatus = async () => {
 export const updateTherapistSoapLockOverride = async (therapistId, {
   soap_lock_exempt,
   soap_lock_custom_enabled,
-  soap_lock_threshold_count,
-  soap_lock_period_days
+  soap_lock_threshold_count
 }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase
@@ -4044,8 +4044,7 @@ export const updateTherapistSoapLockOverride = async (therapistId, {
       .update({
         soap_lock_exempt,
         soap_lock_custom_enabled,
-        soap_lock_threshold_count,
-        soap_lock_period_days
+        soap_lock_threshold_count
       })
       .eq('id', therapistId)
       .select()
@@ -4098,6 +4097,8 @@ export const createTherapistAccount = async (payload, password) => {
         salary_scheme: payload.salary_scheme,
         base_salary: payload.base_salary,
         transport_per_day: payload.transport_per_day,
+        period_start_day: payload.period_start_day,
+        period_end_day: payload.period_end_day,
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
         badges: payload.badges || [],
