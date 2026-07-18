@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package, CheckCircle2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable } from '@/lib/api';
+import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import SearchableSelect from '@/components/ui/searchable-select';
 import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
 import AccountingReport from '@/components/owner/AccountingReport';
 import PatientIncome from '@/components/owner/PatientIncome';
@@ -163,6 +165,74 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
   );
 };
 
+// --- Mark Receivable As Paid Modal ---
+const MarkReceivablePaidModal = ({ receivable, bankAccounts, open, onOpenChange, onSuccess }) => {
+  const { toast } = useToast();
+  const [bankAccountId, setBankAccountId] = useState('');
+  const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setBankAccountId('');
+      setPaidDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [open]);
+
+  const handleSubmit = async () => {
+    if (!bankAccountId) {
+      toast({ variant: "destructive", title: "Error", description: "Pilih akun bank tujuan pembayaran." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await updateOwnerReceivable(receivable.id, {
+        status: 'paid',
+        bank_account_id: bankAccountId,
+        paid_date: paidDate
+      });
+      if (error) throw error;
+      toast({ title: "Berhasil", description: "Piutang ditandai lunas." });
+      onSuccess();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[420px] rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-slate-800">Tandai Lunas &bull; {receivable?.custom_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Tanggal Dibayar</label>
+            <Input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} className="h-9 text-sm rounded-xl border-slate-200" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Masuk ke Akun Bank</label>
+            <SearchableSelect
+              options={(bankAccounts || []).map(acc => ({ label: `${acc.bank_name} - ${acc.account_number}`, value: acc.id }))}
+              value={bankAccountId}
+              onChange={setBankAccountId}
+              placeholder="Pilih akun bank..."
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Batal</Button>
+            <Button onClick={handleSubmit} disabled={loading} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tandai Lunas'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // --- Main Component ---
 const OwnerFinanceDashboard = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -198,6 +268,8 @@ const OwnerFinanceDashboard = () => {
   // Dialog States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState('expenditure');
+  const [markPaidReceivable, setMarkPaidReceivable] = useState(null);
+  const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 
   // Fetch Data Functions
   const fetchOwnerData = async () => {
@@ -370,6 +442,14 @@ const OwnerFinanceDashboard = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <MarkReceivablePaidModal
+        receivable={markPaidReceivable}
+        bankAccounts={ownerData.bankAccounts}
+        open={isMarkPaidOpen}
+        onOpenChange={setIsMarkPaidOpen}
+        onSuccess={() => { setIsMarkPaidOpen(false); fetchOwnerData(); }}
+      />
 
       {/* Custom Tab Navigation */}
       <div className="relative">
@@ -555,15 +635,37 @@ const OwnerFinanceDashboard = () => {
                         <span className="font-semibold text-slate-700">{row.custom_name}</span>
                       )},
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
-                      { header: 'Status', accessor: 'status', render: row => (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{
-                          background: row.status === 'Paid' ? '#f0fdf4' : '#fffbeb',
-                          color: row.status === 'Paid' ? '#059669' : '#d97706',
-                          border: `1px solid ${row.status === 'Paid' ? '#bbf7d0' : '#fde68a'}`
-                        }}>{row.status}</span>
-                      )},
+                      { header: 'Status', accessor: 'status', render: row => {
+                        const labels = { pending: 'Belum Lunas', paid: 'Lunas', cancelled: 'Dibatalkan' };
+                        const colors = {
+                          pending: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+                          paid: { bg: '#f0fdf4', color: '#059669', border: '#bbf7d0' },
+                          cancelled: { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' }
+                        };
+                        const c = colors[row.status] || colors.pending;
+                        return (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                            {labels[row.status] || row.status}
+                          </span>
+                        );
+                      }},
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums text-slate-700">{formatCurrency(row.amount)}</span>
+                      )},
+                      { header: 'Aksi', accessor: 'action', render: row => (
+                        row.status === 'pending' ? (
+                          <button
+                            onClick={() => { setMarkPaidReceivable(row); setIsMarkPaidOpen(true); }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-white"
+                            style={{ background: '#059669' }}
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Tandai Lunas
+                          </button>
+                        ) : row.bank_account_id ? (
+                          <span className="text-[10px] text-slate-400">
+                            {ownerData.bankAccounts.find(b => b.id === row.bank_account_id)?.bank_name || '-'}
+                          </span>
+                        ) : null
                       )},
                     ]} />
                 </div>

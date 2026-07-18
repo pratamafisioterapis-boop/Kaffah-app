@@ -1350,6 +1350,120 @@ export const deleteBankAccountFee = async (id) => {
 };
 
 // ============================================
+// BANK ACCOUNT BALANCE ADJUSTMENTS
+// (manual correction, e.g. owner withdraws cash / fixes a stale balance)
+// ============================================
+
+export const getBankAccountAdjustments = async (bankAccountId = null) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    let query = supabase
+      .from('bank_account_adjustments')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (bankAccountId) query = query.eq('bank_account_id', bankAccountId);
+
+    return await query;
+  }, 'getBankAccountAdjustments', { retry: true });
+};
+
+export const createBankAccountAdjustment = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_account_adjustments')
+      .insert({
+        clinic_id: userRow?.clinic_id,
+        bank_account_id: payload.bank_account_id,
+        date: payload.date,
+        amount: payload.amount,
+        description: payload.description || null,
+        created_by: userId || null
+      })
+      .select()
+      .single();
+  }, 'createBankAccountAdjustment');
+};
+
+export const deleteBankAccountAdjustment = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('bank_account_adjustments').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, error: null };
+  }, 'deleteBankAccountAdjustment');
+};
+
+// ============================================
+// BANK TRANSFERS (antar akun bank/kas milik klinik sendiri)
+// ============================================
+
+export const getBankTransfers = async (bankAccountId = null) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    let query = supabase
+      .from('bank_transfers')
+      .select(`
+        *,
+        from_account:from_account_id ( id, bank_name, account_number ),
+        to_account:to_account_id ( id, bank_name, account_number )
+      `)
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (bankAccountId) query = query.or(`from_account_id.eq.${bankAccountId},to_account_id.eq.${bankAccountId}`);
+
+    return await query;
+  }, 'getBankTransfers', { retry: true });
+};
+
+export const createBankTransfer = async (payload) => {
+  return safeQuery(async () => {
+    if (payload.from_account_id === payload.to_account_id) {
+      return { error: { message: "Akun asal dan akun tujuan tidak boleh sama." } };
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_transfers')
+      .insert({
+        clinic_id: userRow?.clinic_id,
+        date: payload.date,
+        from_account_id: payload.from_account_id,
+        to_account_id: payload.to_account_id,
+        amount: payload.amount,
+        description: payload.description || null,
+        created_by: userId || null
+      })
+      .select()
+      .single();
+  }, 'createBankTransfer');
+};
+
+export const deleteBankTransfer = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('bank_transfers').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, error: null };
+  }, 'deleteBankTransfer');
+};
+
+// ============================================
 // STUBS FOR OTHER FUNCTIONS
 // ============================================
 export const getAdminAccountingReport = async ({ startDate, endDate }) => {
@@ -1955,11 +2069,12 @@ export const createOwnerReceivable = async (payload) => {
       .from('owner_receivables')
       .insert({
         clinic_id: userRow?.clinic_id,
-        due_date: payload.due_date,
+        custom_name: payload.custom_name,
+        date: payload.date,
         amount: payload.amount,
         description: payload.description || null,
-        status: 'unpaid',
-        created_by: payload.created_by || null,
+        status: 'pending',
+        created_by: payload.created_by || userId || null,
         created_at: new Date().toISOString()
       })
       .select()
@@ -1967,6 +2082,34 @@ export const createOwnerReceivable = async (payload) => {
     if (error) return { error };
     return { data, success: true, error: null };
   }, 'createOwnerReceivable');
+};
+
+// Mark a receivable as settled (status -> 'paid') and, when a bank account is
+// given, count the amount as an inflow to that account's computed balance.
+// Can also be used for a plain edit (amount/description/custom_name) or to
+// cancel it (status -> 'cancelled').
+export const updateOwnerReceivable = async (id, payload) => {
+  return safeQuery(async () => {
+    const updatePayload = {
+      updated_at: new Date().toISOString()
+    };
+    if (payload.custom_name !== undefined) updatePayload.custom_name = payload.custom_name;
+    if (payload.date !== undefined) updatePayload.date = payload.date;
+    if (payload.amount !== undefined) updatePayload.amount = payload.amount;
+    if (payload.description !== undefined) updatePayload.description = payload.description || null;
+    if (payload.status !== undefined) updatePayload.status = payload.status;
+    if (payload.bank_account_id !== undefined) updatePayload.bank_account_id = payload.bank_account_id || null;
+    if (payload.paid_date !== undefined) updatePayload.paid_date = payload.paid_date || null;
+
+    const { data, error } = await supabase
+      .from('owner_receivables')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateOwnerReceivable');
 };
 // ============================================
 // OWNER ACCOUNTING (FIXED - NO MORE DUMMY)

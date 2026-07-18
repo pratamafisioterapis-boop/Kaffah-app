@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Plus, Pencil, Trash2, Building, CreditCard, Percent, Info } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Building, CreditCard, Percent, Info, SlidersHorizontal, ArrowLeftRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   getBankAccountsWithBalance,
@@ -16,7 +16,13 @@ import {
   createBankAccountFee,
   updateBankAccountFee,
   deleteBankAccountFee,
-  getOperationalOptions
+  getOperationalOptions,
+  getBankAccountAdjustments,
+  createBankAccountAdjustment,
+  deleteBankAccountAdjustment,
+  getBankTransfers,
+  createBankTransfer,
+  deleteBankTransfer
 } from '@/lib/api';
 import { motion } from 'framer-motion';
 import SearchableSelect from '@/components/ui/searchable-select';
@@ -296,6 +302,345 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
   );
 };
 
+const AdjustmentForm = ({ bankAccountId, onSuccess, onCancel }) => {
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    direction: 'increase',
+    amount: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.amount || Number(form.amount) <= 0) {
+      toast({ variant: "destructive", title: "Error", description: "Nominal tidak valid." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const signedAmount = form.direction === 'increase' ? Number(form.amount) : -Number(form.amount);
+      const { error } = await createBankAccountAdjustment({
+        bank_account_id: bankAccountId,
+        date: form.date,
+        amount: signedAmount,
+        description: form.description
+      });
+      if (error) throw error;
+      toast({ title: "Berhasil", description: "Saldo disesuaikan." });
+      onSuccess();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Tanggal</Label>
+        <Input type="date" value={form.date} onChange={e => setForm(prev => ({ ...prev, date: e.target.value }))} />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Jenis Penyesuaian</Label>
+        <RadioGroup value={form.direction} onValueChange={(val) => setForm(prev => ({ ...prev, direction: val }))} className="flex gap-4">
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="increase" id="adj-increase" />
+            <Label htmlFor="adj-increase" className="font-normal cursor-pointer">Tambah Saldo</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="decrease" id="adj-decrease" />
+            <Label htmlFor="adj-decrease" className="font-normal cursor-pointer">Kurangi Saldo</Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Nominal (Rp)</Label>
+        <Input type="number" min="0" value={form.amount} onChange={e => setForm(prev => ({ ...prev, amount: e.target.value }))} placeholder="0" />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Keterangan</Label>
+        <Input value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Contoh: Ambil kas untuk keperluan pribadi" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+        <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">Batal</Button>
+        <Button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Simpan'}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
+  const [adjustments, setAdjustments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchAdjustments = async () => {
+    if (!account?.bank_account_id) return;
+    setLoading(true);
+    const { data } = await getBankAccountAdjustments(account.bank_account_id);
+    setAdjustments(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (open) fetchAdjustments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, account?.bank_account_id]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Hapus penyesuaian saldo ini?")) return;
+    const { error } = await deleteBankAccountAdjustment(id);
+    if (error) {
+      toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus." });
+      return;
+    }
+    toast({ title: "Terhapus" });
+    fetchAdjustments();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px] rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <SlidersHorizontal className="w-5 h-5 text-indigo-600" />
+            Sesuaikan Saldo &bull; {account?.bank_name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {isFormOpen ? (
+          <AdjustmentForm
+            bankAccountId={account?.bank_account_id}
+            onSuccess={() => { setIsFormOpen(false); fetchAdjustments(); }}
+            onCancel={() => setIsFormOpen(false)}
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-700">
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>Gunakan ini untuk koreksi saldo manual (mis. ambil kas, selisih fisik) yang bukan bagian dari pemasukan/pengeluaran biasa.</p>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>
+            ) : adjustments.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
+                Belum ada penyesuaian saldo untuk akun ini.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {adjustments.map(adj => (
+                  <div key={adj.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                    <div>
+                      <p className={`text-sm font-bold ${adj.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {adj.amount < 0 ? '-' : '+'}{formatIDR(Math.abs(adj.amount))}
+                      </p>
+                      <p className="text-xs text-slate-500">{adj.date} {adj.description ? `• ${adj.description}` : ''}</p>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(adj.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Plus className="w-4 h-4 mr-2" /> Tambah Penyesuaian
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const TransferForm = ({ accounts, onSuccess, onCancel }) => {
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    from_account_id: '',
+    to_account_id: '',
+    amount: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const accountOptions = accounts.map(acc => ({ label: `${acc.bank_name}${acc.account_number ? ' - ' + acc.account_number : ''}`, value: acc.bank_account_id }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.from_account_id || !form.to_account_id) {
+      toast({ variant: "destructive", title: "Error", description: "Pilih akun asal dan tujuan." });
+      return;
+    }
+    if (form.from_account_id === form.to_account_id) {
+      toast({ variant: "destructive", title: "Error", description: "Akun asal dan tujuan tidak boleh sama." });
+      return;
+    }
+    if (!form.amount || Number(form.amount) <= 0) {
+      toast({ variant: "destructive", title: "Error", description: "Nominal tidak valid." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await createBankTransfer({
+        date: form.date,
+        from_account_id: form.from_account_id,
+        to_account_id: form.to_account_id,
+        amount: Number(form.amount),
+        description: form.description
+      });
+      if (error) throw error;
+      toast({ title: "Berhasil", description: "Transfer antar akun tercatat." });
+      onSuccess();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Tanggal</Label>
+        <Input type="date" value={form.date} onChange={e => setForm(prev => ({ ...prev, date: e.target.value }))} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Dari Akun</Label>
+          <SearchableSelect
+            options={accountOptions}
+            value={form.from_account_id}
+            onChange={(val) => setForm(prev => ({ ...prev, from_account_id: val }))}
+            placeholder="Pilih akun asal..."
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Ke Akun</Label>
+          <SearchableSelect
+            options={accountOptions}
+            value={form.to_account_id}
+            onChange={(val) => setForm(prev => ({ ...prev, to_account_id: val }))}
+            placeholder="Pilih akun tujuan..."
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Nominal (Rp)</Label>
+        <Input type="number" min="0" value={form.amount} onChange={e => setForm(prev => ({ ...prev, amount: e.target.value }))} placeholder="0" />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Keterangan</Label>
+        <Input value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Contoh: Setor tunai ke BSI" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+        <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">Batal</Button>
+        <Button type="submit" disabled={loading} className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Transfer'}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone }) => {
+  const [transfers, setTransfers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchTransfers = async () => {
+    setLoading(true);
+    const { data } = await getBankTransfers();
+    setTransfers(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (open) fetchTransfers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Hapus transfer ini?")) return;
+    const { error } = await deleteBankTransfer(id);
+    if (error) {
+      toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus." });
+      return;
+    }
+    toast({ title: "Terhapus" });
+    fetchTransfers();
+    onTransferDone?.();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[560px] rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <ArrowLeftRight className="w-5 h-5 text-violet-600" />
+            Transfer Antar Bank
+          </DialogTitle>
+        </DialogHeader>
+
+        {isFormOpen ? (
+          <TransferForm
+            accounts={accounts}
+            onSuccess={() => { setIsFormOpen(false); fetchTransfers(); onTransferDone?.(); }}
+            onCancel={() => setIsFormOpen(false)}
+          />
+        ) : (
+          <div className="space-y-4">
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-violet-500" /></div>
+            ) : transfers.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
+                Belum ada transfer antar akun.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {transfers.map(tr => (
+                  <div key={tr.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                        {tr.from_account?.bank_name || '-'} <ArrowLeftRight className="w-3 h-3 text-slate-400" /> {tr.to_account?.bank_name || '-'}
+                      </p>
+                      <p className="text-xs text-slate-500">{tr.date} &bull; {formatIDR(tr.amount)}{tr.description ? ` • ${tr.description}` : ''}</p>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(tr.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white">
+              <Plus className="w-4 h-4 mr-2" /> Transfer Baru
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const OwnerBankAccountManager = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -303,6 +648,9 @@ const OwnerBankAccountManager = () => {
   const [editingAccount, setEditingAccount] = useState(null);
   const [feeAccount, setFeeAccount] = useState(null);
   const [isFeeDialogOpen, setIsFeeDialogOpen] = useState(false);
+  const [adjustmentAccount, setAdjustmentAccount] = useState(null);
+  const [isAdjustmentDialogOpen, setIsAdjustmentDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
   const { toast } = useToast();
 
@@ -342,12 +690,21 @@ const OwnerBankAccountManager = () => {
            <h3 className="text-xl font-bold text-teal-900">Bank Accounts</h3>
            <p className="text-teal-700/70">Kelola rekening bank/kas owner &amp; potongan biaya per metode pembayaran.</p>
          </div>
-         <Button
-            onClick={() => { setEditingAccount(null); setIsDialogOpen(true); }}
-            className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5"
-         >
-           <Plus className="w-4 h-4 mr-2" /> Add Account
-         </Button>
+         <div className="flex gap-2">
+           <Button
+              variant="outline"
+              onClick={() => setIsTransferDialogOpen(true)}
+              className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50"
+           >
+             <ArrowLeftRight className="w-4 h-4 mr-2" /> Transfer Antar Bank
+           </Button>
+           <Button
+              onClick={() => { setEditingAccount(null); setIsDialogOpen(true); }}
+              className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5"
+           >
+             <Plus className="w-4 h-4 mr-2" /> Add Account
+           </Button>
+         </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -371,6 +728,19 @@ const OwnerBankAccountManager = () => {
         open={isFeeDialogOpen}
         onOpenChange={setIsFeeDialogOpen}
         paymentMethodOptions={paymentMethodOptions}
+      />
+
+      <AdjustmentManagerDialog
+        account={adjustmentAccount}
+        open={isAdjustmentDialogOpen}
+        onOpenChange={(open) => { setIsAdjustmentDialogOpen(open); if (!open) fetchAccounts(); }}
+      />
+
+      <TransferManagerDialog
+        accounts={accounts}
+        open={isTransferDialogOpen}
+        onOpenChange={setIsTransferDialogOpen}
+        onTransferDone={fetchAccounts}
       />
 
       {loading ? (
@@ -401,6 +771,9 @@ const OwnerBankAccountManager = () => {
                            <Building className="w-6 h-6" />
                         </div>
                         <div className="flex gap-1">
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
+                              <SlidersHorizontal className="w-4 h-4" />
+                           </Button>
                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-lg" title="Potongan Bank" onClick={() => { setFeeAccount(acc); setIsFeeDialogOpen(true); }}>
                               <Percent className="w-4 h-4" />
                            </Button>
