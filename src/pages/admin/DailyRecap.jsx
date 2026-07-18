@@ -433,7 +433,111 @@ const getPremiumPastelBadge = (text) => {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+        <div className="sm:hidden divide-y divide-slate-100">
+          {loadingRecaps ? (
+            <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6" /></div>
+          ) : recaps.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              <div className="flex flex-col items-center justify-center py-6">
+                <Search className="w-8 h-8 text-slate-300 mb-2" />
+                <p>Tidak ada data rekap harian.</p>
+              </div>
+            </div>
+          ) : (
+            recaps.map((recap, idx) => {
+              const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+              const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
+              const packageLabel = recap.package_type || '-';
+
+              return (
+                <motion.div
+                  key={recap.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "p-4 space-y-3 cursor-pointer")}
+                  onClick={() => handleRowClick(recap)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      {renderPatientName(recap)}
+                      <p className="text-[11px] text-slate-500 mt-0.5">{formatDateIndonesian(recap.date)}</p>
+                    </div>
+                    <div className="shrink-0">
+                      {recap.end_time ? (
+                        <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-lg">Selesai</Badge>
+                      ) : recap.start_time ? (
+                        <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-lg">Berlangsung</Badge>
+                      ) : (
+                        <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-lg">Belum</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Diagnosa</p>
+                    <div className="text-slate-600">{renderDiagnoses(recap.diagnosis)}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Layanan</p>
+                      <p className="text-slate-600">{serviceLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tipe Pasien</p>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Badge className={cn("text-xs font-medium px-2.5 py-0.5 rounded-md border-0 transition-none", getPremiumPastelBadge(patientTypeLabel))}>
+                          {patientTypeLabel}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
+                      <p className="text-blue-600 font-semibold">{packageLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
+                      <p className="text-slate-600">{recap.display_therapist_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nominal</p>
+                      <p className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</p>
+                      {recap.payment_method && (
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-1 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1 mt-2">Waktu Sesi</p>
+                    {!recap.start_time ? (
+                      <Button size="sm" className="h-7 w-full text-[10px] bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
+                      </Button>
+                    ) : !recap.end_time ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-blue-600 bg-blue-50 rounded px-1.5 py-1">{formatTime(new Date(recap.start_time))}</span>
+                        <Button size="sm" className="h-7 flex-1 text-[10px] bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                          {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
+                        <span>{formatTime(new Date(recap.start_time))}</span>
+                        <span className="opacity-50">→</span>
+                        <span>{formatTime(new Date(recap.end_time))}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: tabel */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm text-left table-auto">
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>

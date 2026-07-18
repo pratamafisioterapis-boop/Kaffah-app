@@ -146,7 +146,51 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
       </div>
 
       <div className="rounded-md border bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+        <div className="sm:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="px-4 py-8 text-center text-slate-500">
+              <div className="flex justify-center items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Memuat data...
+              </div>
+            </div>
+          ) : currentData.length === 0 ? (
+            <div className="px-4 py-8 text-center text-slate-500">
+              {patients.length === 0 ? "Belum ada data pasien." : "Tidak ada hasil pencarian."}
+            </div>
+          ) : (
+            currentData.map((patient) => {
+              if (!patient) return null;
+              return (
+                <div key={patient?.id || Math.random()} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900 truncate">{patient?.full_name || 'Nama Tidak Tersedia'}</p>
+                      <p className="text-xs font-mono text-blue-600 mt-0.5">{patient?.rm_number || '-'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => onEdit && onEdit(patient)}>
+                        <Edit className="w-4 h-4 mr-1" /> Edit
+                      </Button>
+                      {onDelete && (
+                        <Button variant="ghost" size="sm" onClick={() => onDelete(patient)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4 mr-1" /> Hapus
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs">
+                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Telepon</p>
+                    <p className="text-slate-600">{patient?.phone || '-'}</p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: tabel */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 border-b text-slate-600 font-medium">
               <tr>

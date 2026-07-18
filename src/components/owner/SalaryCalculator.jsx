@@ -382,8 +382,8 @@ const endDateStr = dateRange?.endDate;
 
               {/* Drill-down: list sesi per tipe pasien */}
               {selectedPatientType === type && (
-                isPWA ? (
-                  <div style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
+                <>
+                  <div className="sm:hidden" style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
                     {info.sessions.map((s, i) => (
                       <div key={i} className="px-4 py-3" style={{ borderBottom: '1px solid #f1f0ff', background: i % 2 === 0 ? 'white' : '#faf9ff' }}>
                         <div className="flex items-start justify-between gap-2 mb-1">
@@ -425,8 +425,7 @@ const endDateStr = dateRange?.endDate;
                       <span className="font-bold text-sm" style={{ color: '#059669' }}>{fmt(info.totalAmount)}</span>
                     </div>
                   </div>
-                ) : (
-                <div style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
+                <div className="hidden sm:block overflow-x-auto" style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
                   <table className="w-full" style={{ fontSize: '11px' }}>
                     <thead>
                       <tr style={{ background: '#f5f3ff', borderBottom: '1px solid #ede9fe' }}>
@@ -480,7 +479,7 @@ const endDateStr = dateRange?.endDate;
                     </tfoot>
                   </table>
                 </div>
-                )
+                </>
               )}
             </div>
           ))}
@@ -556,8 +555,8 @@ const endDateStr = dateRange?.endDate;
       {/* Table */}
       {allResults.length > 0 ? (
         <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
-          {isPWA ? (
-            <div>
+          <>
+            <div className="sm:hidden">
               {allResults.map((r, idx) => (
                 <button
                   key={r.id}
@@ -611,8 +610,7 @@ const endDateStr = dateRange?.endDate;
                 </span>
               </div>
             </div>
-          ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ background: '#f5f3ff', borderBottom: '2px solid #ede9fe' }}>
@@ -684,7 +682,7 @@ const endDateStr = dateRange?.endDate;
               </tfoot>
             </table>
           </div>
-          )}
+          </>
 
           {/* Summary strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: '1px solid #ede9fe', background: '#faf9ff' }}>

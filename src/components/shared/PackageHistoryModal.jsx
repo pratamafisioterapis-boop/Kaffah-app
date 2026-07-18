@@ -116,7 +116,62 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                     </div>
 
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
+                        {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+                        <div className="sm:hidden divide-y divide-slate-100">
+                            {isLoading ? (
+                                <div className="flex flex-col items-center justify-center gap-3 p-12 text-center text-slate-500">
+                                    <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                                    <span className="text-sm font-medium text-slate-600">Memuat riwayat...</span>
+                                </div>
+                            ) : history.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-4 p-16 text-center text-slate-500">
+                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100">
+                                        <PackageOpen className="w-8 h-8 text-slate-300" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900 text-base">Tidak ada riwayat penggunaan</p>
+                                        <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto">Paket ini belum pernah digunakan untuk kunjungan perawatan.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                history.map((item, index) => {
+                                    const ownerName = item.patients?.full_name;
+                                    const actualName = item.actual_patient?.full_name;
+                                    const isDifferent = item.actual_patient_id && item.patient_id && item.actual_patient_id !== item.patient_id;
+                                    const displayPatientName = isDifferent ? actualName : (ownerName || '-');
+
+                                    return (
+                                        <div key={item.id} className="p-4 space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-slate-900">{displayPatientName}</p>
+                                                    {isDifferent && (
+                                                        <div className="text-[10px] text-amber-600 mt-1 flex items-center gap-1.5 font-medium bg-amber-50 px-2 py-0.5 rounded-full w-fit border border-amber-100">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
+                                                            Pasien Kerabat
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-slate-900 font-bold font-mono shrink-0">{formatCurrency(item.amount)}</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                                <div>
+                                                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tanggal Kunjungan</p>
+                                                    <p className="text-slate-700 font-medium">{formatDateIndonesian(item.recap_date)}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Fisioterapis</p>
+                                                    <p className="text-slate-600 font-medium">{item.therapist_name || '-'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Desktop: tabel */}
+                        <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                                     <tr>

@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/dialog";
 
 const MedicalRecordsManagement = () => {
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -413,9 +412,8 @@ const handleViewRecord = (record) => {
         </div>
       )}
 
-      {/* CARD LAYOUT PWA */}
-      {isPWA ? (
-        <div className="space-y-3">
+      {/* Mobile / PWA: kartu, tanpa geser horizontal */}
+        <div className="sm:hidden space-y-3">
           {sortedRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
@@ -486,9 +484,9 @@ const handleViewRecord = (record) => {
             })
           )}
         </div>
-      ) : (
-      /* TABLE DESKTOP */
-      <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+
+      {/* Desktop: tabel */}
+      <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-left" style={{ fontSize: '12px' }}>
             <thead>
@@ -612,7 +610,6 @@ const handleViewRecord = (record) => {
           </table>
         </div>
       </div>
-      )}
 
       <MedicalRecordsModal
   key={selectedRecord?.id || 'create'}
