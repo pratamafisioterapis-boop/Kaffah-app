@@ -439,7 +439,7 @@ useEffect(() => {
       <Button
   variant="outline"
   className="flex-1 sm:flex-none border-blue-200 text-blue-600 hover:bg-blue-50"
-  onClick={() => onViewHistory?.(appointment.patient?.id || appointment.patient_id)}
+  onClick={() => onViewHistory?.(appointment.patient?.id || appointment.patient_id, appointment.guest_name, appointment.guest_phone)}
 >
   Riwayat
 </Button>

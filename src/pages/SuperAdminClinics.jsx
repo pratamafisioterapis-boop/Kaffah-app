@@ -6,7 +6,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus } from 'lucide-react';
 
-const emptyForm = { id: null, name: '', address: '', phone: '', subscription_status: 'active' };
+const emptyForm = {
+  id: null, name: '', address: '', phone: '', subscription_status: 'active',
+  owner_full_name: '', owner_email: '', owner_phone: '', owner_password: '',
+};
 const emptyOwnerForm = { full_name: '', email: '', password: '', phone: '' };
 const emptyEditOwnerForm = { id: null, full_name: '', phone: '' };
 
@@ -76,6 +79,17 @@ const SuperAdminClinics = () => {
       toast({ variant: 'destructive', title: 'Nama klinik wajib diisi' });
       return;
     }
+    if (!form.id) {
+      if (!form.owner_full_name?.trim() || !form.owner_email?.trim() || !form.owner_password?.trim()) {
+        toast({ variant: 'destructive', title: 'Nama, email, dan password owner wajib diisi' });
+        return;
+      }
+      if (form.owner_password.length < 6) {
+        toast({ variant: 'destructive', title: 'Password owner minimal 6 karakter' });
+        return;
+      }
+    }
+
     setSaving(true);
     const payload = {
       name: form.name,
@@ -83,14 +97,59 @@ const SuperAdminClinics = () => {
       phone: form.phone || null,
       subscription_status: form.subscription_status || 'active',
     };
-    const { error } = form.id
-      ? await supabase.from('clinics').update(payload).eq('id', form.id)
-      : await supabase.from('clinics').insert(payload);
-    setSaving(false);
+
+    if (form.id) {
+      const { error } = await supabase.from('clinics').update(payload).eq('id', form.id);
+      setSaving(false);
+      if (error) {
+        toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
+        return;
+      }
+      toast({ title: 'Klinik diperbarui' });
+      setOpen(false);
+      fetchClinics();
+      return;
+    }
+
+    const { data: newClinic, error } = await supabase.from('clinics').insert(payload).select().single();
     if (error) {
+      setSaving(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
-    } else {
-      toast({ title: form.id ? 'Klinik diperbarui' : 'Klinik ditambahkan' });
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('https://dqkejdamagvlhqvxaqej.supabase.co/functions/v1/admin-create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          email: form.owner_email,
+          password: form.owner_password,
+          full_name: form.owner_full_name,
+          phone: form.owner_phone,
+          role: 'owner',
+          clinic_id: newClinic.id,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast({
+          variant: 'destructive',
+          title: 'Klinik dibuat, tapi gagal membuat akun owner',
+          description: `${result.error} — gunakan tombol "Tambah Owner" untuk mencoba lagi.`,
+        });
+      } else {
+        toast({ title: 'Klinik & akun owner berhasil dibuat', description: `${form.owner_email} kini owner ${form.name}` });
+      }
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Klinik dibuat, tapi gagal membuat akun owner',
+        description: `${err.message} — gunakan tombol "Tambah Owner" untuk mencoba lagi.`,
+      });
+    } finally {
+      setSaving(false);
       setOpen(false);
       fetchClinics();
     }
@@ -210,6 +269,23 @@ const SuperAdminClinics = () => {
               <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat" /></div>
             <div className="space-y-2"><label className="text-sm font-medium">No. Telepon</label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="No. Telepon" /></div>
+
+            {!form.id && (
+              <>
+                <div className="pt-2 border-t">
+                  <p className="text-sm font-semibold text-slate-700">Akun Owner</p>
+                  <p className="text-xs text-slate-500">Dibuat langsung bersamaan dengan klinik.</p>
+                </div>
+                <div className="space-y-2"><label className="text-sm font-medium">Nama Lengkap Owner</label>
+                  <Input value={form.owner_full_name} onChange={(e) => setForm({ ...form, owner_full_name: e.target.value })} placeholder="Nama Owner" /></div>
+                <div className="space-y-2"><label className="text-sm font-medium">Email Login</label>
+                  <Input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} placeholder="owner@klinik.com" /></div>
+                <div className="space-y-2"><label className="text-sm font-medium">No. Telepon Owner</label>
+                  <Input value={form.owner_phone} onChange={(e) => setForm({ ...form, owner_phone: e.target.value })} /></div>
+                <div className="space-y-2"><label className="text-sm font-medium">Password</label>
+                  <Input type="password" value={form.owner_password} onChange={(e) => setForm({ ...form, owner_password: e.target.value })} placeholder="Minimal 6 karakter" /></div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>

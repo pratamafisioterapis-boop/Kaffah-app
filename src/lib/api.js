@@ -2947,6 +2947,20 @@ export const getPatientById = async (id) => {
     return { data, error: null };
   }, 'getPatientById', { retry: true });
 };
+
+export const getPatientByPhone = async (phone) => {
+  return safeQuery(async () => {
+    if (!phone) return { data: null, error: null };
+    const { data, error } = await supabase
+      .from('patients')
+      .select('id, full_name, phone')
+      .eq('phone', phone)
+      .limit(1)
+      .maybeSingle();
+    if (error) return { error };
+    return { data: data || null, error: null };
+  }, 'getPatientByPhone', { retry: true });
+};
 export const importPatientsFromCSV = async () => ({ data: { success: true, count: 0 } });
 export const parseCSVForPreview = async () => ({ data: [] });
 export const createPatient = async (payload) => {

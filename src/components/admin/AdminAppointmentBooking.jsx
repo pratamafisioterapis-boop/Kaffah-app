@@ -28,7 +28,8 @@ import {
   getActivePhysiotherapists,
   getAppointments,
   getPhysiotherapistByUserId,
-  getAvailableSlots
+  getAvailableSlots,
+  getPatientByPhone
 } from '@/lib/api';
 
 import TherapistCard from './booking/TherapistCard';
@@ -206,23 +207,31 @@ const formattedDate = date
   const handleSuccess = () => {
     setTimeout(() => fetchDayData(date), 200);
   };
-const handleViewHistory = async (patientId) => {
+const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
-  if (!patientId) {
+  let resolvedPatientId = patientId;
+
+  // Booking guest yang belum ter-link ke patient_id — coba cocokkan lewat
+  // nomor telepon ke pasien terdaftar yang sudah ada sebelum menyerah.
+  if (!resolvedPatientId && guestPhone) {
+    const { data: matchedPatient } = await getPatientByPhone(guestPhone);
+    resolvedPatientId = matchedPatient?.id || null;
+  }
+
+  if (!resolvedPatientId) {
     toast({
       variant: "destructive",
       title: "Patient tidak ditemukan"
     });
     return;
   }
-
   // Beberapa appointment awalnya booking guest lalu baru ter-link ke pasien
   // terdaftar di sisi daily_recaps saja (appointments.patient_id tetap null).
   // Ambil juga appointment_id dari daily_recaps supaya riwayat tidak bolong.
   const { data: linkedRecaps } = await supabase
     .from('daily_recaps')
     .select('appointment_id')
-    .eq('patient_id', patientId)
+    .eq('patient_id', resolvedPatientId)
     .not('appointment_id', 'is', null);
 
   const recapAppointmentIds = [...new Set((linkedRecaps || []).map((r) => r.appointment_id))];
@@ -237,8 +246,8 @@ const handleViewHistory = async (patientId) => {
     .order('appointment_date', { ascending: false });
 
   query = recapAppointmentIds.length > 0
-    ? query.or(`patient_id.eq.${patientId},id.in.(${recapAppointmentIds.join(',')})`)
-    : query.eq('patient_id', patientId);
+    ? query.or(`patient_id.eq.${resolvedPatientId},id.in.(${recapAppointmentIds.join(',')})`)
+    : query.eq('patient_id', resolvedPatientId);
 
   const { data, error } = await query;
 

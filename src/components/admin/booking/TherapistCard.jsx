@@ -312,7 +312,7 @@ const TherapistCard = ({
   type="button"
   onClick={(e) => {
     e.stopPropagation();
-    onPatientClick?.(app.patient?.id || app.patient_id);
+    onPatientClick?.(app.patient?.id || app.patient_id, app.guest_name, app.guest_phone);
   }}
   className="text-sm font-semibold text-slate-800 truncate hover:text-blue-600 transition-colors text-left"
 >

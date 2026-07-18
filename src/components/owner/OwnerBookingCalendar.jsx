@@ -17,10 +17,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
-import { 
-  getActivePhysiotherapists,  
+import {
+  getActivePhysiotherapists,
   getAppointments,
-  getAvailableSlots
+  getAvailableSlots,
+  getPatientByPhone
 } from '@/lib/api';
 
 // Reuse Admin Components
@@ -216,8 +217,17 @@ const OwnerBookingCalendar = () => {
     fetchDayData(date);
   };
 
-  const handleViewHistory = async (patientId) => {
-    if (!patientId) {
+  const handleViewHistory = async (patientId, guestName, guestPhone) => {
+    let resolvedPatientId = patientId;
+
+    // Booking guest yang belum ter-link ke patient_id — coba cocokkan lewat
+    // nomor telepon ke pasien terdaftar yang sudah ada sebelum menyerah.
+    if (!resolvedPatientId && guestPhone) {
+      const { data: matchedPatient } = await getPatientByPhone(guestPhone);
+      resolvedPatientId = matchedPatient?.id || null;
+    }
+
+    if (!resolvedPatientId) {
       toast({
         variant: "destructive",
         title: "Patient tidak ditemukan"
@@ -225,15 +235,31 @@ const OwnerBookingCalendar = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    // Beberapa appointment awalnya booking guest lalu baru ter-link ke pasien
+    // terdaftar di sisi daily_recaps saja (appointments.patient_id tetap null).
+    // Ambil juga appointment_id dari daily_recaps supaya riwayat tidak bolong.
+    const { data: linkedRecaps } = await supabase
+      .from('daily_recaps')
+      .select('appointment_id')
+      .eq('patient_id', resolvedPatientId)
+      .not('appointment_id', 'is', null);
+
+    const recapAppointmentIds = [...new Set((linkedRecaps || []).map((r) => r.appointment_id))];
+
+    let query = supabase
       .from('appointments')
       .select(`
         *,
         patient:patients(full_name),
         therapist:physiotherapists(name)
       `)
-      .eq('patient_id', patientId)
       .order('appointment_date', { ascending: false });
+
+    query = recapAppointmentIds.length > 0
+      ? query.or(`patient_id.eq.${resolvedPatientId},id.in.(${recapAppointmentIds.join(',')})`)
+      : query.eq('patient_id', resolvedPatientId);
+
+    const { data, error } = await query;
 
     if (error) {
       toast({
