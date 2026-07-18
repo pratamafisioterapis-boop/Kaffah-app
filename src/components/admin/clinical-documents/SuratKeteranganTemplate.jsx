@@ -32,8 +32,8 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       }}
     >
       {/* LETTERHEAD */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '16px', borderBottom: '3px solid #0f172a' }}>
-        {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '76px', height: '76px', objectFit: 'contain' }} />}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px', paddingBottom: '16px', borderBottom: '3px solid #0f172a', textAlign: 'center' }}>
+        {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '100px', height: '100px', objectFit: 'contain', flexShrink: 0 }} />}
         <div>
           <p style={{ fontWeight: 800, fontSize: '17px', margin: 0, letterSpacing: '0.4px' }}>
             {(clinic?.name || 'Kaffah Physiotherapy').toUpperCase()}
