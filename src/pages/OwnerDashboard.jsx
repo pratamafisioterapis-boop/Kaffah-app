@@ -355,7 +355,7 @@ setTherapists(enrichedTherapists);
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
+              <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
               <h1 className="text-xl md:text-2xl font-bold tracking-tight">Owner Dashboard</h1>
               <p className="text-slate-400 text-xs mt-1">Executive overview of clinic performance.</p>
             </div>

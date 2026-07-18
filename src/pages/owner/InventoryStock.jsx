@@ -54,7 +54,7 @@ const InventoryStockPage = () => {
               <Boxes className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <div>
-              <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{clinicName || 'Kaffah Physiotherapy'}</p>
+              <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">{clinicName || ''}</p>
               <h1 className="text-lg md:text-2xl font-bold tracking-tight">Stok Barang Gudang</h1>
               <p className="text-slate-400 text-xs mt-1">Kelola barang operasional klinik, kuantitas, satuan, dan harga.</p>
             </div>

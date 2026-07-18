@@ -94,7 +94,7 @@ const OwnerDailyRecap = () => {
               </svg>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || 'Kaffah Physiotherapy'}</p>
+              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Rekap Harian</h2>
               <p className="text-sm text-slate-400 mt-0.5">Kelola data kunjungan dan pendapatan harian klinik</p>
             </div>

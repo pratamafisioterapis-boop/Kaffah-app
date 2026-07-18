@@ -53,15 +53,15 @@ const checked = (val) => payment === val ? '☑' : '☐';
   marginBottom: '18px',
   lineHeight: '1.4'
 }}>
-  {(data?.clinic?.name || 'KAFFAH PHYSIOTHERAPY').toUpperCase()}
+  {(data?.clinic?.name || '').toUpperCase()}
 </p>
 
-          <p style={{ 
-  fontSize: '11px', 
+          <p style={{
+  fontSize: '11px',
   lineHeight: '1.8',
   marginTop: '6px'
 }}>
-            {data?.clinic?.address || 'Jl. Telindung, Perumnas Blok 1, RT.07 No.71 Batu Ampar, Balikpapan'}
+            {data?.clinic?.address || ''}
           </p>
 
           <div style={{
@@ -72,10 +72,10 @@ const checked = (val) => payment === val ? '☑' : '☐';
           }} />
 
           <p style={{ fontSize: '11px' }}>
-            {data?.clinic?.email || 'kaffah.physiotherapy@gmail.com'}
+            {data?.clinic?.email || ''}
           </p>
           <p style={{ fontSize: '11px' }}>
-            {data?.clinic?.phone || '0852-4596-5745'}
+            {data?.clinic?.phone || ''}
           </p>
         </div>
       </div>

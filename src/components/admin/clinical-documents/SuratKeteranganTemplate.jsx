@@ -38,7 +38,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
         </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>
-            {(clinic?.name || 'Kaffah Physiotherapy').toUpperCase()}
+            {(clinic?.name || '').toUpperCase()}
           </p>
           <p style={{ fontSize: '11.5px', color: '#475569', margin: '6px 0 0', lineHeight: 1.6 }}>
             {clinic?.address || '-'}
@@ -66,7 +66,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       {/* BODY */}
       <div style={{ marginTop: '32px', fontSize: '13px', lineHeight: 1.9 }}>
         <p style={{ margin: 0 }}>
-          Yang bertanda tangan di bawah ini, fisioterapis di <strong>{clinic?.name || 'Kaffah Physiotherapy'}</strong>, dengan ini menerangkan bahwa:
+          Yang bertanda tangan di bawah ini, fisioterapis di <strong>{clinic?.name || ''}</strong>, dengan ini menerangkan bahwa:
         </p>
 
         <div style={{ margin: '18px 0', padding: '18px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>

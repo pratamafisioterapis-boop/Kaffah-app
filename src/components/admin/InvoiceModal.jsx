@@ -286,7 +286,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
 
       // 4. Siapkan pesan caption
-      const clinicName = detailData?.clinic?.name || 'Kaffah Physiotherapy';
+      const clinicName = detailData?.clinic?.name || '';
       const caption =
         `Berikut *Kwitansi Terapi* hari ini.\n\n` +
         `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
@@ -407,7 +407,7 @@ const handleSendManualWA = async () => {
       );
     }
 
-    const clinicName = detailData?.clinic?.name || 'Kaffah Physiotherapy';
+    const clinicName = detailData?.clinic?.name || '';
 
     const message =
       `Berikut *Kwitansi Terapi* hari ini.\n\n` +
