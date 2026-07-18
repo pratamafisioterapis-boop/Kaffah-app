@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
-import { supabase } from "@/lib/customSupabaseClient";
 
 const dailyQuotes = [
   "🤲 Semoga Allah mudahkan setiap ikhtiar hari ini.",
@@ -49,21 +48,9 @@ const getTodayQuote = () => {
 };
 
 export default function SplashScreen({ onDone }) {
-  const { userDetails, clinicName } = useAuth();
+  const { userDetails } = useAuth();
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
-  const [logoUrl, setLogoUrl] = useState(null);
-
-  useEffect(() => {
-    let active = true;
-    const fetchLogo = async () => {
-      if (!userDetails?.clinic_id) return;
-      const { data } = await supabase.from('clinics').select('logo_url').eq('id', userDetails.clinic_id).single();
-      if (active) setLogoUrl(data?.logo_url || null);
-    };
-    fetchLogo();
-    return () => { active = false; };
-  }, [userDetails?.clinic_id]);
 
   const greeting = getGreeting();
   const quote = getTodayQuote();
@@ -98,19 +85,6 @@ export default function SplashScreen({ onDone }) {
       <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full">
-
-        {/* Logo */}
-        <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={clinicName || "Clinic Logo"}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full animate-pulse bg-white/10" />
-          )}
-        </div>
 
         {/* Greeting */}
         {userDetails && (

@@ -40,14 +40,6 @@ const LoadingFallback = () => (
     <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
     <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
     <div className="relative z-10 flex flex-col items-center gap-8">
-      {/* Logo */}
-      <div className="w-20 h-20 rounded-2xl overflow-hidden">
-        <img
-          src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
-          alt="Kaffah"
-          className="w-full h-full object-cover"
-        />
-      </div>
       {/* Spinner ring */}
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-2 border-white/10" />
