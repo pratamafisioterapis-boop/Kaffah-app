@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { FileText, ClipboardList } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { getClinicDetails } from '@/lib/api';
+import ResumeMedisForm from '@/components/admin/clinical-documents/ResumeMedisForm';
+import ResumeMedisTemplate from '@/components/admin/clinical-documents/ResumeMedisTemplate';
+import SuratKeteranganForm from '@/components/admin/clinical-documents/SuratKeteranganForm';
+import SuratKeteranganTemplate from '@/components/admin/clinical-documents/SuratKeteranganTemplate';
+import ClinicalDocumentHistory from '@/components/admin/clinical-documents/ClinicalDocumentHistory';
 
 const ClinicalDocuments = () => {
   const [activeTab, setActiveTab] = useState("resume-medis");
+  const [clinic, setClinic] = useState(null);
+  const [resumeRefreshKey, setResumeRefreshKey] = useState(0);
+  const [suratRefreshKey, setSuratRefreshKey] = useState(0);
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
     document.referrer.includes('android-app://');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await getClinicDetails();
+      setClinic(data || null);
+    })();
+  }, []);
 
   return (
     <>
@@ -53,26 +69,42 @@ const ClinicalDocuments = () => {
           </TabsList>
           
           <TabsContent value="resume-medis" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-            <div className="min-h-[400px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
-              <div className="p-4 rounded-full bg-blue-50 mb-4">
-                <ClipboardList className="w-8 h-8 text-blue-300" />
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+              <div className="xl:col-span-2">
+                <div className="xl:sticky xl:top-4">
+                  <ResumeMedisForm onSaved={() => setResumeRefreshKey((k) => k + 1)} />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-700">Resume Medis Module</h3>
-              <p className="text-slate-500 mt-2 max-w-sm text-center">
-                This module will allow you to generate comprehensive medical resumes for patients.
-              </p>
+              <div className="xl:col-span-3">
+                <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Resume Medis</h3>
+                <ClinicalDocumentHistory
+                  documentType="resume_medis"
+                  TemplateComponent={ResumeMedisTemplate}
+                  previewTitle="Resume Medis"
+                  clinic={clinic}
+                  refreshKey={resumeRefreshKey}
+                />
+              </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="surat-keterangan" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-            <div className="min-h-[400px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
-              <div className="p-4 rounded-full bg-emerald-50 mb-4">
-                <FileText className="w-8 h-8 text-emerald-300" />
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+              <div className="xl:col-span-2">
+                <div className="xl:sticky xl:top-4">
+                  <SuratKeteranganForm onSaved={() => setSuratRefreshKey((k) => k + 1)} />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-700">Surat Keterangan Fisioterapi</h3>
-              <p className="text-slate-500 mt-2 max-w-sm text-center">
-                This module will allow you to create official physiotherapy certificates and letters.
-              </p>
+              <div className="xl:col-span-3">
+                <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Surat Keterangan</h3>
+                <ClinicalDocumentHistory
+                  documentType="surat_keterangan"
+                  TemplateComponent={SuratKeteranganTemplate}
+                  previewTitle="Surat Keterangan Fisioterapi"
+                  clinic={clinic}
+                  refreshKey={suratRefreshKey}
+                />
+              </div>
             </div>
           </TabsContent>
         </Tabs>

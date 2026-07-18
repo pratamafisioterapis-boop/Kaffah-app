@@ -55,7 +55,7 @@ const InventoryStockOverview = ({ items = [] }) => {
           {/* Desktop: tabel */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
+              <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
                 <tr>
                   <th className="px-6 py-3.5 font-semibold">Nama Barang</th>
                   <th className="px-6 py-3.5 font-semibold text-right">Sisa Stok</th>
