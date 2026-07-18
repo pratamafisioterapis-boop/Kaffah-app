@@ -152,7 +152,7 @@ const PemilihDashboard = () => {
         <StatCard icon={TrendingUp} label="Target Suara Tim Sukses" value={timSuksesTotalTarget} color="#d97706" bg="#fffbeb" accentBar="linear-gradient(90deg,#fbbf24,#d97706)" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
+      <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
         <div className="p-card" style={{ padding: 24 }}>
           <CardHeader title="Sebaran Data Pemilih per Kelurahan" subtitle="Distribusi jumlah data tercatat di tiap kelurahan" />
           <div style={{ height: 300 }}>

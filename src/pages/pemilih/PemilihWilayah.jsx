@@ -109,32 +109,34 @@ const PemilihWilayah = () => {
           {kecamatanList.length === 0 ? (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Belum ada data kecamatan.</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
-              <tbody>
-                {kecamatanList.map((k) => (
-                  <tr key={k.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px 4px' }}>
-                      {editId === k.id ? (
-                        <input style={inputStyle} value={editValue} onChange={(e) => setEditValue(e.target.value)} />
-                      ) : k.nama}
-                    </td>
-                    <td style={{ padding: '10px 4px', textAlign: 'right', width: 100 }}>
-                      {editId === k.id ? (
-                        <>
-                          <button onClick={() => saveEdit('pemilih_kecamatan')} style={{ marginRight: 8, color: '#16a34a' }}><Check size={16} /></button>
-                          <button onClick={() => setEditId(null)} style={{ color: '#64748b' }}><X size={16} /></button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => startEdit(k.id, k.nama)} style={{ marginRight: 8, color: '#2563eb' }}><Pencil size={15} /></button>
-                          <button onClick={() => deleteItem('pemilih_kecamatan', k.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="p-table-wrap">
+              <table className="p-table">
+                <tbody>
+                  {kecamatanList.map((k) => (
+                    <tr key={k.id}>
+                      <td>
+                        {editId === k.id ? (
+                          <input style={inputStyle} value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                        ) : k.nama}
+                      </td>
+                      <td style={{ textAlign: 'right', width: 100, whiteSpace: 'nowrap' }}>
+                        {editId === k.id ? (
+                          <>
+                            <button onClick={() => saveEdit('pemilih_kecamatan')} style={{ marginRight: 8, color: '#16a34a' }}><Check size={16} /></button>
+                            <button onClick={() => setEditId(null)} style={{ color: '#64748b' }}><X size={16} /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => startEdit(k.id, k.nama)} style={{ marginRight: 8, color: '#2563eb' }}><Pencil size={15} /></button>
+                            <button onClick={() => deleteItem('pemilih_kecamatan', k.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -152,40 +154,42 @@ const PemilihWilayah = () => {
           {kelurahanList.length === 0 ? (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Belum ada data kelurahan.</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ textAlign: 'left', padding: '8px 4px', color: '#64748b', fontSize: 12 }}>Kelurahan/Desa</th>
-                  <th style={{ textAlign: 'left', padding: '8px 4px', color: '#64748b', fontSize: 12 }}>Kecamatan</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {kelurahanList.map((k) => (
-                  <tr key={k.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px 4px' }}>
-                      {editId === k.id ? (
-                        <input style={inputStyle} value={editValue} onChange={(e) => setEditValue(e.target.value)} />
-                      ) : k.nama}
-                    </td>
-                    <td style={{ padding: '10px 4px', color: '#64748b' }}>{kecamatanMap[k.kecamatan_id] || '-'}</td>
-                    <td style={{ padding: '10px 4px', textAlign: 'right', width: 100 }}>
-                      {editId === k.id ? (
-                        <>
-                          <button onClick={() => saveEdit('pemilih_kelurahan')} style={{ marginRight: 8, color: '#16a34a' }}><Check size={16} /></button>
-                          <button onClick={() => setEditId(null)} style={{ color: '#64748b' }}><X size={16} /></button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => startEdit(k.id, k.nama)} style={{ marginRight: 8, color: '#2563eb' }}><Pencil size={15} /></button>
-                          <button onClick={() => deleteItem('pemilih_kelurahan', k.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
-                        </>
-                      )}
-                    </td>
+            <div className="p-table-wrap">
+              <table className="p-table">
+                <thead>
+                  <tr>
+                    <th>Kelurahan/Desa</th>
+                    <th>Kecamatan</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {kelurahanList.map((k) => (
+                    <tr key={k.id}>
+                      <td>
+                        {editId === k.id ? (
+                          <input style={inputStyle} value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                        ) : k.nama}
+                      </td>
+                      <td style={{ color: '#64748b' }}>{kecamatanMap[k.kecamatan_id] || '-'}</td>
+                      <td style={{ textAlign: 'right', width: 100, whiteSpace: 'nowrap' }}>
+                        {editId === k.id ? (
+                          <>
+                            <button onClick={() => saveEdit('pemilih_kelurahan')} style={{ marginRight: 8, color: '#16a34a' }}><Check size={16} /></button>
+                            <button onClick={() => setEditId(null)} style={{ color: '#64748b' }}><X size={16} /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => startEdit(k.id, k.nama)} style={{ marginRight: 8, color: '#2563eb' }}><Pencil size={15} /></button>
+                            <button onClick={() => deleteItem('pemilih_kelurahan', k.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

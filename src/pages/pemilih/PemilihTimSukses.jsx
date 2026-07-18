@@ -68,7 +68,7 @@ const PemilihTimSukses = () => {
       </p>
 
       <div className="p-card" style={{ padding: 20, marginBottom: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           <input style={inputStyle} placeholder="Nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
           <input style={inputStyle} placeholder="No. HP" value={form.no_hp} onChange={(e) => setForm({ ...form, no_hp: e.target.value })} />
           <input style={inputStyle} placeholder="Jabatan (mis. Koordinator Kecamatan)" value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} />
@@ -93,35 +93,37 @@ const PemilihTimSukses = () => {
         ) : rows.length === 0 ? (
           <p style={{ padding: 24, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>Belum ada data tim sukses.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                <th style={{ textAlign: 'left', padding: '10px 12px', color: '#64748b', fontSize: 11.5 }}>Nama</th>
-                <th style={{ textAlign: 'left', padding: '10px 12px', color: '#64748b', fontSize: 11.5 }}>Jabatan</th>
-                <th style={{ textAlign: 'left', padding: '10px 12px', color: '#64748b', fontSize: 11.5 }}>Wilayah</th>
-                <th style={{ textAlign: 'left', padding: '10px 12px', color: '#64748b', fontSize: 11.5 }}>Target Suara</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ fontWeight: 600 }}>{r.nama}</div>
-                    <div style={{ color: '#94a3b8', fontSize: 11.5 }}>{r.no_hp || '-'}</div>
-                  </td>
-                  <td style={{ padding: '10px 12px', color: '#475569' }}>{r.jabatan || '-'}</td>
-                  <td style={{ padding: '10px 12px', color: '#475569' }}>
-                    {r.pemilih_kelurahan?.nama ? `${r.pemilih_kelurahan.nama}, ` : ''}{r.pemilih_kecamatan?.nama || '-'}
-                  </td>
-                  <td style={{ padding: '10px 12px', fontWeight: 700 }}>{r.target_suara?.toLocaleString('id-ID') || 0}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <button onClick={() => handleDelete(r.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
-                  </td>
+          <div className="p-table-wrap">
+            <table className="p-table">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Jabatan</th>
+                  <th>Wilayah</th>
+                  <th>Target Suara</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{r.nama}</div>
+                      <div style={{ color: '#94a3b8', fontSize: 11.5 }}>{r.no_hp || '-'}</div>
+                    </td>
+                    <td style={{ color: '#475569' }}>{r.jabatan || '-'}</td>
+                    <td style={{ color: '#475569' }}>
+                      {r.pemilih_kelurahan?.nama ? `${r.pemilih_kelurahan.nama}, ` : ''}{r.pemilih_kecamatan?.nama || '-'}
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{r.target_suara?.toLocaleString('id-ID') || 0}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button onClick={() => handleDelete(r.id)} style={{ color: '#dc2626' }}><Trash2 size={15} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

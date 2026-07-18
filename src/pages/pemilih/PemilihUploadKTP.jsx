@@ -226,7 +226,7 @@ const PemilihUploadKTP = () => {
         <ShieldAlert size={14} /> Hanya menerima KTP wilayah Kecamatan Balikpapan Utara
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 22 }}>
+      <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 22 }}>
         <div className="p-card" style={{ padding: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -281,7 +281,7 @@ const PemilihUploadKTP = () => {
         </div>
 
         <div className="p-card" style={{ padding: 26 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
             <div>
               <label className="p-label">Nama Lengkap</label>
               <input className="p-input" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
