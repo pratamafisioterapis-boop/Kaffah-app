@@ -69,54 +69,33 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// --- Caching logic (dipindah dari public/sw.js supaya cuma 1 service worker aktif di scope '/') ---
-const CACHE_NAME = 'kaffah-care-v104';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/logo192.png',
-  '/logo512.png'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
-  );
+// --- No custom caching on purpose ---
+// This service worker previously cached the app shell (index.html + JS
+// chunks) so it could work offline. In practice, every time new code was
+// deployed, browsers with an already-installed service worker kept serving
+// the OLD cached index.html, which references JS chunk filenames from the
+// previous build that no longer exist on the server — that's what caused
+// the "blank white screen" incidents (the cache version here churned
+// through v100-v104 chasing this same bug). This app is a live,
+// database-backed clinic system; there is no real offline mode to support,
+// so the trade-off isn't worth it.
+//
+// With no `fetch` listener at all, this service worker never intercepts
+// any request — every navigation and asset load goes straight to the
+// network, governed by normal HTTP Cache-Control headers (see
+// vercel.json, which already marks index.html as no-cache). That makes
+// this whole class of bug structurally impossible going forward: there's
+// nothing left here that could ever serve a stale response.
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
+// One-time cleanup: delete any cache storage left over from the old
+// caching logic on devices that installed an earlier version of this file.
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return;
-  }
-
-  // Navigation requests (index.html) must always be revalidated against the
-  // network. A cached/stale index.html references JS chunk filenames from a
-  // previous deploy that no longer exist, which is what causes "Failed to
-  // fetch dynamically imported module" after a new deploy. Only fall back to
-  // the cached copy when truly offline.
-  const isNavigation = event.request.mode === 'navigate' || event.request.destination === 'document';
-
-  event.respondWith(
-    fetch(event.request, isNavigation ? { cache: 'no-store' } : undefined)
-      .then((response) => response)
-      .catch(() => caches.match(event.request))
+    caches.keys()
+      .then((names) => Promise.all(names.map((name) => caches.delete(name))))
+      .then(() => self.clients.claim())
   );
 });
