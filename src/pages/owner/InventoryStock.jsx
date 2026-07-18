@@ -4,9 +4,11 @@ import { getInventoryItems } from '@/lib/api';
 import InventoryItemForm from '@/components/owner/inventory/InventoryItemForm';
 import InventoryItemList from '@/components/owner/inventory/InventoryItemList';
 import InventoryRestockModal from '@/components/owner/inventory/InventoryRestockModal';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Boxes, Wallet } from 'lucide-react';
+import { generateInventoryStockPDF } from '@/lib/exportUtils';
+import { Boxes, Wallet, Download } from 'lucide-react';
 
 const ownerNavItems = [
   { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
@@ -40,6 +42,15 @@ const InventoryStockPage = () => {
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const totalValue = items.reduce((acc, it) => acc + (Number(it.current_stock) * Number(it.price_per_unit)), 0);
+
+  const handleExportPDF = () => {
+    if (items.length === 0) {
+      toast({ variant: 'destructive', title: 'Tidak ada data untuk diekspor' });
+      return;
+    }
+    generateInventoryStockPDF(items, clinicName);
+    toast({ title: 'PDF berhasil dibuat' });
+  };
 
   return (
     <DashboardLayout navItems={ownerNavItems} role="owner" userName="Owner">
@@ -85,7 +96,19 @@ const InventoryStockPage = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-1"><div className="sticky top-4"><InventoryItemForm onSuccess={fetchItems} /></div></div>
-          <div className="xl:col-span-2">
+          <div className="xl:col-span-2 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-700">Daftar Barang</h2>
+              <Button
+                onClick={handleExportPDF}
+                variant="outline"
+                disabled={loading || items.length === 0}
+                className="h-8 px-3 text-xs border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Export PDF
+              </Button>
+            </div>
             {loading ? (
               <div className="text-center py-12 text-slate-400">Memuat data...</div>
             ) : (
