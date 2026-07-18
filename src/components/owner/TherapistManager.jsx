@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, Mail, Phone, Upload, Trash2, Edit2, 
+import {
+  User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus, CalendarClock,
-  Eye, Monitor, Smartphone, Info, Shield
+  Eye, Monitor, Smartphone, Info, Shield, CalendarRange
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import {
   uploadTherapistPhoto, getTherapistTimeOff, addTherapistTimeOff, deleteTherapistTimeOff,
   getCurrentClinic, getBadgesByOwner
 } from '@/lib/api';
-import { cn } from "@/lib/utils";
+import { cn, formatTherapistPeriodLabel } from "@/lib/utils";
 import { supabase } from '@/lib/customSupabaseClient';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
@@ -80,6 +80,8 @@ const TherapistManager = () => {
       salary_scheme: 'full_salary',
       base_salary: 0,
       transport_per_day: 0,
+      period_start_day: 28,
+      period_end_day: 27,
       show_on_landing: false,
       show_on_booking: false,
       badges: [], // Array of badge IDs
@@ -149,6 +151,8 @@ const TherapistManager = () => {
         salary_scheme: therapist.salary_scheme || 'full_salary',
         base_salary: therapist.base_salary || 0,
         transport_per_day: therapist.transport_per_day || 0,
+        period_start_day: therapist.period_start_day || 28,
+        period_end_day: therapist.period_end_day || 27,
         show_on_landing: therapist.show_on_landing || false,
         show_on_booking: therapist.show_on_booking || false,
         badges: Array.isArray(therapist.badges) ? therapist.badges : [],
@@ -221,6 +225,8 @@ const TherapistManager = () => {
       clinic_id: clinicId,
       base_salary: parseFloat(formData.base_salary) || 0,
       transport_per_day: parseFloat(formData.transport_per_day) || 0,
+      period_start_day: Math.min(31, Math.max(1, parseInt(formData.period_start_day) || 28)),
+      period_end_day: Math.min(31, Math.max(1, parseInt(formData.period_end_day) || 27)),
       show_on_landing: Boolean(formData.show_on_landing),
       show_on_booking: Boolean(formData.show_on_booking)
     };
@@ -412,6 +418,12 @@ const headerColorMap = {
                          {therapist.salary_scheme === 'full_salary' ? 'Full Salary' : 'Custom Salary'}
                        </span>
                     </div>
+                    <span
+                      className="mt-1.5 inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded border border-indigo-100 w-fit"
+                      title="Periode dipakai untuk penggajian, hari kerja, target, dan kunci SOAP"
+                    >
+                      <CalendarRange className="w-3 h-3" /> Periode: {formatTherapistPeriodLabel(therapist)}
+                    </span>
                   </div>
                 </div>
 
@@ -604,12 +616,46 @@ const headerColorMap = {
                     </div>
                     <div className="space-y-2">
                        <label className="text-xs font-medium text-slate-600">Transport (Per Hari)</label>
-                       <Input 
-                          type="number" 
-                          value={formData.transport_per_day} 
+                       <Input
+                          type="number"
+                          value={formData.transport_per_day}
                           onChange={(e) => setFormData({...formData, transport_per_day: e.target.value})}
                           className="bg-white"
                           placeholder="0"
+                       />
+                    </div>
+                </div>
+            </div>
+
+            {/* Period Configuration Section — single source of truth for payroll, working days, target, and SOAP lock */}
+            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 space-y-3">
+                <h4 className="font-semibold text-indigo-800 flex items-center gap-2">
+                   <CalendarRange className="w-4 h-4" /> Periode
+                </h4>
+                <p className="text-xs text-indigo-700">
+                  Siklus bulanan yang berulang otomatis (misal tanggal 28 ke 27). Dipakai otomatis untuk perhitungan penggajian, hari kerja, target kunjungan, dan kunci SOAP — tidak perlu diatur ulang manual di tempat lain.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-xs font-medium text-slate-600">Dari Tanggal</label>
+                       <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={formData.period_start_day}
+                          onChange={(e) => setFormData({...formData, period_start_day: e.target.value})}
+                          className="bg-white"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-xs font-medium text-slate-600">Sampai Tanggal</label>
+                       <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={formData.period_end_day}
+                          onChange={(e) => setFormData({...formData, period_end_day: e.target.value})}
+                          className="bg-white"
                        />
                     </div>
                 </div>

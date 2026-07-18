@@ -24,7 +24,7 @@ const TherapistCard = ({
   date,
   leaveStatus = 'aktif',
   leaveReason = '',
-  soapStatus = null // { unfilled_count, threshold_count, period_days, locked }
+  soapStatus = null // { unfilled_count, threshold_count, period_start, period_end, locked }
 }) => {
   
   // Safety check for therapist data
@@ -205,7 +205,10 @@ const TherapistCard = ({
           </TooltipTrigger>
           <TooltipContent>
             <p>
-              {soapStatus.unfilled_count} kunjungan belum diisi SOAP dalam {soapStatus.period_days} hari terakhir
+              {soapStatus.unfilled_count} kunjungan belum diisi SOAP
+              {soapStatus.period_start && soapStatus.period_end
+                ? ` dalam periode ${format(new Date(soapStatus.period_start), 'dd MMM')} - ${format(new Date(soapStatus.period_end), 'dd MMM')}`
+                : ''}
               {soapStatus.unfilled_count >= soapStatus.threshold_count ? ' (mencapai ambang kunci)' : ''}.
             </p>
           </TooltipContent>
