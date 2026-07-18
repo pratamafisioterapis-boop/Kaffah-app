@@ -32,7 +32,6 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   anamnesa: '',
   pemeriksaan_fisik: '',
-  service_id: '',
   diagnosa_id: '',
   diagnosa: '',
   program_terapi: [],
@@ -81,7 +80,6 @@ const ResumeMedisForm = ({ onSaved }) => {
         ...f,
         anamnesa: lastDoc.data.anamnesa || '',
         pemeriksaan_fisik: lastDoc.data.pemeriksaan_fisik || '',
-        service_id: lastDoc.data.service_id || '',
         diagnosa_id: lastDoc.data.diagnosa_id || '',
         diagnosa: lastDoc.data.diagnosa || '',
         program_terapi: lastDoc.data.program_terapi || [],
@@ -116,7 +114,6 @@ const ResumeMedisForm = ({ onSaved }) => {
       document_date: form.document_date,
       anamnesa: form.anamnesa,
       pemeriksaan_fisik: form.pemeriksaan_fisik,
-      service_id: form.service_id,
       diagnosa_id: form.diagnosa_id,
       diagnosa: form.diagnosa,
       program_terapi: form.program_terapi,
@@ -232,9 +229,8 @@ const ResumeMedisForm = ({ onSaved }) => {
           </div>
 
           <DiagnosisServiceField
-            serviceId={form.service_id}
             diagnosaId={form.diagnosa_id}
-            onChange={({ serviceId, diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, service_id: serviceId, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
+            onChange={({ diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
           />
 
           <div className="space-y-2">

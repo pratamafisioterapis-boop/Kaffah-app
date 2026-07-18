@@ -102,12 +102,15 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
             {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
           </p>
           <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
-          <div style={{ height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '10px' }}>
-            {clinic?.stamp_url && (
-              <img src={clinic.stamp_url} style={{ maxHeight: '60px', maxWidth: '60px', objectFit: 'contain' }} />
-            )}
+          <div style={{ position: 'relative', height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
             {data?.therapist_signature_url && (
               <img src={data.therapist_signature_url} style={{ maxHeight: '60px', maxWidth: '130px' }} />
+            )}
+            {clinic?.stamp_url && (
+              <img
+                src={clinic.stamp_url}
+                style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '8px', maxHeight: '60px', maxWidth: '60px', objectFit: 'contain' }}
+              />
             )}
           </div>
           <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />

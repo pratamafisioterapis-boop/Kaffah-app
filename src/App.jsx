@@ -125,6 +125,12 @@ function App() {
     }
   });
 
+  useEffect(() => {
+    // App mounted successfully — clear the stale-chunk reload guard so a
+    // future deploy can trigger one more auto-reload if needed.
+    sessionStorage.removeItem('stale-chunk-reloaded');
+  }, []);
+
   if (!supabase) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
