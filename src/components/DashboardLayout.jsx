@@ -67,7 +67,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchClinicInfo = async () => {
       if (!userDetails?.clinic_id) return;
-      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features').eq('id', userDetails.clinic_id).single();
+      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role').eq('id', userDetails.clinic_id).single();
       if (data) setClinicInfo(data);
     };
     fetchClinicInfo();
@@ -391,9 +391,9 @@ const pwaNavItems = useMemo(() => {
 }, [navItems, role, isPWA]);
   const finalNavItems = useMemo(() => {
     const processed = processNavItems(pwaNavItems);
-    const disabledFeatures = clinicInfo?.disabled_features;
+    const disabledFeatures = clinicInfo?.disabled_features_by_role?.[role];
     if (!disabledFeatures || disabledFeatures.length === 0) return processed;
-    return processed.filter((item) => !isNavItemDisabled(item.label, disabledFeatures));
+    return processed.filter((item) => !isNavItemDisabled(item.label, role, disabledFeatures));
   }, [pwaNavItems, role, clinicInfo]);
 
   
