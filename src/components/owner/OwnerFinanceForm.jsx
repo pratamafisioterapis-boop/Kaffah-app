@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getBankAccounts, getBankAccountFees, getOperationalOptions, createOwnerExpenditure, createOwnerIncome, createOwnerReceivable, getAccountingSubcategories } from '@/lib/api';
@@ -49,8 +48,7 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
     description: '',
     amount: '',
     // Receivables specific
-    custom_name: '',
-    status: 'Unpaid'
+    custom_name: ''
   });
 
   useEffect(() => {
@@ -160,7 +158,6 @@ if (
         result = await createOwnerIncome(payload);
       } else if (type === 'receivable') {
         payload.custom_name = formData.custom_name;
-        payload.status = formData.status;
         result = await createOwnerReceivable(payload);
       }
 
@@ -276,18 +273,7 @@ if (
       )}
 
       {type === 'receivable' && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-600">Status</label>
-          <Select value={formData.status} onValueChange={(val) => handleSelectChange('status', val)}>
-            <SelectTrigger className="h-9 rounded-xl border-slate-200 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Unpaid">Belum Lunas</SelectItem>
-              <SelectItem value="Paid">Lunas</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <p className="text-[11px] text-slate-400 -mt-1">Piutang baru otomatis berstatus "Belum Lunas". Tandai lunas dari daftar piutang setelah dibayar.</p>
       )}
 
       <div className="space-y-1.5">
