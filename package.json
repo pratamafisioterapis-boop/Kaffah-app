@@ -52,6 +52,7 @@
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.292.0",
+    "pdfjs-dist": "^4.10.38",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-day-picker": "^8.10.0",
