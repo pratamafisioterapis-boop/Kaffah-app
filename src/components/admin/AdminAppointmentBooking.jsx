@@ -216,15 +216,31 @@ const handleViewHistory = async (patientId) => {
     return;
   }
 
-  const { data, error } = await supabase
+  // Beberapa appointment awalnya booking guest lalu baru ter-link ke pasien
+  // terdaftar di sisi daily_recaps saja (appointments.patient_id tetap null).
+  // Ambil juga appointment_id dari daily_recaps supaya riwayat tidak bolong.
+  const { data: linkedRecaps } = await supabase
+    .from('daily_recaps')
+    .select('appointment_id')
+    .eq('patient_id', patientId)
+    .not('appointment_id', 'is', null);
+
+  const recapAppointmentIds = [...new Set((linkedRecaps || []).map((r) => r.appointment_id))];
+
+  let query = supabase
     .from('appointments')
     .select(`
       *,
       patient:patients(full_name),
       therapist:physiotherapists(name)
     `)
-    .eq('patient_id', patientId)
     .order('appointment_date', { ascending: false });
+
+  query = recapAppointmentIds.length > 0
+    ? query.or(`patient_id.eq.${patientId},id.in.(${recapAppointmentIds.join(',')})`)
+    : query.eq('patient_id', patientId);
+
+  const { data, error } = await query;
 
   if (error) {
     toast({
