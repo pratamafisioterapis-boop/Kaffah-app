@@ -533,95 +533,92 @@ const handleViewHistory = async (patientId) => {
           )}
 
           {activeModal?.type === 'detail' && (
-  <>
-    <BookedSlotDetailModal
-      appointment={activeModal.data}
-      onClose={closeModal}
-      onSuccess={handleSuccess}
-      onViewHistory={handleViewHistory}
-    />
-
-    <Dialog
-      open={showHistoryModal}
-      onOpenChange={setShowHistoryModal}
-    >
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Riwayat Appointment</DialogTitle>
-          <DialogDescription>
-            History appointment pasien
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3 mt-4">
-          {patientHistory.filter(item => item.status !== 'cancelled').length > 0 ? (
-  patientHistory
-  .filter(item => item.status !== 'cancelled')
-  .sort(
-    (a, b) =>
-      new Date(b.appointment_date) - new Date(a.appointment_date)
-  )
-  .map((item) => {
-
-    const isUpcoming =
-      new Date(item.appointment_date) > new Date();
-
-    return (
-              <div
-                key={item.id}
-                className="border rounded-xl p-4 bg-slate-50"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-800">
-                      {item.patient?.full_name || '-'}
-                    </p>
-
-                    <p className="text-sm text-slate-500">
-                      {item.therapist?.name || '-'}
-                    </p>
-                  </div>
-
-                  <Badge
-  className={
-    isUpcoming
-      ? 'bg-green-100 text-green-700'
-      : 'bg-slate-200 text-slate-700'
-  }
->
-  {isUpcoming ? 'Upcoming' : item.status || '-'}
-</Badge>
-                </div>
-
-                <div className="mt-2 text-sm text-slate-600">
-                  {item.appointment_date
-                    ? format(
-                        new Date(item.appointment_date),
-                        'EEEE, dd MMMM yyyy HH:mm',
-                        { locale: idLocale }
-                      )
-                    : '-'}
-                </div>
-
-                {item.notes && (
-                  <div className="mt-2 text-sm italic text-slate-500">
-                    {item.notes}
-                  </div>
-                )}
-              </div>
-                );
-  })
-          ) : (
-            <div className="text-center text-slate-500 py-10">
-              Tidak ada history appointment
-            </div>
+            <BookedSlotDetailModal
+              appointment={activeModal.data}
+              onClose={closeModal}
+              onSuccess={handleSuccess}
+              onViewHistory={handleViewHistory}
+            />
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  </>
-)}
-                       </DialogContent>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showHistoryModal}
+        onOpenChange={setShowHistoryModal}
+      >
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Riwayat Appointment</DialogTitle>
+            <DialogDescription>
+              History appointment pasien
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-4">
+            {patientHistory.filter(item => item.status !== 'cancelled').length > 0 ? (
+              patientHistory
+                .filter(item => item.status !== 'cancelled')
+                .sort(
+                  (a, b) =>
+                    new Date(b.appointment_date) - new Date(a.appointment_date)
+                )
+                .map((item) => {
+                  const isUpcoming =
+                    new Date(item.appointment_date) > new Date();
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="border rounded-xl p-4 bg-slate-50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {item.patient?.full_name || '-'}
+                          </p>
+
+                          <p className="text-sm text-slate-500">
+                            {item.therapist?.name || '-'}
+                          </p>
+                        </div>
+
+                        <Badge
+                          className={
+                            isUpcoming
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-200 text-slate-700'
+                          }
+                        >
+                          {isUpcoming ? 'Upcoming' : item.status || '-'}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2 text-sm text-slate-600">
+                        {item.appointment_date
+                          ? format(
+                              new Date(item.appointment_date),
+                              'EEEE, dd MMMM yyyy HH:mm',
+                              { locale: idLocale }
+                            )
+                          : '-'}
+                      </div>
+
+                      {item.notes && (
+                        <div className="mt-2 text-sm italic text-slate-500">
+                          {item.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            ) : (
+              <div className="text-center text-slate-500 py-10">
+                Tidak ada history appointment
+              </div>
+            )}
+          </div>
+        </DialogContent>
       </Dialog>
 
       <ScheduleTemplateModal

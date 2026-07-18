@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays } from 'lucide-react';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById } from '@/lib/api';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
@@ -128,6 +128,26 @@ const MedicalRecordForm = ({ therapist }) => {
         if (paramPatientId && paramPatientId !== 'select' && isValidUUID(paramPatientId)) {
            const { data: allPatients } = await getPatients();
            data = allPatients || [];
+
+           // getPatients() hanya mengembalikan 50 pasien aktif teratas (alfabetis),
+           // jadi pasien yang sedang dibuatkan catatan bisa saja tidak ikut ter-load
+           // (muncul sebagai UUID mentah di dropdown). Pastikan dia selalu ada di daftar.
+           if (!data.some(p => p.id === paramPatientId)) {
+             const { data: targetPatient } = await getPatientById(paramPatientId);
+             if (targetPatient) {
+               data = [
+                 {
+                   id: targetPatient.id,
+                   value: targetPatient.id,
+                   label: targetPatient.full_name,
+                   full_name: targetPatient.full_name,
+                   medical_record_number: targetPatient.medical_record_number,
+                   phone: targetPatient.phone || ''
+                 },
+                 ...data
+               ];
+             }
+           }
         } else {
            const { data: assigned } = await getTherapistPatients(therapist.id);
            data = assigned || [];
@@ -242,8 +262,10 @@ if (!recordId) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
-            <h2 className={`font-bold text-slate-900 truncate ${isPWA ? 'text-base' : 'text-xl'}`}>
-              {recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)'}
+            <h2 className={`font-bold text-slate-900 ${isPWA ? 'text-base' : 'text-xl truncate'}`}>
+              {isPWA
+                ? (recordId ? 'Edit Catatan' : 'Buat Catatan SOAP')
+                : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}
             </h2>
             {dateParam && (
               <span className="flex items-center gap-1 text-blue-600 font-medium text-xs mt-0.5">
