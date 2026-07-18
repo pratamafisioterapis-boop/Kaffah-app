@@ -227,15 +227,15 @@ const SuperAdminClinics = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Building2 className="w-6 h-6 text-blue-600" /> Manajemen Klinik
           </h1>
           <p className="text-sm text-slate-500">Kelola seluruh klinik yang terdaftar di sistem.</p>
         </div>
-        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" /> Tambah Klinik
+        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center whitespace-nowrap">
+          <Plus className="w-4 h-4 mr-2 shrink-0" /> Tambah Klinik
         </Button>
       </div>
 

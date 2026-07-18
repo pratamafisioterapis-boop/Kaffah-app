@@ -7,7 +7,7 @@ import {
   Home, Calendar, Users, Settings, LogOut, Activity, Briefcase,
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
-  MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet
+  MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -444,26 +444,43 @@ const pwaNavItems = useMemo(() => {
       </div>
 
       <div className="flex items-center gap-4 px-6 py-8 relative z-10 border-b border-white/10 flex-shrink-0">
-        <div className="relative">
-           <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 overflow-hidden">
-             {clinicInfo ? (
-               <img 
-                 src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
-                 alt={clinicInfo.name || "Clinic Logo"}
-                 className="w-full h-full object-contain p-1"
-               />
-             ) : (
-               <div className="w-full h-full animate-pulse bg-slate-200" />
-             )}
-           </div>
-           <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-tight leading-none">
-            {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-slate-700 align-middle" />}
-          </h2>
-          <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>CLINIC MANAGEMENT</p>
-        </div>
+        {role === 'super_admin' ? (
+          <>
+            <div className="relative">
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
+                <ShieldCheck className="w-7 h-7 text-blue-600" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight leading-none">Super Admin</h2>
+              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>SYSTEM CONTROL</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="relative">
+               <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 overflow-hidden">
+                 {clinicInfo ? (
+                   <img
+                     src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
+                     alt={clinicInfo.name || "Clinic Logo"}
+                     className="w-full h-full object-contain p-1"
+                   />
+                 ) : (
+                   <div className="w-full h-full animate-pulse bg-slate-200" />
+                 )}
+               </div>
+               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight leading-none">
+                {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-slate-700 align-middle" />}
+              </h2>
+              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>CLINIC MANAGEMENT</p>
+            </div>
+          </>
+        )}
       </div>
       
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6 relative z-10 min-h-0">
@@ -636,21 +653,21 @@ const pwaNavItems = useMemo(() => {
 
       <main className={cn(
         "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
-        isPWA && (role === 'therapist' || role === 'admin') ? "pt-0" : "pt-0"
+        isPWA && (role === 'therapist' || role === 'admin' || role === 'super_admin') ? "pt-0" : "pt-0"
       )}>
 
         {/* Header normal dihapus - digantikan hero banner di masing-masing halaman */}
 
         <div className={cn(
           "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
-          isPWA && (role === 'therapist' || role === 'owner' || role === 'admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
+          isPWA && (role === 'therapist' || role === 'owner' || role === 'admin' || role === 'super_admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
            {children}
         </div>
       </main>
 
       {/* Floating Action Button — pill list 1 kolom, semua menu, scrollable — khusus PWA */}
-      {(role === 'therapist' || role === 'owner' || role === 'admin') && (
+      {(role === 'therapist' || role === 'owner' || role === 'admin' || role === 'super_admin') && (
         <>
           <AnimatePresence>
             {isFabOpen && (
