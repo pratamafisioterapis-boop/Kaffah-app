@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { Loader2 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { getServiceOptions, getDiagnosisOptions, createOperationalOption } from '@/lib/api';
 
-// Layanan + Diagnosa picker shared by clinical document forms. Mirrors the
-// service -> diagnosa hierarchy from DiagnosisServiceManager: a new diagnosa
-// can only be created once a Layanan (service) is selected, since every
-// diagnosa row is stored with parent_id pointing at its service.
-const DiagnosisServiceField = ({ serviceId, diagnosaId, onChange }) => {
+// Diagnosa picker backed by the operational_options 'diagnosa' catalog. Every
+// diagnosa row belongs to a Layanan (service) via parent_id (see
+// DiagnosisServiceManager), so creating a brand-new diagnosis prompts for its
+// Layanan in a small dialog instead of exposing a separate always-visible
+// Layanan field on the main form.
+const DiagnosisServiceField = ({ diagnosaId, onChange }) => {
   const { toast } = useToast();
   const [services, setServices] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
+  const [pendingLabel, setPendingLabel] = useState(null);
+  const [pendingServiceId, setPendingServiceId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -21,36 +30,38 @@ const DiagnosisServiceField = ({ serviceId, diagnosaId, onChange }) => {
     })();
   }, []);
 
-  const handleCreateDiagnosis = async (label) => {
-    if (!serviceId) {
-      toast({ variant: 'destructive', title: 'Pilih layanan dulu', description: 'Pilih Layanan terlebih dahulu sebelum menambahkan diagnosa baru.' });
-      return false;
+  const handleRequestCreate = async (label) => {
+    setPendingLabel(label);
+    setPendingServiceId('');
+    return true; // close the select's own dropdown; the dialog takes over
+  };
+
+  const closeDialog = () => {
+    setPendingLabel(null);
+    setPendingServiceId('');
+  };
+
+  const confirmCreate = async () => {
+    if (!pendingServiceId) {
+      toast({ variant: 'destructive', title: 'Pilih layanan', description: 'Pilih Layanan untuk diagnosa ini terlebih dahulu.' });
+      return;
     }
-    const { data, error } = await createOperationalOption('diagnosa', label, { parent_id: serviceId });
+    setIsCreating(true);
+    const { data, error } = await createOperationalOption('diagnosa', pendingLabel, { parent_id: pendingServiceId });
+    setIsCreating(false);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menambah diagnosa', description: error.message });
-      return false;
+      return;
     }
     const newOption = { id: data.id, value: data.id, label: data.label, parent_id: data.parent_id };
     setDiagnoses((prev) => [...prev, newOption]);
-    onChange({ serviceId, diagnosaId: newOption.value, diagnosaLabel: newOption.label });
+    onChange({ diagnosaId: newOption.value, diagnosaLabel: newOption.label });
     toast({ title: 'Diagnosa ditambahkan', description: `"${newOption.label}" berhasil ditambahkan.` });
-    return true;
+    closeDialog();
   };
 
-  const selectedDiagnosaLabel = diagnoses.find((d) => d.value === diagnosaId)?.label || '';
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Layanan</Label>
-        <SearchableSelect
-          options={services}
-          value={serviceId}
-          onChange={(val) => onChange({ serviceId: val, diagnosaId, diagnosaLabel: selectedDiagnosaLabel })}
-          placeholder="Pilih layanan..."
-        />
-      </div>
+    <>
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diagnosa</Label>
         <SearchableSelect
@@ -58,14 +69,41 @@ const DiagnosisServiceField = ({ serviceId, diagnosaId, onChange }) => {
           value={diagnosaId}
           onChange={(val) => {
             const opt = diagnoses.find((d) => d.value === val);
-            onChange({ serviceId, diagnosaId: val, diagnosaLabel: opt?.label || '' });
+            onChange({ diagnosaId: val, diagnosaLabel: opt?.label || '' });
           }}
           allowCreate
-          onCreateOption={handleCreateDiagnosis}
+          onCreateOption={handleRequestCreate}
           placeholder="Cari atau tambah diagnosa..."
         />
       </div>
-    </div>
+
+      <Dialog open={!!pendingLabel} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Diagnosa Baru</DialogTitle>
+            <DialogDescription>
+              Pilih layanan untuk diagnosa "{pendingLabel}" agar tersimpan di kategori yang tepat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-1.5">
+            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Layanan</Label>
+            <SearchableSelect
+              options={services}
+              value={pendingServiceId}
+              onChange={setPendingServiceId}
+              placeholder="Pilih layanan..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>Batal</Button>
+            <Button onClick={confirmCreate} disabled={isCreating || !pendingServiceId} className="bg-indigo-600 hover:bg-indigo-700">
+              {isCreating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

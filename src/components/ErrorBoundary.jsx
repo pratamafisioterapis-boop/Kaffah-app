@@ -16,6 +16,16 @@ class ErrorBoundary extends React.Component {
     // You can also log the error to an error reporting service
     console.error("CRITICAL APP ERROR:", error, errorInfo);
     this.setState({ errorInfo });
+
+    // Stale JS chunk after a new deploy: the currently open tab still
+    // references old hashed filenames that no longer exist on the server.
+    // Reload once (sessionStorage guard prevents a reload loop) instead of
+    // showing the error screen.
+    const isStaleChunkError = /dynamically imported module|loading chunk .* failed|failed to fetch dynamically/i.test(error?.message || '');
+    if (isStaleChunkError && !sessionStorage.getItem('stale-chunk-reloaded')) {
+      sessionStorage.setItem('stale-chunk-reloaded', '1');
+      window.location.reload();
+    }
   }
 
   render() {

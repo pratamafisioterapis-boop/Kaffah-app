@@ -23,7 +23,6 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   address: '',
   phone: '',
-  service_id: '',
   diagnosa_id: '',
   diagnosa: '',
   keterangan_tambahan: '',
@@ -85,7 +84,6 @@ const SuratKeteranganForm = ({ onSaved }) => {
       gender: normalizeGender(selectedPatient?.gender),
       address: form.address,
       phone: form.phone,
-      service_id: form.service_id,
       diagnosa_id: form.diagnosa_id,
       diagnosa: form.diagnosa,
       keterangan_tambahan: form.keterangan_tambahan,
@@ -205,9 +203,8 @@ const SuratKeteranganForm = ({ onSaved }) => {
           </div>
 
           <DiagnosisServiceField
-            serviceId={form.service_id}
             diagnosaId={form.diagnosa_id}
-            onChange={({ serviceId, diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, service_id: serviceId, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
+            onChange={({ diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
           />
 
           <div className="space-y-1.5">
