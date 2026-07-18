@@ -4561,3 +4561,80 @@ export const getAdminChecklistHistory = async (startDate, endDate) => {
     return { data: result, error: null };
   }, 'getAdminChecklistHistory', { retry: true });
 };
+
+// ── Clinical Documents (Resume Medis / Surat Keterangan Fisioterapi) ────────
+
+export const getClinicDetails = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    if (!userRow?.clinic_id) return { data: null, error: null };
+
+    const { data, error } = await supabase
+      .from('clinics')
+      .select('id, name, address, phone, email, logo_url, stamp_url')
+      .eq('id', userRow.clinic_id)
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getClinicDetails', { retry: true });
+};
+
+export const createClinicalDocument = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase
+      .from('clinical_documents')
+      .insert([{ ...payload, clinic_id: userRow?.clinic_id, created_by: userId }])
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'createClinicalDocument');
+};
+
+export const getClinicalDocuments = async (documentType) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('clinical_documents')
+      .select(`
+        *,
+        patients:patient_id ( full_name, medical_record_number ),
+        physiotherapists:therapist_id ( name )
+      `)
+      .eq('document_type', documentType)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getClinicalDocuments', { retry: true });
+};
+
+export const deleteClinicalDocument = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('clinical_documents').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteClinicalDocument');
+};
+
+export const getNextClinicalDocumentNumber = async (documentType, prefix) => {
+  return safeQuery(async () => {
+    const year = new Date().getFullYear();
+    const { count, error } = await supabase
+      .from('clinical_documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('document_type', documentType)
+      .gte('document_date', `${year}-01-01`)
+      .lte('document_date', `${year}-12-31`);
+    if (error) return { error };
+
+    const seq = String((count || 0) + 1).padStart(4, '0');
+    const month = String(new Date().getMonth() + 1).padStart(2, '0');
+    return { data: `${seq}/${prefix}/${month}/${year}`, error: null };
+  }, 'getNextClinicalDocumentNumber', { retry: true });
+};
