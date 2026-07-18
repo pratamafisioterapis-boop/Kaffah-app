@@ -7,9 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { getBankAccounts, createOwnerExpenditure, createOwnerIncome, createOwnerReceivable, getAccountingSubcategories } from '@/lib/api';
+import { getBankAccounts, getBankAccountFees, getOperationalOptions, createOwnerExpenditure, createOwnerIncome, createOwnerReceivable, getAccountingSubcategories } from '@/lib/api';
 import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
+
+const computeFeePreview = (fees, bankAccountId, paymentMethod, amount) => {
+  if (!bankAccountId || !paymentMethod || !amount) return null;
+  const rule = (fees || []).find(f =>
+    f.bank_account_id === bankAccountId &&
+    f.is_active &&
+    (f.payment_method || '').toLowerCase() === paymentMethod.toLowerCase()
+  );
+  if (!rule) return null;
+  const fee = rule.fee_type === 'percentage'
+    ? Math.round((Number(amount) || 0) * rule.fee_value / 100)
+    : Math.min(rule.fee_value, Number(amount) || 0);
+  return { fee, net: (Number(amount) || 0) - fee, rule };
+};
 
 const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
   const isPWA =
@@ -20,29 +34,34 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
   const [loading, setLoading] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
-  
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [bankFees, setBankFees] = useState([]);
+
   // Default date to today, or startDate if today is out of range (optional UX, usually just today)
   const defaultDate = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
     date: defaultDate,
     category: '',
-    sub_category: '', 
+    sub_category: '',
     bank_account_id: '',
+    payment_method: '',
     description: '',
     amount: '',
     // Receivables specific
     custom_name: '',
-    status: 'Unpaid' 
+    status: 'Unpaid'
   });
 
   useEffect(() => {
     const fetchData = async () => {
-        const [banksRes, subsRes] = await Promise.all([
+        const [banksRes, subsRes, paymentRes, feesRes] = await Promise.all([
             getBankAccounts(),
-            getAccountingSubcategories()
+            getAccountingSubcategories(),
+            getOperationalOptions('payment_method'),
+            getBankAccountFees()
         ]);
-        
+
         if (banksRes.data) {
           setBankAccounts(banksRes.data.map(acc => ({
             label: `${acc.bank_name} - ${acc.account_number}`,
@@ -60,9 +79,21 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
   categoryName: sub.parent_category?.category_name
 })));
         }
+
+        if (paymentRes.data) {
+          setPaymentMethods(paymentRes.data.map(opt => ({ label: opt.label, value: opt.label })));
+        }
+
+        if (feesRes.data) {
+          setBankFees(feesRes.data);
+        }
     };
     fetchData();
   }, []);
+
+  const feePreview = type === 'income'
+    ? computeFeePreview(bankFees, formData.bank_account_id, formData.payment_method, formData.amount)
+    : null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,6 +154,9 @@ if (
         result = await createOwnerExpenditure(payload);
       } else if (type === 'income') {
         payload.category = formData.category;
+        if (formData.payment_method) {
+          payload.payment_method = formData.payment_method;
+        }
         result = await createOwnerIncome(payload);
       } else if (type === 'receivable') {
         payload.custom_name = formData.custom_name;
@@ -215,6 +249,29 @@ if (
             placeholder="Pilih akun bank..."
             allowCreate={false}
           />
+        </div>
+      )}
+
+      {type === 'income' && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600">
+            Metode Pembayaran <span className="text-slate-400 font-normal">(opsional)</span>
+          </label>
+          <SearchableSelect
+            options={paymentMethods}
+            value={formData.payment_method}
+            onChange={(val) => {
+              const opt = paymentMethods.find(o => o.value === val);
+              handleSelectChange('payment_method', opt?.label || val);
+            }}
+            placeholder="Pilih metode pembayaran..."
+            allowCreate={true}
+          />
+          {feePreview && (
+            <p className="text-[11px] text-amber-600">
+              Potongan bank ({feePreview.rule.fee_type === 'percentage' ? `${feePreview.rule.fee_value}%` : `Rp${feePreview.rule.fee_value}`}): {new Intl.NumberFormat('id-ID').format(feePreview.fee)} &bull; Bersih: Rp{new Intl.NumberFormat('id-ID').format(feePreview.net)}
+            </p>
+          )}
         </div>
       )}
 

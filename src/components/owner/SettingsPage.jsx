@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import AdminChecklistManager from '@/components/owner/AdminChecklistManager';
 import AdminChecklistHistory from '@/components/owner/AdminChecklistHistory';
 import { motion } from 'framer-motion';
-import { 
-  Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle, 
+import {
+  Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, ListChecks, History
+  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -45,6 +45,7 @@ import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
 import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
+import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // --- Dedicated Discount Type Manager ---
@@ -948,6 +949,9 @@ const SettingsPage = () => {
           <TabsTrigger value="admin" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Users className="w-3.5 h-3.5" /> Admin & Staff
           </TabsTrigger>
+          <TabsTrigger value="bank_accounts" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <Building className="w-3.5 h-3.5" /> Akun Bank
+          </TabsTrigger>
           <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
@@ -995,6 +999,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="admin">
             <AdminManager />
+          </TabsContent>
+          <TabsContent value="bank_accounts">
+            <OwnerBankAccountManager />
           </TabsContent>
           <TabsContent value="whatsapp_settings">
             <WhatsAppSettings />

@@ -42,11 +42,12 @@ const cleanDailyRecapPayload = (data) => {
   });
 
   const uuidFields = [
-    'patient_id', 
-    'actual_patient_id', 
-    'therapist_id', 
-    'appointment_id', 
-    'package_tracking_id'
+    'patient_id',
+    'actual_patient_id',
+    'therapist_id',
+    'appointment_id',
+    'package_tracking_id',
+    'bank_account_id'
   ];
 
   uuidFields.forEach(field => {
@@ -1204,28 +1205,148 @@ export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '
 
 export const getBankAccounts = async () => {
   return safeQuery(async () => {
-    return await supabase.from('bank_accounts').select('*').order('created_at', { ascending: false });
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_accounts')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('created_at', { ascending: false });
   }, 'getBankAccounts', { retry: true });
+};
+
+// Same as getBankAccounts but joins in the real, computed balance
+// (opening balance + linked income - linked expenses across every
+// income/expense source, so the card actually "has a value").
+export const getBankAccountsWithBalance = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_account_balances')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('bank_name', { ascending: true });
+  }, 'getBankAccountsWithBalance', { retry: true });
 };
 
 export const createBankAccount = async (payload) => {
   return safeQuery(async () => {
-    return await supabase.from('bank_accounts').insert([payload]).select().single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_accounts')
+      .insert([{ ...payload, clinic_id: userRow?.clinic_id }])
+      .select()
+      .single();
   }, 'createBankAccount');
 };
 
 export const updateBankAccount = async (id, payload) => {
   return safeQuery(async () => {
-    return await supabase.from('bank_accounts').update(payload).eq('id', id).select().single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_accounts')
+      .update(payload)
+      .eq('id', id)
+      .eq('clinic_id', userRow?.clinic_id)
+      .select()
+      .single();
   }, 'updateBankAccount');
 };
 
 export const deleteBankAccount = async (id) => {
   return safeQuery(async () => {
-    const { error } = await supabase.from('bank_accounts').delete().eq('id', id);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { error } = await supabase
+      .from('bank_accounts')
+      .delete()
+      .eq('id', id)
+      .eq('clinic_id', userRow?.clinic_id);
     if (error) return { error };
     return { data: true, error: null };
   }, 'deleteBankAccount');
+};
+
+// ============================================
+// BANK ACCOUNT PAYMENT-METHOD FEES
+// (e.g. patient pays via QRIS -> bank takes a % or flat Rp cut)
+// ============================================
+
+export const getBankAccountFees = async (bankAccountId = null) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    let query = supabase
+      .from('bank_account_fees')
+      .select('*')
+      .eq('clinic_id', userRow?.clinic_id)
+      .order('created_at', { ascending: true });
+
+    if (bankAccountId) query = query.eq('bank_account_id', bankAccountId);
+
+    return await query;
+  }, 'getBankAccountFees', { retry: true });
+};
+
+export const createBankAccountFee = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    return await supabase
+      .from('bank_account_fees')
+      .insert({
+        clinic_id: userRow?.clinic_id,
+        bank_account_id: payload.bank_account_id,
+        payment_method: payload.payment_method,
+        fee_type: payload.fee_type,
+        fee_value: payload.fee_value,
+        is_active: payload.is_active ?? true,
+        created_by: userId || null
+      })
+      .select()
+      .single();
+  }, 'createBankAccountFee');
+};
+
+export const updateBankAccountFee = async (id, payload) => {
+  return safeQuery(async () => {
+    return await supabase
+      .from('bank_account_fees')
+      .update({
+        payment_method: payload.payment_method,
+        fee_type: payload.fee_type,
+        fee_value: payload.fee_value,
+        is_active: payload.is_active ?? true
+      })
+      .eq('id', id)
+      .select()
+      .single();
+  }, 'updateBankAccountFee');
+};
+
+export const deleteBankAccountFee = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('bank_account_fees').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, error: null };
+  }, 'deleteBankAccountFee');
 };
 
 // ============================================
@@ -1676,8 +1797,9 @@ export const createOwnerExpenditure = async (payload) => {
         date: payload.date,
         amount: payload.amount,
         category: payload.category,
-        sub_category: payload.sub_category || null,   
+        sub_category: payload.sub_category || null,
         description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
         created_by: payload.created_by || null,
         created_at: new Date().toISOString()
       })
@@ -1702,8 +1824,10 @@ export const createOwnerIncome = async (payload) => {
         date: payload.date,
         amount: payload.amount,
         category: payload.category,
-        sub_category: payload.sub_category || null, 
+        sub_category: payload.sub_category || null,
         description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        payment_method: payload.payment_method || null,
         created_by: payload.created_by || null,
         created_at: new Date().toISOString()
       })
@@ -2229,6 +2353,8 @@ export const updateAdminIncome = async (id, payload) => {
   category: payload.category,
   sub_category: payload.sub_category || null,
   description: payload.description || null,
+  bank_account_id: payload.bank_account_id || null,
+  payment_method: payload.payment_method || null,
   updated_at: new Date().toISOString()
 })
       .eq('id', id)
@@ -2254,6 +2380,7 @@ export const createAdminIncome = async (payload) => {
         sub_category: payload.sub_category || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        payment_method: payload.payment_method || null,
         created_by: payload.created_by || null,
         created_at: new Date().toISOString()
       })

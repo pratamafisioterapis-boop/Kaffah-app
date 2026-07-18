@@ -4,30 +4,49 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
-import { createAdminIncome, updateAdminIncome, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
+import { createAdminIncome, updateAdminIncome, getAccountingSubcategories, getBankAccounts, getBankAccountFees, getOperationalOptions } from '@/lib/api';
 import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
+
+const computeFeePreview = (fees, bankAccountId, paymentMethod, amount) => {
+  if (!bankAccountId || !paymentMethod || !amount) return null;
+  const rule = (fees || []).find(f =>
+    f.bank_account_id === bankAccountId &&
+    f.is_active &&
+    (f.payment_method || '').toLowerCase() === paymentMethod.toLowerCase()
+  );
+  if (!rule) return null;
+  const fee = rule.fee_type === 'percentage'
+    ? Math.round((Number(amount) || 0) * rule.fee_value / 100)
+    : Math.min(rule.fee_value, Number(amount) || 0);
+  return { fee, net: (Number(amount) || 0) - fee, rule };
+};
 
 const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
-  
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [bankFees, setBankFees] = useState([]);
+
   const isEditMode = !!initialData;
 
   const [form, setForm] = useState({
     amount: '',
-    category: '', 
+    category: '',
     sub_category: '',
     description: '',
     transaction_date: format(new Date(), 'yyyy-MM-dd'),
-    bank_account_id: ''
+    bank_account_id: '',
+    payment_method: ''
   });
 
   useEffect(() => {
     fetchSubcategories();
     fetchBankAccounts();
+    fetchPaymentMethods();
+    fetchBankFees();
   }, []);
 
   // Populate form immediately when initialData changes
@@ -39,7 +58,8 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
         sub_category: initialData.sub_category || '',
         description: initialData.description || '',
         transaction_date: initialData.transaction_date || format(new Date(), 'yyyy-MM-dd'),
-        bank_account_id: initialData.bank_account_id || ''
+        bank_account_id: initialData.bank_account_id || '',
+        payment_method: initialData.payment_method || ''
       });
     }
   }, [initialData]);
@@ -81,6 +101,18 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
       toast({ variant: "destructive", title: "Error", description: "Failed to load bank accounts." });
     }
   };
+
+  const fetchPaymentMethods = async () => {
+    const { data } = await getOperationalOptions('payment_method');
+    setPaymentMethods((data || []).map(opt => ({ label: opt.label, value: opt.label })));
+  };
+
+  const fetchBankFees = async () => {
+    const { data } = await getBankAccountFees();
+    setBankFees(data || []);
+  };
+
+  const feePreview = computeFeePreview(bankFees, form.bank_account_id, form.payment_method, form.amount);
 
   const handleSubCategoryChange = (val) => {
     const selected = subcategories.find(opt => opt.value === val);
@@ -195,9 +227,28 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
           value={form.bank_account_id}
           onChange={(val) => setForm({...form, bank_account_id: val})}
           placeholder="Select bank account..."
-          allowCreate={false} 
+          allowCreate={false}
           notFoundText="No bank account found."
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="payment_method">Metode Pembayaran <span className="text-slate-400 font-normal">(opsional)</span></Label>
+        <SearchableSelect
+          options={paymentMethods}
+          value={form.payment_method}
+          onChange={(val) => {
+            const opt = paymentMethods.find(o => o.value === val);
+            setForm({...form, payment_method: opt?.label || val});
+          }}
+          placeholder="Pilih metode pembayaran..."
+          allowCreate={true}
+        />
+        {feePreview && (
+          <p className="text-xs text-amber-600">
+            Potongan bank ({feePreview.rule.fee_type === 'percentage' ? `${feePreview.rule.fee_value}%` : `Rp${feePreview.rule.fee_value}`}): {new Intl.NumberFormat('id-ID').format(feePreview.fee)} &bull; Bersih diterima: Rp{new Intl.NumberFormat('id-ID').format(feePreview.net)}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
