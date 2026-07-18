@@ -62,8 +62,6 @@ const TherapistManager = () => {
   const [newTimeOff, setNewTimeOff] = useState({ start_date: '', end_date: '', reason: '' });
   const [loadingTimeOff, setLoadingTimeOff] = useState(false);
 
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
   useEffect(() => {
     fetchTherapists();
     fetchClinicId();
@@ -379,11 +377,6 @@ const headerColorMap = {
       ) : (
         <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
           {therapists.map((therapist) => {
-            const activeDayFlags = days.map((d, i) => {
-              const hours = therapist.working_hours?.[i];
-              const legacyActive = !hours && therapist.working_days?.includes(i);
-              return hours ? hours.enabled : legacyActive;
-            });
             const visibleBadges = Array.isArray(therapist.badges) ? therapist.badges : [];
 
             return (
@@ -501,23 +494,7 @@ const headerColorMap = {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex items-center gap-1" title="Jadwal aktif mingguan">
-                    {days.map((d, i) => (
-                      <span
-                        key={i}
-                        className={cn(
-                          "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
-                          activeDayFlags[i]
-                            ? (therapist.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500")
-                            : "bg-slate-50 text-slate-300"
-                        )}
-                        title={d}
-                      >
-                        {d.charAt(0)}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex items-center justify-end mt-4 pt-3 border-t border-slate-100">
                   <Button
                      variant="ghost"
                      size="sm"
