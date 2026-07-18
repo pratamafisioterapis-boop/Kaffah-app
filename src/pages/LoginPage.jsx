@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
+import kaffahTechLogo from '@/assets/kaffah-tech-icon.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -248,8 +249,8 @@ case 'clinic_admin':
   return (
     <>
       <Helmet>
-        <title>Login - Kaffah Support System</title>
-        <meta name="description" content="Secure Login to Kaffah Physiotherapy System" />
+        <title>Login - Kaffah Tech</title>
+        <meta name="description" content="Secure Login to Kaffah Tech Digital System" />
       </Helmet>
 
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
@@ -283,23 +284,23 @@ case 'clinic_admin':
                   className="w-24 h-24 mb-6 relative"
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-slate-950 rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
+                  <div className="relative w-full h-full bg-white rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden p-2">
                      <img
-  src="https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"
-  alt="Kaffah Logo"
-  className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+  src={kaffahTechLogo}
+  alt="Kaffah Tech Logo"
+  className="w-full h-full object-contain"
 />
                   </div>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                   className="text-center"
                 >
-                  <h1 className="text-2xl font-bold text-white tracking-tight">Kaffah Physiotherapy</h1>
-                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Recovery Starts Here</p>
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Kaffah Tech</h1>
+                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Digital Solutions, Real Impact</p>
                 </motion.div>
               </div>
 
@@ -380,7 +381,7 @@ case 'clinic_admin':
           </div>
           
           <p className="text-center text-slate-600 text-xs mt-6">
-            &copy; {new Date().getFullYear()} Kaffah Physiotherapy. All rights reserved.
+            &copy; {new Date().getFullYear()} Kaffah Tech. All rights reserved.
           </p>
         </motion.div>
       </div>
