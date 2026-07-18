@@ -70,7 +70,7 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 // --- Caching logic (dipindah dari public/sw.js supaya cuma 1 service worker aktif di scope '/') ---
-const CACHE_NAME = 'kaffah-care-v102';
+const CACHE_NAME = 'kaffah-care-v103';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -107,8 +107,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Navigation requests (index.html) must always be revalidated against the
+  // network. A cached/stale index.html references JS chunk filenames from a
+  // previous deploy that no longer exist, which is what causes "Failed to
+  // fetch dynamically imported module" after a new deploy. Only fall back to
+  // the cached copy when truly offline.
+  const isNavigation = event.request.mode === 'navigate' || event.request.destination === 'document';
+
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, isNavigation ? { cache: 'no-store' } : undefined)
       .then((response) => response)
       .catch(() => caches.match(event.request))
   );
