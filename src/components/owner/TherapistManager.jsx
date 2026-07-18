@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus, CalendarClock,
-  Eye, Monitor, Smartphone, Info, Shield, CalendarRange
+  Monitor, Smartphone, Shield, CalendarRange,
+  Wallet, Check, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   getAllPhysiotherapists, savePhysiotherapist, createTherapistAccount, deletePhysiotherapist, 
@@ -24,6 +24,19 @@ import {
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+
+const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
+  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+    <div className="flex items-center gap-2">
+      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", iconClass)}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+      <h4 className="font-semibold text-sm text-slate-800">{title}</h4>
+    </div>
+    {description && <p className="text-xs text-slate-500 -mt-1.5">{description}</p>}
+    {children}
+  </div>
+);
 
 const TherapistManager = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -365,143 +378,160 @@ const headerColorMap = {
         <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
       ) : (
         <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
-          {therapists.map((therapist) => (
-            <motion.div 
+          {therapists.map((therapist) => {
+            const activeDayFlags = days.map((d, i) => {
+              const hours = therapist.working_hours?.[i];
+              const legacyActive = !hours && therapist.working_days?.includes(i);
+              return hours ? hours.enabled : legacyActive;
+            });
+            const visibleBadges = Array.isArray(therapist.badges) ? therapist.badges : [];
+
+            return (
+            <motion.div
               key={therapist.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={`bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col transition-all ${!therapist.is_active ? 'opacity-75 border-slate-300 bg-slate-50' : 'border-slate-200'}`}
+              initial={{ opacity: 0, scale: 0.97, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className={cn(
+                "group bg-white rounded-2xl border overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-lg",
+                !therapist.is_active ? "opacity-70 border-slate-200 bg-slate-50" : "border-slate-200/80"
+              )}
             >
               <div className={cn(
-  "h-24 relative bg-gradient-to-r",
-  therapist.is_active
-    ? headerColorMap[therapist.theme_color] || "from-blue-500 to-cyan-500"
-    : "from-slate-400 to-slate-500"
-)}>
-                <div className="absolute -bottom-10 left-6">
-                  <div className="w-20 h-20 rounded-full border-4 border-white bg-slate-100 overflow-hidden">
+                "h-16 relative bg-gradient-to-r",
+                therapist.is_active
+                  ? headerColorMap[therapist.theme_color] || "from-blue-500 to-cyan-500"
+                  : "from-slate-400 to-slate-500"
+              )}>
+                <div className={cn("absolute top-3 right-3 flex", isPWA ? "gap-1" : "gap-1.5")}>
+                   <div className="bg-white/90 backdrop-blur rounded-full p-0.5 flex items-center shadow-sm">
+                      <Switch
+                         checked={therapist.is_active}
+                         onCheckedChange={() => toggleTherapistStatus(therapist)}
+                         className="data-[state=checked]:bg-green-500 scale-90"
+                      />
+                   </div>
+                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
+                     <Edit2 className="w-3.5 h-3.5" />
+                   </Button>
+                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-red-500/80 text-white border-0" onClick={() => handleDelete(therapist.id)}>
+                     <Trash2 className="w-3.5 h-3.5" />
+                   </Button>
+                </div>
+              </div>
+
+              <div className="px-5 pb-5 flex-1 flex flex-col">
+                <div className="flex items-end gap-3 -mt-8">
+                  <div className="w-16 h-16 rounded-full ring-4 ring-white bg-slate-100 overflow-hidden shrink-0 shadow-md">
                     {therapist.avatar_url ? (
                       <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-full h-full p-4 text-slate-400" />
+                      <User className="w-full h-full p-3.5 text-slate-400" />
                     )}
                   </div>
-                </div>
-                
-                <div className={cn("absolute top-4 right-4 flex", isPWA ? "gap-1.5" : "gap-2")}>
-                   <div className="bg-white/90 backdrop-blur rounded-full p-1 flex items-center shadow-sm">
-                      <Switch 
-                         checked={therapist.is_active} 
-                         onCheckedChange={() => toggleTherapistStatus(therapist)}
-                         className="data-[state=checked]:bg-green-500"
-                      />
-                   </div>
-                   <Button size="icon" variant="secondary" className="h-8 w-8 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
-                     <Edit2 className="w-4 h-4" />
-                   </Button>
-                   <Button size="icon" variant="secondary" className="h-8 w-8 bg-white/20 hover:bg-red-500/80 text-white border-0" onClick={() => handleDelete(therapist.id)}>
-                     <Trash2 className="w-4 h-4" />
-                   </Button>
-                </div>
-              </div>
-              
-              <div className="pt-12 px-6 pb-6 flex-1 flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg text-slate-900">{therapist.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${therapist.is_active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>
-                          {therapist.is_active ? 'Active' : 'Inactive'}
-                       </span>
-                       {therapist.user_id && <Lock className="w-3 h-3 text-green-500" title="Akun Login Terhubung" />}
-                       <span className="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded border border-yellow-200">
-                         {therapist.salary_scheme === 'full_salary' ? 'Full Salary' : 'Custom Salary'}
-                       </span>
+                  <div className="min-w-0 pb-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-base text-slate-900 truncate">{therapist.name}</h3>
+                      {therapist.user_id && <Lock className="w-3 h-3 text-green-500 shrink-0" title="Akun Login Terhubung" />}
                     </div>
-                    <span
-                      className="mt-1.5 inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded border border-indigo-100 w-fit"
-                      title="Periode dipakai untuk penggajian, hari kerja, target, dan kunci SOAP"
-                    >
-                      <CalendarRange className="w-3 h-3" /> Periode: {formatTherapistPeriodLabel(therapist)}
-                    </span>
+                    <p className="text-slate-500 text-xs font-medium truncate">{therapist.specialization}</p>
                   </div>
                 </div>
 
-                <p className="text-blue-600 text-sm font-medium mt-1">{therapist.specialization}</p>
-
-                <div className="space-y-2 text-sm text-slate-600 mt-2">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-slate-400" />
-                    <span className="truncate">{therapist.email || '-'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-slate-400" />
-                    <span>{therapist.phone || '-'}</span>
-                  </div>
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                    therapist.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600"
+                  )}>
+                    <span className={cn("w-1.5 h-1.5 rounded-full", therapist.is_active ? "bg-emerald-500" : "bg-slate-400")} />
+                    {therapist.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+                    {therapist.salary_scheme === 'full_salary' ? 'Full Salary' : 'Custom Salary'}
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                    title="Periode dipakai untuk penggajian, hari kerja, target, dan kunci SOAP"
+                  >
+                    <CalendarRange className="w-2.5 h-2.5" /> {formatTherapistPeriodLabel(therapist)}
+                  </span>
                 </div>
 
-                {/* Display Badges */}
-                {Array.isArray(therapist.badges) && therapist.badges.length > 0 && (
-                   <div className="mt-2 flex flex-wrap gap-1">
-                      {therapist.badges.map(badgeId => {
-                         const badge = availableBadges.find(b => b.id === badgeId);
-                         if (!badge) return null;
-                         return (
-                            <span 
-                                key={badge.id} 
-                                className="text-[10px] px-2 py-0.5 rounded-full font-semibold border border-black/5"
-                                style={{ backgroundColor: badge.color }}
-                            >
-                                {badge.label}
-                            </span>
-                         );
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-3 min-w-0">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{therapist.email || '-'}</span>
+                  <span className="text-slate-300 shrink-0">•</span>
+                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="shrink-0">{therapist.phone || '-'}</span>
+                </div>
+
+                {(visibleBadges.length > 0 || therapist.show_on_landing || therapist.show_on_booking) && (
+                  <div className="flex items-center justify-between gap-2 mt-3">
+                    <div className="flex flex-wrap gap-1 min-w-0">
+                      {visibleBadges.slice(0, 2).map(badgeId => {
+                        const badge = availableBadges.find(b => b.id === badgeId);
+                        if (!badge) return null;
+                        return (
+                          <span
+                            key={badge.id}
+                            className="text-[10px] px-2 py-0.5 rounded-full font-semibold border border-black/5 truncate max-w-[110px]"
+                            style={{ backgroundColor: badge.color }}
+                          >
+                            {badge.label}
+                          </span>
+                        );
                       })}
-                   </div>
+                      {visibleBadges.length > 2 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                          +{visibleBadges.length - 2}
+                        </span>
+                      )}
+                    </div>
+                    {(therapist.show_on_landing || therapist.show_on_booking) && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {therapist.show_on_landing && (
+                          <span title="Tampil di Landing Page" className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-50 text-sky-600 border border-sky-100">
+                            <Monitor className="w-3 h-3" />
+                          </span>
+                        )}
+                        {therapist.show_on_booking && (
+                          <span title="Tampil di Booking Online" className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-50 text-violet-600 border border-violet-100">
+                            <Smartphone className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {/* Visibility Badges */}
-                <div className="mt-2 flex gap-2">
-                    {therapist.show_on_landing && (
-                        <span className="flex items-center gap-1 text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-100">
-                            <Monitor className="w-3 h-3" /> Landing Page
-                        </span>
-                    )}
-                    {therapist.show_on_booking && (
-                        <span className="flex items-center gap-1 text-[10px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded border border-violet-100">
-                            <Smartphone className="w-3 h-3" /> Booking
-                        </span>
-                    )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Jadwal Aktif</h4>
-                  <div className="flex flex-wrap gap-1 text-xs">
-                    {days.map((d, i) => {
-                       const hours = therapist.working_hours?.[i];
-                       const legacyActive = !hours && therapist.working_days?.includes(i);
-                       const isActive = hours ? hours.enabled : legacyActive;
-                       
-                       if (!isActive) return null;
-                       return (
-                        <span key={i} className={`px-2 py-0.5 rounded-md border ${therapist.is_active ? 'bg-green-50 text-green-700 border-green-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                          {d.substring(0,3)}
-                        </span>
-                       );
-                    })}
+                <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-1" title="Jadwal aktif mingguan">
+                    {days.map((d, i) => (
+                      <span
+                        key={i}
+                        className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
+                          activeDayFlags[i]
+                            ? (therapist.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500")
+                            : "bg-slate-50 text-slate-300"
+                        )}
+                        title={d}
+                      >
+                        {d.charAt(0)}
+                      </span>
+                    ))}
                   </div>
+                  <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 shrink-0"
+                     onClick={() => navigate(`/owner/therapist/${therapist.id}/schedule-settings`)}
+                  >
+                      <CalendarClock className="w-3.5 h-3.5 mr-1" /> Jam Praktek
+                  </Button>
                 </div>
-
-                <Button 
-                   variant="outline" 
-                   size="sm" 
-                   className="w-full mt-4 text-blue-600 border-blue-200 hover:bg-blue-50"
-                   onClick={() => navigate(`/owner/therapist/${therapist.id}/schedule-settings`)}
-                >
-                    <CalendarClock className="w-4 h-4 mr-2" /> Atur Jam Praktek (Display)
-                </Button>
               </div>
             </motion.div>
-          ))}
+          );})}
         </div>
       )}
 
@@ -516,281 +546,254 @@ const headerColorMap = {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-6 py-4">
-            {/* Top Section */}
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="flex flex-col items-center gap-3 min-w-[120px]">
-                <div className="w-24 h-24 rounded-full bg-slate-100 border flex items-center justify-center overflow-hidden shrink-0 relative group">
-                  {formData.avatar_url ? (
-                    <img src={formData.avatar_url} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-10 h-10 text-slate-400" />
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Upload className="w-6 h-6 text-white" />
+          <div className="grid gap-4 py-2">
+            {/* Identitas */}
+            <SectionCard icon={User} iconClass="bg-slate-100 text-slate-600" title="Identitas & Kontak">
+              <div className="flex flex-col sm:flex-row gap-5">
+                <div className="flex flex-col items-center gap-2.5 min-w-[104px]">
+                  <div className="w-20 h-20 rounded-full bg-slate-100 border flex items-center justify-center overflow-hidden shrink-0 relative group">
+                    {formData.avatar_url ? (
+                      <img src={formData.avatar_url} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-8 h-8 text-slate-400" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-white" />
+                    </div>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
                   </div>
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
+                  <div className="space-y-1 w-full">
+                    <label className="text-[10px] font-medium text-slate-500">Tanda Tangan</label>
+                    {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-9 mx-auto object-contain border rounded bg-slate-50 mb-1" />}
+                    <input type="file" accept="image/*" onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploading(true);
+                      const { url, error } = await uploadTherapistPhoto(file);
+                      if (url) setFormData(prev => ({ ...prev, signature_url: url }));
+                      else toast({ variant: "destructive", title: "Upload Gagal", description: error.message });
+                      setUploading(false);
+                    }} className="text-[10px] w-full" disabled={uploading} />
+                  </div>
                 </div>
-                <div className="space-y-1 w-full">
-                  <label className="text-[10px] font-medium text-slate-500">Tanda Tangan</label>
-                  {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-10 mx-auto object-contain border rounded bg-slate-50 mb-1" />}
-                  <input type="file" accept="image/*" onChange={async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    setUploading(true);
-                    const { url, error } = await uploadTherapistPhoto(file);
-                    if (url) setFormData(prev => ({ ...prev, signature_url: url }));
-                    else toast({ variant: "destructive", title: "Upload Gagal", description: error.message });
-                    setUploading(false);
-                  }} className="text-[10px] w-full" disabled={uploading} />
+
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Nama Lengkap <span className="text-red-500">*</span></label>
+                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="dr. Fulan" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Spesialisasi</label>
+                    <Input value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} placeholder="Fisioterapi Olahraga" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Email (Untuk Login) <span className="text-red-500">*</span></label>
+                    <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nama@klinik.com" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">No. Telepon</label>
+                    <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Warna Kartu</label>
+                    <Select
+                      value={formData.theme_color || ""}
+                      onValueChange={(val) => setFormData({ ...formData, theme_color: val })}
+                    >
+                      <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Pilih warna" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="purple">Purple</SelectItem>
+                        <SelectItem value="amber">Amber</SelectItem>
+                        <SelectItem value="pink">Pink</SelectItem>
+                        <SelectItem value="indigo">Indigo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></label>
-                  <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="dr. Fulan" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Spesialisasi</label>
-                  <Input value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} placeholder="Fisioterapi Olahraga" />
-                </div>
-                <div className="space-y-2">
-  <label className="text-sm font-medium">Warna Terapis</label>
-  <Select
-    value={formData.theme_color || ""}
-    onValueChange={(val) => setFormData({ ...formData, theme_color: val })}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Pilih warna" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="blue">Blue</SelectItem>
-      <SelectItem value="green">Green</SelectItem>
-      <SelectItem value="purple">Purple</SelectItem>
-      <SelectItem value="amber">Amber</SelectItem>
-      <SelectItem value="pink">Pink</SelectItem>
-      <SelectItem value="indigo">Indigo</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email (Untuk Login) <span className="text-red-500">*</span></label>
-                  <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nama@klinik.com" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">No. Telepon</label>
-                  <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
-                </div>
+              <div className="space-y-1.5 pt-1">
+                <label className="text-xs font-medium text-slate-600">Bio Singkat</label>
+                <Textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                  rows={2}
+                  placeholder="Ditampilkan di profil publik & dokumen medis"
+                />
               </div>
-            </div>
+            </SectionCard>
 
-            {/* Salary Configuration Section */}
-            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 space-y-4">
-                <h4 className="font-semibold text-emerald-800 flex items-center gap-2">
-                   <UserPlus className="w-4 h-4" /> Pengaturan Gaji
-                </h4>
-                <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-3 gap-4"}>
-                    <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600">Tipe Skema Gaji</label>
-                       <Select 
-                          value={formData.salary_scheme} 
-                          onValueChange={(val) => setFormData({...formData, salary_scheme: val})}
-                       >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="full_salary">Full Salary (Based on Omzet)</SelectItem>
-                             <SelectItem value="custom_salary">Custom Salary (Based on Jasa)</SelectItem>
-                          </SelectContent>
-                       </Select>
+            {/* Gaji & Periode */}
+            <div className={isPWA ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
+              <SectionCard icon={Wallet} iconClass="bg-emerald-50 text-emerald-600" title="Pengaturan Gaji">
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Tipe Skema Gaji</label>
+                    <Select
+                      value={formData.salary_scheme}
+                      onValueChange={(val) => setFormData({...formData, salary_scheme: val})}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_salary">Full Salary (Based on Omzet)</SelectItem>
+                        <SelectItem value="custom_salary">Custom Salary (Based on Jasa)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600">Gaji Pokok</label>
+                      <Input
+                        type="number"
+                        value={formData.base_salary}
+                        onChange={(e) => setFormData({...formData, base_salary: e.target.value})}
+                        placeholder="0"
+                      />
                     </div>
-                    <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600">Gaji Pokok (Bulanan)</label>
-                       <Input 
-                          type="number" 
-                          value={formData.base_salary} 
-                          onChange={(e) => setFormData({...formData, base_salary: e.target.value})}
-                          className="bg-white"
-                          placeholder="0"
-                       />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600">Transport/Hari</label>
+                      <Input
+                        type="number"
+                        value={formData.transport_per_day}
+                        onChange={(e) => setFormData({...formData, transport_per_day: e.target.value})}
+                        placeholder="0"
+                      />
                     </div>
-                    <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600">Transport (Per Hari)</label>
-                       <Input
-                          type="number"
-                          value={formData.transport_per_day}
-                          onChange={(e) => setFormData({...formData, transport_per_day: e.target.value})}
-                          className="bg-white"
-                          placeholder="0"
-                       />
-                    </div>
+                  </div>
                 </div>
-            </div>
+              </SectionCard>
 
-            {/* Period Configuration Section — single source of truth for payroll, working days, target, and SOAP lock */}
-            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 space-y-3">
-                <h4 className="font-semibold text-indigo-800 flex items-center gap-2">
-                   <CalendarRange className="w-4 h-4" /> Periode
-                </h4>
-                <p className="text-xs text-indigo-700">
-                  Siklus bulanan yang berulang otomatis (misal tanggal 28 ke 27). Dipakai otomatis untuk perhitungan penggajian, hari kerja, target kunjungan, dan kunci SOAP — tidak perlu diatur ulang manual di tempat lain.
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600">Dari Tanggal</label>
-                       <Input
-                          type="number"
-                          min={1}
-                          max={31}
-                          value={formData.period_start_day}
-                          onChange={(e) => setFormData({...formData, period_start_day: e.target.value})}
-                          className="bg-white"
-                       />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-xs font-medium text-slate-600">Sampai Tanggal</label>
-                       <Input
-                          type="number"
-                          min={1}
-                          max={31}
-                          value={formData.period_end_day}
-                          onChange={(e) => setFormData({...formData, period_end_day: e.target.value})}
-                          className="bg-white"
-                       />
-                    </div>
-                </div>
-            </div>
-
-            {/* Badge Selection */}
-            <div className="p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-                <h4 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-blue-600" /> Badge Profesional (Public)
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                   {availableBadges.length === 0 ? (
-                      <p className="text-sm text-slate-400 italic">Belum ada badge. Tambahkan di tab "Badges".</p>
-                   ) : (
-                      availableBadges.map((badge) => (
-                         <div key={badge.id} className="flex items-center space-x-2 bg-slate-50 p-2 rounded border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <Checkbox 
-                                id={`badge-${badge.id}`}
-                                checked={formData.badges?.includes(badge.id)}
-                                onCheckedChange={(checked) => handleBadgeChange(badge.id, checked)}
-                            />
-                            <label htmlFor={`badge-${badge.id}`} className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: badge.color }}></span>
-                                {badge.label}
-                            </label>
-                         </div>
-                      ))
-                   )}
-                </div>
-                {formData.badges?.length > 0 && (
-                   <p className="text-xs text-green-600 font-medium">
-                      {formData.badges.length} badge dipilih
-                   </p>
-                )}
-            </div>
-
-            {/* Visibility Controls */}
-            <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 space-y-3">
-                <h4 className="font-semibold text-blue-900 flex items-center gap-2">
-                    <Eye className="w-4 h-4" /> Pengaturan Tampilan Publik
-                </h4>
-                <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 p-2 rounded">
-                    <Info className="w-4 h-4" />
-                    💡 Terapis akan ditampilkan di halaman public sesuai pilihan di atas. Jika tidak dipilih, terapis tetap aktif di sistem internal.
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2 bg-white p-3 rounded border border-blue-100">
-                        <Checkbox 
-                            id="show-landing" 
-                            checked={formData.show_on_landing}
-                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_on_landing: checked }))}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="show-landing" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                                Tampilkan di Landing Page
-                            </label>
-                            <p className="text-[10px] text-slate-500">
-                                Profil akan muncul di bagian "Tim Kami" pada halaman depan website.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-white p-3 rounded border border-blue-100">
-                        <Checkbox 
-                            id="show-booking" 
-                            checked={formData.show_on_booking}
-                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_on_booking: checked }))}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="show-booking" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                                Tampilkan di Booking Online
-                            </label>
-                            <p className="text-[10px] text-slate-500">
-                                Pasien umum dapat memilih terapis ini saat melakukan reservasi online.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Services & Password Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
-                    <label className="text-sm font-semibold text-slate-800 block">Layanan / Services</label>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox 
-                                id="svc-physio" 
-                                checked={formData.services?.includes('physiotherapy')}
-                                onCheckedChange={(checked) => handleServiceChange('physiotherapy', checked)}
-                            />
-                            <label htmlFor="svc-physio" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Physiotherapy
-                            </label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox 
-                                id="svc-recovery" 
-                                checked={formData.services?.includes('recovery')}
-                                onCheckedChange={(checked) => handleServiceChange('recovery', checked)}
-                            />
-                            <label htmlFor="svc-recovery" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Recovery
-                            </label>
-                        </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">Pilih jenis layanan yang dapat ditangani oleh terapis ini.</p>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                    <h4 className="font-semibold text-yellow-800 flex items-center gap-2 mb-2">
-                    <Lock className="w-4 h-4" /> Akses Akun
-                    </h4>
-                    <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">
-                        {editingTherapist ? 'Reset Password (Biarkan kosong jika tidak diubah)' : 'Password Login *'}
-                    </label>
-                    <Input 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        placeholder={editingTherapist ? "********" : "Minimal 6 karakter"}
+              <SectionCard
+                icon={CalendarRange}
+                iconClass="bg-indigo-50 text-indigo-600"
+                title="Periode"
+                description="Siklus bulanan berulang, dipakai otomatis untuk penggajian, hari kerja, target, dan kunci SOAP."
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Dari Tanggal</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={formData.period_start_day}
+                      onChange={(e) => setFormData({...formData, period_start_day: e.target.value})}
                     />
-                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Sampai Tanggal</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={formData.period_end_day}
+                      onChange={(e) => setFormData({...formData, period_end_day: e.target.value})}
+                    />
+                  </div>
                 </div>
+              </SectionCard>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bio Singkat</label>
-              <Textarea 
-                value={formData.bio} 
-                onChange={(e) => setFormData({...formData, bio: e.target.value})} 
-                rows={2}
-              />
-            </div>
-            
+            {/* Publikasi & Layanan */}
+            <SectionCard
+              icon={Megaphone}
+              iconClass="bg-blue-50 text-blue-600"
+              title="Publikasi & Layanan"
+              description="Mengatur tampilan profil di halaman publik dan jenis layanan yang bisa dipesan."
+            >
+              <div className="flex items-center justify-between gap-3 py-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Monitor className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                  <span className="text-sm font-medium text-slate-700 truncate">Tampilkan di Landing Page</span>
+                </div>
+                <Switch
+                  checked={formData.show_on_landing}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_on_landing: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 py-1 border-t border-slate-100 pt-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Smartphone className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                  <span className="text-sm font-medium text-slate-700 truncate">Tampilkan di Booking Online</span>
+                </div>
+                <Switch
+                  checked={formData.show_on_booking}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_on_booking: checked }))}
+                />
+              </div>
+
+              <div className="pt-2.5 border-t border-slate-100 space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">Layanan</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'physiotherapy', label: 'Physiotherapy' },
+                    { id: 'recovery', label: 'Recovery' }
+                  ].map(svc => {
+                    const selected = formData.services?.includes(svc.id);
+                    return (
+                      <button
+                        key={svc.id}
+                        type="button"
+                        onClick={() => handleServiceChange(svc.id, !selected)}
+                        className={cn(
+                          "text-xs px-3 py-1 rounded-full font-semibold border transition-all",
+                          selected ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                        )}
+                      >
+                        {svc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2.5 border-t border-slate-100 space-y-1.5">
+                <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-blue-500" /> Badge Profesional
+                </label>
+                {availableBadges.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">Belum ada badge. Tambahkan di tab "Badges".</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableBadges.map((badge) => {
+                      const selected = formData.badges?.includes(badge.id);
+                      return (
+                        <button
+                          key={badge.id}
+                          type="button"
+                          onClick={() => handleBadgeChange(badge.id, !selected)}
+                          className={cn(
+                            "text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition-all",
+                            selected ? "border-black/10" : "opacity-45 hover:opacity-80 border-transparent"
+                          )}
+                          style={{ backgroundColor: badge.color }}
+                        >
+                          {selected && <Check className="w-3 h-3" />}
+                          {badge.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
+            {/* Akses Akun */}
+            <SectionCard icon={Lock} iconClass="bg-amber-50 text-amber-600" title="Akses Akun">
+              <div className="space-y-1.5 max-w-sm">
+                <label className="text-xs font-medium text-slate-600">
+                  {editingTherapist ? 'Reset Password (biarkan kosong jika tidak diubah)' : 'Password Login *'}
+                </label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={editingTherapist ? "********" : "Minimal 6 karakter"}
+                />
+              </div>
+            </SectionCard>
           </div>
 
           <DialogFooter>
