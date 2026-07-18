@@ -190,6 +190,11 @@ const CSS = `
   /* Wrapper wajib dipakai di sekeliling <table> agar tabel bisa di-scroll horizontal, bukan mendorong layout melebar di layar HP/PWA */
   .p-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+  /* Pasangan kelas untuk tabel (desktop) vs kartu (mobile) — dipakai bareng supaya
+     daftar panjang tidak perlu di-swipe horizontal di layar HP/PWA */
+  .p-mobile-only { display: none; }
+  .p-desktop-only { display: block; }
+
   /* Grid yang otomatis menjadi 1 kolom di layar sempit (form & panel berdampingan) */
   .p-grid-collapse { min-width: 0; }
   .p-grid-collapse > * { min-width: 0; }
@@ -208,6 +213,8 @@ const CSS = `
     .p-modal-overlay { align-items: flex-end; padding: 0; }
     .p-modal { width: 100% !important; max-width: 100% !important; border-radius: 20px 20px 0 0 !important; max-height: 92vh; }
     .p-table th, .p-table td { padding: 10px 11px; font-size: 12.5px; }
+    .p-mobile-only { display: block; }
+    .p-desktop-only { display: none; }
   }
   @media (min-width: 769px) and (max-width: 1100px) {
     :root { --sidebar-w: 210px; }
