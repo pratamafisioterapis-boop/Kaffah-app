@@ -175,16 +175,24 @@ const CSS = `
   .p-modal {
     background: #fff; border-radius: 20px; box-shadow: var(--p-shadow-lg);
     animation: p-scale-in 0.18s cubic-bezier(.4,0,.2,1);
+    max-height: 90vh; overflow-y: auto;
   }
   @keyframes p-fade-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes p-scale-in { from { opacity: 0; transform: scale(0.96) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
   .p-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .p-table thead tr { background: #fafafa; border-bottom: 1.5px solid var(--p-border); }
-  .p-table th { text-align: left; padding: 12px 14px; color: #6b7280; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .p-table th { text-align: left; padding: 12px 14px; color: #6b7280; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
   .p-table td { padding: 13px 14px; border-bottom: 1px solid #f1f1f3; }
   .p-table tbody tr { transition: background 0.12s; }
   .p-table tbody tr:hover { background: #fafafa; }
+
+  /* Wrapper wajib dipakai di sekeliling <table> agar tabel bisa di-scroll horizontal, bukan mendorong layout melebar di layar HP/PWA */
+  .p-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Grid yang otomatis menjadi 1 kolom di layar sempit (form & panel berdampingan) */
+  .p-grid-collapse { min-width: 0; }
+  .p-grid-collapse > * { min-width: 0; }
 
   .p-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
   .p-scrollbar::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 8px; }
@@ -196,6 +204,10 @@ const CSS = `
     .pmh-main { margin-left: 0 !important; padding: 74px 16px 40px; }
     .pmh-overlay { align-items: flex-end; padding: 0; }
     .p-page-title { font-size: 20px; }
+    .p-grid-collapse { grid-template-columns: 1fr !important; }
+    .p-modal-overlay { align-items: flex-end; padding: 0; }
+    .p-modal { width: 100% !important; max-width: 100% !important; border-radius: 20px 20px 0 0 !important; max-height: 92vh; }
+    .p-table th, .p-table td { padding: 10px 11px; font-size: 12.5px; }
   }
   @media (min-width: 769px) and (max-width: 1100px) {
     :root { --sidebar-w: 210px; }

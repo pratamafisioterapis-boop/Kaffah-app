@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles } from 'lucide-react';
+import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 
 const KATEGORI_LABEL = {
   pendukung: { label: 'Pendukung', color: '#16a34a' },
@@ -34,10 +34,20 @@ const StatCard = ({ icon: Icon, label, value, color, bg, accentBar }) => (
   </div>
 );
 
-const CardHeader = ({ title, subtitle }) => (
-  <div style={{ marginBottom: 18 }}>
-    <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29', letterSpacing: '-0.01em' }}>{title}</h3>
-    {subtitle && <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#9ca3af' }}>{subtitle}</p>}
+const CardHeader = ({ title, subtitle, icon: Icon, iconColor, iconBg }) => (
+  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 18 }}>
+    {Icon && (
+      <div style={{
+        width: 30, height: 30, borderRadius: 9, background: iconBg, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
+      }}>
+        <Icon size={15} color={iconColor} />
+      </div>
+    )}
+    <div>
+      <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29', letterSpacing: '-0.01em' }}>{title}</h3>
+      {subtitle && <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#9ca3af' }}>{subtitle}</p>}
+    </div>
   </div>
 );
 
@@ -152,15 +162,19 @@ const PemilihDashboard = () => {
         <StatCard icon={TrendingUp} label="Target Suara Tim Sukses" value={timSuksesTotalTarget} color="#d97706" bg="#fffbeb" accentBar="linear-gradient(90deg,#fbbf24,#d97706)" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
+      <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
         <div className="p-card" style={{ padding: 24 }}>
-          <CardHeader title="Sebaran Data Pemilih per Kelurahan" subtitle="Distribusi jumlah data tercatat di tiap kelurahan" />
+          <CardHeader
+            title="Sebaran Data Pemilih per Kelurahan"
+            subtitle="Distribusi jumlah data tercatat di tiap kelurahan"
+            icon={BarChart3} iconColor="#2563eb" iconBg="#eff6ff"
+          />
           <div style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={perKelurahan} margin={{ top: 5, right: 10, left: -10, bottom: 50 }} barCategoryGap="30%" maxBarSize={64}>
+              <BarChart data={perKelurahan} margin={{ top: 5, right: 10, left: -10, bottom: 50 }} barCategoryGap="34%" maxBarSize={56}>
                 <defs>
                   <linearGradient id="gradPendukung" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="0%" stopColor="#34d399" />
                     <stop offset="100%" stopColor="#15803d" />
                   </linearGradient>
                   <linearGradient id="gradSimpatisan" x1="0" y1="0" x2="0" y2="1">
@@ -175,37 +189,62 @@ const PemilihDashboard = () => {
                     <stop offset="0%" stopColor="#fbbf24" />
                     <stop offset="100%" stopColor="#b45309" />
                   </linearGradient>
+                  <filter id="barShadow" x="-40%" y="-20%" width="180%" height="150%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.12" />
+                  </filter>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f3" />
                 <XAxis dataKey="nama" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 10.5, fill: '#6b7280', fontWeight: 500 }} height={70} axisLine={{ stroke: '#e8e9ec' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
                 <Tooltip
                   cursor={{ fill: '#fafafa' }}
                   contentStyle={{ borderRadius: 14, fontSize: 12, border: '1px solid #e8e9ec', boxShadow: '0 12px 32px rgba(16,24,40,0.12)', padding: '10px 14px' }}
                   labelStyle={{ fontWeight: 700, color: '#1a1d29', marginBottom: 4 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} iconType="circle" iconSize={8} />
-                <Bar dataKey="pendukung" stackId="a" fill="url(#gradPendukung)" name="Pendukung" />
-                <Bar dataKey="simpatisan" stackId="a" fill="url(#gradSimpatisan)" name="Simpatisan" />
-                <Bar dataKey="tidak_mendukung" stackId="a" fill="url(#gradTidakMendukung)" name="Tidak Mendukung" />
-                <Bar dataKey="belum_diketahui" stackId="a" fill="url(#gradBelumDiketahui)" name="Belum Diketahui" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="pendukung" stackId="a" fill="url(#gradPendukung)" name="Pendukung" filter="url(#barShadow)" />
+                <Bar dataKey="simpatisan" stackId="a" fill="url(#gradSimpatisan)" name="Simpatisan" filter="url(#barShadow)" />
+                <Bar dataKey="tidak_mendukung" stackId="a" fill="url(#gradTidakMendukung)" name="Tidak Mendukung" filter="url(#barShadow)" />
+                <Bar dataKey="belum_diketahui" stackId="a" fill="url(#gradBelumDiketahui)" name="Belum Diketahui" radius={[8, 8, 0, 0]} filter="url(#barShadow)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="p-card" style={{ padding: 24 }}>
-          <CardHeader title="Komposisi Dukungan" subtitle="Proporsi kategori seluruh data" />
-          <div style={{ height: 300 }}>
+          <CardHeader
+            title="Komposisi Dukungan"
+            subtitle="Proporsi kategori seluruh data"
+            icon={PieChartIcon} iconColor="#dc2626" iconBg="#fef2f2"
+          />
+          <div style={{ height: 300, position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={58} outerRadius={92} paddingAngle={3} cornerRadius={6}>
+                <defs>
+                  <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0f172a" floodOpacity="0.14" />
+                  </filter>
+                </defs>
+                <Pie
+                  data={pieData} dataKey="value" nameKey="name" cx="50%" cy="46%"
+                  innerRadius={62} outerRadius={94} paddingAngle={3} cornerRadius={8}
+                  filter="url(#donutShadow)"
+                >
                   {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke="#fff" strokeWidth={2} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 14, fontSize: 12, border: '1px solid #e8e9ec', boxShadow: '0 12px 32px rgba(16,24,40,0.12)', padding: '10px 14px' }} />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} />
               </PieChart>
             </ResponsiveContainer>
+            <div style={{
+              position: 'absolute', top: '46%', left: '50%', transform: 'translate(-50%, -50%)',
+              textAlign: 'center', pointerEvents: 'none',
+            }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1d29', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {stats.total.toLocaleString('id-ID')}
+              </div>
+              <div style={{ fontSize: 10.5, color: '#9ca3af', fontWeight: 600, marginTop: 3 }}>Total Data</div>
+            </div>
           </div>
         </div>
       </div>
