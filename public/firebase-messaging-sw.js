@@ -70,7 +70,7 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 // --- Caching logic (dipindah dari public/sw.js supaya cuma 1 service worker aktif di scope '/') ---
-const CACHE_NAME = 'kaffah-care-v103';
+const CACHE_NAME = 'kaffah-care-v104';
 const urlsToCache = [
   '/',
   '/index.html',
