@@ -8,9 +8,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, ClipboardList, Eye } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { useToast } from '@/components/ui/use-toast';
-import { getPatients, getPatientById, getPhysiotherapists, getClinicDetails, createClinicalDocument } from '@/lib/api';
+import { normalizeGender } from '@/lib/utils';
+import {
+  getPatients, getPatientById, getPhysiotherapists, getClinicDetails,
+  createClinicalDocument, getLatestClinicalDocumentForPatient,
+} from '@/lib/api';
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import ResumeMedisTemplate from './ResumeMedisTemplate';
+import DiagnosisServiceField from './DiagnosisServiceField';
 
 const PROGRAM_TERAPI_OPTIONS = [
   { key: 'tens', label: 'TENS' },
@@ -27,6 +32,8 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   anamnesa: '',
   pemeriksaan_fisik: '',
+  service_id: '',
+  diagnosa_id: '',
   diagnosa: '',
   program_terapi: [],
   program_terapi_lainnya: '',
@@ -67,6 +74,25 @@ const ResumeMedisForm = ({ onSaved }) => {
     setForm((f) => ({ ...f, patient_id: patientId }));
     const { data } = await getPatientById(patientId);
     setSelectedPatient(data || null);
+
+    const { data: lastDoc } = await getLatestClinicalDocumentForPatient('resume_medis', patientId);
+    if (lastDoc?.data) {
+      setForm((f) => ({
+        ...f,
+        anamnesa: lastDoc.data.anamnesa || '',
+        pemeriksaan_fisik: lastDoc.data.pemeriksaan_fisik || '',
+        service_id: lastDoc.data.service_id || '',
+        diagnosa_id: lastDoc.data.diagnosa_id || '',
+        diagnosa: lastDoc.data.diagnosa || '',
+        program_terapi: lastDoc.data.program_terapi || [],
+        program_terapi_lainnya: lastDoc.data.program_terapi_lainnya || '',
+        rekomendasi: lastDoc.data.rekomendasi || '',
+      }));
+      toast({
+        title: 'Riwayat resume medis ditemukan',
+        description: `Data dari resume terakhir (${lastDoc.document_date}) otomatis diisi. Silakan sesuaikan jika perlu.`,
+      });
+    }
   };
 
   const toggleProgram = (key) => {
@@ -84,12 +110,14 @@ const ResumeMedisForm = ({ onSaved }) => {
       patient_name: selectedPatient?.full_name || '-',
       medical_record_number: selectedPatient?.medical_record_number || '-',
       birth_date: selectedPatient?.birth_date || null,
-      gender: selectedPatient?.gender === 'L' ? 'Laki-laki' : selectedPatient?.gender === 'P' ? 'Perempuan' : (selectedPatient?.gender || '-'),
+      gender: normalizeGender(selectedPatient?.gender),
       therapist_name: therapist?.name || '-',
       therapist_signature_url: therapist?.signature_url || null,
       document_date: form.document_date,
       anamnesa: form.anamnesa,
       pemeriksaan_fisik: form.pemeriksaan_fisik,
+      service_id: form.service_id,
+      diagnosa_id: form.diagnosa_id,
       diagnosa: form.diagnosa,
       program_terapi: form.program_terapi,
       program_terapi_lainnya: form.program_terapi_lainnya,
@@ -177,7 +205,7 @@ const ResumeMedisForm = ({ onSaved }) => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs">
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">No. RM</p><p className="font-semibold text-slate-800">{selectedPatient.medical_record_number || '-'}</p></div>
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">Tgl Lahir</p><p className="font-semibold text-slate-800">{selectedPatient.birth_date || '-'}</p></div>
-              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{selectedPatient.gender === 'L' ? 'Laki-laki' : selectedPatient.gender === 'P' ? 'Perempuan' : '-'}</p></div>
+              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{normalizeGender(selectedPatient.gender)}</p></div>
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">Telepon</p><p className="font-semibold text-slate-800">{selectedPatient.phone || '-'}</p></div>
             </div>
           )}
@@ -203,10 +231,11 @@ const ResumeMedisForm = ({ onSaved }) => {
             <Textarea rows={2} placeholder="Hasil pemeriksaan fisik..." value={form.pemeriksaan_fisik} onChange={(e) => setForm((f) => ({ ...f, pemeriksaan_fisik: e.target.value }))} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diagnosa</Label>
-            <Input placeholder="Diagnosa fisioterapi..." value={form.diagnosa} onChange={(e) => setForm((f) => ({ ...f, diagnosa: e.target.value }))} />
-          </div>
+          <DiagnosisServiceField
+            serviceId={form.service_id}
+            diagnosaId={form.diagnosa_id}
+            onChange={({ serviceId, diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, service_id: serviceId, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
+          />
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Program Terapi</Label>

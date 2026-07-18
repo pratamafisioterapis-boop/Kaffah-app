@@ -4622,6 +4622,21 @@ export const deleteClinicalDocument = async (id) => {
   }, 'deleteClinicalDocument');
 };
 
+export const getLatestClinicalDocumentForPatient = async (documentType, patientId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('clinical_documents')
+      .select('*')
+      .eq('document_type', documentType)
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getLatestClinicalDocumentForPatient', { retry: true });
+};
+
 export const getNextClinicalDocumentNumber = async (documentType, prefix) => {
   return safeQuery(async () => {
     const year = new Date().getFullYear();

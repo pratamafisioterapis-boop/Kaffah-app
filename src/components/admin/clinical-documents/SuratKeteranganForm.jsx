@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Loader2, FileText, Eye } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { useToast } from '@/components/ui/use-toast';
+import { normalizeGender } from '@/lib/utils';
 import {
   getPatients, getPatientById, getPhysiotherapists, getClinicDetails,
   createClinicalDocument, getNextClinicalDocumentNumber,
 } from '@/lib/api';
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import SuratKeteranganTemplate from './SuratKeteranganTemplate';
+import DiagnosisServiceField from './DiagnosisServiceField';
 
 const emptyForm = {
   patient_id: '',
@@ -21,6 +23,8 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   address: '',
   phone: '',
+  service_id: '',
+  diagnosa_id: '',
   diagnosa: '',
   keterangan_tambahan: '',
   tempat: '',
@@ -78,9 +82,11 @@ const SuratKeteranganForm = ({ onSaved }) => {
       patient_name: selectedPatient?.full_name || '-',
       birth_date: selectedPatient?.birth_date || null,
       age: calcAge(selectedPatient?.birth_date),
-      gender: selectedPatient?.gender === 'L' ? 'Laki-laki' : selectedPatient?.gender === 'P' ? 'Perempuan' : (selectedPatient?.gender || '-'),
+      gender: normalizeGender(selectedPatient?.gender),
       address: form.address,
       phone: form.phone,
+      service_id: form.service_id,
+      diagnosa_id: form.diagnosa_id,
       diagnosa: form.diagnosa,
       keterangan_tambahan: form.keterangan_tambahan,
       document_date: form.document_date,
@@ -171,7 +177,7 @@ const SuratKeteranganForm = ({ onSaved }) => {
           {selectedPatient && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs">
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">Usia</p><p className="font-semibold text-slate-800">{calcAge(selectedPatient.birth_date) ?? '-'} Th</p></div>
-              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{selectedPatient.gender === 'L' ? 'Laki-laki' : selectedPatient.gender === 'P' ? 'Perempuan' : '-'}</p></div>
+              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{normalizeGender(selectedPatient.gender)}</p></div>
               <div className="col-span-2"><p className="text-slate-400 uppercase tracking-wide text-[10px]">No. RM</p><p className="font-semibold text-slate-800">{selectedPatient.medical_record_number || '-'}</p></div>
             </div>
           )}
@@ -198,10 +204,11 @@ const SuratKeteranganForm = ({ onSaved }) => {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diagnosa</Label>
-            <Input placeholder="Diagnosa fisioterapi..." value={form.diagnosa} onChange={(e) => setForm((f) => ({ ...f, diagnosa: e.target.value }))} />
-          </div>
+          <DiagnosisServiceField
+            serviceId={form.service_id}
+            diagnosaId={form.diagnosa_id}
+            onChange={({ serviceId, diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, service_id: serviceId, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
+          />
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Keterangan Tambahan (opsional)</Label>

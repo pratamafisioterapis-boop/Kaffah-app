@@ -166,14 +166,17 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
 
         {/* SIGNATURE */}
         <div style={{ marginTop: '48px', display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ textAlign: 'center', width: '210px' }}>
+          <div style={{ textAlign: 'center', width: '240px' }}>
             <p style={{ fontSize: '12px', margin: 0 }}>
               {(data?.tempat || clinic?.address?.split(',')[0] || 'Balikpapan')}, {formatDate(data?.document_date)}
             </p>
             <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
-            <div style={{ height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <div style={{ height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '10px' }}>
+              {clinic?.stamp_url && (
+                <img src={clinic.stamp_url} style={{ maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }} />
+              )}
               {data?.therapist_signature_url && (
-                <img src={data.therapist_signature_url} style={{ maxHeight: '55px', maxWidth: '150px' }} />
+                <img src={data.therapist_signature_url} style={{ maxHeight: '55px', maxWidth: '120px' }} />
               )}
             </div>
             <div style={{ borderTop: '1px solid #0f172a', width: '180px', margin: '4px auto 0' }} />
