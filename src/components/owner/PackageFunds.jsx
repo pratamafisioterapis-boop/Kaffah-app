@@ -96,7 +96,7 @@ const PackageFunds = () => {
 
   return (
     <Card className="border-cyan-100 shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2 text-slate-800">
             <Package className="w-5 h-5 text-cyan-600" />
@@ -108,7 +108,7 @@ const PackageFunds = () => {
           </p>
         </div>
 
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-xs text-slate-500">
             Total Dana Paket
           </p>
@@ -120,89 +120,96 @@ const PackageFunds = () => {
       </CardHeader>
 
       <CardContent>
-        <div className="rounded-xl border overflow-x-auto bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Pasien</TableHead>
+        {loading ? (
+          <div className="flex justify-center items-center gap-2 h-24 text-slate-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Memuat data...
+          </div>
+        ) : packages.length === 0 ? (
+          <div className="h-24 flex items-center justify-center text-slate-400">
+            Tidak ada paket aktif
+          </div>
+        ) : (
+          <>
+            {/* Mobile: kartu */}
+            <div className="sm:hidden rounded-xl border bg-white divide-y divide-slate-100">
+              {packages.map((item) => (
+                <div key={item.id} className="p-3 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-700">{item.patientName}</span>
+                    <span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-700 shrink-0">
+                      {item.status}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-600">{item.package_name || '-'}</div>
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="text-slate-500">
+                      Sisa sesi: <span className="font-bold text-cyan-600">{item.sessions_remaining}</span>
+                    </span>
+                    <span className="font-bold text-cyan-700">{formatCurrency(item.remainingValue)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                <TableHead>
-                  Jenis Paket
-                </TableHead>
+            {/* Desktop: tabel */}
+            <div className="hidden sm:block rounded-xl border overflow-x-auto bg-white">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Pasien</TableHead>
 
-                <TableHead className="text-center">
-                  Sisa Sesi
-                </TableHead>
+                    <TableHead>
+                      Jenis Paket
+                    </TableHead>
 
-                <TableHead>
-                  Status
-                </TableHead>
+                    <TableHead className="text-center">
+                      Sisa Sesi
+                    </TableHead>
 
-                <TableHead className="text-right">
-                  Nominal
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+                    <TableHead>
+                      Status
+                    </TableHead>
 
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center"
-                  >
-                    <div className="flex justify-center items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Memuat data...
-                    </div>
-                  </TableCell>
-                </TableRow>
-
-              ) : packages.length === 0 ? (
-
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-slate-400"
-                  >
-                    Tidak ada paket aktif
-                  </TableCell>
-                </TableRow>
-
-              ) : (
-
-                packages.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-semibold text-slate-700">
-                      {item.patientName}
-                    </TableCell>
-
-                    <TableCell className="text-slate-600">
-                      {item.package_name || '-'}
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <span className="font-bold text-cyan-600">
-                        {item.sessions_remaining}
-                      </span>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-700">
-                        {item.status}
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="text-right font-bold text-cyan-700">
-                      {formatCurrency(item.remainingValue)}
-                    </TableCell>
+                    <TableHead className="text-right">
+                      Nominal
+                    </TableHead>
                   </TableRow>
-                ))
+                </TableHeader>
 
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                <TableBody>
+                  {packages.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-semibold text-slate-700">
+                        {item.patientName}
+                      </TableCell>
+
+                      <TableCell className="text-slate-600">
+                        {item.package_name || '-'}
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <span className="font-bold text-cyan-600">
+                          {item.sessions_remaining}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-700">
+                          {item.status}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-right font-bold text-cyan-700">
+                        {formatCurrency(item.remainingValue)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

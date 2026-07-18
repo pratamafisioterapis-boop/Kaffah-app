@@ -50,6 +50,7 @@ import {
   fetchAllTherapists,
   fetchTodaySessionsPerTherapist
 } from '@/lib/api';
+import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -117,6 +118,8 @@ const OwnerDashboardHome = () => {
   const [therapists, setTherapists] = useState([]);
   const [therapistSessions, setTherapistSessions] = useState({});
   const [isLoadingTherapists, setIsLoadingTherapists] = useState(true);
+  const [unfilledSoapCounts, setUnfilledSoapCounts] = useState({});
+  const [isLoadingSoap, setIsLoadingSoap] = useState(true);
 
   // Update localStorage whenever state changes
   useEffect(() => {
@@ -269,11 +272,40 @@ setTherapists(enrichedTherapists);
     }
   }, [toast]);
 
+  // SOAP belum diisi per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
+  const loadUnfilledSoapCounts = useCallback(async () => {
+    if (!therapists.length) {
+      setUnfilledSoapCounts({});
+      setIsLoadingSoap(false);
+      return;
+    }
+    setIsLoadingSoap(true);
+    try {
+      const results = await Promise.all(
+        therapists.map(async (t) => {
+          const { count } = await getUnfilledSOAPVisits(null, t.id, dateRange.startDate, dateRange.endDate);
+          return { id: t.id, count: count || 0 };
+        })
+      );
+      const counts = {};
+      results.forEach(r => { counts[r.id] = r.count; });
+      setUnfilledSoapCounts(counts);
+    } catch (error) {
+      console.error("Failed to fetch unfilled SOAP counts:", error);
+    } finally {
+      setIsLoadingSoap(false);
+    }
+  }, [therapists, dateRange]);
+
   // Initial Load & Refresh on Location Change
   useEffect(() => {
     loadKPIData();
     loadTherapistData();
   }, [loadKPIData, loadTherapistData, location]);
+
+  useEffect(() => {
+    loadUnfilledSoapCounts();
+  }, [loadUnfilledSoapCounts]);
 
 
   // Real-time Subscription
@@ -386,10 +418,13 @@ setTherapists(enrichedTherapists);
 
              {/* Section 2: Therapist Status Strip */}
              <section className="space-y-4">
-                <TherapistStatusCards 
+                <TherapistStatusCards
                   therapists={therapists}
                   therapistSessions={therapistSessions}
                   isLoading={isLoadingTherapists}
+                  unfilledSoapCounts={unfilledSoapCounts}
+                  isLoadingSoap={isLoadingSoap}
+                  dateRange={dateRange}
                 />
              </section>
 

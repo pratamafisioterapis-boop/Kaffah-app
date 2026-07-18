@@ -445,7 +445,7 @@ const OwnerFinanceDashboard = () => {
 
         {/* --- OWNER SECTION --- */}
         {activeTab === 'owner' && <motion.div key="owner" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-            <div className="flex gap-1.5 p-1 w-fit rounded-xl" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-xl overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
               <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
               <SubTabButton isActive={activeOwnerTab === 'bank'} onClick={() => setActiveOwnerTab('bank')} label="Akun Bank" icon={Building} color="blue" />
@@ -596,7 +596,7 @@ const OwnerFinanceDashboard = () => {
 
         {/* --- ADMIN SECTION --- */}
         {activeTab === 'admin' && <motion.div key="admin" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-            <div className="flex gap-1.5 p-1 w-fit rounded-xl" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-xl overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
               <SubTabButton isActive={activeAdminTab === 'expenses'} onClick={() => setActiveAdminTab('expenses')} label="Pengeluaran Admin" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeAdminTab === 'income'} onClick={() => setActiveAdminTab('income')} label="Pemasukan Admin" icon={TrendingUp} color="emerald" />
             </div>
