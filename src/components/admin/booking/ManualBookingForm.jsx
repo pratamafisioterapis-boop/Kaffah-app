@@ -65,7 +65,8 @@ const [showDropdown, setShowDropdown] = useState(false);
 const [extendDate, setExtendDate] = useState('');
   const [showResultModal, setShowResultModal] = useState(false);
 
-  const isLeave = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
+  const isLeave = ['cuti', 'sakit', 'non_active', 'terkunci'].includes(leaveStatus);
+  const isSoapLocked = leaveStatus === 'terkunci';
 
   useEffect(() => {
     loadPatients();
@@ -188,7 +189,9 @@ if (pkg) {
       toast({
         variant: "destructive",
         title: "Tidak Dapat Booking",
-        description: `Fisioterapis sedang ${leaveStatus}.`
+        description: isSoapLocked
+          ? "Jadwal terapis ini terkunci karena dokumentasi SOAP belum lengkap."
+          : `Fisioterapis sedang ${leaveStatus}.`
       });
       return;
     }
@@ -445,7 +448,7 @@ const handleConfirmRecurring = async () => {
       </div>
       {isLeave ? (
         <div className="bg-red-50 text-red-900 p-3 rounded-md text-xs border border-red-200">
-          Therapist sedang {leaveStatus}.
+          {isSoapLocked ? 'Terapis terkunci: dokumentasi SOAP belum lengkap.' : `Therapist sedang ${leaveStatus}.`}
         </div>
       ) : (
         <div className="bg-amber-50 text-amber-900 p-3 rounded-md text-xs border border-amber-200">

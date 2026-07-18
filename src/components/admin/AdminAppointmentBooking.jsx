@@ -164,6 +164,8 @@ const formattedDate = date
 
           if (s.status === 'aktif') {
             statusMap[s.therapist_id] = 'aktif';
+          } else if (statusMap[s.therapist_id] !== 'aktif' && s.status) {
+            statusMap[s.therapist_id] = s.status;
           }
 
           const slotObj = {
@@ -465,7 +467,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       // Group 3: Tidak ada jadwal / cuti / non_active
       if (
         slots.length === 0 ||
-        ['tidak_ada_jadwal', 'cuti', 'non_active'].includes(leaveStatus)
+        ['tidak_ada_jadwal', 'cuti', 'non_active', 'terkunci'].includes(leaveStatus)
       ) {
         return { group: 3, time: '99:99' };
       }

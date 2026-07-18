@@ -62,7 +62,8 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
   const [showResultModal, setShowResultModal] = useState(false);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
 
-  const isLeave = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
+  const isLeave = ['cuti', 'sakit', 'non_active', 'terkunci'].includes(leaveStatus);
+  const isSoapLocked = leaveStatus === 'terkunci';
 
   // Global scope calculation for package state
   const lastDateGlobal = getLastValidDate(packageInfo);
@@ -173,7 +174,9 @@ setPackageInfo(pkg);
       toast({
          variant: "destructive",
          title: "Tidak Dapat Booking",
-         description: `Fisioterapis sedang ${leaveStatus === 'non_active' ? 'tidak aktif' : leaveStatus}, tidak dapat membuat appointment.`
+         description: isSoapLocked
+           ? "Jadwal terapis ini terkunci karena dokumentasi SOAP belum lengkap."
+           : `Fisioterapis sedang ${leaveStatus === 'non_active' ? 'tidak aktif' : leaveStatus}, tidak dapat membuat appointment.`
        });
        return;
     }

@@ -35,7 +35,8 @@ const TherapistCard = ({
       );
   }
 
-  const isLeave = ['cuti', 'non_active', 'libur_mingguan'].includes(leaveStatus);
+  const isLeave = ['cuti', 'non_active', 'libur_mingguan', 'terkunci'].includes(leaveStatus);
+  const isSoapLocked = leaveStatus === 'terkunci';
   const isWeeklyOff = leaveStatus === 'libur_mingguan';
   const isNoSchedule = leaveStatus === 'tidak_ada_jadwal';
   const isFullBooked = leaveStatus === 'full_booked';
@@ -166,6 +167,8 @@ const TherapistCard = ({
             "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border flex items-center gap-1",
             isFullBooked
               ? "bg-red-100 text-red-700 border-red-200"
+              : isSoapLocked
+              ? "bg-red-100 text-red-700 border-red-200"
               : isWeeklyOff
               ? "bg-violet-100 text-violet-700 border-violet-300"
               : "bg-gray-200 text-gray-700 border-gray-300"
@@ -173,6 +176,8 @@ const TherapistCard = ({
             {isWeeklyOff && <CalendarOff className="w-3 h-3" />}
             {leaveStatus === 'non_active'
               ? 'NON-ACTIVE'
+              : isSoapLocked
+              ? '🔒 SOAP TERKUNCI'
               : isWeeklyOff
               ? (leaveReason || 'LIBUR MINGGUAN')
               : leaveStatus.toUpperCase().replace(/_/g, ' ')}
@@ -248,7 +253,8 @@ const TherapistCard = ({
               ) : (
                 <div className="w-full py-4 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                    <span className="text-xs text-slate-400 italic">
-                      {isLeave && !isFullBooked && `Therapist sedang ${leaveStatus.replace(/_/g, ' ')}`}
+                      {isSoapLocked && !isFullBooked && 'Terapis terkunci: SOAP belum lengkap'}
+                      {isLeave && !isSoapLocked && !isFullBooked && `Therapist sedang ${leaveStatus.replace(/_/g, ' ')}`}
                       {isFullBooked && 'Semua slot hari ini sudah terbooking'}
                       {!isLeave && !isFullBooked && 'Tidak ada slot kosong'}
                    </span>

@@ -440,7 +440,7 @@ const OwnerBookingCalendar = () => {
       // Group 3: Tidak ada jadwal / cuti / non_active
       if (
         slots.length === 0 ||
-        ['tidak_ada_jadwal', 'cuti', 'non_active'].includes(leaveStatus)
+        ['tidak_ada_jadwal', 'cuti', 'non_active', 'terkunci'].includes(leaveStatus)
       ) {
         return { group: 3, time: '99:99' };
       }

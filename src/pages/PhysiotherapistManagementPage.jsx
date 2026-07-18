@@ -5,7 +5,8 @@ import TherapistManager from '@/components/owner/TherapistManager';
 import TherapistTargetManager from '@/components/owner/TherapistTargetManager';
 import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager';
 import BadgeManager from '@/components/owner/BadgeManager';
-import { CalendarClock, Users, Target, CalendarOff, Shield } from 'lucide-react';
+import TherapistSoapLockManager from '@/components/owner/TherapistSoapLockManager';
+import { CalendarClock, Users, Target, CalendarOff, Shield, Lock } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -84,6 +85,10 @@ const PhysiotherapistManagementPage = () => {
           <TabsTrigger value="badges" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
             <Shield className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Badges</span>
           </TabsTrigger>
+
+          <TabsTrigger value="soap-lock" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <Lock className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Kunci SOAP</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* ================= DATA TERAPIS ================= */}
@@ -118,6 +123,11 @@ const PhysiotherapistManagementPage = () => {
         {/* ================= BADGES ================= */}
         <TabsContent value="badges">
           <BadgeManager />
+        </TabsContent>
+
+        {/* ================= KUNCI SOAP ================= */}
+        <TabsContent value="soap-lock">
+          <TherapistSoapLockManager />
         </TabsContent>
 
       </Tabs>
