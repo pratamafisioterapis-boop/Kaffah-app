@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
+import { isNavItemDisabled } from '@/lib/featureCatalog';
 
 // Icon Mapping
 const iconMap = {
@@ -66,7 +67,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchClinicInfo = async () => {
       if (!userDetails?.clinic_id) return;
-      const { data } = await supabase.from('clinics').select('name, logo_url').eq('id', userDetails.clinic_id).single();
+      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features').eq('id', userDetails.clinic_id).single();
       if (data) setClinicInfo(data);
     };
     fetchClinicInfo();
@@ -388,10 +389,12 @@ const pwaNavItems = useMemo(() => {
   return navItems;
 
 }, [navItems, role, isPWA]);
-  const finalNavItems = useMemo(
-  () => processNavItems(pwaNavItems),
-  [pwaNavItems, role]
-);
+  const finalNavItems = useMemo(() => {
+    const processed = processNavItems(pwaNavItems);
+    const disabledFeatures = clinicInfo?.disabled_features;
+    if (!disabledFeatures || disabledFeatures.length === 0) return processed;
+    return processed.filter((item) => !isNavItemDisabled(item.label, disabledFeatures));
+  }, [pwaNavItems, role, clinicInfo]);
 
   
 
