@@ -4,9 +4,10 @@ import { getInventoryStockOuts, getInventoryItems } from '@/lib/api';
 import InventoryTakeOutForm from '@/components/admin/inventory/InventoryTakeOutForm';
 import InventoryTakeOutHistory from '@/components/admin/inventory/InventoryTakeOutHistory';
 import InventoryStockOverview from '@/components/admin/inventory/InventoryStockOverview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Boxes } from 'lucide-react';
+import { Boxes, ClipboardList } from 'lucide-react';
 
 const adminNavItems = [
   { label: 'Dashboard', path: '/admin', icon: 'Home' },
@@ -74,22 +75,43 @@ const InventoryTakeOutPage = () => {
           </div>
         </div>
 
-        <div>
-          <h3 className="font-bold text-slate-800 text-lg mb-3">Stok Barang Saat Ini</h3>
-          {loadingItems ? (
-            <div className="text-center py-12 text-slate-400">Memuat data...</div>
-          ) : (
-            <InventoryStockOverview items={items} />
-          )}
-        </div>
+        <Tabs defaultValue="ambil" className="w-full space-y-4">
+          <TabsList className="grid w-full sm:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-xl">
+            <TabsTrigger
+              value="ambil"
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            >
+              <ClipboardList className="w-4 h-4" /> Ambil Barang
+            </TabsTrigger>
+            <TabsTrigger
+              value="stok"
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            >
+              <Boxes className="w-4 h-4" /> Stok Barang
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm onSuccess={refreshAll} /></div></div>
-          <div className="xl:col-span-2">
-            <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Pengambilan</h3>
-            {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : <InventoryTakeOutHistory history={history} />}
-          </div>
-        </div>
+          <TabsContent value="ambil" className="mt-0 outline-none">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm onSuccess={refreshAll} /></div></div>
+              <div className="xl:col-span-2">
+                <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Pengambilan</h3>
+                {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : <InventoryTakeOutHistory history={history} />}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="stok" className="mt-0 outline-none">
+            <h3 className="font-bold text-slate-800 text-lg mb-3">Stok Barang Saat Ini</h3>
+            {loadingItems ? (
+              <div className="text-center py-12 text-slate-400">Memuat data...</div>
+            ) : (
+              <div className="max-h-[70vh] overflow-y-auto rounded-2xl">
+                <InventoryStockOverview items={items} />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
