@@ -27,7 +27,7 @@ const emptyForm = {
   diagnosa_id: '',
   diagnosa: '',
   keterangan_tambahan: '',
-  tempat: '',
+  tempat: 'Balikpapan',
 };
 
 const calcAge = (birthDate) => {

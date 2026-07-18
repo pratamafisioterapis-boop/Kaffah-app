@@ -38,7 +38,7 @@ const emptyForm = {
   program_terapi: [],
   program_terapi_lainnya: '',
   rekomendasi: '',
-  tempat: '',
+  tempat: 'Balikpapan',
 };
 
 const ResumeMedisForm = ({ onSaved }) => {

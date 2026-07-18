@@ -99,7 +99,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       <div style={{ marginTop: '56px', display: 'flex', justifyContent: 'flex-end' }}>
         <div style={{ textAlign: 'center', width: '250px' }}>
           <p style={{ fontSize: '13px', margin: 0 }}>
-            {(data?.tempat || clinic?.address?.split(',')[0] || 'Balikpapan')}, {formatDate(data?.document_date)}
+            {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
           </p>
           <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
           <div style={{ height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '10px' }}>
