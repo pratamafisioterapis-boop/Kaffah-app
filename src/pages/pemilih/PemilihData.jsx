@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Search, Pencil, Trash2, X, Check, CreditCard, ImageOff, Download, Users } from 'lucide-react';
+import PemilihSelect from './PemilihSelect';
 
 const KATEGORI_LABEL = {
   pendukung: { label: 'Pendukung', color: '#16a34a', bg: '#f0fdf4' },
@@ -17,17 +18,17 @@ const PemilihData = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterKecamatan, setFilterKecamatan] = useState('');
+  const [filterKelurahan, setFilterKelurahan] = useState('');
   const [filterKategori, setFilterKategori] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 25;
-  const [kecamatanList, setKecamatanList] = useState([]);
+  const [kelurahanList, setKelurahanList] = useState([]);
   const [editRow, setEditRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const [viewingKtp, setViewingKtp] = useState(null);
 
   useEffect(() => {
-    supabase.from('pemilih_kecamatan').select('id, nama').order('nama').then(({ data }) => setKecamatanList(data || []));
+    supabase.from('pemilih_kelurahan').select('id, nama').order('nama').then(({ data }) => setKelurahanList(data || []));
   }, []);
 
   const fetchRows = useCallback(async () => {
@@ -36,18 +37,18 @@ const PemilihData = () => {
     const to = from + pageSize - 1;
     let query = supabase
       .from('pemilih_data')
-      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, tps, foto_ktp_url, pemilih_kecamatan(nama), pemilih_kelurahan(nama)', { count: 'exact' })
+      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, tps, foto_ktp_url, pemilih_kelurahan(nama)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
     if (search.trim()) query = query.or(`nama.ilike.%${search.trim()}%,nik.ilike.%${search.trim()}%`);
-    if (filterKecamatan) query = query.eq('kecamatan_id', filterKecamatan);
+    if (filterKelurahan) query = query.eq('kelurahan_id', filterKelurahan);
     if (filterKategori) query = query.eq('kategori_dukungan', filterKategori);
 
     const { data, error, count } = await query;
     if (!error) { setRows(data || []); setTotalCount(count || 0); }
     setLoading(false);
-  }, [page, search, filterKecamatan, filterKategori]);
+  }, [page, search, filterKelurahan, filterKategori]);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
@@ -104,84 +105,136 @@ const PemilihData = () => {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <select className="p-select" style={{ width: 'auto', minWidth: 170 }} value={filterKecamatan} onChange={(e) => { setFilterKecamatan(e.target.value); setPage(1); }}>
-          <option value="">Semua Kecamatan</option>
-          {kecamatanList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
-        </select>
-        <select className="p-select" style={{ width: 'auto', minWidth: 170 }} value={filterKategori} onChange={(e) => { setFilterKategori(e.target.value); setPage(1); }}>
-          <option value="">Semua Kategori</option>
-          {Object.entries(KATEGORI_LABEL).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
+        <PemilihSelect
+          value={filterKelurahan}
+          onChange={(v) => { setFilterKelurahan(v); setPage(1); }}
+          options={kelurahanList.map((k) => ({ value: k.id, label: k.nama }))}
+          allLabel="Semua Kelurahan"
+          title="Pilih Kelurahan"
+          style={{ width: 'auto', minWidth: 170 }}
+        />
+        <PemilihSelect
+          value={filterKategori}
+          onChange={(v) => { setFilterKategori(v); setPage(1); }}
+          options={Object.entries(KATEGORI_LABEL).map(([k, v]) => ({ value: k, label: v.label }))}
+          allLabel="Semua Kategori"
+          title="Pilih Kategori"
+          style={{ width: 'auto', minWidth: 170 }}
+        />
       </div>
 
-      <div className="p-card" style={{ overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 60, textAlign: 'center' }}><Loader2 className="animate-spin" size={26} color="#dc2626" /></div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 50, textAlign: 'center' }}>
-            <Users size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
-            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Tidak ada data.</p>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="p-table">
-              <thead>
-                <tr>
-                  <th>Nama / NIK</th>
-                  <th>Alamat</th>
-                  <th>Wilayah</th>
-                  <th>Kategori</th>
-                  <th style={{ textAlign: 'center' }}>KTP</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#1a1d29' }}>{r.nama}</div>
-                      <div style={{ color: '#9ca3af', fontSize: 11.5, marginTop: 2 }}>{r.nik || '-'}</div>
-                    </td>
-                    <td style={{ color: '#4b5563' }}>
-                      {r.alamat || '-'} {r.rt && `RT${r.rt}`}{r.rw && `/RW${r.rw}`}
-                    </td>
-                    <td style={{ color: '#4b5563' }}>
-                      {r.pemilih_kelurahan?.nama || '-'}, {r.pemilih_kecamatan?.nama || '-'}
-                    </td>
-                    <td>
-                      <span className="p-badge" style={{
-                        color: KATEGORI_LABEL[r.kategori_dukungan]?.color,
-                        background: KATEGORI_LABEL[r.kategori_dukungan]?.bg,
-                      }}>
-                        {KATEGORI_LABEL[r.kategori_dukungan]?.label}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {r.foto_ktp_url ? (
-                        <button
-                          onClick={() => setViewingKtp({ url: r.foto_ktp_url, nama: r.nama })}
-                          className="p-btn-ghost"
-                          style={{ padding: '5px 12px', fontSize: 11 }}
-                        >
-                          <CreditCard size={13} /> Lihat
-                        </button>
-                      ) : (
-                        <span style={{ color: '#d4d4d8', display: 'inline-flex', alignItems: 'center' }}>
-                          <ImageOff size={14} />
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button onClick={() => openEdit(r)} style={{ marginRight: 10, color: '#2563eb', padding: 4 }}><Pencil size={15} /></button>
-                      <button onClick={() => deleteRow(r.id)} style={{ color: '#dc2626', padding: 4 }}><Trash2 size={15} /></button>
-                    </td>
+      {loading ? (
+        <div className="p-card" style={{ padding: 60, textAlign: 'center' }}><Loader2 className="animate-spin" size={26} color="#dc2626" /></div>
+      ) : rows.length === 0 ? (
+        <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
+          <Users size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
+          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Tidak ada data.</p>
+        </div>
+      ) : (
+        <>
+          <div className="p-card p-desktop-only" style={{ overflow: 'hidden' }}>
+            <div className="p-table-wrap">
+              <table className="p-table">
+                <thead>
+                  <tr>
+                    <th>Nama / NIK</th>
+                    <th>Alamat</th>
+                    <th>Wilayah</th>
+                    <th>Kategori</th>
+                    <th style={{ textAlign: 'center' }}>KTP</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <div style={{ fontWeight: 700, color: '#1a1d29' }}>{r.nama}</div>
+                        <div style={{ color: '#9ca3af', fontSize: 11.5, marginTop: 2 }}>{r.nik || '-'}</div>
+                      </td>
+                      <td style={{ color: '#4b5563' }}>
+                        {r.alamat || '-'} {r.rt && `RT${r.rt}`}{r.rw && `/RW${r.rw}`}
+                      </td>
+                      <td style={{ color: '#4b5563' }}>
+                        {r.pemilih_kelurahan?.nama || '-'}
+                      </td>
+                      <td>
+                        <span className="p-badge" style={{
+                          color: KATEGORI_LABEL[r.kategori_dukungan]?.color,
+                          background: KATEGORI_LABEL[r.kategori_dukungan]?.bg,
+                        }}>
+                          {KATEGORI_LABEL[r.kategori_dukungan]?.label}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {r.foto_ktp_url ? (
+                          <button
+                            onClick={() => setViewingKtp({ url: r.foto_ktp_url, nama: r.nama })}
+                            className="p-btn-ghost"
+                            style={{ padding: '5px 12px', fontSize: 11 }}
+                          >
+                            <CreditCard size={13} /> Lihat
+                          </button>
+                        ) : (
+                          <span style={{ color: '#d4d4d8', display: 'inline-flex', alignItems: 'center' }}>
+                            <ImageOff size={14} />
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => openEdit(r)} style={{ marginRight: 10, color: '#2563eb', padding: 4 }}><Pencil size={15} /></button>
+                        <button onClick={() => deleteRow(r.id)} style={{ color: '#dc2626', padding: 4 }}><Trash2 size={15} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="p-mobile-only">
+            {rows.map((r) => (
+              <div key={r.id} className="p-card" style={{ padding: 16, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: '#1a1d29', fontSize: 14 }}>{r.nama}</div>
+                    <div style={{ color: '#9ca3af', fontSize: 11.5, marginTop: 2 }}>{r.nik || '-'}</div>
+                  </div>
+                  <span className="p-badge" style={{
+                    color: KATEGORI_LABEL[r.kategori_dukungan]?.color,
+                    background: KATEGORI_LABEL[r.kategori_dukungan]?.bg,
+                    flexShrink: 0,
+                  }}>
+                    {KATEGORI_LABEL[r.kategori_dukungan]?.label}
+                  </span>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 12.5, color: '#4b5563', lineHeight: 1.5 }}>
+                  {r.alamat || '-'} {r.rt && `RT${r.rt}`}{r.rw && `/RW${r.rw}`}
+                  <br />
+                  <span style={{ color: '#9ca3af' }}>{r.pemilih_kelurahan?.nama || '-'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f1f1f3' }}>
+                  {r.foto_ktp_url && (
+                    <button
+                      onClick={() => setViewingKtp({ url: r.foto_ktp_url, nama: r.nama })}
+                      className="p-btn-ghost"
+                      style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12 }}
+                    >
+                      <CreditCard size={13} /> KTP
+                    </button>
+                  )}
+                  <button onClick={() => openEdit(r)} className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12, color: '#2563eb' }}>
+                    <Pencil size={13} /> Edit
+                  </button>
+                  <button onClick={() => deleteRow(r.id)} className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12, color: '#dc2626' }}>
+                    <Trash2 size={13} /> Hapus
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, fontSize: 13 }}>
         <span style={{ color: '#6b7280' }}>Halaman {page} dari {totalPages}</span>

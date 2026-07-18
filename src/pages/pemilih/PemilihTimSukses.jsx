@@ -2,34 +2,39 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
+import PemilihSelect from './PemilihSelect';
 
+const DAPIL_KECAMATAN = 'Balikpapan Utara';
 const inputStyle = { padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13.5 };
 
 const PemilihTimSukses = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState([]);
-  const [kecamatanList, setKecamatanList] = useState([]);
+  const [dapilKecamatanId, setDapilKecamatanId] = useState(null);
   const [kelurahanList, setKelurahanList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ nama: '', no_hp: '', jabatan: '', kecamatan_id: '', kelurahan_id: '', target_suara: '' });
+  const [form, setForm] = useState({ nama: '', no_hp: '', jabatan: '', kelurahan_id: '', target_suara: '' });
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: r }, { data: kec }, { data: kel }] = await Promise.all([
-      supabase.from('pemilih_tim_sukses').select('id, nama, no_hp, jabatan, target_suara, kecamatan_id, kelurahan_id, pemilih_kecamatan(nama), pemilih_kelurahan(nama)').order('created_at', { ascending: false }),
-      supabase.from('pemilih_kecamatan').select('id, nama').order('nama'),
-      supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').order('nama'),
+    let { data: kec } = await supabase.from('pemilih_kecamatan').select('id').ilike('nama', DAPIL_KECAMATAN).maybeSingle();
+    if (!kec) {
+      const { data: created } = await supabase.from('pemilih_kecamatan').insert({ nama: DAPIL_KECAMATAN }).select('id').single();
+      kec = created;
+    }
+    if (kec) setDapilKecamatanId(kec.id);
+
+    const [{ data: r }, { data: kel }] = await Promise.all([
+      supabase.from('pemilih_tim_sukses').select('id, nama, no_hp, jabatan, target_suara, kelurahan_id, pemilih_kelurahan(nama)').order('created_at', { ascending: false }),
+      supabase.from('pemilih_kelurahan').select('id, nama').order('nama'),
     ]);
     setRows(r || []);
-    setKecamatanList(kec || []);
     setKelurahanList(kel || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
-
-  const filteredKelurahan = kelurahanList.filter((k) => k.kecamatan_id === form.kecamatan_id);
 
   const handleAdd = async () => {
     if (!form.nama.trim()) {
@@ -41,13 +46,13 @@ const PemilihTimSukses = () => {
       nama: form.nama.trim(),
       no_hp: form.no_hp || null,
       jabatan: form.jabatan || null,
-      kecamatan_id: form.kecamatan_id || null,
+      kecamatan_id: dapilKecamatanId,
       kelurahan_id: form.kelurahan_id || null,
       target_suara: form.target_suara ? parseInt(form.target_suara, 10) : 0,
     });
     if (error) toast({ title: 'Gagal menambah', description: error.message, variant: 'destructive' });
     else {
-      setForm({ nama: '', no_hp: '', jabatan: '', kecamatan_id: '', kelurahan_id: '', target_suara: '' });
+      setForm({ nama: '', no_hp: '', jabatan: '', kelurahan_id: '', target_suara: '' });
       fetchAll();
     }
     setSaving(false);
@@ -72,14 +77,13 @@ const PemilihTimSukses = () => {
           <input style={inputStyle} placeholder="Nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
           <input style={inputStyle} placeholder="No. HP" value={form.no_hp} onChange={(e) => setForm({ ...form, no_hp: e.target.value })} />
           <input style={inputStyle} placeholder="Jabatan (mis. Koordinator Kecamatan)" value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} />
-          <select style={inputStyle} value={form.kecamatan_id} onChange={(e) => setForm({ ...form, kecamatan_id: e.target.value, kelurahan_id: '' })}>
-            <option value="">Pilih Kecamatan</option>
-            {kecamatanList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
-          </select>
-          <select style={inputStyle} value={form.kelurahan_id} onChange={(e) => setForm({ ...form, kelurahan_id: e.target.value })} disabled={!form.kecamatan_id}>
-            <option value="">Pilih Kelurahan (opsional)</option>
-            {filteredKelurahan.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
-          </select>
+          <PemilihSelect
+            value={form.kelurahan_id}
+            onChange={(v) => setForm({ ...form, kelurahan_id: v })}
+            options={kelurahanList.map((k) => ({ value: k.id, label: k.nama }))}
+            allLabel="Pilih Kelurahan (opsional)"
+            title="Pilih Kelurahan"
+          />
           <input style={inputStyle} type="number" placeholder="Target suara" value={form.target_suara} onChange={(e) => setForm({ ...form, target_suara: e.target.value })} />
         </div>
         <button className="p-btn-primary" style={{ marginTop: 14 }} onClick={handleAdd} disabled={saving}>
@@ -113,7 +117,7 @@ const PemilihTimSukses = () => {
                     </td>
                     <td style={{ color: '#475569' }}>{r.jabatan || '-'}</td>
                     <td style={{ color: '#475569' }}>
-                      {r.pemilih_kelurahan?.nama ? `${r.pemilih_kelurahan.nama}, ` : ''}{r.pemilih_kecamatan?.nama || '-'}
+                      {r.pemilih_kelurahan?.nama || '-'}
                     </td>
                     <td style={{ fontWeight: 700 }}>{r.target_suara?.toLocaleString('id-ID') || 0}</td>
                     <td style={{ textAlign: 'right' }}>

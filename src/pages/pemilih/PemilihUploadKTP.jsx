@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Upload, Check, ShieldAlert, CreditCard, ImagePlus } from 'lucide-react';
+import { Loader2, Upload, Check, ShieldAlert, CreditCard, ImagePlus, Camera, FolderOpen } from 'lucide-react';
+import PemilihSelect from './PemilihSelect';
 
 const DAPIL_KECAMATAN = 'Balikpapan Utara';
 
@@ -18,6 +19,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 const PemilihUploadKTP = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(null);
   const [file, setFile] = useState(null);
@@ -70,6 +72,7 @@ const PemilihUploadKTP = () => {
       alamat: '', rt: '', rw: '', kelurahan_id: '', no_hp: '',
       agama: '', status_perkawinan: '', pekerjaan: '', kategori_dukungan: 'belum_diketahui',
     });
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -110,6 +113,7 @@ const PemilihUploadKTP = () => {
         setRejected({ kecamatanTerbaca: r.kecamatan || 'tidak terbaca' });
         setFile(null);
         setPreview(null);
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
         if (fileInputRef.current) fileInputRef.current.value = '';
         toast({
           title: 'KTP Ditolak',
@@ -236,28 +240,49 @@ const PemilihUploadKTP = () => {
           </div>
 
           {!preview ? (
-            <label
-              htmlFor="ktp-file-input"
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 10, padding: '36px 16px', borderRadius: 14, border: '2px dashed #e2e2e6',
-                background: '#fafafa', cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, padding: '30px 16px', borderRadius: 14, border: '2px dashed #e2e2e6', background: '#fafafa',
+            }}>
               <ImagePlus size={30} color="#9ca3af" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Pilih foto KTP</span>
-              <span style={{ fontSize: 11, color: '#a1a1aa' }}>JPG atau PNG</span>
-            </label>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Ambil atau pilih foto KTP</span>
+              <span style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 4 }}>JPG atau PNG</span>
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <button type="button" className="p-btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 10px', fontSize: 12.5 }} onClick={() => cameraInputRef.current?.click()}>
+                  <Camera size={15} /> Kamera
+                </button>
+                <button type="button" className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '9px 10px', fontSize: 12.5 }} onClick={() => fileInputRef.current?.click()}>
+                  <FolderOpen size={15} /> Galeri/File
+                </button>
+              </div>
+            </div>
           ) : (
-            <img src={preview} alt="preview KTP" style={{ width: '100%', borderRadius: 12, border: '1px solid #e8e9ec', marginBottom: 14, boxShadow: '0 4px 12px rgba(16,24,40,0.08)' }} />
+            <>
+              <img src={preview} alt="preview KTP" style={{ width: '100%', borderRadius: 12, border: '1px solid #e8e9ec', marginBottom: 10, boxShadow: '0 4px 12px rgba(16,24,40,0.08)' }} />
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <button type="button" className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12 }} onClick={() => cameraInputRef.current?.click()}>
+                  <Camera size={14} /> Ambil Ulang
+                </button>
+                <button type="button" className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12 }} onClick={() => fileInputRef.current?.click()}>
+                  <FolderOpen size={14} /> Ganti File
+                </button>
+              </div>
+            </>
           )}
           <input
-            id="ktp-file-input"
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFile}
+            style={{ display: 'none' }}
+          />
+          <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleFile}
-            style={{ display: preview ? 'block' : 'none', marginBottom: 12, fontSize: 12.5 }}
+            style={{ display: 'none' }}
           />
 
           <button className="p-btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: preview ? 0 : 16 }} onClick={runOcr} disabled={!file || ocrLoading}>
@@ -332,10 +357,13 @@ const PemilihUploadKTP = () => {
             </div>
             <div>
               <label className="p-label">Kelurahan/Desa</label>
-              <select className="p-select" value={form.kelurahan_id} onChange={(e) => setForm({ ...form, kelurahan_id: e.target.value })}>
-                <option value="">Pilih Kelurahan</option>
-                {kelurahanList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
-              </select>
+              <PemilihSelect
+                value={form.kelurahan_id}
+                onChange={(v) => setForm({ ...form, kelurahan_id: v })}
+                options={kelurahanList.map((k) => ({ value: k.id, label: k.nama }))}
+                placeholder="Pilih Kelurahan"
+                title="Pilih Kelurahan"
+              />
             </div>
             <div>
               <label className="p-label">Agama</label>
