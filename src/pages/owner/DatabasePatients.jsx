@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Database, Plus } from 'lucide-react';
+import { Database, Plus, Upload } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
+import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
 
 const DatabasePatients = () => {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -19,6 +20,7 @@ const DatabasePatients = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [isImportOpen, setIsImportOpen] = useState(false);
 
     // State for Table
     const [pagination, setPagination] = useState({
@@ -137,13 +139,16 @@ const DatabasePatients = () => {
                     <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Total {pagination.totalItems} pasien terdaftar dalam sistem</p>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 shrink-0">
                   <Button onClick={handleRefresh} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                     {isPWA ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     ) : 'Refresh Data'}
+                  </Button>
+                  <Button onClick={() => setIsImportOpen(true)} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
+                    <Upload className="w-4 h-4" /> {isPWA ? 'Import' : 'Import Excel'}
                   </Button>
                   <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white gap-2">
                     <Plus className="w-4 h-4" /> {isPWA ? 'Tambah' : 'Tambah Pasien'}
@@ -165,11 +170,18 @@ const DatabasePatients = () => {
             />
             
             {/* Modal */}
-            <PatientModal 
-                isOpen={modalOpen} 
-                onClose={() => setModalOpen(false)} 
-                mode={modalMode} 
+            <PatientModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                mode={modalMode}
                 patient={selectedPatient}
+                onSuccess={handleRefresh}
+            />
+
+            {/* Import Excel Modal */}
+            <ImportPatientExcelModal
+                isOpen={isImportOpen}
+                onClose={() => setIsImportOpen(false)}
                 onSuccess={handleRefresh}
             />
         </div>
