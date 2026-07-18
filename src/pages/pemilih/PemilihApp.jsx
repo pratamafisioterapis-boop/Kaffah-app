@@ -7,6 +7,7 @@ import PemilihData from './PemilihData';
 import PemilihTimSukses from './PemilihTimSukses';
 import PemilihKegiatan from './PemilihKegiatan';
 import PemilihWilayah from './PemilihWilayah';
+import PemilihExtractPdf from './PemilihExtractPdf';
 
 const PemilihApp = () => {
   return (
@@ -19,6 +20,7 @@ const PemilihApp = () => {
         <Route path="/tim-sukses" element={<PemilihTimSukses />} />
         <Route path="/kegiatan" element={<PemilihKegiatan />} />
         <Route path="/wilayah" element={<PemilihWilayah />} />
+        <Route path="/extract-pdf" element={<PemilihExtractPdf />} />
       </Routes>
     </PemilihLayout>
   );

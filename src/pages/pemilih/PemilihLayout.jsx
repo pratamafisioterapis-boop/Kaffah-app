@@ -9,6 +9,7 @@ const NAV = [
   { to: '/pemilih/tim-sukses', label: 'Tim Sukses', icon: '🤝', full: 'Tim Sukses & Relawan' },
   { to: '/pemilih/kegiatan', label: 'Kegiatan', icon: '📝', full: 'Log Kegiatan' },
   { to: '/pemilih/wilayah', label: 'Wilayah', icon: '🗺️', full: 'Setup Wilayah' },
+  { to: '/pemilih/extract-pdf', label: 'Ekstrak PDF', icon: '📄', full: 'Ekstrak Data dari PDF' },
 ];
 
 const CSS = `
