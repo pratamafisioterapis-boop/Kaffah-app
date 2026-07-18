@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal } from 'lucide-react';
+import { FEATURE_CATALOG } from '@/lib/featureCatalog';
 
 const emptyForm = {
   id: null, name: '', address: '', phone: '', subscription_status: 'active',
@@ -169,6 +171,22 @@ const SuperAdminClinics = () => {
     else { toast({ title: 'Klinik dihapus' }); fetchClinics(); }
   };
 
+  const toggleFeature = async (clinic, featureKey) => {
+    const current = clinic.disabled_features || [];
+    const nextDisabled = current.includes(featureKey)
+      ? current.filter((k) => k !== featureKey)
+      : [...current, featureKey];
+
+    // Optimistic update
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features: nextDisabled } : c)));
+
+    const { error } = await supabase.from('clinics').update({ disabled_features: nextDisabled }).eq('id', clinic.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah fitur', description: error.message });
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, disabled_features: current } : c)));
+    }
+  };
+
   const handleCreateOwner = async () => {
     if (!ownerForm.full_name || !ownerForm.email || !ownerForm.password) {
       toast({ variant: 'destructive', title: 'Nama, email, dan password wajib diisi' });
@@ -223,22 +241,27 @@ const SuperAdminClinics = () => {
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+      ) : clinics.length === 0 ? (
+        <p className="p-6 text-center text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada klinik terdaftar.</p>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 divide-y">
-          {clinics.length === 0 && <p className="p-6 text-center text-slate-500">Belum ada klinik terdaftar.</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {clinics.map((clinic) => (
-            <div key={clinic.id} className="flex items-center justify-between p-4 flex-wrap gap-2">
-              <div>
-                <p className="font-semibold text-slate-800">{clinic.name}</p>
-                <p className="text-sm text-slate-500">{clinic.address || '-'} • {clinic.phone || '-'}</p>
-                <p className="text-sm text-blue-600 mt-1">
-                  Owner: {owners[clinic.id]?.full_name || <span className="text-slate-400 italic">belum ada</span>}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xs px-2 py-1 rounded-full ${clinic.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+            <div key={clinic.id} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-800 truncate">{clinic.name}</p>
+                  <p className="text-sm text-slate-500 truncate">{clinic.address || '-'}</p>
+                  <p className="text-sm text-slate-500">{clinic.phone || '-'}</p>
+                  <p className="text-sm text-blue-600 mt-1">
+                    Owner: {owners[clinic.id]?.full_name || <span className="text-slate-400 italic">belum ada</span>}
+                  </p>
+                </div>
+                <span className={`shrink-0 text-xs px-2 py-1 rounded-full ${clinic.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                   {clinic.subscription_status === 'active' ? 'Aktif' : 'Nonaktif'}
                 </span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
                 {owners[clinic.id] ? (
                   <Button size="sm" variant="outline" onClick={() => openEditOwner(owners[clinic.id])}>
                     <Pencil className="w-4 h-4 mr-1" /> Edit Owner
@@ -253,6 +276,23 @@ const SuperAdminClinics = () => {
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => openEdit(clinic)}><Pencil className="w-4 h-4" /></Button>
                 <Button size="sm" variant="ghost" onClick={() => handleDelete(clinic)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 mb-2.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> Fitur Klinik
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                  {FEATURE_CATALOG.map((feature) => (
+                    <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                      <Checkbox
+                        checked={!(clinic.disabled_features || []).includes(feature.key)}
+                        onCheckedChange={() => toggleFeature(clinic, feature.key)}
+                      />
+                      {feature.label}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
