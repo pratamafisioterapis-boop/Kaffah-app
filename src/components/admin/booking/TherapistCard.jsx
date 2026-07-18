@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, CalendarOff } from 'lucide-react';
+import { Plus, CalendarOff, FileWarning } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,10 @@ const TherapistCard = ({
   onManualBooking,
   onAppointmentClick,
   onPatientClick,
-  date, 
+  date,
   leaveStatus = 'aktif',
-  leaveReason = ''
+  leaveReason = '',
+  soapStatus = null // { unfilled_count, threshold_count, period_days, locked }
 }) => {
   
   // Safety check for therapist data
@@ -35,7 +36,8 @@ const TherapistCard = ({
       );
   }
 
-  const isLeave = ['cuti', 'non_active', 'libur_mingguan'].includes(leaveStatus);
+  const isLeave = ['cuti', 'non_active', 'libur_mingguan', 'terkunci'].includes(leaveStatus);
+  const isSoapLocked = leaveStatus === 'terkunci';
   const isWeeklyOff = leaveStatus === 'libur_mingguan';
   const isNoSchedule = leaveStatus === 'tidak_ada_jadwal';
   const isFullBooked = leaveStatus === 'full_booked';
@@ -166,6 +168,8 @@ const TherapistCard = ({
             "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border flex items-center gap-1",
             isFullBooked
               ? "bg-red-100 text-red-700 border-red-200"
+              : isSoapLocked
+              ? "bg-red-100 text-red-700 border-red-200"
               : isWeeklyOff
               ? "bg-violet-100 text-violet-700 border-violet-300"
               : "bg-gray-200 text-gray-700 border-gray-300"
@@ -173,6 +177,8 @@ const TherapistCard = ({
             {isWeeklyOff && <CalendarOff className="w-3 h-3" />}
             {leaveStatus === 'non_active'
               ? 'NON-ACTIVE'
+              : isSoapLocked
+              ? '🔒 SOAP TERKUNCI'
               : isWeeklyOff
               ? (leaveReason || 'LIBUR MINGGUAN')
               : leaveStatus.toUpperCase().replace(/_/g, ' ')}
@@ -183,6 +189,28 @@ const TherapistCard = ({
       <p className="text-xs md:text-sm text-white/80">
         {therapist.specialization || 'Fisioterapis'}
       </p>
+
+      {soapStatus && soapStatus.unfilled_count > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "flex items-center gap-1 mt-1.5 w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+              soapStatus.unfilled_count >= soapStatus.threshold_count
+                ? "bg-red-500/20 text-red-100 border-red-400/40"
+                : "bg-amber-500/20 text-amber-100 border-amber-400/40"
+            )}>
+              <FileWarning className="w-3 h-3 shrink-0" />
+              {soapStatus.unfilled_count} SOAP belum diisi
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              {soapStatus.unfilled_count} kunjungan belum diisi SOAP dalam {soapStatus.period_days} hari terakhir
+              {soapStatus.unfilled_count >= soapStatus.threshold_count ? ' (mencapai ambang kunci)' : ''}.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      )}
     </div>
 
   </div>
@@ -248,7 +276,8 @@ const TherapistCard = ({
               ) : (
                 <div className="w-full py-4 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                    <span className="text-xs text-slate-400 italic">
-                      {isLeave && !isFullBooked && `Therapist sedang ${leaveStatus.replace(/_/g, ' ')}`}
+                      {isSoapLocked && !isFullBooked && 'Terapis terkunci: SOAP belum lengkap'}
+                      {isLeave && !isSoapLocked && !isFullBooked && `Therapist sedang ${leaveStatus.replace(/_/g, ' ')}`}
                       {isFullBooked && 'Semua slot hari ini sudah terbooking'}
                       {!isLeave && !isFullBooked && 'Tidak ada slot kosong'}
                    </span>

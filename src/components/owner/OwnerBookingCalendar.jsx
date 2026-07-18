@@ -21,7 +21,8 @@ import {
   getActivePhysiotherapists,
   getAppointments,
   getAvailableSlots,
-  getPatientByPhone
+  getPatientByPhone,
+  getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
 
 // Reuse Admin Components
@@ -47,6 +48,7 @@ const OwnerBookingCalendar = () => {
   const [appointments, setAppointments] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
+  const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null);
@@ -74,6 +76,21 @@ const OwnerBookingCalendar = () => {
       fetchDayData(date);
     }
   }, [date, therapists]);
+
+  useEffect(() => {
+    if (therapists.length > 0) {
+      loadSoapStatus();
+    }
+  }, [therapists]);
+
+  const loadSoapStatus = async () => {
+    const { data } = await getClinicTherapistsSoapLockStatus();
+    if (Array.isArray(data)) {
+      const map = {};
+      data.forEach(s => { map[s.therapist_id] = s; });
+      setSoapStatusByTherapist(map);
+    }
+  };
 
   // Real-time subscription
   useEffect(() => {
@@ -440,7 +457,7 @@ const OwnerBookingCalendar = () => {
       // Group 3: Tidak ada jadwal / cuti / non_active
       if (
         slots.length === 0 ||
-        ['tidak_ada_jadwal', 'cuti', 'non_active'].includes(leaveStatus)
+        ['tidak_ada_jadwal', 'cuti', 'non_active', 'terkunci'].includes(leaveStatus)
       ) {
         return { group: 3, time: '99:99' };
       }
@@ -487,6 +504,7 @@ const OwnerBookingCalendar = () => {
                 date={date}
                 leaveStatus={leaveStatus}
                 leaveReason={therapistLeaveReason[therapist.id]}
+                soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}

@@ -13,7 +13,8 @@ const SlotGrid = ({
   onSlotClick, 
   leaveStatus = 'aktif' 
 }) => {
-  const isCutiOrSakit = ['cuti', 'sakit', 'non_active'].includes(leaveStatus);
+  const isCutiOrSakit = ['cuti', 'sakit', 'non_active', 'terkunci'].includes(leaveStatus);
+  const isSoapLocked = leaveStatus === 'terkunci';
 
   // Debug log for Task 2 verification
   if (slots.length > 0 && isCutiOrSakit) {
@@ -24,7 +25,7 @@ const SlotGrid = ({
     return (
       <div className="w-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
         <span className="text-sm text-slate-400 italic">
-           {isCutiOrSakit ? 'Therapist tidak tersedia.' : 'Tidak ada slot tersedia.'}
+           {isSoapLocked ? 'Terapis terkunci: SOAP belum lengkap.' : isCutiOrSakit ? 'Therapist tidak tersedia.' : 'Tidak ada slot tersedia.'}
         </span>
       </div>
     );
@@ -58,7 +59,7 @@ const SlotGrid = ({
             >
               {isDisabled ? (
                  <span className="leave-label font-bold text-[10px] uppercase text-gray-700">
-                    {leaveStatus === 'non_active' ? 'INACTIVE' : leaveStatus.toUpperCase()}
+                    {leaveStatus === 'non_active' ? 'INACTIVE' : leaveStatus === 'terkunci' ? '🔒 TERKUNCI' : leaveStatus.toUpperCase()}
                  </span>
               ) : (
                  <>
@@ -76,7 +77,11 @@ const SlotGrid = ({
                   <div className="w-full cursor-not-allowed">{ButtonElement}</div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Fisioterapis sedang {leaveStatus === 'non_active' ? 'tidak aktif' : leaveStatus}</p>
+                  <p>
+                    {isSoapLocked
+                      ? 'Jadwal terkunci: dokumentasi SOAP belum lengkap.'
+                      : `Fisioterapis sedang ${leaveStatus === 'non_active' ? 'tidak aktif' : leaveStatus}`}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             );

@@ -29,7 +29,8 @@ import {
   getAppointments,
   getPhysiotherapistByUserId,
   getAvailableSlots,
-  getPatientByPhone
+  getPatientByPhone,
+  getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
 
 import TherapistCard from './booking/TherapistCard';
@@ -52,6 +53,7 @@ const AdminAppointmentBooking = () => {
 
   const [therapists, setTherapists] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
+  const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
@@ -95,6 +97,21 @@ const formattedDate = date
       fetchDayData(date);
     }
   }, [date, therapists]);
+
+  useEffect(() => {
+    if (therapists.length > 0) {
+      loadSoapStatus();
+    }
+  }, [therapists]);
+
+  const loadSoapStatus = async () => {
+    const { data } = await getClinicTherapistsSoapLockStatus();
+    if (Array.isArray(data)) {
+      const map = {};
+      data.forEach(s => { map[s.therapist_id] = s; });
+      setSoapStatusByTherapist(map);
+    }
+  };
 
   useEffect(() => {
     const leaveChannel = supabase
@@ -164,6 +181,8 @@ const formattedDate = date
 
           if (s.status === 'aktif') {
             statusMap[s.therapist_id] = 'aktif';
+          } else if (statusMap[s.therapist_id] !== 'aktif' && s.status) {
+            statusMap[s.therapist_id] = s.status;
           }
 
           const slotObj = {
@@ -465,7 +484,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       // Group 3: Tidak ada jadwal / cuti / non_active
       if (
         slots.length === 0 ||
-        ['tidak_ada_jadwal', 'cuti', 'non_active'].includes(leaveStatus)
+        ['tidak_ada_jadwal', 'cuti', 'non_active', 'terkunci'].includes(leaveStatus)
       ) {
         return { group: 3, time: '99:99' };
       }
@@ -516,6 +535,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 appointments={therapistApps}
                 date={date}
                 leaveStatus={leaveStatus}
+                soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}

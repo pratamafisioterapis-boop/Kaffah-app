@@ -3960,6 +3960,121 @@ export const savePhysiotherapist = async (payload) => {
     return { data, error: null };
   }, 'savePhysiotherapist', { retry: true });
 };
+
+// ============================================
+// SOAP LOCK (physiotherapist appointment lock based on unfilled SOAP)
+// ============================================
+
+export const getSoapLockSettings = async () => {
+  return safeQuery(async () => {
+    const { data: clinic } = await getCurrentClinic();
+    if (!clinic?.id) return { data: null, error: null };
+
+    const { data, error } = await supabase
+      .from('soap_lock_settings')
+      .select('*')
+      .eq('clinic_id', clinic.id)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    if (data) return { data, error: null };
+
+    // No row yet for this clinic (e.g. brand new clinic) — create a
+    // disabled-by-default row so it never activates unexpectedly.
+    const { data: created, error: createError } = await supabase
+      .from('soap_lock_settings')
+      .insert({ clinic_id: clinic.id, enabled: false, threshold_count: 5, period_days: 7 })
+      .select()
+      .single();
+
+    if (createError) return { error: createError };
+    return { data: created, error: null };
+  }, 'getSoapLockSettings');
+};
+
+export const saveSoapLockSettings = async ({ enabled, threshold_count, period_days }) => {
+  return safeQuery(async () => {
+    const { data: clinic } = await getCurrentClinic();
+    if (!clinic?.id) return { error: { message: 'Clinic tidak ditemukan' } };
+
+    const { data, error } = await supabase
+      .from('soap_lock_settings')
+      .upsert(
+        {
+          clinic_id: clinic.id,
+          enabled,
+          threshold_count,
+          period_days,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'clinic_id' }
+      )
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, error: null };
+  }, 'saveSoapLockSettings');
+};
+
+export const getClinicTherapistsSoapLockStatus = async () => {
+  return safeQuery(async () => {
+    const { data: clinic } = await getCurrentClinic();
+    if (!clinic?.id) return { data: [], error: null };
+
+    const { data, error } = await supabase.rpc('get_clinic_therapists_soap_lock_status', {
+      p_clinic_id: clinic.id
+    });
+
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getClinicTherapistsSoapLockStatus');
+};
+
+export const updateTherapistSoapLockOverride = async (therapistId, {
+  soap_lock_exempt,
+  soap_lock_custom_enabled,
+  soap_lock_threshold_count,
+  soap_lock_period_days
+}) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .update({
+        soap_lock_exempt,
+        soap_lock_custom_enabled,
+        soap_lock_threshold_count,
+        soap_lock_period_days
+      })
+      .eq('id', therapistId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updateTherapistSoapLockOverride');
+};
+
+export const setTherapistManualUnlock = async (therapistId, unlock, { note, byName } = {}) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .update({
+        soap_lock_manual_unlock: unlock,
+        soap_lock_manual_unlock_note: unlock ? (note || null) : null,
+        soap_lock_manual_unlock_by_name: unlock ? (byName || null) : null,
+        soap_lock_manual_unlock_at: unlock ? new Date().toISOString() : null
+      })
+      .eq('id', therapistId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, error: null };
+  }, 'setTherapistManualUnlock');
+};
+
 export const createTherapistAccount = async (payload, password) => {
   return safeQuery(async () => {
 
