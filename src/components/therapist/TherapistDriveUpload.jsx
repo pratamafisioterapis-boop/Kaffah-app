@@ -96,7 +96,13 @@ const TherapistDriveUpload = () => {
       <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
-          <Input ref={fileInputRef} type="file" onChange={handleFileChange} disabled={uploading} />
+          <Input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
           {file && (
             <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-lg px-3 py-2 mt-1">
               <span className="flex items-center gap-1.5 min-w-0">
