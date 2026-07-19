@@ -518,10 +518,10 @@ const getPremiumPastelBadge = (text) => {
           <div className={cn("flex flex-wrap items-center gap-2 w-full", isPWA ? "flex-col" : "")}>
             {/* Filter Tombol Periode */}
             <div className="flex items-center gap-2 w-full">
-              <div className="flex gap-1.5 flex-1">
+              <div className="grid grid-cols-4 gap-1.5 flex-1">
                 <Button
   variant={activeFilter === 'today' ? 'default' : 'outline'}
-  className={activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
@@ -543,7 +543,7 @@ const getPremiumPastelBadge = (text) => {
 
                 <Button
   variant={activeFilter === 'week' ? 'default' : 'outline'}
-  className={activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
   size="sm"
                   onClick={() => {
   const now = new Date();
@@ -579,7 +579,7 @@ const getPremiumPastelBadge = (text) => {
 
                 <Button
   variant={activeFilter === 'month' ? 'default' : 'outline'}
-  className={activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
@@ -613,7 +613,7 @@ const end = formatLocal(lastDay);
 
                 <Button
   variant={activeFilter === 'period' ? 'default' : 'outline'}
-  className={activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
+  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : '')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
@@ -646,13 +646,13 @@ const end = formatLocal(lastDay);
             {/* Filter Tanggal + Refresh + Terapis + Search */}
             <div className={cn("flex items-center gap-2 w-full flex-wrap", isPWA && "flex-col")}>
               <div className="flex items-center gap-2 flex-1 flex-wrap">
-              <Input 
-  value={dateRangeDisplay.start} 
+              <Input
+  value={dateRangeDisplay.start}
   onChange={(e) => {
     setActiveFilter(null);
     setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
-  }} 
-  className="w-32 text-xs" 
+  }}
+  className="h-9 w-32 text-xs"
   onClick={() => setShowStartCalendar(true)}
 />
 
@@ -673,13 +673,13 @@ const end = formatLocal(lastDay);
 
 <span>-</span>
 
-<Input 
-  value={dateRangeDisplay.end} 
+<Input
+  value={dateRangeDisplay.end}
   onChange={(e) => {
     setActiveFilter(null);
     setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
-  }} 
-  className="w-32 text-xs"
+  }}
+  className="h-9 w-32 text-xs"
   onClick={() => setShowEndCalendar(true)}
 />
 
@@ -698,7 +698,7 @@ const end = formatLocal(lastDay);
   </div>
 )}
 
-<Button variant="outline" size="icon" onClick={fetchRecaps}>
+<Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={fetchRecaps}>
   <RefreshCcw className="w-4 h-4"/>
 </Button>
 <div className="relative">
@@ -755,7 +755,7 @@ const end = formatLocal(lastDay);
                 </div>
               </>
             )}
-            <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={cn(isPWA ? "w-full" : "w-[180px]")} />
+            <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={cn("h-9", isPWA ? "w-full" : "w-[180px]")} />
               </div>
             </div>
           </div>

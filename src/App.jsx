@@ -17,6 +17,7 @@ const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
 const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
 const SmartBookingPage = React.lazy(() => import('@/pages/SmartBookingPage'));
+const InvoiceViewPage = React.lazy(() => import('@/pages/InvoiceViewPage'));
 const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
 const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
@@ -174,6 +175,7 @@ function App() {
                 <Route path="/book" element={<Navigate to="/booking" replace />} />
                 <Route path="/booking/smart" element={<Navigate to="/booking" replace />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/i/:recapId" element={<InvoiceViewPage />} />
                 
                 {/* Protected Routes */}
                 <Route
