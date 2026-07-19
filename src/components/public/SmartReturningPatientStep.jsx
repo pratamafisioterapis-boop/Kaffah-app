@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Search, Users, CheckCircle2, AlertTriangle, Phon
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { searchPatientByBirthDateAndLastName, getPatientTherapistHistory, getLatestMedicalRecordForPatient } from '@/lib/api';
+import { searchPatientByBirthDateAndLastName, getPatientTherapistHistory } from '@/lib/api';
 
 const SmartReturningPatientStep = ({ onBack, onSwitchToNew, onNext }) => {
   const [lastName, setLastName] = useState('');
@@ -14,7 +14,6 @@ const SmartReturningPatientStep = ({ onBack, onSwitchToNew, onNext }) => {
   const [notFound, setNotFound] = useState(false);
   const [patient, setPatient] = useState(null);
   const [phone, setPhone] = useState('');
-  const [note, setNote] = useState('');
   const [preferredTherapists, setPreferredTherapistsState] = useState([]);
   const [error, setError] = useState('');
 
@@ -40,14 +39,10 @@ const SmartReturningPatientStep = ({ onBack, onSwitchToNew, onNext }) => {
     setPatient(found);
     setPhone(found.phone || '');
 
-    const [historyRes, recordRes] = await Promise.all([
-      getPatientTherapistHistory(found.id),
-      getLatestMedicalRecordForPatient(found.id)
-    ]);
+    const historyRes = await getPatientTherapistHistory(found.id);
     setPreferredTherapistsState(
       (historyRes.data || []).sort((a, b) => b.count - a.count).slice(0, 2)
     );
-    setNote(recordRes.data?.history_main_problem || '');
     setSearching(false);
   };
 
@@ -65,7 +60,6 @@ const SmartReturningPatientStep = ({ onBack, onSwitchToNew, onNext }) => {
         age: String(age),
         gender: (patient.gender || '').toLowerCase().startsWith('p') || patient.gender === 'female' ? 'female' : 'male'
       },
-      note: note.trim(),
       preferredTherapistIds: preferredTherapists.map(t => t.id)
     });
   };
@@ -177,20 +171,6 @@ const SmartReturningPatientStep = ({ onBack, onSwitchToNew, onNext }) => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="h-11 sm:h-12 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold text-slate-700 mb-1.5 block">
-                  Keluhan Terakhir <span className="text-slate-400 font-normal">(bisa diubah jika sudah berbeda)</span>
-                </Label>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={4}
-                  maxLength={500}
-                  placeholder="Ceritakan keluhan Anda saat ini..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#1e3a8a]/30 focus:border-[#1e3a8a]/40 transition-all resize-none"
                 />
               </div>
 
