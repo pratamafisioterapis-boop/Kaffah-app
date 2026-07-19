@@ -23,7 +23,11 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
 
     getTherapistPracticeHoursGrouped(therapist.id).then(({ data }) => {
       if (!isMounted || !data) return;
-      setPracticeHours(data.map(g => `${g.day_range}: ${g.display_start_time?.slice(0, 5)} - ${g.display_end_time?.slice(0, 5)}`));
+      setPracticeHours(
+        data
+          .filter(g => g.day_range)
+          .map(g => `${g.day_range}: ${g.display_start_time?.slice(0, 5)} - ${g.display_end_time?.slice(0, 5)}`)
+      );
     });
 
     return () => { isMounted = false; };
@@ -108,9 +112,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
           )}
         </div>
 
-        {/* Bio Section */}
-        <div className="px-6 flex-grow relative z-10 flex flex-col items-center w-full">
-          <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 w-full mb-5 flex-grow">
+        {/* Bio & Practice Hours Section */}
+        <div className="px-6 flex-grow relative z-10 flex flex-col items-center w-full gap-3">
+          <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 w-full min-h-[64px] flex flex-col justify-center">
             <div className="cursor-help" onClick={(e) => isLongBio && handleOpenBio(e)}>
               <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed text-center">
                 {bioText}
@@ -130,16 +134,21 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
           </div>
 
           {practiceHours.length > 0 && (
-            <div className="w-full mt-3 bg-slate-50/70 border border-slate-100 rounded-xl p-3">
+            <div className="w-full bg-[#b8935f]/[0.06] border border-[#b8935f]/20 rounded-xl p-3">
               <div className="flex items-center gap-1.5 justify-center text-[10px] font-bold text-[#b8935f] uppercase tracking-wider mb-1.5">
                 <Clock className="w-3 h-3" /> Jam Praktek
               </div>
               <div className="space-y-0.5">
-                {practiceHours.map((schedule, idx) => (
+                {practiceHours.slice(0, 2).map((schedule, idx) => (
                   <p key={idx} className="text-xs text-slate-600 font-medium text-center">
                     {schedule}
                   </p>
                 ))}
+                {practiceHours.length > 2 && (
+                  <p className="text-[10px] text-slate-400 text-center pt-0.5">
+                    +{practiceHours.length - 2} jadwal lainnya
+                  </p>
+                )}
               </div>
             </div>
           )}
