@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { ArrowLeft, Sparkles, Loader2, AlertTriangle, MessageCircle, CalendarDays, User, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, AlertTriangle, MessageCircle, CalendarDays, User, ShieldCheck, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { findSmartRecommendations } from '@/lib/smartBookingMatcher';
 import { complaintLabel } from '@/lib/complaintTags';
 
-const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, onBack, onSelectSlot }) => {
+const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, preferredTherapistIds = [], onBack, onSelectSlot }) => {
   const [loading, setLoading] = useState(true);
   const [searchResult, setSearchResult] = useState(null);
 
@@ -21,7 +21,8 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, onBack, 
       complaintSlugs,
       whenId: timePreference.whenId,
       customDate: timePreference.customDate ? new Date(timePreference.customDate) : null,
-      windowId: timePreference.windowId
+      windowId: timePreference.windowId,
+      preferredTherapistIds
     }).then(res => {
       if (isMounted) {
         setSearchResult(res);
@@ -107,6 +108,12 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, onBack, 
                     <p className="text-xs text-slate-400 truncate">{r.therapist.specialization || 'Fisioterapis'}</p>
                   </div>
                 </div>
+
+                {r.isPreferred && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold mb-1.5">
+                    <History className="w-3.5 h-3.5" /> Pernah menangani Anda
+                  </div>
+                )}
 
                 {Array.isArray(r.therapist.complaint_tags) && r.therapist.complaint_tags.some(t => complaintSlugs.includes(t)) && (
                   <div className="flex items-center gap-1.5 text-[11px] text-[#b8935f] font-semibold mb-3">

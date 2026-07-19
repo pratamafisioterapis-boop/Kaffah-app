@@ -11,7 +11,9 @@ import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { getActivePhysiotherapists, createAppointment, getClinicLogo } from '@/lib/api';
 import { complaintLabel } from '@/lib/complaintTags';
+import SmartPatientTypeStep from '@/components/public/SmartPatientTypeStep';
 import SmartPatientStep from '@/components/public/SmartPatientStep';
+import SmartReturningPatientStep from '@/components/public/SmartReturningPatientStep';
 import SmartComplaintStep from '@/components/public/SmartComplaintStep';
 import SmartTimePreferenceStep from '@/components/public/SmartTimePreferenceStep';
 import SmartResultsStep from '@/components/public/SmartResultsStep';
@@ -25,6 +27,10 @@ const STEP_ORDER = [
   { key: 'confirm', label: 'Konfirmasi', icon: ClipboardCheck },
 ];
 
+// 'patientSearch' (returning patients) fills the same slot as 'patient' (new
+// patients) in the progress bar — they're two paths to the same milestone.
+const STEP_PROGRESS_ALIAS = { patientSearch: 'patient' };
+
 const SmartBookingPage = () => {
   const { toast } = useToast();
   const location = useLocation();
@@ -37,6 +43,9 @@ const SmartBookingPage = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
+  const [patientType, setPatientType] = useState(null); // 'new' | 'returning'
+  const [existingPatientId, setExistingPatientId] = useState(null);
+  const [preferredTherapistIds, setPreferredTherapistIds] = useState([]);
   const [patientData, setPatientData] = useState(null);
   const [complaintSlugs, setComplaintSlugs] = useState([]);
   const [complaintNote, setComplaintNote] = useState('');
@@ -103,7 +112,7 @@ const SmartBookingPage = () => {
         guestComplaint,
         guestAge: parseInt(patientData.age, 10),
         guestGender: patientData.gender,
-        patientId: null
+        patientId: existingPatientId
       };
 
       const { error } = await createAppointment(appointmentPayload);
@@ -120,7 +129,7 @@ const SmartBookingPage = () => {
     }
   };
 
-  const currentStepIndex = STEP_ORDER.findIndex(s => s.key === step);
+  const currentStepIndex = STEP_ORDER.findIndex(s => s.key === (STEP_PROGRESS_ALIAS[step] || step));
   const StepProgress = () => {
     if (currentStepIndex === -1) return null;
     return (
@@ -232,7 +241,7 @@ const SmartBookingPage = () => {
                     ))}
                   </div>
 
-                  <Button onClick={() => goTo('patient')} className="h-13 sm:h-14 px-8 sm:px-10 rounded-full bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white font-bold shadow-lg shadow-[#0f1e3d]/30 text-base sm:text-lg">
+                  <Button onClick={() => goTo('patientType')} className="h-13 sm:h-14 px-8 sm:px-10 rounded-full bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white font-bold shadow-lg shadow-[#0f1e3d]/30 text-base sm:text-lg">
                     Mulai Smart Booking <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
 
@@ -244,12 +253,36 @@ const SmartBookingPage = () => {
                 </motion.div>
               )}
 
+              {step === 'patientType' && (
+                <SmartPatientTypeStep
+                  key="patientType"
+                  onBack={() => goTo('intro')}
+                  onSelectNew={() => { setPatientType('new'); setExistingPatientId(null); goTo('patient'); }}
+                  onSelectReturning={() => { setPatientType('returning'); goTo('patientSearch'); }}
+                />
+              )}
+
               {step === 'patient' && (
                 <SmartPatientStep
                   key="patient"
                   initialData={patientData}
-                  onBack={() => goTo('intro')}
+                  onBack={() => goTo('patientType')}
                   onNext={(data) => { setPatientData(data); goTo('complaint'); }}
+                />
+              )}
+
+              {step === 'patientSearch' && (
+                <SmartReturningPatientStep
+                  key="patientSearch"
+                  onBack={() => goTo('patientType')}
+                  onSwitchToNew={() => { setPatientType('new'); setExistingPatientId(null); goTo('patient'); }}
+                  onNext={({ patientId, patientData: foundData, note, preferredTherapistIds: ids }) => {
+                    setExistingPatientId(patientId);
+                    setPatientData(foundData);
+                    setComplaintNote(note);
+                    setPreferredTherapistIds(ids);
+                    goTo('complaint');
+                  }}
                 />
               )}
 
@@ -258,7 +291,7 @@ const SmartBookingPage = () => {
                   key="complaint"
                   initialSelection={complaintSlugs}
                   initialNote={complaintNote}
-                  onBack={() => goTo('patient')}
+                  onBack={() => goTo(patientType === 'returning' ? 'patientSearch' : 'patient')}
                   onNext={(slugs, note) => { setComplaintSlugs(slugs); setComplaintNote(note); goTo('time'); }}
                 />
               )}
@@ -278,6 +311,7 @@ const SmartBookingPage = () => {
                   therapists={therapists}
                   complaintSlugs={complaintSlugs}
                   timePreference={timePreference}
+                  preferredTherapistIds={preferredTherapistIds}
                   onBack={() => goTo('time')}
                   onSelectSlot={handleSelectSlot}
                 />

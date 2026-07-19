@@ -230,14 +230,11 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
 
     setSaving(true);
     try {
-        // Clean up data before sending - Remove therapist fields
-        // Note: Even though api.js also cleans it, it's safer to not send it from here if possible, 
-        // but since the component state has it, we pass it and let api.js handle the stripping 
-        // OR strip here. The prompt asks to update the handler.
-        // Let's strip here as well for clarity and redundancy as requested in Task 3.
+        // therapist_id is not a real foreign key here (the picker stores the
+        // therapist's name as its "value"), so it must not be sent to the DB.
+        // therapist_name is a genuine text column and should be persisted.
         const {
   therapist_id,
-  therapist_name,
   patient,
   created_at,
   created_by,
@@ -251,14 +248,7 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
             ? JSON.stringify(cleanedData.medical_diagnosis)
             : null;
         }
-        
-        // However, we need to pass formData to the API functions which expect an object.
-        // The API functions (Task 1 & 2) are now updated to destructure these out.
-        // So passing formData is safe, but let's pass cleanedData to be explicit about intent in the UI layer too if desired.
-        // Actually, the API functions expect the full object or whatever we pass.
-        // I will pass the full formData because the API function signatures (Task 1 & 2) now handle the exclusion.
-        // BUT Task 3 explicitly says: "destructure formData to remove therapist_id and therapist_name before calling... Only submit the valid fields to the API."
-        
+
         let result;
         if (recordData?.id) {
            result = await updateMedicalRecordDetailed(recordData.id, cleanedData);
@@ -518,7 +508,7 @@ onClose();
                         placeholder="Cari Terapis..."
                       />
                       <p className="text-xs text-slate-500 mt-1">
-                        ℹ️ Field ini hanya untuk referensi, tidak disimpan ke database
+                        ℹ️ Nama fisioterapis akan disimpan bersama rekam medis
                       </p>
                     </div>
                     <div className="space-y-2">
