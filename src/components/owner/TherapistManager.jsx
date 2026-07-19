@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange,
-  Wallet, Check, Megaphone, Stethoscope
+  Wallet, Check, Megaphone, Stethoscope, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,6 +119,31 @@ const TherapistManager = () => {
         toast({ variant: "destructive", title: "Error", description: error?.message });
     }
     setLoading(false);
+  };
+
+  const toggleRemunerationEnabled = async (therapist) => {
+    const newValue = !therapist.remuneration_enabled;
+
+    setTherapists(prev => prev.map(t =>
+      t.id === therapist.id ? { ...t, remuneration_enabled: newValue } : t
+    ));
+
+    const { error } = await supabase
+      .from('physiotherapists')
+      .update({ remuneration_enabled: newValue })
+      .eq('id', therapist.id);
+
+    if (error) {
+      setTherapists(prev => prev.map(t =>
+        t.id === therapist.id ? { ...t, remuneration_enabled: !newValue } : t
+      ));
+      toast({ variant: "destructive", title: "Gagal Update Remunerasi", description: error.message });
+    } else {
+      toast({
+        title: newValue ? "Remunerasi Diaktifkan" : "Remunerasi Dinonaktifkan",
+        description: `Status remunerasi ${therapist.name} telah diperbarui.`
+      });
+    }
   };
 
   const toggleTherapistStatus = async (therapist) => {
@@ -461,6 +486,19 @@ const headerColorMap = {
                   >
                     <CalendarRange className="w-2.5 h-2.5" /> {formatTherapistPeriodLabel(therapist)}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleRemunerationEnabled(therapist)}
+                    title="Klik untuk mengaktifkan/nonaktifkan program remunerasi terapis ini"
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                      therapist.remuneration_enabled
+                        ? "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100"
+                        : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                    )}
+                  >
+                    <Award className="w-2.5 h-2.5" /> {therapist.remuneration_enabled ? 'Remunerasi Aktif' : 'Remunerasi Nonaktif'}
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-3 min-w-0">
