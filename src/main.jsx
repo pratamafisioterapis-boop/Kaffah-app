@@ -65,14 +65,10 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('SW registered:', registration.scope);
 
-        // Cek update tiap kali tab di-fokus lagi / dibuka lagi
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            registration.update();
-          }
-        });
-
-        // Cek update berkala tiap 60 detik selama tab terbuka
+        // Sengaja TIDAK cek update di 'visibilitychange': tab kembali visible juga terjadi
+        // saat user baru kembali dari native file/camera picker (mis. upload dokumen Drive),
+        // dan reload otomatis di titik itu akan menghapus file yang baru saja dipilih.
+        // Cek update berkala tiap 60 detik selama tab terbuka sudah cukup.
         setInterval(() => {
           registration.update();
         }, 60 * 1000);
