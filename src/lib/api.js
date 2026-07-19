@@ -862,26 +862,6 @@ export const getPatientTherapistHistory = async (patientId) => {
   }, 'getPatientTherapistHistory', { retry: false });
 };
 
-// Public-safe (no login required) — used by Smart Booking's "Pasien Lama" flow
-// to prefill the complaint note from the patient's most recent medical record.
-export const getLatestMedicalRecordForPatient = async (patientId) => {
-  return safeQuery(async () => {
-    if (!patientId) return { data: null, error: null };
-
-    const { data, error } = await supabase
-      .from('medical_records_detailed')
-      .select('history_main_problem, record_date')
-      .eq('patient_id', patientId)
-      .order('record_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) return { error };
-
-    return { data, error: null };
-  }, 'getLatestMedicalRecordForPatient', { retry: false });
-};
-
 export const getUser = async (id) => {
   return safeQuery(async () => {
     if (id) {

@@ -16,7 +16,6 @@ import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
 const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
-const PublicBookingPage = React.lazy(() => import('@/pages/PublicBookingPage'));
 const SmartBookingPage = React.lazy(() => import('@/pages/SmartBookingPage'));
 const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
@@ -171,9 +170,9 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/booking" element={<PublicBookingPage />} />
+                <Route path="/booking" element={<SmartBookingPage />} />
                 <Route path="/book" element={<Navigate to="/booking" replace />} />
-                <Route path="/booking/smart" element={<SmartBookingPage />} />
+                <Route path="/booking/smart" element={<Navigate to="/booking" replace />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 
                 {/* Protected Routes */}

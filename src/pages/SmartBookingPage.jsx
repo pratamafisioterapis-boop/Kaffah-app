@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, ArrowLeft, ShieldCheck, Loader2, AlertTriangle, RefreshCw,
-  UserPlus, Stethoscope, CalendarClock, Wand2, ClipboardCheck, CheckCircle2
+  UserPlus, Stethoscope, CalendarClock, Wand2, ClipboardCheck, CheckCircle2, Crown, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -80,6 +80,11 @@ const SmartBookingPage = () => {
   const goTo = (next) => {
     setStep(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleHomecareWhatsApp = () => {
+    const message = `Halo Admin Kaffah Physiotherapy,\n\nSaya ingin melakukan reservasi layanan fisioterapi homecare.\n\nMohon informasi terkait jadwal yang tersedia dan prosedur booking.\n\nTerima kasih.`;
+    window.open(`https://wa.me/6281233339435?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSelectSlot = (therapist, date, slot) => {
@@ -185,13 +190,10 @@ const SmartBookingPage = () => {
               </span>
             </div>
           </div>
-          <a href="/booking" className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-[#1e3a8a] bg-blue-50 border border-blue-100 rounded-full px-3.5 py-1.5 hover:bg-blue-100 transition-colors">
-            Booking Manual <ArrowRight className="w-3.5 h-3.5" />
-          </a>
         </div>
       </header>
 
-      <main className="flex-grow py-6 sm:py-10">
+      <main className={step === 'intro' ? 'flex-grow' : 'flex-grow py-6 sm:py-10'}>
         {fetchError ? (
           <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center max-w-md mx-auto">
             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-red-100">
@@ -213,43 +215,83 @@ const SmartBookingPage = () => {
             {step !== 'intro' && <StepProgress />}
             <AnimatePresence mode="wait">
               {step === 'intro' && (
-                <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-full max-w-3xl mx-auto px-4 pt-6 sm:pt-14 pb-16 text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0f1e3d]/5 border border-[#0f1e3d]/10 mb-5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#b8935f]" />
-                    <span className="text-[11px] sm:text-xs font-bold tracking-[0.15em] text-[#0f1e3d] uppercase">Smart Booking</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-4xl font-bold text-[#0f1e3d] tracking-tight mb-3">
-                    Biar Kami Carikan Terapis &amp; Jadwal Terbaik
-                  </h1>
-                  <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-10">
-                    Ceritakan keluhan dan waktu favorit Anda — sistem kami akan merekomendasikan fisioterapis yang paling sesuai beserta jadwal yang tersedia. Lebih cepat, tanpa perlu memilih satu per satu.
-                  </p>
+                <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-full">
+                  {/* Premium hero */}
+                  <div className="relative overflow-hidden bg-gradient-to-br from-[#0f1e3d] via-[#132348] to-[#0f1e3d] pt-14 sm:pt-20 pb-16 sm:pb-24 px-4">
+                    <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#b8935f]/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-[#1e3a8a]/30 rounded-full blur-3xl" />
+                    <div
+                      className="absolute inset-0 opacity-[0.07]"
+                      style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+                    />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-left">
-                    {[
-                      { icon: Stethoscope, title: 'Ceritakan Keluhan', desc: 'Pilih kondisi yang Anda rasakan' },
-                      { icon: CalendarClock, title: 'Pilih Waktu Favorit', desc: 'Kapan & jam berapa Anda mau terapi' },
-                      { icon: Wand2, title: 'Dapatkan Rekomendasi', desc: 'Terapis & slot jam terbaik otomatis' },
-                    ].map((f, i) => (
-                      <div key={i} className="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-[0_10px_30px_-20px_rgba(15,30,61,0.15)]">
-                        <div className="w-10 h-10 rounded-xl bg-[#0f1e3d]/5 flex items-center justify-center mb-3">
-                          <f.icon className="w-5 h-5 text-[#0f1e3d]" />
-                        </div>
-                        <p className="font-bold text-sm text-[#0f1e3d]">{f.title}</p>
-                        <p className="text-xs text-slate-500 mt-1">{f.desc}</p>
+                    <div className="relative z-10 max-w-2xl mx-auto text-center">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur mb-6">
+                        <Crown className="w-3.5 h-3.5 text-[#e8c98a]" />
+                        <span className="text-[11px] sm:text-xs font-bold tracking-[0.15em] text-[#e8c98a] uppercase">Kaffah Premium Care</span>
                       </div>
-                    ))}
+                      <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-4 leading-tight">
+                        Biar Kami Carikan Terapis &amp; Jadwal Terbaik
+                      </h1>
+                      <p className="text-slate-300 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-10">
+                        Ceritakan keluhan dan waktu favorit Anda — sistem kami akan merekomendasikan fisioterapis yang paling sesuai beserta jadwal yang tersedia.
+                      </p>
+
+                      <Button onClick={() => goTo('patientType')} className="h-13 sm:h-14 px-8 sm:px-10 rounded-full bg-gradient-to-r from-[#b8935f] to-[#d4b378] hover:from-[#a8825a] hover:to-[#c4a368] text-[#0f1e3d] font-bold shadow-lg shadow-[#b8935f]/25 text-base sm:text-lg hover:scale-[1.02] transition-transform">
+                        Mulai Smart Booking <ArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
                   </div>
 
-                  <Button onClick={() => goTo('patientType')} className="h-13 sm:h-14 px-8 sm:px-10 rounded-full bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white font-bold shadow-lg shadow-[#0f1e3d]/30 text-base sm:text-lg">
-                    Mulai Smart Booking <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
+                  {/* How it works */}
+                  <div className="max-w-4xl mx-auto px-4 -mt-8 sm:-mt-10 relative z-10 mb-12 sm:mb-16">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+                      {[
+                        { icon: Stethoscope, title: 'Ceritakan Keluhan', desc: 'Pilih kondisi yang Anda rasakan' },
+                        { icon: CalendarClock, title: 'Pilih Waktu Favorit', desc: 'Kapan & jam berapa Anda mau terapi' },
+                        { icon: Wand2, title: 'Dapatkan Rekomendasi', desc: 'Terapis & slot jam terbaik otomatis' },
+                      ].map((f, i) => (
+                        <div key={i} className="bg-white rounded-2xl border border-slate-200/70 p-5 sm:p-6 shadow-[0_20px_45px_-25px_rgba(15,30,61,0.35)] text-left">
+                          <div className="w-11 h-11 rounded-xl bg-[#0f1e3d]/5 flex items-center justify-center mb-4">
+                            <f.icon className="w-5 h-5 text-[#0f1e3d]" />
+                          </div>
+                          <p className="font-bold text-sm text-[#0f1e3d]">{f.title}</p>
+                          <p className="text-xs text-slate-500 mt-1">{f.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                  <p className="mt-5">
-                    <a href="/booking" className="text-sm text-slate-400 hover:text-[#1e3a8a] font-medium underline underline-offset-4">
-                      Ingin pilih semua sendiri? Coba Booking Manual
-                    </a>
-                  </p>
+                  {/* Homecare CTA */}
+                  <div className="max-w-4xl mx-auto px-4 pb-16 sm:pb-24">
+                    <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0f1e3d] via-[#132348] to-[#0f1e3d] p-7 sm:p-9 shadow-[0_30px_70px_-25px_rgba(15,30,61,0.5)]">
+                      <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#b8935f]/10 rounded-full blur-3xl" />
+                      <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#1e3a8a]/20 rounded-full blur-3xl" />
+
+                      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="max-w-2xl text-left">
+                          <div className="inline-flex items-center gap-1.5 mb-3">
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#b8935f]" />
+                            <p className="text-[11px] sm:text-xs font-bold tracking-[0.15em] text-[#b8935f] uppercase">Exclusive Service</p>
+                          </div>
+                          <h4 className="text-lg sm:text-xl font-bold text-white mb-2.5 sm:mb-3 tracking-tight">
+                            Layanan Fisioterapi Homecare
+                          </h4>
+                          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                            Untuk reservasi layanan fisioterapi homecare, kami sarankan menghubungi Admin Kaffah Physiotherapy secara langsung agar penjadwalan dapat disesuaikan dengan kebutuhan dan ketersediaan terapis.
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={handleHomecareWhatsApp}
+                          className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#b8935f] to-[#d4b378] hover:from-[#a8825a] hover:to-[#c4a368] text-[#0f1e3d] px-6 sm:px-7 py-3 rounded-full text-sm font-bold shadow-lg shadow-[#b8935f]/20 transition-all duration-300 hover:scale-105 shrink-0"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Hubungi Admin via WhatsApp
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -276,10 +318,9 @@ const SmartBookingPage = () => {
                   key="patientSearch"
                   onBack={() => goTo('patientType')}
                   onSwitchToNew={() => { setPatientType('new'); setExistingPatientId(null); goTo('patient'); }}
-                  onNext={({ patientId, patientData: foundData, note, preferredTherapistIds: ids }) => {
+                  onNext={({ patientId, patientData: foundData, preferredTherapistIds: ids }) => {
                     setExistingPatientId(patientId);
                     setPatientData(foundData);
-                    setComplaintNote(note);
                     setPreferredTherapistIds(ids);
                     goTo('complaint');
                   }}

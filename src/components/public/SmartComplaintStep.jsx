@@ -20,6 +20,10 @@ const SmartComplaintStep = ({ initialSelection, initialNote, onBack, onNext }) =
       setError('Pilih minimal satu keluhan agar kami bisa merekomendasikan terapis yang tepat.');
       return;
     }
+    if (!note.trim()) {
+      setError('Mohon ceritakan keluhan Anda lebih detail.');
+      return;
+    }
     onNext(selected, note.trim());
   };
 
@@ -81,7 +85,7 @@ const SmartComplaintStep = ({ initialSelection, initialNote, onBack, onNext }) =
 
           <div className="mt-6">
             <label htmlFor="complaint-note" className="block text-sm font-semibold text-slate-700 mb-2">
-              Ceritakan lebih detail <span className="text-slate-400 font-normal">(opsional)</span>
+              Ceritakan lebih detail
             </label>
             <textarea
               id="complaint-note"
