@@ -36,6 +36,23 @@ const TherapistDriveUpload = () => {
   useEffect(() => {
     pushDiag('Komponen dimuat (mount)');
 
+    try {
+      const reloadReason = sessionStorage.getItem('last-auto-reload-reason');
+      if (reloadReason) {
+        const info = JSON.parse(reloadReason);
+        pushDiag(`⚠️ HALAMAN SEBELUMNYA AUTO-RELOAD karena: ${info.type} — "${info.message}" (pada ${info.at})`);
+        sessionStorage.removeItem('last-auto-reload-reason');
+      }
+      const renderError = sessionStorage.getItem('last-render-error');
+      if (renderError) {
+        const info = JSON.parse(renderError);
+        pushDiag(`⚠️ ERROR RENDER SEBELUMNYA: "${info.message}" (pada ${info.at})`);
+        sessionStorage.removeItem('last-render-error');
+      }
+    } catch (_e) {
+      // ignore
+    }
+
     const onVisibility = () => pushDiag(`visibilitychange -> document.visibilityState=${document.visibilityState}`);
     const onPageShow = (e) => pushDiag(`pageshow (persisted=${e.persisted})`);
     const onPageHide = (e) => pushDiag(`pagehide (persisted=${e.persisted})`);
