@@ -24,8 +24,23 @@ class ErrorBoundary extends React.Component {
     const isStaleChunkError = /dynamically imported module|loading chunk .* failed|failed to fetch dynamically/i.test(error?.message || '');
     if (isStaleChunkError && !sessionStorage.getItem('stale-chunk-reloaded')) {
       sessionStorage.setItem('stale-chunk-reloaded', '1');
+      sessionStorage.setItem('last-auto-reload-reason', JSON.stringify({
+        type: 'stale-chunk',
+        message: error?.message || '',
+        at: new Date().toISOString(),
+        path: window.location.pathname,
+      }));
       window.location.reload();
+      return;
     }
+
+    // Record ANY uncaught render error (not just stale-chunk ones) so the next
+    // page load can surface what actually happened, even without devtools.
+    sessionStorage.setItem('last-render-error', JSON.stringify({
+      message: error?.message || String(error),
+      at: new Date().toISOString(),
+      path: window.location.pathname,
+    }));
   }
 
   render() {
