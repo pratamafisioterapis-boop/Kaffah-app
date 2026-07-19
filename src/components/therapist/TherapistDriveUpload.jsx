@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Bug, Camera, Image as ImageIcon, FileText } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Camera, Image as ImageIcon, FileText } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 100;
@@ -57,13 +57,18 @@ const formatFileSize = (bytes) => {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 };
 
-const nowStr = () => new Date().toTimeString().slice(0, 8) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
-
-const useDiagLog = () => {
-  const [log, setLog] = useState([]);
-  const push = (msg) => setLog((prev) => [...prev.slice(-29), `${nowStr()} — ${msg}`]);
-  return [log, push];
-};
+// MIME types eksplisit (bukan ekstensi seperti ".doc") untuk dokumen: pada
+// beberapa versi Android, accept yang berisi ekstensi memaksa sistem
+// menampilkan document picker penuh yang berat dan bisa membuat tab browser
+// dimatikan sistem saat memilih. MIME type eksplisit mengarahkan ke picker
+// yang lebih ringan.
+const DOC_ACCEPT = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+].join(',');
 
 const TherapistDriveUpload = () => {
   const { toast } = useToast();
@@ -75,55 +80,12 @@ const TherapistDriveUpload = () => {
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
   const docInputRef = useRef(null);
-  const [diagLog, pushDiag] = useDiagLog();
 
   const resetAllInputs = () => {
     [cameraInputRef, galleryInputRef, docInputRef].forEach((ref) => {
       if (ref.current) ref.current.value = '';
     });
   };
-
-  useEffect(() => {
-    pushDiag('Komponen dimuat (mount)');
-
-    try {
-      const reloadReason = sessionStorage.getItem('last-auto-reload-reason');
-      if (reloadReason) {
-        const info = JSON.parse(reloadReason);
-        pushDiag(`⚠️ HALAMAN SEBELUMNYA AUTO-RELOAD karena: ${info.type} — "${info.message}" (pada ${info.at})`);
-        sessionStorage.removeItem('last-auto-reload-reason');
-      }
-      const renderError = sessionStorage.getItem('last-render-error');
-      if (renderError) {
-        const info = JSON.parse(renderError);
-        pushDiag(`⚠️ ERROR RENDER SEBELUMNYA: "${info.message}" (pada ${info.at})`);
-        sessionStorage.removeItem('last-render-error');
-      }
-    } catch (_e) {
-      // ignore
-    }
-
-    const onVisibility = () => pushDiag(`visibilitychange -> document.visibilityState=${document.visibilityState}`);
-    const onPageShow = (e) => pushDiag(`pageshow (persisted=${e.persisted})`);
-    const onPageHide = (e) => pushDiag(`pagehide (persisted=${e.persisted})`);
-    const onFocus = () => pushDiag('window focus');
-    const onBlur = () => pushDiag('window blur');
-
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pageshow', onPageShow);
-    window.addEventListener('pagehide', onPageHide);
-    window.addEventListener('focus', onFocus);
-    window.addEventListener('blur', onBlur);
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pageshow', onPageShow);
-      window.removeEventListener('pagehide', onPageHide);
-      window.removeEventListener('focus', onFocus);
-      window.removeEventListener('blur', onBlur);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -141,7 +103,7 @@ const TherapistDriveUpload = () => {
       }
       setFile(pending.file);
       if (pending.label) setLabel(pending.label);
-      pushDiag(`✅ File "${pending.file.name}" dipulihkan otomatis setelah halaman ter-reload`);
+      toast({ title: 'File Dipulihkan', description: `File "${pending.file.name}" yang sempat terputus berhasil dipulihkan.` });
     })();
     return () => {
       cancelled = true;
@@ -163,7 +125,6 @@ const TherapistDriveUpload = () => {
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0] || null;
-    pushDiag(`onChange input file terpanggil, files.length=${e.target.files?.length ?? 'null'}${selected ? `, nama=${selected.name}` : ''}`);
     if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       toast({
         variant: 'destructive',
@@ -226,16 +187,13 @@ const TherapistDriveUpload = () => {
           <Label className="text-xs text-slate-600">Pilih File</Label>
           {/* Tiga jalur terpisah: kamera dan galeri memakai picker media ringan
               Android (terbukti stabil, sama dengan upload Remunerasi). Picker
-              "Dokumen" membuka aplikasi Files penuh yang di beberapa device
-              membunuh tab browser saat memilih — sengaja dipisah agar jalur
-              foto tidak ikut lewat situ. */}
+              "Dokumen" membuka document picker sistem yang di beberapa device
+              lebih berat dan bisa membuat tab browser dimatikan saat memilih —
+              sengaja dipisah agar jalur foto/video tidak ikut lewat situ. */}
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => {
-                pushDiag('Tombol "Ambil Foto" ditekan');
-                cameraInputRef.current?.click();
-              }}
+              onClick={() => cameraInputRef.current?.click()}
               disabled={uploading}
               className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
             >
@@ -243,10 +201,7 @@ const TherapistDriveUpload = () => {
             </button>
             <button
               type="button"
-              onClick={() => {
-                pushDiag('Tombol "Foto/Video" ditekan');
-                galleryInputRef.current?.click();
-              }}
+              onClick={() => galleryInputRef.current?.click()}
               disabled={uploading}
               className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
             >
@@ -254,10 +209,7 @@ const TherapistDriveUpload = () => {
             </button>
             <button
               type="button"
-              onClick={() => {
-                pushDiag('Tombol "Dokumen" ditekan');
-                docInputRef.current?.click();
-              }}
+              onClick={() => docInputRef.current?.click()}
               disabled={uploading}
               className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
             >
@@ -284,7 +236,7 @@ const TherapistDriveUpload = () => {
           <input
             ref={docInputRef}
             type="file"
-            accept="application/pdf,.doc,.docx,.xls,.xlsx"
+            accept={DOC_ACCEPT}
             className="hidden"
             onChange={handleFileChange}
             disabled={uploading}
@@ -356,19 +308,6 @@ const TherapistDriveUpload = () => {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="bg-slate-900 text-slate-100 p-4 rounded-lg border border-slate-700">
-        <Label className="text-xs text-amber-400 mb-2 flex items-center gap-1.5">
-          <Bug className="w-3.5 h-3.5" /> Log Diagnostik (sementara, untuk debugging)
-        </Label>
-        <div className="text-[10px] font-mono space-y-0.5 max-h-64 overflow-y-auto">
-          {diagLog.length === 0 ? (
-            <p className="text-slate-500">Belum ada event tercatat.</p>
-          ) : (
-            diagLog.map((entry, i) => <p key={i} className="text-slate-300 break-all">{entry}</p>)
-          )}
-        </div>
       </div>
     </div>
   );
