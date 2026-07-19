@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Bug, Camera, Image as ImageIcon, FileText } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
-const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE_MB = 100;
 
 // Simpan file yang baru dipilih ke IndexedDB supaya selamat dari reload
 // halaman (tab Android bisa di-reload OS saat user berada di native
@@ -217,7 +217,7 @@ const TherapistDriveUpload = () => {
           Upload Dokumen ke Google Drive
         </h2>
         <p className="text-slate-500 mt-1">
-          Unggah dokumen (foto, PDF, dll) ke folder Google Drive klinik yang telah diatur Owner.
+          Unggah dokumen (foto, video, PDF, dll) ke folder Google Drive klinik yang telah diatur Owner.
         </p>
       </div>
 
@@ -244,13 +244,13 @@ const TherapistDriveUpload = () => {
             <button
               type="button"
               onClick={() => {
-                pushDiag('Tombol "Pilih Foto" ditekan');
+                pushDiag('Tombol "Foto/Video" ditekan');
                 galleryInputRef.current?.click();
               }}
               disabled={uploading}
               className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
             >
-              <ImageIcon className="w-4 h-4" /> Pilih Foto
+              <ImageIcon className="w-4 h-4" /> Foto/Video
             </button>
             <button
               type="button"
@@ -276,7 +276,7 @@ const TherapistDriveUpload = () => {
           <input
             ref={galleryInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="hidden"
             onChange={handleFileChange}
             disabled={uploading}

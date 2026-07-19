@@ -3669,7 +3669,7 @@ export const uploadFileToClinicDrive = async ({ file, label }) => {
     if (data?.error) return { error: { message: data.error } };
 
     return { data, success: true, error: null };
-  }, 'uploadFileToClinicDrive', { timeout: 120000 });
+  }, 'uploadFileToClinicDrive', { timeout: 300000 });
 };
 
 export const getMyDriveUploads = async (limit = 20) => {
