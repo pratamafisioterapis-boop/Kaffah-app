@@ -3540,7 +3540,7 @@ export const getWaApiSettings = async () => {
 
     const { data, error } = await supabase
       .from('wa_settings')
-      .select('id, clinic_id, enabled, api_provider, api_key, phone_number')
+      .select('id, clinic_id, enabled, api_provider, api_key, number_key, phone_number')
       .eq('clinic_id', clinicId)
       .maybeSingle();
 
@@ -3554,7 +3554,7 @@ export const getWaApiSettings = async () => {
   }, 'getWaApiSettings', { retry: true });
 };
 
-export const upsertWaApiSettings = async ({ apiKey, phoneNumber, enabled }) => {
+export const upsertWaApiSettings = async ({ apiKey, numberKey, phoneNumber, enabled }) => {
   return safeQuery(async () => {
     const clinicId = await getCurrentClinicId();
     if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
@@ -3563,6 +3563,7 @@ export const upsertWaApiSettings = async ({ apiKey, phoneNumber, enabled }) => {
       clinic_id: clinicId,
       api_provider: 'watzap',
       api_key: apiKey,
+      number_key: numberKey,
       phone_number: phoneNumber,
       enabled: enabled !== undefined ? enabled : true,
       updated_at: new Date().toISOString(),
