@@ -39,6 +39,7 @@ const SmartBookingPage = () => {
 
   const [patientData, setPatientData] = useState(null);
   const [complaintSlugs, setComplaintSlugs] = useState([]);
+  const [complaintNote, setComplaintNote] = useState('');
   const [timePreference, setTimePreference] = useState(null);
   const [selectedPick, setSelectedPick] = useState(null); // { therapist, date, slot }
 
@@ -86,6 +87,9 @@ const SmartBookingPage = () => {
       const timePart = (slot.slot_start || '').slice(0, 5);
       const appointmentDate = `${dateStr}T${timePart}:00`;
       const complaintLabels = complaintSlugs.map(complaintLabel);
+      const guestComplaint = complaintNote
+        ? `${complaintLabels.join(', ')} — ${complaintNote}`
+        : complaintLabels.join(', ');
 
       const appointmentPayload = {
         therapistId: therapist.id,
@@ -93,10 +97,10 @@ const SmartBookingPage = () => {
         appointmentDate,
         durationMinutes: slot.duration_minutes || 60,
         status: 'confirmed',
-        notes: `[Smart Booking] Keluhan: ${complaintLabels.join(', ')}`,
+        notes: `[Smart Booking] Keluhan: ${guestComplaint}`,
         guestName: patientData.full_name,
         guestPhone: patientData.phone,
-        guestComplaint: complaintLabels.join(', '),
+        guestComplaint,
         guestAge: parseInt(patientData.age, 10),
         guestGender: patientData.gender,
         patientId: null
@@ -107,7 +111,7 @@ const SmartBookingPage = () => {
 
       setSuccess(true);
 
-      const message = `Halo Admin Kaffah Physiotherapy,\nSaya ingin konfirmasi booking (Smart Booking):\n\nNama: ${patientData.full_name}\nUsia: ${patientData.age} tahun\nJenis Kelamin: ${patientData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}\nKeluhan: ${complaintLabels.join(', ')}\nTerapis: ${therapist.name}\nTanggal: ${format(date, 'dd MMM yyyy')}\nJam: ${timePart}\n\nMohon diproses. Terima kasih.`;
+      const message = `Halo Admin Kaffah Physiotherapy,\nSaya ingin konfirmasi booking (Smart Booking):\n\nNama: ${patientData.full_name}\nUsia: ${patientData.age} tahun\nJenis Kelamin: ${patientData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}\nKeluhan: ${guestComplaint}\nTerapis: ${therapist.name}\nTanggal: ${format(date, 'dd MMM yyyy')}\nJam: ${timePart}\n\nMohon diproses. Terima kasih.`;
       window.open(`https://wa.me/6281233339435?text=${encodeURIComponent(message)}`, '_blank');
     } catch (error) {
       toast({ variant: 'destructive', title: 'Booking Gagal', description: error.message || 'Terjadi kesalahan saat memproses data.' });
@@ -253,8 +257,9 @@ const SmartBookingPage = () => {
                 <SmartComplaintStep
                   key="complaint"
                   initialSelection={complaintSlugs}
+                  initialNote={complaintNote}
                   onBack={() => goTo('patient')}
-                  onNext={(slugs) => { setComplaintSlugs(slugs); goTo('time'); }}
+                  onNext={(slugs, note) => { setComplaintSlugs(slugs); setComplaintNote(note); goTo('time'); }}
                 />
               )}
 
@@ -298,7 +303,7 @@ const SmartBookingPage = () => {
                       <div className="flex justify-between items-center py-3 border-b border-slate-100"><span className="text-slate-400 text-sm">Usia / Jenis Kelamin</span><span className="font-bold text-[#1e3a8a] text-right">{patientData?.age} tahun · {patientData?.gender === 'male' ? 'Laki-laki' : 'Perempuan'}</span></div>
                       <div className="flex justify-between items-center py-3 border-b border-slate-100"><span className="text-slate-400 text-sm">Fisioterapis</span><span className="font-bold text-[#1e3a8a] text-right">{selectedPick.therapist.name}</span></div>
                       <div className="flex justify-between items-center py-3 border-b border-slate-100"><span className="text-slate-400 text-sm">Waktu</span><span className="font-bold text-[#1e3a8a] text-right">{format(selectedPick.date, 'dd MMM yyyy', { locale: idLocale })} - {(selectedPick.slot.slot_start || '').slice(0, 5)}</span></div>
-                      <div className="py-3"><span className="text-slate-400 text-sm block mb-1.5">Keluhan</span><div className="flex flex-wrap gap-1.5">{complaintSlugs.map(slug => (<span key={slug} className="text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-700 px-2.5 py-1 rounded-full">{complaintLabel(slug)}</span>))}</div></div>
+                      <div className="py-3"><span className="text-slate-400 text-sm block mb-1.5">Keluhan</span><div className="flex flex-wrap gap-1.5">{complaintSlugs.map(slug => (<span key={slug} className="text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-700 px-2.5 py-1 rounded-full">{complaintLabel(slug)}</span>))}</div>{complaintNote && <p className="text-sm text-slate-600 mt-2 leading-relaxed">{complaintNote}</p>}</div>
                       <Button onClick={handleConfirmBooking} disabled={submitting} className="w-full h-14 text-base sm:text-lg font-bold bg-[#1e3a8a] hover:bg-[#172554] mt-6 rounded-full shadow-lg shadow-blue-900/20 hover:shadow-xl transition-all hover:-translate-y-0.5">{submitting ? <Loader2 className="animate-spin mr-2" /> : "Simpan & Konfirmasi via WhatsApp"}</Button>
                     </div>
                   </div>
