@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, FolderOpen } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 25;
@@ -96,10 +96,19 @@ const TherapistDriveUpload = () => {
       <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
-          <Input
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="w-full flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+          >
+            <FolderOpen className="w-4 h-4" /> Pilih File
+          </button>
+          <input
             ref={fileInputRef}
             type="file"
             accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+            className="hidden"
             onChange={handleFileChange}
             disabled={uploading}
           />
