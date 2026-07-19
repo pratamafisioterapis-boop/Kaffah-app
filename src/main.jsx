@@ -44,9 +44,29 @@ try {
 if ('serviceWorker' in navigator) {
   let refreshing = false;
 
-  // Begitu SW baru ambil alih kontrol tab ini, reload otomatis 1x
+  // Lacak interaksi dengan <input type="file"> di seluruh app (klik utk buka
+  // native picker, atau file baru saja dipilih). Sama seperti alasan kita
+  // sengaja tidak cek update SW di 'visibilitychange' (lihat bawah): kembali
+  // dari native file/camera picker juga memicu tab jadi visible lagi, dan
+  // kalau tepat saat itu SW baru selesai aktif lalu controllerchange me-reload
+  // halaman, file yang baru dipilih user langsung hilang tanpa pesan error.
+  let fileInputGraceUntil = 0;
+  const FILE_INPUT_GRACE_MS = 20000;
+  const markFileInputActivity = (e) => {
+    if (e.target?.matches?.('input[type="file"]')) {
+      fileInputGraceUntil = Date.now() + FILE_INPUT_GRACE_MS;
+    }
+  };
+  document.addEventListener('click', markFileInputActivity, true);
+  document.addEventListener('change', markFileInputActivity, true);
+
+  // Begitu SW baru ambil alih kontrol tab ini, reload otomatis 1x — kecuali
+  // sedang dalam masa tenggang interaksi file input, supaya tidak menimpa
+  // file yang baru saja dipilih user. Update tetap akan terpakai di reload
+  // berikutnya karena SW baru sudah aktif walau kita skip reload sekarang.
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
+    if (Date.now() < fileInputGraceUntil) return;
     refreshing = true;
     window.location.reload();
   });
