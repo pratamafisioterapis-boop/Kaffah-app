@@ -55,11 +55,6 @@ const RemunerationManager = () => {
   const [reports, setReports] = useState({});
   const [loadingReports, setLoadingReports] = useState(false);
 
-  const [period, setPeriod] = useState(() => {
-    const { startDate, endDate } = getTherapistPeriodRange(null);
-    return { start: format(startDate, 'yyyy-MM-dd'), end: format(endDate, 'yyyy-MM-dd') };
-  });
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCriteria, setEditingCriteria] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
@@ -84,18 +79,27 @@ const RemunerationManager = () => {
   useEffect(() => { fetchBaseData(); }, [fetchBaseData]);
 
   const fetchReports = useCallback(async () => {
-    if (!therapists.length || !period.start || !period.end) return;
+    if (!therapists.length) return;
     setLoadingReports(true);
     try {
+      // Each therapist can have their own payroll/target cycle
+      // (period_start_day/period_end_day), so the report must be computed
+      // per therapist's own period — using one shared date range for
+      // everyone caused the owner's numbers to silently diverge from the
+      // therapist's own Remunerasi page (and made saved realizations
+      // invisible here, since they're keyed by the therapist's real period).
       const entries = await Promise.all(therapists.map(async (t) => {
-        const { data } = await getRemunerationReport(t.id, period.start, period.end);
+        const { startDate, endDate } = getTherapistPeriodRange(t);
+        const periodStart = format(startDate, 'yyyy-MM-dd');
+        const periodEnd = format(endDate, 'yyyy-MM-dd');
+        const { data } = await getRemunerationReport(t.id, periodStart, periodEnd);
         return [t.id, data];
       }));
       setReports(Object.fromEntries(entries));
     } finally {
       setLoadingReports(false);
     }
-  }, [therapists, period]);
+  }, [therapists]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
 
@@ -174,12 +178,9 @@ const RemunerationManager = () => {
 
         {/* ================= PENILAIAN PERFORMA ================= */}
         <TabsContent value="performance" className="space-y-4 mt-4">
-          <div className="flex flex-wrap items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <Label className="text-xs text-slate-500">Periode</Label>
-            <Input type="date" value={period.start} onChange={(e) => setPeriod(p => ({ ...p, start: e.target.value }))} className="w-40 h-9 text-xs" />
-            <span className="text-slate-400">-</span>
-            <Input type="date" value={period.end} onChange={(e) => setPeriod(p => ({ ...p, end: e.target.value }))} className="w-40 h-9 text-xs" />
-            {loadingReports && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+          <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
+            Setiap terapis dinilai berdasarkan periode gajinya masing-masing (lihat label periode di tiap kartu).
+            {loadingReports && <Loader2 className="w-4 h-4 animate-spin text-slate-400 ml-auto" />}
           </div>
 
           {criteria.length === 0 ? (
@@ -196,6 +197,11 @@ const RemunerationManager = () => {
                       <div>
                         <p className="font-semibold text-slate-900 text-sm">{t.name}</p>
                         <p className="text-xs text-slate-500">{t.specialization || 'Fisioterapis'}</p>
+                        {report && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Periode {format(new Date(report.periodStart), 'dd MMM yyyy')} - {format(new Date(report.periodEnd), 'dd MMM yyyy')}
+                          </p>
+                        )}
                       </div>
                       {report && (
                         <div className="text-right">

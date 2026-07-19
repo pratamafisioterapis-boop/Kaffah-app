@@ -4086,6 +4086,7 @@ export const savePhysiotherapist = async (payload) => {
         complaint_tags: payload.complaint_tags || [],
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
+        remuneration_enabled: payload.remuneration_enabled,
         badges: payload.badges || [],
         updated_at: new Date().toISOString()
       })
