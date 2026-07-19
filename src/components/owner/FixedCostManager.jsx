@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Loader2, AlertCircle, Wallet, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { autoPostFixedCosts } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -33,14 +34,18 @@ const FixedCostManager = () => {
   const fetchItems = useCallback(async () => {
     if (!clinicId) { setLoading(false); return; }
     setLoading(true);
+    const { data: posted } = await autoPostFixedCosts();
+    if (posted?.length) {
+      toast({ title: 'Fixed cost diposting', description: `${posted.length} item bulan ini otomatis tercatat sebagai pengeluaran.` });
+    }
     const { data, error } = await supabase
       .from('clinic_fixed_costs')
-      .select('id, item_name, amount, post_day')
+      .select('id, item_name, amount, post_day, last_posted_month')
       .eq('clinic_id', clinicId)
       .order('created_at', { ascending: true });
     if (!error) setItems(data || []);
     setLoading(false);
-  }, [clinicId]);
+  }, [clinicId, toast]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 

@@ -9,20 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { generateInventoryStockPDF } from '@/lib/exportUtils';
 import { Boxes, Wallet, Download } from 'lucide-react';
-
-const ownerNavItems = [
-  { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
-  { label: 'Appointments', path: '/owner/appointments', icon: 'Calendar' },
-  { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'FileText' },
-  { label: 'Database Patients', path: '/owner/database-patients', icon: 'Database' },
-  { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
-  { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
-  { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
-  { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
-  { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
-  { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
-  { label: 'Setup', path: '/owner/settings', icon: 'Settings' }
-];
+import { OWNER_NAV_ITEMS as ownerNavItems } from '@/lib/navItems';
 
 const InventoryStockPage = () => {
   const { toast } = useToast();

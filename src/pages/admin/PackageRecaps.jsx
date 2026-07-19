@@ -16,6 +16,7 @@ import PackageHistoryModal from '@/components/shared/PackageHistoryModal';
 import EditPackageStatusModal from '@/components/admin/EditPackageStatusModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import {
   Select,
   SelectContent,
@@ -573,23 +574,8 @@ export const PackageRecapsContent = () => {
 
 // Admin Wrapper
 const PackageRecapsAdmin = () => {
-    // Admin Nav Items - Matches sorted order required by layout logic
-    const adminNavItems = [
-        { label: 'Dashboard', path: '/admin/dashboard', icon: 'Home' },
-        { label: 'Appointments', path: '/admin/appointments', icon: 'Calendar' },
-        { label: 'Daily Recaps', path: '/admin/daily-recap', icon: 'ClipboardList' },
-        { label: 'Package Recaps', path: '/admin/package-recaps', icon: 'Package' },
-        { label: 'Database Patients', path: '/admin/database-patients', icon: 'Database' },
-        { label: 'Medical Records', path: '/admin/medical-records', icon: 'Activity' },
-        { label: 'Physiotherapist Management', path: '/admin/physiotherapist-management', icon: 'Users' },
-        { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
-        { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' },
-        { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
-        { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Package' }
-    ];
-
     return (
-        <DashboardLayout role="admin" navItems={adminNavItems}>
+        <DashboardLayout role="admin" navItems={ADMIN_NAV_ITEMS}>
             <PackageRecapsContent />
         </DashboardLayout>
     );
