@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Stethoscope, Zap, Check, ArrowRight, MessageCircle, Crown, ShieldCheck } from 'lucide-react';
+import { Stethoscope, Zap, Check, ArrowRight, MessageCircle, Crown, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -93,6 +93,22 @@ Terima kasih.`;
       animate="visible"
       exit="exit"
     >
+      <a
+        href="/booking/smart"
+        className="flex items-center justify-between gap-3 mb-6 sm:mb-8 rounded-2xl bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] px-5 py-4 sm:px-6 sm:py-5 shadow-[0_15px_40px_-20px_rgba(15,30,61,0.5)] hover:shadow-[0_20px_50px_-20px_rgba(15,30,61,0.6)] transition-all group"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-[#e8c98a]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-bold text-sm sm:text-base">Coba Smart Booking</p>
+            <p className="text-blue-100 text-xs sm:text-sm truncate">Biar sistem rekomendasikan terapis &amp; jadwal terbaik untuk Anda</p>
+          </div>
+        </div>
+        <ArrowRight className="w-5 h-5 text-white shrink-0 group-hover:translate-x-1 transition-transform" />
+      </a>
+
       <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0f1e3d]/5 border border-[#0f1e3d]/10">
           <Crown className="w-3.5 h-3.5 text-[#b8935f]" />
