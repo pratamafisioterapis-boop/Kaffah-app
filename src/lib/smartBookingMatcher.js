@@ -54,17 +54,25 @@ export function orderedWindows(preferredId) {
  * if no therapist has been tagged for any of the selected complaints yet —
  * the patient should never be left with zero options just because the
  * clinic hasn't finished tagging its therapists.
+ *
+ * Therapists who previously treated this patient (preferredTherapistIds, from
+ * their appointment history) get a large score bonus so they're recommended
+ * first — continuity of care matters more than a specialization tag match.
  */
-export function rankTherapistsByComplaint(therapists, selectedSlugs) {
-  if (!selectedSlugs || selectedSlugs.length === 0) return therapists;
+export function rankTherapistsByComplaint(therapists, selectedSlugs, preferredTherapistIds = []) {
+  const preferredSet = new Set(preferredTherapistIds);
+  const hasPreferred = preferredSet.size > 0;
+
+  if ((!selectedSlugs || selectedSlugs.length === 0) && !hasPreferred) return therapists;
 
   const scored = therapists.map(t => {
     const tags = Array.isArray(t.complaint_tags) ? t.complaint_tags : [];
-    const matchCount = tags.filter(tag => selectedSlugs.includes(tag)).length;
-    return { therapist: t, matchCount };
+    const matchCount = (selectedSlugs || []).filter(tag => tags.includes(tag)).length;
+    const preferredBonus = preferredSet.has(t.id) ? 1000 : 0;
+    return { therapist: t, score: matchCount + preferredBonus };
   });
 
-  const matched = scored.filter(s => s.matchCount > 0).sort((a, b) => b.matchCount - a.matchCount);
+  const matched = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   if (matched.length > 0) return matched.map(s => s.therapist);
 
   return therapists;
@@ -85,10 +93,12 @@ export async function findSmartRecommendations({
   whenId,
   customDate,
   windowId,
+  preferredTherapistIds = [],
   maxResults = 6
 }) {
-  const rankedTherapists = rankTherapistsByComplaint(therapists, complaintSlugs);
+  const rankedTherapists = rankTherapistsByComplaint(therapists, complaintSlugs, preferredTherapistIds);
   const rankedIds = new Set(rankedTherapists.map(t => t.id));
+  const preferredSet = new Set(preferredTherapistIds);
   const candidateDates = buildCandidateDates(whenId, customDate);
   const windowsOrder = orderedWindows(windowId);
 
@@ -130,6 +140,7 @@ export async function findSmartRecommendations({
           date,
           window: win,
           slots: slotsForT.sort((a, b) => a.slot_start.localeCompare(b.slot_start)).slice(0, 4),
+          isPreferred: preferredSet.has(t.id),
           isExactMatch
         });
       });

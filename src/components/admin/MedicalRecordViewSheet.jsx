@@ -33,10 +33,26 @@ const Section = ({ title, icon: Icon, color, children }) => (
 const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [] }) => {
   if (!record) return null;
 
+  const resolveOne = (id) => {
+    const found = diagnoses.find(d => d.value === id || d.id === id);
+    return found ? found.label : id;
+  };
+
   const resolveDiagnosis = (val) => {
     if (!val) return null;
-    const found = diagnoses.find(d => d.value === val || d.id === val);
-    return found ? found.label : val;
+    let ids = val;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        ids = Array.isArray(parsed) ? parsed : val;
+      } catch {
+        ids = val;
+      }
+    }
+    if (Array.isArray(ids)) {
+      return ids.map(resolveOne).join(', ');
+    }
+    return resolveOne(ids);
   };
 
   const fmt = (dateStr) => {
