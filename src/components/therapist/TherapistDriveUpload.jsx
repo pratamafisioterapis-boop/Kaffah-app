@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, FolderOpen, Bug } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Bug, Camera, Image as ImageIcon, FileText } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 25;
@@ -72,8 +72,16 @@ const TherapistDriveUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const docInputRef = useRef(null);
   const [diagLog, pushDiag] = useDiagLog();
+
+  const resetAllInputs = () => {
+    [cameraInputRef, galleryInputRef, docInputRef].forEach((ref) => {
+      if (ref.current) ref.current.value = '';
+    });
+  };
 
   useEffect(() => {
     pushDiag('Komponen dimuat (mount)');
@@ -162,7 +170,7 @@ const TherapistDriveUpload = () => {
         title: 'File Terlalu Besar',
         description: `Ukuran maksimal ${MAX_FILE_SIZE_MB} MB. File Anda ${formatFileSize(selected.size)}.`,
       });
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      resetAllInputs();
       setFile(null);
       return;
     }
@@ -171,7 +179,7 @@ const TherapistDriveUpload = () => {
 
   const handleClearFile = () => {
     setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    resetAllInputs();
     clearPendingUpload();
   };
 
@@ -216,24 +224,69 @@ const TherapistDriveUpload = () => {
       <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
-          <button
-            type="button"
-            onClick={() => {
-              pushDiag('Tombol "Pilih File" ditekan, memanggil input.click()');
-              fileInputRef.current?.click();
-            }}
-            disabled={uploading}
-            className="w-full flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
-          >
-            <FolderOpen className="w-4 h-4" /> Pilih File
-          </button>
+          {/* Tiga jalur terpisah: kamera dan galeri memakai picker media ringan
+              Android (terbukti stabil, sama dengan upload Remunerasi). Picker
+              "Dokumen" membuka aplikasi Files penuh yang di beberapa device
+              membunuh tab browser saat memilih — sengaja dipisah agar jalur
+              foto tidak ikut lewat situ. */}
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                pushDiag('Tombol "Ambil Foto" ditekan');
+                cameraInputRef.current?.click();
+              }}
+              disabled={uploading}
+              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+            >
+              <Camera className="w-4 h-4" /> Ambil Foto
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                pushDiag('Tombol "Pilih Foto" ditekan');
+                galleryInputRef.current?.click();
+              }}
+              disabled={uploading}
+              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+            >
+              <ImageIcon className="w-4 h-4" /> Pilih Foto
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                pushDiag('Tombol "Dokumen" ditekan');
+                docInputRef.current?.click();
+              }}
+              disabled={uploading}
+              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+            >
+              <FileText className="w-4 h-4" /> Dokumen
+            </button>
+          </div>
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
             type="file"
-            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+            accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={handleFileChange}
-            onClick={() => pushDiag('input file: onClick native terpicu')}
+            disabled={uploading}
+          />
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          <input
+            ref={docInputRef}
+            type="file"
+            accept="application/pdf,.doc,.docx,.xls,.xlsx"
+            className="hidden"
+            onChange={handleFileChange}
             disabled={uploading}
           />
           {file && (
