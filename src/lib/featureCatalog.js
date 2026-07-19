@@ -28,7 +28,7 @@ export const FEATURE_CATALOG = [
   { key: 'insentif_dokter', label: 'Konversi Insentif Dokter', roles: ['owner'], match: (label) => label.includes('insentif dokter') },
   { key: 'setup', label: 'Setup', roles: ['owner'], match: (label) => label === 'setup' },
   { key: 'therapist_booking', label: 'Booking Calendar', roles: ['therapist'], match: (label) => label.includes('booking calendar') },
-  { key: 'therapist_appointments', label: 'Daftar Appointment', roles: ['therapist'], match: (label) => label.includes('daftar appointment') },
+  { key: 'therapist_appointments', label: 'Riwayat Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat pasien') || label.includes('daftar appointment') },
   { key: 'therapist_evaluation', label: 'Evaluasi Pasien', roles: ['therapist'], match: (label) => label.includes('evaluasi pasien') },
 ];
 
