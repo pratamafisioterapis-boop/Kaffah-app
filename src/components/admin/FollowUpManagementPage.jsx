@@ -110,65 +110,6 @@ const FollowUpManagementPage = () => {
       setQueueItems(prev => prev.filter(i => i.id !== id));
     }
   };
-const handleGenerate = async (type) => {
-
-  try {
-
-    let functionName = '';
-
-    switch (type) {
-
-      case 'follow_up':
-        functionName = 'generate_follow_up_daily';
-        break;
-
-      case 'package_expiry':
-        functionName = 'generate_smart_package_expiry';
-        break;
-
-      case 'therapy_reminder':
-        functionName = 'generate_therapy_reminder_today';
-        break;
-
-      case 'reminder_therapist_h10':
-        functionName = 'send_reminder_therapist_h10';
-        break;
-
-      case 'birthday_greeting':
-        functionName = 'generate_birthday_greetings';
-        break;
-
-      case 'booking_appointment':
-        functionName = 'generate_appointment_reminders';
-        break;
-
-      default:
-        throw new Error(`Unknown type: ${type}`);
-    }
-
-    const { error } = await supabase.rpc(functionName);
-
-    if (error) throw error;
-
-    toast({
-      title: 'Berhasil',
-      description: `${type} berhasil di-generate`
-    });
-
-    await fetchQueue();
-
-  } catch (error) {
-
-    console.error(error);
-
-    toast({
-      variant: 'destructive',
-      title: 'Generate gagal',
-      description: error.message
-    });
-
-  }
-};
   const handleToggleBablast = async () => {
 
   if (!userDetails?.clinic_id) return;
@@ -393,38 +334,6 @@ const isPWA =
 
 
         <TabsContent value={activeTab} className="mt-6">
-<div className="flex justify-end gap-2 mb-4 mt-4">
-
-  <button
-    onClick={() => handleGenerate(activeTab)}
-    className="px-4 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-medium"
-  >
-    Generate Section
-  </button>
-
-  <button
-    onClick={async () => {
-      if (!window.confirm('Hapus semua data section ini?')) return;
-
-      const ids = filteredItems.map(i => i.id);
-
-      for (const id of ids) {
-        await deleteFollowUp(id);
-      }
-
-      fetchQueue();
-
-      toast({
-        title: 'Berhasil',
-        description: 'Semua data section dihapus'
-      });
-    }}
-    className="px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium"
-  >
-    Delete Section
-  </button>
-
-</div>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />

@@ -8,11 +8,120 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, Save, MessageCircle, Clock, History, Info } from 'lucide-react';
+import { Loader2, Save, MessageCircle, Clock, History, Info, KeyRound, ShieldCheck, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { getWaApiSettings, upsertWaApiSettings } from '@/lib/api';
 
 import WhatsAppMessagePreview from './WhatsAppMessagePreview';
 import WhatsAppScheduleConfig from './WhatsAppScheduleConfig';
 import WhatsAppLogs from './WhatsAppLogs';
+
+const WaApiKeySection = () => {
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [showKey, setShowKey] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [enabled, setEnabled] = useState(true);
+    const [hasKey, setHasKey] = useState(false);
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        setLoading(true);
+        const { data } = await getWaApiSettings();
+        if (data) {
+            setApiKey(data.api_key || '');
+            setPhoneNumber(data.phone_number || '');
+            setEnabled(data.enabled ?? true);
+            setHasKey(!!data.api_key);
+        }
+        setLoading(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        const { error } = await upsertWaApiSettings({ apiKey: apiKey.trim(), phoneNumber: phoneNumber.trim(), enabled });
+        if (error) {
+            toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
+        } else {
+            toast({ title: "API Key Tersimpan", description: "Konfigurasi Watzap klinik berhasil disimpan." });
+            setHasKey(!!apiKey.trim());
+        }
+        setSaving(false);
+    };
+
+    return (
+        <div className="bg-white p-4 rounded-lg border border-slate-200 mb-6">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-indigo-600" />
+                    <div>
+                        <Label className="text-base">API Key Watzap Klinik</Label>
+                        <p className="text-xs text-slate-500">Diperlukan agar fitur "Kirim Otomatis" via WhatsApp aktif untuk klinik ini.</p>
+                    </div>
+                </div>
+                {!loading && (
+                    hasKey ? (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                            <ShieldCheck className="w-3.5 h-3.5" /> Terhubung
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                            <ShieldAlert className="w-3.5 h-3.5" /> Belum Diatur
+                        </span>
+                    )
+                )}
+            </div>
+
+            {loading ? (
+                <div className="p-4 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-slate-600">Watzap API Key</Label>
+                        <div className="relative">
+                            <Input
+                                type={showKey ? 'text' : 'password'}
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="Masukkan API Key dari dashboard Watzap"
+                                className="pr-9"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowKey(v => !v)}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-slate-600">Nomor WhatsApp Pengirim (opsional)</Label>
+                        <Input
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="Contoh: 08123456789"
+                        />
+                    </div>
+                    <div className="md:col-span-2 flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2">
+                            <Switch checked={enabled} onCheckedChange={setEnabled} />
+                            <span className="text-sm text-slate-600">Aktifkan integrasi WhatsApp untuk klinik ini</span>
+                        </div>
+                        <Button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                            Simpan API Key
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const CATEGORIES = [
   {
@@ -371,6 +480,8 @@ const WhatsAppSettings = () => {
                 </h2>
                 <p className="text-slate-500 mt-1">Kelola pesan otomatis dan notifikasi WhatsApp untuk pasien klinik.</p>
             </div>
+
+            <WaApiKeySection />
 
             <Tabs defaultValue="booking_appointment" className="w-full">
                 <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto flex flex-wrap gap-1 mb-6">

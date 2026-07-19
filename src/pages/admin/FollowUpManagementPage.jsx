@@ -210,26 +210,6 @@ const FollowUpManagementPage = () => {
                     <TabsTrigger value="therapy_reminder" className="flex-1 min-w-[100px]">Jadwal ({getCount('therapy_reminder')})</TabsTrigger>
                     <TabsTrigger value="birthday_greeting" className="flex-1 min-w-[100px]">Ultah ({getCount('birthday_greeting')})</TabsTrigger>
                 </TabsList>
-<div className="flex justify-end mb-4">
-
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handleGenerate(activeTab)}
-    disabled={generating === activeTab}
-    className="border-blue-200 text-blue-600 hover:bg-blue-50"
-  >
-    {generating === activeTab && (
-      <Loader2 className="w-3 h-3 animate-spin mr-1" />
-    )}
-
-    Generate Section
-  </Button>
-
-</div>
-<div className="bg-red-500 text-white p-4 rounded-xl mb-4 text-center font-bold">
-  TEST FOLLOW UP PAGE ACTIVE
-</div>
                 <TabsContent value={activeTab} className="mt-0">
                     {isLoading ? (
                         <div className="flex justify-center py-20">

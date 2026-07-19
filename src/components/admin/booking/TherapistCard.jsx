@@ -96,12 +96,12 @@ const TherapistCard = ({
         "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20 before:pointer-events-none",
 
         shouldGrayScale && "bg-slate-100",
-        isWeeklyOff && "ring-2 ring-violet-300"
+        isWeeklyOff && "ring-2 ring-slate-300"
       )}>
         <CardHeader className={cn(
   "relative py-4 md:py-6 px-3 md:px-5 border-b text-white",
   "bg-gradient-to-br backdrop-blur-xl",
-  isWeeklyOff ? "from-violet-800/90 to-violet-950/90" : "from-slate-800/90 to-slate-900/90",
+  isWeeklyOff ? "from-slate-600/90 to-slate-700/90" : "from-slate-800/90 to-slate-900/90",
   "border-white/10"
 )}>
 
@@ -171,7 +171,7 @@ const TherapistCard = ({
               : isSoapLocked
               ? "bg-red-100 text-red-700 border-red-200"
               : isWeeklyOff
-              ? "bg-violet-100 text-violet-700 border-violet-300"
+              ? "bg-slate-200 text-slate-700 border-slate-300"
               : "bg-gray-200 text-gray-700 border-gray-300"
           )}>
             {isWeeklyOff && <CalendarOff className="w-3 h-3" />}

@@ -39,7 +39,14 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                 .order('recap_date', { ascending: false });
 
             if (recapError) throw recapError;
-            setHistory(recapData || []);
+            // Nominal (amount) > 0 entries first, most recent first within each group.
+            const sorted = [...(recapData || [])].sort((a, b) => {
+                const aPaid = (a.amount || 0) > 0 ? 1 : 0;
+                const bPaid = (b.amount || 0) > 0 ? 1 : 0;
+                if (aPaid !== bPaid) return bPaid - aPaid;
+                return new Date(b.recap_date) - new Date(a.recap_date);
+            });
+            setHistory(sorted);
 
         } catch (error) {
             console.error("Error fetching history:", error);

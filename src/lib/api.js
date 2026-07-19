@@ -3522,6 +3522,68 @@ export const sendWhatsAppMessageManual = async (payload) => {
   }, 'sendWhatsAppMessageManual');
 };
 
+// ============================================
+// WHATSAPP API KEY SETTINGS (per clinic)
+// ============================================
+const getCurrentClinicId = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return null;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  return userRow?.clinic_id || null;
+};
+
+export const getWaApiSettings = async () => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { data: null };
+
+    const { data, error } = await supabase
+      .from('wa_settings')
+      .select('id, clinic_id, enabled, api_provider, api_key, phone_number')
+      .eq('clinic_id', clinicId)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return {
+      data: data || null,
+      success: true,
+      error: null
+    };
+  }, 'getWaApiSettings', { retry: true });
+};
+
+export const upsertWaApiSettings = async ({ apiKey, phoneNumber, enabled }) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+
+    const payload = {
+      clinic_id: clinicId,
+      api_provider: 'watzap',
+      api_key: apiKey,
+      phone_number: phoneNumber,
+      enabled: enabled !== undefined ? enabled : true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('wa_settings')
+      .upsert(payload, { onConflict: 'clinic_id' })
+      .select()
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return {
+      data,
+      success: true,
+      error: null
+    };
+  }, 'upsertWaApiSettings');
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,

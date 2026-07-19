@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import { useToast } from "@/components/ui/use-toast";
-import { getInvoiceSettings } from '@/lib/api';
+import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
@@ -28,13 +28,21 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     invoiceSubtitle: 'Layanan Fisioterapi',
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [waAutoAvailable, setWaAutoAvailable] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchSettings();
       fetchDetailData();
+      fetchWaAvailability();
     }
   }, [isOpen, data?.id]);
+
+  // ── Cek apakah klinik ini sudah punya API Key WA (untuk kirim otomatis) ───
+  const fetchWaAvailability = async () => {
+    const { data: waSettings } = await getWaApiSettings();
+    setWaAutoAvailable(!!(waSettings?.enabled && waSettings?.api_key));
+  };
 
   // ── Fetch Invoice Settings ────────────────────────────────────────────────
   const fetchSettings = async () => {
@@ -408,14 +416,15 @@ const handleSendManualWA = async () => {
     }
 
     const clinicName = detailData?.clinic?.name || '';
+    const invoiceLink = `${window.location.origin}/i/${data.id}`;
 
     const message =
       `Berikut *Kwitansi Terapi* hari ini.\n\n` +
       `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
       `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
+      `📄 Lihat/unduh kwitansi:\n${invoiceLink}\n\n` +
       `*Salam Sehat,*\n` +
-      `${clinicName}\n\n` +
-      `Lihat kwitansi:\n${fileUrl}`;
+      `${clinicName}`;
 
     const formattedPhone =
       rawPhone.replace(/^0/, '62');
@@ -448,45 +457,64 @@ const handleSendManualWA = async () => {
   }
 };
   // ── Print ─────────────────────────────────────────────────────────────────
-  const handlePrint = () => {
-    const printContent = componentRef.current;
-    if (!printContent) return;
+  // Render the exact same rasterized image used for the PDF download so the
+  // printed result always matches — the browser's native print layout of the
+  // raw DOM tends to paginate/reflow the fixed-size invoice unpredictably.
+  const [isPrinting, setIsPrinting] = useState(false);
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    try {
+      const element = componentRef.current;
+      if (!element) return;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        windowWidth: 794,
+      });
+      const imgData = canvas.toDataURL('image/png');
 
-    const doc = iframe.contentWindow.document;
-    let styleTags = '';
-    document.querySelectorAll('style, link[rel="stylesheet"]')
-      .forEach(node => { styleTags += node.outerHTML; });
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
 
-    doc.open();
-    doc.write(`
-      <html>
-        <head>
-          <title>Invoice - ${data?.patient_name || 'Patient'}</title>
-          ${styleTags}
-          <style>
-            @media print {
-              body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
-              @page { size: A4; margin: 0; }
-              #invoice-root { width: 210mm; min-height: 297mm; }
-            }
-          </style>
-        </head>
-        <body style="background: white; display: flex; justify-content: center;">
-          <div id="invoice-root">${printContent.innerHTML}</div>
-        </body>
-      </html>
-    `);
-    doc.close();
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <html>
+          <head>
+            <title>Invoice - ${data?.patient_name || 'Patient'}</title>
+            <style>
+              @media print {
+                body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+                @page { size: A4; margin: 0; }
+              }
+              body { margin: 0; padding: 0; }
+              img { width: 210mm; height: 297mm; display: block; }
+            </style>
+          </head>
+          <body>
+            <img src="${imgData}" />
+          </body>
+        </html>
+      `);
+      doc.close();
 
-    setTimeout(() => {
+      await new Promise(resolve => setTimeout(resolve, 300));
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
       setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 500);
+    } catch (err) {
+      console.error('Print Error:', err);
+      toast({ variant: "destructive", title: "Gagal Mencetak", description: err.message });
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   if (!data) return null;
@@ -500,8 +528,11 @@ const handleSendManualWA = async () => {
           <h2 className="text-lg font-semibold text-slate-900">Preview Invoice</h2>
           <div className="flex gap-2">
 
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrinting}>
+              {isPrinting
+                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                : <Printer className="w-4 h-4 mr-2" />
+              }
               Cetak
             </Button>
 
@@ -518,18 +549,20 @@ const handleSendManualWA = async () => {
               Download PDF
             </Button>
 
-            <Button
-  size="sm"
-  onClick={handleSendWA}
-  disabled={isSendingWA || loadingSettings}
-  className="bg-green-600 hover:bg-green-700 text-white"
->
-  {isSendingWA
-    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-    : <Send className="w-4 h-4 mr-2" />
-  }
-  {isSendingWA ? 'Mengirim...' : 'Kirim Otomatis'}
-</Button>
+            {waAutoAvailable && (
+              <Button
+                size="sm"
+                onClick={handleSendWA}
+                disabled={isSendingWA || loadingSettings}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isSendingWA
+                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  : <Send className="w-4 h-4 mr-2" />
+                }
+                {isSendingWA ? 'Mengirim...' : 'Kirim Otomatis'}
+              </Button>
+            )}
 
 <Button
   size="sm"
