@@ -4,8 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
+
+const MAX_FILE_SIZE_MB = 25;
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
+};
 
 const TherapistDriveUpload = () => {
   const { toast } = useToast();
@@ -27,6 +35,26 @@ const TherapistDriveUpload = () => {
     setLoadingHistory(false);
   };
 
+  const handleFileChange = (e) => {
+    const selected = e.target.files?.[0] || null;
+    if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'File Terlalu Besar',
+        description: `Ukuran maksimal ${MAX_FILE_SIZE_MB} MB. File Anda ${formatFileSize(selected.size)}.`,
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setFile(null);
+      return;
+    }
+    setFile(selected);
+  };
+
+  const handleClearFile = () => {
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast({ variant: 'destructive', title: 'Pilih File', description: 'Silakan pilih file terlebih dahulu.' });
@@ -34,17 +62,23 @@ const TherapistDriveUpload = () => {
     }
 
     setUploading(true);
-    const { data, error } = await uploadFileToClinicDrive({ file, label: label.trim() });
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal Upload', description: error.message });
-    } else {
-      toast({ title: 'Berhasil', description: `File "${file.name}" berhasil diunggah ke Google Drive.` });
-      setFile(null);
-      setLabel('');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      fetchHistory();
+    try {
+      const { data, error } = await uploadFileToClinicDrive({ file, label: label.trim() });
+      if (error) {
+        console.error('[TherapistDriveUpload] Upload failed:', error);
+        toast({ variant: 'destructive', title: 'Gagal Upload', description: error.message || 'Terjadi kesalahan saat mengunggah file.' });
+      } else {
+        toast({ title: 'Berhasil', description: `File "${file.name}" berhasil diunggah ke Google Drive.` });
+        handleClearFile();
+        setLabel('');
+        fetchHistory();
+      }
+    } catch (err) {
+      console.error('[TherapistDriveUpload] Unexpected error:', err);
+      toast({ variant: 'destructive', title: 'Gagal Upload', description: err?.message || 'Terjadi kesalahan tak terduga.' });
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   return (
@@ -62,7 +96,19 @@ const TherapistDriveUpload = () => {
       <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
-          <Input ref={fileInputRef} type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          <Input ref={fileInputRef} type="file" onChange={handleFileChange} disabled={uploading} />
+          {file && (
+            <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-lg px-3 py-2 mt-1">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{file.name}</span>
+                <span className="text-blue-400 flex-shrink-0">({formatFileSize(file.size)})</span>
+              </span>
+              <button type="button" onClick={handleClearFile} disabled={uploading} className="text-blue-400 hover:text-blue-600 flex-shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Keterangan (opsional)</Label>
