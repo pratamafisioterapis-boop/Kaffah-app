@@ -1,20 +1,33 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Settings2, Loader2, TrendingUp, Users, Wallet, Info, Plus, Trash2 } from 'lucide-react';
+import { Target, Settings2, Loader2, TrendingUp, Users, Wallet, Info, Plus, Trash2, Receipt, Bus, Coins } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import {
+  autoPostFixedCosts, getOwnerExpenditures, getAdminExpenses, getOwnerIncome, getAdminIncome,
+  getPatientIncomeFromPackages, getActivePhysiotherapists, getTherapistSchedules, getTherapistTimeOff,
+  getServiceRates
+} from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, calculateAttendanceDays, getTherapistPeriodRange } from '@/lib/utils';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
 
-// avgRevenuePerPatient & avgIncentivePerPatient dihitung otomatis di RevenueOverview.jsx
-// dari data transaksi & tabel service_rates periode berjalan.
-const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient = 0, totalPatientsInPeriod = 0 }) => {
+const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+
+// BEP itu "sudah balik modal atau belum bulan ini", jadi biayanya harus biaya
+// yang benar-benar sudah/akan terjadi bulan ini — bukan estimasi per pasien:
+// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
+// - Pengeluaran owner & admin: yang sudah tercatat dari tgl 1 s/d hari ini
+// - Transport & insentif terapis: dihitung harian dari awal periode s/d hari ini
+// Pemasukan dihitung terpisah: total bulan berjalan (tgl 1 s/d akhir bulan),
+// bukan mengikuti periode gaji terapis.
+const BreakEvenPointWidget = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { userDetails } = useAuth();
   const clinicId = userDetails?.clinic_id;
@@ -27,21 +40,96 @@ const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
 
-  const fetchItems = useCallback(async () => {
-    if (!clinicId) { setLoading(false); return; }
-    setLoading(true);
+  const [ownerExpense, setOwnerExpense] = useState(0);
+  const [adminExpense, setAdminExpense] = useState(0);
+  const [transportTotal, setTransportTotal] = useState(0);
+  const [incentiveTotal, setIncentiveTotal] = useState(0);
+  const [revenueThisMonth, setRevenueThisMonth] = useState(0);
+
+  const fetchFixedCostItems = useCallback(async () => {
+    if (!clinicId) return;
+    await autoPostFixedCosts();
     const { data, error } = await supabase
       .from('clinic_fixed_costs')
       .select('id, item_name, amount')
       .eq('clinic_id', clinicId)
       .order('created_at', { ascending: true });
     if (!error) setItems(data || []);
-    setLoading(false);
   }, [clinicId]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  const fetchBepData = useCallback(async () => {
+    if (!clinicId) { setLoading(false); return; }
+    setLoading(true);
+
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const monthStartStr = format(startOfMonth(today), 'yyyy-MM-dd');
+    const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
+
+    await fetchFixedCostItems();
+
+    const [ownerExpRes, adminExpRes, ownerIncRes, adminIncRes, patientIncRes, therapistsRes, serviceRatesRes] = await Promise.all([
+      getOwnerExpenditures({ startDate: monthStartStr, endDate: todayStr }),
+      getAdminExpenses({ startDate: monthStartStr, endDate: todayStr }),
+      getOwnerIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getAdminIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getPatientIncomeFromPackages({ startDate: monthStartStr, endDate: monthEndStr }),
+      getActivePhysiotherapists(),
+      getServiceRates()
+    ]);
+
+    setOwnerExpense(sumAmount(ownerExpRes.data));
+    setAdminExpense(sumAmount(adminExpRes.data));
+    setRevenueThisMonth(sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data));
+
+    const therapists = therapistsRes.data || [];
+    const serviceRates = serviceRatesRes.data || [];
+
+    let transportSum = 0;
+    let incentiveSum = 0;
+
+    await Promise.all(therapists.map(async (t) => {
+      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
+      const periodStartStr = format(periodStart, 'yyyy-MM-dd');
+      // Period start could be after today right after a cycle rollover — clamp.
+      const effectiveEnd = periodStart > today ? periodStart : today;
+      const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
+
+      const [schedRes, timeOffRes, recapsRes] = await Promise.all([
+        getTherapistSchedules(t.id),
+        getTherapistTimeOff(t.id),
+        supabase.from('daily_recaps')
+          .select('amount, patient_type')
+          .eq('therapist_id', t.id)
+          .gte('recap_date', periodStartStr)
+          .lte('recap_date', effectiveEndStr)
+      ]);
+
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
+      transportSum += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+
+      (recapsRes.data || []).forEach(r => {
+        const typeLabel = (r.patient_type || '').toUpperCase();
+        const matched = serviceRates.find(sr => {
+          const svc = (sr.service_name || '').toUpperCase();
+          return svc === typeLabel || svc.includes(typeLabel) || typeLabel.includes(svc);
+        });
+        incentiveSum += Number(matched?.rate) || 0;
+      });
+    }));
+
+    setTransportTotal(transportSum);
+    setIncentiveTotal(incentiveSum);
+    setLoading(false);
+  }, [clinicId, fetchFixedCostItems]);
+
+  useEffect(() => { fetchBepData(); }, [fetchBepData]);
 
   const totalFixedCost = useMemo(() => items.reduce((s, i) => s + (Number(i.amount) || 0), 0), [items]);
+  const totalCost = totalFixedCost + ownerExpense + adminExpense + transportTotal + incentiveTotal;
+  const progressPct = totalCost > 0 ? Math.min(Math.round((revenueThisMonth / totalCost) * 100), 100) : 0;
+  const isConfigured = totalFixedCost > 0;
+  const isBreakEven = revenueThisMonth >= totalCost;
 
   const handleAddItem = async () => {
     if (!clinicId) return;
@@ -93,18 +181,6 @@ const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient
     toast({ title: 'Item dihapus' });
   };
 
-  const contributionMargin = useMemo(() => Math.max(avgRevenuePerPatient - avgIncentivePerPatient, 0), [avgRevenuePerPatient, avgIncentivePerPatient]);
-  const bepPatients = useMemo(() => {
-    if (contributionMargin <= 0) return null;
-    return Math.ceil(totalFixedCost / contributionMargin);
-  }, [totalFixedCost, contributionMargin]);
-  const bepRevenue = useMemo(() => bepPatients ? bepPatients * avgRevenuePerPatient : null, [bepPatients, avgRevenuePerPatient]);
-  const progressPct = useMemo(() => {
-    if (!bepPatients || bepPatients === 0) return 0;
-    return Math.min(Math.round((totalPatientsInPeriod / bepPatients) * 100), 100);
-  }, [totalPatientsInPeriod, bepPatients]);
-  const isConfigured = totalFixedCost > 0 && contributionMargin > 0;
-
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-800/50" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%)' }}>
       <div className="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -118,7 +194,7 @@ const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient
             </div>
             <div className="min-w-0">
               <h3 className="text-white font-bold text-base tracking-tight">Break Even Point</h3>
-              <p className="text-slate-400 text-xs mt-0.5">Titik impas berdasarkan biaya tetap & insentif terapis</p>
+              <p className="text-slate-400 text-xs mt-0.5">Total biaya bulan ini vs total pemasukan bulan ini</p>
             </div>
           </div>
           <button
@@ -139,32 +215,28 @@ const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient
         ) : !isConfigured ? (
           <div className="rounded-xl border border-dashed border-white/15 bg-white/5 p-5 text-center">
             <Info className="w-5 h-5 text-indigo-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-300">
-              {totalFixedCost <= 0
-                ? 'Tambahkan minimal 1 item fixed cost untuk melihat titik impas.'
-                : 'Insentif terapis per pasien belum terdeteksi dari data Tarif Jasa Terapis.'}
-            </p>
+            <p className="text-sm text-slate-300">Tambahkan minimal 1 item fixed cost untuk melihat titik impas.</p>
             <Button onClick={() => setIsOpen(true)} className="mt-3 bg-indigo-600 hover:bg-indigo-700">Atur Fixed Cost</Button>
           </div>
         ) : (
           <>
             <div className={cn("grid gap-3", isPWA ? "grid-cols-1" : "grid-cols-2")}>
               <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">BEP Pasien/Sesi</p>
-                <p className="text-2xl font-bold text-white tabular-nums">{bepPatients?.toLocaleString('id-ID') ?? '-'}</p>
-                <p className="text-[11px] text-slate-400 mt-1">per bulan</p>
+                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Biaya Bulan Ini</p>
+                <p className="text-lg font-bold text-white tabular-nums break-words">{formatCurrency(totalCost)}</p>
+                <p className="text-[11px] text-slate-400 mt-1">fixed cost + pengeluaran + transport + insentif</p>
               </div>
               <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">BEP Revenue</p>
-                <p className="text-lg font-bold text-white tabular-nums break-words">{formatCurrency(bepRevenue)}</p>
-                <p className="text-[11px] text-slate-400 mt-1">per bulan</p>
+                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Pemasukan Bulan Ini</p>
+                <p className="text-lg font-bold text-white tabular-nums break-words">{formatCurrency(revenueThisMonth)}</p>
+                <p className="text-[11px] text-slate-400 mt-1">tgl 1 s/d akhir bulan</p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className={cn("flex text-xs gap-1", isPWA ? "flex-col" : "items-center justify-between")}>
-                <span className="text-slate-400 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Progress periode ini</span>
-                <span className="text-white font-semibold">{totalPatientsInPeriod} / {bepPatients} pasien</span>
+                <span className="text-slate-400 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Progress terhadap biaya bulan ini</span>
+                <span className="text-white font-semibold">{progressPct}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
                 <motion.div
@@ -172,26 +244,36 @@ const BreakEvenPointWidget = ({ avgRevenuePerPatient = 0, avgIncentivePerPatient
                   animate={{ width: `${progressPct}%` }}
                   transition={{ duration: 0.8, ease: 'easeOut' }}
                   className="h-full rounded-full"
-                  style={{ background: progressPct >= 100 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #6366f1, #a855f7)' }}
+                  style={{ background: isBreakEven ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #6366f1, #a855f7)' }}
                 />
               </div>
               <p className="text-[11px] text-slate-400">
-                {progressPct >= 100 ? 'Sudah melewati titik impas 🎉' : `${100 - progressPct}% lagi menuju titik impas`}
+                {isBreakEven
+                  ? `Sudah melewati titik impas — profit ${formatCurrency(revenueThisMonth - totalCost)} 🎉`
+                  : `Kurang ${formatCurrency(totalCost - revenueThisMonth)} lagi untuk mencapai titik impas`}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
               <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Wallet className="w-3.5 h-3.5 text-amber-400" />
+                <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 Fixed Cost: <span className="text-slate-200 font-semibold">{formatCurrency(totalFixedCost)}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-400">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                Insentif/Pasien: <span className="text-slate-200 font-semibold">{formatCurrency(avgIncentivePerPatient)}</span>
+                <Receipt className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                Pengeluaran (s/d hari ini): <span className="text-slate-200 font-semibold">{formatCurrency(ownerExpense + adminExpense)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Bus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                Transport Terapis: <span className="text-slate-200 font-semibold">{formatCurrency(transportTotal)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                Insentif Terapis: <span className="text-slate-200 font-semibold">{formatCurrency(incentiveTotal)}</span>
               </div>
             </div>
             <p className="text-[10px] text-slate-500 italic">
-              *Insentif per pasien dihitung otomatis dari rata-rata Tarif Jasa Terapis periode ini.
+              *Pengeluaran dihitung dari tgl 1 bulan ini s/d hari ini. Transport &amp; insentif terapis dihitung harian dari awal periode gaji masing-masing s/d hari ini.
             </p>
           </>
         )}

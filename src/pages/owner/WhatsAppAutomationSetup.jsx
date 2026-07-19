@@ -10,6 +10,7 @@ import TemplateCard from '@/components/whatsapp/TemplateCard';
 import TemplateEditModal from '@/components/whatsapp/TemplateEditModal';
 import PreviewModal from '@/components/whatsapp/PreviewModal';
 import { runDailyWhatsAppAutomation } from '@/lib/whatsappScheduler';
+import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 const WhatsAppAutomationSetup = () => {
   const { toast } = useToast();
@@ -83,10 +84,7 @@ const WhatsAppAutomationSetup = () => {
     }
   };
 
-  const navItems = [
-    { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
-    { label: 'WhatsApp Automation', path: '/owner/whatsapp-automation/setup', icon: 'MessageSquare' },
-  ];
+  const navItems = OWNER_NAV_ITEMS;
 
   return (
     <DashboardLayout role="owner" navItems={navItems}>

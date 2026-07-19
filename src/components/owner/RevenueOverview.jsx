@@ -277,31 +277,6 @@ const RevenueOverview = ({ dateRange }) => {
       .sort((a, b) => b.amount - a.amount);
   }, [data.nonPkgRecaps, data.pkgRecaps, paymentMethodMap]);
 
-  // ── BEP Inputs: avg revenue & avg insentif terapis per pasien/sesi periode ini ──
-  const bepInputs = useMemo(() => {
-    const allSessions = [
-      ...(data.nonPkgRecaps || []).map(r => ({ patient_type: r.patient_type || '', amount: Number(r.amount) || 0 })),
-      ...(data.pkgRecaps || []).map(r => ({
-        patient_type: r.patient_type || '',
-        amount: r.package_tracking ? Number(r.package_tracking.nominal) / Number(r.package_tracking.total_sessions) : 0,
-      })),
-    ];
-    const totalSessionsInPeriod = allSessions.length;
-    const avgRevenuePerPatient = totalSessionsInPeriod > 0 ? metrics.totalRevenue / totalSessionsInPeriod : 0;
-
-    const totalIncentive = allSessions.reduce((sum, s) => {
-      const typeLabel = (s.patient_type || '').toUpperCase();
-      const matched = serviceRates.find(r => {
-        const svc = (r.service_name || '').toUpperCase();
-        return svc === typeLabel || svc.includes(typeLabel) || typeLabel.includes(svc);
-      });
-      return sum + (Number(matched?.rate) || 0);
-    }, 0);
-    const avgIncentivePerPatient = totalSessionsInPeriod > 0 ? totalIncentive / totalSessionsInPeriod : 0;
-
-    return { totalSessionsInPeriod, avgRevenuePerPatient, avgIncentivePerPatient };
-  }, [data.nonPkgRecaps, data.pkgRecaps, serviceRates, metrics.totalRevenue]);
-
   // ── Alerts ──
   const alerts = useMemo(() => {
     const items = [];
@@ -446,11 +421,7 @@ const RevenueOverview = ({ dateRange }) => {
       </Card>
 
       {/* ── Break Even Point ── */}
-      <BreakEvenPointWidget
-        avgRevenuePerPatient={bepInputs.avgRevenuePerPatient}
-        avgIncentivePerPatient={bepInputs.avgIncentivePerPatient}
-        totalPatientsInPeriod={bepInputs.totalSessionsInPeriod}
-      />
+      <BreakEvenPointWidget />
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">

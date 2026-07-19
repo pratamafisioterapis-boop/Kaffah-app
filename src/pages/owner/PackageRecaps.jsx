@@ -1,26 +1,12 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { PackageRecapsContent } from '@/pages/admin/PackageRecaps';
+import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 // Owner Wrapper
 const PackageRecapsOwner = () => {
-    // Owner Nav Items
-    const ownerNavItems = [
-        { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
-        { label: 'Appointments', path: '/owner/appointments', icon: 'Calendar' },
-        { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'ClipboardList' },
-        { label: 'Package Recaps', path: '/owner/package-recaps', icon: 'Package' }, // Explicitly added
-        { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
-        { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'MessageSquare' },
-        { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
-        { label: 'Accounting System', path: '/owner/accounting', icon: 'DollarSign' },
-        { label: 'Stok Barang', path: '/owner/inventory', icon: 'Package' },
-        { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
-        { label: 'Setup', path: '/owner/settings', icon: 'Settings' }
-    ];
-
     return (
-        <DashboardLayout role="owner" navItems={ownerNavItems}>
+        <DashboardLayout role="owner" navItems={OWNER_NAV_ITEMS}>
             <PackageRecapsContent />
         </DashboardLayout>
     );

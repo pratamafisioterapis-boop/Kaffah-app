@@ -31,6 +31,7 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
+import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 const HeroClock = () => {
   const [now, setNow] = React.useState(new Date());
   React.useEffect(() => {
@@ -837,20 +838,7 @@ setTrendPatients(trendArray);
 };
 
 const AdminDashboard = () => {
-  const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: 'Home' },
-    { label: 'Database Patients', path: '/admin/database-patients', icon: 'Database' },
-    { label: 'Appointments', path: '/admin/appointments', icon: 'Calendar' },
-    { label: 'Medical Records', path: '/admin/medical-records', icon: 'Activity' },
-    { label: 'Daily Recaps', path: '/admin/daily-recap', icon: 'FileText' },
-    { label: 'Package Recaps', path: '/admin/package-recaps', icon: 'Package' },
-    { label: 'Physiotherapist Management', path: '/admin/physiotherapist-management', icon: 'Users' },
-    { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
-    { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' }, 
-    { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
-    { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
-    { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
-  ];
+  const navItems = ADMIN_NAV_ITEMS;
 return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
       <Routes>

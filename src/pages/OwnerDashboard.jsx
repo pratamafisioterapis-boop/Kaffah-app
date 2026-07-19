@@ -35,6 +35,7 @@ import SlotUtilizationChart from '@/components/owner/operational/SlotUtilization
 import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDemandChart';
 import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
+import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 // API
 import { 
@@ -458,21 +459,7 @@ setTherapists(enrichedTherapists);
 };
 
 const OwnerDashboard = () => {
-  const navItems = [
-    { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
-    { label: 'Appointments', path: '/owner/appointments', icon: 'Calendar' },
-    { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'FileText' },
-    { label: 'Database Patients', path: '/owner/database-patients', icon: 'Database' },
-    { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
-    { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
-    { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
-    { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
-    { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },
-    { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
-    { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
-    { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
-    { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
-  ];
+  const navItems = OWNER_NAV_ITEMS;
 
   return (
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">

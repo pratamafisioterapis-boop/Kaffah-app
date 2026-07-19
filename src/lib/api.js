@@ -1672,6 +1672,62 @@ export const deleteAccountingSubcategory = async (id) => {
     return { success: true, error: null };
   }, 'deleteAccountingSubcategory');
 };
+// Fixed cost items are meant to auto-post as an owner expenditure once their
+// `post_day` has passed each month. There's no cron/edge-function in this
+// project to do that on a schedule, so this runs opportunistically whenever
+// the owner opens a page that needs the fixed-cost total (Fixed Cost
+// manager, BEP widget) — idempotent via `last_posted_month` so it only
+// posts once per item per calendar month no matter how many times it runs.
+export const autoPostFixedCosts = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [], error: null };
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const clinicId = userRow?.clinic_id;
+    if (!clinicId) return { data: [], error: null };
+
+    const { data: items, error: fetchError } = await supabase
+      .from('clinic_fixed_costs')
+      .select('id, item_name, amount, post_day, last_posted_month')
+      .eq('clinic_id', clinicId);
+    if (fetchError) return { error: fetchError };
+
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const today = now.getDate();
+
+    const due = (items || []).filter(i => {
+      if (i.last_posted_month === currentMonth) return false;
+      const effectiveDay = Math.min(i.post_day || 1, daysInMonth);
+      return effectiveDay <= today;
+    });
+
+    const posted = [];
+    for (const item of due) {
+      const effectiveDay = Math.min(item.post_day || 1, daysInMonth);
+      const postDate = `${currentMonth}-${String(effectiveDay).padStart(2, '0')}`;
+      // eslint-disable-next-line no-await-in-loop
+      const { error: insertError } = await supabase.from('owner_expenditures').insert({
+        clinic_id: clinicId,
+        date: postDate,
+        amount: item.amount,
+        category: 'FIXED COST',
+        description: item.item_name,
+        created_by: userId,
+        created_at: new Date().toISOString()
+      });
+      if (insertError) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await supabase.from('clinic_fixed_costs').update({ last_posted_month: currentMonth }).eq('id', item.id);
+      posted.push(item.item_name);
+    }
+
+    return { data: posted, error: null };
+  }, 'autoPostFixedCosts', { retry: false });
+};
+
 export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
