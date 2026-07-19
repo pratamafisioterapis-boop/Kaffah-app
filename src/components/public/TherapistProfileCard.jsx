@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Award, ArrowRight, ShieldCheck } from 'lucide-react';
+import { User, Award, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { getTherapistPracticeHoursGrouped } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,19 @@ import {
 const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButton = false }) => {
   const navigate = useNavigate();
   const [showBioModal, setShowBioModal] = useState(false);
+  const [practiceHours, setPracticeHours] = useState([]);
+
+  useEffect(() => {
+    if (!therapist?.id) return;
+    let isMounted = true;
+
+    getTherapistPracticeHoursGrouped(therapist.id).then(({ data }) => {
+      if (!isMounted || !data) return;
+      setPracticeHours(data.map(g => `${g.day_range}: ${g.display_start_time?.slice(0, 5)} - ${g.display_end_time?.slice(0, 5)}`));
+    });
+
+    return () => { isMounted = false; };
+  }, [therapist?.id]);
 
   const bioText = therapist.bio || 'Profesional berpengalaman dalam menangani berbagai kondisi muskuloskeletal dan rehabilitasi fisik.';
   const isLongBio = bioText.length > 100;
@@ -114,6 +128,21 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
               </div>
             )}
           </div>
+
+          {practiceHours.length > 0 && (
+            <div className="w-full mt-3 bg-slate-50/70 border border-slate-100 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 justify-center text-[10px] font-bold text-[#b8935f] uppercase tracking-wider mb-1.5">
+                <Clock className="w-3 h-3" /> Jam Praktek
+              </div>
+              <div className="space-y-0.5">
+                {practiceHours.map((schedule, idx) => (
+                  <p key={idx} className="text-xs text-slate-600 font-medium text-center">
+                    {schedule}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Button Section */}

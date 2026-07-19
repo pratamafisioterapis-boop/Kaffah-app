@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Upload, Trash2, Edit2,
-  Plus, X, Loader2, Lock, UserPlus, CalendarClock,
+  Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange,
   Wallet, Check, Megaphone
 } from 'lucide-react';
@@ -23,7 +23,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
@@ -41,7 +40,6 @@ const SectionCard = ({ icon: Icon, iconClass, title, description, children }) =>
 const TherapistManager = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState(null);
@@ -494,16 +492,6 @@ const headerColorMap = {
                   </div>
                 )}
 
-                <div className="flex items-center justify-end mt-4 pt-3 border-t border-slate-100">
-                  <Button
-                     variant="ghost"
-                     size="sm"
-                     className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 shrink-0"
-                     onClick={() => navigate(`/owner/therapist/${therapist.id}/schedule-settings`)}
-                  >
-                      <CalendarClock className="w-3.5 h-3.5 mr-1" /> Jam Praktek
-                  </Button>
-                </div>
               </div>
             </motion.div>
           );})}
