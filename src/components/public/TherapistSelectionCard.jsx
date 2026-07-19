@@ -1,12 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { parseWorkingHours } from '@/lib/utils';
+import { getTherapistPracticeHoursGrouped } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const TherapistSelectionCard = ({ therapist, isSelected, onSelect }) => {
-  const workingSchedules = parseWorkingHours(therapist.working_hours);
+  const [workingSchedules, setWorkingSchedules] = useState([]);
+
+  useEffect(() => {
+    if (!therapist?.id) return;
+    let isMounted = true;
+
+    getTherapistPracticeHoursGrouped(therapist.id).then(({ data }) => {
+      if (!isMounted || !data) return;
+      setWorkingSchedules(data.map(g => `${g.day_range}: ${g.display_start_time?.slice(0, 5)} - ${g.display_end_time?.slice(0, 5)}`));
+    });
+
+    return () => { isMounted = false; };
+  }, [therapist?.id]);
 
   return (
     <motion.div
