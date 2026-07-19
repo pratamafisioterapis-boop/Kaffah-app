@@ -80,7 +80,7 @@ const LocationSection = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 mb-1">Jam Operasional</h3>
-                  <p className="text-slate-600">Senin- jumat : 09.00-21.00 | Sabtu : 09.00-17.00</p>
+                  <p className="text-slate-600">Senin - Jumat : 09.00-21.00 | Sabtu - Minggu : 09.00-17.00</p>
                 </div>
               </div>
             </div>
