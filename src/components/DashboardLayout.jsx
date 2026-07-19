@@ -7,7 +7,7 @@ import {
   Home, Calendar, Users, Settings, LogOut, Activity, Briefcase,
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
-  MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck
+  MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -33,7 +33,8 @@ const iconMap = {
   Boxes,
   Wallet,
   FileSearch,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Award
 };
 
 // Safe date formatter to prevent runtime crashes

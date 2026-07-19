@@ -5205,3 +5205,306 @@ export const getNextClinicalDocumentNumber = async (documentType, prefix) => {
     return { data: `${seq}/${prefix}/${month}/${year}`, error: null };
   }, 'getNextClinicalDocumentNumber', { retry: true });
 };
+
+// ============================================
+// REMUNERATION (Penilaian Performa & Remunerasi Terapis)
+// ============================================
+
+export const getRemunerationCriteria = async () => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('remuneration_criteria')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getRemunerationCriteria', { retry: true });
+};
+
+export const createRemunerationCriteria = async (payload) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+
+    const { data, error } = await supabase
+      .from('remuneration_criteria')
+      .insert([{
+        clinic_id: clinicId,
+        name: payload.name,
+        metric_key: payload.metricKey || 'custom',
+        target_mode: payload.targetMode || 'fixed_percent',
+        target_value: payload.targetValue,
+        weight_percent: payload.weightPercent,
+        unit: payload.unit || '%',
+        is_auto: !!payload.isAuto,
+        sort_order: payload.sortOrder || 0,
+      }])
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'createRemunerationCriteria');
+};
+
+export const updateRemunerationCriteria = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('remuneration_criteria')
+      .update({
+        name: payload.name,
+        target_mode: payload.targetMode,
+        target_value: payload.targetValue,
+        weight_percent: payload.weightPercent,
+        unit: payload.unit,
+        is_active: payload.isActive,
+        sort_order: payload.sortOrder,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateRemunerationCriteria');
+};
+
+export const deleteRemunerationCriteria = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase
+      .from('remuneration_criteria')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteRemunerationCriteria');
+};
+
+export const getRemunerationRealizations = async (therapistId, periodStart, periodEnd) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('remuneration_realizations')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .eq('period_start', periodStart)
+      .eq('period_end', periodEnd);
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getRemunerationRealizations', { retry: true });
+};
+
+export const upsertRemunerationRealization = async ({ therapistId, criteriaId, periodStart, periodEnd, value, proofUrl, note }) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const payload = {
+      clinic_id: clinicId,
+      therapist_id: therapistId,
+      criteria_id: criteriaId,
+      period_start: periodStart,
+      period_end: periodEnd,
+      realization_value: value,
+      proof_url: proofUrl || null,
+      note: note || null,
+      input_by: userId || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('remuneration_realizations')
+      .upsert(payload, { onConflict: 'criteria_id,therapist_id,period_start,period_end' })
+      .select()
+      .maybeSingle();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertRemunerationRealization');
+};
+
+export const uploadRemunerationProof = async (file, therapistId) => {
+  return safeQuery(async () => {
+    const ext = file.name.split('.').pop();
+    const fileName = `${therapistId}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase
+      .storage
+      .from('remuneration-proofs')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) return { error: uploadError };
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('remuneration-proofs')
+      .getPublicUrl(fileName);
+
+    return { data: publicUrlData.publicUrl, success: true, error: null };
+  }, 'uploadRemunerationProof');
+};
+
+// Kedisiplinan kehadiran: proporsi appointment yang benar-benar direalisasikan
+// (ada daily_recap dengan start_time) dari seluruh appointment yang dijadwalkan
+// (tidak termasuk yang dibatalkan) pada periode tsb.
+export const getTherapistAttendanceRate = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: appts, error: apptError } = await supabase
+      .from('appointments')
+      .select('id, status')
+      .eq('therapist_id', therapistId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .neq('status', 'cancelled');
+
+    if (apptError) return { error: apptError };
+
+    const totalScheduled = (appts || []).length;
+
+    const { data: recaps, error: recapError } = await supabase
+      .from('daily_recaps')
+      .select('id, start_time')
+      .eq('therapist_id', therapistId)
+      .gte('recap_date', startDate)
+      .lte('recap_date', endDate)
+      .not('start_time', 'is', null);
+
+    if (recapError) return { error: recapError };
+
+    const totalAttended = (recaps || []).length;
+    const rate = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 100;
+
+    return {
+      data: { totalScheduled, totalAttended, rate },
+      success: true,
+      error: null
+    };
+  }, 'getTherapistAttendanceRate', { retry: true });
+};
+
+// Kelengkapan SOAP: proporsi kunjungan (daily_recaps) pada periode yang sudah
+// memiliki medical record (SOAP) terisi.
+export const getTherapistSoapCompleteness = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: recaps, error: recapError } = await supabase
+      .from('daily_recaps')
+      .select('id')
+      .eq('therapist_id', therapistId)
+      .gte('recap_date', startDate)
+      .lte('recap_date', endDate);
+
+    if (recapError) return { error: recapError };
+
+    const totalRecaps = (recaps || []).length;
+    if (totalRecaps === 0) {
+      return { data: { totalRecaps, totalFilled: 0, rate: 100 }, success: true, error: null };
+    }
+
+    const recapIds = recaps.map(r => r.id);
+    const { data: medicalRecords, error: mrError } = await supabase
+      .from('medical_records')
+      .select('daily_recap_id')
+      .in('daily_recap_id', recapIds);
+
+    if (mrError) return { error: mrError };
+
+    const filledIds = new Set((medicalRecords || []).map(r => r.daily_recap_id).filter(Boolean));
+    const totalFilled = filledIds.size;
+    const rate = Math.round((totalFilled / totalRecaps) * 100);
+
+    return {
+      data: { totalRecaps, totalFilled, rate },
+      success: true,
+      error: null
+    };
+  }, 'getTherapistSoapCompleteness', { retry: true });
+};
+
+// Laporan remunerasi lengkap untuk satu terapis pada satu periode: gabungan
+// kriteria (dari owner), realisasi manual, dan metrik otomatis dari DB.
+export const getRemunerationReport = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: criteria, error: criteriaError } = await getRemunerationCriteria();
+    if (criteriaError) return { error: criteriaError };
+
+    const { data: targetProgress } = await getTherapistTargetProgress(therapistId, startDate, endDate);
+    const { data: attendance } = await getTherapistAttendanceRate(therapistId, startDate, endDate);
+    const { data: soapCompleteness } = await getTherapistSoapCompleteness(therapistId, startDate, endDate);
+    const { data: realizations } = await getRemunerationRealizations(therapistId, startDate, endDate);
+
+    const realizationMap = {};
+    (realizations || []).forEach(r => { realizationMap[r.criteria_id] = r; });
+
+    const patientTargetVisits = targetProgress?.target_visits || 0;
+
+    const rows = (criteria || []).map(c => {
+      let targetValue = c.target_value;
+      let realizationValue = 0;
+      let unit = c.unit;
+      let proofUrl = null;
+
+      if (c.target_mode === 'percent_of_patient_target') {
+        targetValue = Math.round(patientTargetVisits * (c.target_value / 100));
+      }
+
+      if (c.metric_key === 'target_pasien') {
+        realizationValue = targetProgress?.actual_visits || 0;
+        targetValue = patientTargetVisits;
+      } else if (c.metric_key === 'kehadiran') {
+        realizationValue = attendance?.rate || 0;
+      } else if (c.metric_key === 'kelengkapan_soap') {
+        realizationValue = soapCompleteness?.rate || 0;
+      } else {
+        const r = realizationMap[c.id];
+        realizationValue = r?.realization_value || 0;
+        proofUrl = r?.proof_url || null;
+      }
+
+      const achievementPercent = targetValue > 0
+        ? Math.round((realizationValue / targetValue) * 100)
+        : (realizationValue > 0 ? 100 : 0);
+
+      // Cap contribution at 100% achievement so over-performing one metric
+      // can't offset an under-performing one beyond its own weight.
+      const cappedAchievement = Math.min(achievementPercent, 100);
+      const weightedScore = (cappedAchievement / 100) * c.weight_percent;
+
+      return {
+        ...c,
+        targetValue,
+        realizationValue,
+        unit,
+        proofUrl,
+        achievementPercent,
+        weightedScore,
+      };
+    });
+
+    const overallScore = Math.round(rows.reduce((sum, r) => sum + r.weightedScore, 0));
+    const patientTargetRow = rows.find(r => r.metric_key === 'target_pasien');
+    const isActive = patientTargetRow ? patientTargetRow.realizationValue >= patientTargetRow.targetValue && patientTargetRow.targetValue > 0 : false;
+
+    return {
+      data: {
+        rows,
+        overallScore,
+        isActive,
+        periodStart: startDate,
+        periodEnd: endDate,
+      },
+      success: true,
+      error: null
+    };
+  }, 'getRemunerationReport');
+};

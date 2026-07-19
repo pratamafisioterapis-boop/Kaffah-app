@@ -200,8 +200,11 @@ useEffect(() => {
         setOptionsMap(mapping);
       }
     };
+    // Re-fetch whenever data syncs (e.g. a new diagnosis/service option was
+    // added elsewhere after this page mounted) so labels never fall back to
+    // showing the raw option UUID.
     fetchOptions();
-  }, []);
+  }, [lastSyncTime]);
 
   useEffect(() => {
     if (!showPaymentFilter) return;
@@ -470,9 +473,11 @@ const getPremiumPastelBadge = (text) => {
   const renderDiagnoses = (diagnosis) => {
     if (!diagnosis || diagnosis.length === 0) return '-';
 
+    const mappedDiagnoses = diagnosis.map(d => optionsMap[d] || d);
+
     return (
       <div className="flex flex-wrap gap-1 justify-center">
-        {diagnosis.slice(0, 3).map((d, i) => (
+        {mappedDiagnoses.slice(0, 3).map((d, i) => (
           <Badge
             key={i}
             variant="outline"
@@ -481,9 +486,9 @@ const getPremiumPastelBadge = (text) => {
             {d}
           </Badge>
         ))}
-        {diagnosis.length > 3 && (
+        {mappedDiagnoses.length > 3 && (
           <span className="text-sm text-slate-400">
-            +{diagnosis.length - 3}
+            +{mappedDiagnoses.length - 3}
           </span>
         )}
       </div>
