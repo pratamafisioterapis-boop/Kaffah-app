@@ -584,7 +584,11 @@ export const createAppointment = async (params) => {
   p_action_by_name: params.action_by_name ?? null,
   p_action_by_role: params.action_by_role ?? null,
 
-  p_is_manual: params.p_is_manual ?? false
+  p_is_manual: params.p_is_manual ?? false,
+
+  p_guest_complaint: params.p_guest_complaint || params.guestComplaint || null,
+  p_guest_age: params.p_guest_age ?? params.guestAge ?? null,
+  p_guest_gender: params.p_guest_gender || params.guestGender || null
 };
 console.log("PAYLOAD RPC FINAL", payload);
 
@@ -3897,6 +3901,7 @@ export const savePhysiotherapist = async (payload) => {
         transport_per_day: payload.transport_per_day,
         period_start_day: payload.period_start_day,
         period_end_day: payload.period_end_day,
+        complaint_tags: payload.complaint_tags || [],
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
         badges: payload.badges || [],
@@ -4048,6 +4053,7 @@ export const createTherapistAccount = async (payload, password) => {
         transport_per_day: payload.transport_per_day,
         period_start_day: payload.period_start_day,
         period_end_day: payload.period_end_day,
+        complaint_tags: payload.complaint_tags || [],
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
         badges: payload.badges || [],

@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange,
-  Wallet, Check, Megaphone
+  Wallet, Check, Megaphone, Stethoscope
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import {
   getCurrentClinic, getBadgesByOwner
 } from '@/lib/api';
 import { cn, formatTherapistPeriodLabel } from "@/lib/utils";
+import { COMPLAINT_TAGS } from "@/lib/complaintTags";
 import { supabase } from '@/lib/customSupabaseClient';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
@@ -94,6 +95,7 @@ const TherapistManager = () => {
       show_on_landing: false,
       show_on_booking: false,
       badges: [], // Array of badge IDs
+      complaint_tags: [], // Array of complaint-tag slugs, for Smart Booking matching
       theme_color: '',
       signature_url: ''
     };
@@ -165,6 +167,7 @@ const TherapistManager = () => {
         show_on_landing: therapist.show_on_landing || false,
         show_on_booking: therapist.show_on_booking || false,
         badges: Array.isArray(therapist.badges) ? therapist.badges : [],
+        complaint_tags: Array.isArray(therapist.complaint_tags) ? therapist.complaint_tags : [],
         theme_color: therapist.theme_color || '',
         signature_url: therapist.signature_url || ''
       });
@@ -210,6 +213,17 @@ const TherapistManager = () => {
             return { ...prev, badges: [...currentBadges, badgeId] };
         } else {
             return { ...prev, badges: currentBadges.filter(b => b !== badgeId) };
+        }
+    });
+  };
+
+  const handleComplaintTagChange = (slug, isChecked) => {
+    setFormData(prev => {
+        const current = prev.complaint_tags || [];
+        if (isChecked) {
+            return { ...prev, complaint_tags: [...current, slug] };
+        } else {
+            return { ...prev, complaint_tags: current.filter(s => s !== slug) };
         }
     });
   };
@@ -740,6 +754,34 @@ const headerColorMap = {
                     })}
                   </div>
                 )}
+              </div>
+            </SectionCard>
+
+            {/* Keahlian Menangani Keluhan — dipakai untuk rekomendasi Smart Booking */}
+            <SectionCard
+              icon={Stethoscope}
+              iconClass="bg-rose-50 text-rose-600"
+              title="Keahlian Menangani Keluhan"
+              description="Pilih kondisi/keluhan yang jadi keahlian terapis ini. Dipakai otomatis untuk mencocokkan rekomendasi terapis di Smart Booking — pilih minimal satu."
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {COMPLAINT_TAGS.map((tag) => {
+                  const selected = formData.complaint_tags?.includes(tag.slug);
+                  return (
+                    <button
+                      key={tag.slug}
+                      type="button"
+                      onClick={() => handleComplaintTagChange(tag.slug, !selected)}
+                      className={cn(
+                        "text-xs px-3 py-1 rounded-full font-semibold border flex items-center gap-1 transition-all",
+                        selected ? "bg-rose-600 text-white border-rose-600" : "bg-white text-slate-600 border-slate-200 hover:border-rose-200"
+                      )}
+                    >
+                      {selected && <Check className="w-3 h-3" />}
+                      {tag.label}
+                    </button>
+                  );
+                })}
               </div>
             </SectionCard>
 
