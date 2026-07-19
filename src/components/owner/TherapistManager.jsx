@@ -94,6 +94,7 @@ const TherapistManager = () => {
       period_end_day: 27,
       show_on_landing: false,
       show_on_booking: false,
+      remuneration_enabled: true,
       badges: [], // Array of badge IDs
       complaint_tags: [], // Array of complaint-tag slugs, for Smart Booking matching
       theme_color: '',
@@ -191,6 +192,7 @@ const TherapistManager = () => {
         period_end_day: therapist.period_end_day || 27,
         show_on_landing: therapist.show_on_landing || false,
         show_on_booking: therapist.show_on_booking || false,
+        remuneration_enabled: therapist.remuneration_enabled ?? true,
         badges: Array.isArray(therapist.badges) ? therapist.badges : [],
         complaint_tags: Array.isArray(therapist.complaint_tags) ? therapist.complaint_tags : [],
         theme_color: therapist.theme_color || '',
@@ -276,7 +278,8 @@ const TherapistManager = () => {
       period_start_day: Math.min(31, Math.max(1, parseInt(formData.period_start_day) || 28)),
       period_end_day: Math.min(31, Math.max(1, parseInt(formData.period_end_day) || 27)),
       show_on_landing: Boolean(formData.show_on_landing),
-      show_on_booking: Boolean(formData.show_on_booking)
+      show_on_booking: Boolean(formData.show_on_booking),
+      remuneration_enabled: Boolean(formData.remuneration_enabled)
     };
 
     let error = null;
@@ -728,6 +731,24 @@ const headerColorMap = {
                 </div>
               </SectionCard>
             </div>
+
+            <SectionCard
+              icon={Award}
+              iconClass="bg-violet-50 text-violet-600"
+              title="Remunerasi"
+              description="Aktifkan/nonaktifkan program penilaian performa & remunerasi untuk terapis ini."
+            >
+              <div className="flex items-center justify-between gap-3 py-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Award className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                  <span className="text-sm font-medium text-slate-700 truncate">Ikutkan dalam program remunerasi</span>
+                </div>
+                <Switch
+                  checked={formData.remuneration_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, remuneration_enabled: checked }))}
+                />
+              </div>
+            </SectionCard>
 
             {/* Publikasi & Layanan */}
             <SectionCard
