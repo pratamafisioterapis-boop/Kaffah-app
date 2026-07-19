@@ -9,6 +9,48 @@ import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 25;
 
+// Simpan file yang baru dipilih ke IndexedDB supaya selamat dari reload
+// halaman (tab Android bisa di-reload OS saat user berada di native
+// file/camera picker; file yang dipilih hilang tanpa pesan apa pun).
+// Saat komponen dimuat lagi, file yang tersimpan dipulihkan otomatis.
+const PENDING_DB = 'kaffah-drive-upload';
+const PENDING_STORE = 'pending';
+const PENDING_KEY = 'current';
+const PENDING_MAX_AGE_MS = 15 * 60 * 1000;
+
+const openPendingDb = () =>
+  new Promise((resolve, reject) => {
+    const req = indexedDB.open(PENDING_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(PENDING_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+const withPendingStore = async (mode, fn) => {
+  const db = await openPendingDb();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(PENDING_STORE, mode);
+      const result = fn(tx.objectStore(PENDING_STORE));
+      tx.oncomplete = () => resolve(result?.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+};
+
+const savePendingUpload = (file, label) =>
+  withPendingStore('readwrite', (store) =>
+    store.put({ file, label, savedAt: Date.now() }, PENDING_KEY)
+  ).catch(() => {});
+
+const loadPendingUpload = () =>
+  withPendingStore('readonly', (store) => store.get(PENDING_KEY)).catch(() => null);
+
+const clearPendingUpload = () =>
+  withPendingStore('readwrite', (store) => store.delete(PENDING_KEY)).catch(() => {});
+
 const formatFileSize = (bytes) => {
   if (!bytes) return '';
   const mb = bytes / (1024 * 1024);
@@ -79,6 +121,31 @@ const TherapistDriveUpload = () => {
     fetchHistory();
   }, []);
 
+  // Pulihkan file yang sempat dipilih tapi hilang karena halaman ter-reload.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const pending = await loadPendingUpload();
+      if (cancelled || !pending?.file) return;
+      if (Date.now() - (pending.savedAt || 0) > PENDING_MAX_AGE_MS) {
+        clearPendingUpload();
+        return;
+      }
+      setFile(pending.file);
+      if (pending.label) setLabel(pending.label);
+      pushDiag(`✅ File "${pending.file.name}" dipulihkan otomatis setelah halaman ter-reload`);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Setiap kali file/label berubah, simpan sebagai upload tertunda.
+  useEffect(() => {
+    if (file) savePendingUpload(file, label);
+  }, [file, label]);
+
   const fetchHistory = async () => {
     setLoadingHistory(true);
     const { data } = await getMyDriveUploads();
@@ -105,6 +172,7 @@ const TherapistDriveUpload = () => {
   const handleClearFile = () => {
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    clearPendingUpload();
   };
 
   const handleUpload = async () => {
