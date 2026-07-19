@@ -3585,6 +3585,101 @@ export const upsertWaApiSettings = async ({ apiKey, numberKey, phoneNumber, enab
   }, 'upsertWaApiSettings');
 };
 
+// ============================================
+// GOOGLE DRIVE (Owner-configured upload folder)
+// ============================================
+
+export const getGoogleDriveSettings = async () => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { data: null };
+
+    const { data, error } = await supabase
+      .from('google_drive_settings')
+      .select('id, clinic_id, folder_id, folder_name, updated_at')
+      .eq('clinic_id', clinicId)
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return { data: data || null, success: true, error: null };
+  }, 'getGoogleDriveSettings', { retry: true });
+};
+
+export const upsertGoogleDriveSettings = async ({ folderId, folderName }) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const payload = {
+      clinic_id: clinicId,
+      folder_id: folderId,
+      folder_name: folderName || null,
+      updated_by: userId || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('google_drive_settings')
+      .upsert(payload, { onConflict: 'clinic_id' })
+      .select()
+      .maybeSingle();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'upsertGoogleDriveSettings');
+};
+
+export const getGoogleDriveServiceAccountEmail = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('therapist-drive-upload?action=info', {
+      method: 'GET',
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getGoogleDriveServiceAccountEmail');
+};
+
+export const uploadFileToClinicDrive = async ({ file, label }) => {
+  return safeQuery(async () => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (label) formData.append('label', label);
+
+    const { data, error } = await supabase.functions.invoke('therapist-drive-upload', {
+      body: formData,
+    });
+
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+
+    return { data, success: true, error: null };
+  }, 'uploadFileToClinicDrive');
+};
+
+export const getMyDriveUploads = async (limit = 20) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('therapist_drive_uploads')
+      .select('id, file_name, label, web_view_link, created_at')
+      .eq('therapist_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) return { error };
+
+    return { data: data || [], success: true, error: null };
+  }, 'getMyDriveUploads', { retry: true });
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,
