@@ -79,11 +79,61 @@ export function rankTherapistsByComplaint(therapists, selectedSlugs, preferredTh
   return therapists;
 }
 
+const getActiveSlotsForDate = async (date, rankedIds, now) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const { data: slots } = await getAvailableSlots(dateStr, null);
+  if (!slots || slots.length === 0) return [];
+
+  let activeSlots = slots.filter(s => s.status === 'aktif' && rankedIds.has(s.therapist_id));
+
+  // Don't recommend a slot that's about to start (or already passed) —
+  // patients need at least MIN_LEAD_MINUTES to arrive/prepare.
+  if (isSameDay(date, now)) {
+    activeSlots = activeSlots.filter(s => {
+      const [h, m] = (s.slot_start || '').split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return false;
+      const slotDateTime = new Date(date);
+      slotDateTime.setHours(h, m, 0, 0);
+      return (slotDateTime.getTime() - now.getTime()) >= MIN_LEAD_MINUTES * 60 * 1000;
+    });
+  }
+
+  return activeSlots;
+};
+
+const buildResultsForWindow = (rankedTherapists, preferredSet, date, win, activeSlots, windowId) => {
+  const inWindow = activeSlots.filter(s => {
+    const start = (s.slot_start || '').slice(0, 5);
+    return start >= win.start && start < win.end;
+  });
+  if (inWindow.length === 0) return [];
+
+  const byTherapist = {};
+  inWindow.forEach(s => {
+    if (!byTherapist[s.therapist_id]) byTherapist[s.therapist_id] = [];
+    byTherapist[s.therapist_id].push(s);
+  });
+
+  return rankedTherapists
+    .filter(t => byTherapist[t.id])
+    .map(t => ({
+      therapist: t,
+      date,
+      window: win,
+      slots: byTherapist[t.id].sort((a, b) => a.slot_start.localeCompare(b.slot_start)).slice(0, 4),
+      isPreferred: preferredSet.has(t.id),
+      isExactMatch: win.id === windowId
+    }));
+};
+
 /**
  * Core Smart Booking search: given a ranked therapist pool and a time
- * preference, scans forward through candidate dates/time-windows until it
- * finds available slots, widening the search (other windows same day, then
- * later days) so the patient is never left without an option.
+ * preference, scans forward through candidate dates looking ONLY for the
+ * patient's exact requested window first (so "Malam" stays "Malam" even if
+ * that means a later date, rather than silently swapping to "Sore" on an
+ * earlier one). Only if the exact window is empty across the *entire*
+ * search range does it fall back to widening into nearby windows, starting
+ * from the earliest date that has anything open at all.
  *
  * Returns { results, scannedDates, exactMatch } where each result is
  * { therapist, date, window, slots (aktif slots sorted by time), isExactMatch }.
@@ -101,72 +151,51 @@ export async function findSmartRecommendations({
   const rankedIds = new Set(rankedTherapists.map(t => t.id));
   const preferredSet = new Set(preferredTherapistIds);
   const candidateDates = buildCandidateDates(whenId, customDate);
-  const windowsOrder = orderedWindows(windowId);
+  const preferredWindow = TIME_WINDOWS.find(w => w.id === windowId) || null;
+  const now = new Date();
 
   let results = [];
   let scannedDates = 0;
-  const now = new Date();
+  const slotsByDate = new Map();
 
-  for (const date of candidateDates) {
-    scannedDates += 1;
-    const dateStr = format(date, 'yyyy-MM-dd');
-
-    // Fetch all therapists' slot statuses for this date in one call.
-    // eslint-disable-next-line no-await-in-loop
-    const { data: slots } = await getAvailableSlots(dateStr, null);
-    if (!slots || slots.length === 0) continue;
-
-    let activeSlots = slots.filter(s => s.status === 'aktif' && rankedIds.has(s.therapist_id));
-
-    // Don't recommend a slot that's about to start (or already passed) —
-    // patients need at least MIN_LEAD_MINUTES to arrive/prepare.
-    if (isSameDay(date, now)) {
-      activeSlots = activeSlots.filter(s => {
-        const [h, m] = (s.slot_start || '').split(':').map(Number);
-        if (Number.isNaN(h) || Number.isNaN(m)) return false;
-        const slotDateTime = new Date(date);
-        slotDateTime.setHours(h, m, 0, 0);
-        return (slotDateTime.getTime() - now.getTime()) >= MIN_LEAD_MINUTES * 60 * 1000;
-      });
+  const fetchAndCache = async (date) => {
+    const key = date.toDateString();
+    if (!slotsByDate.has(key)) {
+      // eslint-disable-next-line no-await-in-loop
+      slotsByDate.set(key, await getActiveSlotsForDate(date, rankedIds, now));
     }
+    return slotsByDate.get(key);
+  };
 
-    if (activeSlots.length === 0) continue;
-
-    for (const win of windowsOrder) {
-      const inWindow = activeSlots.filter(s => {
-        const start = (s.slot_start || '').slice(0, 5);
-        return start >= win.start && start < win.end;
-      });
-      if (inWindow.length === 0) continue;
-
-      const byTherapist = {};
-      inWindow.forEach(s => {
-        if (!byTherapist[s.therapist_id]) byTherapist[s.therapist_id] = [];
-        byTherapist[s.therapist_id].push(s);
-      });
-
-      const isExactMatch = date.toDateString() === candidateDates[0].toDateString() && win.id === windowId;
-
-      rankedTherapists.forEach(t => {
-        const slotsForT = byTherapist[t.id];
-        if (!slotsForT) return;
-        results.push({
-          therapist: t,
-          date,
-          window: win,
-          slots: slotsForT.sort((a, b) => a.slot_start.localeCompare(b.slot_start)).slice(0, 4),
-          isPreferred: preferredSet.has(t.id),
-          isExactMatch
-        });
-      });
-
-      break; // found a usable window for this date, don't widen further within the same day
+  // Phase 1: only the exact requested window, across the whole date range —
+  // continuity of the patient's actual preference beats an earlier date.
+  if (preferredWindow) {
+    for (const date of candidateDates) {
+      scannedDates += 1;
+      const activeSlots = await fetchAndCache(date); // eslint-disable-line no-await-in-loop
+      if (activeSlots.length === 0) continue;
+      results.push(...buildResultsForWindow(rankedTherapists, preferredSet, date, preferredWindow, activeSlots, windowId));
+      if (results.length >= maxResults) break;
     }
+  }
 
-    // Keep scanning later dates too — don't stop at the first date that has
-    // any match, otherwise a fully-booked "asap" day would hide every other
-    // available date/therapist for the rest of the week.
-    if (results.length >= maxResults) break;
+  // Phase 2: fall back to widening into nearby windows — only runs if the
+  // exact window came up completely empty for every date scanned above.
+  if (results.length === 0) {
+    const windowsOrder = orderedWindows(windowId);
+    for (const date of candidateDates) {
+      const activeSlots = await fetchAndCache(date); // eslint-disable-line no-await-in-loop
+      if (activeSlots.length === 0) continue;
+
+      for (const win of windowsOrder) {
+        const windowResults = buildResultsForWindow(rankedTherapists, preferredSet, date, win, activeSlots, windowId);
+        if (windowResults.length === 0) continue;
+        results.push(...windowResults);
+        break; // found a usable window for this date, don't widen further within the same day
+      }
+
+      if (results.length >= maxResults) break;
+    }
   }
 
   return {
