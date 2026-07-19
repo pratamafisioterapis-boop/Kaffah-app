@@ -113,7 +113,7 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
         </div>
 
         {/* Bio & Practice Hours Section */}
-        <div className="px-6 flex-grow relative z-10 flex flex-col items-center w-full gap-3">
+        <div className="px-6 pb-6 flex-grow relative z-10 flex flex-col items-center w-full gap-3">
           <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 w-full min-h-[64px] flex flex-col justify-center">
             <div className="cursor-help" onClick={(e) => isLongBio && handleOpenBio(e)}>
               <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed text-center">
@@ -145,9 +145,13 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
                   </p>
                 ))}
                 {practiceHours.length > 2 && (
-                  <p className="text-[10px] text-slate-400 text-center pt-0.5">
+                  <button
+                    type="button"
+                    onClick={handleOpenBio}
+                    className="w-full text-[10px] text-[#0f1e3d] hover:text-[#b8935f] hover:underline transition-all font-semibold text-center pt-0.5 cursor-pointer"
+                  >
                     +{practiceHours.length - 2} jadwal lainnya
-                  </p>
+                  </button>
                 )}
               </div>
             </div>
@@ -156,7 +160,7 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
 
         {/* Button Section */}
         {showSelectButton && (
-          <div className="p-6 pt-0 mt-auto relative z-10">
+          <div className="p-6 pt-3 mt-auto relative z-10">
             <Button
               className={`w-full rounded-xl transition-all font-semibold ${
                 isSelected
@@ -192,6 +196,21 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
              <div className="bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100 text-slate-600 text-sm leading-relaxed text-justify shadow-sm">
                 {bioText}
              </div>
+
+             {practiceHours.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-1.5 justify-center text-xs font-bold text-[#b8935f] uppercase tracking-wider mb-3">
+                  <Clock className="w-3.5 h-3.5" /> Jam Praktek
+                </div>
+                <div className="bg-[#b8935f]/[0.06] border border-[#b8935f]/20 rounded-xl p-4 space-y-1.5">
+                  {practiceHours.map((schedule, idx) => (
+                    <p key={idx} className="text-sm text-slate-600 font-medium text-center">
+                      {schedule}
+                    </p>
+                  ))}
+                </div>
+              </div>
+             )}
 
              {Array.isArray(therapist.badges) && therapist.badges.length > 0 && (
               <div className="mb-6">
