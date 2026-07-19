@@ -4,8 +4,9 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange,
-  Wallet, Check, Megaphone, Stethoscope, Award
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt
 } from 'lucide-react';
+import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,6 +61,10 @@ const TherapistManager = () => {
   const [timeOffs, setTimeOffs] = useState([]);
   const [newTimeOff, setNewTimeOff] = useState({ start_date: '', end_date: '', reason: '' });
   const [loadingTimeOff, setLoadingTimeOff] = useState(false);
+
+  // Payroll State
+  const [payrollDialogOpen, setPayrollDialogOpen] = useState(false);
+  const [selectedTherapistForPayroll, setSelectedTherapistForPayroll] = useState(null);
 
   useEffect(() => {
     fetchTherapists();
@@ -443,6 +448,9 @@ const headerColorMap = {
                          className="data-[state=checked]:bg-green-500 scale-90"
                       />
                    </div>
+                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForPayroll(therapist); setPayrollDialogOpen(true); }} title="Payroll / Slip Gaji">
+                     <Receipt className="w-3.5 h-3.5" />
+                   </Button>
                    <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
                      <Edit2 className="w-3.5 h-3.5" />
                    </Button>
@@ -939,6 +947,12 @@ const headerColorMap = {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PayrollManagerModal
+        open={payrollDialogOpen}
+        onClose={() => setPayrollDialogOpen(false)}
+        therapist={selectedTherapistForPayroll}
+      />
     </div>
   );
 };
