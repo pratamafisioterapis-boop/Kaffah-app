@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import TherapistPatients from '@/components/therapist/TherapistPatients';
-import TherapistAppointments from '@/components/therapist/TherapistAppointments';
+import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
 import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
@@ -51,7 +51,7 @@ const [settingsOpen, setSettingsOpen] = useState(false);
   const navItems = [
     { label: 'Dashboard', path: '/therapist', icon: 'Home' },
     { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' }, 
-    { label: 'Daftar Appointment', path: '/therapist/appointments', icon: 'Settings' },
+    { label: 'Riwayat Pasien', path: '/therapist/appointments', icon: 'ClipboardList' },
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
@@ -93,7 +93,7 @@ const [settingsOpen, setSettingsOpen] = useState(false);
           {/* Other Routes */}
           <Route path="/booking" element={<TherapistBookingCalendar therapist={therapistProfile} />} />
           <Route path="/schedule-appointment" element={<TherapistAppointmentScheduler therapist={therapistProfile} />} />
-          <Route path="/appointments" element={<TherapistAppointments therapist={therapistProfile} />} />
+          <Route path="/appointments" element={<TherapistPatientHistory therapist={therapistProfile} />} />
           <Route path="/records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />

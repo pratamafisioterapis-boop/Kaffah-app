@@ -207,7 +207,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
        console.log("[Scheduler] Success response:", data);
 
        toast({ title: "Appointment Berhasil Dibuat!", className: "bg-green-50 border-green-200" });
-       navigate('/therapist/appointments');
+       navigate('/therapist/booking');
 
     } catch (error) {
        console.error("[Scheduler] Booking Error:", error);
