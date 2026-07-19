@@ -72,7 +72,7 @@ const RemunerationManager = () => {
         getActivePhysiotherapists(),
         getRemunerationCriteria(),
       ]);
-      setTherapists(therapistsRes.data || []);
+      setTherapists((therapistsRes.data || []).filter(t => t.remuneration_enabled !== false));
       setCriteria(criteriaRes.data || []);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat data remunerasi.' });
@@ -214,10 +214,15 @@ const RemunerationManager = () => {
                     </div>
                     <div className="divide-y divide-slate-100">
                       {(report?.rows || []).map((row) => (
-                        <div key={row.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                        <div key={row.id} className="flex items-center justify-between px-4 py-2.5 text-xs gap-2">
                           <div className="min-w-0">
                             <p className="font-medium text-slate-700 truncate">{row.name}</p>
                             <p className="text-slate-400">Bobot {row.weight_percent}%</p>
+                            {row.proofUrl && (
+                              <a href={row.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-600 hover:underline mt-0.5">
+                                <ImageIcon className="w-3 h-3" /> Lihat bukti
+                              </a>
+                            )}
                           </div>
                           <div className="text-right shrink-0 ml-2">
                             <p className="font-mono text-slate-800">{row.realizationValue}{row.unit === '%' ? '%' : ''} / {row.targetValue}{row.unit === '%' ? '%' : ''} {row.unit !== '%' ? row.unit : ''}</p>
