@@ -205,10 +205,13 @@ const OwnerBookingCalendar = () => {
         .gte('end_date', dateStr);
 
       (timeOffRows || []).forEach(row => {
+        // Only treat it as real leave ("cuti") when the reason says so —
+        // any other day-off reason (e.g. "Libur", "Libur Mingguan") is a
+        // recurring weekly off, not leave.
         const reasonLower = (row.reason || '').toLowerCase();
-        statusMap[row.therapist_id] = reasonLower.includes('mingguan')
-          ? 'libur_mingguan'
-          : 'cuti';
+        statusMap[row.therapist_id] = reasonLower.includes('cuti')
+          ? 'cuti'
+          : 'libur_mingguan';
         reasonMap[row.therapist_id] = row.reason || '';
       });
 

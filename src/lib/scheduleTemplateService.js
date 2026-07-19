@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { calculateDayNameIndonesia } from './whatsappService';
 
@@ -6,6 +6,25 @@ import { calculateDayNameIndonesia } from './whatsappService';
 // Kalau jam kosong sebenarnya lebih banyak dari ini, kita cuma tampilkan
 // sebagian yang disebar (pagi/siang/sore) supaya tidak kelihatan sepi.
 const MAX_SHOWN_SLOTS = 4;
+
+// Jangan tawarkan jam kosong yang sudah/hampir lewat — hanya berlaku kalau
+// `date` yang diminta adalah hari ini.
+const MIN_LEAD_MINUTES = 20;
+
+const filterByLeadTime = (slots, date) => {
+  if (!date) return slots;
+  const now = new Date();
+  const target = new Date(date);
+  if (!isSameDay(target, now)) return slots;
+
+  return slots.filter(s => {
+    const [h, m] = (s.slot_start_time || '').split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return true;
+    const slotDateTime = new Date(target);
+    slotDateTime.setHours(h, m, 0, 0);
+    return (slotDateTime.getTime() - now.getTime()) >= MIN_LEAD_MINUTES * 60 * 1000;
+  });
+};
 
 const pickSpreadSlots = (slots, max) => {
   if (slots.length <= max) return slots;
@@ -23,10 +42,13 @@ const pickSpreadSlots = (slots, max) => {
 
 // ─── MODE: PER TERAPIS ─────────────────────────────────────────────────────
 
-export const getTherapistSlotSummary = (allSlots = [], maxShown = MAX_SHOWN_SLOTS) => {
-  const available = allSlots
-    .filter(s => s.status === 'aktif')
-    .sort((a, b) => a.slot_start_time.localeCompare(b.slot_start_time));
+export const getTherapistSlotSummary = (allSlots = [], maxShown = MAX_SHOWN_SLOTS, date = null) => {
+  const available = filterByLeadTime(
+    allSlots
+      .filter(s => s.status === 'aktif')
+      .sort((a, b) => a.slot_start_time.localeCompare(b.slot_start_time)),
+    date
+  );
 
   if (available.length === 0) return null;
 
@@ -66,12 +88,11 @@ export const generateBookingAvailabilityMessage = ({ clinicName, date, therapist
 
 // ─── MODE: GLOBAL (TANPA NAMA TERAPIS) ─────────────────────────────────────
 
-export const getGlobalSlotSummary = (allSlotLists = [], maxShown = MAX_SHOWN_SLOTS) => {
+export const getGlobalSlotSummary = (allSlotLists = [], maxShown = MAX_SHOWN_SLOTS, date = null) => {
   const uniqueTimes = new Set();
 
   allSlotLists.forEach(slots => {
-    slots
-      .filter(s => s.status === 'aktif')
+    filterByLeadTime(slots.filter(s => s.status === 'aktif'), date)
       .forEach(s => uniqueTimes.add(s.slot_start_time));
   });
 

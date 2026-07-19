@@ -26,6 +26,6 @@ export const TIME_WINDOWS = [
 export const WHEN_OPTIONS = [
   { id: 'asap', label: 'Secepatnya', desc: 'Jadwal terdekat yang tersedia' },
   { id: 'tomorrow', label: 'Besok', desc: 'Mulai besok' },
-  { id: 'this_week', label: 'Dalam Minggu Ini', desc: 'Sebelum akhir minggu ini' },
+  { id: 'this_week', label: 'Dalam Seminggu Ini', desc: '7 hari ke depan' },
   { id: 'custom', label: 'Tanggal Khusus', desc: 'Pilih tanggal sendiri' },
 ];
