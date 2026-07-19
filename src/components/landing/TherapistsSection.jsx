@@ -109,15 +109,19 @@ const TherapistsSection = () => {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"
+              className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto"
             >
               {therapists.map((therapist) => (
-                <TherapistProfileCard 
-                    key={therapist.id} 
-                    therapist={therapist} 
-                    isSelected={false}
-                    onSelect={() => {}} // No selection on landing page
-                />
+                <div
+                  key={therapist.id}
+                  className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
+                >
+                  <TherapistProfileCard
+                      therapist={therapist}
+                      isSelected={false}
+                      onSelect={() => {}} // No selection on landing page
+                  />
+                </div>
               ))}
             </motion.div>
           )}
