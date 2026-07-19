@@ -247,7 +247,7 @@ const TherapistManager = () => {
       ...formData,
       clinic_id: clinicId,
       base_salary: parseFloat(formData.base_salary) || 0,
-      transport_per_day: parseFloat(formData.transport_per_day) || 0,
+      transport_per_day: formData.salary_scheme === 'probation' ? 0 : (parseFloat(formData.transport_per_day) || 0),
       period_start_day: Math.min(31, Math.max(1, parseInt(formData.period_start_day) || 28)),
       period_end_day: Math.min(31, Math.max(1, parseInt(formData.period_end_day) || 27)),
       show_on_landing: Boolean(formData.show_on_landing),
@@ -449,7 +449,11 @@ const headerColorMap = {
                     {therapist.is_active ? 'Active' : 'Inactive'}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-                    {therapist.salary_scheme === 'full_salary' ? 'Full Salary' : 'Custom Salary'}
+                    {therapist.salary_scheme === 'full_salary'
+                      ? 'Full Salary'
+                      : therapist.salary_scheme === 'probation'
+                        ? 'Probation'
+                        : 'Custom Salary'}
                   </span>
                   <span
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
@@ -610,18 +614,30 @@ const headerColorMap = {
                     <label className="text-xs font-medium text-slate-600">Tipe Skema Gaji</label>
                     <Select
                       value={formData.salary_scheme}
-                      onValueChange={(val) => setFormData({...formData, salary_scheme: val})}
+                      onValueChange={(val) => setFormData(prev => ({
+                        ...prev,
+                        salary_scheme: val,
+                        // Probation has no transport allowance — clear it so a
+                        // stale value doesn't silently get paid out anyway.
+                        transport_per_day: val === 'probation' ? 0 : prev.transport_per_day
+                      }))}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="full_salary">Full Salary (Based on Omzet)</SelectItem>
                         <SelectItem value="custom_salary">Custom Salary (Based on Jasa)</SelectItem>
+                        <SelectItem value="probation">Probation (Take Home Pay Saja)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {formData.salary_scheme === 'probation' && (
+                      <p className="text-[11px] text-amber-600">Skema probation: hanya take home pay tetap, tanpa jasa/insentif dan tanpa uang transport.</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-600">Gaji Pokok</label>
+                      <label className="text-xs font-medium text-slate-600">
+                        {formData.salary_scheme === 'probation' ? 'Take Home Pay' : 'Gaji Pokok'}
+                      </label>
                       <Input
                         type="number"
                         value={formData.base_salary}
@@ -633,9 +649,11 @@ const headerColorMap = {
                       <label className="text-xs font-medium text-slate-600">Transport/Hari</label>
                       <Input
                         type="number"
-                        value={formData.transport_per_day}
+                        value={formData.salary_scheme === 'probation' ? 0 : formData.transport_per_day}
                         onChange={(e) => setFormData({...formData, transport_per_day: e.target.value})}
                         placeholder="0"
+                        disabled={formData.salary_scheme === 'probation'}
+                        className={formData.salary_scheme === 'probation' ? 'bg-slate-50 text-slate-400' : ''}
                       />
                     </div>
                   </div>

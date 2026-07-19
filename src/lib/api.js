@@ -724,15 +724,42 @@ export const getActivePhysiotherapists = async (filters = {}) => {
     }
 
     let query = supabase.from('physiotherapists').select('*').eq('is_active', true).eq('clinic_id', clinicId);
-    
+
     if (filters.showOnBooking) {
       query = query.eq('show_on_booking', true);
     }
     if (filters.showOnLanding) {
       query = query.eq('show_on_landing', true);
     }
-    
-    return await query;
+
+    const { data, error } = await query;
+    if (error) return { error };
+
+    // `badges` is stored as an array of therapist_badges_master IDs — hydrate
+    // it into {id, label, color} objects so consumers (e.g. the landing page
+    // therapist cards) can render them without a second round-trip.
+    const therapistsData = data || [];
+    const badgeIds = new Set();
+    therapistsData.forEach(t => {
+      (Array.isArray(t.badges) ? t.badges : []).forEach(id => badgeIds.add(id));
+    });
+
+    let badgeMap = new Map();
+    if (badgeIds.size > 0) {
+      const { data: badgeRows } = await supabase
+        .from('therapist_badges_master')
+        .select('id, label, color')
+        .in('id', Array.from(badgeIds));
+      badgeMap = new Map((badgeRows || []).map(b => [b.id, b]));
+    }
+
+    therapistsData.forEach(t => {
+      t.badges = (Array.isArray(t.badges) ? t.badges : [])
+        .map(id => badgeMap.get(id))
+        .filter(Boolean);
+    });
+
+    return { data: therapistsData, error: null };
   }, 'getActivePhysiotherapists', { retry: true });
 };
 

@@ -125,34 +125,46 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       
       // 2. Base Salary & Transport
       const baseSalary = parseFloat(therapist.base_salary) || 0; // Monthly
-      const transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * attendanceDays;
 
       // 3. Commission / Service Fee
       let commission = 0;
       let breakdown = {};
-      
-      const salaryType = therapist.salary_scheme || 'full_salary'; // 'full_salary' or 'custom_salary'
+      let transportAllowance = 0;
 
-      if (salaryType === 'full_salary') {
-         // "Full Salary" logic: Sum of nominal_per_sesi (amount)
-         commission = calculateFullSalary(therapistRecaps);
+      const salaryType = therapist.salary_scheme || 'full_salary'; // 'full_salary' | 'custom_salary' | 'probation'
+
+      if (salaryType === 'probation') {
+         // Probation: take-home pay only — no jasa/commission, no transport.
       } else {
-         // "Custom Salary" logic: Session Count * Rate
-         commission = calculateCustomSalary(therapistRecaps, customRates);
-         
-         // Generate breakdown for custom
-         therapistRecaps.forEach(r => {
-             const type = r.patient_type || 'General';
-             breakdown[type] = (breakdown[type] || 0) + 1;
-         });
+        transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * attendanceDays;
+
+        if (salaryType === 'full_salary') {
+           // "Full Salary" logic: Sum of nominal_per_sesi (amount)
+           commission = calculateFullSalary(therapistRecaps);
+        } else {
+           // "Custom Salary" logic: Session Count * Rate
+           commission = calculateCustomSalary(therapistRecaps, customRates);
+
+           // Generate breakdown for custom
+           therapistRecaps.forEach(r => {
+               const type = r.patient_type || 'General';
+               breakdown[type] = (breakdown[type] || 0) + 1;
+           });
+        }
       }
 
       const total = baseSalary + transportAllowance + commission;
 
+      const salaryTypeLabel = salaryType === 'full_salary'
+        ? 'Full Salary (Omzet)'
+        : salaryType === 'probation'
+          ? 'Probation (Take Home Pay)'
+          : 'Custom Salary (Jasa)';
+
       setResult({
         therapistName: therapist.name,
         period: `${startDateStr} s/d ${endDateStr}`,
-        salaryType: salaryType === 'full_salary' ? 'Full Salary (Omzet)' : 'Custom Salary (Jasa)',
+        salaryType: salaryTypeLabel,
         attendanceDays,
         baseSalary,
         transportAllowance,
@@ -223,13 +235,15 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
     const transportPerDay = parseFloat(therapist.transport_per_day) || 0;
-    const transportAllowance = transportPerDay * attendanceDays;
     const salaryType = therapist.salary_scheme || 'full_salary';
+    const isProbation = salaryType === 'probation';
+    const transportAllowance = isProbation ? 0 : transportPerDay * attendanceDays;
 
     let commission = 0;
     const breakdownByType = {}; // { patientTypeLabel: { count, totalAmount, sessions: [] } }
 
-    therapistRecaps.forEach(r => {
+    // Probation: take-home pay only — no jasa/commission is computed from recaps.
+    (isProbation ? [] : therapistRecaps).forEach(r => {
       const typeLabel = optionsMap[r.patient_type] || r.patient_type || 'Umum';
       const pkgTracking = r.package_tracking;
       const totalSessions = pkgTracking?.total_sessions || 1;
@@ -292,7 +306,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       id: therapist.id,
       name: therapist.name,
       period: `${format(new Date(startDateStr), 'dd/MM/yyyy')} s/d ${format(new Date(endDateStr), 'dd/MM/yyyy')}`,
-      salaryType: salaryType === 'full_salary' ? 'Full Salary' : 'Custom Salary',
+      salaryType: salaryType === 'full_salary' ? 'Full Salary' : salaryType === 'probation' ? 'Probation' : 'Custom Salary',
       attendanceDays,
       transportPerDay,
       baseSalary,
@@ -326,6 +340,12 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   };
   const fmtDate = (d) => { try { return format(new Date(d), 'dd MMM yyyy', { locale: idLocale }); } catch { return d; } };
 
+  const salaryBadgeStyle = (salaryType) => {
+    if (salaryType === 'Full Salary') return { background: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' };
+    if (salaryType === 'Probation') return { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' };
+    return { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' };
+  };
+
   // ── Detail panel saat klik nama terapis ──
   if (selectedTherapistDetail) {
     const d = selectedTherapistDetail;
@@ -349,7 +369,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
           {[
             { label: 'Gaji Pokok', value: fmt(d.baseSalary), color: '#4f46e5', bg: '#eef2ff' },
             { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: fmt(d.transportAllowance), color: '#0891b2', bg: '#ecfeff' },
-            { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
+            { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : d.salaryType === 'Probation' ? 'Jasa (Tidak Berlaku)' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
           ].map(({ label, value, color, bg }) => (
             <div key={label} className="rounded-xl p-4 min-w-0" style={{ background: bg }}>
               <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
@@ -609,11 +629,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
-                      style={{
-                        background: r.salaryType === 'Full Salary' ? '#ecfdf5' : '#eff6ff',
-                        color: r.salaryType === 'Full Salary' ? '#059669' : '#2563eb',
-                        border: `1px solid ${r.salaryType === 'Full Salary' ? '#bbf7d0' : '#bfdbfe'}`
-                      }}>
+                      style={salaryBadgeStyle(r.salaryType)}>
                       {r.salaryType}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
