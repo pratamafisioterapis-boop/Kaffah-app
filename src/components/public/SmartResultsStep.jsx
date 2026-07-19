@@ -77,21 +77,27 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, preferre
               r => r.date.toDateString() === searchResult.results[0].date.toDateString()
             );
             const first = searchResult.results[0];
+            const isGood = searchResult.exactMatch || searchResult.dateShifted;
+            const title = searchResult.exactMatch
+              ? 'Sesuai permintaan Anda!'
+              : searchResult.dateShifted
+                ? 'Tanggal pilihan Anda penuh — berikut rekomendasi hari lain sesuai waktu yang Anda pilih'
+                : 'Waktu pilihan Anda penuh — ini alternatif terdekat';
             return (
               <div className={cn(
                 "rounded-2xl p-4 sm:p-5 mb-6 flex items-start gap-3",
-                searchResult.exactMatch ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
+                isGood ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
               )}>
-                {searchResult.exactMatch ? (
+                {isGood ? (
                   <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 ) : (
                   <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <p className={cn("font-bold text-sm", searchResult.exactMatch ? "text-emerald-800" : "text-amber-800")}>
-                    {searchResult.exactMatch ? 'Sesuai permintaan Anda!' : 'Waktu pilihan Anda penuh — ini alternatif terdekat'}
+                  <p className={cn("font-bold text-sm", isGood ? "text-emerald-800" : "text-amber-800")}>
+                    {title}
                   </p>
-                  <p className={cn("text-sm mt-0.5 flex items-center gap-1.5 flex-wrap", searchResult.exactMatch ? "text-emerald-700" : "text-amber-700")}>
+                  <p className={cn("text-sm mt-0.5 flex items-center gap-1.5 flex-wrap", isGood ? "text-emerald-700" : "text-amber-700")}>
                     <CalendarDays className="w-3.5 h-3.5" />
                     {allSameDate
                       ? `${format(first.date, 'EEEE, dd MMMM yyyy', { locale: idLocale })} · ${first.window.label} (${first.window.desc})`
