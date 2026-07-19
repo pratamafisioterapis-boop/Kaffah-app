@@ -104,7 +104,12 @@ const getActiveSlotsForDate = async (date, rankedIds, now) => {
   return activeSlots;
 };
 
-const buildResultsForWindow = (rankedTherapists, preferredSet, date, win, activeSlots, windowId) => {
+// "tomorrow" and "custom" pin the search to one specific date the patient
+// actually asked for — unlike "asap" (soonest available) or "this_week" (a
+// whole range), those two should not silently spread across other days.
+const PINNED_DATE_WHEN_IDS = new Set(['tomorrow', 'custom']);
+
+const buildResultsForWindow = (rankedTherapists, preferredSet, date, win, activeSlots, windowId, isExactDate) => {
   const inWindow = activeSlots.filter(s => {
     const start = (s.slot_start || '').slice(0, 5);
     return start >= win.start && start < win.end;
@@ -117,6 +122,8 @@ const buildResultsForWindow = (rankedTherapists, preferredSet, date, win, active
     byTherapist[s.therapist_id].push(s);
   });
 
+  const isExactWindow = win.id === windowId;
+
   return rankedTherapists
     .filter(t => byTherapist[t.id])
     .map(t => ({
@@ -125,21 +132,31 @@ const buildResultsForWindow = (rankedTherapists, preferredSet, date, win, active
       window: win,
       slots: byTherapist[t.id].sort((a, b) => a.slot_start.localeCompare(b.slot_start)).slice(0, 4),
       isPreferred: preferredSet.has(t.id),
-      isExactMatch: win.id === windowId
+      isExactDate,
+      isExactWindow,
+      isExactMatch: isExactDate && isExactWindow
     }));
 };
 
 /**
  * Core Smart Booking search: given a ranked therapist pool and a time
- * preference, scans forward through candidate dates looking ONLY for the
- * patient's exact requested window first (so "Malam" stays "Malam" even if
- * that means a later date, rather than silently swapping to "Sore" on an
- * earlier one). Only if the exact window is empty across the *entire*
- * search range does it fall back to widening into nearby windows, starting
- * from the earliest date that has anything open at all.
+ * preference, finds available slots for the patient.
  *
- * Returns { results, scannedDates, exactMatch } where each result is
- * { therapist, date, window, slots (aktif slots sorted by time), isExactMatch }.
+ * "Besok" and "Tanggal Khusus" pin the search to that one specific date —
+ * the patient asked for a date, not a range, so results only spread to
+ * other days once that exact date has nothing left to offer. "Secepatnya"
+ * and "Dalam Seminggu Ini" have no single pinned date, so they search
+ * across their whole range from the start.
+ *
+ * Within whatever date(s) are in play, it looks for the exact requested
+ * window first (so "Malam" stays "Malam"), and only widens into nearby
+ * windows if the exact window is empty everywhere it looked.
+ *
+ * Returns { results, scannedDates, exactMatch, dateShifted } where each
+ * result is { therapist, date, window, slots, isExactDate, isExactWindow,
+ * isExactMatch }. `exactMatch` means the first result matches both the
+ * requested date and window; `dateShifted` means it matches the window but
+ * had to move to a different date than the one pinned.
  */
 export async function findSmartRecommendations({
   therapists,
@@ -163,6 +180,8 @@ export async function findSmartRecommendations({
   const candidateDates = buildCandidateDates(whenId, customDate);
   const preferredWindow = TIME_WINDOWS.find(w => w.id === windowId) || null;
   const now = new Date();
+  const pinnedDate = PINNED_DATE_WHEN_IDS.has(whenId) ? candidateDates[0] : null;
+  const isPinnedDate = (date) => (pinnedDate ? isSameDay(date, pinnedDate) : true);
 
   let results = [];
   let scannedDates = 0;
@@ -177,14 +196,24 @@ export async function findSmartRecommendations({
     return slotsByDate.get(key);
   };
 
-  // Phase 1: only the exact requested window, across the whole date range —
-  // continuity of the patient's actual preference beats an earlier date.
-  if (preferredWindow) {
+  // Phase 1a: pinned date only, exact window — the patient's literal request.
+  if (pinnedDate && preferredWindow) {
+    scannedDates += 1;
+    const activeSlots = await fetchAndCache(pinnedDate);
+    if (activeSlots.length > 0) {
+      results.push(...buildResultsForWindow(rankedTherapists, preferredSet, pinnedDate, preferredWindow, activeSlots, windowId, true));
+    }
+  }
+
+  // Phase 1b: exact window, other dates — only runs for range searches
+  // (no pinned date), or as a fallback once the pinned date came up empty.
+  if (results.length === 0 && preferredWindow) {
     for (const date of candidateDates) {
+      if (pinnedDate && isSameDay(date, pinnedDate)) continue; // already checked in phase 1a
       scannedDates += 1;
       const activeSlots = await fetchAndCache(date); // eslint-disable-line no-await-in-loop
       if (activeSlots.length === 0) continue;
-      const dateResults = buildResultsForWindow(rankedTherapists, preferredSet, date, preferredWindow, activeSlots, windowId);
+      const dateResults = buildResultsForWindow(rankedTherapists, preferredSet, date, preferredWindow, activeSlots, windowId, isPinnedDate(date));
       results.push(...dateResults.slice(0, MAX_RESULTS_PER_DATE));
       if (results.length >= maxResults) break;
     }
@@ -192,14 +221,20 @@ export async function findSmartRecommendations({
 
   // Phase 2: fall back to widening into nearby windows — only runs if the
   // exact window came up completely empty for every date scanned above.
+  // Still checks the pinned date first, so a date-correct alternative
+  // window beats jumping to another day entirely.
   if (results.length === 0) {
     const windowsOrder = orderedWindows(windowId);
-    for (const date of candidateDates) {
+    const datesForFallback = pinnedDate
+      ? [pinnedDate, ...candidateDates.filter(d => !isSameDay(d, pinnedDate))]
+      : candidateDates;
+
+    for (const date of datesForFallback) {
       const activeSlots = await fetchAndCache(date); // eslint-disable-line no-await-in-loop
       if (activeSlots.length === 0) continue;
 
       for (const win of windowsOrder) {
-        const windowResults = buildResultsForWindow(rankedTherapists, preferredSet, date, win, activeSlots, windowId);
+        const windowResults = buildResultsForWindow(rankedTherapists, preferredSet, date, win, activeSlots, windowId, isPinnedDate(date));
         if (windowResults.length === 0) continue;
         results.push(...windowResults.slice(0, MAX_RESULTS_PER_DATE));
         break; // found a usable window for this date, don't widen further within the same day
@@ -209,9 +244,12 @@ export async function findSmartRecommendations({
     }
   }
 
+  results = results.slice(0, maxResults);
+
   return {
-    results: results.slice(0, maxResults),
+    results,
     scannedDates,
-    exactMatch: results.length > 0 && results[0].isExactMatch
+    exactMatch: results.length > 0 && results[0].isExactMatch,
+    dateShifted: results.length > 0 && !results[0].isExactDate && results[0].isExactWindow
   };
 }
