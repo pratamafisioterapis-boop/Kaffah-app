@@ -62,13 +62,13 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
 
     if (templateMode === 'global') {
       const allSlotLists = selectedTherapists.map(t => schedulesMap[t.id] || []);
-      const globalSummary = getGlobalSlotSummary(allSlotLists);
+      const globalSummary = getGlobalSlotSummary(allSlotLists, undefined, date);
       return generateGlobalAvailabilityMessage({ clinicName, date, globalSummary });
     }
 
     const therapistSummaries = selectedTherapists.map(t => ({
       name: t.name,
-      summary: getTherapistSlotSummary(schedulesMap[t.id] || [])
+      summary: getTherapistSlotSummary(schedulesMap[t.id] || [], undefined, date)
     }));
 
     return generateBookingAvailabilityMessage({ clinicName, date, therapistSummaries });

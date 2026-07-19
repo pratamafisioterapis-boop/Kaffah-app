@@ -475,13 +475,13 @@ const handleConfirmRecurring = async () => {
         )}
       </div>
 
-      <div className="flex bg-slate-100 p-1 rounded-lg">
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
         <button
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-medium py-2 rounded-md",
-            formData.patient_type === 'registered' ? "bg-white shadow-sm" : "text-slate-500"
+            "flex-1 text-xs font-semibold py-2.5 rounded-xl transition-all",
+            formData.patient_type === 'registered' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500"
           )}
         >
           Pasien Terdaftar
@@ -490,8 +490,8 @@ const handleConfirmRecurring = async () => {
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-medium py-2 rounded-md",
-            formData.patient_type === 'guest' ? "bg-white shadow-sm" : "text-slate-500"
+            "flex-1 text-xs font-semibold py-2.5 rounded-xl transition-all",
+            formData.patient_type === 'guest' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500"
           )}
         >
           Tamu / Baru
@@ -521,7 +521,7 @@ const handleConfirmRecurring = async () => {
     console.error(err);
   }
 }}
-    className={cn(formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
+    className={cn("rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
   />
   {formData.patient_id && (
     <CheckCircle className="absolute right-3 top-2.5 h-4 w-4 text-green-500" />
@@ -612,12 +612,14 @@ const handleConfirmRecurring = async () => {
             value={formData.guest_name}
             onChange={e => setFormData(prev => ({ ...prev, guest_name: e.target.value }))}
             disabled={isLeave}
+            className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
           />
           <Input
             placeholder="No HP"
             value={formData.guest_phone}
             onChange={e => setFormData(prev => ({ ...prev, guest_phone: e.target.value }))}
             disabled={isLeave}
+            className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
           />
         </>
       )}
@@ -662,15 +664,15 @@ const handleConfirmRecurring = async () => {
       )}
       <Textarea
         placeholder="Tulis catatan..."
-        className="h-20 resize-none"
+        className="h-20 resize-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
         value={formData.notes}
         onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
         disabled={isLeave}
       />
 
       <DialogFooter>
-        <Button variant="outline" onClick={onClose} disabled={loading}>Batal</Button>
-        <Button onClick={handleSubmit} disabled={loading || isLeave}>
+        <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-full">Batal</Button>
+        <Button onClick={handleSubmit} disabled={loading || isLeave} className="bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] rounded-full font-bold shadow-lg shadow-[#0f1e3d]/20">
           {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           Simpan
         </Button>

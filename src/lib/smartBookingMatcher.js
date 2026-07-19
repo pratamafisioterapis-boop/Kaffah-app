@@ -1,9 +1,11 @@
-import { addDays, startOfDay, endOfWeek, eachDayOfInterval, format } from 'date-fns';
+import { addDays, startOfDay, isSameDay, format } from 'date-fns';
 import { getAvailableSlots } from '@/lib/api';
 import { TIME_WINDOWS } from '@/lib/complaintTags';
 
 const MAX_DATES_TO_SCAN = 14;
-const EXTRA_DAYS_IF_WEEK_EXHAUSTED = 10;
+const ROLLING_WEEK_DAYS = 7;
+// A slot can't be recommended/booked once it's less than this many minutes away.
+const MIN_LEAD_MINUTES = 30;
 
 /**
  * Builds the ordered list of candidate dates to search, based on the
@@ -18,10 +20,9 @@ export function buildCandidateDates(whenId, customDate) {
   }
 
   if (whenId === 'this_week') {
-    const endWeek = endOfWeek(today, { weekStartsOn: 0 }); // 0 = Minggu, matches app convention
-    const daysThisWeek = eachDayOfInterval({ start: today, end: endWeek });
-    const extra = Array.from({ length: EXTRA_DAYS_IF_WEEK_EXHAUSTED }, (_, i) => addDays(endWeek, i + 1));
-    return [...daysThisWeek, ...extra];
+    // Rolling 7-day window from today — not "until the end of the calendar
+    // week" — so a request made on a Friday still searches a full week out.
+    return Array.from({ length: ROLLING_WEEK_DAYS }, (_, i) => addDays(today, i));
   }
 
   if (whenId === 'custom' && customDate) {
@@ -104,6 +105,7 @@ export async function findSmartRecommendations({
 
   let results = [];
   let scannedDates = 0;
+  const now = new Date();
 
   for (const date of candidateDates) {
     scannedDates += 1;
@@ -114,7 +116,20 @@ export async function findSmartRecommendations({
     const { data: slots } = await getAvailableSlots(dateStr, null);
     if (!slots || slots.length === 0) continue;
 
-    const activeSlots = slots.filter(s => s.status === 'aktif' && rankedIds.has(s.therapist_id));
+    let activeSlots = slots.filter(s => s.status === 'aktif' && rankedIds.has(s.therapist_id));
+
+    // Don't recommend a slot that's about to start (or already passed) —
+    // patients need at least MIN_LEAD_MINUTES to arrive/prepare.
+    if (isSameDay(date, now)) {
+      activeSlots = activeSlots.filter(s => {
+        const [h, m] = (s.slot_start || '').split(':').map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) return false;
+        const slotDateTime = new Date(date);
+        slotDateTime.setHours(h, m, 0, 0);
+        return (slotDateTime.getTime() - now.getTime()) >= MIN_LEAD_MINUTES * 60 * 1000;
+      });
+    }
+
     if (activeSlots.length === 0) continue;
 
     for (const win of windowsOrder) {
