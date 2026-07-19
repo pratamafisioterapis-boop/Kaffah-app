@@ -3875,57 +3875,6 @@ export const getTherapistTimeOff = async (therapistId) => {
 
   }, 'getTherapistTimeOff');
 };
-export const getTherapistPracticeHours = async (therapistId) => {
-  return safeQuery(async () => {
-
-    const { data, error } = await supabase.rpc(
-      'get_therapist_practice_hours',
-      {
-        p_therapist_id: therapistId
-      }
-    );
-
-    if (error) return { error };
-
-    return {
-      data: data || [],
-      success: true,
-      error: null
-    };
-
-  }, 'getTherapistPracticeHours', { retry: true });
-};
-
-export const updateTherapistPracticeHours = async ({
-  therapist_id,
-  day_of_week,
-  display_start_time,
-  display_end_time,
-  is_display_active
-}) => {
-  return safeQuery(async () => {
-
-    const { data, error } = await supabase.rpc(
-      'update_therapist_practice_hours',
-      {
-        p_therapist_id: therapist_id,
-        p_day_of_week: day_of_week,
-        p_display_start_time: display_start_time,
-        p_display_end_time: display_end_time,
-        p_is_display_active: is_display_active
-      }
-    );
-
-    if (error) return { error };
-
-    return {
-      data,
-      success: true,
-      error: null
-    };
-
-  }, 'updateTherapistPracticeHours');
-};
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
     if (!payload?.id) {

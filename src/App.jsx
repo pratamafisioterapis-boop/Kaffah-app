@@ -18,7 +18,6 @@ const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
 const PublicBookingPage = React.lazy(() => import('@/pages/PublicBookingPage'));
 const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
-const TherapistScheduleSettingsPage = React.lazy(() => import('@/pages/owner/TherapistScheduleSettings'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
 const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
 const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
@@ -181,15 +180,6 @@ function App() {
   element={<Navigate to="/admin/appointments" replace />}
 />
 
-                <Route 
-                  path="/owner/therapist/:therapistId/schedule-settings" 
-                  element={
-                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
-                       <TherapistScheduleSettingsPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
                 <Route
                   path="/owner/package-recaps"
                   element={
