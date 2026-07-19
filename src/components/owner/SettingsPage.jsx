@@ -919,6 +919,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
 
 const SettingsPage = () => {
   const [reloadGallery, setReloadGallery] = useState(0);
+  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'admin';
 
   const handleUploadSuccess = () => {
     setReloadGallery(prev => prev + 1);
@@ -942,7 +943,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="admin" className="w-full">
+      <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           <TabsTrigger value="account_clinic" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <UserCog className="w-3.5 h-3.5" /> Akun & Klinik

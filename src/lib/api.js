@@ -3634,14 +3634,25 @@ export const upsertGoogleDriveSettings = async ({ folderId, folderName }) => {
   }, 'upsertGoogleDriveSettings');
 };
 
-export const getGoogleDriveServiceAccountEmail = async () => {
+export const getGoogleDriveConnectionStatus = async () => {
   return safeQuery(async () => {
     const { data, error } = await supabase.functions.invoke('therapist-drive-upload?action=info', {
       method: 'GET',
     });
     if (error) return { error };
     return { data, success: true, error: null };
-  }, 'getGoogleDriveServiceAccountEmail');
+  }, 'getGoogleDriveConnectionStatus');
+};
+
+export const startGoogleDriveOAuth = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('google-drive-oauth-start', {
+      method: 'POST',
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'startGoogleDriveOAuth');
 };
 
 export const uploadFileToClinicDrive = async ({ file, label }) => {
