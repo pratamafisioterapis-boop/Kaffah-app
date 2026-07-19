@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, FolderOpen } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, FolderOpen, Bug } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 25;
@@ -15,6 +15,14 @@ const formatFileSize = (bytes) => {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 };
 
+const nowStr = () => new Date().toTimeString().slice(0, 8) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
+
+const useDiagLog = () => {
+  const [log, setLog] = useState([]);
+  const push = (msg) => setLog((prev) => [...prev.slice(-29), `${nowStr()} — ${msg}`]);
+  return [log, push];
+};
+
 const TherapistDriveUpload = () => {
   const { toast } = useToast();
   const [file, setFile] = useState(null);
@@ -23,6 +31,32 @@ const TherapistDriveUpload = () => {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const fileInputRef = useRef(null);
+  const [diagLog, pushDiag] = useDiagLog();
+
+  useEffect(() => {
+    pushDiag('Komponen dimuat (mount)');
+
+    const onVisibility = () => pushDiag(`visibilitychange -> document.visibilityState=${document.visibilityState}`);
+    const onPageShow = (e) => pushDiag(`pageshow (persisted=${e.persisted})`);
+    const onPageHide = (e) => pushDiag(`pagehide (persisted=${e.persisted})`);
+    const onFocus = () => pushDiag('window focus');
+    const onBlur = () => pushDiag('window blur');
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -37,6 +71,7 @@ const TherapistDriveUpload = () => {
 
   const handleFileChange = (e) => {
     const selected = e.target.files?.[0] || null;
+    pushDiag(`onChange input file terpanggil, files.length=${e.target.files?.length ?? 'null'}${selected ? `, nama=${selected.name}` : ''}`);
     if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       toast({
         variant: 'destructive',
@@ -98,7 +133,10 @@ const TherapistDriveUpload = () => {
           <Label className="text-xs text-slate-600">Pilih File</Label>
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              pushDiag('Tombol "Pilih File" ditekan, memanggil input.click()');
+              fileInputRef.current?.click();
+            }}
             disabled={uploading}
             className="w-full flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
           >
@@ -110,6 +148,7 @@ const TherapistDriveUpload = () => {
             accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
             className="hidden"
             onChange={handleFileChange}
+            onClick={() => pushDiag('input file: onClick native terpicu')}
             disabled={uploading}
           />
           {file && (
@@ -179,6 +218,19 @@ const TherapistDriveUpload = () => {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="bg-slate-900 text-slate-100 p-4 rounded-lg border border-slate-700">
+        <Label className="text-xs text-amber-400 mb-2 flex items-center gap-1.5">
+          <Bug className="w-3.5 h-3.5" /> Log Diagnostik (sementara, untuk debugging)
+        </Label>
+        <div className="text-[10px] font-mono space-y-0.5 max-h-64 overflow-y-auto">
+          {diagLog.length === 0 ? (
+            <p className="text-slate-500">Belum ada event tercatat.</p>
+          ) : (
+            diagLog.map((entry, i) => <p key={i} className="text-slate-300 break-all">{entry}</p>)
+          )}
+        </div>
       </div>
     </div>
   );
