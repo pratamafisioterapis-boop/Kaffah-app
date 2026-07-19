@@ -102,8 +102,8 @@ Terima kasih.`;
             <Sparkles className="w-5 h-5 text-[#e8c98a]" />
           </div>
           <div className="min-w-0">
-            <p className="text-white font-bold text-sm sm:text-base">Coba Smart Booking</p>
-            <p className="text-blue-100 text-xs sm:text-sm truncate">Biar sistem rekomendasikan terapis &amp; jadwal terbaik untuk Anda</p>
+            <p className="text-white font-bold text-sm sm:text-base">Coba Smart Booking — Lebih Cepat &amp; Simpel</p>
+            <p className="text-blue-100 text-xs sm:text-sm truncate">Cukup ceritakan keluhan Anda, sistem carikan terapis &amp; jadwal terbaik</p>
           </div>
         </div>
         <ArrowRight className="w-5 h-5 text-white shrink-0 group-hover:translate-x-1 transition-transform" />

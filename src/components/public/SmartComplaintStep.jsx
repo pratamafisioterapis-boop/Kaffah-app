@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { COMPLAINT_TAGS } from '@/lib/complaintTags';
 
-const SmartComplaintStep = ({ initialSelection, onBack, onNext }) => {
+const SmartComplaintStep = ({ initialSelection, initialNote, onBack, onNext }) => {
   const [selected, setSelected] = useState(initialSelection || []);
+  const [note, setNote] = useState(initialNote || '');
   const [error, setError] = useState('');
 
   const toggle = (slug) => {
@@ -19,7 +20,7 @@ const SmartComplaintStep = ({ initialSelection, onBack, onNext }) => {
       setError('Pilih minimal satu keluhan agar kami bisa merekomendasikan terapis yang tepat.');
       return;
     }
-    onNext(selected);
+    onNext(selected, note.trim());
   };
 
   return (
@@ -77,6 +78,22 @@ const SmartComplaintStep = ({ initialSelection, onBack, onNext }) => {
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 mt-5">{error}</p>
           )}
+
+          <div className="mt-6">
+            <label htmlFor="complaint-note" className="block text-sm font-semibold text-slate-700 mb-2">
+              Ceritakan lebih detail <span className="text-slate-400 font-normal">(opsional)</span>
+            </label>
+            <textarea
+              id="complaint-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Contoh: nyeri punggung sejak 2 minggu terakhir, terasa lebih parah saat duduk lama..."
+              rows={4}
+              maxLength={500}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#1e3a8a]/30 focus:border-[#1e3a8a]/40 transition-all resize-none"
+            />
+            <p className="text-right text-[11px] text-slate-400 mt-1">{note.length}/500</p>
+          </div>
         </div>
       </div>
 
