@@ -17,10 +17,10 @@ import {
   deleteTherapistSchedule 
 } from '@/lib/api';
 import { calculateDurationMinutes, cn } from '@/lib/utils';
-import SearchableSelect from '@/components/ui/searchable-select';
 import TherapistScheduleForm from './TherapistScheduleForm';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import TherapistPickerGrid from './TherapistPickerGrid';
 
 const DAYS = [
   { value: 1, label: 'Senin', color: 'from-blue-500 to-blue-600', badgeColor: 'bg-blue-100 text-blue-800' },
@@ -253,11 +253,6 @@ const TherapistScheduleManager = () => {
     setScheduleToDelete(null);
   };
 
-  const therapistOptions = therapists.map(t => ({
-    value: t.id,
-    label: t.name
-  }));
-
   const handleFormSuccess = (newData) => {
     console.log("[TherapistScheduleManager] Form success, new data:", newData);
     setIsFormOpen(false);
@@ -279,32 +274,11 @@ const TherapistScheduleManager = () => {
         <p className="text-sm text-slate-500">Pilih terapis untuk melihat dan mengatur jadwal</p>
       </div>
 
-      {/* Cards Terapis - pilih langsung tanpa dropdown */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {therapists.map((t) => {
-          const isActive = selectedTherapist?.id === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setSelectedTherapist(t)}
-              className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center",
-                isActive
-                  ? "border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-              )}
-            >
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm",
-                isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
-              )}>
-                {getInitials(t.name)}
-              </div>
-              <span className="text-sm font-medium text-slate-700 truncate w-full">{t.name}</span>
-            </button>
-          );
-        })}
-      </div>
+      <TherapistPickerGrid
+        therapists={therapists}
+        selectedId={selectedTherapist?.id}
+        onSelect={setSelectedTherapist}
+      />
 
       {!selectedTherapist ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
@@ -376,6 +350,7 @@ const TherapistScheduleManager = () => {
              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border-2 border-white shadow-md ring-2 ring-blue-100">
+                    <AvatarImage src={selectedTherapist.avatar_url} className="object-cover" />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold">
                       {getInitials(selectedTherapist.name)}
                     </AvatarFallback>
