@@ -3,6 +3,7 @@ import { Trash2, ExternalLink, RefreshCw, AlertCircle, Calendar, Tag, HardDrive,
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useMediaAssets } from '@/lib/hooks/useMediaAssets';
+import { deleteMediaAssetDrive } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ const MediaAssetGallery = () => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState(null);
   const [deletePath, setDeletePath] = useState(null);
+  const [deleteProvider, setDeleteProvider] = useState('supabase');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -29,14 +31,17 @@ const MediaAssetGallery = () => {
   const handleDeleteClick = (asset) => {
     setDeleteId(asset.id);
     setDeletePath(asset.file_path);
+    setDeleteProvider(asset.storage_provider || 'supabase');
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteId || !deletePath) return;
-    
+
     setIsDeleting(true);
-    const result = await deleteAsset(deleteId, deletePath);
-    
+    const result = deleteProvider === 'google_drive'
+      ? await deleteMediaAssetDrive(deleteId)
+      : await deleteAsset(deleteId, deletePath);
+
     if (result.success) {
       toast({
         title: "Terhapus",
@@ -48,7 +53,7 @@ const MediaAssetGallery = () => {
       toast({
         variant: "destructive",
         title: "Gagal Menghapus",
-        description: result.error
+        description: result.error?.message || result.error
       });
     }
     setIsDeleting(false);

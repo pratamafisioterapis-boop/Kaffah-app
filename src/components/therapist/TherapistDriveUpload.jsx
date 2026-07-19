@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Camera, Image as ImageIcon, FileText } from 'lucide-react';
+import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Camera, Image as ImageIcon } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
 const MAX_FILE_SIZE_MB = 100;
@@ -57,19 +57,6 @@ const formatFileSize = (bytes) => {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 };
 
-// MIME types eksplisit (bukan ekstensi seperti ".doc") untuk dokumen: pada
-// beberapa versi Android, accept yang berisi ekstensi memaksa sistem
-// menampilkan document picker penuh yang berat dan bisa membuat tab browser
-// dimatikan sistem saat memilih. MIME type eksplisit mengarahkan ke picker
-// yang lebih ringan.
-const DOC_ACCEPT = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-].join(',');
-
 const TherapistDriveUpload = () => {
   const { toast } = useToast();
   const [file, setFile] = useState(null);
@@ -79,10 +66,9 @@ const TherapistDriveUpload = () => {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  const docInputRef = useRef(null);
 
   const resetAllInputs = () => {
-    [cameraInputRef, galleryInputRef, docInputRef].forEach((ref) => {
+    [cameraInputRef, galleryInputRef].forEach((ref) => {
       if (ref.current) ref.current.value = '';
     });
   };
@@ -175,22 +161,19 @@ const TherapistDriveUpload = () => {
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <UploadCloud className="w-6 h-6 text-blue-600" />
-          Upload Dokumen ke Google Drive
+          Upload Konten
         </h2>
         <p className="text-slate-500 mt-1">
-          Unggah dokumen (foto, video, PDF, dll) ke folder Google Drive klinik yang telah diatur Owner.
+          Unggah foto atau video ke folder Google Drive klinik yang telah diatur Owner.
         </p>
       </div>
 
       <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
-          {/* Tiga jalur terpisah: kamera dan galeri memakai picker media ringan
-              Android (terbukti stabil, sama dengan upload Remunerasi). Picker
-              "Dokumen" membuka document picker sistem yang di beberapa device
-              lebih berat dan bisa membuat tab browser dimatikan saat memilih —
-              sengaja dipisah agar jalur foto/video tidak ikut lewat situ. */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Dua jalur terpisah: kamera dan galeri memakai picker media ringan
+              Android (terbukti stabil, sama dengan upload Remunerasi). */}
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
@@ -207,14 +190,6 @@ const TherapistDriveUpload = () => {
             >
               <ImageIcon className="w-4 h-4" /> Foto/Video
             </button>
-            <button
-              type="button"
-              onClick={() => docInputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
-            >
-              <FileText className="w-4 h-4" /> Dokumen
-            </button>
           </div>
           <input
             ref={cameraInputRef}
@@ -229,14 +204,6 @@ const TherapistDriveUpload = () => {
             ref={galleryInputRef}
             type="file"
             accept="image/*,video/*"
-            className="hidden"
-            onChange={handleFileChange}
-            disabled={uploading}
-          />
-          <input
-            ref={docInputRef}
-            type="file"
-            accept={DOC_ACCEPT}
             className="hidden"
             onChange={handleFileChange}
             disabled={uploading}

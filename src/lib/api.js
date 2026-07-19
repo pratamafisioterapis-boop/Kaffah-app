@@ -3691,6 +3691,174 @@ export const getMyDriveUploads = async (limit = 20) => {
   }, 'getMyDriveUploads', { retry: true });
 };
 
+// Owner/Admin: lihat seluruh konten yang diunggah terapis ke Drive klinik
+// (lintas terapis), dipakai untuk moderasi + hapus dari sisi Owner.
+export const getClinicDriveUploads = async (limit = 100) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('therapist_drive_uploads')
+      .select('id, therapist_id, file_name, label, web_view_link, created_at')
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) return { error };
+
+    const therapistIds = [...new Set((data || []).map(row => row.therapist_id).filter(Boolean))];
+    let namesByUserId = {};
+    if (therapistIds.length > 0) {
+      const { data: therapists } = await supabase
+        .from('physiotherapists')
+        .select('user_id, name')
+        .in('user_id', therapistIds);
+      namesByUserId = Object.fromEntries((therapists || []).map(t => [t.user_id, t.name]));
+    }
+
+    const enriched = (data || []).map(row => ({
+      ...row,
+      therapist_name: namesByUserId[row.therapist_id] || 'Tidak diketahui',
+    }));
+
+    return { data: enriched, success: true, error: null };
+  }, 'getClinicDriveUploads', { retry: true });
+};
+
+// Owner/Admin: hapus konten terapis dari Drive + riwayat DB melalui edge function
+// (harus lewat server karena butuh refresh token akun Google Owner).
+export const deleteDriveUpload = async (uploadId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke(`therapist-drive-upload?action=delete&id=${uploadId}`, {
+      method: 'DELETE',
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'deleteDriveUpload');
+};
+
+// Owner/Admin: upload aset Media klinik (logo/header/footer/promo/dll) ke
+// Google Drive klinik, menggantikan penyimpanan Supabase Storage sebelumnya.
+export const uploadMediaAssetToDrive = async (file, category) => {
+  return safeQuery(async () => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+
+    const { data, error } = await supabase.functions.invoke('clinic-media-drive-upload', {
+      body: formData,
+    });
+
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+
+    return { data: data.data, success: true, error: null };
+  }, 'uploadMediaAssetToDrive', { timeout: 300000 });
+};
+
+// Owner/Admin: hapus aset Media yang tersimpan di Google Drive (beserta file-nya).
+export const deleteMediaAssetDrive = async (assetId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke(`clinic-media-drive-upload?action=delete&id=${assetId}`, {
+      method: 'DELETE',
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'deleteMediaAssetDrive');
+};
+
+// ============================================
+// PAYROLL (Slip Gaji Terapis)
+// ============================================
+
+export const getPayrollRecordsForTherapist = async (physiotherapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('payroll_records')
+      .select('*')
+      .eq('physiotherapist_id', physiotherapistId)
+      .order('payroll_period_start', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getPayrollRecordsForTherapist', { retry: true });
+};
+
+export const getMyPayrollRecords = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [] };
+
+    const { data: therapistRow } = await supabase
+      .from('physiotherapists')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!therapistRow?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('payroll_records')
+      .select('*')
+      .eq('physiotherapist_id', therapistRow.id)
+      .order('payroll_period_start', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getMyPayrollRecords', { retry: true });
+};
+
+export const upsertPayrollRecord = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const record = {
+      physiotherapist_id: payload.physiotherapist_id,
+      payroll_period_start: payload.payroll_period_start,
+      payroll_period_end: payload.payroll_period_end,
+      salary_scheme: payload.salary_scheme,
+      base_salary: parseFloat(payload.base_salary) || 0,
+      transport_per_day: parseFloat(payload.transport_per_day) || 0,
+      incentive_amount: parseFloat(payload.incentive_amount) || 0,
+      custom_commission: parseFloat(payload.custom_commission) || 0,
+      total_salary: parseFloat(payload.total_salary) || 0,
+      status: payload.status || 'issued',
+    };
+
+    let result;
+    if (payload.id) {
+      result = await supabase
+        .from('payroll_records')
+        .update(record)
+        .eq('id', payload.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('payroll_records')
+        .insert({ ...record, created_by: userId || null })
+        .select()
+        .single();
+    }
+
+    if (result.error) return { error: result.error };
+    return { data: result.data, success: true, error: null };
+  }, 'upsertPayrollRecord');
+};
+
+export const deletePayrollRecord = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('payroll_records').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deletePayrollRecord');
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,

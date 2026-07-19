@@ -47,6 +47,7 @@ import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager'
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
+import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // --- Dedicated Discount Type Manager ---
@@ -1011,8 +1012,9 @@ const SettingsPage = () => {
           <TabsContent value="whatsapp_settings">
             <WhatsAppSettings />
           </TabsContent>
-          <TabsContent value="google_drive">
+          <TabsContent value="google_drive" className="space-y-6">
             <GoogleDriveSettings />
+            <TherapistDriveUploadsManager />
           </TabsContent>
           <TabsContent value="accounting_cats">
             <AccountingCategoryManager />

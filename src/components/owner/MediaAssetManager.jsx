@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { useMediaAssets } from '@/lib/hooks/useMediaAssets';
+import { uploadMediaAssetToDrive } from '@/lib/api';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -15,8 +15,8 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [category, setCategory] = useState('umum');
   const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
-  const { uploadAsset, loading } = useMediaAssets();
   const { toast } = useToast();
 
   const handleDrag = (e) => {
@@ -82,12 +82,14 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
   const handleUpload = async () => {
     if (!selectedFile) return;
 
-    const result = await uploadAsset(selectedFile, category);
+    setLoading(true);
+    const { success, error } = await uploadMediaAssetToDrive(selectedFile, category);
+    setLoading(false);
 
-    if (result.success) {
+    if (success) {
       toast({
         title: "Upload Berhasil",
-        description: "File telah berhasil diunggah ke penyimpanan."
+        description: "File telah berhasil diunggah ke Google Drive klinik."
       });
       handleRemoveFile();
       if (onUploadSuccess) onUploadSuccess();
@@ -95,7 +97,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
       toast({
         variant: "destructive",
         title: "Upload Gagal",
-        description: result.error
+        description: error?.message || "Terjadi kesalahan saat mengunggah file."
       });
     }
   };
@@ -104,7 +106,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-slate-900 mb-1">Upload Media Baru</h3>
-        <p className="text-sm text-slate-500">Unggah gambar untuk logo klinik, header, footer, atau kebutuhan lainnya.</p>
+        <p className="text-sm text-slate-500">Unggah gambar untuk logo klinik, header, footer, atau kebutuhan lainnya. File disimpan ke Google Drive klinik.</p>
       </div>
 
       <div className="space-y-4">
