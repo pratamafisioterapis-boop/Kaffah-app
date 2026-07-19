@@ -21,6 +21,7 @@ const WaApiKeySection = () => {
     const [saving, setSaving] = useState(false);
     const [showKey, setShowKey] = useState(false);
     const [apiKey, setApiKey] = useState('');
+    const [numberKey, setNumberKey] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [enabled, setEnabled] = useState(true);
     const [hasKey, setHasKey] = useState(false);
@@ -34,6 +35,7 @@ const WaApiKeySection = () => {
         const { data } = await getWaApiSettings();
         if (data) {
             setApiKey(data.api_key || '');
+            setNumberKey(data.number_key || '');
             setPhoneNumber(data.phone_number || '');
             setEnabled(data.enabled ?? true);
             setHasKey(!!data.api_key);
@@ -43,7 +45,7 @@ const WaApiKeySection = () => {
 
     const handleSave = async () => {
         setSaving(true);
-        const { error } = await upsertWaApiSettings({ apiKey: apiKey.trim(), phoneNumber: phoneNumber.trim(), enabled });
+        const { error } = await upsertWaApiSettings({ apiKey: apiKey.trim(), numberKey: numberKey.trim() || 'ALL', phoneNumber: phoneNumber.trim(), enabled });
         if (error) {
             toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
         } else {
@@ -98,6 +100,17 @@ const WaApiKeySection = () => {
                                 {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                         </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-slate-600">Watzap Number Key</Label>
+                        <Input
+                            value={numberKey}
+                            onChange={(e) => setNumberKey(e.target.value)}
+                            placeholder="Isi 'ALL' jika hanya punya 1 nomor terhubung"
+                        />
+                        <p className="text-[11px] text-slate-400">
+                            Wajib diisi agar pesan WhatsApp benar-benar terkirim. Ambil dari menu WhatsApp → API → Number Key di dashboard Watzap, atau isi <code className="px-1 bg-slate-100 rounded">ALL</code> jika klinik hanya punya satu nomor terhubung.
+                        </p>
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-xs text-slate-600">Nomor WhatsApp Pengirim (opsional)</Label>
