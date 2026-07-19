@@ -9,6 +9,7 @@ import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
 import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
 import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardWidget';
+import TherapistRemuneration from '@/components/therapist/TherapistRemuneration';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
@@ -52,6 +53,7 @@ const [settingsOpen, setSettingsOpen] = useState(false);
     { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' }, 
     { label: 'Daftar Appointment', path: '/therapist/appointments', icon: 'Settings' },
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
+    { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
 
@@ -95,6 +97,7 @@ const [settingsOpen, setSettingsOpen] = useState(false);
           <Route path="/records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
+          <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
         </Routes>
       </DashboardLayout>
     <TherapistSettingsDrawer

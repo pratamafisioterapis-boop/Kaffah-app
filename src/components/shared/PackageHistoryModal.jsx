@@ -36,15 +36,16 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                     package_tracking_id
                 `)
                 .eq('package_tracking_id', packageData.id)
-                .order('recap_date', { ascending: false });
+                .order('recap_date', { ascending: true });
 
             if (recapError) throw recapError;
-            // Nominal (amount) > 0 entries first, most recent first within each group.
+            // Nominal (amount) > 0 entries first (the earliest visit is where the
+            // package is paid for), oldest to newest within each group.
             const sorted = [...(recapData || [])].sort((a, b) => {
                 const aPaid = (a.amount || 0) > 0 ? 1 : 0;
                 const bPaid = (b.amount || 0) > 0 ? 1 : 0;
                 if (aPaid !== bPaid) return bPaid - aPaid;
-                return new Date(b.recap_date) - new Date(a.recap_date);
+                return new Date(a.recap_date) - new Date(b.recap_date);
             });
             setHistory(sorted);
 

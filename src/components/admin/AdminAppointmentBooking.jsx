@@ -53,6 +53,7 @@ const AdminAppointmentBooking = () => {
 
   const [therapists, setTherapists] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
+  const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
@@ -205,8 +206,26 @@ const formattedDate = date
 });
       }
 
+      // Cek langsung therapist_time_off agar hari tanpa slot (libur mingguan/cuti)
+      // tetap terdeteksi dan badge-nya tampil di kartu terapis.
+      const reasonMap = {};
+      const { data: timeOffRows } = await supabase
+        .from('therapist_time_off')
+        .select('therapist_id, reason')
+        .lte('start_date', dateStr)
+        .gte('end_date', dateStr);
+
+      (timeOffRows || []).forEach(row => {
+        const reasonLower = (row.reason || '').toLowerCase();
+        statusMap[row.therapist_id] = reasonLower.includes('cuti')
+          ? 'cuti'
+          : 'libur_mingguan';
+        reasonMap[row.therapist_id] = row.reason || '';
+      });
+
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
+      setTherapistLeaveReason(reasonMap);
 
     } catch (err) {
       setError("Gagal memuat jadwal.");
@@ -535,6 +554,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 appointments={therapistApps}
                 date={date}
                 leaveStatus={leaveStatus}
+                leaveReason={therapistLeaveReason[therapist.id]}
                 soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
