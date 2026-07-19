@@ -160,10 +160,12 @@ export async function findSmartRecommendations({
         });
       });
 
-      if (results.length > 0) break; // found a usable window for this date, don't widen further
+      break; // found a usable window for this date, don't widen further within the same day
     }
 
-    if (results.length > 0) break; // found matches on the earliest possible date, stop scanning
+    // Keep scanning later dates too — don't stop at the first date that has
+    // any match, otherwise a fully-booked "asap" day would hide every other
+    // available date/therapist for the rest of the week.
     if (results.length >= maxResults) break;
   }
 
