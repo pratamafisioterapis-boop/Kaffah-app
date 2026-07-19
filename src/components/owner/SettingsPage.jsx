@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building
+  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building, HardDrive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -46,6 +46,7 @@ import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
+import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // --- Dedicated Discount Type Manager ---
@@ -955,6 +956,9 @@ const SettingsPage = () => {
           <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
+          <TabsTrigger value="google_drive" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <HardDrive className="w-3.5 h-3.5" /> Google Drive
+          </TabsTrigger>
           <TabsTrigger value="accounting_cats" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <BookOpen className="w-3.5 h-3.5" /> Akunting
           </TabsTrigger>
@@ -1005,6 +1009,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="whatsapp_settings">
             <WhatsAppSettings />
+          </TabsContent>
+          <TabsContent value="google_drive">
+            <GoogleDriveSettings />
           </TabsContent>
           <TabsContent value="accounting_cats">
             <AccountingCategoryManager />
