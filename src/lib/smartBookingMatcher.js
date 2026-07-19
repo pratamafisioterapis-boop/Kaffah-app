@@ -6,6 +6,9 @@ const MAX_DATES_TO_SCAN = 14;
 const ROLLING_WEEK_DAYS = 7;
 // A slot can't be recommended/booked once it's less than this many minutes away.
 const MIN_LEAD_MINUTES = 30;
+// Cap how many result cards a single date can contribute, so the list spreads
+// across several dates in the range instead of one date filling every slot.
+const MAX_RESULTS_PER_DATE = 2;
 
 /**
  * Builds the ordered list of candidate dates to search, based on the
@@ -147,7 +150,14 @@ export async function findSmartRecommendations({
   preferredTherapistIds = [],
   maxResults = 6
 }) {
-  const rankedTherapists = rankTherapistsByComplaint(therapists, complaintSlugs, preferredTherapistIds);
+  // Guard against duplicate therapist rows (e.g. a data glitch upstream) —
+  // otherwise the same therapist can be ranked twice and show up as two
+  // identical result cards for the same date/slot.
+  const dedupedTherapists = Array.from(
+    new Map(therapists.filter(t => t?.id).map(t => [t.id, t])).values()
+  );
+
+  const rankedTherapists = rankTherapistsByComplaint(dedupedTherapists, complaintSlugs, preferredTherapistIds);
   const rankedIds = new Set(rankedTherapists.map(t => t.id));
   const preferredSet = new Set(preferredTherapistIds);
   const candidateDates = buildCandidateDates(whenId, customDate);
@@ -174,7 +184,8 @@ export async function findSmartRecommendations({
       scannedDates += 1;
       const activeSlots = await fetchAndCache(date); // eslint-disable-line no-await-in-loop
       if (activeSlots.length === 0) continue;
-      results.push(...buildResultsForWindow(rankedTherapists, preferredSet, date, preferredWindow, activeSlots, windowId));
+      const dateResults = buildResultsForWindow(rankedTherapists, preferredSet, date, preferredWindow, activeSlots, windowId);
+      results.push(...dateResults.slice(0, MAX_RESULTS_PER_DATE));
       if (results.length >= maxResults) break;
     }
   }
@@ -190,7 +201,7 @@ export async function findSmartRecommendations({
       for (const win of windowsOrder) {
         const windowResults = buildResultsForWindow(rankedTherapists, preferredSet, date, win, activeSlots, windowId);
         if (windowResults.length === 0) continue;
-        results.push(...windowResults);
+        results.push(...windowResults.slice(0, MAX_RESULTS_PER_DATE));
         break; // found a usable window for this date, don't widen further within the same day
       }
 
