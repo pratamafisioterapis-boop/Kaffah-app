@@ -278,7 +278,7 @@ const TherapistPatientHistory = ({ therapist }) => {
 
       {/* Filter Toolbar */}
       <Card className="p-4 space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
           {QUICK_FILTERS.map((f) => (
             <Button
               key={f.key}
@@ -290,52 +290,59 @@ const TherapistPatientHistory = ({ therapist }) => {
               {f.label}
             </Button>
           ))}
-          <Button variant="outline" size="sm" onClick={() => fetchHistory(dateRange)} className="ml-auto gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchHistory(dateRange)}
+            className="gap-1.5 w-full sm:w-auto sm:ml-auto"
+          >
             <RefreshCcw className="w-3.5 h-3.5" /> Segarkan
           </Button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 md:items-end">
-          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-            <div className="flex items-center px-2 text-xs font-medium text-slate-500">
-              <CalendarRange className="w-3.5 h-3.5 mr-1.5" />Periode:
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 shrink-0">
+              <CalendarRange className="w-3.5 h-3.5" />Periode:
             </div>
-            <div className="relative">
-              <Input
-                value={displayDateID(dateRange.start)}
-                onChange={(e) => handleCustomDate('start', parseDateFromDisplay(e.target.value) || '')}
-                onClick={() => setShowStartCalendar(true)}
-                className="w-32 text-xs h-8 bg-white border-slate-200"
-                placeholder="dd/MM/yyyy"
-              />
-              {showStartCalendar && (
-                <div className="absolute top-full left-0 z-50 mt-1">
-                  <DatePicker
-                    value={dateRange.start}
-                    onChange={(val) => { handleCustomDate('start', val); setShowStartCalendar(false); }}
-                    onClose={() => setShowStartCalendar(false)}
-                  />
-                </div>
-              )}
-            </div>
-            <span className="text-slate-400">-</span>
-            <div className="relative">
-              <Input
-                value={displayDateID(dateRange.end)}
-                onChange={(e) => handleCustomDate('end', parseDateFromDisplay(e.target.value) || '')}
-                onClick={() => setShowEndCalendar(true)}
-                className="w-32 text-xs h-8 bg-white border-slate-200"
-                placeholder="dd/MM/yyyy"
-              />
-              {showEndCalendar && (
-                <div className="absolute top-full left-0 z-50 mt-1">
-                  <DatePicker
-                    value={dateRange.end}
-                    onChange={(val) => { handleCustomDate('end', val); setShowEndCalendar(false); }}
-                    onClose={() => setShowEndCalendar(false)}
-                  />
-                </div>
-              )}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="relative flex-1 min-w-0">
+                <Input
+                  value={displayDateID(dateRange.start)}
+                  onChange={(e) => handleCustomDate('start', parseDateFromDisplay(e.target.value) || '')}
+                  onClick={() => setShowStartCalendar(true)}
+                  className="w-full min-w-0 text-xs h-8 bg-white border-slate-200"
+                  placeholder="dd/MM/yyyy"
+                />
+                {showStartCalendar && (
+                  <div className="absolute top-full left-0 z-50 mt-1">
+                    <DatePicker
+                      value={dateRange.start}
+                      onChange={(val) => { handleCustomDate('start', val); setShowStartCalendar(false); }}
+                      onClose={() => setShowStartCalendar(false)}
+                    />
+                  </div>
+                )}
+              </div>
+              <span className="text-slate-400 shrink-0">-</span>
+              <div className="relative flex-1 min-w-0">
+                <Input
+                  value={displayDateID(dateRange.end)}
+                  onChange={(e) => handleCustomDate('end', parseDateFromDisplay(e.target.value) || '')}
+                  onClick={() => setShowEndCalendar(true)}
+                  className="w-full min-w-0 text-xs h-8 bg-white border-slate-200"
+                  placeholder="dd/MM/yyyy"
+                />
+                {showEndCalendar && (
+                  <div className="absolute top-full right-0 sm:left-0 sm:right-auto z-50 mt-1">
+                    <DatePicker
+                      value={dateRange.end}
+                      onChange={(val) => { handleCustomDate('end', val); setShowEndCalendar(false); }}
+                      onClose={() => setShowEndCalendar(false)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
