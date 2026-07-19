@@ -72,30 +72,40 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, preferre
         </div>
       ) : (
         <>
-          <div className={cn(
-            "rounded-2xl p-4 sm:p-5 mb-6 flex items-start gap-3",
-            searchResult.exactMatch ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
-          )}>
-            {searchResult.exactMatch ? (
-              <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            )}
-            <div>
-              <p className={cn("font-bold text-sm", searchResult.exactMatch ? "text-emerald-800" : "text-amber-800")}>
-                {searchResult.exactMatch ? 'Sesuai permintaan Anda!' : 'Waktu pilihan Anda penuh — ini alternatif terdekat'}
-              </p>
-              <p className={cn("text-sm mt-0.5 flex items-center gap-1.5 flex-wrap", searchResult.exactMatch ? "text-emerald-700" : "text-amber-700")}>
-                <CalendarDays className="w-3.5 h-3.5" />
-                {format(searchResult.results[0].date, 'EEEE, dd MMMM yyyy', { locale: idLocale })} · {searchResult.results[0].window.label} ({searchResult.results[0].window.desc})
-              </p>
-            </div>
-          </div>
+          {(() => {
+            const allSameDate = searchResult.results.every(
+              r => r.date.toDateString() === searchResult.results[0].date.toDateString()
+            );
+            const first = searchResult.results[0];
+            return (
+              <div className={cn(
+                "rounded-2xl p-4 sm:p-5 mb-6 flex items-start gap-3",
+                searchResult.exactMatch ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
+              )}>
+                {searchResult.exactMatch ? (
+                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p className={cn("font-bold text-sm", searchResult.exactMatch ? "text-emerald-800" : "text-amber-800")}>
+                    {searchResult.exactMatch ? 'Sesuai permintaan Anda!' : 'Waktu pilihan Anda penuh — ini alternatif terdekat'}
+                  </p>
+                  <p className={cn("text-sm mt-0.5 flex items-center gap-1.5 flex-wrap", searchResult.exactMatch ? "text-emerald-700" : "text-amber-700")}>
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    {allSameDate
+                      ? `${format(first.date, 'EEEE, dd MMMM yyyy', { locale: idLocale })} · ${first.window.label} (${first.window.desc})`
+                      : `Beberapa pilihan tanggal · ${first.window.label} (${first.window.desc})`}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             {searchResult.results.map((r) => (
               <div
-                key={r.therapist.id}
+                key={`${r.therapist.id}_${r.date.toDateString()}_${r.window.id}`}
                 className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_10px_30px_-20px_rgba(15,30,61,0.15)] p-5 flex flex-col"
               >
                 <div className="flex items-center gap-3 mb-3">
@@ -107,6 +117,11 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, preferre
                     <p className="font-bold text-[#0f1e3d] text-sm truncate">{r.therapist.name}</p>
                     <p className="text-xs text-slate-400 truncate">{r.therapist.specialization || 'Fisioterapis'}</p>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold mb-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-[#1e3a8a]" />
+                  {format(r.date, 'EEEE, dd MMM', { locale: idLocale })}
                 </div>
 
                 {r.isPreferred && (
