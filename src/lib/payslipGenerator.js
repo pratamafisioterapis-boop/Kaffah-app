@@ -22,12 +22,6 @@ const formatPeriodLabel = (start, end) => {
   }
 };
 
-const SALARY_SCHEME_LABEL = {
-  full_salary: 'Full Salary',
-  custom_salary: 'Custom Salary',
-  probation: 'Probation',
-};
-
 /**
  * Generates a premium, modern slip gaji (payslip) PDF for a physiotherapist.
  * @param {object} record - payroll_records row (base_salary, transport_per_day, incentive_amount, custom_commission, total_salary, payroll_period_start/end, status, salary_scheme)
@@ -108,14 +102,15 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
 
   // --- Employee info card ---
   let y = headerHeight + 8 + 8;
+  const cardH = 20;
   doc.setDrawColor(220, 220, 224);
   doc.setFillColor(250, 249, 246);
-  doc.roundedRect(marginX, y, pageWidth - marginX * 2, 24, 2, 2, 'FD');
+  doc.roundedRect(marginX, y, pageWidth - marginX * 2, cardH, 2, 2, 'FD');
   doc.setDrawColor(...GOLD_SOFT);
   doc.setLineWidth(0.3);
-  doc.line(marginX, y, marginX, y + 24);
+  doc.line(marginX, y, marginX, y + cardH);
   doc.setFillColor(...GOLD);
-  doc.rect(marginX, y, 1.2, 24, 'F');
+  doc.rect(marginX, y, 1.2, cardH, 'F');
 
   const infoLabelStyle = () => {
     doc.setFont('helvetica', 'bold');
@@ -128,42 +123,37 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     doc.setTextColor(...INK);
   };
 
+  const cardWidth = pageWidth - marginX * 2;
   const col1X = marginX + 8;
-  const col2X = marginX + (pageWidth - marginX * 2) * 0.55;
+  const col2X = marginX + cardWidth * 0.44;
+  const col3X = marginX + cardWidth * 0.76;
 
   infoLabelStyle();
   doc.text('NAMA TERAPIS', col1X, y + 8);
   infoValueStyle();
-  doc.text(therapist.name || '-', col1X, y + 14);
+  doc.text(therapist.name || '-', col1X, y + 14.5);
 
   infoLabelStyle();
   doc.text('SPESIALISASI', col2X, y + 8);
   infoValueStyle();
   doc.setFontSize(9.5);
-  doc.text(therapist.specialization || 'Physiotherapist', col2X, y + 14);
+  doc.text(therapist.specialization || 'Physiotherapist', col2X, y + 14.5);
 
   infoLabelStyle();
-  doc.text('SKEMA GAJI', col1X, y + 20);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...INK);
-  doc.text(SALARY_SCHEME_LABEL[record.salary_scheme] || record.salary_scheme || '-', col1X + 24, y + 20);
-
-  infoLabelStyle();
-  doc.text('STATUS', col2X, y + 20);
+  doc.text('STATUS', col3X, y + 8);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(9.5);
   doc.setTextColor(...GOLD);
-  doc.text((record.status || 'issued').toUpperCase(), col2X + 16, y + 20);
+  doc.text((record.status || 'issued').toUpperCase(), col3X, y + 14.5);
 
   // --- Earnings table ---
-  y += 24 + 8;
+  y += cardH + 8;
 
   const rows = [
-    ['01', 'Gaji Pokok', formatCurrency(record.base_salary)],
-    ['02', 'Uang Transport', formatCurrency(record.transport_per_day)],
-    ['03', 'Jasa Insentif', formatCurrency(record.incentive_amount)],
-    ['04', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
+    ['1', 'Gaji Pokok', formatCurrency(record.base_salary)],
+    ['2', 'Uang Transport', formatCurrency(record.transport_per_day)],
+    ['3', 'Jasa Insentif', formatCurrency(record.incentive_amount)],
+    ['4', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
   ];
 
   autoTable(doc, {
@@ -179,19 +169,19 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
       fontSize: 8.5,
       fontStyle: 'bold',
       halign: 'left',
-      cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 },
+      cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
     },
     bodyStyles: {
       fontSize: 9.5,
       textColor: INK,
-      cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 },
+      cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
       valign: 'middle',
     },
     alternateRowStyles: { fillColor: [250, 249, 246] },
     columnStyles: {
       0: { cellWidth: 14, halign: 'center', textColor: MUTED },
-      1: { cellWidth: 'auto' },
-      2: { halign: 'right', cellWidth: 48, fontStyle: 'bold' },
+      1: { cellWidth: 'auto', cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 } },
+      2: { halign: 'right', cellWidth: 48, fontStyle: 'bold', cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 } },
     },
     didDrawPage: (data) => {
       doc.setDrawColor(...GOLD_SOFT);
@@ -248,13 +238,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   doc.text(
     'Dokumen ini bersifat rahasia dan hanya diperuntukkan bagi karyawan yang bersangkutan.',
     pageWidth / 2,
-    pageHeight - 14,
-    { align: 'center' }
-  );
-  doc.text(
-    `Diterbitkan pada ${format(new Date(), 'd MMMM yyyy, HH:mm', { locale: idLocale })}`,
-    pageWidth / 2,
-    pageHeight - 10.5,
+    pageHeight - 12,
     { align: 'center' }
   );
 
