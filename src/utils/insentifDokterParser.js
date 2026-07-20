@@ -390,10 +390,68 @@ function parseFormatB(pages) {
 }
 
 // â”€â”€ Helper angka format Indonesia "1.234.567" â†’ number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function toNumber(str) {
+export function toNumber(str) {
   if (!str) return 0;
   const n = parseFloat(String(str).replace(/\./g, '').replace(',', '.'));
   return isNaN(n) ? 0 : n;
+}
+
+// Bangun laporan rekap terpisah per jenis asuransi dari hasil parsing.
+// BPJS: nilainya ada di kolom TOTAL, direkap per Desc Transaksi.
+// Jaminan (PWTT/PWT): nilainya ada di sub-kolom TIPE PASIEN (Pertamina/
+// Pertamedika/Jaminan/Pribadi) - masing-masing direkap terpisah per
+// Deskripsi, hanya menghitung baris yang punya nilai (>0) di sub-kolom itu.
+const JAMINAN_SUBTYPE_LABELS = {
+  pertamina: 'Pertamina',
+  pertamedika: 'Pertamedika',
+  jaminan: 'Jaminan',
+  pribadi: 'Pribadi',
+};
+
+export function buildInsentifDokterReport(results) {
+  const bpjsRows = [];
+  const jaminanRows = [];
+  (results || []).forEach((res) => {
+    if (res.format === 'B') bpjsRows.push(...res.rows);
+    else if (res.format === 'A') jaminanRows.push(...res.rows);
+  });
+
+  const bpjsByDesc = {};
+  bpjsRows.forEach((r) => {
+    const key = (r.descTransaksi || '(Tanpa Deskripsi)').trim();
+    const val = toNumber(r.total);
+    if (!bpjsByDesc[key]) bpjsByDesc[key] = { deskripsi: key, count: 0, total: 0 };
+    bpjsByDesc[key].count += 1;
+    bpjsByDesc[key].total += val;
+  });
+  const bpjsByDeskripsi = Object.values(bpjsByDesc).sort((a, b) => b.total - a.total);
+  const bpjs = {
+    count: bpjsRows.length,
+    total: bpjsByDeskripsi.reduce((s, r) => s + r.total, 0),
+    byDeskripsi: bpjsByDeskripsi,
+  };
+
+  const jaminan = {};
+  Object.keys(JAMINAN_SUBTYPE_LABELS).forEach((key) => {
+    const byDesc = {};
+    jaminanRows.forEach((r) => {
+      const val = toNumber(r[key]);
+      if (!val) return;
+      const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+      if (!byDesc[deskKey]) byDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+      byDesc[deskKey].count += 1;
+      byDesc[deskKey].total += val;
+    });
+    const byDeskripsi = Object.values(byDesc).sort((a, b) => b.total - a.total);
+    jaminan[key] = {
+      label: JAMINAN_SUBTYPE_LABELS[key],
+      count: byDeskripsi.reduce((s, r) => s + r.count, 0),
+      total: byDeskripsi.reduce((s, r) => s + r.total, 0),
+      byDeskripsi,
+    };
+  });
+
+  return { bpjs, jaminan };
 }
 
 // â”€â”€ Fungsi utama: parse 1 file PDF â†’ { format, rows, summary, verification, meta } â”€

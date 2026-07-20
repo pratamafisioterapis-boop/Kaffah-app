@@ -1,10 +1,87 @@
-import React, { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Trash2, FileText } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Trash2, FileText, BarChart3 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { parseInsentifDokterPdf, generateInsentifDokterExcel } from '@/utils/insentifDokterParser';
+import { parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport } from '@/utils/insentifDokterParser';
+
+const rupiah = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(n || 0)}`;
+
+const InsentifDeskripsiTable = ({ data }) => {
+  if (!data.count) {
+    return <p className="text-sm text-slate-500 py-6 text-center">Tidak ada data untuk kategori ini.</p>;
+  }
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs text-slate-500">Jumlah Transaksi</p>
+          <p className="text-lg font-bold text-slate-800">{data.count}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs text-slate-500">Total Nilai</p>
+          <p className="text-lg font-bold text-slate-800">{rupiah(data.total)}</p>
+        </div>
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-100">
+            <tr>
+              <th className="text-left px-3 py-2 font-medium text-slate-600">Deskripsi</th>
+              <th className="text-right px-3 py-2 font-medium text-slate-600">Jumlah</th>
+              <th className="text-right px-3 py-2 font-medium text-slate-600">Total Nilai</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.byDeskripsi.map((row) => (
+              <tr key={row.deskripsi} className="border-t border-slate-100">
+                <td className="px-3 py-1.5 text-slate-700">{row.deskripsi}</td>
+                <td className="px-3 py-1.5 text-right text-slate-700">{row.count}</td>
+                <td className="px-3 py-1.5 text-right text-slate-700">{rupiah(row.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const InsentifLaporan = ({ results }) => {
+  const report = useMemo(() => buildInsentifDokterReport(results), [results]);
+  const jaminanSubtypes = Object.entries(report.jaminan).filter(([, v]) => v.count > 0);
+
+  if (!report.bpjs.count && jaminanSubtypes.length === 0) {
+    return (
+      <p className="text-sm text-slate-500 py-8 text-center">
+        Belum ada data. Upload PDF di tab "Konversi" terlebih dahulu.
+      </p>
+    );
+  }
+
+  return (
+    <Tabs defaultValue={report.bpjs.count ? 'bpjs' : jaminanSubtypes[0]?.[0]} className="w-full">
+      <TabsList className="flex-wrap h-auto">
+        {report.bpjs.count > 0 && <TabsTrigger value="bpjs">BPJS ({report.bpjs.count})</TabsTrigger>}
+        {jaminanSubtypes.map(([key, v]) => (
+          <TabsTrigger key={key} value={key}>{v.label} ({v.count})</TabsTrigger>
+        ))}
+      </TabsList>
+      {report.bpjs.count > 0 && (
+        <TabsContent value="bpjs">
+          <InsentifDeskripsiTable data={report.bpjs} />
+        </TabsContent>
+      )}
+      {jaminanSubtypes.map(([key, v]) => (
+        <TabsContent key={key} value={key}>
+          <InsentifDeskripsiTable data={v} />
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+};
 
 const InsentifDokterConverter = () => {
   const { toast } = useToast();
@@ -93,118 +170,139 @@ const InsentifDokterConverter = () => {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <label className="text-sm font-medium text-slate-600 whitespace-nowrap">
-              Label Periode (opsional):
-            </label>
-            <input
-              type="text"
-              value={periodeLabel}
-              onChange={(e) => setPeriodeLabel(e.target.value)}
-              placeholder="contoh: April 2026"
-              className="h-9 px-3 rounded-md border border-input bg-white text-sm outline-none flex-1 max-w-xs"
-            />
-          </div>
+      <Tabs defaultValue="konversi" className="w-full">
+        <TabsList>
+          <TabsTrigger value="konversi" className="gap-1.5">
+            <FileSpreadsheet className="w-4 h-4" /> Konversi
+          </TabsTrigger>
+          <TabsTrigger value="laporan" className="gap-1.5">
+            <BarChart3 className="w-4 h-4" /> Laporan
+          </TabsTrigger>
+        </TabsList>
 
-          <div
-            className="border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
-            }}
-          >
-            {processing ? (
-              <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-3" />
-            ) : (
-              <Upload className="w-10 h-10 text-slate-400 mb-3" />
-            )}
-            <h3 className="font-semibold text-slate-700">
-              {processing ? 'Memproses PDF...' : 'Klik atau drag & drop PDF di sini'}
-            </h3>
-            <p className="text-slate-500 text-sm mt-1">
-              Bisa upload banyak file sekaligus, boleh campur kedua format (PWTT/PWT & BPJS Individu)
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              multiple
-              className="hidden"
-              onChange={(e) => e.target.files?.length && handleFiles(e.target.files)}
-              disabled={processing}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="konversi" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <label className="text-sm font-medium text-slate-600 whitespace-nowrap">
+                  Label Periode (opsional):
+                </label>
+                <input
+                  type="text"
+                  value={periodeLabel}
+                  onChange={(e) => setPeriodeLabel(e.target.value)}
+                  placeholder="contoh: April 2026"
+                  className="h-9 px-3 rounded-md border border-input bg-white text-sm outline-none flex-1 max-w-xs"
+                />
+              </div>
 
-      {results.length > 0 && (
-        <div className="space-y-4">
-          {results.map((res, idx) => (
-            <Card
-              key={idx}
-              className={
-                res.verification.isVerified ? 'border-green-200' :
-                res.verification.isMinorRounding ? 'border-amber-300' : 'border-red-300'
-              }
-            >
-              <CardContent className="pt-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-slate-800">{res.fileName}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Format: {res.format === 'A' ? 'PWTT/PWT (Pasien Jaminan)' : 'BPJS Individu'}
-                        {' '}&middot; {res.rows.length} baris data
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-2 text-sm">
-                        {res.verification.isVerified ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            <span className="text-green-700 font-medium">
-                              Total cocok dengan PDF (Rp {new Intl.NumberFormat('id-ID').format(res.verification.printedTotal)})
-                            </span>
-                          </>
-                        ) : res.verification.isMinorRounding ? (
-                          <>
-                            <AlertTriangle className="w-4 h-4 text-amber-600" />
-                            <span className="text-amber-700 font-medium">
-                              Selisih pembulatan kecil Rp {new Intl.NumberFormat('id-ID').format(Math.abs(res.verification.selisih))}
-                              {' '}(dari PDF sumber, bukan kesalahan ekstraksi — data baris tetap akurat).
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <AlertTriangle className="w-4 h-4 text-red-600" />
-                            <span className="text-red-700 font-medium">
-                              Total tidak cocok — selisih Rp {new Intl.NumberFormat('id-ID').format(Math.abs(res.verification.selisih))}.
-                              Mohon periksa manual.
-                            </span>
-                          </>
-                        )}
+              <div
+                className="border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+                }}
+              >
+                {processing ? (
+                  <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-3" />
+                ) : (
+                  <Upload className="w-10 h-10 text-slate-400 mb-3" />
+                )}
+                <h3 className="font-semibold text-slate-700">
+                  {processing ? 'Memproses PDF...' : 'Klik atau drag & drop PDF di sini'}
+                </h3>
+                <p className="text-slate-500 text-sm mt-1">
+                  Bisa upload banyak file sekaligus, boleh campur kedua format (PWTT/PWT & BPJS Individu)
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => e.target.files?.length && handleFiles(e.target.files)}
+                  disabled={processing}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {results.length > 0 && (
+            <div className="space-y-4">
+              {results.map((res, idx) => (
+                <Card
+                  key={idx}
+                  className={
+                    res.verification.isVerified ? 'border-green-200' :
+                    res.verification.isMinorRounding ? 'border-amber-300' : 'border-red-300'
+                  }
+                >
+                  <CardContent className="pt-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-slate-800">{res.fileName}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Format: {res.format === 'A' ? 'PWTT/PWT (Pasien Jaminan)' : 'BPJS Individu'}
+                            {' '}&middot; {res.rows.length} baris data
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-2 text-sm">
+                            {res.verification.isVerified ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <span className="text-green-700 font-medium">
+                                  Total cocok dengan PDF (Rp {new Intl.NumberFormat('id-ID').format(res.verification.printedTotal)})
+                                </span>
+                              </>
+                            ) : res.verification.isMinorRounding ? (
+                              <>
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                <span className="text-amber-700 font-medium">
+                                  Selisih pembulatan kecil Rp {new Intl.NumberFormat('id-ID').format(Math.abs(res.verification.selisih))}
+                                  {' '}(dari PDF sumber, bukan kesalahan ekstraksi — data baris tetap akurat).
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle className="w-4 h-4 text-red-600" />
+                                <span className="text-red-700 font-medium">
+                                  Total tidak cocok — selisih Rp {new Intl.NumberFormat('id-ID').format(Math.abs(res.verification.selisih))}.
+                                  Mohon periksa manual.
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                      <Button size="sm" variant="ghost" onClick={() => handleRemove(idx)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => handleRemove(idx)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ))}
 
-          <div className="flex justify-end">
-            <Button onClick={handleExport} className="bg-green-600 hover:bg-green-700 text-white gap-2">
-              <FileSpreadsheet className="w-4 h-4" />
-              Download Excel ({results.length} file)
-            </Button>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-end">
+                <Button onClick={handleExport} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Download Excel ({results.length} file)
+                </Button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="laporan">
+          <Card>
+            <CardContent className="pt-6">
+              <InsentifLaporan results={results} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
