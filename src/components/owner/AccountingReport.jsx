@@ -14,8 +14,8 @@ import {
   getPatientIncomeFromPackages 
 } from '@/lib/api';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import 'jspdf-autotable';
 import { useToast } from '@/components/ui/use-toast';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
@@ -388,7 +388,7 @@ combinedExpenses.sort((a, b) => {
         doc.text(title, 14, finalY + 10);
         doc.setTextColor(0, 0, 0);
 
-        doc.autoTable({
+        autoTable(doc, {
             startY: finalY + 15,
             head: [columns.map(c => c.header)],
             body: tableData.map(row => columns.map(c => {

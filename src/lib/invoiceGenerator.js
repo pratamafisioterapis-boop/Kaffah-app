@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
 export const generateInvoicePDF = (recap, activePackage, clinic = {}) => {
@@ -131,7 +131,7 @@ export const generateInvoicePDF = (recap, activePackage, clinic = {}) => {
   const amount = Number(recap.amount);
   const formattedAmount = "Rp " + amount.toLocaleString('id-ID');
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: tableY,
     margin: { left: contentStartX, right: 15 },
     head: [['CODE', 'DESCRIPTION', 'SESSION', 'RATE']],
