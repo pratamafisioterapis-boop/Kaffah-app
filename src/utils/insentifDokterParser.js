@@ -416,13 +416,41 @@ export function buildInsentifDokterReport(results) {
     else if (res.format === 'A') jaminanRows.push(...res.rows);
   });
 
+  // BPJS: baris "KONSUL DOKTER" menandai bahwa pasien tsb kontrol/periksa ke
+  // dokter pada tanggal itu. Untuk deskripsi lain (tindakan dsb), nominalnya
+  // dipisah jadi 2 kelompok: terjadi di hari yang SAMA dengan Konsul Dokter
+  // pasien itu, vs terjadi di hari pasien itu TIDAK konsul dokter.
+  const KONSUL_RE = /KONSUL/i;
+  const konsulDays = new Set();
+  bpjsRows.forEach((r) => {
+    if (KONSUL_RE.test(r.descTransaksi || '')) {
+      konsulDays.add(`${r.noReg}|${r.tanggal}`);
+    }
+  });
+
   const bpjsByDesc = {};
   bpjsRows.forEach((r) => {
     const key = (r.descTransaksi || '(Tanpa Deskripsi)').trim();
     const val = toNumber(r.total);
-    if (!bpjsByDesc[key]) bpjsByDesc[key] = { deskripsi: key, count: 0, total: 0 };
-    bpjsByDesc[key].count += 1;
-    bpjsByDesc[key].total += val;
+    const isKonsul = KONSUL_RE.test(r.descTransaksi || '');
+    const sameDayHasKonsul = konsulDays.has(`${r.noReg}|${r.tanggal}`);
+
+    if (!bpjsByDesc[key]) {
+      bpjsByDesc[key] = {
+        deskripsi: key,
+        isKonsul,
+        count: 0,
+        total: 0,
+        denganKonsulDokter: { count: 0, total: 0 },
+        tanpaKonsulDokter: { count: 0, total: 0 },
+      };
+    }
+    const entry = bpjsByDesc[key];
+    entry.count += 1;
+    entry.total += val;
+    const bucket = (isKonsul || sameDayHasKonsul) ? entry.denganKonsulDokter : entry.tanpaKonsulDokter;
+    bucket.count += 1;
+    bucket.total += val;
   });
   const bpjsByDeskripsi = Object.values(bpjsByDesc).sort((a, b) => b.total - a.total);
   const bpjs = {
