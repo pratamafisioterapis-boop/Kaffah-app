@@ -342,13 +342,84 @@ function parseFormatA(pages) {
 }
 
 // â”€â”€ FORMAT B: BPJS Individu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PENTING: posisi kolom di-deteksi dari baris header tiap file (sama seperti
+// Format A) alih-alih di-hardcode. Nilai piksel yang di-hardcode sebelumnya
+// terbukti TIDAK cocok untuk sebagian file BPJS nyata (kolom "Dokter"/teks
+// header lain ikut kebaca sebagai bagian dari Desc Transaksi), yang bikin
+// deskripsi tercampur nama dokter dan bikin pencocokan "hari yang sama"
+// jadi salah. BOUNDS_B di bawah cuma dipakai sebagai fallback kalau header
+// gagal terdeteksi.
 const BOUNDS_B = [
   [0, 'no'], [30, 'noreg'], [80, 'nama'], [210, 'tanggal'], [255, 'desc'],
   [420, 'nilaibill'], [470, 'nilaiinacbg'], [515, 'koef'], [550, 'qty'],
   [580, 'tarif'], [630, 'diterima'], [700, 'total'],
 ];
 
+function classifyHeaderTokenB(t) {
+  if (t === 'No') return 'no';
+  if (t === 'Qty' || t === 'Koef') return t.toLowerCase();
+  if (/Reg/i.test(t)) return 'noreg';
+  if (/Nama/i.test(t)) return 'nama';
+  if (/Dokter/i.test(t)) return 'dokter';
+  if (/Tanggal/i.test(t)) return 'tanggal';
+  if (/Desc|Transaksi/i.test(t)) return 'desc';
+  if (/Inacbg/i.test(t)) return 'nilaiinacbg';
+  if (/Bill/i.test(t)) return 'nilaibill';
+  if (/Tarif/i.test(t)) return 'tarif';
+  if (/Diterima/i.test(t)) return 'diterima';
+  if (/Total/i.test(t)) return 'total';
+  return null;
+}
+
+// Kolom teks/struktural butuh batas digeser ke kiri (K kecil) supaya nama/
+// deskripsi yang meluber tidak "kemakan" ke kolom berikutnya; kolom angka
+// rata-kanan butuh batas = posisi header itu sendiri (K=1) seperti di Format A.
+const MONEY_KEYS_B = new Set(['nilaibill', 'nilaiinacbg', 'koef', 'qty', 'tarif', 'diterima', 'total']);
+function boundaryWeightForB(key) {
+  return MONEY_KEYS_B.has(key) ? 1.0 : 0.4;
+}
+
+function detectFormatBBounds(pages) {
+  for (const pageWords of pages.slice(0, 3)) {
+    const lines = clusterLines(pageWords);
+    for (const line of lines) {
+      const sorted = [...line].sort((a, b) => a.x - b.x);
+      const classified = sorted
+        .map((w) => ({ key: classifyHeaderTokenB(w.text), x0: w.x }))
+        .filter((c) => c.key);
+      const keys = new Set(classified.map((c) => c.key));
+      const requiredKeys = ['noreg', 'nama', 'tanggal', 'desc'];
+      if (!requiredKeys.every((k) => keys.has(k))) continue;
+      // Butuh minimal beberapa anchor kolom angka juga di baris yang sama,
+      // supaya bukan cuma header kolom teks yang ke-deteksi (kalau kolom
+      // angka labelnya ternyata di baris terpisah, batas mereka tidak akan
+      // akurat â€” lebih aman fallback ke BOUNDS_B daripada memaksakan).
+      const moneyAnchors = classified.filter((c) => MONEY_KEYS_B.has(c.key));
+      if (moneyAnchors.length < 3) continue;
+
+      let anchors = [...classified];
+      anchors.sort((a, b) => a.x0 - b.x0);
+      const seen = new Set();
+      anchors = anchors.filter((a) => {
+        if (seen.has(a.key)) return false;
+        seen.add(a.key);
+        return true;
+      });
+      const bounds = [[0, anchors[0].key]];
+      for (let i = 1; i < anchors.length; i++) {
+        const prev = anchors[i - 1].x0;
+        const curX = anchors[i].x0;
+        const K = boundaryWeightForB(anchors[i].key);
+        bounds.push([prev + K * (curX - prev), anchors[i].key]);
+      }
+      return bounds;
+    }
+  }
+  return null;
+}
+
 function parseFormatB(pages) {
+  const bounds = detectFormatBBounds(pages) || BOUNDS_B;
   const rows = [];
   let cur = null;
   const summary = {};
@@ -362,9 +433,11 @@ function parseFormatB(pages) {
       const firstWord = sortedLine[0]?.text || '';
 
       if (
-        lineText.startsWith('Page ') || lineText.startsWith('PERINCIAN') ||
+        lineText.startsWith('Page ') || lineText.startsWith('Hal ') ||
+        lineText.startsWith('PERINCIAN') || lineText.startsWith('STATUS PASIEN') ||
         lineText.startsWith('Periode') || lineText.startsWith('Faktor Jasa Medis') ||
-        lineText.startsWith('No Reg No Nama') || DATE_RE.test(lineText.trim())
+        lineText.startsWith('No Reg No Nama') || lineText.startsWith('No No Reg') ||
+        DATE_RE.test(lineText.trim())
       ) continue;
 
       if (lineText.trim().toUpperCase().startsWith('JUMLAH')) {
@@ -375,7 +448,7 @@ function parseFormatB(pages) {
       }
       if (footerStarted) continue;
 
-      const cols = lineToCols(line, BOUNDS_B);
+      const cols = lineToCols(line, bounds);
       const tanggal = (cols.tanggal || '').trim();
       const isNewRow = DATE_RE.test(tanggal);
 
