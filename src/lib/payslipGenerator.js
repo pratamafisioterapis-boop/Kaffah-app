@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -166,7 +166,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     ['04', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     margin: { left: marginX, right: marginX },
     head: [['NO', 'KOMPONEN PENDAPATAN', 'JUMLAH']],

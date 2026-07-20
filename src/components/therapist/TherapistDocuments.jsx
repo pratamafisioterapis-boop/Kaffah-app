@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TherapistDriveUpload from '@/components/therapist/TherapistDriveUpload';
 import TherapistSharedMedia from '@/components/therapist/TherapistSharedMedia';
 import TherapistPayrollList from '@/components/therapist/TherapistPayrollList';
+import PayrollAuthGate from '@/components/therapist/PayrollAuthGate';
 
 const TherapistDocuments = ({ therapist }) => {
   return (
@@ -29,7 +30,9 @@ const TherapistDocuments = ({ therapist }) => {
             <TherapistSharedMedia therapist={therapist} />
           </TabsContent>
           <TabsContent value="payroll">
-            <TherapistPayrollList therapist={therapist} />
+            <PayrollAuthGate therapist={therapist}>
+              <TherapistPayrollList therapist={therapist} />
+            </PayrollAuthGate>
           </TabsContent>
         </div>
       </Tabs>

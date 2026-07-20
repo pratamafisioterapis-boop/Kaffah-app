@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format, isValid } from 'date-fns';
 
 const AdminAccountingReport = ({ data, dateRange }) => {
@@ -38,7 +38,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
 
       doc.text(`Period: ${formattedStart} - ${formattedEnd}`, 14, 32);
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 40,
         head: [['Metric', 'Amount (IDR)']],
         body: [
@@ -58,7 +58,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
         parseFloat(e.amount || 0).toLocaleString('id-ID')
       ]) : [];
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 20,
         head: [['Date', 'Category', 'Description', 'Amount']],
         body: expenseRows.length > 0 ? expenseRows : [['-', '-', 'No Data', '0']],
@@ -74,7 +74,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
         parseFloat(i.amount || 0).toLocaleString('id-ID')
       ]) : [];
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 20,
         head: [['Date', 'Source', 'Description', 'Amount']],
         body: incomeRows.length > 0 ? incomeRows : [['-', '-', 'No Data', '0']],
