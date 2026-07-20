@@ -44,7 +44,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
 
   const fetchClinic = async () => {
     const { data } = await getCurrentClinic();
-    if (data) setClinic(data);
+    if (data) {
+      setClinic(data);
+      setForm((prev) => ({
+        ...prev,
+        incentive_amount: prev.incentive_amount === 0
+          ? (data.therapist_incentive_per_patient || 0)
+          : prev.incentive_amount,
+      }));
+    }
   };
 
   const fetchRecords = async () => {
