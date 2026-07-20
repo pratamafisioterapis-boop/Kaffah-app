@@ -241,6 +241,9 @@ export const interpolateTemplate = (template, item) => {
   message = message.replace(/\[jam\]/gi, jamFormatted);
   message = message.replace(/\[jam_terapi\]/gi, jamFormatted);
 
+  const terapisName = item.appointment_data?.therapist?.name || item.therapist_name || 'Terapis Kami';
+  message = message.replace(/\[terapis\]/gi, terapisName);
+
   return message;
 };
 
@@ -333,7 +336,8 @@ export const getFollowUpQueue = async (status = null, type = null) => {
         .select(`
           id,
           appointment_date,
-          duration_minutes
+          duration_minutes,
+          therapist:physiotherapists(name)
         `)
         .in('id', appointmentIds);
 
