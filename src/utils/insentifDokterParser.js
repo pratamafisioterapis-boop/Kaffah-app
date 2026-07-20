@@ -514,8 +514,37 @@ function parseFormatB(pages) {
     }
   }
   if (cur) rows.push(cur);
+  stripDoctorPrefix(rows);
 
   return { rows, summary };
+}
+
+// PDF asli BPJS Individu memang mencetak "Desc Transaksi" dengan nama+gelar
+// dokter di depan (mis. "NURHIKMAH HN, DR, SPKFR, KONSUL DOKTER ..."), diulang
+// identik di SETIAP baris karena satu laporan cuma untuk satu dokter. Ini
+// bukan bug ekstraksi, tapi bikin tabel di web jadi berantakan/susah dibaca.
+// Deteksi prefix yang paling sering muncul (3 segmen dipisah koma: Nama,
+// Gelar, Kredensial) dan buang dari setiap descTransaksi supaya yang tersisa
+// cuma nama tindakannya saja.
+function stripDoctorPrefix(rows) {
+  if (!rows.length) return;
+  const prefixCounts = {};
+  rows.forEach((r) => {
+    const parts = (r.descTransaksi || '').split(',');
+    if (parts.length >= 4) {
+      const prefix = parts.slice(0, 3).join(',').trim();
+      if (prefix) prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
+    }
+  });
+  const entries = Object.entries(prefixCounts).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return;
+  const [topPrefix, topCount] = entries[0];
+  if (topCount / rows.length < 0.5) return;
+  rows.forEach((r) => {
+    if (r.descTransaksi && r.descTransaksi.startsWith(topPrefix + ',')) {
+      r.descTransaksi = r.descTransaksi.slice(topPrefix.length + 1).trim();
+    }
+  });
 }
 
 // â”€â”€ Helper angka format Indonesia "1.234.567" â†’ number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -549,11 +578,15 @@ export function buildInsentifDokterReport(results) {
   // dokter pada tanggal itu. Untuk deskripsi lain (tindakan dsb), nominalnya
   // dipisah jadi 2 kelompok: terjadi di hari yang SAMA dengan Konsul Dokter
   // pasien itu, vs terjadi di hari pasien itu TIDAK konsul dokter.
+  // Kunci pencocokan dinormalisasi (buang semua spasi + uppercase) supaya
+  // variasi kecil hasil ekstraksi teks PDF (spasi ganda, dsb) tidak bikin
+  // baris yang sebenarnya satu kunjungan gagal dicocokkan.
+  const dayKey = (r) => `${(r.noReg || '').replace(/\s+/g, '').toUpperCase()}|${(r.tanggal || '').trim()}`;
   const KONSUL_RE = /KONSUL/i;
   const konsulDays = new Set();
   bpjsRows.forEach((r) => {
     if (KONSUL_RE.test(r.descTransaksi || '')) {
-      konsulDays.add(`${r.noReg}|${r.tanggal}`);
+      konsulDays.add(dayKey(r));
     }
   });
 
@@ -562,7 +595,7 @@ export function buildInsentifDokterReport(results) {
     const key = (r.descTransaksi || '(Tanpa Deskripsi)').trim();
     const val = toNumber(r.total);
     const isKonsul = KONSUL_RE.test(r.descTransaksi || '');
-    const sameDayHasKonsul = konsulDays.has(`${r.noReg}|${r.tanggal}`);
+    const sameDayHasKonsul = konsulDays.has(dayKey(r));
 
     if (!bpjsByDesc[key]) {
       bpjsByDesc[key] = {
