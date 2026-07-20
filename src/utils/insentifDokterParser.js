@@ -419,7 +419,13 @@ function detectFormatBBounds(pages) {
 }
 
 function parseFormatB(pages) {
-  const bounds = detectFormatBBounds(pages) || BOUNDS_B;
+  // CATATAN: deteksi bounds otomatis (detectFormatBBounds) sempat dicoba di
+  // sini tapi terbukti keliru pada file BPJS asli (salah kenali baris lain
+  // sebagai header, sehingga hampir semua nilai hilang / total meleset
+  // hampir 100%). Dimatikan dulu sampai ada sampel PDF asli untuk kalibrasi
+  // ulang posisi kolom yang benar â€” balik pakai BOUNDS_B yang sudah terbukti
+  // jalan sebelumnya.
+  const bounds = BOUNDS_B;
   const rows = [];
   let cur = null;
   const summary = {};
