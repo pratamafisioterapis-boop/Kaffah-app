@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt } from 'lucide-react';
+import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -9,7 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import {
   getPayrollRecordsForTherapist, upsertPayrollRecord, deletePayrollRecord, getCurrentClinic,
+  getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getServiceRates,
 } from '@/lib/api';
+import {
+  calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, getTherapistPeriodRange,
+} from '@/lib/utils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -32,15 +36,31 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [saving, setSaving] = useState(false);
   const [clinic, setClinic] = useState(null);
   const [form, setForm] = useState(emptyForm(therapist));
+  const [attendanceDays, setAttendanceDays] = useState(0);
+  const [calculatingAuto, setCalculatingAuto] = useState(false);
 
   useEffect(() => {
     if (open && therapist?.id) {
       setForm(emptyForm(therapist));
+      setAttendanceDays(0);
       fetchRecords();
       fetchClinic();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, therapist?.id]);
+
+  // Setiap periode berubah, hitung ulang Uang Transport (transport per hari x
+  // hari kerja) dan Jasa Insentif memakai logika yang sama dengan Simulasi
+  // Hitung Gaji (Salary Calculator), supaya kedua tempat selalu konsisten.
+  useEffect(() => {
+    if (open && therapist?.id && form.payroll_period_start && form.payroll_period_end) {
+      const handle = setTimeout(() => {
+        recalculateFromAttendance(form.payroll_period_start, form.payroll_period_end);
+      }, 300);
+      return () => clearTimeout(handle);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, therapist?.id, form.payroll_period_start, form.payroll_period_end]);
 
   const fetchClinic = async () => {
     const { data } = await getCurrentClinic();
@@ -52,6 +72,60 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           ? (data.therapist_incentive_per_patient || 0)
           : prev.incentive_amount,
       }));
+    }
+  };
+
+  const handlePeriodeIni = () => {
+    const { startDate, endDate } = getTherapistPeriodRange(therapist);
+    setForm((prev) => ({
+      ...prev,
+      payroll_period_start: format(startDate, 'yyyy-MM-dd'),
+      payroll_period_end: format(endDate, 'yyyy-MM-dd'),
+    }));
+  };
+
+  const recalculateFromAttendance = async (startDateStr, endDateStr) => {
+    if (!therapist?.id || !startDateStr || !endDateStr) return;
+    setCalculatingAuto(true);
+    try {
+      const salaryType = therapist.salary_scheme || 'full_salary';
+      const isProbation = salaryType === 'probation';
+
+      const [scheduleRes, timeOffRes, recapsRes, ratesRes] = await Promise.all([
+        getTherapistSchedules(therapist.id),
+        getTherapistTimeOff(therapist.id),
+        getDailyRecaps({ startDate: startDateStr, endDate: endDateStr, therapistId: therapist.id, limit: 'all' }),
+        salaryType === 'custom_salary' ? getServiceRates() : Promise.resolve({ data: [] }),
+      ]);
+
+      const days = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
+      setAttendanceDays(days);
+
+      const therapistRecaps = recapsRes.data || [];
+      let transportAllowance = 0;
+      let incentiveAmount = 0;
+
+      if (!isProbation) {
+        transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * days;
+
+        if (salaryType === 'full_salary') {
+          incentiveAmount = calculateFullSalary(therapistRecaps);
+        } else {
+          const rateMap = {};
+          (ratesRes.data || []).forEach((r) => { rateMap[r.service_name] = r.rate; });
+          incentiveAmount = calculateCustomSalary(therapistRecaps, rateMap);
+        }
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        transport_per_day: transportAllowance,
+        incentive_amount: incentiveAmount,
+      }));
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Gagal Menghitung Otomatis', description: error.message });
+    } finally {
+      setCalculatingAuto(false);
     }
   };
 
@@ -149,16 +223,37 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600">Periode Selesai</label>
               <Input type="date" value={form.payroll_period_end} onChange={(e) => setForm({ ...form, payroll_period_end: e.target.value })} />
             </div>
+            <div className="col-span-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePeriodeIni}
+                className="w-full text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+              >
+                <CalendarClock className="w-3.5 h-3.5 mr-1.5" />
+                Periode Ini ({therapist ? `Tgl ${therapist.period_start_day ?? 28} - ${therapist.period_end_day ?? 27}` : '...'})
+              </Button>
+            </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Gaji Pokok</label>
               <Input type="number" value={form.base_salary} onChange={(e) => setForm({ ...form, base_salary: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Uang Transport</label>
+              <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                Uang Transport
+                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                {!calculatingAuto && attendanceDays > 0 && (
+                  <span className="text-[10px] font-normal text-slate-400">({attendanceDays} hari kerja)</span>
+                )}
+              </label>
               <Input type="number" value={form.transport_per_day} onChange={(e) => setForm({ ...form, transport_per_day: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Jasa Insentif</label>
+              <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                Jasa Insentif
+                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+              </label>
               <Input type="number" value={form.incentive_amount} onChange={(e) => setForm({ ...form, incentive_amount: e.target.value })} />
             </div>
             <div className="space-y-1.5">
@@ -166,6 +261,9 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <Input type="number" value={form.custom_commission} onChange={(e) => setForm({ ...form, custom_commission: e.target.value })} />
             </div>
           </div>
+          <p className="text-[11px] text-slate-400 -mt-1">
+            Uang Transport &amp; Jasa Insentif otomatis dihitung dari periode di atas (mengikuti hari kerja &amp; skema gaji terapis, sama seperti Simulasi Hitung Gaji). Nilainya tetap bisa diubah manual bila perlu.
+          </p>
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-200">
             <span className="text-sm font-medium text-slate-600">Total Take Home Pay</span>
