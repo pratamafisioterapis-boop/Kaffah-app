@@ -4,6 +4,7 @@ import { Loader2, Receipt, Eye, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getMyPayrollRecords, getCurrentClinic } from '@/lib/api';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
+import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -13,6 +14,7 @@ const TherapistPayrollList = ({ therapist }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [clinic, setClinic] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     fetchRecords();
@@ -33,7 +35,7 @@ const TherapistPayrollList = ({ therapist }) => {
 
   const handleView = (record) => {
     const doc = generatePayslipPDF(record, therapist || {}, clinic || {});
-    window.open(doc.output('bloburl'), '_blank');
+    setPreviewUrl(URL.createObjectURL(doc.output('blob')));
   };
 
   const handleDownload = (record) => {
@@ -88,6 +90,13 @@ const TherapistPayrollList = ({ therapist }) => {
           </div>
         )}
       </div>
+
+      <PdfPreviewModal
+        open={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        url={previewUrl}
+        title="Preview Slip Gaji"
+      />
     </div>
   );
 };

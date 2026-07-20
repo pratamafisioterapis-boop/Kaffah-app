@@ -1,0 +1,1 @@
+import{r as s,e6 as o,en as u}from"./index-Dz91BNoU.js";var n=u.useId||(()=>{}),c=0;function f(t){const[e,a]=s.useState(n());return o(()=>{a(r=>r??String(c++))},[t]),t||(e?`radix-${e}`:"")}export{f as u};

@@ -1,1 +1,0 @@
-import{Y as n,dN as f,k as e}from"./index-Cjb8QMuN.js";function o(r,a){const t=n(r);return isNaN(a)?f(r,NaN):(a&&t.setDate(t.getDate()+a),t)}function D(r,a){const t=e(r),s=e(a);return+t==+s}export{o as a,D as i};
