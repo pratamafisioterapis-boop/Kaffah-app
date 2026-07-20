@@ -299,11 +299,36 @@ function parseFormatA(pages) {
         };
       } else {
         if (!cur) continue;
+        // Jaring pengaman: baris "lanjutan" (No Reg tidak valid di kolom itu)
+        // seharusnya cuma teks Deskripsi/Nama yang meluber ke baris ke-2, jadi
+        // kolom uangnya kosong. Kalau ternyata baris ini justru punya nilai
+        // Jasa Medis SENDIRI padahal baris yang sedang diproses (`cur`) SUDAH
+        // punya nilai Jasa Medis, berarti ini transaksi lain (deskripsi lain,
+        // tanggal & pasien sama) yang salah terdeteksi sebagai lanjutan —
+        // pisahkan jadi baris baru supaya nilainya tidak hilang/tertimpa.
+        const jasaMedisBaru = (cols.jasamedis || '').trim();
+        if (jasaMedisBaru && cur.jasaMedis) {
+          rows.push(cur);
+          cur = {
+            no: String(rows.length + 1),
+            noReg: cur.noReg,
+            namaPasien: cur.namaPasien,
+            deskripsi: (cols.desk || '').trim(),
+            tanggal: cur.tanggal,
+            qty: (cols.qty || '').trim(),
+            jasaMedis: jasaMedisBaru,
+            pertamina: (cols.pertamina || '').trim(),
+            pertamedika: (cols.pertamedika || '').trim(),
+            jaminan: (cols.jaminan || '').trim(),
+            pribadi: (cols.pribadi || '').trim(),
+          };
+          continue;
+        }
         if (cols.desk) cur.deskripsi += ' ' + cols.desk.trim();
         if (cols.nama) cur.namaPasien += ' ' + cols.nama.trim();
         if (cols.tanggal && !cur.tanggal) cur.tanggal = cols.tanggal.trim();
         if (cols.qty && !cur.qty) cur.qty = cols.qty.trim();
-        if (cols.jasamedis && !cur.jasaMedis) cur.jasaMedis = cols.jasamedis.trim();
+        if (jasaMedisBaru && !cur.jasaMedis) cur.jasaMedis = jasaMedisBaru;
         if (cols.pertamina && !cur.pertamina) cur.pertamina = cols.pertamina.trim();
         if (cols.pertamedika && !cur.pertamedika) cur.pertamedika = cols.pertamedika.trim();
         if (cols.jaminan && !cur.jaminan) cur.jaminan = cols.jaminan.trim();
@@ -372,6 +397,31 @@ function parseFormatB(pages) {
         };
       } else {
         if (!cur) continue;
+        // Jaring pengaman: baris lanjutan (bukan awal transaksi baru menurut
+        // kolom Tanggal) seharusnya cuma Nama/Desc yang meluber ke baris
+        // ke-2, jadi kolom Total-nya kosong. Kalau baris ini justru punya
+        // nilai Total SENDIRI padahal `cur` sudah punya Total, berarti ini
+        // transaksi lain (deskripsi lain, tanggal & pasien sama) yang salah
+        // terdeteksi sebagai lanjutan — pisahkan jadi baris baru.
+        const totalBaru = (cols.total || '').trim();
+        if (totalBaru && cur.total) {
+          rows.push(cur);
+          cur = {
+            no: String(rows.length + 1),
+            noReg: cur.noReg,
+            namaPasien: cur.namaPasien,
+            tanggal: cur.tanggal,
+            descTransaksi: (cols.desc || '').trim(),
+            nilaiBill: (cols.nilaibill || '').trim(),
+            nilaiInacbg: (cols.nilaiinacbg || '').trim(),
+            koef: (cols.koef || '').trim(),
+            qty: (cols.qty || '').trim(),
+            jasaMedisTarif: (cols.tarif || '').trim(),
+            jasaMedisDiterima: (cols.diterima || '').trim(),
+            total: totalBaru,
+          };
+          continue;
+        }
         if (cols.nama) cur.namaPasien += ' ' + cols.nama.trim();
         if (cols.desc) cur.descTransaksi += ' ' + cols.desc.trim();
         if (cols.nilaibill && !cur.nilaiBill) cur.nilaiBill = cols.nilaibill.trim();
@@ -380,7 +430,7 @@ function parseFormatB(pages) {
         if (cols.qty && !cur.qty) cur.qty = cols.qty.trim();
         if (cols.tarif && !cur.jasaMedisTarif) cur.jasaMedisTarif = cols.tarif.trim();
         if (cols.diterima && !cur.jasaMedisDiterima) cur.jasaMedisDiterima = cols.diterima.trim();
-        if (cols.total && !cur.total) cur.total = cols.total.trim();
+        if (totalBaru && !cur.total) cur.total = totalBaru;
       }
     }
   }
