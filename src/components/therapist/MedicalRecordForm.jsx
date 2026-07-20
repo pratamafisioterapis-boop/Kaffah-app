@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays } from 'lucide-react';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus } from '@/lib/api';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
@@ -180,12 +180,21 @@ const MedicalRecordForm = ({ therapist }) => {
 };
 
 // 🔥 HANYA CREATE MODE
-if (!recordId) {
+const isCreate = !recordId;
+if (isCreate) {
   payload.daily_recap_id = dailyRecapId;
 }
 
        if (dateParam && !recordId) {
           payload.created_at = `${dateParam}T12:00:00`;
+       }
+
+       // Ambil status kunci SEBELUM simpan, supaya bisa dibandingkan setelah
+       // simpan untuk mendeteksi SOAP yang jadi ambang pembuka jadwal.
+       let wasLocked = false;
+       if (isCreate && therapist?.id) {
+         const { data: lockStatus } = await getTherapistSoapLockStatus(therapist.id);
+         wasLocked = !!lockStatus?.locked;
        }
 
        let result;
@@ -194,14 +203,30 @@ if (!recordId) {
        } else {
          result = await createMedicalRecord(payload);
        }
-       
+
        if (result.error) throw result.error;
-       
-       window.dispatchEvent(new CustomEvent('medical-record-updated', { 
-         detail: { patientId: formData.patient_id } 
+
+       window.dispatchEvent(new CustomEvent('medical-record-updated', {
+         detail: { patientId: formData.patient_id }
        }));
 
        toast({ title: "Berhasil", description: recordId ? "Rekam medis diperbarui." : "Rekam medis berhasil disimpan." });
+
+       // SOAP ini yang membuat jumlah SOAP belum diisi turun di bawah ambang
+       // batas -> jadwal baru saja terbuka kembali. Beri tahu terapis
+       // langsung supaya tidak menunda-nunda mengisi SOAP yang tersisa.
+       if (isCreate && wasLocked && therapist?.id) {
+         const { data: lockStatusAfter } = await getTherapistSoapLockStatus(therapist.id);
+         if (!lockStatusAfter?.locked) {
+           toast({
+             title: "🔓 Jadwal Anda Telah Dibuka!",
+             description: "Kerja bagus! SOAP ini melengkapi kekurangan Anda dan jadwal booking Anda kini terbuka kembali. Yuk langsung lengkapi SOAP lain yang masih tersisa, jangan ditunda-tunda.",
+             className: "bg-green-50 border-green-200 text-green-800",
+             duration: 8000,
+           });
+         }
+       }
+
        navigate(-1);
     } catch (err) {
        toast({ variant: "destructive", title: "Gagal", description: err.message });

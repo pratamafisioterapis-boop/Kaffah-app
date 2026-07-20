@@ -4468,6 +4468,17 @@ export const getClinicTherapistsSoapLockStatus = async () => {
   }, 'getClinicTherapistsSoapLockStatus');
 };
 
+export const getTherapistSoapLockStatus = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('get_therapist_soap_lock_status', {
+      p_therapist_id: therapistId
+    });
+
+    if (error) return { error };
+    return { data: Array.isArray(data) ? data[0] : data, error: null };
+  }, 'getTherapistSoapLockStatus');
+};
+
 export const updateTherapistSoapLockOverride = async (therapistId, {
   soap_lock_exempt,
   soap_lock_custom_enabled,
