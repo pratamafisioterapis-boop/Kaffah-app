@@ -311,7 +311,7 @@ const TherapistPatientHistory = ({ therapist }) => {
                   value={displayDateID(dateRange.start)}
                   onChange={(e) => handleCustomDate('start', parseDateFromDisplay(e.target.value) || '')}
                   onClick={() => setShowStartCalendar(true)}
-                  className="w-full min-w-0 text-xs h-8 bg-white border-slate-200"
+                  className="w-full min-w-0 text-xs h-8 px-2 bg-white border-slate-200"
                   placeholder="dd/MM/yyyy"
                 />
                 {showStartCalendar && (
@@ -330,7 +330,7 @@ const TherapistPatientHistory = ({ therapist }) => {
                   value={displayDateID(dateRange.end)}
                   onChange={(e) => handleCustomDate('end', parseDateFromDisplay(e.target.value) || '')}
                   onClick={() => setShowEndCalendar(true)}
-                  className="w-full min-w-0 text-xs h-8 bg-white border-slate-200"
+                  className="w-full min-w-0 text-xs h-8 px-2 bg-white border-slate-200"
                   placeholder="dd/MM/yyyy"
                 />
                 {showEndCalendar && (

@@ -54,14 +54,14 @@ const InventoryTakeOutForm = ({ onSuccess }) => {
         <Label>Pilih Barang</Label>
         <SearchableSelect options={itemOptions} value={form.item_id} onChange={(val) => setForm({ ...form, item_id: val })} placeholder="Pilih barang..." allowCreate={false} notFoundText="Barang tidak ditemukan." />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Jumlah {selectedItem ? `(${selectedItem.unit})` : ''}</Label>
           <Input type="number" step="0.01" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
         <div className="space-y-2">
           <Label>Tanggal Ambil</Label>
-          <Input type="date" value={form.taken_date} onChange={(e) => setForm({ ...form, taken_date: e.target.value })} />
+          <Input type="date" className="px-2" value={form.taken_date} onChange={(e) => setForm({ ...form, taken_date: e.target.value })} />
         </div>
       </div>
 

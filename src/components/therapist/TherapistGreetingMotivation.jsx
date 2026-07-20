@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Sun, Moon, CloudSun } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const MOTIVATIONS = [
   "Setiap sentuhan menyembuhkan, setiap kata memberi harapan. Semangat!",
@@ -21,6 +22,7 @@ const MOTIVATIONS = [
 ];
 
 const TherapistGreetingMotivation = ({ therapistName }) => {
+  const { clinicName } = useAuth();
   const [greeting, setGreeting] = useState('');
   const [motivation, setMotivation] = useState('');
   const [GreetingIcon, setGreetingIcon] = useState(Sun);
@@ -55,45 +57,43 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
 
   }, []);
 
-  const hour = new Date().getHours();
-  const timeOfDay = hour >= 5 && hour < 12 ? 'pagi' : hour >= 12 && hour < 15 ? 'siang' : hour >= 15 && hour < 18 ? 'sore' : 'malam';
-  const gradients = {
-    pagi: 'from-amber-400 via-orange-400 to-rose-400',
-    siang: 'from-sky-500 via-blue-500 to-indigo-500',
-    sore: 'from-orange-500 via-rose-500 to-pink-500',
-    malam: 'from-indigo-600 via-violet-600 to-purple-600',
-  };
-  const currentGradient = gradients[timeOfDay];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${currentGradient} p-0 text-white shadow-lg`}
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white shadow-xl border border-slate-700/50"
     >
-      {/* Decorative blobs */}
-      <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-      <div className="absolute top-1/2 left-1/3 h-24 w-24 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+      {/* Premium texture + glow accents */}
+      <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+      <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+
+      {/* Gold hairline accent */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
 
       <div className="relative z-10 p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          
+
           {/* Left: Greeting */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner border border-white/30 shrink-0">
-              <GreetingIcon className="w-7 h-7 text-white drop-shadow" />
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm flex items-center justify-center shadow-inner border border-amber-300/30 shrink-0">
+              <GreetingIcon className="w-7 h-7 text-amber-300 drop-shadow" />
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-0.5">
+            <div className="min-w-0">
+              {clinicName && (
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300/80 mb-1 truncate">
+                  {clinicName}
+                </p>
+              )}
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
                 {greeting}
               </p>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight leading-tight">
-                {therapistName || 'Terapis'} 
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight leading-tight truncate">
+                {therapistName || 'Terapis'}
                 <span className="ml-2 text-2xl">👋</span>
               </h1>
-              <p className="text-sm text-white/70 mt-1 font-medium">
+              <p className="text-sm text-white/50 mt-1 font-medium">
                 {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -104,10 +104,10 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex items-start gap-3 bg-white/15 backdrop-blur-sm p-4 rounded-xl border border-white/20 max-w-md"
+            className="relative flex items-start gap-3 bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-amber-300/20 max-w-md shadow-lg"
           >
-            <Sparkles className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5 drop-shadow" />
-            <p className="text-sm font-medium leading-relaxed text-white/90 italic">
+            <Sparkles className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5 drop-shadow" />
+            <p className="text-sm font-medium leading-relaxed text-white/90 italic min-w-0">
               "{motivation}"
             </p>
           </motion.div>

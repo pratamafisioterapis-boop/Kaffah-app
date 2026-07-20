@@ -311,11 +311,14 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         )}
 
         {activeTab === "reports" && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <AdminAccountingReport data={reportData} dateRange={dateRange} />
           </div>
         )}
       </div>
+
+      {/* Spacer so content doesn't sit under the mobile FAB */}
+      <div className="h-16 lg:hidden" />
 
       {/* --- Modals --- */}
       
