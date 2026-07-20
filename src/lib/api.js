@@ -65,8 +65,7 @@ const enrichRecapsWithOptions = async (recaps) => {
   const { data: options } = await supabase
     .from('operational_options')
     .select('id, label, category')
-    .in('category', ['diagnosa', 'service_type', 'patient_type', 'tipe_paket', 'service', 'payment_method'])
-    .eq('is_active', true);
+    .in('category', ['diagnosa', 'service_type', 'patient_type', 'tipe_paket', 'service', 'payment_method']);
 
   if (!options) return recaps;
 
@@ -93,7 +92,7 @@ if (!Array.isArray(diagArray)) {
 // 🔥 flatten + mapping aman
 diagArray = diagArray.flat();
 
-const enrichedDiagnosis = diagArray.map(d => optionsMap[d] || d);
+const enrichedDiagnosis = diagArray.map(d => optionsMap[d] || (isValidUUID(d) ? 'Diagnosa tidak dikenal' : d));
 
 const enrichedServiceType = optionsMap[recap.service_type] || recap.service_type;
 const enrichedPatientType = optionsMap[recap.patient_type] || recap.patient_type;

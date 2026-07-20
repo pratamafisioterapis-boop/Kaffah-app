@@ -320,14 +320,14 @@ const packageRisk = getPackageRisk();
 </div>
             </div>
 
-            <div className="flex items-center text-xs text-slate-600 mt-1 gap-3">
-              <span className="flex items-center gap-1">
-                <Phone className="w-3 h-3" />
-                {patientPhone}
+            <div className="flex items-center flex-wrap text-xs text-slate-600 mt-1 gap-x-3 gap-y-1">
+              <span className="flex items-center gap-1 min-w-0 shrink-0">
+                <Phone className="w-3 h-3 shrink-0" />
+                <span className="truncate">{patientPhone}</span>
               </span>
 
               {medicalRecordNumber && (
-                <span className="border-l pl-3 border-slate-300">
+                <span className="border-l pl-3 border-slate-300 shrink-0">
                   {medicalRecordNumber}
                 </span>
               )}

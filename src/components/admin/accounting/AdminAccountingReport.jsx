@@ -146,12 +146,12 @@ const AdminAccountingReport = ({ data, dateRange }) => {
               .sort(([, a], [, b]) => b - a)
               .slice(0, 5)
               .map(([cat, amount], idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                    <span className="text-sm font-medium text-gray-700">{cat}</span>
+                <div key={idx} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+                    <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">Rp {amount.toLocaleString('id-ID')}</span>
+                  <span className="text-sm font-bold text-gray-900 shrink-0 whitespace-nowrap">Rp {amount.toLocaleString('id-ID')}</span>
                 </div>
               ))}
             </div>
@@ -174,12 +174,12 @@ const AdminAccountingReport = ({ data, dateRange }) => {
               .sort(([, a], [, b]) => b - a)
               .slice(0, 5)
               .map(([source, amount], idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-sm font-medium text-gray-700">{source}</span>
+                <div key={idx} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0"></div>
+                    <span className="text-sm font-medium text-gray-700 truncate">{source}</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">Rp {amount.toLocaleString('id-ID')}</span>
+                  <span className="text-sm font-bold text-gray-900 shrink-0 whitespace-nowrap">Rp {amount.toLocaleString('id-ID')}</span>
                 </div>
               ))}
             </div>

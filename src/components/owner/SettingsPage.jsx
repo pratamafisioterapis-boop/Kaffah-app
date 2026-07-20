@@ -918,6 +918,56 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
   );
 };
 
+const SETTINGS_TAB_GROUPS = [
+  {
+    label: 'Akun & Tim',
+    items: [
+      { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
+      { value: 'admin', icon: Users, label: 'Admin & Staff' },
+    ],
+  },
+  {
+    label: 'Keuangan',
+    items: [
+      { value: 'bank_accounts', icon: Building, label: 'Akun Bank' },
+      { value: 'accounting_cats', icon: BookOpen, label: 'Akunting' },
+      { value: 'service_rates', icon: Wallet, label: 'Tarif Jasa' },
+      { value: 'payment', icon: null, label: 'Pembayaran' },
+      { value: 'discount', icon: Tag, label: 'Jenis Diskon' },
+    ],
+  },
+  {
+    label: 'Komunikasi & Integrasi',
+    items: [
+      { value: 'whatsapp_settings', icon: MessageCircle, label: 'WhatsApp' },
+      { value: 'google_drive', icon: HardDrive, label: 'Google Drive' },
+    ],
+  },
+  {
+    label: 'Data Master',
+    items: [
+      { value: 'diagnosis_service', icon: FolderTree, label: 'Diagnosa & Layanan' },
+      { value: 'source', icon: null, label: 'Sumber' },
+      { value: 'type', icon: null, label: 'Tipe Pasien' },
+      { value: 'package', icon: null, label: 'Tipe Paket' },
+    ],
+  },
+  {
+    label: 'Tampilan & Media',
+    items: [
+      { value: 'design_style', icon: Palette, label: 'Tampilan' },
+      { value: 'media_assets', icon: ImageIcon, label: 'Media' },
+    ],
+  },
+  {
+    label: 'Checklist Admin',
+    items: [
+      { value: 'admin_checklist', icon: ListChecks, label: 'Checklist Admin' },
+      { value: 'admin_checklist_history', icon: History, label: 'Riwayat Checklist' },
+    ],
+  },
+];
+
 const SettingsPage = () => {
   const [reloadGallery, setReloadGallery] = useState(0);
   const initialTab = new URLSearchParams(window.location.search).get('tab') || 'admin';
@@ -945,58 +995,23 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue={initialTab} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-          <TabsTrigger value="account_clinic" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <UserCog className="w-3.5 h-3.5" /> Akun & Klinik
-          </TabsTrigger>
-          <TabsTrigger value="admin" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <Users className="w-3.5 h-3.5" /> Admin & Staff
-          </TabsTrigger>
-          <TabsTrigger value="bank_accounts" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <Building className="w-3.5 h-3.5" /> Akun Bank
-          </TabsTrigger>
-          <TabsTrigger value="whatsapp_settings" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-          </TabsTrigger>
-          <TabsTrigger value="google_drive" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <HardDrive className="w-3.5 h-3.5" /> Google Drive
-          </TabsTrigger>
-          <TabsTrigger value="accounting_cats" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <BookOpen className="w-3.5 h-3.5" /> Akunting
-          </TabsTrigger>
-          <TabsTrigger value="media_assets" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <ImageIcon className="w-3.5 h-3.5" /> Media
-          </TabsTrigger>
-          <TabsTrigger value="diagnosis_service" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <FolderTree className="w-3.5 h-3.5" /> Diagnosa & Layanan
-          </TabsTrigger>
-          <TabsTrigger value="source" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
-            Sumber
-          </TabsTrigger>
-          <TabsTrigger value="type" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
-            Tipe Pasien
-          </TabsTrigger>
-          <TabsTrigger value="package" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
-            Tipe Paket
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 text-xs font-medium">
-            Pembayaran
-          </TabsTrigger>
-          <TabsTrigger value="discount" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <Tag className="w-3.5 h-3.5" /> Jenis Diskon
-          </TabsTrigger>
-          <TabsTrigger value="design_style" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <Palette className="w-3.5 h-3.5" /> Tampilan
-          </TabsTrigger>
-          <TabsTrigger value="service_rates" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <Wallet className="w-3.5 h-3.5" /> Tarif Jasa
-          </TabsTrigger>
-          <TabsTrigger value="admin_checklist" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <ListChecks className="w-3.5 h-3.5" /> Checklist Admin
-          </TabsTrigger>
-          <TabsTrigger value="admin_checklist_history" className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
-            <History className="w-3.5 h-3.5" /> Riwayat Checklist
-          </TabsTrigger>
+        <TabsList className="flex flex-col h-auto gap-3 bg-transparent p-0 border-none items-stretch w-full">
+          {SETTINGS_TAB_GROUPS.map((group) => (
+            <div key={group.label} className="bg-slate-100/70 rounded-2xl border border-slate-200 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1 mb-2">{group.label}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {group.items.map(({ value, icon: Icon, label }) => (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium"
+                  >
+                    {Icon && <Icon className="w-3.5 h-3.5" />} {label}
+                  </TabsTrigger>
+                ))}
+              </div>
+            </div>
+          ))}
         </TabsList>
 
         <div className="mt-6">

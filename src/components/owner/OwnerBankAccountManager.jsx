@@ -765,12 +765,12 @@ const OwnerBankAccountManager = () => {
                   <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-cyan-400 to-teal-500"></div>
                   <div className="absolute -right-6 -top-6 w-24 h-24 bg-teal-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
 
-                  <CardContent className="p-6 relative">
-                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-teal-50 rounded-xl text-teal-600 shadow-sm">
-                           <Building className="w-6 h-6" />
+                  <CardContent className="p-5 relative">
+                     <div className="flex justify-between items-start mb-3">
+                        <div className="p-2.5 bg-teal-50 rounded-xl text-teal-600 shadow-sm">
+                           <Building className="w-5 h-5" />
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
                               <SlidersHorizontal className="w-4 h-4" />
                            </Button>
@@ -787,16 +787,24 @@ const OwnerBankAccountManager = () => {
                      </div>
 
                      <h4 className="font-bold text-lg text-slate-800 mb-1">{acc.bank_name}</h4>
-                     <p className="text-slate-500 text-sm font-mono bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100 mb-5">
-                       {acc.account_number || '-'}
-                     </p>
+                     {acc.account_number ? (
+                       <p className="text-slate-500 text-sm font-mono bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100 mb-3">
+                         {acc.account_number}
+                       </p>
+                     ) : (
+                       <p className="text-slate-400 text-xs italic mb-3">Nomor rekening belum diisi</p>
+                     )}
 
-                     <div className="flex justify-between items-end pt-4 border-t border-slate-50">
-                        <div>
+                     <div className="flex justify-between items-end pt-3 border-t border-slate-50">
+                        <div className="min-w-0">
                           <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Holder</p>
-                          <p className="font-medium text-sm text-slate-700 truncate max-w-[120px]" title={acc.holder_name}>{acc.holder_name || '-'}</p>
+                          {acc.holder_name ? (
+                            <p className="font-medium text-sm text-slate-700 truncate max-w-[120px]" title={acc.holder_name}>{acc.holder_name}</p>
+                          ) : (
+                            <p className="text-xs text-slate-400 italic">Belum diisi</p>
+                          )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Saldo Saat Ini</p>
                            <p className={`font-bold text-lg tracking-tight ${acc.current_balance < 0 ? 'text-rose-600' : 'text-teal-600'}`}>
                              {formatIDR(acc.current_balance)}

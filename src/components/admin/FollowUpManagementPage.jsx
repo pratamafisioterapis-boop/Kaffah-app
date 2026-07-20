@@ -18,7 +18,6 @@ const FollowUpManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('booking_appointment');
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
-  const [isChatAIEnabled, setIsChatAIEnabled] = useState(false);
 
   const { userDetails, clinicName } = useAuth();
   const { toast } = useToast();
@@ -56,17 +55,6 @@ const FollowUpManagementPage = () => {
         if (waSetting) {
           setIsBablastEnabled(waSetting.enabled);
         }
-      }
-
-      // Chat AI
-      const { data: aiSetting } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'chat_ai_enabled')
-        .maybeSingle();
-
-      if (aiSetting) {
-        setIsChatAIEnabled(aiSetting.value === 'true');
       }
     };
 
@@ -158,20 +146,6 @@ const FollowUpManagementPage = () => {
   }
 };
 
-  const handleToggleChatAI = async () => {
-
-    const newValue = !isChatAIEnabled;
-
-    const { data } = await supabase
-      .from('system_settings')
-      .update({ value: newValue.toString() })
-      .eq('key', 'chat_ai_enabled')
-      .select()
-      .single();
-
-    if (data) setIsChatAIEnabled(newValue);
-  };
-
   // ===============================
   // Filter
   // ===============================
@@ -246,9 +220,6 @@ const isPWA =
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola antrian pesan WhatsApp otomatis</p>
           </div>
         </div>
-        <div className={`flex items-center ${isPWA ? 'gap-4' : 'gap-8'}`}>
-
-        {/* Bablast */}
         <div className="flex items-center gap-3">
           <span className={`${isPWA ? 'text-xs' : 'text-sm'} font-medium text-white`}>
             Bablast
@@ -267,31 +238,6 @@ const isPWA =
             />
           </button>
         </div>
-
-        {/* Divider */}
-        <div className="h-6 w-px bg-white/20" />
-
-        {/* Chat AI */}
-        <div className="flex items-center gap-3">
-          <span className={`${isPWA ? 'text-xs' : 'text-sm'} font-medium text-white`}>
-            Chat AI
-          </span>
-
-          <button
-            onClick={handleToggleChatAI}
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
-              isChatAIEnabled ? 'bg-blue-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
-                isChatAIEnabled ? 'translate-x-7' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-
-      </div>
       </div>
     </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Edit2, Trash2, Save, Target, 
-  Loader2, CheckCircle
+import {
+  Plus, Edit2, Trash2, Save, Target,
+  Loader2, CheckCircle, CalendarDays
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -260,86 +259,90 @@ const TherapistTargetManager = () => {
         </Button>
       </div>
 
-      <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead>Periode</TableHead>
-              <TableHead>Terapis</TableHead>
-              <TableHead className="text-center">Target Kunjungan</TableHead>
-              <TableHead className="text-center">Capaian</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead>Excluded Types</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
-            ) : targets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <div className="flex flex-col items-center justify-center text-slate-500">
-                    <p className="font-medium">Belum ada target terapis</p>
-                    <p className="text-sm mt-1">Klik 'Tambah Target' untuk membuat target baru</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              targets.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium text-sm">
-                     {item.start_date && item.end_date 
-                       ? `${formatDate(item.start_date)} s/d ${formatDate(item.end_date)}` 
-                       : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {/* Updated to try user.full_name first (from new API join) or fallback to helper */}
-                    {item.user?.full_name || getTherapistName(item.therapist_id)}
-                  </TableCell>
-                  <TableCell className="text-center font-semibold text-blue-600">
-                    {item.target_visits || 0}
-                  </TableCell>
-                  <TableCell className="text-center font-medium">
-                    {item.actual_visits !== undefined && item.achievement_percentage !== undefined 
-                      ? `${item.actual_visits} (${item.achievement_percentage}%)` 
-                      : (item.actual_visits || 0)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(item.status)}
-                  </TableCell>
-                  <TableCell>
-                     {item.excluded_patient_types && item.excluded_patient_types.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {item.excluded_patient_types.slice(0, 2).map((type, idx) => (
-                            <Badge key={idx} variant="outline" className="text-[10px] bg-slate-50">
-                              {type}
-                            </Badge>
-                          ))}
-                          {item.excluded_patient_types.length > 2 && (
-                            <Badge variant="outline" className="text-[10px] bg-slate-50">+{item.excluded_patient_types.length - 2}</Badge>
-                          )}
-                        </div>
-                     ) : (
-                       <span className="text-slate-400 text-xs">-</span>
-                     )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleOpenDialog(item)}>
-                        <Edit2 className="w-4 h-4 text-slate-500 hover:text-blue-600" />
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-300" /></div>
+      ) : targets.length === 0 ? (
+        <div className="bg-white border rounded-xl shadow-sm text-center py-12">
+          <div className="flex flex-col items-center justify-center text-slate-500">
+            <p className="font-medium">Belum ada target terapis</p>
+            <p className="text-sm mt-1">Klik 'Tambah Target' untuk membuat target baru</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {targets.map((item) => {
+            const therapistName = item.user?.full_name || getTherapistName(item.therapist_id);
+            const pct = item.achievement_percentage ?? (item.target_visits ? Math.round(((item.actual_visits || 0) / item.target_visits) * 100) : 0);
+            const accent = item.status === 'TERCAPAI'
+              ? 'from-emerald-400 to-teal-500'
+              : item.status === 'BELUM TERCAPAI'
+                ? 'from-amber-400 to-orange-500'
+                : item.status === 'PERLU EVALUASI'
+                  ? 'from-rose-400 to-red-500'
+                  : 'from-slate-300 to-slate-400';
+
+            return (
+              <div key={item.id} className="card-premium relative overflow-hidden border-0 ring-1 ring-slate-100 group">
+                <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${accent}`} />
+                <div className="p-5 pl-6">
+                  <div className="flex items-start justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                        {getInitials(therapistName)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 truncate" title={therapistName}>{therapistName}</p>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 min-w-0">
+                          <CalendarDays className="w-3 h-3 shrink-0" />
+                          <span className="truncate">
+                            {item.start_date && item.end_date ? `${formatDate(item.start_date)} s/d ${formatDate(item.end_date)}` : '-'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpenDialog(item)}>
+                        <Edit2 className="w-3.5 h-3.5 text-slate-500 hover:text-blue-600" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-600" />
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(item.id)}>
+                        <Trash2 className="w-3.5 h-3.5 text-slate-500 hover:text-red-600" />
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  </div>
+
+                  <div className="flex items-end justify-between mb-2 gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Capaian</p>
+                      <p className="text-2xl font-bold text-slate-900 truncate">
+                        {item.actual_visits || 0}
+                        <span className="text-sm font-medium text-slate-400"> / {item.target_visits || 0}</span>
+                      </p>
+                    </div>
+                    <div className="shrink-0">{getStatusBadge(item.status)}</div>
+                  </div>
+
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden mb-3">
+                    <div className={`h-full rounded-full bg-gradient-to-r ${accent}`} style={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }} />
+                  </div>
+
+                  {item.excluded_patient_types && item.excluded_patient_types.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-3 border-t border-slate-100">
+                      {item.excluded_patient_types.slice(0, 3).map((type, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[10px] bg-slate-50 font-normal">
+                          {type}
+                        </Badge>
+                      ))}
+                      {item.excluded_patient_types.length > 3 && (
+                        <Badge variant="outline" className="text-[10px] bg-slate-50 font-normal">+{item.excluded_patient_types.length - 3}</Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
