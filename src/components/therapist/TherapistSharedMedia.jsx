@@ -35,13 +35,13 @@ const TherapistSharedMedia = ({ therapist }) => {
         .eq('clinic_id', userRow.clinic_id)
         .order('created_at', { ascending: false });
 
-      // Filter by access: show if allowed_therapist_ids is null OR contains this therapist's id
+      // Filter by access: hide if blocked_therapist_ids contains this therapist's id
       if (therapist?.id) {
         query = query.or(
-          `allowed_therapist_ids.is.null,allowed_therapist_ids.cs.{${therapist.id}}`
+          `blocked_therapist_ids.is.null,blocked_therapist_ids.not.cs.{${therapist.id}}`
         );
       } else {
-        query = query.is('allowed_therapist_ids', null);
+        query = query.is('blocked_therapist_ids', null);
       }
 
       const { data, error } = await query;

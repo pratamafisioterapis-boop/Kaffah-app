@@ -72,7 +72,7 @@ const MediaAssetGallery = () => {
 
   const openAccessDialog = (asset) => {
     setAccessTarget(asset);
-    setAccessSelected(asset.allowed_therapist_ids || []);
+    setAccessSelected(asset.blocked_therapist_ids || []);
   };
 
   const toggleTherapist = (id) => {
@@ -93,7 +93,7 @@ const MediaAssetGallery = () => {
       toast({ title: 'Akses Diperbarui', description: 'Pengaturan akses berhasil disimpan.' });
       if (data) {
         setAssets?.((prev) =>
-          prev.map((a) => (a.id === data.id ? { ...a, allowed_therapist_ids: data.allowed_therapist_ids } : a))
+          prev.map((a) => (a.id === data.id ? { ...a, blocked_therapist_ids: data.blocked_therapist_ids } : a))
         );
       }
       setAccessTarget(null);
@@ -109,8 +109,8 @@ const MediaAssetGallery = () => {
   };
 
   const accessLabel = (asset) => {
-    if (!asset.allowed_therapist_ids?.length) return null;
-    return `${asset.allowed_therapist_ids.length} terapis`;
+    if (!asset.blocked_therapist_ids?.length) return null;
+    return `${asset.blocked_therapist_ids.length} terapis`;
   };
 
   return (
@@ -186,7 +186,7 @@ const MediaAssetGallery = () => {
                     </span>
                     {restricted && (
                       <span className="px-2 py-1 bg-amber-50/90 backdrop-blur-sm rounded text-[10px] font-semibold text-amber-700 shadow-sm border border-amber-200 flex items-center gap-1">
-                        <Users className="w-2.5 h-2.5" /> {restricted}
+                        <Users className="w-2.5 h-2.5" /> {restricted} diblokir
                       </span>
                     )}
                   </div>
@@ -216,7 +216,7 @@ const MediaAssetGallery = () => {
                   >
                     <Users className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">
-                      {restricted ? `Terbatas: ${restricted}` : 'Semua terapis'}
+                      {restricted ? `${restricted} terapis diblokir` : 'Semua terapis dapat melihat'}
                     </span>
                     <span className="ml-auto text-blue-500 font-medium shrink-0">Atur</span>
                   </button>
@@ -275,7 +275,7 @@ const MediaAssetGallery = () => {
               Pengaturan Akses
             </DialogTitle>
             <DialogDescription className="pt-1">
-              Pilih terapis yang dapat melihat "<span className="font-medium text-slate-700">{accessTarget?.name}</span>" di tab Sharing Media. Kosongi semua untuk mengizinkan semua terapis.
+              Centang terapis yang <span className="font-semibold text-red-600">TIDAK BOLEH</span> melihat "<span className="font-medium text-slate-700">{accessTarget?.name}</span>" di tab Sharing Media. Kosongi semua agar semua terapis dapat melihatnya.
             </DialogDescription>
           </DialogHeader>
 
@@ -292,7 +292,7 @@ const MediaAssetGallery = () => {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left"
                   >
                     {checked ? (
-                      <CheckSquare className="w-4 h-4 text-blue-600 shrink-0" />
+                      <CheckSquare className="w-4 h-4 text-red-600 shrink-0" />
                     ) : (
                       <Square className="w-4 h-4 text-slate-300 shrink-0" />
                     )}
@@ -311,7 +311,7 @@ const MediaAssetGallery = () => {
           <div className="text-xs text-slate-400 pt-2 border-t border-slate-100">
             {accessSelected.length === 0
               ? 'Semua terapis aktif dapat melihat file ini.'
-              : `${accessSelected.length} dari ${physiotherapists.length} terapis dipilih.`}
+              : `${accessSelected.length} dari ${physiotherapists.length} terapis diblokir (tidak dapat melihat file ini).`}
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
@@ -323,7 +323,7 @@ const MediaAssetGallery = () => {
                 onClick={() => setAccessSelected([])}
                 disabled={isSavingAccess}
               >
-                Izinkan Semua
+                Batalkan Semua Blokir
               </Button>
             )}
             <Button variant="outline" onClick={() => setAccessTarget(null)} disabled={isSavingAccess}>
