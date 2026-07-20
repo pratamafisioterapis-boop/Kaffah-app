@@ -173,18 +173,18 @@ const TherapistTargetWidget = ({ userId }) => {
             <Card className="border-l-4 border-l-indigo-500 shadow-sm hover:shadow-md transition-shadow h-full relative overflow-hidden bg-white">
                 <CardContent className="p-6">
                     {/* Header: Period & Status */}
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>
+                    <div className="flex justify-between items-start mb-4 gap-2">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-slate-500 text-xs mb-1 min-w-0">
+                                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">
                                     {start_date ? format(parseISO(start_date), 'dd MMM') : '-'} - {end_date ? format(parseISO(end_date), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                                 </span>
                             </div>
-                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 flex-wrap">
                                 Target Kunjungan
                                 {achievement_percentage >= 100 && (
-                                    <motion.span 
+                                    <motion.span
                                         initial={{ scale: 0 }} animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
                                         className="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 border border-yellow-200"
                                     >
@@ -193,7 +193,7 @@ const TherapistTargetWidget = ({ userId }) => {
                                 )}
                             </h3>
                         </div>
-                        <Badge variant="outline" className={`${getStatusColor(status)} shadow-none`}>
+                        <Badge variant="outline" className={`${getStatusColor(status)} shadow-none shrink-0`}>
                             {status}
                         </Badge>
                     </div>

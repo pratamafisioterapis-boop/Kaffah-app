@@ -228,10 +228,10 @@ const TherapistRemuneration = ({ therapist }) => {
                 achieved ? "bg-gradient-to-r from-emerald-400 to-emerald-500" : "bg-gradient-to-r from-amber-400 to-amber-500"
               )} />
 
-              <div className="flex items-start justify-between pt-1">
-                <div>
-                  <p className="font-semibold text-slate-900 text-sm">{row.name}</p>
-                  <p className="text-[11px] text-slate-400">Bobot {row.weight_percent}% • Target {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</p>
+              <div className="flex items-start justify-between pt-1 gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">{row.name}</p>
+                  <p className="text-[11px] text-slate-400 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</p>
                 </div>
                 <span className={cn(
                   "text-xs font-bold px-2 py-1 rounded-lg shrink-0",

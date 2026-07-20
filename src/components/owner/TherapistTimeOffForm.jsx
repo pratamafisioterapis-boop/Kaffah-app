@@ -131,7 +131,7 @@ const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-         <div className="grid grid-cols-2 gap-4">
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
                <Label>Mulai Tanggal <span className="text-red-500">*</span></Label>
                <Input 

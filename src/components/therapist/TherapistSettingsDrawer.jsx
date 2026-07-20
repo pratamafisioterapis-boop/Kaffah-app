@@ -338,7 +338,7 @@ const TabCuti = ({ therapistId }) => {
       {showForm && (
         <div className="border border-blue-100 bg-blue-50/50 rounded-xl p-4 space-y-3">
           <p className="text-sm font-semibold text-slate-700">Pengajuan Cuti Baru</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-slate-500">Mulai</Label>
               <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="rounded-xl text-sm" />

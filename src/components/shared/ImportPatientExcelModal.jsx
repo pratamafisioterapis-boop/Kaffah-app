@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, Download, FileSpreadsheet, Info, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { read, utils, writeFile } from 'xlsx';
@@ -267,7 +266,7 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div className="rounded-md border">
-                <ScrollArea className="h-[320px]">
+                <div className="h-[320px] overflow-auto">
                   <Table>
                     <TableHeader className="bg-slate-50 sticky top-0 z-10">
                       <TableRow>
@@ -298,7 +297,7 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
                       ))}
                     </TableBody>
                   </Table>
-                </ScrollArea>
+                </div>
               </div>
 
               {step === 'importing' && (

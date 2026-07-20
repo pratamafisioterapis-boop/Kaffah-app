@@ -131,7 +131,80 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
          />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+          ))
+        ) : filteredPatients.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm py-12 text-center text-slate-500">
+            <ClipboardList className="w-12 h-12 mb-3 mx-auto text-slate-300" />
+            <h3 className="text-lg font-medium text-slate-900">Belum ada data pasien</h3>
+            <p className="text-sm mt-1">Silakan tambah data pasien baru untuk memulai.</p>
+          </div>
+        ) : (
+          filteredPatients.map((patient) => (
+            <div key={patient.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 text-sm truncate">{patient.full_name}</p>
+                  {patient.nickname && <p className="text-xs text-slate-500 truncate">{patient.nickname}</p>}
+                  <p className="text-xs font-mono text-slate-500 mt-0.5">{patient.medical_record_number}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full shrink-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => onEdit(patient)} className="cursor-pointer">
+                      <Edit className="mr-2 h-4 w-4 text-blue-600" /> Edit Pasien
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer" onClick={() => onDelete(patient)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Hapus Pasien
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                <span>{patient.genderLabel}</span>
+                <span className="text-slate-300">•</span>
+                <span>{patient.formattedAge}</span>
+                <span className="text-slate-300">•</span>
+                <span className="font-mono whitespace-nowrap">{patient.formattedBirthDate}</span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {patient.isComplete ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border-transparent font-medium">
+                    <CheckCircle className="w-3 h-3 mr-1" /> Lengkap
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-50 text-amber-700 border-transparent font-medium">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Tidak Lengkap
+                  </Badge>
+                )}
+                {patient.status === 'aktif' ? (
+                  <Badge className="bg-green-100 text-green-800 border-transparent">Aktif</Badge>
+                ) : (
+                  <Badge className="bg-slate-100 text-slate-800 border-transparent">Non-Aktif</Badge>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden sm:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
           <Table>
               <TableHeader className="bg-slate-50 border-b-2 border-slate-200">
                   <TableRow>

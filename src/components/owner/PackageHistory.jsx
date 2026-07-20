@@ -109,7 +109,41 @@ const PackageHistory = () => {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          <div className="text-center py-8">Loading...</div>
+        ) : filteredPackages.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Tidak ada data paket ditemukan.</div>
+        ) : (
+          filteredPackages.map((pkg) => (
+            <div key={pkg.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{pkg.patients?.full_name || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground">{pkg.patients?.medical_record_number}</p>
+                  <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                </div>
+                {getStatusBadge(pkg.status)}
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">{pkg.sessions_used}</span>
+                <span className="text-muted-foreground">/ {pkg.total_sessions} sesi</span>
+              </div>
+              <div className="text-xs text-slate-500">
+                {pkg.start_date ? format(new Date(pkg.start_date), 'dd MMM yyyy', { locale: id }) : '-'}
+                <span className="mx-1">s/d</span>
+                {pkg.end_date ? format(new Date(pkg.end_date), 'dd MMM yyyy', { locale: id }) : '-'}
+              </div>
+              <Button variant="ghost" size="sm" className="w-full justify-center border border-slate-200" onClick={() => handleViewDetail(pkg)}>
+                <Eye className="h-4 w-4 mr-1" /> Detail
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden sm:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

@@ -214,7 +214,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             <h4 className="font-semibold text-sm text-slate-800">Buat Slip Gaji Baru</h4>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Periode Mulai</label>
               <Input type="date" value={form.payroll_period_start} onChange={(e) => setForm({ ...form, payroll_period_start: e.target.value })} />
@@ -223,7 +223,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600">Periode Selesai</label>
               <Input type="date" value={form.payroll_period_end} onChange={(e) => setForm({ ...form, payroll_period_end: e.target.value })} />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"

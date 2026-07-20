@@ -44,14 +44,6 @@ const itemsPerPage = 20;
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState(null);
   const fileInputRef = useRef(null);
-  const isPWA = (() => {
-    try {
-      return window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true;
-    } catch {
-      return false;
-    }
-  })();
 
 useEffect(() => {
   setCurrentPage(1);
@@ -330,9 +322,8 @@ const paginatedList = sortedList.slice(
          <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Nama pasien atau No. RM..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
-      {isPWA ? (
-        /* ── Tampilan PWA Mobile ── */
-        <div className="space-y-2">
+      {/* ── Tampilan Mobile (narrow) ── */}
+      <div className="sm:hidden space-y-2">
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="animate-spin w-6 h-6 text-blue-600" />
@@ -398,9 +389,9 @@ const paginatedList = sortedList.slice(
             );
           })}
         </div>
-      ) : (
-        /* ── Tampilan Desktop (Table) ── */
-        <Card className="border shadow-sm overflow-hidden">
+
+      {/* ── Tampilan Desktop (Table) ── */}
+      <Card className="hidden sm:block border shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50">
@@ -447,7 +438,6 @@ const paginatedList = sortedList.slice(
             </Table>
           </div>
         </Card>
-      )}
 {totalPages > 1 && (
   <div className="flex items-center justify-center gap-2">
     

@@ -398,7 +398,40 @@ const realIncome = filteredIncomeData.reduce(
           <CardTitle>Rincian Pasien</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-3">
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-8">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Memuat data...</span>
+              </div>
+            ) : filteredIncomeData.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">Tidak ada data pendapatan untuk periode ini.</div>
+            ) : (
+              filteredIncomeData.map((item, index) => (
+                <div key={`${item.patientId}-${index}`} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-500 whitespace-nowrap">
+                      {item.recapDate ? format(new Date(item.recapDate), 'dd MMM yyyy', { locale: id }) : '-'}
+                    </span>
+                    <span className="font-bold text-green-600 shrink-0 whitespace-nowrap">{formatCurrency(item.totalRevenue)}</span>
+                  </div>
+                  <p className="font-medium truncate">{item.patientName}</p>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className={`px-2 py-1 rounded font-medium ${item.patientType === 'Paket' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {item.patientType}
+                    </span>
+                    <span className="text-slate-500 truncate">{item.paymentMethod || '-'}</span>
+                  </div>
+                  {item.packagePrice > 0 && (
+                    <p className="text-xs text-blue-600 font-medium">Harga Paket: {formatCurrency(item.packagePrice)}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="hidden sm:block rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
   <TableRow>
@@ -414,7 +447,7 @@ const realIncome = filteredIncomeData.reduce(
 <TableBody>
   {loading ? (
     <TableRow>
-      <TableCell colSpan={4} className="h-24 text-center">
+      <TableCell colSpan={6} className="h-24 text-center">
         <div className="flex items-center justify-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Memuat data...</span>
@@ -423,7 +456,7 @@ const realIncome = filteredIncomeData.reduce(
     </TableRow>
   ) : filteredIncomeData.length === 0 ? (
     <TableRow>
-      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
         Tidak ada data pendapatan untuk periode ini.
       </TableCell>
     </TableRow>
