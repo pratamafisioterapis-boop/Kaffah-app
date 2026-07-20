@@ -757,19 +757,19 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
       aoa.push([`File asal: ${res.fileName}`]);
       aoa.push([]);
       aoa.push([
-        'No', 'No Reg', 'Nama Pasien', 'Tanggal', 'Desc Transaksi',
-        'Nilai Bill', 'Nilai Inacbg', 'Koef', 'Qty',
-        'Jasa Medis (Tarif)', 'Jasa Medis (Diterima)', 'Total',
+        'Reg No', 'Nama Pasien', 'Tanggal', 'Desc Transaksi',
+        'Nilai Bill', 'Nilai Inacbg', 'Faktor Koef', 'Qty',
+        'Jasa Medis ( Tarif )', 'Jasa Medis ( Diterima )', 'Total',
       ]);
       res.rows.forEach((r) => {
         aoa.push([
-          r.no, r.noReg, r.namaPasien, r.tanggal, r.descTransaksi,
+          r.noReg, r.namaPasien, r.tanggal, r.descTransaksi,
           toNumber(r.nilaiBill), toNumber(r.nilaiInacbg), r.koef, r.qty,
           toNumber(r.jasaMedisTarif), toNumber(r.jasaMedisDiterima), toNumber(r.total),
         ]);
       });
       aoa.push([]);
-      aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', '', '', '', '', '', '', '', '', '', '', toNumber(res.summary.jumlahBersih)]);
+      aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', '', '', '', '', '', '', '', '', '', toNumber(res.summary.jumlahBersih)]);
     }
 
     aoa.push([]);
