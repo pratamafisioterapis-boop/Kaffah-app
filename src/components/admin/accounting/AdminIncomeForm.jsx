@@ -70,7 +70,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
       if (error) throw error;
       if (data) {
         const mappedSubcats = data
-          .filter(sub => sub.subcategory_name) // Filter out empty names
+          .filter(sub => sub.subcategory_name && sub.parent_category?.type === 'income') // Only income categories
           .map(sub => ({
             label: sub.subcategory_name,
             value: sub.subcategory_name,
