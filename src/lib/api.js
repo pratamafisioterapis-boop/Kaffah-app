@@ -3776,15 +3776,15 @@ export const deleteMediaAssetDrive = async (assetId) => {
   }, 'deleteMediaAssetDrive');
 };
 
-// Owner: set which physiotherapists can see a media asset in Sharing Media.
-// NULL = visible to all; array of physiotherapist UUIDs = restricted access.
-export const updateMediaAssetAccess = async (assetId, therapistIds) => {
+// Owner: set which physiotherapists are BLOCKED from seeing a media asset in Sharing Media.
+// NULL/empty = visible to all; array of physiotherapist UUIDs = hidden from those therapists.
+export const updateMediaAssetAccess = async (assetId, blockedTherapistIds) => {
   return safeQuery(async () => {
     const clinicId = await getCurrentClinicId();
     if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
     const { data, error } = await supabase
       .from('media_assets')
-      .update({ allowed_therapist_ids: therapistIds?.length ? therapistIds : null })
+      .update({ blocked_therapist_ids: blockedTherapistIds?.length ? blockedTherapistIds : null })
       .eq('id', assetId)
       .eq('clinic_id', clinicId)
       .select()
