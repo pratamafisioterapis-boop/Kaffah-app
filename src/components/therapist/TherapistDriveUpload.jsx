@@ -136,6 +136,11 @@ const TherapistDriveUpload = () => {
       return;
     }
 
+    if (!label.trim()) {
+      toast({ variant: 'destructive', title: 'Keterangan Wajib Diisi', description: 'Silakan isi keterangan sebagai nama file yang akan diunggah.' });
+      return;
+    }
+
     setUploading(true);
     try {
       const { data, error } = await uploadFileToClinicDrive({ file, label: label.trim() });
@@ -222,15 +227,16 @@ const TherapistDriveUpload = () => {
           )}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-600">Keterangan (opsional)</Label>
+          <Label className="text-xs text-slate-600">Keterangan <span className="text-red-500">*</span></Label>
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Contoh: Foto evaluasi pasien Budi"
+            required
           />
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleUpload} disabled={uploading || !file} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleUpload} disabled={uploading || !file || !label.trim()} className="bg-blue-600 hover:bg-blue-700">
             {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
             Upload ke Drive
           </Button>
@@ -258,7 +264,6 @@ const TherapistDriveUpload = () => {
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-700 truncate">{item.file_name}</p>
-                    {item.label && <p className="text-xs text-slate-400 truncate">{item.label}</p>}
                   </div>
                 </div>
                 {item.web_view_link && (

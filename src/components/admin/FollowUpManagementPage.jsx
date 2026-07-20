@@ -5,7 +5,6 @@ import {
   deleteFollowUp
 } from '@/lib/api';
 import { interpolateTemplate } from '@/lib/api';
-import { supabase } from '@/lib/customSupabaseClient';
 import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,9 +16,8 @@ const FollowUpManagementPage = () => {
   const [queueItems, setQueueItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('booking_appointment');
-  const [isBablastEnabled, setIsBablastEnabled] = useState(false);
 
-  const { userDetails, clinicName } = useAuth();
+  const { clinicName } = useAuth();
   const { toast } = useToast();
 
   // ===============================
@@ -41,25 +39,6 @@ const FollowUpManagementPage = () => {
   // ===============================
   useEffect(() => {
     fetchQueue();
-
-    const fetchSettings = async () => {
-
-      // Bablast
-      if (userDetails?.clinic_id) {
-        const { data: waSetting } = await supabase
-          .from('wa_settings')
-          .select('id, enabled')
-          .eq('clinic_id', userDetails.clinic_id)
-          .maybeSingle();
-
-        if (waSetting) {
-          setIsBablastEnabled(waSetting.enabled);
-        }
-      }
-    };
-
-    fetchSettings();
-
   }, [fetchQueue]);
 
   // ===============================
@@ -98,54 +77,6 @@ const FollowUpManagementPage = () => {
       setQueueItems(prev => prev.filter(i => i.id !== id));
     }
   };
-  const handleToggleBablast = async () => {
-
-  if (!userDetails?.clinic_id) return;
-
-  const { data: current } = await supabase
-    .from('wa_settings')
-    .select('id, enabled')
-    .eq('clinic_id', userDetails.clinic_id)
-    .maybeSingle();
-
-  let data, error;
-
-  if (current) {
-    const newValue = !current.enabled;
-    const payload = newValue
-      ? {
-          enabled: true,
-          last_enabled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      : {
-          enabled: false,
-          updated_at: new Date().toISOString()
-        };
-
-    ({ data, error } = await supabase
-      .from('wa_settings')
-      .update(payload)
-      .eq('id', current.id)
-      .select()
-      .single());
-  } else {
-    ({ data, error } = await supabase
-      .from('wa_settings')
-      .insert({
-        clinic_id: userDetails.clinic_id,
-        enabled: true,
-        last_enabled_at: new Date().toISOString()
-      })
-      .select()
-      .single());
-  }
-
-  if (!error && data) {
-    setIsBablastEnabled(data.enabled);
-  }
-};
-
   // ===============================
   // Filter
   // ===============================
@@ -219,24 +150,6 @@ const isPWA =
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Follow Up Management</h2>
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola antrian pesan WhatsApp otomatis</p>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`${isPWA ? 'text-xs' : 'text-sm'} font-medium text-white`}>
-            Bablast
-          </span>
-
-          <button
-            onClick={handleToggleBablast}
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
-              isBablastEnabled ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
-                isBablastEnabled ? 'translate-x-7' : 'translate-x-1'
-              }`}
-            />
-          </button>
         </div>
       </div>
     </div>
