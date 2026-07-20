@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { FileBarChart2, Users, ClipboardCheck, ClipboardX, Loader2, ChevronDown, ChevronUp, X, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { createMedicalRecord } from '@/lib/api';
+import { createMedicalRecord, getTherapistSoapLockStatus } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -179,6 +179,14 @@ const handleOpenSoapModal = () => {
     }
     setSavingSOAP(true);
     try {
+      // Ambil status kunci SEBELUM simpan, supaya bisa dibandingkan setelah
+      // simpan untuk mendeteksi SOAP yang jadi ambang pembuka jadwal.
+      let wasLocked = false;
+      if (therapistId) {
+        const { data: lockStatus } = await getTherapistSoapLockStatus(therapistId);
+        wasLocked = !!lockStatus?.locked;
+      }
+
       const payload = {
         patient_id: selectedRecap.patient_id,
         daily_recap_id: selectedRecap.id,
@@ -193,6 +201,21 @@ const handleOpenSoapModal = () => {
       if (error) throw new Error(error.message);
 
       toast({ title: 'SOAP Tersimpan!', description: `SOAP untuk ${selectedRecap.patient_name} berhasil disimpan.` });
+
+      // SOAP ini yang membuat jumlah SOAP belum diisi turun di bawah ambang
+      // batas -> jadwal baru saja terbuka kembali. Beri tahu terapis
+      // langsung supaya tidak menunda-nunda mengisi SOAP yang tersisa.
+      if (wasLocked && therapistId) {
+        const { data: lockStatusAfter } = await getTherapistSoapLockStatus(therapistId);
+        if (!lockStatusAfter?.locked) {
+          toast({
+            title: '🔓 Jadwal Anda Telah Dibuka!',
+            description: 'Kerja bagus! SOAP ini melengkapi kekurangan Anda dan jadwal booking Anda kini terbuka kembali. Yuk langsung lengkapi SOAP lain yang masih tersisa, jangan ditunda-tunda.',
+            className: 'bg-green-50 border-green-200 text-green-800',
+            duration: 8000,
+          });
+        }
+      }
 
       // Update state: hapus dari daftar unfilled
       const updatedUnfilled = unfilledRecaps.filter(r => r.id !== selectedRecap.id);
