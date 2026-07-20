@@ -159,6 +159,7 @@ export const useMediaAssets = () => {
 
   return {
     assets,
+    setAssets,
     loading,
     fetchAssets,
     uploadAsset,

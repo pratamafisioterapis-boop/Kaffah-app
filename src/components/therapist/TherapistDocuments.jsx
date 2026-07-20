@@ -26,7 +26,7 @@ const TherapistDocuments = ({ therapist }) => {
             <TherapistDriveUpload />
           </TabsContent>
           <TabsContent value="sharing_media">
-            <TherapistSharedMedia />
+            <TherapistSharedMedia therapist={therapist} />
           </TabsContent>
           <TabsContent value="payroll">
             <TherapistPayrollList therapist={therapist} />

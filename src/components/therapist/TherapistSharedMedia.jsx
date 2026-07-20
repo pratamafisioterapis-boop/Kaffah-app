@@ -1,17 +1,58 @@
-import React, { useEffect } from 'react';
-import { Download, Image as ImageIcon, Calendar } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useMediaAssets } from '@/lib/hooks/useMediaAssets';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-const TherapistSharedMedia = () => {
-  const { assets, fetchAssets, loading } = useMediaAssets();
+const TherapistSharedMedia = ({ therapist }) => {
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAssets();
-  }, []);
+    fetchSharedMedia();
+  }, [therapist?.id]);
+
+  const fetchSharedMedia = async () => {
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) return;
+
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('clinic_id')
+        .eq('id', userId)
+        .single();
+
+      if (!userRow?.clinic_id) return;
+
+      let query = supabase
+        .from('media_assets')
+        .select('*')
+        .eq('clinic_id', userRow.clinic_id)
+        .order('created_at', { ascending: false });
+
+      // Filter by access: show if allowed_therapist_ids is null OR contains this therapist's id
+      if (therapist?.id) {
+        query = query.or(
+          `allowed_therapist_ids.is.null,allowed_therapist_ids.cs.{${therapist.id}}`
+        );
+      } else {
+        query = query.is('allowed_therapist_ids', null);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setAssets(data || []);
+    } catch (err) {
+      console.error('fetchSharedMedia error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -25,7 +66,7 @@ const TherapistSharedMedia = () => {
         </p>
       </div>
 
-      {loading && assets.length === 0 ? (
+      {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
         </div>
@@ -36,7 +77,7 @@ const TherapistSharedMedia = () => {
           </div>
           <h3 className="text-lg font-medium text-slate-900">Belum ada media dibagikan</h3>
           <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">
-            Owner belum membagikan media apa pun untuk klinik ini.
+            Owner belum membagikan media apa pun untuk Anda.
           </p>
         </div>
       ) : (

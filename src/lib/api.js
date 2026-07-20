@@ -3730,8 +3730,9 @@ export const getClinicDriveUploads = async (limit = 100) => {
 // (harus lewat server karena butuh refresh token akun Google Owner).
 export const deleteDriveUpload = async (uploadId) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.functions.invoke(`therapist-drive-upload?action=delete&id=${uploadId}`, {
+    const { data, error } = await supabase.functions.invoke('therapist-drive-upload', {
       method: 'DELETE',
+      body: { action: 'delete', id: uploadId },
     });
     if (error) return { error };
     if (data?.error) return { error: { message: data.error } };
@@ -3761,13 +3762,32 @@ export const uploadMediaAssetToDrive = async (file, category) => {
 // Owner/Admin: hapus aset Media yang tersimpan di Google Drive (beserta file-nya).
 export const deleteMediaAssetDrive = async (assetId) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.functions.invoke(`clinic-media-drive-upload?action=delete&id=${assetId}`, {
+    const { data, error } = await supabase.functions.invoke('clinic-media-drive-upload', {
       method: 'DELETE',
+      body: { action: 'delete', id: assetId },
     });
     if (error) return { error };
     if (data?.error) return { error: { message: data.error } };
     return { data, success: true, error: null };
   }, 'deleteMediaAssetDrive');
+};
+
+// Owner: set which physiotherapists can see a media asset in Sharing Media.
+// NULL = visible to all; array of physiotherapist UUIDs = restricted access.
+export const updateMediaAssetAccess = async (assetId, therapistIds) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+    const { data, error } = await supabase
+      .from('media_assets')
+      .update({ allowed_therapist_ids: therapistIds?.length ? therapistIds : null })
+      .eq('id', assetId)
+      .eq('clinic_id', clinicId)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateMediaAssetAccess');
 };
 
 // ============================================
@@ -3827,7 +3847,7 @@ export const upsertPayrollRecord = async (payload) => {
       incentive_amount: parseFloat(payload.incentive_amount) || 0,
       custom_commission: parseFloat(payload.custom_commission) || 0,
       total_salary: parseFloat(payload.total_salary) || 0,
-      status: payload.status || 'issued',
+      status: payload.status || 'draft',
     };
 
     let result;
