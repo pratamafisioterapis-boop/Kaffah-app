@@ -213,9 +213,8 @@ const fetchData = async () => {
         </div>
       )}
 
-      {/* CARD LAYOUT PWA */}
-      {isPWA ? (
-        <div className="space-y-3">
+      {/* CARD LAYOUT (mobile/narrow) */}
+      <div className="sm:hidden space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
@@ -272,9 +271,9 @@ const fetchData = async () => {
             })
           )}
         </div>
-      ) : (
-      /* TABLE DESKTOP */
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+
+      {/* TABLE LAYOUT (desktop/wide) */}
+      <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-50 text-base">
             <TableRow>
@@ -341,7 +340,6 @@ const fetchData = async () => {
           </TableBody>
         </Table>
       </div>
-      )}
 
       <DeletePackageConfirmationModal
         isOpen={deleteModalOpen}

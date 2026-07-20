@@ -769,9 +769,9 @@ const end = formatLocal(lastDay);
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {isPWA ? (
-          // ── CARD LAYOUT PWA ──
-          <div className="divide-y divide-slate-100">
+        <>
+          {/* ── CARD LAYOUT (mobile/narrow) ── */}
+          <div className="sm:hidden divide-y divide-slate-100">
             {loadingRecaps ? (
               <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-blue-500"/></div>
             ) : recaps.length === 0 ? (
@@ -847,8 +847,8 @@ const end = formatLocal(lastDay);
               );
             })}
           </div>
-        ) : (
-        <div className="overflow-x-hidden">
+          {/* ── TABLE LAYOUT (desktop/wide) ── */}
+          <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-xs text-left table-fixed">
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
@@ -991,8 +991,9 @@ const end = formatLocal(lastDay);
                })}
             </tbody>
           </table>
-        </div>
-        )} {/* ── end isPWA ── */}
+          </div>
+        </>
+        {/* ── end responsive card/table split ── */}
         <div className="p-4 border-t border-slate-100 flex justify-between items-center bg-white text-xs text-slate-500">
           <span>Hal {currentPage} dari {totalPages} ({totalRecords} data)</span>
           <div className="flex gap-1">

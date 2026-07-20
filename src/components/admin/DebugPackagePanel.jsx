@@ -275,7 +275,7 @@ const DebugPackagePanel = () => {
                             <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <Package className="w-4 h-4" /> Package History
                             </h4>
-                            <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+                            <div className="bg-white rounded-md border border-slate-200 overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-slate-50">
@@ -331,7 +331,7 @@ const DebugPackagePanel = () => {
                             <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <FileText className="w-4 h-4" /> Related Daily Recaps
                             </h4>
-                            <div className="bg-white rounded-md border border-slate-200 overflow-hidden max-h-[300px] overflow-y-auto">
+                            <div className="bg-white rounded-md border border-slate-200 max-h-[300px] overflow-auto">
                                 <Table>
                                     <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
                                         <TableRow>

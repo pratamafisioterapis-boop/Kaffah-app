@@ -703,7 +703,72 @@ const OwnerPackageRecap = () => {
                 <p>{error}</p>
             </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="h-48 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+            ) : filteredHistory.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-slate-500">
+                <PackageIcon className="w-12 h-12 mb-3 text-slate-300" />
+                <h3 className="text-lg font-medium text-slate-900">Belum ada riwayat paket</h3>
+                <p className="text-sm mt-1">Data paket akan muncul di sini.</p>
+              </div>
+            ) : (
+              paginatedHistory.map((pkg) => {
+                const displayEndDate = pkg.computed_status === 'diperpanjang' && pkg.extended_until
+                  ? pkg.extended_until
+                  : pkg.end_date;
+                const sisaHari = calculateSisaHari(pkg);
+                const sisaHariClass = getSisaHariColor(sisaHari);
+
+                return (
+                  <div key={pkg.id} className="p-4 space-y-2" onClick={() => handleRowClick(pkg)}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate">{pkg.patient_name || 'Nama tidak tersedia'}</p>
+                        <p className="text-xs text-slate-500 font-mono">{pkg.medical_record_number || '-'}</p>
+                        <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                      </div>
+                      <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" onClick={(e) => handleManualStatusUpdate(e, pkg.id)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Hitung Ulang Status" disabled={updatingStatusId === pkg.id}>
+                          <RefreshCw className={`w-4 h-4 text-slate-500 ${updatingStatusId === pkg.id ? 'animate-spin text-blue-600' : ''}`} />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => openSessionModal(e, pkg)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Edit Sesi">
+                          <Calculator className="w-4 h-4 text-slate-500" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => openEditModal(e, pkg)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Edit Status">
+                          <Edit className="w-4 h-4 text-slate-500" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => handleDeleteClick(e, pkg)} className="h-8 w-8 p-0 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-full" title="Hapus Paket">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
+                      <span className="font-mono whitespace-nowrap">{pkg.formatted_start_date}</span>
+                      <span className="font-mono whitespace-nowrap">s/d {displayEndDate ? format(new Date(displayEndDate), 'dd MMM yyyy', { locale: id }) : '-'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="inline-flex items-center bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                        <span className="font-bold text-slate-700 text-xs">{pkg.computed_sessions_used}</span>
+                        <span className="text-slate-400 mx-1 text-xs">/</span>
+                        <span className="text-slate-500 text-xs">{pkg.computed_total_sessions}</span>
+                      </div>
+                      {sisaHari !== null && (
+                        <Badge variant="outline" className={cn("font-medium", sisaHariClass)}>{sisaHari} Hari</Badge>
+                      )}
+                      {getStatusBadge(pkg.computed_status)}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
@@ -832,10 +897,10 @@ const OwnerPackageRecap = () => {
                 )}
               </TableBody>
               </Table>
-              {/* Bottom Pagination Controls */}
-              {filteredHistory.length > 0 && <PaginationControls />}
-
           </div>
+          {/* Bottom Pagination Controls */}
+          {filteredHistory.length > 0 && <PaginationControls />}
+          </>
         )}
       </div>
 
@@ -859,8 +924,8 @@ const OwnerPackageRecap = () => {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4"><Input type="date" value={manualForm.start_date} onChange={(e) => setManualForm({...manualForm, start_date: e.target.value})} className="bg-white border-slate-300" /><Input type="number" placeholder="Hari Berlaku" value={manualForm.validity_days} onChange={(e) => setManualForm({...manualForm, validity_days: e.target.value})} className="bg-white border-slate-300" /></div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Input type="date" value={manualForm.start_date} onChange={(e) => setManualForm({...manualForm, start_date: e.target.value})} className="bg-white border-slate-300" /><Input type="number" placeholder="Hari Berlaku" value={manualForm.validity_days} onChange={(e) => setManualForm({...manualForm, validity_days: e.target.value})} className="bg-white border-slate-300" /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input type="number" placeholder="Used Sessions" value={manualForm.sessions_used} onChange={(e) => setManualForm({...manualForm, sessions_used: e.target.value})} className="bg-white border-slate-300" />
                     <Input type="number" placeholder="Remaining Sessions" value={manualForm.sessions_remaining} onChange={(e) => setManualForm({...manualForm, sessions_remaining: e.target.value})} className="bg-white border-slate-300" />
                 </div>

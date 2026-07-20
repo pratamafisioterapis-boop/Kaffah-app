@@ -342,7 +342,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-amber-700">Pilih transaksi daily recap yang cocok dengan mutasi Rp {Number(row.nominal || row.amount).toLocaleString('id-ID')}:</p>
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-amber-50 border-b text-amber-800 uppercase tracking-wide">
@@ -2526,6 +2526,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                               Tidak ada transaksi debit di daily recap dalam 10 hari sebelum tanggal ini.
                             </div>
                           ) : (
+                            <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="border-b text-xs text-slate-500 uppercase tracking-wide">
@@ -2589,6 +2590,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                 </tr>
                               </tfoot>
                             </table>
+                            </div>
                           )}
                         </div>
                       )}
@@ -2632,7 +2634,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
           {recapAuditResult && (
             <>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Card className="border-slate-200">
                   <CardContent className="pt-4">
                     <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">Total Dicek</p>

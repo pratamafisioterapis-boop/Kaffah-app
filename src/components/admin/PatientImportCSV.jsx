@@ -281,7 +281,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
               <span className="flex items-center text-red-600"><AlertCircle className="w-4 h-4 mr-1"/> {invalidCount} Invalid</span>
             </div>
           </div>
-          <ScrollArea className="h-[300px] w-full">
+          <div className="h-[300px] w-full overflow-auto">
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-100 text-slate-600 font-medium sticky top-0 z-10">
                 <tr>
@@ -321,7 +321,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
                 ))}
               </tbody>
             </table>
-          </ScrollArea>
+          </div>
            {invalidCount > 0 && (
              <div className="p-4 bg-red-50 border-t border-red-100">
                <h4 className="text-xs font-bold text-red-700 mb-2">Error Detil:</h4>

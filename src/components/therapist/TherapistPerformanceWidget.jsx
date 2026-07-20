@@ -148,14 +148,14 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
 
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+      <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
             <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
           </div>
-          <h3 className="text-sm font-bold text-slate-700">Performa Bulan Ini</h3>
+          <h3 className="text-sm font-bold text-slate-700 truncate">Performa Bulan Ini</h3>
         </div>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
           {format(startPeriod, 'dd MMM', { locale: idLocale })} – {format(endPeriod, 'dd MMM yyyy', { locale: idLocale })}
         </span>
       </div>

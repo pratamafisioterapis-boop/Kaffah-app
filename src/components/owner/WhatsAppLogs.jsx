@@ -52,7 +52,35 @@ const WhatsAppLogs = () => {
             </Button>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="sm:hidden divide-y divide-slate-100">
+            {loading ? (
+                <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/></div>
+            ) : logs.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">Belum ada riwayat pesan.</div>
+            ) : (
+                logs.map((log) => (
+                    <div key={log.id} className="p-4 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(log.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                            {getStatusBadge(log.status)}
+                        </div>
+                        <p className="font-medium text-slate-800 truncate">{log.patient?.full_name || 'Unknown'}</p>
+                        <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
+                            <span className="truncate">{log.phone_number}</span>
+                            <span className="uppercase font-medium shrink-0">{log.category.replace('_', ' ')}</span>
+                        </div>
+                        {log.status === 'failed' && (
+                            <div className="flex items-center text-red-500 text-xs gap-1" title={log.error_message}>
+                                <AlertCircle className="w-3 h-3" /> Error
+                            </div>
+                        )}
+                    </div>
+                ))
+            )}
+        </div>
+
+        <div className="hidden sm:block overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>

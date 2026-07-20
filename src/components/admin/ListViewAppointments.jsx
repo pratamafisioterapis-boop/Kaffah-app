@@ -16,10 +16,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const ListViewAppointments = ({ appointments, onEditClick, therapists = [], loading }) => {
   const { role } = useAuth();
-  const isPWA =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [therapistFilter, setTherapistFilter] = useState('all');
@@ -135,9 +131,8 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
          </div>
       </div>
 
-      {/* Table — desktop / browser biasa */}
-      {!isPWA && (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      {/* Table — desktop / wide */}
+      <div className="hidden sm:block bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
          <div className="overflow-x-auto">
             <Table>
                <TableHeader className="bg-slate-50">
@@ -218,11 +213,9 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
             </Table>
          </div>
       </div>
-      )}
 
-      {/* Card List — khusus PWA / mobile */}
-      {isPWA && (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      {/* Card List — mobile/narrow */}
+      <div className="sm:hidden bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
          {loading ? (
             <div className="h-24 flex items-center justify-center text-sm text-slate-500">Loading appointments...</div>
          ) : sortedAppointments.length === 0 ? (
@@ -273,7 +266,6 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
             ))
          )}
       </div>
-      )}
     </div>
   );
 };

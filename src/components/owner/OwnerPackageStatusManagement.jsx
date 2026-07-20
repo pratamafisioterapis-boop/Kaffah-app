@@ -308,8 +308,95 @@ const OwnerPackageStatusManagement = () => {
         </div>
       )}
 
-      {/* Main Table */}
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+      {/* Main List — mobile cards */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <RefreshCw className="w-6 h-6 animate-spin mb-2" />
+            <p>Loading package data...</p>
+          </div>
+        ) : filteredPackages.length === 0 ? (
+          <div className="py-16 text-center text-slate-500 italic bg-white rounded-md border">
+            Tidak ada data paket ditemukan.
+          </div>
+        ) : (
+          filteredPackages.map((pkg) => {
+            const progress = pkg.computed_total_sessions > 0
+              ? (pkg.computed_sessions_used / pkg.computed_total_sessions) * 100
+              : 0;
+            const displayEndDate = pkg.computed_status === 'diperpanjang' && pkg.extended_until
+              ? pkg.extended_until
+              : pkg.end_date;
+
+            return (
+              <div key={pkg.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Checkbox
+                      className="mt-1 shrink-0"
+                      checked={selectedIds.includes(pkg.id)}
+                      onCheckedChange={(checked) => handleSelectOne(pkg.id, checked)}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900 truncate">{pkg.patient?.full_name}</p>
+                      <p className="text-xs text-slate-500 font-mono">{pkg.patient?.rm_number}</p>
+                      <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 shrink-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setDetailModalOpen(true); }}>
+                        <Eye className="mr-2 h-4 w-4" /> Detail
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setEditModalOpen(true); }}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit Status
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600"
+                        onClick={() => handleDelete([pkg.id])}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
+                  <span className="flex items-center gap-1 min-w-0">
+                    <Calendar className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{pkg.formatted_start_date}</span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0 whitespace-nowrap">
+                    <Clock className="w-3 h-3" />
+                    {displayEndDate ? format(new Date(displayEndDate), 'dd MMM yyyy', { locale: id }) : '-'}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-medium">{pkg.computed_sessions_used} / {pkg.computed_total_sessions}</span>
+                    <span className="text-slate-500">{pkg.computed_sessions_remaining} sisa</span>
+                  </div>
+                  <Progress value={progress} className="h-2" indicatorClassName={getProgressColor(progress / 100)} />
+                </div>
+
+                <div className="pt-1">{getStatusBadge(pkg.computed_status, pkg.end_date)}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Main Table — desktop/wide */}
+      <div className="hidden sm:block rounded-md border bg-white shadow-sm overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>

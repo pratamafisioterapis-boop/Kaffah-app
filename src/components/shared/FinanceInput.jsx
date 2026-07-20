@@ -272,7 +272,29 @@ const FinanceInput = ({ role }) => {
               </Button>
             </div>
             
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-3">
+              {expenses.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data.</div>
+              ) : (
+                expenses.map(ex => (
+                  <div key={ex.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(ex.transaction_date), 'dd/MM/yyyy')}</span>
+                      <span className="font-medium text-red-600 shrink-0 whitespace-nowrap">Rp {parseFloat(ex.amount).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{ex.main_category}</p>
+                      <p className="text-xs text-slate-500 truncate">{ex.sub_category}</p>
+                    </div>
+                    {ex.description && <p className="text-sm text-slate-600 truncate">{ex.description}</p>}
+                    <p className="text-xs text-slate-400">{ex.bank_account?.bank_name || 'Cash'}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
@@ -315,7 +337,26 @@ const FinanceInput = ({ role }) => {
               </Button>
             </div>
             
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-3">
+              {incomes.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data.</div>
+              ) : (
+                incomes.map(inc => (
+                  <div key={inc.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(inc.transaction_date), 'dd/MM/yyyy')}</span>
+                      <span className="font-medium text-green-600 shrink-0 whitespace-nowrap">Rp {parseFloat(inc.amount).toLocaleString('id-ID')}</span>
+                    </div>
+                    <p className="font-medium truncate">{inc.source}</p>
+                    {inc.description && <p className="text-sm text-slate-600 truncate">{inc.description}</p>}
+                    <p className="text-xs text-slate-400">{inc.bank_account?.bank_name || 'Cash'}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
@@ -396,7 +437,44 @@ const FinanceInput = ({ role }) => {
                 </Button>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Mobile cards */}
+              <div className="sm:hidden space-y-3">
+                {receivables.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Tidak ada data piutang.</div>
+                ) : (
+                  receivables.map(rec => (
+                    <div key={rec.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{rec.patient?.full_name}</p>
+                          <p className="text-xs text-slate-500 font-mono">{rec.patient?.rm_number}</p>
+                        </div>
+                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                          rec.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                          rec.status === 'Partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {rec.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm gap-2">
+                        <span className="text-slate-500">Total: Rp {parseFloat(rec.total_amount).toLocaleString('id-ID')}</span>
+                        <span className="font-bold text-red-600 whitespace-nowrap">Sisa: Rp {parseFloat(rec.outstanding_amount).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Jatuh tempo: {rec.due_date ? format(new Date(rec.due_date), 'dd/MM/yyyy') : '-'}</span>
+                        {rec.status !== 'Paid' && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUpdateReceivableStatus(rec.id, 'Paid')}>
+                            Tandai Lunas
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-slate-50">
                     <TableRow>
@@ -423,8 +501,8 @@ const FinanceInput = ({ role }) => {
                           <TableCell className="font-bold text-red-600">Rp {parseFloat(rec.outstanding_amount).toLocaleString('id-ID')}</TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                              rec.status === 'Paid' ? 'bg-green-100 text-green-700' : 
-                              rec.status === 'Partial' ? 'bg-yellow-100 text-yellow-700' : 
+                              rec.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                              rec.status === 'Partial' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-red-100 text-red-700'
                             }`}>
                               {rec.status}

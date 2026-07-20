@@ -204,7 +204,7 @@ const OwnerOperationalMetrics = () => {
         </div>
         
         <div className="w-full md:w-auto">
-  <div className="grid grid-cols-2 gap-2">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
     <Input
       type="date"
       value={dateRange.startDate}
