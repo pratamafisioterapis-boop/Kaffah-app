@@ -15,6 +15,7 @@ import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, getTherapistPeriodRange,
 } from '@/lib/utils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
+import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -38,6 +39,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [form, setForm] = useState(emptyForm(therapist));
   const [attendanceDays, setAttendanceDays] = useState(0);
   const [calculatingAuto, setCalculatingAuto] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     if (open && therapist?.id) {
@@ -186,7 +188,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
 
   const handleView = (record) => {
     const doc = generatePayslipPDF(record, therapist, clinic || {});
-    window.open(doc.output('bloburl'), '_blank');
+    setPreviewUrl(URL.createObjectURL(doc.output('blob')));
   };
 
   const handleDownload = (record) => {
@@ -318,6 +320,13 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           <Button variant="outline" onClick={onClose}>Tutup</Button>
         </DialogFooter>
       </DialogContent>
+
+      <PdfPreviewModal
+        open={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        url={previewUrl}
+        title="Preview Slip Gaji"
+      />
     </Dialog>
   );
 };
