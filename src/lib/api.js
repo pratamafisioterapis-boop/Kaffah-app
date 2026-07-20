@@ -1604,18 +1604,19 @@ export const getAccountingSubcategories = async () => {
         *,
         parent_category:accounting_categories (
           id,
-          category_name
+          category_name,
+          type
         )
       `)
       .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: true });
   }, 'getAccountingSubcategories', { retry: true });
 };
-export const createAccountingCategory = async (category_name) => {
+export const createAccountingCategory = async (category_name, type = 'expense') => {
   return safeQuery(async () => {
     return await supabase
       .from('accounting_categories')
-      .insert({ category_name })
+      .insert({ category_name, type })
       .select()
       .single();
   }, 'createAccountingCategory');
@@ -1632,11 +1633,11 @@ export const createAccountingSubcategory = async (subcategory_name, category_id)
       .single();
   }, 'createAccountingSubcategory');
 };
-export const updateAccountingCategory = async (id, category_name) => {
+export const updateAccountingCategory = async (id, category_name, type) => {
   return safeQuery(async () => {
     return await supabase
       .from('accounting_categories')
-      .update({ category_name })
+      .update({ category_name, type })
       .eq('id', id)
       .select()
       .single();

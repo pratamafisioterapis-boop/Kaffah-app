@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,7 +74,8 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
   label: sub.subcategory_name,
   value: sub.id, // ✅ gunakan UUID asli
   description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`,
-  categoryName: sub.parent_category?.category_name
+  categoryName: sub.parent_category?.category_name,
+  categoryType: sub.parent_category?.type
 })));
         }
 
@@ -88,6 +89,13 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
     };
     fetchData();
   }, []);
+
+  const visibleSubcategories = useMemo(() => {
+    const wantedType = type === 'income' ? 'income' : 'expense';
+    return type === 'receivable'
+      ? subcategories
+      : subcategories.filter(sub => sub.categoryType === wantedType);
+  }, [subcategories, type]);
 
   const feePreview = type === 'income'
     ? computeFeePreview(bankFees, formData.bank_account_id, formData.payment_method, formData.amount)
@@ -205,7 +213,7 @@ if (
               Sub Kategori <span className="text-red-400">*</span>
             </label>
             <SearchableSelect
-              options={subcategories}
+              options={visibleSubcategories}
               value={formData.sub_category}
               onChange={handleSubCategoryChange}
               placeholder="Pilih sub kategori..."
