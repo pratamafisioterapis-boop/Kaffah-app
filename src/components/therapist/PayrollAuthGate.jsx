@@ -4,7 +4,7 @@ import { KeyRound, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
 import { sendPayrollAccessCode, verifyPayrollAccessCode } from '@/lib/payrollOtpClient';
 
 const SESSION_TTL_MS = 30 * 60 * 1000; // berlaku 30 menit, disimpan di localStorage supaya tidak hilang saat tab di-reload/background
@@ -74,7 +74,7 @@ const PayrollAuthGate = ({ therapist, children }) => {
   };
 
   const handleVerify = async () => {
-    if (code.length !== 6) return;
+    if (code.length < 6) return;
     setVerifying(true);
     const { error } = await verifyPayrollAccessCode(therapist.email, code);
     setVerifying(false);
@@ -115,19 +115,18 @@ const PayrollAuthGate = ({ therapist, children }) => {
               </Button>
             ) : (
               <div className="space-y-3">
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={code} onChange={setCode}>
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                <Button onClick={handleVerify} disabled={verifying || code.length !== 6} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Masukkan kode dari email"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className="text-center text-lg tracking-[0.3em]"
+                  maxLength={12}
+                  autoFocus
+                />
+                <Button onClick={handleVerify} disabled={verifying || code.length < 6} className="w-full bg-emerald-600 hover:bg-emerald-700">
                   {verifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}
                   Verifikasi
                 </Button>
