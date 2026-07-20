@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { sendPayrollAccessCode, verifyPayrollAccessCode } from '@/lib/payrollOtpClient';
 
-const SESSION_TTL_MS = 30 * 60 * 1000; // berlaku 30 menit per sesi browser
+const SESSION_TTL_MS = 30 * 60 * 1000; // berlaku 30 menit, disimpan di localStorage supaya tidak hilang saat tab di-reload/background
 const RESEND_COOLDOWN_S = 60;
 
 const sessionKey = (therapistId) => `kaffah_payroll_otp_verified_${therapistId}`;
@@ -20,7 +20,7 @@ const maskEmail = (email) => {
 };
 
 const isSessionValid = (therapistId) => {
-  const raw = sessionStorage.getItem(sessionKey(therapistId));
+  const raw = localStorage.getItem(sessionKey(therapistId));
   if (!raw) return false;
   const expiresAt = parseInt(raw, 10);
   return Number.isFinite(expiresAt) && Date.now() < expiresAt;
@@ -85,7 +85,7 @@ const PayrollAuthGate = ({ therapist, children }) => {
       return;
     }
 
-    sessionStorage.setItem(sessionKey(therapist.id), String(Date.now() + SESSION_TTL_MS));
+    localStorage.setItem(sessionKey(therapist.id), String(Date.now() + SESSION_TTL_MS));
     setVerified(true);
     toast({ title: 'Terverifikasi', description: 'Payroll Anda sudah bisa diakses.' });
   };
