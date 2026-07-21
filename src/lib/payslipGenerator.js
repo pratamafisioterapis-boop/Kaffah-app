@@ -14,7 +14,7 @@ const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleS
 
 // payroll_records.status hanya boleh 'draft' | 'approved' | 'paid' (lihat
 // constraint payroll_records_status_check).
-const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Paid' };
 
 const formatPeriodLabel = (start, end) => {
   try {
