@@ -31,7 +31,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Physiotherapist Management', path: '/admin/physiotherapist-management', icon: 'Users' },
   { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
   { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' },
-  { label: 'Accounting', path: '/admin/accounting', icon: 'DollarSign' },
+  { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
   { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
   { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
 ];
