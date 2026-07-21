@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { supabase } from "@/lib/customSupabaseClient";
 
 const dailyQuotes = [
   "🤲 Semoga Allah mudahkan setiap ikhtiar hari ini.",
@@ -51,6 +52,43 @@ export default function SplashScreen({ onDone }) {
   const { userDetails } = useAuth();
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveAvatar = async () => {
+      if (!userDetails) { if (active) setAvatarUrl(null); return; }
+
+      // Custom photo set by the account owner always wins.
+      if (userDetails.avatar_url) {
+        if (active) setAvatarUrl(userDetails.avatar_url);
+        return;
+      }
+
+      // Otherwise fall back to a sensible default per role.
+      if ((userDetails.role === 'owner' || userDetails.role === 'admin') && userDetails.clinic_id) {
+        const { data } = await supabase
+          .from('clinics')
+          .select('logo_url')
+          .eq('id', userDetails.clinic_id)
+          .single();
+        if (active) setAvatarUrl(data?.logo_url || null);
+      } else if (userDetails.role === 'therapist') {
+        const { data } = await supabase
+          .from('physiotherapists')
+          .select('avatar_url')
+          .eq('user_id', userDetails.id)
+          .maybeSingle();
+        if (active) setAvatarUrl(data?.avatar_url || null);
+      } else {
+        if (active) setAvatarUrl(null);
+      }
+    };
+
+    resolveAvatar();
+    return () => { active = false; };
+  }, [userDetails]);
 
   const greeting = getGreeting();
   const quote = getTodayQuote();
@@ -101,7 +139,7 @@ export default function SplashScreen({ onDone }) {
                 />
               </svg>
               <div
-                className="splash-badge absolute inset-[5px] rounded-full flex items-center justify-center"
+                className="splash-badge absolute inset-[5px] rounded-full flex items-center justify-center overflow-hidden"
                 style={{
                   background: 'linear-gradient(145deg,#2a2f4a,#161a2e)',
                   border: '1px solid rgba(212,175,55,.5)',
@@ -111,7 +149,11 @@ export default function SplashScreen({ onDone }) {
                   fontWeight: 700,
                 }}
               >
-                {monogram}
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  monogram
+                )}
               </div>
             </div>
 
