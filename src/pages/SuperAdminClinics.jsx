@@ -91,9 +91,12 @@ const SuperAdminClinics = () => {
     if (error) toast({ variant: 'destructive', title: 'Gagal memuat klinik', description: error.message });
     else setClinics(data || []);
 
-    const { data: ownerRows } = await supabase.from('users').select('id, full_name, phone, clinic_id').eq('role', 'owner');
+    const { data: ownerRows } = await supabase.from('users').select('id, full_name, email, phone, clinic_id').eq('role', 'owner').order('created_at', { ascending: true });
     const ownerMap = {};
-    (ownerRows || []).forEach((o) => { ownerMap[o.clinic_id] = o; });
+    (ownerRows || []).forEach((o) => {
+      if (!ownerMap[o.clinic_id]) ownerMap[o.clinic_id] = [];
+      ownerMap[o.clinic_id].push(o);
+    });
     setOwners(ownerMap);
 
     setLoading(false);
@@ -285,6 +288,7 @@ const SuperAdminClinics = () => {
       } else {
         toast({ title: 'Owner berhasil dibuat', description: `${ownerForm.email} kini owner ${ownerClinic.name}` });
         setOwnerOpen(false);
+        fetchClinics();
       }
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal membuat owner', description: err.message });
@@ -320,9 +324,27 @@ const SuperAdminClinics = () => {
                   <p className="font-semibold text-slate-800 truncate">{clinic.name}</p>
                   <p className="text-sm text-slate-500 truncate">{clinic.address || '-'}</p>
                   <p className="text-sm text-slate-500">{clinic.phone || '-'}</p>
-                  <p className="text-sm text-blue-600 mt-1">
-                    Owner: {owners[clinic.id]?.full_name || <span className="text-slate-400 italic">belum ada</span>}
-                  </p>
+                  <div className="text-sm text-blue-600 mt-1">
+                    {(owners[clinic.id]?.length ?? 0) === 0 ? (
+                      <span className="text-slate-400 italic">Owner: belum ada</span>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {owners[clinic.id].map((o) => (
+                          <div key={o.id} className="flex items-center gap-1.5">
+                            <span>Owner: {o.full_name}</span>
+                            <button
+                              type="button"
+                              onClick={() => openEditOwner(o)}
+                              className="text-slate-400 hover:text-blue-600"
+                              title="Edit owner ini"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span className={`shrink-0 text-xs px-2 py-1 rounded-full ${clinic.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                   {clinic.subscription_status === 'active' ? 'Aktif' : 'Nonaktif'}
@@ -330,15 +352,9 @@ const SuperAdminClinics = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {owners[clinic.id] ? (
-                  <Button size="sm" variant="outline" onClick={() => openEditOwner(owners[clinic.id])}>
-                    <Pencil className="w-4 h-4 mr-1" /> Edit Owner
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" onClick={() => openCreateOwner(clinic)}>
-                    <UserPlus className="w-4 h-4 mr-1" /> Tambah Owner
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" onClick={() => openCreateOwner(clinic)}>
+                  <UserPlus className="w-4 h-4 mr-1" /> Tambah Owner
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => handleToggleActive(clinic)}>
                   {clinic.subscription_status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                 </Button>
