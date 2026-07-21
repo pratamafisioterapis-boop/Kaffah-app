@@ -3851,7 +3851,7 @@ export const upsertPayrollRecord = async (payload) => {
       incentive_amount: parseFloat(payload.incentive_amount) || 0,
       custom_commission: parseFloat(payload.custom_commission) || 0,
       total_salary: parseFloat(payload.total_salary) || 0,
-      status: payload.status || 'approved',
+      status: payload.status || 'paid',
     };
 
     let result;
