@@ -67,6 +67,22 @@ class AuthErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Auth Context Error Boundary Caught:", error, errorInfo);
+
+    // AuthProvider wraps the whole routed app, so it's the boundary that
+    // actually catches stale-chunk errors from lazy-loaded routes/pages
+    // after a new deploy (ErrorBoundary further up never sees them). Reload
+    // once instead of stranding the user on this dead-end screen.
+    const isStaleChunkError = /dynamically imported module|loading chunk .* failed|failed to fetch dynamically/i.test(error?.message || '');
+    if (isStaleChunkError && !sessionStorage.getItem('stale-chunk-reloaded')) {
+      sessionStorage.setItem('stale-chunk-reloaded', '1');
+      sessionStorage.setItem('last-auto-reload-reason', JSON.stringify({
+        type: 'stale-chunk-auth-boundary',
+        message: error?.message || '',
+        at: new Date().toISOString(),
+        path: window.location.pathname,
+      }));
+      window.location.reload();
+    }
   }
 
   render() {
