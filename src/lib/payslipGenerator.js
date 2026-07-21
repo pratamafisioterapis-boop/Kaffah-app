@@ -12,6 +12,10 @@ const MUTED = [120, 124, 134];
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 
+// payroll_records.status hanya boleh 'draft' | 'approved' | 'paid' (lihat
+// constraint payroll_records_status_check).
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+
 const formatPeriodLabel = (start, end) => {
   try {
     const s = format(new Date(start), 'd MMMM yyyy', { locale: idLocale });
@@ -144,7 +148,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(...GOLD);
-  doc.text((record.status || 'issued').toUpperCase(), col3X, y + 14.5);
+  doc.text((STATUS_LABEL[record.status] || STATUS_LABEL.approved).toUpperCase(), col3X, y + 14.5);
 
   // --- Earnings table ---
   y += cardH + 8;
