@@ -3478,10 +3478,15 @@ export const getPatientById = async (id) => {
 export const getPatientByPhone = async (phone) => {
   return safeQuery(async () => {
     if (!phone) return { data: null, error: null };
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('patients')
       .select('id, full_name, phone')
       .eq('phone', phone)
+      .eq('clinic_id', userRow?.clinic_id)
       .limit(1)
       .maybeSingle();
     if (error) return { error };

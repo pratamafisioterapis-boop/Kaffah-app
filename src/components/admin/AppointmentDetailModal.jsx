@@ -343,9 +343,17 @@ const handleConfirmReschedule = async () => {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium flex items-center justify-between">Patient <Lock className="w-3 h-3 text-slate-400" /></label>
-              <div className="opacity-80 pointer-events-none">
-                <SearchableSelect options={patientOptions} value={formData.patient_id} onChange={() => {}} placeholder={appointment?.guest_name ? "Guest" : "Select Patient..."} disabled={true} />
+              <label className="text-sm font-medium flex items-center justify-between">
+                Patient {appointment?.id && <Lock className="w-3 h-3 text-slate-400" />}
+              </label>
+              <div className={cn(appointment?.id && "opacity-80 pointer-events-none")}>
+                <SearchableSelect
+                  options={patientOptions}
+                  value={formData.patient_id}
+                  onChange={(val) => setFormData(prev => ({ ...prev, patient_id: val }))}
+                  placeholder={appointment?.guest_name ? "Guest" : "Select Patient..."}
+                  disabled={!!appointment?.id}
+                />
               </div>
             </div>
 
