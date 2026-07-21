@@ -3893,6 +3893,87 @@ export const deleteMediaAssetDrive = async (assetId) => {
   }, 'deleteMediaAssetDrive');
 };
 
+// ============================================
+// GOOGLE SHEETS BACKUP (Owner-configured, per clinic)
+// Backup data klinik yang rapi & terpilih ke 1 Google Spreadsheet,
+// supaya data tidak hilang meski terjadi masalah pada web.
+// ============================================
+
+export const GOOGLE_SHEETS_DOMAINS = [
+  { key: 'patients', label: 'Data Pasien', description: 'No. RM, nama, kontak, NIK, status pasien.' },
+  { key: 'appointments', label: 'Appointment', description: 'Jadwal kunjungan: pasien, terapis, layanan, status.' },
+  { key: 'daily_recaps', label: 'Daily Recap', description: 'Rekap transaksi harian per kunjungan.' },
+  { key: 'package_tracking', label: 'Package Recap', description: 'Riwayat & sisa sesi paket terapi pasien.' },
+  { key: 'accounting', label: 'Keuangan', description: 'Pemasukan & pengeluaran Owner dan Admin.' },
+  { key: 'medical_records', label: 'Rekam Medis', description: 'Ringkasan SOAP per kunjungan.' },
+  { key: 'soap', label: 'SOAP (Pemeriksaan Fisioterapi)', description: 'Detail pemeriksaan fisioterapi lengkap.' },
+];
+
+export const getGoogleSheetsSettings = async () => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { data: null };
+
+    const { data, error } = await supabase
+      .from('google_sheets_settings')
+      .select('clinic_id, spreadsheet_id, spreadsheet_url, enabled_sheets, auto_sync_enabled, last_synced_at, last_sync_status, last_sync_error, updated_at')
+      .eq('clinic_id', clinicId)
+      .maybeSingle();
+
+    if (error) return { error };
+    return { data: data || null, success: true, error: null };
+  }, 'getGoogleSheetsSettings', { retry: true });
+};
+
+export const updateGoogleSheetsSettings = async ({ enabledSheets, autoSyncEnabled }) => {
+  return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
+    if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const payload = {
+      clinic_id: clinicId,
+      enabled_sheets: enabledSheets,
+      auto_sync_enabled: autoSyncEnabled,
+      updated_by: userId || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('google_sheets_settings')
+      .upsert(payload, { onConflict: 'clinic_id' })
+      .select()
+      .maybeSingle();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateGoogleSheetsSettings');
+};
+
+export const createGoogleSheetsBackup = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('google-sheets-sync', {
+      body: { action: 'create' },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'createGoogleSheetsBackup', { timeout: 120000 });
+};
+
+export const syncGoogleSheetsNow = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('google-sheets-sync', {
+      body: { action: 'sync' },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'syncGoogleSheetsNow', { timeout: 120000 });
+};
+
 // Owner: set which physiotherapists are BLOCKED from seeing a media asset in Sharing Media.
 // NULL/empty = visible to all; array of physiotherapist UUIDs = hidden from those therapists.
 export const updateMediaAssetAccess = async (assetId, blockedTherapistIds) => {
