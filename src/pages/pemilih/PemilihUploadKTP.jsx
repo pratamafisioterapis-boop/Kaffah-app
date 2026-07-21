@@ -167,20 +167,14 @@ const PemilihUploadKTP = () => {
     }
     setSaving(true);
     try {
-      let fotoUrl = null;
+      let fotoPath = null;
       if (file) {
         const safeName = (form.nik || form.nama || 'ktp').replace(/[^a-zA-Z0-9-_]/g, '_');
         const ext = file.name.split('.').pop() || 'jpg';
-        const path = `${user.id}/${safeName}_${Date.now()}.${ext}`;
+        fotoPath = `${user.id}/${safeName}_${Date.now()}.${ext}`;
 
-        const { error: upErr } = await supabase.storage.from('pemilih-ktp').upload(path, file);
+        const { error: upErr } = await supabase.storage.from('pemilih-ktp').upload(fotoPath, file);
         if (upErr) throw new Error(`Gagal upload foto KTP: ${upErr.message}`);
-
-        const { data: signed } = await supabase.storage
-          .from('pemilih-ktp')
-          .createSignedUrl(path, 60 * 60 * 24 * 365);
-
-        fotoUrl = signed?.signedUrl || null;
       }
 
       const { error } = await supabase.from('pemilih_data').insert({
@@ -199,7 +193,7 @@ const PemilihUploadKTP = () => {
         status_perkawinan: form.status_perkawinan || null,
         pekerjaan: form.pekerjaan || null,
         kategori_dukungan: form.kategori_dukungan,
-        foto_ktp_url: fotoUrl,
+        foto_ktp_path: fotoPath,
         sumber_data: 'ocr_ktp',
         petugas_input: user.id,
       });
