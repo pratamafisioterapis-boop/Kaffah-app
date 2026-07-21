@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { getDailyRecaps, getMissingRecaps } from '@/lib/api';
+import { getDailyRecaps } from '@/lib/api';
 import { getTherapistPeriodRange, formatTherapistPeriodLabel, cn } from '@/lib/utils';
 import { displayDateID, parseDateFromDisplay } from '@/lib/dateFormatHelpers';
 import { Card } from '@/components/ui/card';
@@ -54,22 +54,6 @@ const getPatientRM = (recap) =>
 
 const getPatientKey = (recap) =>
   recap.actual_patient_id || recap.patient_id || recap.guest_name || recap.id;
-
-// Sesi yang sudah terjadwal/confirmed tapi belum direkap admin lewat "Daily
-// Recap" tetap harus muncul di riwayat, jadi appointment yang belum punya
-// baris daily_recaps disintesis jadi baris "pending" di sini.
-const missingAppointmentToRecord = (appointment) => ({
-  id: `appt-${appointment.id}`,
-  recap_date: (appointment.appointment_date || '').slice(0, 10),
-  patient_id: appointment.patient_id,
-  actual_patient_id: null,
-  patients: appointment.patient || null,
-  actual_patients: null,
-  guest_name: appointment.patient ? null : 'Tanpa Nama',
-  diagnosis: null,
-  patient_type: null,
-  isPendingRecap: true,
-});
 
 const getDiagnosisList = (recap) => {
   if (Array.isArray(recap.diagnosis)) return recap.diagnosis.filter(Boolean);
@@ -154,33 +138,19 @@ const TherapistPatientHistory = ({ therapist }) => {
   const fetchHistory = async (range) => {
     if (!therapist?.id) return;
     setLoading(true);
-    // "Semua" tidak punya batas tanggal konkret; beri rentang lebar supaya
-    // pencarian appointment yang belum direkap tetap bisa jalan.
-    const missingStart = range.start || '2000-01-01';
-    const missingEnd = range.end || formatLocalDate(new Date());
-
-    const [{ data, error }, { data: missingAppointments, error: missingError }] = await Promise.all([
-      getDailyRecaps({
-        therapistId: therapist.id,
-        startDate: range.start || undefined,
-        endDate: range.end || undefined,
-        limit: 'all',
-        sort: { key: 'recap_date', direction: 'desc' },
-      }),
-      getMissingRecaps({
-        therapistId: therapist.id,
-        startDate: missingStart,
-        endDate: missingEnd,
-      }),
-    ]);
+    const { data, error } = await getDailyRecaps({
+      therapistId: therapist.id,
+      startDate: range.start || undefined,
+      endDate: range.end || undefined,
+      limit: 'all',
+      sort: { key: 'recap_date', direction: 'desc' },
+    });
 
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal memuat riwayat', description: error.message });
       setRecords([]);
     } else {
-      if (missingError) console.error('[TherapistPatientHistory] getMissingRecaps error:', missingError);
-      const pendingRecords = (missingAppointments || []).map(missingAppointmentToRecord);
-      setRecords([...(data || []), ...pendingRecords]);
+      setRecords(data || []);
     }
     setLoading(false);
   };

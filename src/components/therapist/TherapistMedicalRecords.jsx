@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getMedicalRecords, getPatients, createBulkMedicalRecords, getMissingRecaps } from '@/lib/api';
+import { getMedicalRecords, getPatients, createBulkMedicalRecords } from '@/lib/api';
 import { getTherapistVisits } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -75,32 +75,13 @@ useEffect(() => {
       console.log("Fetching recaps for therapist:", therapist.id);
       
       const { data: visits, error: visitsError } = await getTherapistVisits(therapist.id);
-
+      
       if (visitsError) throw visitsError;
-
-      // Appointment yang sudah confirmed tapi belum direkap admin lewat
-      // "Daily Recap" tidak punya baris di daily_recaps sama sekali, jadi
-      // getTherapistVisits (yang sumbernya daily_recaps) tidak melihatnya.
-      // Gabungkan di sini supaya pasien tsb tetap tampil (belum ada SOAP).
-      const { data: missingAppointments, error: missingError } = await getMissingRecaps({
-        therapistId: therapist.id,
-        startDate: '2000-01-01',
-        endDate: format(new Date(), 'yyyy-MM-dd'),
-      });
-      if (missingError) console.error('[TherapistMedicalRecords] getMissingRecaps error:', missingError);
-
-      const pendingVisits = (missingAppointments || [])
-        .filter(a => a.patient?.id)
-        .map(a => ({
-          id: `appt-${a.id}`,
-          recap_date: (a.appointment_date || '').slice(0, 10),
-          patient: a.patient,
-        }));
-
+      
       const uniquePatientsMap = new Map();
       const visitsByPatient = {};
-
-      [...visits, ...pendingVisits].forEach(visit => {
+      
+      visits.forEach(visit => {
         if (visit.patient && visit.patient.id) {
           if (!uniquePatientsMap.has(visit.patient.id)) { uniquePatientsMap.set(visit.patient.id, visit.patient); }
           if (!visitsByPatient[visit.patient.id]) { visitsByPatient[visit.patient.id] = []; }
