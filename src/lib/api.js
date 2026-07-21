@@ -2672,11 +2672,67 @@ export const updatePackageTracking = async (id, updates) => {
     return { data, success: true, error: null };
   }, 'updatePackageTracking');
 };
-export const deletePackageTracking = async () => ({ data: true });
-export const deleteDailyRecapsByPackageType = async () => ({ data: true });
-export const updatePackageSessionsUsed = async () => ({ data: {} });
-export const updatePackageTrackingStatus = async () => ({ data: {} });
-export const getAllPackageTrackings = async () => ({ data: [] });
+export const deletePackageTracking = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase
+      .from('package_tracking')
+      .delete()
+      .eq('id', id);
+    if (error) return { error };
+    return { data: true, error: null };
+  }, 'deletePackageTracking');
+};
+export const deleteDailyRecapsByPackageType = async (patientId, packageName) => {
+  return safeQuery(async () => {
+    const { error, count } = await supabase
+      .from('daily_recaps')
+      .delete({ count: 'exact' })
+      .eq('patient_id', patientId)
+      .eq('package_type', packageName);
+    if (error) return { error };
+    return { data: true, count, error: null };
+  }, 'deleteDailyRecapsByPackageType');
+};
+export const updatePackageSessionsUsed = async (id, sessionsUsed, sessionsRemaining) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .update({
+        sessions_used: sessionsUsed,
+        sessions_remaining: sessionsRemaining,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updatePackageSessionsUsed');
+};
+export const updatePackageTrackingStatus = async (id, status, extendedUntil = null) => {
+  return safeQuery(async () => {
+    const updates = { status, updated_at: new Date().toISOString() };
+    if (extendedUntil !== null) updates.extended_until = extendedUntil;
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updatePackageTrackingStatus');
+};
+export const getAllPackageTrackings = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select(`*, patient:patients(id, full_name, medical_record_number, phone)`)
+      .order('created_at', { ascending: false });
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getAllPackageTrackings', { retry: true });
+};
 export const getPackageUsageHistory = async (packageId) => {
   return safeQuery(async () => {
 
@@ -2729,12 +2785,74 @@ export const getPackageUsageHistory = async (packageId) => {
 
   }, 'getPackageUsageHistory', { retry: true });
 };
-export const createPackageTracking = async () => ({ data: {} });
+export const createPackageTracking = async (payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .insert({
+        ...payload,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'createPackageTracking');
+};
 export const recalculateAllPackageUsage = async () => ({ data: true });
-export const updatePackageStatusAutomatically = async () => ({ data: true });
-export const getPackageByPatientAndDate = async () => ({ data: null });
-export const getFirstSessionNominalInPackage = async () => ({ data: 0 });
-export const getPackageSessionCount = async () => ({ data: 0 });
+export const updatePackageStatusAutomatically = async (packageId) => {
+  return safeQuery(async () => {
+    const { error: rpcError } = await supabase.rpc('recalculate_package_sessions', { p_package_id: packageId });
+    if (rpcError) return { error: rpcError };
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select('*')
+      .eq('id', packageId)
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'updatePackageStatusAutomatically');
+};
+export const getPackageByPatientAndDate = async (patientId, date) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select('*')
+      .eq('patient_id', patientId)
+      .eq('status', 'aktif')
+      .gt('sessions_remaining', 0)
+      .lte('start_date', date)
+      .or(`extended_until.gte.${date},and(extended_until.is.null,end_date.gte.${date})`)
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'getPackageByPatientAndDate');
+};
+export const getFirstSessionNominalInPackage = async (packageId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select('nominal, total_sessions')
+      .eq('id', packageId)
+      .single();
+    if (error) return { error };
+    const perSession = data?.total_sessions > 0 ? Math.floor((data.nominal || 0) / data.total_sessions) : 0;
+    return { data: perSession, error: null };
+  }, 'getFirstSessionNominalInPackage');
+};
+export const getPackageSessionCount = async (packageId) => {
+  return safeQuery(async () => {
+    const { count, error } = await supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true })
+      .eq('package_tracking_id', packageId);
+    if (error) return { error };
+    return { data: count || 0, error: null };
+  }, 'getPackageSessionCount');
+};
 export const fetchTotalPackages = async (startDate, endDate) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
