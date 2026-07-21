@@ -1613,20 +1613,29 @@ export const getAccountingSubcategories = async () => {
 };
 export const createAccountingCategory = async (category_name, type = 'expense') => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_categories')
-      .insert({ category_name, type })
+      .insert({ category_name, type, clinic_id: userRow?.clinic_id })
       .select()
       .single();
   }, 'createAccountingCategory');
 };
 export const createAccountingSubcategory = async (subcategory_name, category_id) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_subcategories')
       .insert({
         subcategory_name,
-        category_id
+        category_id,
+        clinic_id: userRow?.clinic_id
       })
       .select()
       .single();
@@ -4338,10 +4347,15 @@ export const deletePatientInfoOption = async (id) => {
 };
 export const createOperationalOption = async (category, label, extra = {}) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const payload = {
       category,
       label,
       is_active: true,
+      clinic_id: userRow?.clinic_id,
       ...extra
     };
     const { data, error } = await supabase

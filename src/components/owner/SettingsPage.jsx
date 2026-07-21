@@ -134,10 +134,14 @@ const DiscountTypeManager = () => {
         // INSERT
         console.log("🔄 Operation: INSERT");
         console.log("📦 Payload:", payload);
-        
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
         const { data, error } = await supabase
           .from('operational_options')
-          .insert(payload)
+          .insert({ ...payload, clinic_id: userRow?.clinic_id })
           .select()
           .single();
 
