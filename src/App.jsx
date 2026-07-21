@@ -97,6 +97,11 @@ class AuthErrorBoundary extends React.Component {
             <p className="text-slate-600 mb-6 text-sm">
               We encountered a problem loading the authentication system. This might be due to a temporary network issue.
             </p>
+            {this.state.error && (
+              <p className="mb-6 text-left text-xs font-mono text-red-700 bg-red-50 border border-red-100 rounded-lg p-3 break-words whitespace-pre-wrap">
+                {this.state.error.message || String(this.state.error)}
+              </p>
+            )}
             <div className="space-y-3">
                <button 
                  onClick={() => window.location.reload()}
