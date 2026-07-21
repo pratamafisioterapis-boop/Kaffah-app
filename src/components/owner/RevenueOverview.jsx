@@ -86,6 +86,11 @@ const RevenueOverview = ({ dateRange }) => {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const clinicId = currentUserRow?.clinic_id;
+
       const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
@@ -94,11 +99,13 @@ const RevenueOverview = ({ dateRange }) => {
         getAdminExpenses(dateRange),
         supabase.from('daily_recaps')
           .select('therapist_name, amount, patient_type, payment_method')
+          .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
           .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, package_tracking!inner(nominal, total_sessions)')
+          .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
@@ -125,7 +132,8 @@ const RevenueOverview = ({ dateRange }) => {
       const { data: paymentMethods } = await supabase
         .from('operational_options')
         .select('id, label')
-        .eq('category', 'payment_method');
+        .eq('category', 'payment_method')
+        .eq('clinic_id', clinicId);
       const pmMap = {};
       (paymentMethods || []).forEach(pm => { pmMap[pm.id] = pm.label; });
       setPaymentMethodMap(pmMap);

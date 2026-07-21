@@ -94,9 +94,14 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       console.log(`Fetching recaps for range: ${fetchStart} to ${fetchEnd}`);
 
       // Fetch langsung dari supabase agar bisa select field spesifik
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
       const { data: recaps, error: recapError } = await supabase
         .from('daily_recaps')
         .select('therapist_id, recap_date, patient_type')
+        .eq('clinic_id', currentUserRow?.clinic_id)
         .gte('recap_date', fetchStart)
         .lte('recap_date', fetchEnd);
 
