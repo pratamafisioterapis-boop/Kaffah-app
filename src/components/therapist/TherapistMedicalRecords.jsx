@@ -98,6 +98,7 @@ useEffect(() => {
       }
       
       const { data: allRecords } = await getMedicalRecords({
+  patientIds: patientList.map(p => p.id),
   limit: 9999
 });
 

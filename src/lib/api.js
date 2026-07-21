@@ -3403,6 +3403,7 @@ export const createMedicalRecord = async (payload) => {
 // 🔹 GET MEDICAL RECORDS
 export const getMedicalRecords = async ({
   patientId = null,
+  patientIds = null,
   therapistId = null,
   startDate = null,
   endDate = null,
@@ -3432,6 +3433,13 @@ export const getMedicalRecords = async ({
     // 🔥 FILTER PASIEN
     if (patientId) {
       query = query.eq('patient_id', patientId);
+    }
+
+    if (patientIds) {
+      if (patientIds.length === 0) {
+        return { data: [], total: 0, success: true, error: null };
+      }
+      query = query.in('patient_id', patientIds);
     }
 
     // 🔥 FILTER TERAPIS

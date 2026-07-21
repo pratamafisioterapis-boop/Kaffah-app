@@ -15,14 +15,14 @@ const TherapistPatients = ({ therapist }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (therapist?.name) {
+    if (therapist?.id) {
       loadPatients();
     }
   }, [therapist]);
 
   const loadPatients = async () => {
     setLoading(true);
-    const { data } = await getTherapistPatientsFromRecaps(therapist.name);
+    const { data } = await getTherapistPatientsFromRecaps(therapist.id);
     // Normalize data immediately
     const normalizedData = (data || []).map(p => normalizePatient(p));
     setPatients(normalizedData);
