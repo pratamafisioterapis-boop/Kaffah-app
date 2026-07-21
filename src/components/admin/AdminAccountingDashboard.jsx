@@ -18,6 +18,7 @@ import AdminIncomeDeleteConfirmationModal from './accounting/AdminIncomeDeleteCo
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => {
+  const { clinicName } = useAuth();
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
@@ -158,7 +159,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
               <Wallet className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
+              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Akuntansi & Keuangan</h2>
               <p className="text-sm text-slate-400 mt-0.5">Kelola arus kas operasional klinik (Admin)</p>
             </div>
