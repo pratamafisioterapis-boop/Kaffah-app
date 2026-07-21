@@ -3053,8 +3053,7 @@ export const getMissingRecaps = async ({
 
         patient:patients(
           id,
-          full_name,
-          medical_record_number
+          full_name
         ),
 
         therapist:physiotherapists(
