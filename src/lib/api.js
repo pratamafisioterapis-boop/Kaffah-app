@@ -2800,7 +2800,6 @@ export const createPackageTracking = async (payload) => {
     return { data, error: null };
   }, 'createPackageTracking');
 };
-export const recalculateAllPackageUsage = async () => ({ data: true });
 export const updatePackageStatusAutomatically = async (packageId) => {
   return safeQuery(async () => {
     const { error: rpcError } = await supabase.rpc('recalculate_package_sessions', { p_package_id: packageId });
