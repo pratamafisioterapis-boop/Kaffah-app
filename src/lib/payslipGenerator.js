@@ -3,12 +3,12 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-const EMERALD = [6, 78, 59];
-const EMERALD_SOFT = [4, 120, 87];
-const GOLD = [191, 155, 78];
-const GOLD_SOFT = [232, 214, 166];
-const INK = [30, 32, 38];
-const MUTED = [120, 124, 134];
+const BRONZE = [156, 122, 60];
+const BRONZE_SOFT = [228, 220, 196];
+const CREAM = [251, 249, 243];
+const INK = [34, 32, 27];
+const MUTED = [163, 156, 134];
+const ROW_LINE = [238, 238, 238];
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 
@@ -28,6 +28,8 @@ const formatPeriodLabel = (start, end) => {
 
 /**
  * Generates a premium, modern slip gaji (payslip) PDF for a physiotherapist.
+ * Ivory Minimal design: warm off-white background, bronze hairline accents,
+ * serif clinic name — no solid color fill blocks.
  * @param {object} record - payroll_records row (base_salary, transport_per_day, incentive_amount, custom_commission, total_salary, payroll_period_start/end, status, salary_scheme)
  * @param {object} therapist - physiotherapist profile (name, specialization)
  * @param {object} clinic - clinic profile (name, address, phone, email)
@@ -39,87 +41,77 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   const pageHeight = doc.internal.pageSize.height;
   const marginX = 16;
 
-  // --- Outer premium border frame ---
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.6);
-  doc.rect(6, 6, pageWidth - 12, pageHeight - 12);
-  doc.setDrawColor(...EMERALD);
-  doc.setLineWidth(0.15);
-  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
-
-  // --- Header band ---
-  const headerHeight = 40;
-  doc.setFillColor(...EMERALD);
-  doc.rect(8, 8, pageWidth - 16, headerHeight, 'F');
-  doc.setFillColor(...EMERALD_SOFT);
-  doc.rect(8, 8 + headerHeight - 1.2, pageWidth - 16, 1.2, 'F');
-  doc.setDrawColor(...GOLD);
+  // --- Outer frame ---
+  doc.setDrawColor(...BRONZE_SOFT);
   doc.setLineWidth(0.4);
-  doc.line(8, 8 + headerHeight, pageWidth - 8, 8 + headerHeight);
+  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
   const clinicName = clinic.name || 'Klinik Fisioterapi';
 
-  doc.setTextColor(...GOLD);
+  // --- Header (no fill, just type + hairline) ---
+  doc.setTextColor(...BRONZE);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.text('S L I P   G A J I', marginX, 20);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(17);
-  doc.setFont('helvetica', 'bold');
-  doc.text(clinicName.toUpperCase(), marginX, 29);
+  doc.setTextColor(...INK);
+  doc.setFontSize(19);
+  doc.setFont('times', 'bold');
+  doc.text(clinicName, marginX, 29);
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(210, 214, 224);
+  doc.setTextColor(...MUTED);
   const contactLine = [clinic.address, clinic.phone].filter(Boolean).join('  •  ');
   if (contactLine) doc.text(contactLine, marginX, 35, { maxWidth: pageWidth - marginX * 2 - 55 });
 
-  // Confidential badge (right side of header)
+  // Confidential badge (outline only, right side of header)
   const badgeW = 42;
-  const badgeX = pageWidth - 8 - badgeW - 4;
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.4);
-  doc.rect(badgeX, 13, badgeW, 8);
+  const badgeX = pageWidth - marginX - badgeW;
+  doc.setDrawColor(...BRONZE);
+  doc.setLineWidth(0.3);
+  doc.rect(badgeX, 13, badgeW, 7);
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...GOLD);
-  doc.text('CONFIDENTIAL', badgeX + badgeW / 2, 18, { align: 'center' });
+  doc.setTextColor(...BRONZE);
+  doc.text('CONFIDENTIAL', badgeX + badgeW / 2, 17.6, { align: 'center' });
 
   const periodLabel = formatPeriodLabel(record.payroll_period_start, record.payroll_period_end);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(210, 214, 224);
-  doc.text('PERIODE', badgeX + badgeW, 25, { align: 'right' });
+  doc.setTextColor(...MUTED);
+  doc.text('PERIODE', pageWidth - marginX, 25, { align: 'right' });
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text(periodLabel, badgeX + badgeW, 30, { align: 'right' });
+  doc.setTextColor(...INK);
+  doc.text(periodLabel, pageWidth - marginX, 30, { align: 'right' });
 
   const docNo = `SG/${(record.id || '').toString().slice(0, 8).toUpperCase() || '00000000'}`;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(210, 214, 224);
-  doc.text('NO. DOKUMEN', badgeX + badgeW, 36, { align: 'right' });
+  doc.setTextColor(...MUTED);
+  doc.text('NO. DOKUMEN', pageWidth - marginX, 36, { align: 'right' });
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text(docNo, badgeX + badgeW, 40, { align: 'right' });
+  doc.setTextColor(...INK);
+  doc.text(docNo, pageWidth - marginX, 40, { align: 'right' });
 
-  // --- Employee info card ---
+  // Header hairline
+  const headerHeight = 40;
+  doc.setDrawColor(...BRONZE);
+  doc.setLineWidth(0.5);
+  doc.line(8, 8 + headerHeight, pageWidth - 8, 8 + headerHeight);
+
+  // --- Employee info card (soft cream fill, thin border) ---
   let y = headerHeight + 8 + 8;
   const cardH = 20;
-  doc.setDrawColor(220, 220, 224);
-  doc.setFillColor(250, 249, 246);
-  doc.roundedRect(marginX, y, pageWidth - marginX * 2, cardH, 2, 2, 'FD');
-  doc.setDrawColor(...GOLD_SOFT);
+  doc.setDrawColor(...BRONZE_SOFT);
   doc.setLineWidth(0.3);
-  doc.line(marginX, y, marginX, y + cardH);
-  doc.setFillColor(...GOLD);
-  doc.rect(marginX, y, 1.2, cardH, 'F');
+  doc.setFillColor(...CREAM);
+  doc.rect(marginX, y, pageWidth - marginX * 2, cardH, 'FD');
 
   const infoLabelStyle = () => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.2);
-    doc.setTextColor(...MUTED);
+    doc.setTextColor(...BRONZE);
   };
   const infoValueStyle = () => {
     doc.setFont('helvetica', 'bold');
@@ -145,10 +137,15 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
 
   infoLabelStyle();
   doc.text('STATUS', col3X, y + 8);
+  const statusLabel = (STATUS_LABEL[record.status] || STATUS_LABEL.paid).toUpperCase();
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.setTextColor(...GOLD);
-  doc.text((STATUS_LABEL[record.status] || STATUS_LABEL.paid).toUpperCase(), col3X, y + 14.5);
+  doc.setFontSize(8.5);
+  const statusW = doc.getTextWidth(statusLabel) + 7;
+  doc.setDrawColor(...BRONZE);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(col3X, y + 10.5, statusW, 6, 3, 3);
+  doc.setTextColor(...BRONZE);
+  doc.text(statusLabel, col3X + statusW / 2, y + 14.5, { align: 'center' });
 
   // --- Earnings table ---
   y += cardH + 8;
@@ -168,49 +165,51 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     theme: 'plain',
     styles: { font: 'helvetica' },
     headStyles: {
-      fillColor: EMERALD,
-      textColor: GOLD,
+      textColor: BRONZE,
       fontSize: 8.5,
       fontStyle: 'bold',
       halign: 'left',
       cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
+      lineWidth: { bottom: 0.5 },
+      lineColor: BRONZE,
     },
     bodyStyles: {
       fontSize: 9.5,
       textColor: INK,
       cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
       valign: 'middle',
+      lineWidth: { bottom: 0.2 },
+      lineColor: ROW_LINE,
     },
-    alternateRowStyles: { fillColor: [250, 249, 246] },
     columnStyles: {
       0: { cellWidth: 14, halign: 'center', textColor: MUTED },
       1: { cellWidth: 'auto', cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 } },
       2: { halign: 'right', cellWidth: 48, fontStyle: 'bold', cellPadding: { top: 3.5, bottom: 3.5, left: 6, right: 6 } },
     },
-    didDrawPage: (data) => {
-      doc.setDrawColor(...GOLD_SOFT);
-      doc.setLineWidth(0.2);
-      doc.line(marginX, data.cursor.y, pageWidth - marginX, data.cursor.y);
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.row.index === rows.length - 1) {
+        data.cell.styles.lineWidth = { bottom: 0.5 };
+        data.cell.styles.lineColor = BRONZE;
+      }
     },
   });
 
-  // --- Total take-home pay ---
+  // --- Total take-home pay (no fill, just rules) ---
   let finalY = doc.lastAutoTable.finalY + 6;
-  const totalBoxH = 16;
-  doc.setFillColor(...EMERALD);
-  doc.rect(marginX, finalY, pageWidth - marginX * 2, totalBoxH, 'F');
-  doc.setDrawColor(...GOLD);
+  const totalBoxH = 14;
+  doc.setDrawColor(...INK);
   doc.setLineWidth(0.5);
-  doc.rect(marginX, finalY, pageWidth - marginX * 2, totalBoxH);
+  doc.line(marginX, finalY, pageWidth - marginX, finalY);
+  doc.line(marginX, finalY + totalBoxH, pageWidth - marginX, finalY + totalBoxH);
 
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...INK);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text('TOTAL TAKE HOME PAY', marginX + 6, finalY + totalBoxH / 2 + 1.5);
+  doc.text('TOTAL TAKE HOME PAY', marginX, finalY + totalBoxH / 2 + 1.5);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13);
-  doc.text(formatCurrency(record.total_salary), pageWidth - marginX - 6, finalY + totalBoxH / 2 + 2, { align: 'right' });
+  doc.setTextColor(...BRONZE);
+  doc.setFontSize(14);
+  doc.text(formatCurrency(record.total_salary), pageWidth - marginX, finalY + totalBoxH / 2 + 2, { align: 'right' });
 
   // --- Signatures ---
   const sigY = finalY + totalBoxH + 26;
@@ -218,21 +217,24 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.setTextColor(...INK);
+  doc.setTextColor(...MUTED);
   doc.text('Mengetahui,', marginX + sigWidth / 2, sigY, { align: 'center' });
   doc.text('Manajemen / Owner', marginX + sigWidth / 2, sigY + 4.5, { align: 'center' });
   doc.setDrawColor(...INK);
   doc.setLineWidth(0.2);
   doc.line(marginX, sigY + 20, marginX + sigWidth, sigY + 20);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...INK);
   doc.text(`( ${clinicName} )`, marginX + sigWidth / 2, sigY + 25, { align: 'center' });
 
   const rightSigX = pageWidth - marginX - sigWidth;
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MUTED);
   doc.text('Diterima oleh,', rightSigX + sigWidth / 2, sigY, { align: 'center' });
   doc.text('Terapis', rightSigX + sigWidth / 2, sigY + 4.5, { align: 'center' });
   doc.line(rightSigX, sigY + 20, rightSigX + sigWidth, sigY + 20);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...INK);
   doc.text(`( ${therapist.name || '-'} )`, rightSigX + sigWidth / 2, sigY + 25, { align: 'center' });
 
   // --- Footer ---
