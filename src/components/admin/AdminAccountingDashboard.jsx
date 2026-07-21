@@ -125,7 +125,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
   const safeExpenses = Array.isArray(reportData?.expenses_breakdown) ? reportData.expenses_breakdown : [];
   const safeIncome = Array.isArray(reportData?.income_breakdown) ? reportData.income_breakdown : [];
 
-  if (loading && !reportData.expenses_breakdown) {
+  if (loading && !initialData) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600" />

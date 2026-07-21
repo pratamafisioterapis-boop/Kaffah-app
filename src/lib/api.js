@@ -1896,6 +1896,9 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
 };
 export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
     let query = supabase
       .from('daily_recaps')
@@ -1918,6 +1921,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
           full_name
         )
       `)
+      .eq('clinic_id', userRow?.clinic_id)
       .or('amount.not.is.null,amount_package.not.is.null')
       .order('recap_date', { ascending: false });
 
