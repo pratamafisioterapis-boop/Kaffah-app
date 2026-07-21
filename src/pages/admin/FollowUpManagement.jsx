@@ -582,14 +582,14 @@ console.log({
     <div className="space-y-6 pb-12 animate-in fade-in duration-500 p-6 max-w-[1600px] mx-auto">
       {/* Hero Banner */}
       <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
-              <MessageCircle className="w-6 h-6 text-white" />
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+              <MessageCircle className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || ''}</p>
+              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight flex items-center gap-2">
                 Follow Up Management
                 <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" title="Live Updates Active" />
