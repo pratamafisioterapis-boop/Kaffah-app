@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { sendPayrollAccessCode, verifyPayrollAccessCode } from '@/lib/payrollOtpClient';
 
-const SESSION_TTL_MS = 30 * 60 * 1000; // berlaku 30 menit, disimpan di localStorage supaya tidak hilang saat tab di-reload/background
+const SESSION_TTL_MS = 5 * 60 * 1000; // berlaku 5 menit, disimpan di localStorage supaya tidak hilang saat tab di-reload/background
 const RESEND_COOLDOWN_S = 60;
 
 const sessionKey = (therapistId) => `kaffah_payroll_otp_verified_${therapistId}`;

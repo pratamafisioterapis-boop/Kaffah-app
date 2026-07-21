@@ -295,9 +295,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 >
                   <div>
                     <p className="text-sm font-medium text-slate-700">
-                      {format(new Date(r.payroll_period_start), 'd MMM', { locale: idLocale })} — {format(new Date(r.payroll_period_end), 'd MMM yyyy', { locale: idLocale })}
+                      {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                     </p>
-                    <p className="text-xs text-slate-500">{formatCurrency(r.total_salary)}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => handleView(r)} title="Lihat">
