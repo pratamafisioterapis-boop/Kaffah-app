@@ -40,7 +40,7 @@ const HeroClock = () => {
   }, []);
   return (
     <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 backdrop-blur-sm px-3 py-2 rounded-xl">
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-300/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span className="text-sm font-bold text-white font-mono tracking-wider">

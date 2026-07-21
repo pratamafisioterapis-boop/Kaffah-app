@@ -384,14 +384,14 @@ const OwnerFinanceDashboard = () => {
 
       {/* Hero Banner */}
       <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center shadow-lg">
-              <Wallet className="w-6 h-6 text-white" />
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+              <Wallet className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-indigo-300 uppercase mb-1">{useAuth().clinicName || ''}</p>
+              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Accounting System</h2>
               <p className="text-sm text-slate-400 mt-0.5">Manage finances, analytics & reporting</p>
             </div>
@@ -399,7 +399,7 @@ const OwnerFinanceDashboard = () => {
           {!isPWA && (
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
-              <span className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
               <input
                 type="date"
                 value={dateRange.startDate}
