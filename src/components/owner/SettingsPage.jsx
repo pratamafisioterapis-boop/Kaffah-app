@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building, HardDrive
+  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building, HardDrive, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -47,6 +47,7 @@ import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager'
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
+import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -941,6 +942,7 @@ const SETTINGS_TAB_GROUPS = [
     items: [
       { value: 'whatsapp_settings', icon: MessageCircle, label: 'WhatsApp' },
       { value: 'google_drive', icon: HardDrive, label: 'Google Drive' },
+      { value: 'google_sheets', icon: FileSpreadsheet, label: 'Backup Google Sheets' },
     ],
   },
   {
@@ -1030,6 +1032,9 @@ const SettingsPage = () => {
           <TabsContent value="google_drive" className="space-y-6">
             <GoogleDriveSettings />
             <TherapistDriveUploadsManager />
+          </TabsContent>
+          <TabsContent value="google_sheets" className="space-y-6">
+            <GoogleSheetsSettings />
           </TabsContent>
           <TabsContent value="accounting_cats">
             <AccountingCategoryManager />
