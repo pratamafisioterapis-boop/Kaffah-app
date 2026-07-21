@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { UploadCloud, Loader2, FileUp, ExternalLink, CheckCircle2, Paperclip, X, Camera, Image as ImageIcon } from 'lucide-react';
 import { uploadFileToClinicDrive, getMyDriveUploads } from '@/lib/api';
 
-const MAX_FILE_SIZE_MB = 100;
+const MAX_FILE_SIZE_MB = 250;
 
 // Simpan file yang baru dipilih ke IndexedDB supaya selamat dari reload
 // halaman (tab Android bisa di-reload OS saat user berada di native
