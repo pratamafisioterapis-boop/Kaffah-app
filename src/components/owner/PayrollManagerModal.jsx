@@ -30,7 +30,7 @@ const emptyForm = (therapist) => ({
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 
-const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Paid' };
 const STATUS_BADGE_CLASS = {
   draft: 'bg-amber-50 text-amber-700 border border-amber-200',
   approved: 'bg-blue-50 text-blue-700 border border-blue-200',

@@ -3,8 +3,8 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-const NAVY = [17, 24, 46];
-const NAVY_SOFT = [30, 41, 71];
+const EMERALD = [6, 78, 59];
+const EMERALD_SOFT = [4, 120, 87];
 const GOLD = [191, 155, 78];
 const GOLD_SOFT = [232, 214, 166];
 const INK = [30, 32, 38];
@@ -14,7 +14,7 @@ const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleS
 
 // payroll_records.status hanya boleh 'draft' | 'approved' | 'paid' (lihat
 // constraint payroll_records_status_check).
-const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Paid' };
 
 const formatPeriodLabel = (start, end) => {
   try {
@@ -43,15 +43,15 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.6);
   doc.rect(6, 6, pageWidth - 12, pageHeight - 12);
-  doc.setDrawColor(...NAVY);
+  doc.setDrawColor(...EMERALD);
   doc.setLineWidth(0.15);
   doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
   // --- Header band ---
   const headerHeight = 40;
-  doc.setFillColor(...NAVY);
+  doc.setFillColor(...EMERALD);
   doc.rect(8, 8, pageWidth - 16, headerHeight, 'F');
-  doc.setFillColor(...NAVY_SOFT);
+  doc.setFillColor(...EMERALD_SOFT);
   doc.rect(8, 8 + headerHeight - 1.2, pageWidth - 16, 1.2, 'F');
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.4);
@@ -168,7 +168,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     theme: 'plain',
     styles: { font: 'helvetica' },
     headStyles: {
-      fillColor: NAVY,
+      fillColor: EMERALD,
       textColor: GOLD,
       fontSize: 8.5,
       fontStyle: 'bold',
@@ -197,7 +197,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   // --- Total take-home pay ---
   let finalY = doc.lastAutoTable.finalY + 6;
   const totalBoxH = 16;
-  doc.setFillColor(...NAVY);
+  doc.setFillColor(...EMERALD);
   doc.rect(marginX, finalY, pageWidth - marginX * 2, totalBoxH, 'F');
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
