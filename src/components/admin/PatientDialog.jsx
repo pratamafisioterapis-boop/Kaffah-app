@@ -624,6 +624,14 @@ const calculatePackageSessionsFromRecaps = (patientName, packageName, startDate,
     }
     
     const used = dailyRecaps.filter(r => {
+        // FIX: cocokkan lewat package_tracking_id (identitas paket ini persis),
+        // bukan substring nama paket - substring bisa dobel-hitung kalau pasien
+        // beli paket yang sama 2x, atau nama paket saling tumpang tindih
+        // (mis. "Paket 5" vs "Paket 50 Sesi"). Fallback ke pola lama hanya untuk
+        // recap lawas yang belum punya package_tracking_id.
+        if (pkg.id && r.package_tracking_id) {
+            return r.package_tracking_id === pkg.id;
+        }
         const recapDate = new Date(r.recap_date);
         const start = new Date(startDate);
         const isAfterStart = recapDate >= start;

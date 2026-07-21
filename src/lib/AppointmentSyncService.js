@@ -70,16 +70,19 @@ const AppointmentSyncService = {
           }
 
           // Tanggal baru = hari ini (atau sudah lewat), atau sesi sudah pernah dimulai:
-          // update seperti biasa
-          const timeStr = newDate.toISOString();
+          // update recap_date saja. Kalau sesi sudah pernah dimulai/diakhiri lewat
+          // tombol "Mulai Sesi"/"Akhiri Sesi", JANGAN sentuh start_time/end_time -
+          // itu data manual admin dan tidak boleh direset oleh sync reschedule.
+          const updatePayload = { recap_date: dateStr };
+
+          if (!existingRecap.start_time) {
+            updatePayload.start_time = newDate.toISOString();
+            updatePayload.end_time = null;
+          }
 
           const { error: updateError } = await supabase
             .from('daily_recaps')
-            .update({
-              recap_date: dateStr,
-              start_time: timeStr,
-              end_time: null 
-            })
+            .update(updatePayload)
             .eq('id', existingRecap.id);
 
           if (updateError) throw updateError;
