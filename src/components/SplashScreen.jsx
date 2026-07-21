@@ -130,7 +130,7 @@ export default function SplashScreen({ onDone }) {
         {userDetails && (
           <>
             {/* Monogram badge with drawing ring */}
-            <div className="relative w-[74px] h-[74px] mb-5">
+            <div className="relative w-[128px] h-[128px] mb-6">
               <svg viewBox="0 0 100 100" className="splash-ring absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
                 <circle
                   cx="50" cy="50" r="46"
@@ -139,13 +139,13 @@ export default function SplashScreen({ onDone }) {
                 />
               </svg>
               <div
-                className="splash-badge absolute inset-[5px] rounded-full flex items-center justify-center overflow-hidden"
+                className="splash-badge absolute inset-[7px] rounded-full flex items-center justify-center overflow-hidden"
                 style={{
                   background: 'linear-gradient(145deg,#2a2f4a,#161a2e)',
                   border: '1px solid rgba(212,175,55,.5)',
                   color: '#d4af37',
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '26px',
+                  fontSize: '44px',
                   fontWeight: 700,
                 }}
               >
@@ -157,16 +157,16 @@ export default function SplashScreen({ onDone }) {
               </div>
             </div>
 
-            <p className="splash-anim text-white/50 text-xs font-medium tracking-[2px] uppercase" style={{ '--d': '0.5s' }}>{greeting}</p>
+            <p className="splash-anim text-white/50 text-sm font-medium tracking-[2px] uppercase" style={{ '--d': '0.5s' }}>{greeting}</p>
             <h1
-              className="splash-anim text-white text-3xl font-bold mt-1 leading-tight"
+              className="splash-anim text-white text-5xl font-bold mt-2 leading-tight"
               style={{ '--d': '0.68s', fontFamily: 'Georgia, "Times New Roman", serif' }}
             >
               {name}
             </h1>
             {roleLabel && (
               <span
-                className="splash-anim mt-4 text-[10px] font-bold tracking-[1.2px] px-4 py-1.5 rounded-full uppercase"
+                className="splash-anim mt-5 text-xs font-bold tracking-[1.2px] px-5 py-2 rounded-full uppercase"
                 style={{
                   '--d': '0.86s',
                   border: '1px solid rgba(212,175,55,.5)',
