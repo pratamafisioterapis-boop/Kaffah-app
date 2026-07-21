@@ -201,20 +201,24 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const fileUrl = publicUrlData.publicUrl;
 
     // Simpan URL ke daily_recaps
-    await supabase
+    const { error: saveUrlError } = await supabase
       .from('daily_recaps')
       .update({ invoice_url: fileUrl })
       .eq('id', data.id);
+
+    if (saveUrlError) throw new Error(`Gagal menyimpan invoice_url: ${saveUrlError.message}`);
 
     return fileUrl;
   };
 
   // ── Helper: Simpan Invoice Record ─────────────────────────────────────────
   const saveInvoiceRecord = async (invoiceNumber) => {
-    await supabase
+    const { error: saveReceiptError } = await supabase
       .from('daily_recaps')
       .update({ receipt_number: invoiceNumber })
       .eq('id', data.id);
+
+    if (saveReceiptError) throw new Error(`Gagal menyimpan receipt_number: ${saveReceiptError.message}`);
 
     const { data: existing } = await supabase
       .from('invoice_records')

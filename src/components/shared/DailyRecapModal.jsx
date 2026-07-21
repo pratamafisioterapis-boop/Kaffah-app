@@ -775,8 +775,9 @@ setFormData({
             const { data: pkg } = await getPatientActivePackage(patientId);
             
             if (pkg) {
-                // Determine expired status locally
-                const today = new Date().toISOString().split('T')[0];
+                // Determine expired status locally (pakai tanggal kalender WITA,
+                // bukan UTC mentah - supaya konsisten dgn filter tanggal lain)
+                const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
                 const endDate = pkg.extended_until || pkg.end_date;
                 const isActuallyExpired = pkg.status === 'expired' || (endDate && endDate < today && pkg.sessions_used < pkg.total_sessions);
 
@@ -946,9 +947,14 @@ setFormData({
                 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
-                // FIX: kirim package_tracking_id eksplisit agar link ke instance paket
-                // tidak pernah "menghilang" tanpa disengaja saat recap diedit
-                package_tracking_id: selectedPackage?.id || null
+                // FIX: saat edit, pertahankan package_tracking_id ASLI recap ini
+                // (initialData) - jangan pakai selectedPackage, karena itu adalah
+                // paket AKTIF pasien SAAT INI dan bisa berbeda dari paket yang
+                // sebenarnya dipakai waktu recap ini dibuat. Kalau di-mismatch,
+                // hitungan sesi paket lama & baru jadi rusak.
+                package_tracking_id: mode === 'edit'
+                    ? (initialData?.package_tracking_id ?? null)
+                    : (selectedPackage?.id ?? null)
             };
 
             let result;

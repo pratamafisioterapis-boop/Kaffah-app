@@ -553,19 +553,21 @@ const getPremiumPastelBadge = (text) => {
                   onClick={() => {
   const now = new Date();
 
-  // 🔥 pakai waktu lokal langsung (jangan shift lagi)
-  const base = new Date(now);
+  // 🔥 shift ke WITA (+8) dulu, baru pakai getter UTC - biar hasilnya
+  // konsisten & tidak tergantung timezone perangkat admin (sama seperti
+  // filter "Hari Ini"/"Bulan Ini")
+  const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
-  const day = base.getDay(); // 0 (Minggu) - 6 (Sabtu)
+  const day = base.getUTCDay(); // 0 (Minggu) - 6 (Sabtu)
 
   // 🔥 hitung offset ke Senin (ISO)
   const diffToMonday = (day + 6) % 7;
 
   const monday = new Date(base);
-  monday.setDate(base.getDate() - diffToMonday);
+  monday.setUTCDate(base.getUTCDate() - diffToMonday);
 
   const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
 
   const start = monday.toISOString().split('T')[0];
   const end = sunday.toISOString().split('T')[0];
