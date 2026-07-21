@@ -148,7 +148,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(...GOLD);
-  doc.text((STATUS_LABEL[record.status] || STATUS_LABEL.approved).toUpperCase(), col3X, y + 14.5);
+  doc.text((STATUS_LABEL[record.status] || STATUS_LABEL.paid).toUpperCase(), col3X, y + 14.5);
 
   // --- Earnings table ---
   y += cardH + 8;
