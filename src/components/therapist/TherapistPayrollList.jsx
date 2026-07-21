@@ -8,8 +8,6 @@ import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
-
 const TherapistPayrollList = ({ therapist }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,9 +71,8 @@ const TherapistPayrollList = ({ therapist }) => {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-700">
-                    {format(new Date(r.payroll_period_start), 'd MMM', { locale: idLocale })} — {format(new Date(r.payroll_period_end), 'd MMM yyyy', { locale: idLocale })}
+                    {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                   </p>
-                  <p className="text-xs text-slate-500">{formatCurrency(r.total_salary)}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => handleView(r)}>

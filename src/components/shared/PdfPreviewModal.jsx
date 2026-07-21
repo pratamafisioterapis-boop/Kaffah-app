@@ -38,15 +38,21 @@ const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen' }) => {
           const scale = containerWidth / baseViewport.width;
           const viewport = page.getViewport({ scale });
 
+          // Render at devicePixelRatio so text stays crisp on high-DPI phone
+          // screens instead of looking blurry/pixelated at CSS resolution.
+          const outputScale = window.devicePixelRatio || 1;
           const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = `${viewport.width}px`;
+          canvas.style.height = `${viewport.height}px`;
           canvas.className = 'shadow-sm mx-auto block';
           canvas.style.marginBottom = '12px';
           containerRef.current.appendChild(canvas);
 
           const ctx = canvas.getContext('2d');
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : undefined;
+          await page.render({ canvasContext: ctx, viewport, transform }).promise;
         }
       } catch (err) {
         if (!cancelled) setError(err?.message || 'Gagal memuat pratinjau PDF.');
