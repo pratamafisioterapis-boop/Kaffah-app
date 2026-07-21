@@ -536,7 +536,12 @@ diagnosis_labels: selectedDiagnosisLabels,
 service_type: selectedServiceLabel,
 patient_type: selectedPatientTypeLabel,
 
-package_tracking_id: null,
+// FIX: jangan hardcode null saat edit — itu memutus link paket yang sudah
+// tersimpan (sesi jadi tidak terhitung & muncul lagi di tanggal yang salah).
+// Edit: pertahankan link lama. Add: pakai paket aktif pasien kalau ada.
+package_tracking_id: mode === 'edit'
+  ? (initialData?.package_tracking_id ?? null)
+  : (activePackage?.id ?? null),
 
 
 package_type: selectedPackage.label,
