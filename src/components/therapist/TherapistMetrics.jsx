@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -87,12 +87,14 @@ const [
   recapsRes,
   activeTargetRes,
   unfilledRes,
-  patientTypeRes
+  patientTypeRes,
+  todayAppointmentsRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
   getUnfilledSOAPVisits(null, therapist.id, startCustom, endCustom),
-  getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom })
+  getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom }),
+  getAppointments({ date: todayISO, therapistId: therapist.id })
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -112,7 +114,8 @@ const rawMonthlyRecaps = recapsRes.data || [];
 
       const unfilledCount = Number(unfilledRes?.count ?? 0);
       const allPatientsCount = periodRecaps.length;
-      const todayRecaps = rawMonthlyRecaps.filter(r => r.recap_date === todayISO);
+      const todayAppointmentsCount = (todayAppointmentsRes?.data || [])
+        .filter(a => a.status !== 'cancelled').length;
 
       // Gunakan hasil targetProgressRes yang sudah di-fetch sebelumnya (tidak fetch ulang)
       let targetInfo = {
@@ -137,7 +140,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
       }
       setMetrics({
         totalPatients: allPatientsCount,
-        todayAppointments: todayRecaps.length,
+        todayAppointments: todayAppointmentsCount,
         monthlyVisitsTotal: rawMonthlyRecaps.length, 
         monthlyVisitsCalculated: targetInfo.monthlyVisitsCalculated,
         targetVisits: targetInfo.targetVisits,
