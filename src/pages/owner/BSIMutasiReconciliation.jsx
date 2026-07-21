@@ -408,7 +408,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
 
 // --- DebitSettlementDetail ---------------------------------------------------
 
-const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih }) => {
+const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih, clinicId }) => {
   const [patients, setPatients] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
 
@@ -421,7 +421,8 @@ const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih }) => {
         .select('daily_recap_id')
         .eq('source_type', 'debit_settlement')
         .eq('debit_settlement_id', settlement.id)
-        .eq('is_checked', true);
+        .eq('is_checked', true)
+        .eq('clinic_id', clinicId);
       const recapIds = (checks || []).map(c => c.daily_recap_id).filter(Boolean);
       if (!recapIds.length) {
         if (!cancelled) { setPatients([]); setLoading(false); }
@@ -430,11 +431,12 @@ const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih }) => {
       const { data: recaps } = await supabase
         .from('daily_recaps')
         .select('id, recap_date, amount, patient_id, actual_patient_id, full_name, guest_name')
-        .in('id', recapIds);
+        .in('id', recapIds)
+        .eq('clinic_id', clinicId);
       const allIds = (recaps || []).flatMap(r => [r.patient_id, r.actual_patient_id]).filter(Boolean);
       let patientMap = {};
       if (allIds.length) {
-        const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+        const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]).eq('clinic_id', clinicId);
         (pts || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
       const enriched = (recaps || []).map(r => ({
@@ -444,7 +446,7 @@ const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih }) => {
       if (!cancelled) { setPatients(enriched); setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [settlement.id]);
+  }, [settlement.id, clinicId]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -567,7 +569,8 @@ const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
 
 const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
+  const clinicId = userDetails?.clinic_id || null;
 
   // Upload states
   const [csvRows, setCsvRows] = useState([]);
@@ -615,6 +618,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         supabase
           .from('daily_recaps')
           .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+          .eq('clinic_id', clinicId)
           .gte('recap_date', minDate)
           .lte('recap_date', maxDate)
           .not('amount', 'is', null)
@@ -623,6 +627,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         supabase
           .from('admin_income')
           .select('id, date, amount, category, sub_category, description')
+          .eq('clinic_id', clinicId)
           .gte('date', minDate)
           .lte('date', maxDate)
           .gt('amount', 0)
@@ -632,14 +637,15 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const allIds = (recaps || []).flatMap(r => [r.patient_id, r.actual_patient_id]).filter(Boolean);
       let patientMap = {};
       if (allIds.length > 0) {
-        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]).eq('clinic_id', clinicId);
         (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
 
       const { data: paymentMethodOpts } = await supabase
         .from('operational_options')
         .select('id, label')
-        .eq('category', 'payment_method');
+        .eq('category', 'payment_method')
+        .eq('clinic_id', clinicId);
       const pmMap = {};
       (paymentMethodOpts || []).forEach(pm => { pmMap[pm.id] = pm.label; });
       const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -669,6 +675,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: allQrisTx } = await supabase
         .from('bsi_mutasi_transactions')
         .select('id, tgl_transaksi, nominal, tipe')
+        .eq('clinic_id', clinicId)
         .eq('tipe', 'qris')
         .gte('tgl_transaksi', minDate)
         .lte('tgl_transaksi', maxDate);
@@ -699,6 +706,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           .from('bsi_reconciliation_checks')
           .select('*')
           .eq('source_type', 'mutasi_csv')
+          .eq('clinic_id', clinicId)
           .in('daily_recap_id', recapIds);
         (checks1 || []).forEach(c => { checkMap[c.daily_recap_id] = c; });
       }
@@ -707,6 +715,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           .from('bsi_reconciliation_checks')
           .select('*')
           .eq('source_type', 'mutasi_csv')
+          .eq('clinic_id', clinicId)
           .in('admin_income_id', adminIncomeIds);
         (checks2 || []).forEach(c => { checkMap[c.admin_income_id] = c; });
       }
@@ -716,7 +725,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     } finally {
       setLoadingAllRecaps(false);
     }
-  }, [savedTransactions, csvRows, toast]);
+  }, [savedTransactions, csvRows, toast, clinicId]);
 
   const handleMutasiCheck = useCallback(async (recap, isChecked, targetMutasiRow) => {
     // targetMutasiRow = baris mutasi CSV yang sedang dibuka picker-nya
@@ -748,6 +757,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           is_checked: isChecked,
           checked_by: user?.id,
           checked_at: isChecked ? new Date().toISOString() : null,
+          clinic_id: clinicId,
         }).select().single();
       if (data) setMutasiChecks(prev => ({ ...prev, [recap.id]: data }));
     }
@@ -794,7 +804,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         _editMode: false,
       };
     }));
-  }, [mutasiChecks, user]);
+  }, [mutasiChecks, user, clinicId]);
 
   const [debitEntries, setDebitEntries] = useState([]);
   const [debitParsing, setDebitParsing] = useState(false);
@@ -822,10 +832,12 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const [activeTab, setActiveTab] = useState(readOnly ? 'check' : 'upload');
 
   const loadMonthStatus = useCallback(async () => {
+    if (!clinicId) return;
     // Get all transactions grouped by tahun-bulan
     const { data, error } = await supabase
       .from('bsi_mutasi_transactions')
-      .select('tgl_masuk, bulan, tahun');
+      .select('tgl_masuk, bulan, tahun')
+      .eq('clinic_id', clinicId);
 
     if (error) return;
 
@@ -869,7 +881,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     });
 
     setUploadedMonths(result);
-  }, []);
+  }, [clinicId]);
 
   // Load month status on mount
   useEffect(() => {
@@ -894,6 +906,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       supabase
         .from('bsi_mutasi_transactions')
         .select('*')
+        .eq('clinic_id', clinicId)
         .eq('tahun', year)
         .eq('bulan', month)
         .order('tgl_masuk')
@@ -901,6 +914,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       supabase
         .from('bsi_mutasi_uploads')
         .select('*')
+        .eq('clinic_id', clinicId)
         .gte('periode_start', `${year}-${String(month).padStart(2, '0')}-01`)
         .lte('periode_end', `${year}-${String(month).padStart(2, '0')}-31`)
         .order('uploaded_at', { ascending: false }),
@@ -947,6 +961,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: existingTx, error: existErr } = await supabase
         .from('bsi_mutasi_transactions')
         .select('tgl_masuk, waktu_transaksi, deskripsi, nominal')
+        .eq('clinic_id', clinicId)
         .gte('tgl_masuk', periodeStart)
         .lte('tgl_masuk', periodeEnd);
 
@@ -978,6 +993,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           jumlah_transaksi: newRows.length,
           uploaded_by: user?.id || null,
           notes: fileName,
+          clinic_id: clinicId,
         })
         .select()
         .single();
@@ -996,6 +1012,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         tipe: r.tipe,
         bulan: r.bulan,
         tahun: r.tahun,
+        clinic_id: clinicId,
       }));
 
       const batchSize = 100;
@@ -1033,12 +1050,12 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     } finally {
       setSaving(false);
     }
-  }, [csvRows, fileName, user, toast]);
+  }, [csvRows, fileName, user, toast, clinicId, loadMonthStatus]);
 
   // Delete upload
   const handleDeleteUpload = async (uploadId) => {
     if (!confirm('Hapus data upload ini beserta semua transaksinya?')) return;
-    const { error } = await supabase.from('bsi_mutasi_uploads').delete().eq('id', uploadId);
+    const { error } = await supabase.from('bsi_mutasi_uploads').delete().eq('id', uploadId).eq('clinic_id', clinicId);
     if (error) { toast({ variant: 'destructive', title: 'Gagal hapus', description: error.message }); return; }
     toast({ title: 'Berhasil dihapus' });
     await loadMonthStatus();
@@ -1069,6 +1086,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: recaps, error } = await supabase
         .from('daily_recaps')
         .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+        .eq('clinic_id', clinicId)
         .gte('recap_date', minDate)
         .lte('recap_date', maxDate)
         .not('amount', 'is', null)
@@ -1082,6 +1100,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: debitSettlements } = await supabase
         .from('bsi_debit_settlements')
         .select('id, report_date, sales_volume, net_amount, mdr_amount, account_name, file_name')
+        .eq('clinic_id', clinicId)
         .gte('report_date', minDate)
         .lte('report_date', maxDate);
       const settlementsByDate = {};
@@ -1095,7 +1114,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       let patientMap = {};
       if (allPatientIds.length > 0) {
         const { data: patients } = await supabase
-          .from('patients').select('id, full_name').in('id', allPatientIds);
+          .from('patients').select('id, full_name').in('id', allPatientIds).eq('clinic_id', clinicId);
         (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
 
@@ -1109,6 +1128,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           .select('mutasi_transaction_id, daily_recap_id, admin_income_id')
           .eq('source_type', 'mutasi_csv')
           .eq('is_checked', true)
+          .eq('clinic_id', clinicId)
           .in('mutasi_transaction_id', txIds);
 
         const recapById = {};
@@ -1120,7 +1140,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           const { data: adminIncomes } = await supabase
             .from('admin_income')
             .select('id, date, amount, category, sub_category, description')
-            .in('id', [...new Set(adminIncomeCheckIds)]);
+            .in('id', [...new Set(adminIncomeCheckIds)])
+            .eq('clinic_id', clinicId);
           (adminIncomes || []).forEach(a => { adminIncomeById[a.id] = a; });
         }
 
@@ -1260,7 +1281,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     } finally {
       setReconciling(false);
     }
-  }, [savedTransactions, csvRows, toast]);
+  }, [savedTransactions, csvRows, toast, clinicId]);
 
   const handleReset = () => {
     setCsvRows([]);
@@ -1278,11 +1299,12 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     const { data } = await supabase
       .from('bsi_debit_settlements')
       .select('*')
+      .eq('clinic_id', clinicId)
       .eq('tahun', year)
       .eq('bulan', month)
       .order('report_date');
     setDebitEntries(data || []);
-  }, [debitFilterMonth]);
+  }, [debitFilterMonth, clinicId]);
 
   // Load debit settlements saat bulan berubah
   useEffect(() => {
@@ -1318,6 +1340,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: allEntries } = await supabase
         .from('bsi_debit_settlements')
         .select('*')
+        .eq('clinic_id', clinicId)
         .order('report_date');
       for (const entry of allEntries || []) {
         if (cancelled) return;
@@ -1331,7 +1354,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clinicId]);
 
   const handleDebitPdfUpload = useCallback(async (e) => {
     const files = Array.from(e.target.files || []);
@@ -1365,6 +1388,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             bulan,
             tahun,
             uploaded_by: user?.id || null,
+            clinic_id: clinicId,
           })
           .select()
           .single();
@@ -1383,11 +1407,11 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       }
     }
     setDebitParsing(false);
-  }, [toast, user]);
+  }, [toast, user, clinicId, loadDebitSettlements]);
 
   const handleRemoveDebitEntry = async (id) => {
     if (!confirm('Hapus data settlement ini?')) return;
-    await supabase.from('bsi_debit_settlements').delete().eq('id', id);
+    await supabase.from('bsi_debit_settlements').delete().eq('id', id).eq('clinic_id', clinicId);
     await loadDebitSettlements();
   };
 
@@ -1407,6 +1431,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     const { data: recaps } = await supabase
       .from('daily_recaps')
       .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+      .eq('clinic_id', clinicId)
       .in('recap_date', validDates)
       .not('amount', 'is', null)
       .gt('amount', 0);
@@ -1419,7 +1444,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     const allIds = debitRecapsOnly.map(r => r.patient_id).concat(debitRecapsOnly.map(r => r.actual_patient_id)).filter(Boolean);
     let patientMap = {};
     if (allIds.length > 0) {
-      const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]);
+      const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', [...new Set(allIds)]).eq('clinic_id', clinicId);
       (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
     }
 
@@ -1436,14 +1461,15 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       .from('bsi_reconciliation_checks')
       .select('*')
       .eq('source_type', 'debit_settlement')
-      .eq('debit_settlement_id', settlement.id);
+      .eq('debit_settlement_id', settlement.id)
+      .eq('clinic_id', clinicId);
     const checkMap = {};
     (checks || []).forEach(c => { checkMap[`${settlement.id}::${c.daily_recap_id}`] = c; });
     setDebitChecks(prev => ({ ...prev, ...checkMap }));
 
     setDebitLoadingRecaps(false);
     return enriched;
-  }, []);
+  }, [clinicId]);
 
   // Status "recap ini sudah dipakai di settlement mana" diambil GLOBAL (semua settlement
   // sekaligus), bukan snapshot per-kartu — supaya kartu yang dibuka duluan tetap otomatis
@@ -1453,7 +1479,8 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       .from('bsi_reconciliation_checks')
       .select('daily_recap_id, debit_settlement_id, bsi_debit_settlements(report_date)')
       .eq('source_type', 'debit_settlement')
-      .eq('is_checked', true);
+      .eq('is_checked', true)
+      .eq('clinic_id', clinicId);
     const usageMap = {};
     (data || []).forEach(c => {
       usageMap[c.daily_recap_id] = {
@@ -1462,7 +1489,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       };
     });
     setDebitRecapUsage(usageMap);
-  }, []);
+  }, [clinicId]);
 
   const handleDebitCheck = useCallback(async (settlement, recap, isChecked) => {
     const key = `${settlement.id}::${recap.id}`;
@@ -1476,6 +1503,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       .eq('source_type', 'debit_settlement')
       .eq('debit_settlement_id', settlement.id)
       .eq('daily_recap_id', recap.id)
+      .eq('clinic_id', clinicId)
       .limit(1);
     const existingCheck = existingRows?.[0] || null;
 
@@ -1499,6 +1527,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         is_checked: isChecked,
         checked_by: user?.id,
         checked_at: isChecked ? new Date().toISOString() : null,
+        clinic_id: clinicId,
       })
       .select().single();
 
@@ -1511,6 +1540,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .eq('source_type', 'debit_settlement')
         .eq('debit_settlement_id', settlement.id)
         .eq('daily_recap_id', recap.id)
+        .eq('clinic_id', clinicId)
         .single();
       if (existing2) {
         const { data: updated } = await supabase
@@ -1526,7 +1556,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
     if (data) setDebitChecks(prev => ({ ...prev, [key]: data }));
     await refreshDebitRecapUsage();
-  }, [user, refreshDebitRecapUsage]);
+  }, [user, refreshDebitRecapUsage, clinicId]);
 
   const runRecapAudit = useCallback(async () => {
     const { start, end } = recapAuditRange;
@@ -1544,6 +1574,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: recaps, error } = await supabase
         .from('daily_recaps')
         .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+        .eq('clinic_id', clinicId)
         .gte('recap_date', start)
         .lte('recap_date', end)
         .not('amount', 'is', null)
@@ -1557,7 +1588,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       ].filter(Boolean))];
       let patientMap = {};
       if (allPatientIds.length) {
-        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', allPatientIds);
+        const { data: patients } = await supabase.from('patients').select('id, full_name').in('id', allPatientIds).eq('clinic_id', clinicId);
         (patients || []).forEach(p => { patientMap[p.id] = p.full_name; });
       }
       const getPatientName = (r) => patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-';
@@ -1581,6 +1612,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .select('daily_recap_id, mutasi_transaction_id')
         .eq('source_type', 'mutasi_csv')
         .eq('is_checked', true)
+        .eq('clinic_id', clinicId)
         .in('daily_recap_id', recapIds);
       const manualMatchedIds = new Set((manualChecks || []).map(c => c.daily_recap_id));
       const manuallyClaimedMutasiIds = new Set((manualChecks || []).map(c => c.mutasi_transaction_id).filter(Boolean));
@@ -1596,6 +1628,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: mutasiRows } = await supabase
         .from('bsi_mutasi_transactions')
         .select('id, tgl_masuk, tgl_transaksi, nominal, tipe')
+        .eq('clinic_id', clinicId)
         .in('tipe', ['qris', 'transfer'])
         .gte('tgl_masuk', start)
         .lte('tgl_masuk', toDateStr(widenedEnd))
@@ -1643,6 +1676,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .select('daily_recap_id')
         .eq('source_type', 'debit_settlement')
         .eq('is_checked', true)
+        .eq('clinic_id', clinicId)
         .in('daily_recap_id', recapIds);
       const debitMatchedIds = new Set((debitChecksData || []).map(c => c.daily_recap_id));
 
@@ -1653,6 +1687,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const { data: allSettlementDates } = await supabase
         .from('bsi_debit_settlements')
         .select('report_date')
+        .eq('clinic_id', clinicId)
         .order('report_date');
       const settlementDatesSorted = (allSettlementDates || []).map(s => s.report_date);
       const hasSettlementCovering = (recapDate) => {
@@ -1725,7 +1760,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     } finally {
       setRecapAuditLoading(false);
     }
-  }, [recapAuditRange, toast]);
+  }, [recapAuditRange, toast, clinicId]);
   const handleAutoMatchDebit = useCallback(async (entry, { silent = false } = {}) => {
     setAutoMatchingId(entry.id);
     try {
@@ -1741,6 +1776,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         .from('bsi_reconciliation_checks')
         .select('id, daily_recap_id, debit_settlement_id, is_checked')
         .eq('source_type', 'debit_settlement')
+        .eq('clinic_id', clinicId)
         .in('daily_recap_id', recapsForEntry.map(r => r.id));
 
       const usedElsewhere = new Set(
@@ -1777,7 +1813,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     } finally {
       setAutoMatchingId(null);
     }
-  }, [debitRecaps, loadDebitRecapsForSettlement, handleDebitCheck, toast]);
+  }, [debitRecaps, loadDebitRecapsForSettlement, handleDebitCheck, toast, clinicId]);
 
   // Summary
   const summary = React.useMemo(() => {
@@ -1819,7 +1855,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   const renderReconciledRowDetail = (row, idx) => (
     <>
       {row.tipe === 'debit' && row.status === 'matched' && row.matchedSettlement && (
-        <DebitSettlementDetail settlement={row.matchedSettlement} mutasiNominal={row.nominal || row.amount} selisih={row.debitSelisih} />
+        <DebitSettlementDetail settlement={row.matchedSettlement} mutasiNominal={row.nominal || row.amount} selisih={row.debitSelisih} clinicId={clinicId} />
       )}
       {row.status === 'matched' && row.matchedRecap && !row._editMode && (
         <div className="flex flex-col gap-3">
