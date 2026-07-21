@@ -8,6 +8,13 @@ import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+const STATUS_BADGE_CLASS = {
+  draft: 'bg-amber-50 text-amber-700 border border-amber-200',
+  approved: 'bg-blue-50 text-blue-700 border border-blue-200',
+  paid: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+};
+
 const TherapistPayrollList = ({ therapist }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +80,9 @@ const TherapistPayrollList = ({ therapist }) => {
                   <p className="text-sm font-medium text-slate-700">
                     {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                   </p>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
+                    {STATUS_LABEL[r.status] || STATUS_LABEL.paid}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => handleView(r)}>

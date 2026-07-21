@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock } from 'lucide-react';
+import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +30,13 @@ const emptyForm = (therapist) => ({
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 
+const STATUS_LABEL = { draft: 'Draft', approved: 'Disetujui', paid: 'Dibayar' };
+const STATUS_BADGE_CLASS = {
+  draft: 'bg-amber-50 text-amber-700 border border-amber-200',
+  approved: 'bg-blue-50 text-blue-700 border border-blue-200',
+  paid: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+};
+
 const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const { toast } = useToast();
   const [records, setRecords] = useState([]);
@@ -40,6 +47,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [attendanceDays, setAttendanceDays] = useState(0);
   const [calculatingAuto, setCalculatingAuto] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [markingPaidId, setMarkingPaidId] = useState(null);
 
   useEffect(() => {
     if (open && therapist?.id) {
@@ -186,6 +194,31 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
     }
   };
 
+  const handleMarkAsPaid = async (record) => {
+    setMarkingPaidId(record.id);
+    const { data, error } = await upsertPayrollRecord({
+      id: record.id,
+      physiotherapist_id: record.physiotherapist_id,
+      payroll_period_start: record.payroll_period_start,
+      payroll_period_end: record.payroll_period_end,
+      salary_scheme: record.salary_scheme,
+      base_salary: record.base_salary,
+      transport_per_day: record.transport_per_day,
+      incentive_amount: record.incentive_amount,
+      custom_commission: record.custom_commission,
+      total_salary: record.total_salary,
+      status: 'paid',
+    });
+    setMarkingPaidId(null);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal', description: error.message });
+    } else {
+      setRecords((prev) => prev.map((r) => (r.id === record.id ? data : r)));
+      toast({ title: 'Berhasil', description: 'Slip gaji ditandai sebagai Dibayar.' });
+    }
+  };
+
   const handleView = (record) => {
     const doc = generatePayslipPDF(record, therapist, clinic || {});
     setPreviewUrl(URL.createObjectURL(doc.output('blob')));
@@ -297,8 +330,23 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                     <p className="text-sm font-medium text-slate-700">
                       {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                     </p>
+                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
+                      {STATUS_LABEL[r.status] || STATUS_LABEL.paid}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
+                    {r.status !== 'paid' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-emerald-600"
+                        onClick={() => handleMarkAsPaid(r)}
+                        disabled={markingPaidId === r.id}
+                        title="Tandai Dibayar"
+                      >
+                        {markingPaidId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => handleView(r)} title="Lihat">
                       <Eye className="w-4 h-4" />
                     </Button>
