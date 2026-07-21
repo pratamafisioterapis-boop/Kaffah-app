@@ -254,22 +254,34 @@ const BreakEvenPointWidget = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                Fixed Cost: <span className="text-slate-200 font-semibold">{formatCurrency(totalFixedCost)}</span>
+            <div className={cn("grid gap-3 pt-1", isPWA ? "grid-cols-1" : "grid-cols-2")}>
+              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p>Fixed Cost:</p>
+                  <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(totalFixedCost)}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Receipt className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                Pengeluaran (s/d hari ini): <span className="text-slate-200 font-semibold">{formatCurrency(ownerExpense + adminExpense)}</span>
+              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <Receipt className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p>Pengeluaran (s/d hari ini):</p>
+                  <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Bus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                Transport Terapis: <span className="text-slate-200 font-semibold">{formatCurrency(transportTotal)}</span>
+              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <Bus className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p>Transport Terapis:</p>
+                  <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                Insentif Terapis: <span className="text-slate-200 font-semibold">{formatCurrency(incentiveTotal)}</span>
+              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p>Insentif Terapis:</p>
+                  <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
+                </div>
               </div>
             </div>
             <p className="text-[10px] text-slate-500 italic">
