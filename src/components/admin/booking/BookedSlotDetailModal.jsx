@@ -119,6 +119,28 @@ fetchBookedSlots(newDate);
   };
 }, [isRescheduleMode, newDate]);
 
+useEffect(() => {
+  const fetchTherapists = async () => {
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal ambil therapist"
+      });
+      return;
+    }
+
+    setTherapists(data || []);
+  };
+
+  fetchTherapists();
+}, []);
+
 // 1. Safety Check: If appointment is null/undefined, don't render anything
   if (!appointment) return null;
 
@@ -185,27 +207,6 @@ fetchBookedSlots(newDate);
     }
   };
 
-  useEffect(() => {
-  const fetchTherapists = async () => {
-    const { data, error } = await supabase
-      .from('physiotherapists')
-      .select('id, name')
-      .eq('is_active', true)
-      .order('name');
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Gagal ambil therapist"
-      });
-      return;
-    }
-
-    setTherapists(data || []);
-  };
-
-  fetchTherapists();
-}, []);
     return (
   <div className="space-y-5">
       {isRescheduleMode && (

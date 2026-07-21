@@ -50,13 +50,18 @@ const AddPackageModal = ({ isOpen, onClose, onSuccess }) => {
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const currentUserId = sessionData?.session?.user?.id;
+            const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+            const clinicId = currentUserRow?.clinic_id;
+
             // Fetch Patients
             const { data: patientsData, error: patientsError } = await supabase
                 .from('patients')
                 .select('id, full_name, medical_record_number')
                 .eq('status', 'aktif')
                 .order('full_name');
-            
+
             if (patientsError) throw patientsError;
 
             // Fetch Package Types
@@ -64,8 +69,9 @@ const AddPackageModal = ({ isOpen, onClose, onSuccess }) => {
                 .from('operational_options')
                 .select('*')
                 .eq('category', 'tipe_paket')
-                .eq('is_active', true);
-            
+                .eq('is_active', true)
+                .eq('clinic_id', clinicId);
+
             if (packagesError) throw packagesError;
 
             // Task 4: Fetch Payment Methods
@@ -73,8 +79,9 @@ const AddPackageModal = ({ isOpen, onClose, onSuccess }) => {
                 .from('operational_options')
                 .select('*')
                 .eq('category', 'payment_method')
-                .eq('is_active', true);
-            
+                .eq('is_active', true)
+                .eq('clinic_id', clinicId);
+
             if (paymentError) throw paymentError;
 
             setPatients(patientsData || []);

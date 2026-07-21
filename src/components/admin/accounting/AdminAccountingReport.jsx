@@ -68,8 +68,8 @@ const AdminAccountingReport = ({ data, dateRange }) => {
       doc.text('Income Detail', 14, doc.lastAutoTable.finalY + 15);
       
       const incomeRows = Array.isArray(income_breakdown) ? income_breakdown.map(i => [
-        i.transaction_date && isValid(new Date(i.transaction_date)) ? format(new Date(i.transaction_date), 'dd/MM/yyyy') : '-',
-        i.source || '-',
+        i.date && isValid(new Date(i.date)) ? format(new Date(i.date), 'dd/MM/yyyy') : '-',
+        i.category || '-',
         i.description || '-',
         parseFloat(i.amount || 0).toLocaleString('id-ID')
       ]) : [];
@@ -166,7 +166,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
             <div className="space-y-3">
               {Object.entries(
                 income_breakdown.reduce((acc, curr) => {
-                  const src = curr.source || 'Uncategorized';
+                  const src = curr.category || 'Uncategorized';
                   acc[src] = (acc[src] || 0) + parseFloat(curr.amount || 0);
                   return acc;
                 }, {})

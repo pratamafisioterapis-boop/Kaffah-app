@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { updatePackageTrackingStatus } from '@/lib/api';
 
 // Shared Logic Component
 export const PackageRecapsContent = () => {
@@ -45,7 +46,8 @@ export const PackageRecapsContent = () => {
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isEditStatusModalOpen, setIsEditStatusModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-    
+    const [isExtending, setIsExtending] = useState(false);
+
     const [selectedPackage, setSelectedPackage] = useState(null);
 
     useEffect(() => {
@@ -87,6 +89,23 @@ export const PackageRecapsContent = () => {
         e.stopPropagation();
         setSelectedPackage(pkg);
         setIsExtendModalOpen(true);
+    };
+
+    const handleConfirmExtend = async (isoDate) => {
+        if (!selectedPackage) return;
+        setIsExtending(true);
+        try {
+            const { error } = await updatePackageTrackingStatus(selectedPackage.id, 'diperpanjang', isoDate);
+            if (error) throw error;
+            toast({ title: "Berhasil", description: "Paket berhasil diperpanjang." });
+            setIsExtendModalOpen(false);
+            fetchPackages();
+        } catch (error) {
+            console.error("Error extending package:", error);
+            toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal memperpanjang paket." });
+        } finally {
+            setIsExtending(false);
+        }
     };
 
     const handleDeleteClick = (e, pkg) => {
@@ -533,10 +552,10 @@ export const PackageRecapsContent = () => {
             />
 
             <ExtendPackageModal
-                isOpen={isExtendModalOpen}
-                onClose={() => setIsExtendModalOpen(false)}
-                packageData={selectedPackage}
-                onSuccess={fetchPackages}
+                open={isExtendModalOpen}
+                onOpenChange={setIsExtendModalOpen}
+                onExtend={handleConfirmExtend}
+                isLoading={isExtending}
             />
 
             <PackageHistoryModal

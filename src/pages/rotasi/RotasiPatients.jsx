@@ -149,7 +149,12 @@ const RotasiPatients = () => {
       .range(from, to);
 
     if (search.trim()) {
-      query = query.or(`name.ilike.%${search.trim()}%,medical_record_number.ilike.%${search.trim()}%,diagnosis.ilike.%${search.trim()}%`);
+      // Wrap in double quotes so PostgREST treats the whole pattern as a
+      // literal value instead of splitting on filter metacharacters
+      // (comma, period, parens) that may appear in user-typed search text.
+      const escaped = search.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const pattern = `"%${escaped}%"`;
+      query = query.or(`name.ilike.${pattern},medical_record_number.ilike.${pattern},diagnosis.ilike.${pattern}`);
     }
 
     const { data, error, count } = await query;

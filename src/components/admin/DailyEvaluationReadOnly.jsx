@@ -35,7 +35,14 @@ const DailyEvaluationReadOnly = () => {
   const fetchSoapRecords = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients(id, full_name, medical_record_number), therapist:users!created_by(full_name)`).order('created_at', { ascending: false });
+      const { data: patients, error: patientError } = await getPatients();
+      if (patientError) throw patientError;
+      const clinicPatientIds = (patients || []).map(p => p.id);
+      if (clinicPatientIds.length === 0) {
+        setPatientGroups([]);
+        return;
+      }
+      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients(id, full_name, medical_record_number), therapist:users!created_by(full_name)`).in('patient_id', clinicPatientIds).order('created_at', { ascending: false });
       if (error) throw error;
       const grouped = {};
       data.forEach(record => {

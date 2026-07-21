@@ -44,21 +44,27 @@ const TodaysOverviewWidget = () => {
     const todayEnd = endOfDay(new Date()).toISOString();
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
       // 1. Total Appointments Today
       const { count: appointmentCount, error: appError } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
+        .eq('clinic_id', currentUserRow?.clinic_id)
         .gte('appointment_date', todayStart)
         .lte('appointment_date', todayEnd);
 
       if (appError) throw appError;
 
       // 2. Cancelled Appointments Today
-      // Note: Querying 'appointments' table as 'daily_recaps' typically records completed sessions 
+      // Note: Querying 'appointments' table as 'daily_recaps' typically records completed sessions
       // and does not have a status column in the schema provided.
       const { count: cancelledCount, error: cancelError } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
+        .eq('clinic_id', currentUserRow?.clinic_id)
         .gte('appointment_date', todayStart)
         .lte('appointment_date', todayEnd)
         .ilike('status', '%cancelled%');
@@ -66,10 +72,6 @@ const TodaysOverviewWidget = () => {
       if (cancelError) throw cancelError;
 
       // 3. Total Slot Kosong (Empty Slots) Hari Ini - Menggunakan Function Database
-const { data: sessionData } = await supabase.auth.getSession();
-const currentUserId = sessionData?.session?.user?.id;
-const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
-
 const { data: slotData, error: slotError } = await supabase
   .rpc('get_available_slots_with_status_by_date', {
     p_date: new Date().toISOString().split('T')[0],

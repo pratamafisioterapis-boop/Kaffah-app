@@ -18,9 +18,9 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
   const [bankAccounts, setBankAccounts] = useState([]);
 
   const [formData, setFormData] = useState({
-    transaction_date: '',
+    date: '',
     input_time: '',
-    source: '',
+    category: '',
     sub_category: '',
     bank_account_id: '',
     amount: '',
@@ -48,9 +48,9 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
   useEffect(() => {
     if (income && isOpen) {
       setFormData({
-        transaction_date: income.transaction_date || '',
+        date: income.date || '',
         input_time: income.input_time ? income.input_time.substring(0, 5) : '',
-        source: income.source || '',
+        category: income.category || '',
         sub_category: income.sub_category || '',
         bank_account_id: income.bank_account_id || '',
         amount: income.amount || '',
@@ -107,8 +107,8 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
               <Input
                 type="date"
                 required
-                value={formData.transaction_date}
-                onChange={(e) => setFormData({...formData, transaction_date: e.target.value})}
+                value={formData.date}
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
                 className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
               />
             </div>
@@ -137,9 +137,9 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Sumber Pemasukan</Label>
-            <Select 
-              value={formData.source} 
-              onValueChange={(val) => setFormData({...formData, source: val})}
+            <Select
+              value={formData.category}
+              onValueChange={(val) => setFormData({...formData, category: val})}
             >
               <SelectTrigger className="bg-slate-50 border-slate-200">
                 <SelectValue placeholder="Pilih Sumber" />
@@ -148,9 +148,9 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
                 {incomeSources.map(src => (
                   <SelectItem key={src} value={src}>{src}</SelectItem>
                 ))}
-                 {/* Fallback if source not in list */}
-                 {formData.source && !incomeSources.includes(formData.source) && (
-                   <SelectItem value={formData.source}>{formData.source}</SelectItem>
+                 {/* Fallback if category not in list */}
+                 {formData.category && !incomeSources.includes(formData.category) && (
+                   <SelectItem value={formData.category}>{formData.category}</SelectItem>
                 )}
               </SelectContent>
             </Select>

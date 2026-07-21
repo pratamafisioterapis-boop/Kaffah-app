@@ -47,9 +47,14 @@ const AdminDatabasePatients = () => {
             const from = (pagination.page - 1) * pagination.itemsPerPage;
             const to = from + pagination.itemsPerPage - 1;
 
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData?.session?.user?.id;
+            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
             let query = supabase
                 .from('patients')
-                .select('*, patient_info_options(label)', { count: 'exact' });
+                .select('*, patient_info_options(label)', { count: 'exact' })
+                .eq('clinic_id', userRow?.clinic_id);
 
             // Apply Status Filter (DB Side)
             if (filters.status !== 'all') {

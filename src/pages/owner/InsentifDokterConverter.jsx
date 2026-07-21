@@ -395,7 +395,7 @@ const InsentifDokterConverter = () => {
     }
     setLoadingDetailId(id);
     try {
-      const detail = await getInsentifDokterHistoryDetail(id);
+      const detail = await getInsentifDokterHistoryDetail(id, clinicId);
       setHistoryDetails((prev) => ({ ...prev, [id]: detail }));
       setSelectedHistoryId(id);
     } catch (err) {
@@ -407,7 +407,7 @@ const InsentifDokterConverter = () => {
 
   const handleDeleteHistory = async (id) => {
     try {
-      await deleteInsentifDokterHistory(id);
+      await deleteInsentifDokterHistory(id, clinicId);
       setHistory((prev) => prev.filter((h) => h.id !== id));
       setHistoryDetails((prev) => {
         const next = { ...prev };

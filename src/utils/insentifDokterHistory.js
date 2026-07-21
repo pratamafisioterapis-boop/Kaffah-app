@@ -47,17 +47,18 @@ export async function listInsentifDokterHistory(clinicId) {
   return data || [];
 }
 
-export async function getInsentifDokterHistoryDetail(id) {
+export async function getInsentifDokterHistoryDetail(id, clinicId) {
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
     .eq('id', id)
+    .eq('clinic_id', clinicId)
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function deleteInsentifDokterHistory(id) {
-  const { error } = await supabase.from(TABLE).delete().eq('id', id);
+export async function deleteInsentifDokterHistory(id, clinicId) {
+  const { error } = await supabase.from(TABLE).delete().eq('id', id).eq('clinic_id', clinicId);
   if (error) throw error;
 }

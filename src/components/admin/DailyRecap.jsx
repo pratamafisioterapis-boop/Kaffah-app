@@ -67,6 +67,7 @@ const renderPatientName = (recap) => {
 const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const location = useLocation();
   const { toast } = useToast();
+  const { clinicName } = useAuth();
   const isMounted = useRef(true);
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { lastSyncTime } = useAppointmentState(); 
@@ -511,7 +512,7 @@ const getPremiumPastelBadge = (text) => {
               </svg>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
+              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Rekap Harian</h2>
               <p className="text-sm text-slate-400 mt-0.5">Kelola data kunjungan dan pendapatan</p>
             </div>

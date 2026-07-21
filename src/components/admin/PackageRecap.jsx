@@ -60,7 +60,7 @@ const PackageRecap = ({ hideControls = false }) => {
   const [selectedPackage, setSelectedPackage] = useState(null);
 
   const { toast } = useToast();
-  const { role } = useAuth();
+  const { role, clinicName } = useAuth();
   const canViewHistory = role === 'admin' || role === 'owner' || role === 'super_admin';
 
   
@@ -171,7 +171,7 @@ const fetchData = async () => {
               </svg>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
+              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Tracking Paket</h2>
               <p className="text-sm text-slate-400 mt-0.5">Monitor penggunaan paket pasien secara real-time</p>
             </div>

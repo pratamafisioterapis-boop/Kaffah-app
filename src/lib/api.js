@@ -276,6 +276,19 @@ export const generateFollowUps = async (type) => {
 
 export const getFollowUpQueue = async (status = null, type = null) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data: clinicPatients } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('clinic_id', userRow?.clinic_id);
+    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
+    if (clinicPatientIds.length === 0) {
+      return { data: [], success: true, error: null };
+    }
+
     let query = supabase
       .from('follow_up_queue')
       .select(`
@@ -289,7 +302,8 @@ export const getFollowUpQueue = async (status = null, type = null) => {
           nickname,
           birth_date
         )
-      `);
+      `)
+      .in('patient_id', clinicPatientIds);
 
     // FILTER STATUS
     if (status) {
@@ -301,8 +315,8 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       query = query.eq('follow_up_type', type);
     }
 
-    // Hanya tampilkan data hari ini
-    const today = new Date().toISOString().split('T')[0];
+    // Hanya tampilkan data hari ini (WITA, samakan dengan filter "today" di FollowUpManagementPage.jsx)
+    const today = getTodayWITA();
     query = query.eq('scheduled_date', today);
 
     // ORDER
@@ -1613,20 +1627,29 @@ export const getAccountingSubcategories = async () => {
 };
 export const createAccountingCategory = async (category_name, type = 'expense') => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_categories')
-      .insert({ category_name, type })
+      .insert({ category_name, type, clinic_id: userRow?.clinic_id })
       .select()
       .single();
   }, 'createAccountingCategory');
 };
 export const createAccountingSubcategory = async (subcategory_name, category_id) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     return await supabase
       .from('accounting_subcategories')
       .insert({
         subcategory_name,
-        category_id
+        category_id,
+        clinic_id: userRow?.clinic_id
       })
       .select()
       .single();
@@ -1896,6 +1919,9 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
 };
 export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
     let query = supabase
       .from('daily_recaps')
@@ -1918,6 +1944,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
           full_name
         )
       `)
+      .eq('clinic_id', userRow?.clinic_id)
       .or('amount.not.is.null,amount_package.not.is.null')
       .order('recap_date', { ascending: false });
 
@@ -2148,6 +2175,10 @@ export const createOwnerInitialCapital = async (payload) => {
 
 export const updateOwnerInitialCapital = async (id, payload) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('owner_initial_capital')
       .update({
@@ -2159,6 +2190,7 @@ export const updateOwnerInitialCapital = async (id, payload) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('clinic_id', userRow?.clinic_id)
       .select(`
         *,
         bank_account:bank_account_id (
@@ -2177,10 +2209,15 @@ export const updateOwnerInitialCapital = async (id, payload) => {
 
 export const deleteOwnerInitialCapital = async (id) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { error } = await supabase
       .from('owner_initial_capital')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('clinic_id', userRow?.clinic_id);
     if (error) return { error };
     return { success: true, error: null };
   }, 'deleteOwnerInitialCapital');
@@ -2483,7 +2520,11 @@ export const createAdminExpense = async (payload) => {
 
 export const getInventoryItems = async ({ activeOnly = true } = {}) => {
   return safeQuery(async () => {
-    let query = supabase.from('inventory_items').select('*');
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    let query = supabase.from('inventory_items').select('*').eq('clinic_id', userRow?.clinic_id);
     if (activeOnly) query = query.eq('is_active', true);
     const { data, error } = await query;
     if (error) return { error };
@@ -2502,6 +2543,10 @@ export const getInventoryItems = async ({ activeOnly = true } = {}) => {
 
 export const createInventoryItem = async (payload) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const quantity = Number(payload.quantity) || 0;
     const totalPrice = Number(payload.total_price) || 0;
     const pricePerUnit = quantity > 0 ? totalPrice / quantity : 0;
@@ -2514,7 +2559,8 @@ export const createInventoryItem = async (payload) => {
         current_stock: quantity,
         price_per_unit: pricePerUnit,
         minimum_stock: payload.minimum_stock || 0,
-        created_by: payload.created_by || null
+        created_by: payload.created_by || null,
+        clinic_id: userRow?.clinic_id
       })
       .select()
       .single();
@@ -2537,6 +2583,10 @@ export const createInventoryItem = async (payload) => {
 
 export const updateInventoryItem = async (id, payload) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('inventory_items')
       .update({
@@ -2547,6 +2597,7 @@ export const updateInventoryItem = async (id, payload) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('clinic_id', userRow?.clinic_id)
       .select()
       .single();
     if (error) return { error };
@@ -2556,7 +2607,11 @@ export const updateInventoryItem = async (id, payload) => {
 
 export const deleteInventoryItem = async (id) => {
   return safeQuery(async () => {
-    const { error } = await supabase.from('inventory_items').delete().eq('id', id);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { error } = await supabase.from('inventory_items').delete().eq('id', id).eq('clinic_id', userRow?.clinic_id);
     if (error) return { error };
     return { success: true, error: null };
   }, 'deleteInventoryItem');
@@ -2884,7 +2939,27 @@ export const fetchTotalPackages = async (startDate, endDate) => {
     return { data: uniquePackages.size || 0 };
   }, 'fetchTotalPackages');
 };
-export const createBulkMedicalRecords = async () => ({ data: [] });
+export const createBulkMedicalRecords = async (payloads) => {
+  return safeQuery(async () => {
+    if (!Array.isArray(payloads) || payloads.length === 0) {
+      return { data: [], success: true, error: null };
+    }
+
+    const insertPayload = payloads.map(p => ({
+      ...p,
+      created_at: p.created_at || new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+      .from('medical_records')
+      .insert(insertPayload)
+      .select();
+
+    if (error) return { error };
+
+    return { data, success: true, error: null };
+  }, 'createBulkMedicalRecords');
+};
 // Pastikan token auth masih fresh sebelum menulis; kalau gagal karena
 // 0 baris (RLS menolak akibat sesi lama), refresh sesi lalu coba sekali lagi.
 const ensureFreshSessionThenWrite = async (writeFn) => {
@@ -2945,6 +3020,18 @@ export const setDailyRecapEndTime = async (recapId) => {
 // 🔹 GET MEDICAL RECORDS + PATIENT
 export const getMedicalRecordsWithPatients = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data: clinicPatients } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('clinic_id', userRow?.clinic_id);
+    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
+    if (clinicPatientIds.length === 0) {
+      return { data: [], success: true, error: null };
+    }
 
     const { data, error } = await supabase
       .from('medical_records_detailed')
@@ -2988,6 +3075,7 @@ export const getMedicalRecordsWithPatients = async () => {
           phone
         )
       `)
+      .in('patient_id', clinicPatientIds)
       .order('created_at', { ascending: false });
 
     console.log('MEDICAL RECORDS FETCH:', data);
@@ -3315,6 +3403,7 @@ export const createMedicalRecord = async (payload) => {
 // 🔹 GET MEDICAL RECORDS
 export const getMedicalRecords = async ({
   patientId = null,
+  patientIds = null,
   therapistId = null,
   startDate = null,
   endDate = null,
@@ -3344,6 +3433,13 @@ export const getMedicalRecords = async ({
     // 🔥 FILTER PASIEN
     if (patientId) {
       query = query.eq('patient_id', patientId);
+    }
+
+    if (patientIds) {
+      if (patientIds.length === 0) {
+        return { data: [], total: 0, success: true, error: null };
+      }
+      query = query.in('patient_id', patientIds);
     }
 
     // 🔥 FILTER TERAPIS
@@ -3456,7 +3552,11 @@ export const getTherapistRecaps = async (
 };
 export const getPatientById = async (id) => {
   return safeQuery(async () => {
-    const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase.from('patients').select('*').eq('id', id).eq('clinic_id', userRow?.clinic_id).single();
     if (error) return { error };
     return { data, error: null };
   }, 'getPatientById', { retry: true });
@@ -3465,10 +3565,15 @@ export const getPatientById = async (id) => {
 export const getPatientByPhone = async (phone) => {
   return safeQuery(async () => {
     if (!phone) return { data: null, error: null };
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('patients')
       .select('id, full_name, phone')
       .eq('phone', phone)
+      .eq('clinic_id', userRow?.clinic_id)
       .limit(1)
       .maybeSingle();
     if (error) return { error };
@@ -4105,6 +4210,18 @@ export const getFollowUpQueueFiltered = async ({
   endDate = null
 } = {}) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data: clinicPatients } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('clinic_id', userRow?.clinic_id);
+    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
+    if (clinicPatientIds.length === 0) {
+      return { data: [], success: true, error: null };
+    }
 
     let query = supabase
       .from('follow_up_queue')
@@ -4117,6 +4234,7 @@ export const getFollowUpQueueFiltered = async ({
           medical_record_number
         )
       `)
+      .in('patient_id', clinicPatientIds)
       .order('scheduled_date', { ascending: true });
 
     if (status) {
@@ -4334,10 +4452,15 @@ export const deletePatientInfoOption = async (id) => {
 };
 export const createOperationalOption = async (category, label, extra = {}) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const payload = {
       category,
       label,
       is_active: true,
+      clinic_id: userRow?.clinic_id,
       ...extra
     };
     const { data, error } = await supabase
@@ -4601,6 +4724,8 @@ export const savePhysiotherapist = async (payload) => {
         show_on_booking: payload.show_on_booking,
         remuneration_enabled: payload.remuneration_enabled,
         badges: payload.badges || [],
+        theme_color: payload.theme_color || null,
+        signature_url: payload.signature_url || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', payload.id)
@@ -4763,7 +4888,10 @@ export const createTherapistAccount = async (payload, password) => {
         complaint_tags: payload.complaint_tags || [],
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
+        remuneration_enabled: payload.remuneration_enabled ?? true,
         badges: payload.badges || [],
+        theme_color: payload.theme_color || null,
+        signature_url: payload.signature_url || null,
         created_at: new Date().toISOString()
       })
       .select()
@@ -4984,6 +5112,10 @@ export const deleteTherapistSchedule = async (id) => {
 // 🔹 GET ALL TARGETS
 export const getAllTherapistTargets = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('therapist_targets')
       .select(`
@@ -4993,6 +5125,7 @@ export const getAllTherapistTargets = async () => {
           name
         )
       `)
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: false });
 
     if (error) return { error };
@@ -5677,6 +5810,7 @@ export const createClinicalDocument = async (payload) => {
 
 export const getClinicalDocuments = async (documentType) => {
   return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
     const { data, error } = await supabase
       .from('clinical_documents')
       .select(`
@@ -5685,6 +5819,7 @@ export const getClinicalDocuments = async (documentType) => {
         physiotherapists:therapist_id ( name )
       `)
       .eq('document_type', documentType)
+      .eq('clinic_id', clinicId)
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) return { error };
@@ -5694,7 +5829,8 @@ export const getClinicalDocuments = async (documentType) => {
 
 export const deleteClinicalDocument = async (id) => {
   return safeQuery(async () => {
-    const { error } = await supabase.from('clinical_documents').delete().eq('id', id);
+    const clinicId = await getCurrentClinicId();
+    const { error } = await supabase.from('clinical_documents').delete().eq('id', id).eq('clinic_id', clinicId);
     if (error) return { error };
     return { success: true, error: null };
   }, 'deleteClinicalDocument');
@@ -5702,11 +5838,13 @@ export const deleteClinicalDocument = async (id) => {
 
 export const getLatestClinicalDocumentForPatient = async (documentType, patientId) => {
   return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
     const { data, error } = await supabase
       .from('clinical_documents')
       .select('*')
       .eq('document_type', documentType)
       .eq('patient_id', patientId)
+      .eq('clinic_id', clinicId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -5717,11 +5855,13 @@ export const getLatestClinicalDocumentForPatient = async (documentType, patientI
 
 export const getNextClinicalDocumentNumber = async (documentType, prefix) => {
   return safeQuery(async () => {
+    const clinicId = await getCurrentClinicId();
     const year = new Date().getFullYear();
     const { count, error } = await supabase
       .from('clinical_documents')
       .select('id', { count: 'exact', head: true })
       .eq('document_type', documentType)
+      .eq('clinic_id', clinicId)
       .gte('document_date', `${year}-01-01`)
       .lte('document_date', `${year}-12-31`);
     if (error) return { error };

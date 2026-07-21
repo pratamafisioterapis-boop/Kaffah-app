@@ -37,11 +37,15 @@ const PemilihData = () => {
     const to = from + pageSize - 1;
     let query = supabase
       .from('pemilih_data')
-      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, tps, foto_ktp_url, pemilih_kelurahan(nama)', { count: 'exact' })
+      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, tps, foto_ktp_path, pemilih_kelurahan(nama)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
-    if (search.trim()) query = query.or(`nama.ilike.%${search.trim()}%,nik.ilike.%${search.trim()}%`);
+    if (search.trim()) {
+      const escaped = search.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const pattern = `"%${escaped}%"`;
+      query = query.or(`nama.ilike.${pattern},nik.ilike.${pattern}`);
+    }
     if (filterKelurahan) query = query.eq('kelurahan_id', filterKelurahan);
     if (filterKategori) query = query.eq('kategori_dukungan', filterKategori);
 
@@ -75,9 +79,25 @@ const PemilihData = () => {
 
   const deleteRow = async (id) => {
     if (!window.confirm('Hapus data pemilih ini secara permanen?')) return;
+    const row = rows.find((r) => r.id === id);
     const { error } = await supabase.from('pemilih_data').delete().eq('id', id);
-    if (error) toast({ title: 'Gagal menghapus', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Data dihapus' }); fetchRows(); }
+    if (error) { toast({ title: 'Gagal menghapus', description: error.message, variant: 'destructive' }); return; }
+    if (row?.foto_ktp_path) {
+      await supabase.storage.from('pemilih-ktp').remove([row.foto_ktp_path]);
+    }
+    toast({ title: 'Data dihapus' });
+    fetchRows();
+  };
+
+  const openKtp = async (row) => {
+    const { data, error } = await supabase.storage
+      .from('pemilih-ktp')
+      .createSignedUrl(row.foto_ktp_path, 60 * 10);
+    if (error || !data?.signedUrl) {
+      toast({ title: 'Gagal memuat foto KTP', description: error?.message, variant: 'destructive' });
+      return;
+    }
+    setViewingKtp({ url: data.signedUrl, nama: row.nama });
   };
 
   const downloadBtnProps = viewingKtp ? {
@@ -167,9 +187,9 @@ const PemilihData = () => {
                         </span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {r.foto_ktp_url ? (
+                        {r.foto_ktp_path ? (
                           <button
-                            onClick={() => setViewingKtp({ url: r.foto_ktp_url, nama: r.nama })}
+                            onClick={() => openKtp(r)}
                             className="p-btn-ghost"
                             style={{ padding: '5px 12px', fontSize: 11 }}
                           >
@@ -214,9 +234,9 @@ const PemilihData = () => {
                   <span style={{ color: '#9ca3af' }}>{r.pemilih_kelurahan?.nama || '-'}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f1f1f3' }}>
-                  {r.foto_ktp_url && (
+                  {r.foto_ktp_path && (
                     <button
-                      onClick={() => setViewingKtp({ url: r.foto_ktp_url, nama: r.nama })}
+                      onClick={() => openKtp(r)}
                       className="p-btn-ghost"
                       style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12 }}
                     >
