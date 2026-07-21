@@ -4619,6 +4619,8 @@ export const savePhysiotherapist = async (payload) => {
         show_on_booking: payload.show_on_booking,
         remuneration_enabled: payload.remuneration_enabled,
         badges: payload.badges || [],
+        theme_color: payload.theme_color || null,
+        signature_url: payload.signature_url || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', payload.id)
@@ -4781,7 +4783,10 @@ export const createTherapistAccount = async (payload, password) => {
         complaint_tags: payload.complaint_tags || [],
         show_on_landing: payload.show_on_landing,
         show_on_booking: payload.show_on_booking,
+        remuneration_enabled: payload.remuneration_enabled ?? true,
         badges: payload.badges || [],
+        theme_color: payload.theme_color || null,
+        signature_url: payload.signature_url || null,
         created_at: new Date().toISOString()
       })
       .select()
@@ -5002,6 +5007,10 @@ export const deleteTherapistSchedule = async (id) => {
 // 🔹 GET ALL TARGETS
 export const getAllTherapistTargets = async () => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
     const { data, error } = await supabase
       .from('therapist_targets')
       .select(`
@@ -5011,6 +5020,7 @@ export const getAllTherapistTargets = async () => {
           name
         )
       `)
+      .eq('clinic_id', userRow?.clinic_id)
       .order('created_at', { ascending: false });
 
     if (error) return { error };
