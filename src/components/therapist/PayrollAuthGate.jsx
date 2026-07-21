@@ -11,6 +11,7 @@ const SESSION_TTL_MS = 30 * 60 * 1000; // berlaku 30 menit, disimpan di localSto
 const RESEND_COOLDOWN_S = 60;
 
 const sessionKey = (therapistId) => `kaffah_payroll_otp_verified_${therapistId}`;
+const lastSentKey = (therapistId) => `kaffah_payroll_otp_last_sent_${therapistId}`;
 
 const maskEmail = (email) => {
   if (!email || !email.includes('@')) return '-';
@@ -26,22 +27,29 @@ const isSessionValid = (therapistId) => {
   return Number.isFinite(expiresAt) && Date.now() < expiresAt;
 };
 
+// Sisa cooldown (detik) dihitung dari waktu kirim terakhir yang disimpan di
+// localStorage, supaya bertahan walau komponen ini sempat remount (mis. tab
+// browser di-reload saat berpindah aplikasi) — tidak mendorong user klik
+// "Kirim Kode" berkali-kali sampai kena rate limit Supabase.
+const remainingCooldown = (therapistId) => {
+  const raw = localStorage.getItem(lastSentKey(therapistId));
+  if (!raw) return 0;
+  const lastSentAt = parseInt(raw, 10);
+  if (!Number.isFinite(lastSentAt)) return 0;
+  const elapsed = Math.floor((Date.now() - lastSentAt) / 1000);
+  return Math.max(0, RESEND_COOLDOWN_S - elapsed);
+};
+
 const PayrollAuthGate = ({ therapist, children }) => {
   const { toast } = useToast();
   const [verified, setVerified] = useState(() => (therapist?.id ? isSessionValid(therapist.id) : false));
-  const [step, setStep] = useState('idle'); // idle | sent
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState('');
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(() => (therapist?.id ? remainingCooldown(therapist.id) : 0));
   const cooldownTimer = useRef(null);
 
-  useEffect(() => {
-    return () => clearInterval(cooldownTimer.current);
-  }, []);
-
-  const startCooldown = () => {
-    setCooldown(RESEND_COOLDOWN_S);
+  const runCooldownTimer = () => {
     clearInterval(cooldownTimer.current);
     cooldownTimer.current = setInterval(() => {
       setCooldown((prev) => {
@@ -53,6 +61,12 @@ const PayrollAuthGate = ({ therapist, children }) => {
       });
     }, 1000);
   };
+
+  useEffect(() => {
+    if (cooldown > 0) runCooldownTimer();
+    return () => clearInterval(cooldownTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSendCode = async () => {
     if (!therapist?.email) {
@@ -67,10 +81,11 @@ const PayrollAuthGate = ({ therapist, children }) => {
       toast({ variant: 'destructive', title: 'Gagal Mengirim Kode', description: error.message });
       return;
     }
-    setStep('sent');
+    localStorage.setItem(lastSentKey(therapist.id), String(Date.now()));
     setCode('');
-    startCooldown();
-    toast({ title: 'Kode Terkirim', description: `Kode verifikasi telah dikirim ke ${maskEmail(therapist.email)}.` });
+    setCooldown(RESEND_COOLDOWN_S);
+    runCooldownTimer();
+    toast({ title: 'Kode Terkirim', description: `Kode verifikasi telah dikirim ke ${maskEmail(therapist.email)}. Gunakan kode dari email terbaru — kode sebelumnya tidak berlaku lagi.` });
   };
 
   const handleVerify = async () => {
@@ -80,7 +95,7 @@ const PayrollAuthGate = ({ therapist, children }) => {
     setVerifying(false);
 
     if (error) {
-      toast({ variant: 'destructive', title: 'Kode Salah', description: 'Kode verifikasi tidak valid atau sudah kedaluwarsa.' });
+      toast({ variant: 'destructive', title: 'Kode Salah', description: 'Kode verifikasi tidak valid atau sudah kedaluwarsa. Pastikan memakai kode dari email terbaru.' });
       setCode('');
       return;
     }
@@ -108,39 +123,27 @@ const PayrollAuthGate = ({ therapist, children }) => {
               </p>
             </div>
 
-            {step === 'idle' ? (
-              <Button onClick={handleSendCode} disabled={sending} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-                Kirim Kode ke Email
+            <Button onClick={handleSendCode} disabled={sending || cooldown > 0} variant="outline" className="w-full">
+              {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+              {cooldown > 0 ? `Kirim Kode ke Email (${cooldown}s)` : 'Kirim Kode ke Email'}
+            </Button>
+
+            <div className="space-y-3">
+              <Input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="Masukkan kode dari email"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                className="text-center text-lg tracking-[0.3em]"
+                maxLength={12}
+              />
+              <Button onClick={handleVerify} disabled={verifying || code.length < 6} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                {verifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}
+                Verifikasi
               </Button>
-            ) : (
-              <div className="space-y-3">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="Masukkan kode dari email"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  className="text-center text-lg tracking-[0.3em]"
-                  maxLength={12}
-                  autoFocus
-                />
-                <Button onClick={handleVerify} disabled={verifying || code.length < 6} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                  {verifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}
-                  Verifikasi
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSendCode}
-                  disabled={sending || cooldown > 0}
-                  className="w-full text-slate-500"
-                >
-                  {cooldown > 0 ? `Kirim Ulang (${cooldown}s)` : 'Kirim Ulang Kode'}
-                </Button>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </motion.div>
