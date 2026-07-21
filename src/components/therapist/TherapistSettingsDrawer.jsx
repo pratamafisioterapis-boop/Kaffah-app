@@ -43,6 +43,7 @@ const Avatar = ({ url, name, size = 'lg' }) => {
 // TAB: PROFIL
 // ═══════════════════════════════════════════════════════════════════════════════
 const TabProfil = ({ therapist, onUpdated }) => {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: therapist?.name || '',
     phone: therapist?.phone || '',
@@ -53,6 +54,48 @@ const TabProfil = ({ therapist, onUpdated }) => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef();
+
+  const [splashAvatarUrl, setSplashAvatarUrl] = useState('');
+  const [uploadingSplash, setUploadingSplash] = useState(false);
+  const splashFileRef = useRef();
+
+  useEffect(() => {
+    let active = true;
+    const fetchSplashAvatar = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase.from('users').select('avatar_url').eq('id', user.id).single();
+      if (active) setSplashAvatarUrl(data?.avatar_url || '');
+    };
+    fetchSplashAvatar();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const handleUploadSplashAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 2MB.' });
+      return;
+    }
+    setUploadingSplash(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `user-avatars/${user.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: urlData } = supabase.storage.from('images').getPublicUrl(path);
+      const { error: updateErr } = await supabase.from('users').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
+      if (updateErr) throw updateErr;
+
+      setSplashAvatarUrl(urlData.publicUrl);
+      toast({ title: 'Foto splash screen diperbarui' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message });
+    } finally {
+      setUploadingSplash(false);
+    }
+  };
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -161,6 +204,28 @@ const TabProfil = ({ therapist, onUpdated }) => {
         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
         Simpan Profil
       </Button>
+
+      {/* Foto Splash Screen (terpisah dari foto di therapist card) */}
+      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="relative shrink-0">
+          <Avatar url={splashAvatarUrl} name={form.name} size="lg" />
+          <button
+            onClick={() => splashFileRef.current?.click()}
+            disabled={uploadingSplash}
+            className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 shadow-lg hover:bg-blue-700 transition"
+          >
+            {uploadingSplash ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Foto Splash Screen</p>
+          <p className="text-xs text-slate-400 mt-0.5">Tampil saat kamu membuka aplikasi. Jika kosong, memakai foto di therapist card.</p>
+          <p className="text-xs text-blue-500 mt-1.5 cursor-pointer" onClick={() => splashFileRef.current?.click()}>
+            Ganti foto splash screen
+          </p>
+        </div>
+        <input ref={splashFileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadSplashAvatar} />
+      </div>
     </div>
   );
 };

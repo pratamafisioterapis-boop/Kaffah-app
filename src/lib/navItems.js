@@ -34,4 +34,5 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
   { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
   { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
+  { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },
 ];

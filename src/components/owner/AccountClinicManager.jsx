@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Mail, Lock, Building2, Upload } from 'lucide-react';
+import { Loader2, Mail, Lock, Building2, Upload, UserCircle } from 'lucide-react';
 
 const AccountClinicManager = () => {
   const { user, userDetails } = useAuth();
@@ -14,6 +14,9 @@ const AccountClinicManager = () => {
   const [newPassword, setNewPassword] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const [avatarUrl, setAvatarUrl] = useState(userDetails?.avatar_url || '');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [clinic, setClinic] = useState(null);
   const [clinicName, setClinicName] = useState('');
@@ -104,6 +107,27 @@ const AccountClinicManager = () => {
     }
   };
 
+  const handleUploadAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `user-avatars/${user.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
+      const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', user.id);
+      if (updateError) throw updateError;
+      setAvatarUrl(pub.publicUrl);
+      toast({ title: 'Foto splash screen diperbarui' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal upload foto', description: err.message });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleUploadStamp = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !clinic) return;
@@ -142,6 +166,22 @@ const AccountClinicManager = () => {
         <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-blue-600">
           {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
         </Button>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Foto Profil (Splash Screen)</h3>
+        <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border">
+            {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
+          </div>
+          <label className="cursor-pointer">
+            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+              {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
+            </span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} disabled={uploadingAvatar} />
+          </label>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">

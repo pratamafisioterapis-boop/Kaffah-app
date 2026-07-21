@@ -31,6 +31,7 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
+import AdminAccountSettings from '@/components/admin/AdminAccountSettings';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 const HeroClock = () => {
   const [now, setNow] = React.useState(new Date());
@@ -867,6 +868,7 @@ return (
         {/* Accounting Route */}
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
         <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
+        <Route path="/settings" element={<AdminAccountSettings />} />
 
         {/* Redirects for legacy routes */}
         <Route path="/patients" element={<Navigate to="/admin/database-patients" replace />} />
