@@ -3952,12 +3952,29 @@ export const updateGoogleSheetsSettings = async ({ enabledSheets, autoSyncEnable
   }, 'updateGoogleSheetsSettings');
 };
 
+// supabase-js melempar FunctionsHttpError generik ("Edge Function returned a
+// non-2xx status code") saat status bukan 2xx, tanpa membaca body respons.
+// Pesan error asli dari edge function tersimpan di error.context (Response),
+// jadi harus dibaca manual di sini supaya pesan yang ditampilkan ke user jelas.
+const extractFunctionErrorMessage = async (error) => {
+  if (!error) return 'Terjadi kesalahan tidak diketahui.';
+  try {
+    if (error.context && typeof error.context.json === 'function') {
+      const body = await error.context.clone().json();
+      if (body?.error) return body.error;
+    }
+  } catch (_e) {
+    // body bukan JSON atau sudah terbaca, pakai fallback di bawah
+  }
+  return error.message || 'Terjadi kesalahan tidak diketahui.';
+};
+
 export const createGoogleSheetsBackup = async () => {
   return safeQuery(async () => {
     const { data, error } = await supabase.functions.invoke('google-sheets-sync', {
       body: { action: 'create' },
     });
-    if (error) return { error };
+    if (error) return { error: { message: await extractFunctionErrorMessage(error) } };
     if (data?.error) return { error: { message: data.error } };
     return { data, success: true, error: null };
   }, 'createGoogleSheetsBackup', { timeout: 120000 });
@@ -3968,7 +3985,7 @@ export const syncGoogleSheetsNow = async () => {
     const { data, error } = await supabase.functions.invoke('google-sheets-sync', {
       body: { action: 'sync' },
     });
-    if (error) return { error };
+    if (error) return { error: { message: await extractFunctionErrorMessage(error) } };
     if (data?.error) return { error: { message: data.error } };
     return { data, success: true, error: null };
   }, 'syncGoogleSheetsNow', { timeout: 120000 });
