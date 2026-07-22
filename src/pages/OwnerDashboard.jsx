@@ -23,6 +23,7 @@ import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
 import RevenueOverview from '@/components/owner/RevenueOverview';
 import ModalAwalManagement from '@/components/owner/ModalAwalManagement';
+import AdminManagementPage from '@/components/owner/AdminManagementPage';
 
 
 
@@ -487,6 +488,7 @@ const OwnerDashboard = () => {
         <Route path="/modal-awal" element={<ModalAwalManagement />} />
         <Route path="/daily-recap" element={<OwnerDailyRecap />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin-management" element={<AdminManagementPage />} />
         
 
         {/* Fallback for old routes */}
