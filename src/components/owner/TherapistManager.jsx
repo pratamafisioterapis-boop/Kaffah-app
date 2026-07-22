@@ -271,7 +271,18 @@ const TherapistManager = () => {
       return;
     }
 
-    
+    if (!editingTherapist) {
+      const normalizedName = formData.name.trim().toLowerCase();
+      const possibleDuplicate = therapists.find(t => t.name.trim().toLowerCase() === normalizedName);
+      if (possibleDuplicate) {
+        const confirmed = window.confirm(
+          `Sudah ada terapis dengan nama "${possibleDuplicate.name}" di daftar.\n\n` +
+          `Kalau maksudnya mengubah data/foto terapis yang sudah ada, tekan Batal lalu pakai tombol Edit (ikon pensil) di kartu terapis tersebut — bukan "Buat Akun Terapis".\n\n` +
+          `Lanjutkan buat akun BARU yang terpisah?`
+        );
+        if (!confirmed) return;
+      }
+    }
 
     setSaving(true);
     
