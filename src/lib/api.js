@@ -280,30 +280,28 @@ export const getFollowUpQueue = async (status = null, type = null) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data: clinicPatients } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('clinic_id', userRow?.clinic_id);
-    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
-    if (clinicPatientIds.length === 0) {
+    if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
     }
 
+    // Filter via inner join ke patients.clinic_id di database, bukan .in(patient_id, [...ribuan id])
+    // yang bisa melebihi batas panjang URL untuk klinik dengan banyak pasien.
     let query = supabase
       .from('follow_up_queue')
       .select(`
         *,
-        patient:patients(
+        patient:patients!inner(
           id,
           full_name,
           phone,
           medical_record_number,
           gender,
           nickname,
-          birth_date
+          birth_date,
+          clinic_id
         )
       `)
-      .in('patient_id', clinicPatientIds);
+      .eq('patient.clinic_id', userRow.clinic_id);
 
     // FILTER STATUS
     if (status) {
@@ -3024,15 +3022,13 @@ export const getMedicalRecordsWithPatients = async () => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data: clinicPatients } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('clinic_id', userRow?.clinic_id);
-    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
-    if (clinicPatientIds.length === 0) {
+    if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
     }
 
+    // Filter langsung via inner join ke patients.clinic_id di database,
+    // bukan .in(patient_id, [...ribuan id]) yang bisa melebihi batas panjang URL
+    // dan membuat query gagal diam-diam untuk klinik dengan banyak pasien (mis. >1500).
     const { data, error } = await supabase
       .from('medical_records_detailed')
       .select(`
@@ -3068,14 +3064,15 @@ export const getMedicalRecordsWithPatients = async () => {
         treatment_goal,
         therapist_name,
 
-        patient:patients!patient_id (
+        patient:patients!patient_id!inner (
           id,
           full_name,
           medical_record_number,
-          phone
+          phone,
+          clinic_id
         )
       `)
-      .in('patient_id', clinicPatientIds)
+      .eq('patient.clinic_id', userRow.clinic_id)
       .order('created_at', { ascending: false });
 
     console.log('MEDICAL RECORDS FETCH:', data);
@@ -4214,27 +4211,25 @@ export const getFollowUpQueueFiltered = async ({
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data: clinicPatients } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('clinic_id', userRow?.clinic_id);
-    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
-    if (clinicPatientIds.length === 0) {
+    if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
     }
 
+    // Filter via inner join ke patients.clinic_id di database, bukan .in(patient_id, [...ribuan id])
+    // yang bisa melebihi batas panjang URL untuk klinik dengan banyak pasien.
     let query = supabase
       .from('follow_up_queue')
       .select(`
         *,
-        patient:patients (
+        patient:patients!inner (
           id,
           full_name,
           phone,
-          medical_record_number
+          medical_record_number,
+          clinic_id
         )
       `)
-      .in('patient_id', clinicPatientIds)
+      .eq('patient.clinic_id', userRow.clinic_id)
       .order('scheduled_date', { ascending: true });
 
     if (status) {
