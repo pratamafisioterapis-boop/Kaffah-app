@@ -500,15 +500,17 @@ setIsSubmitting(true);
 try {
 const isoDate = parseDateFromDisplay(formData.recap_date);
 const therapistName = therapists.find(t => t.value === formData.therapist_id)?.label || '';
-const { data: activePackage } = await supabase
+// NOTE: sessions_used < total_sessions must be compared in JS — PostgREST's
+// .lt()/.gt() only compares a column against a literal, not another column,
+// so a query filter here would always fail to match (package_tracking_id
+// stayed null on every new recap, even with an active package with sessions left).
+const { data: candidatePackages } = await supabase
 .from('package_tracking')
-.select('id')
+.select('id, sessions_used, total_sessions')
 .eq('patient_id', formData.patient_id)
 .eq('status', 'aktif')
-.lt('sessions_used', 'total_sessions')
-.order('created_at', { ascending: false })
-.limit(1)
-.single();
+.order('created_at', { ascending: false });
+const activePackage = (candidatePackages || []).find(p => p.sessions_used < p.total_sessions) || null;
 const selectedDiagnosisLabels = diagnoses
 .filter(d => formData.diagnosis.includes(d.value))
 .map(d => d.label);
