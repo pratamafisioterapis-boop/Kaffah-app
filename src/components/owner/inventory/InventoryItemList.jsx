@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2, PackagePlus, Boxes, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { deleteInventoryItem } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+
+const PAGE_SIZE = 8;
 
 const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) => {
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const handleDelete = async (item) => {
     if (!window.confirm(`Hapus barang "${item.item_name}" dari daftar? Riwayat pengambilan sebelumnya tidak akan terhapus.`)) return;
@@ -23,19 +28,60 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
     }
   };
 
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const filteredItems = items.filter(item =>
+    (item.item_name || '').toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
+      {items.length > 0 && (
+        <div className="p-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Cari nama barang..."
+              className="pl-9 pr-9 h-9 text-sm"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
           <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>
           <h3 className="text-lg font-medium text-slate-900">Belum ada barang di gudang</h3>
           <p className="text-slate-500 max-w-sm mt-1">Tambahkan barang baru melalui formulir di samping.</p>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
+          <div className="bg-slate-100 p-4 rounded-full mb-3"><Search className="w-8 h-8 text-slate-400" /></div>
+          <h3 className="text-lg font-medium text-slate-900">Barang tidak ditemukan</h3>
+          <p className="text-slate-500 max-w-sm mt-1">Coba kata kunci lain.</p>
+        </div>
       ) : (
         <>
           {/* Mobile / PWA: kartu, tanpa geser horizontal */}
           <div className="sm:hidden divide-y divide-slate-100">
-            {items.map(item => {
+            {pageItems.map(item => {
               const isLow = item.minimum_stock > 0 && item.current_stock <= item.minimum_stock;
               const isEmpty = Number(item.current_stock) <= 0;
               return (
@@ -99,7 +145,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {items.map(item => {
+                {pageItems.map(item => {
                   const isLow = item.minimum_stock > 0 && item.current_stock <= item.minimum_stock;
                   const isEmpty = Number(item.current_stock) <= 0;
                   return (
@@ -142,6 +188,35 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+              <p className="text-xs text-slate-500">
+                Halaman {currentPage} dari {totalPages} <span className="text-slate-400">({filteredItems.length} barang)</span>
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 border-slate-200"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(currentPage - 1)}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 border-slate-200"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(currentPage + 1)}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
