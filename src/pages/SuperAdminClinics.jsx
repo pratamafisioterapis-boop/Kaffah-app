@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal } from 'lucide-react';
-import { ROLES, ROLE_LABELS, getFeatureCatalogForRole } from '@/lib/featureCatalog';
+import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
 import { cn } from '@/lib/utils';
 
 const emptyForm = {
@@ -402,6 +402,28 @@ const SuperAdminClinics = () => {
                     );
                   })}
                 </div>
+
+                {(featureRoleTab[clinic.id] || 'owner') === 'owner' && (
+                  <div className="mt-3 pl-3 border-l-2 border-slate-100">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                      Detail Menu Setup
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5">
+                      {SETUP_SUB_FEATURES.map((sub) => {
+                        const disabledForRole = clinic.disabled_features_by_role?.owner || [];
+                        return (
+                          <label key={sub.key} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                            <Checkbox
+                              checked={!disabledForRole.includes(sub.key)}
+                              onCheckedChange={() => toggleFeature(clinic, 'owner', sub.key)}
+                            />
+                            {sub.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

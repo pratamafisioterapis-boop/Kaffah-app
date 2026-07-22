@@ -24,6 +24,7 @@ export const FEATURE_CATALOG = [
   { key: 'accounting', label: 'Accounting System', roles: ['owner', 'admin'], match: (label) => label.includes('accounting') },
   { key: 'inventory', label: 'Stok Barang / Ambil Barang Gudang', roles: ['owner', 'admin'], match: (label) => label.includes('barang') || label.includes('inventory') },
   { key: 'check_transaksi', label: 'Check Transaksi', roles: ['admin'], match: (label) => label.includes('check transaksi') },
+  { key: 'setup_akun', label: 'Setup Akun', roles: ['admin'], match: (label) => label.includes('setup akun') },
   { key: 'modal_awal', label: 'Modal Awal', roles: ['owner'], match: (label) => label.includes('modal awal') },
   { key: 'bsi_reconciliation', label: 'Rekonsiliasi BSI', roles: ['owner'], match: (label) => label.includes('rekonsiliasi bsi') },
   { key: 'insentif_dokter', label: 'Konversi Insentif Dokter', roles: ['owner'], match: (label) => label.includes('insentif dokter') },
@@ -31,6 +32,7 @@ export const FEATURE_CATALOG = [
   { key: 'therapist_booking', label: 'Booking Calendar', roles: ['therapist'], match: (label) => label.includes('booking calendar') },
   { key: 'therapist_appointments', label: 'Riwayat Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat pasien') || label.includes('daftar appointment') },
   { key: 'therapist_evaluation', label: 'Evaluasi Pasien', roles: ['therapist'], match: (label) => label.includes('evaluasi pasien') },
+  { key: 'therapist_settings', label: 'Settings', roles: ['therapist'], match: (label) => label === 'settings' },
 ];
 
 // Feature catalog entries relevant to a given role only, in display order.
@@ -45,3 +47,26 @@ export const isNavItemDisabled = (label, role, disabledFeaturesForRole) => {
   const feature = getFeatureCatalogForRole(role).find((f) => f.match(lowerLabel));
   return feature ? disabledFeaturesForRole.includes(feature.key) : false;
 };
+
+// The "Setup" menu (owner only) is itself a tabbed page (see
+// SETTINGS_TAB_GROUPS in SettingsPage.jsx). Super Admin can additionally
+// hide individual Setup tabs per clinic — e.g. hide the WhatsApp tab for a
+// clinic that doesn't use Follow Up features — independently of the
+// top-level "Setup" toggle. Keys here match each tab's `value`.
+export const SETUP_SUB_FEATURES = [
+  { key: 'account_clinic', label: 'Akun & Klinik' },
+  { key: 'bank_accounts', label: 'Akun Bank' },
+  { key: 'accounting_cats', label: 'Akunting' },
+  { key: 'service_rates', label: 'Tarif Jasa' },
+  { key: 'payment', label: 'Pembayaran' },
+  { key: 'discount', label: 'Jenis Diskon' },
+  { key: 'whatsapp_settings', label: 'WhatsApp' },
+  { key: 'google_drive', label: 'Google Drive' },
+  { key: 'google_sheets', label: 'Backup Google Sheets' },
+  { key: 'diagnosis_service', label: 'Diagnosa & Layanan' },
+  { key: 'source', label: 'Sumber' },
+  { key: 'type', label: 'Tipe Pasien' },
+  { key: 'package', label: 'Tipe Paket' },
+  { key: 'design_style', label: 'Tampilan' },
+  { key: 'media_assets', label: 'Media' },
+];
