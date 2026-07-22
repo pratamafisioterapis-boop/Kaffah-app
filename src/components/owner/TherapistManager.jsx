@@ -292,9 +292,15 @@ const TherapistManager = () => {
 
     if (editingTherapist) {
 
-  // 🔥 UPDATE AUTH VIA RPC — hanya jika ada password baru
-  if (editingTherapist?.user_id && password && password.trim() !== '') {
-    if (password.length < 6) {
+  const emailChanged = formData.email && formData.email !== editingTherapist.email;
+  const passwordChanged = password && password.trim() !== '';
+
+  // 🔥 UPDATE AUTH VIA RPC — jika email login berubah dan/atau ada password baru.
+  // Login sebenarnya disimpan di auth.users, terpisah dari kolom email di
+  // tabel physiotherapists (yang cuma tampilan kartu) — keduanya harus
+  // disinkronkan lewat RPC ini, bukan hanya saat password diganti.
+  if (editingTherapist?.user_id && (emailChanged || passwordChanged)) {
+    if (passwordChanged && password.length < 6) {
       toast({ variant: "destructive", title: "Password Terlalu Pendek", description: "Password minimal 6 karakter." });
       setSaving(false);
       return;
@@ -302,17 +308,17 @@ const TherapistManager = () => {
 
     const { error: authError } = await supabase.rpc('update_auth_user', {
       p_user_id: editingTherapist.user_id,
-      p_email: formData.email || null,
-      p_password: password.trim()
+      p_email: emailChanged ? formData.email : null,
+      p_password: passwordChanged ? password.trim() : null
     });
 
     if (authError) {
       console.error('AUTH UPDATE ERROR:', authError);
-      toast({ variant: "destructive", title: "Gagal Update Password", description: authError.message || "Password tidak dapat diperbarui." });
+      toast({ variant: "destructive", title: "Gagal Update Akun Login", description: authError.message || "Email/Password tidak dapat diperbarui." });
       setSaving(false);
       return;
     } else {
-      console.log('Password berhasil diupdate untuk user:', editingTherapist.user_id);
+      console.log('Akun login berhasil diupdate untuk user:', editingTherapist.user_id);
     }
   }
 
