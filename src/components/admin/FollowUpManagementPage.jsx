@@ -2,14 +2,36 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getFollowUpQueue,
   markFollowUpAsSent,
-  deleteFollowUp
+  deleteFollowUp,
+  interpolateTemplate
 } from '@/lib/api';
-import { interpolateTemplate } from '@/lib/api';
 import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  CalendarCheck,
+  MessageCircle,
+  Package,
+  Clock,
+  Cake,
+  Stethoscope
+} from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+
+// Setiap tab bisa mewakili lebih dari satu follow_up_type — mis. "Pengingat
+// Terapi" juga harus menghitung reminder homecare (therapy_reminder_homecare),
+// yang sebelumnya tidak muncul di tab manapun karena tipenya berbeda dari
+// yang dicocokkan tab ini.
+const TAB_CONFIG = [
+  { value: 'booking_appointment', label: 'Booking', shortLabel: 'Booking', icon: CalendarCheck, types: ['booking_appointment'] },
+  { value: 'follow_up', label: 'Follow Up', shortLabel: 'Follow Up', icon: MessageCircle, types: ['follow_up'] },
+  { value: 'package_expiry', label: 'Paket', shortLabel: 'Paket', icon: Package, types: ['package_expiry'] },
+  { value: 'therapy_reminder', label: 'Pengingat Terapi', shortLabel: 'Reminder', icon: Clock, types: ['therapy_reminder', 'therapy_reminder_homecare'] },
+  { value: 'birthday_greeting', label: 'Ultah', shortLabel: 'Ultah', icon: Cake, types: ['birthday_greeting'] },
+  { value: 'reminder_therapist_h10', label: 'Jadwal Terapis Besok', shortLabel: 'Jadwal Besok', icon: Stethoscope, types: ['reminder_therapist_h10'] }
+];
 
 const FollowUpManagementPage = () => {
 
@@ -84,13 +106,15 @@ const FollowUpManagementPage = () => {
     timeZone: 'Asia/Makassar'
   });
 
+  const activeTabConfig = TAB_CONFIG.find(tab => tab.value === activeTab) || TAB_CONFIG[0];
+
   const statusRank = { pending: 0, failed: 1, sent: 2, completed: 2, cancelled: 3 };
 const byStatus = (a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
 
 const filteredItems = queueItems.filter(
   item =>
     item &&
-    item.follow_up_type === activeTab &&
+    activeTabConfig.types.includes(item.follow_up_type) &&
     item.scheduled_date?.split('T')[0] === today
 );
 const displayItems =
@@ -117,11 +141,11 @@ const displayItems =
 
       })
     : [...filteredItems].sort(byStatus);
-const getCount = (type) => {
+const getCount = (types) => {
   return queueItems.filter(
     i =>
       i &&
-      i.follow_up_type === type &&
+      types.includes(i.follow_up_type) &&
       i.scheduled_date?.split('T')[0] === today
   ).length;
 };
@@ -133,7 +157,7 @@ const isPWA =
   // UI
   // ===============================
   return (
-  <div className="space-y-6">
+  <div className="space-y-4 sm:space-y-6">
 
     {/* Hero Banner — desktop & PWA */}
     <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
@@ -155,7 +179,7 @@ const isPWA =
     </div>
 
     {/* ================= TABS SECTION ================= */}
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-6">
 
       <Tabs
         defaultValue="booking_appointment"
@@ -164,41 +188,34 @@ const isPWA =
         className="w-full"
       >
 
-        <TabsList className="bg-slate-50 border border-slate-200 rounded-xl p-1 flex overflow-x-auto">
-          
-          <TabsTrigger value="booking_appointment" className="flex-1 min-w-[120px]">
-            Booking ({getCount('booking_appointment')})
-          </TabsTrigger>
-
-          <TabsTrigger value="follow_up" className="flex-1 min-w-[120px]">
-            Follow Up ({getCount('follow_up')})
-          </TabsTrigger>
-
-          <TabsTrigger value="package_expiry" className="flex-1 min-w-[120px]">
-            Paket ({getCount('package_expiry')})
-          </TabsTrigger>
-
-          <TabsTrigger value="therapy_reminder" className="flex-1 min-w-[120px]">
-            Pengingat Terapi ({getCount('therapy_reminder')})
-          </TabsTrigger>
-
-          <TabsTrigger value="birthday_greeting" className="flex-1 min-w-[120px]">
-            Ultah ({getCount('birthday_greeting')})
-          </TabsTrigger>
-          <TabsTrigger value="reminder_therapist_h10" className="flex-1 min-w-[160px]">
-  Jadwal Terapis Besok ({getCount('reminder_therapist_h10')})
-</TabsTrigger>
+        <TabsList className="w-full h-auto flex-nowrap justify-start gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory bg-slate-50 border border-slate-200 rounded-xl p-1.5 -mx-1 px-1 sm:mx-0 sm:px-1.5">
+          {TAB_CONFIG.map(tab => {
+            const Icon = tab.icon;
+            const count = getCount(tab.types);
+            return (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="shrink-0 snap-start gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:shadow-sm"
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="text-[10px] sm:text-xs font-bold opacity-60">({count})</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
 
 
-        <TabsContent value={activeTab} className="mt-6">
+        <TabsContent value={activeTab} className="mt-4 sm:mt-6">
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-slate-50 rounded-2xl border border-slate-200 px-4 text-center">
               <CheckCircle2 className="w-12 h-12 text-slate-300 mb-3" />
               <h3 className="text-lg font-medium text-slate-900">
                 Tidak ada antrian
@@ -208,7 +225,7 @@ const isPWA =
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {displayItems.map(item => (
                 <FollowUpCard
                   key={item.id}

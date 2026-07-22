@@ -284,13 +284,16 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       return { data: [], success: true, error: null };
     }
 
-    // Filter via inner join ke patients.clinic_id di database, bukan .in(patient_id, [...ribuan id])
-    // yang bisa melebihi batas panjang URL untuk klinik dengan banyak pasien.
+    // Filter langsung pakai follow_up_queue.clinic_id (bukan inner join ke
+    // patients.clinic_id) supaya reminder untuk pasien tamu/guest booking
+    // (patient_id NULL, mis. dari appointment guest_name/guest_phone) tidak
+    // ikut hilang — inner join sebelumnya otomatis membuang baris tanpa
+    // pasangan di tabel patients.
     let query = supabase
       .from('follow_up_queue')
       .select(`
         *,
-        patient:patients!inner(
+        patient:patients(
           id,
           full_name,
           phone,
@@ -301,7 +304,7 @@ export const getFollowUpQueue = async (status = null, type = null) => {
           clinic_id
         )
       `)
-      .eq('patient.clinic_id', userRow.clinic_id);
+      .eq('clinic_id', userRow.clinic_id);
 
     // FILTER STATUS
     if (status) {
@@ -4352,13 +4355,14 @@ export const getFollowUpQueueFiltered = async ({
       return { data: [], success: true, error: null };
     }
 
-    // Filter via inner join ke patients.clinic_id di database, bukan .in(patient_id, [...ribuan id])
-    // yang bisa melebihi batas panjang URL untuk klinik dengan banyak pasien.
+    // Filter langsung pakai follow_up_queue.clinic_id (bukan inner join ke
+    // patients.clinic_id) supaya reminder untuk pasien tamu/guest booking
+    // (patient_id NULL) tidak ikut hilang — lihat catatan di getFollowUpQueue.
     let query = supabase
       .from('follow_up_queue')
       .select(`
         *,
-        patient:patients!inner (
+        patient:patients (
           id,
           full_name,
           phone,
@@ -4366,7 +4370,7 @@ export const getFollowUpQueueFiltered = async ({
           clinic_id
         )
       `)
-      .eq('patient.clinic_id', userRow.clinic_id)
+      .eq('clinic_id', userRow.clinic_id)
       .order('scheduled_date', { ascending: true });
 
     if (status) {

@@ -237,40 +237,39 @@ const getPackageRisk = () => {
 
 const packageRisk = getPackageRisk();
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
+    <Card className="rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
 
       {/* ===== Premium Header ===== */}
-      <div className={`bg-gradient-to-r ${typeConfig.header} p-5`}>
+      <div className={`bg-gradient-to-r ${typeConfig.header} p-3 sm:p-5`}>
 
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
 
-          <Avatar className="h-12 w-12 shadow-sm">
-            <AvatarFallback className={`${typeConfig.avatar} font-semibold text-sm`}>
+          <Avatar className="h-9 w-9 sm:h-12 sm:w-12 shadow-sm shrink-0">
+            <AvatarFallback className={`${typeConfig.avatar} font-semibold text-xs sm:text-sm`}>
               {initials}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <h3
-                  className="font-semibold text-slate-900 truncate"
-                  title={patientName}
-                >
-                  {patientName}
-                </h3>
-                {isGuest && item.follow_up_type !== 'reminder_therapist_h10' && (
-                  <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
-                    Pasien Baru
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3
+                className="font-semibold text-sm sm:text-base text-slate-900 truncate max-w-full"
+                title={patientName}
+              >
+                {patientName}
+              </h3>
+              {isGuest && item.follow_up_type !== 'reminder_therapist_h10' && (
+                <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
+                  Pasien Baru
+                </span>
+              )}
+            </div>
 
-              <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
 
   <Badge
     variant="outline"
-    className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${typeConfig.badge}`}
+    className={`flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full ${typeConfig.badge}`}
   >
     {typeConfig.icon}
     {typeConfig.label}
@@ -278,7 +277,7 @@ const packageRisk = getPackageRisk();
 
   <Badge
     variant="outline"
-    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
+    className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-semibold
       ${
         item.status === 'failed'
           ? 'bg-red-100 text-red-700 border-red-200'
@@ -318,9 +317,8 @@ const packageRisk = getPackageRisk();
   </Badge>
 
 </div>
-            </div>
 
-            <div className="flex items-center flex-wrap text-xs text-slate-600 mt-1 gap-x-3 gap-y-1">
+            <div className="flex items-center flex-wrap text-[11px] sm:text-xs text-slate-600 mt-2 gap-x-3 gap-y-1">
               <span className="flex items-center gap-1 min-w-0 shrink-0">
                 <Phone className="w-3 h-3 shrink-0" />
                 <span className="truncate">{patientPhone}</span>
@@ -333,7 +331,7 @@ const packageRisk = getPackageRisk();
               )}
             </div>
 
-            <div className="flex items-center gap-1 text-xs text-slate-500 mt-2">
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 mt-1.5 sm:mt-2">
               <Calendar className="w-3 h-3" />
               {formatDateDisplay()} • {formattedTime}
             </div>
@@ -368,17 +366,17 @@ const packageRisk = getPackageRisk();
 
   return (
 
-    <div className="mt-3">
+    <div className="mt-2.5 sm:mt-3">
 
       <div
         className={`
-          text-[10px]
+          text-[9px] sm:text-[10px]
           font-semibold
           px-2
           py-1
           rounded-lg
           inline-flex
-          mb-2
+          mb-1.5 sm:mb-2
           ${colorConfig.bg}
           ${colorConfig.text}
         `}
@@ -386,52 +384,52 @@ const packageRisk = getPackageRisk();
         {colorConfig.label}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
 
         <div
           className={`
-            rounded-xl
+            rounded-lg sm:rounded-xl
             border
-            px-3
-            py-2
+            px-2.5 sm:px-3
+            py-1.5 sm:py-2
             ${colorConfig.bg}
             ${colorConfig.border}
           `}
         >
-          <div className={`text-[10px] uppercase ${colorConfig.text}`}>
+          <div className={`text-[9px] sm:text-[10px] uppercase ${colorConfig.text}`}>
             Masa Berlaku
           </div>
 
           <div
-            className={`text-xl font-bold mt-1 ${colorConfig.value}`}
+            className={`text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 ${colorConfig.value}`}
           >
             {daysLeft}
           </div>
 
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[9px] sm:text-[10px] text-slate-500">
             Hari
           </div>
         </div>
 
         <div
           className="
-            rounded-xl
+            rounded-lg sm:rounded-xl
             border
             border-slate-200
             bg-slate-50
-            px-3
-            py-2
+            px-2.5 sm:px-3
+            py-1.5 sm:py-2
           "
         >
-          <div className="text-[10px] uppercase text-slate-600">
+          <div className="text-[9px] sm:text-[10px] uppercase text-slate-600">
             Sesi Tersisa
           </div>
 
-          <div className="text-xl font-bold mt-1 text-slate-900">
+          <div className="text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 text-slate-900">
             {sessionsRemaining}
           </div>
 
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[9px] sm:text-[10px] text-slate-500">
             Sesi
           </div>
         </div>
@@ -448,9 +446,9 @@ const packageRisk = getPackageRisk();
       </div>
 
       {/* ===== Message Section ===== */}
-      <div className="p-5 flex-grow">
+      <div className="p-3 sm:p-5 flex-grow">
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-slate-700 leading-relaxed shadow-sm">
+        <div className="bg-white rounded-lg sm:rounded-xl border border-slate-200 p-3 sm:p-4 text-xs sm:text-sm text-slate-700 leading-relaxed shadow-sm">
 
           <div className={expanded ? '' : 'line-clamp-4'}>
             {displayMessage || 'No message content'}
@@ -469,11 +467,11 @@ const packageRisk = getPackageRisk();
       </div>
 
       {/* ===== Actions ===== */}
-      <div className="px-5 pb-5 flex flex-wrap gap-2">
+      <div className="px-3 pb-3 sm:px-5 sm:pb-5 flex flex-wrap items-center gap-1.5 sm:gap-2">
 
   <Button
     size="sm"
-    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1"
+    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
     onClick={handleSendWhatsApp}
     disabled={isProcessing}
   >
@@ -486,7 +484,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="outline"
-    className="flex-1 rounded-xl"
+    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
     onClick={() => handleAction(onComplete)}
     disabled={isProcessing}
   >
@@ -498,7 +496,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="ghost"
-    className="rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+    className="rounded-lg sm:rounded-xl h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
     onClick={handleCopyMessage}
     title="Salin pesan"
   >
@@ -508,7 +506,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="ghost"
-    className="rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
+    className="rounded-lg sm:rounded-xl h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
     onClick={() => handleAction(onDelete)}
     disabled={isProcessing}
   >
