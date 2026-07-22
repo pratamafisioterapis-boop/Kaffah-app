@@ -476,26 +476,25 @@ const RevenueOverview = ({ dateRange }) => {
       </div>
       {/* ── Dana Paket ── */}
       <div className="bg-white rounded-2xl border border-amber-100 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
               <DollarSign className="w-6 h-6 text-amber-600" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800">Dana Paket Belum Terealisasi</h3>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-slate-800 leading-snug">Dana Paket Belum Terealisasi</h3>
               <p className="text-xs text-slate-400 mt-0.5">Sisa sesi paket aktif yang belum dilakukan</p>
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600">
-              {danaPacket.jumlahPaket} paket aktif
-            </span>
-          </div>
+          <span className="self-start sm:self-auto shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 whitespace-nowrap">
+            {danaPacket.jumlahPaket} paket aktif
+          </span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
           <div className="bg-amber-50 rounded-xl p-4 min-w-0">
-            <p className="text-xl sm:text-2xl md:text-3xl font-black text-amber-600 leading-none break-words">{formatFull(danaPacket.total)}</p>
+            <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none whitespace-nowrap">{formatShortCurrency(danaPacket.total)}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
+            <p className="text-[11px] text-slate-400 mt-0.5 break-words">{formatFull(danaPacket.total)}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-4">
             <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.sisaSesi}</p>
