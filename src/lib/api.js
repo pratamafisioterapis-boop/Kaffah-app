@@ -2459,16 +2459,38 @@ export const updateReceivable = async (id, payload) => {
 };
 export const deleteAdminExpense = async (id) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data: existing } = await supabase
+      .from('admin_expenses')
+      .select('clinic_id, amount, category')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('admin_expenses')
       .delete()
       .eq('id', id);
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: existing?.clinic_id,
+      actorId: userId,
+      action: 'delete',
+      kind: 'expense',
+      amount: existing?.amount,
+      category: existing?.category
+    });
+
     return { success: true, error: null };
   }, 'deleteAdminExpense');
 };
 export const updateAdminExpense = async (id, payload) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
     const { data, error } = await supabase
       .from('admin_expenses')
       .update({
@@ -2485,6 +2507,16 @@ export const updateAdminExpense = async (id, payload) => {
       .select()
       .single();
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: data?.clinic_id,
+      actorId: userId,
+      action: 'update',
+      kind: 'expense',
+      amount: data?.amount,
+      category: data?.category
+    });
+
     return { data, success: true, error: null };
   }, 'updateAdminExpense');
 };
@@ -2511,6 +2543,16 @@ export const createAdminExpense = async (payload) => {
       .select()
       .single();
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: userRow?.clinic_id,
+      actorId: userId,
+      action: 'create',
+      kind: 'expense',
+      amount: data?.amount,
+      category: data?.category
+    });
+
     return { data, success: true, error: null };
   }, 'createAdminExpense');
 };
@@ -2671,16 +2713,38 @@ export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {})
 };
 export const deleteAdminIncome = async (id) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data: existing } = await supabase
+      .from('admin_income')
+      .select('clinic_id, amount, category')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('admin_income')
       .delete()
       .eq('id', id);
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: existing?.clinic_id,
+      actorId: userId,
+      action: 'delete',
+      kind: 'income',
+      amount: existing?.amount,
+      category: existing?.category
+    });
+
     return { success: true, error: null };
   }, 'deleteAdminIncome');
 };
 export const updateAdminIncome = async (id, payload) => {
   return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
     const { data, error } = await supabase
       .from('admin_income')
       .update({
@@ -2697,6 +2761,16 @@ export const updateAdminIncome = async (id, payload) => {
       .select()
       .single();
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: data?.clinic_id,
+      actorId: userId,
+      action: 'update',
+      kind: 'income',
+      amount: data?.amount,
+      category: data?.category
+    });
+
     return { data, success: true, error: null };
   }, 'updateAdminIncome');
 };
@@ -2723,6 +2797,16 @@ export const createAdminIncome = async (payload) => {
       .select()
       .single();
     if (error) return { error };
+
+    notifyClinicOwnersAboutTransaction({
+      clinicId: userRow?.clinic_id,
+      actorId: userId,
+      action: 'create',
+      kind: 'income',
+      amount: data?.amount,
+      category: data?.category
+    });
+
     return { data, success: true, error: null };
   }, 'createAdminIncome');
 };
@@ -3742,6 +3826,46 @@ export const sendPushNotification = async (payload) => {
     };
 
   }, 'sendPushNotification');
+};
+
+// Kirim push notification ke semua owner sebuah klinik saat admin melakukan
+// input/edit/hapus data pengeluaran atau pemasukan. Non-blocking: kegagalan
+// notifikasi tidak boleh menggagalkan operasi accounting itu sendiri.
+const notifyClinicOwnersAboutTransaction = async ({ clinicId, actorId, action, kind, amount, category }) => {
+  try {
+    if (!clinicId) return;
+
+    const { data: owners } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clinic_id', clinicId)
+      .eq('role', 'owner');
+
+    if (!owners || owners.length === 0) return;
+
+    let actorName = 'Admin';
+    if (actorId) {
+      const { data: actorRow } = await supabase.from('users').select('full_name').eq('id', actorId).single();
+      if (actorRow?.full_name) actorName = actorRow.full_name;
+    }
+
+    const kindLabel = kind === 'expense' ? 'Pengeluaran' : 'Pemasukan';
+    const actionVerb = { create: 'menambahkan', update: 'mengubah', delete: 'menghapus' }[action] || action;
+    const actionTitle = { create: 'Baru', update: 'Diperbarui', delete: 'Dihapus' }[action] || '';
+    const formattedAmount = `Rp ${Number(amount || 0).toLocaleString('id-ID')}`;
+
+    const title = `${kindLabel} ${actionTitle}`.trim();
+    const body = `${actorName} ${actionVerb} ${kindLabel.toLowerCase()} ${formattedAmount}${category ? ` (${category})` : ''}`;
+
+    await Promise.all(owners.map(owner => sendPushNotification({
+      user_id: owner.id,
+      title,
+      body,
+      url: '/owner/accounting'
+    })));
+  } catch (err) {
+    console.warn('[notifyClinicOwnersAboutTransaction] failed:', err);
+  }
 };
 
 export const sendWhatsAppMessageManual = async (payload) => {
