@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ListChecks, Plus, Pencil, Trash2, Loader2, ArrowUp, ArrowDown, Power } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ListChecks, Plus, Pencil, Trash2, Loader2, ArrowUp, ArrowDown, Power, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -12,12 +12,15 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import {
   getAdminChecklistItemsSetup, createAdminChecklistItem, updateAdminChecklistItem,
-  deleteAdminChecklistItem, reorderAdminChecklistItem
+  deleteAdminChecklistItem, reorderAdminChecklistItem, getAdmins
 } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 const AdminChecklistManager = () => {
   const { toast } = useToast();
   const [items, setItems] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [scope, setScope] = useState(null); // null = task umum (semua admin), else admin.id
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -27,16 +30,20 @@ const AdminChecklistManager = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({ title: '', description: '' });
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await getAdminChecklistItemsSetup();
+    const { data, error } = await getAdminChecklistItemsSetup(scope);
     if (!error) setItems(data || []);
     setLoading(false);
-  };
+  }, [scope]);
+
+  useEffect(() => {
+    getAdmins().then(({ data }) => setAdmins(data || []));
+  }, []);
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [fetchItems]);
 
   const openAddDialog = () => {
     setFormData({ title: '', description: '' });
@@ -68,7 +75,7 @@ const AdminChecklistManager = () => {
           description: formData.description.trim() || null
         });
       } else {
-        result = await createAdminChecklistItem(formData.title, formData.description);
+        result = await createAdminChecklistItem(formData.title, formData.description, scope);
       }
       if (result.error) throw result.error;
 
@@ -127,6 +134,41 @@ const AdminChecklistManager = () => {
           <Plus className="w-4 h-4" /> Tambah Task
         </Button>
       </div>
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setScope(null)}
+          className={cn(
+            "shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors",
+            scope === null
+              ? "bg-[#0f1e3d] text-white border-[#0f1e3d]"
+              : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+          )}
+        >
+          <Users className="w-3.5 h-3.5" /> Umum (Semua Admin)
+        </button>
+        {admins.map((admin) => (
+          <button
+            key={admin.id}
+            type="button"
+            onClick={() => setScope(admin.id)}
+            className={cn(
+              "shrink-0 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors",
+              scope === admin.id
+                ? "bg-[#0f1e3d] text-white border-[#0f1e3d]"
+                : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+            )}
+          >
+            {admin.full_name}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-400 -mt-3">
+        {scope === null
+          ? 'Task di sini muncul untuk semua admin di klinik ini.'
+          : `Task di sini hanya muncul untuk ${admins.find(a => a.id === scope)?.full_name || 'admin ini'}.`}
+      </p>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (

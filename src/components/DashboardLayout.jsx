@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud
+  UploadCloud, UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -36,7 +36,8 @@ const iconMap = {
   FileSearch,
   FileSpreadsheet,
   Award,
-  UploadCloud
+  UploadCloud,
+  UserCog
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -241,7 +242,7 @@ const isPWA =
         };
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      } else if (role === 'owner') {
-         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
+         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Admin Management', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
          const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;

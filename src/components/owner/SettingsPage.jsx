@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import AdminChecklistManager from '@/components/owner/AdminChecklistManager';
-import AdminChecklistHistory from '@/components/owner/AdminChecklistHistory';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
-  Check, Users, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, ListChecks, History, Building, HardDrive, FileSpreadsheet
+  Check, ClipboardPaste, BookOpen, Image as ImageIcon,
+  FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -38,7 +36,6 @@ import {
 } from "@/components/ui/dialog";
 
 // Import Managers
-import AdminManager from '@/components/owner/AdminManager';
 import AccountingCategoryManager from '@/components/owner/AccountingCategoryManager';
 import MediaAssetManager from '@/components/owner/MediaAssetManager';
 import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
@@ -928,7 +925,6 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Akun & Tim',
     items: [
       { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
-      { value: 'admin', icon: Users, label: 'Admin & Staff' },
     ],
   },
   {
@@ -965,18 +961,11 @@ const SETTINGS_TAB_GROUPS = [
       { value: 'media_assets', icon: ImageIcon, label: 'Media' },
     ],
   },
-  {
-    label: 'Checklist Admin',
-    items: [
-      { value: 'admin_checklist', icon: ListChecks, label: 'Checklist Admin' },
-      { value: 'admin_checklist_history', icon: History, label: 'Riwayat Checklist' },
-    ],
-  },
 ];
 
 const SettingsPage = () => {
   const [reloadGallery, setReloadGallery] = useState(0);
-  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'admin';
+  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'account_clinic';
 
   const handleUploadSuccess = () => {
     setReloadGallery(prev => prev + 1);
@@ -1024,9 +1013,6 @@ const SettingsPage = () => {
           <TabsContent value="account_clinic">
             <AccountClinicManager />
           </TabsContent>
-          <TabsContent value="admin">
-            <AdminManager />
-          </TabsContent>
           <TabsContent value="bank_accounts">
             <OwnerBankAccountManager />
           </TabsContent>
@@ -1070,12 +1056,6 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="service_rates">
             <ServiceRateManager />
-          </TabsContent>
-          <TabsContent value="admin_checklist">
-            <AdminChecklistManager />
-          </TabsContent>
-          <TabsContent value="admin_checklist_history">
-            <AdminChecklistHistory />
           </TabsContent>
         </div>
       </Tabs>

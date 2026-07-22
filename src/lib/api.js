@@ -5533,16 +5533,19 @@ export const updateServiceRate = async (id, rate) => {
 // ============================================
 
 // --- OWNER SETUP: kelola master list checklist ---
-export const getAdminChecklistItemsSetup = async () => {
+export const getAdminChecklistItemsSetup = async (assignedAdminId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('admin_checklist_items')
       .select('*')
-      .eq('clinic_id', userRow?.clinic_id)
+      .eq('clinic_id', userRow?.clinic_id);
+    query = assignedAdminId ? query.eq('assigned_admin_id', assignedAdminId) : query.is('assigned_admin_id', null);
+
+    const { data, error } = await query
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
     if (error) return { error };
@@ -5550,16 +5553,18 @@ export const getAdminChecklistItemsSetup = async () => {
   }, 'getAdminChecklistItemsSetup', { retry: true });
 };
 
-export const createAdminChecklistItem = async (title, description = '') => {
+export const createAdminChecklistItem = async (title, description = '', assignedAdminId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data: existing } = await supabase
+    let existingQuery = supabase
       .from('admin_checklist_items')
       .select('sort_order')
-      .eq('clinic_id', userRow?.clinic_id)
+      .eq('clinic_id', userRow?.clinic_id);
+    existingQuery = assignedAdminId ? existingQuery.eq('assigned_admin_id', assignedAdminId) : existingQuery.is('assigned_admin_id', null);
+    const { data: existing } = await existingQuery
       .order('sort_order', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -5573,7 +5578,8 @@ export const createAdminChecklistItem = async (title, description = '') => {
         title: title.trim(),
         description: description?.trim() || null,
         sort_order: nextOrder,
-        is_active: true
+        is_active: true,
+        assigned_admin_id: assignedAdminId || null
       })
       .select()
       .single();
@@ -5640,6 +5646,7 @@ export const getTodayAdminChecklist = async () => {
       .select('*')
       .eq('clinic_id', userRow?.clinic_id)
       .eq('is_active', true)
+      .or(`assigned_admin_id.is.null,assigned_admin_id.eq.${userId}`)
       .order('sort_order', { ascending: true });
     if (itemsError) return { error: itemsError };
 
@@ -5713,35 +5720,45 @@ export const updateAdminChecklistNote = async (itemId, note) => {
   }, 'updateAdminChecklistNote');
 };
 // --- OWNER: riwayat & catatan checklist harian ---
-export const getAdminChecklistHistory = async (startDate, endDate) => {
+export const getAdminChecklistHistory = async (startDate, endDate, assignedAdminId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data: items, error: itemsError } = await supabase
+    let itemsQuery = supabase
       .from('admin_checklist_items')
       .select('*')
-      .eq('clinic_id', userRow?.clinic_id)
-      .order('sort_order', { ascending: true });
+      .eq('clinic_id', userRow?.clinic_id);
+    if (assignedAdminId) {
+      itemsQuery = itemsQuery.or(`assigned_admin_id.is.null,assigned_admin_id.eq.${assignedAdminId}`);
+    }
+    const { data: items, error: itemsError } = await itemsQuery.order('sort_order', { ascending: true });
     if (itemsError) return { error: itemsError };
+
+    const itemIds = (items || []).map(i => i.id);
+    if (itemIds.length === 0) return { data: [], error: null };
 
     const { data: completions, error: compError } = await supabase
       .from('admin_checklist_completions')
       .select('*')
       .eq('clinic_id', userRow?.clinic_id)
+      .in('item_id', itemIds)
       .gte('checklist_date', startDate)
       .lte('checklist_date', endDate)
       .order('checklist_date', { ascending: false });
     if (compError) return { error: compError };
 
-    const completedByIds = [...new Set((completions || []).map(c => c.completed_by).filter(Boolean))];
+    const involvedUserIds = new Set();
+    (completions || []).forEach(c => { if (c.completed_by) involvedUserIds.add(c.completed_by); });
+    (items || []).forEach(i => { if (i.assigned_admin_id) involvedUserIds.add(i.assigned_admin_id); });
+
     let usersMap = {};
-    if (completedByIds.length > 0) {
+    if (involvedUserIds.size > 0) {
       const { data: usersData } = await supabase
         .from('users')
         .select('id, full_name')
-        .in('id', completedByIds);
+        .in('id', [...involvedUserIds]);
       usersMap = (usersData || []).reduce((acc, u) => {
         acc[u.id] = u.full_name;
         return acc;
@@ -5756,11 +5773,14 @@ export const getAdminChecklistHistory = async (startDate, endDate) => {
     const groupedByDate = (completions || []).reduce((acc, c) => {
       const date = c.checklist_date;
       if (!acc[date]) acc[date] = [];
+      const item = itemsMap[c.item_id];
       acc[date].push({
         ...c,
-        item_title: itemsMap[c.item_id]?.title || 'Task terhapus',
-        item_description: itemsMap[c.item_id]?.description || null,
-        completed_by_name: c.completed_by ? (usersMap[c.completed_by] || 'Admin') : null
+        item_title: item?.title || 'Task terhapus',
+        item_description: item?.description || null,
+        completed_by_name: c.completed_by ? (usersMap[c.completed_by] || 'Admin') : null,
+        assigned_admin_id: item?.assigned_admin_id || null,
+        assigned_admin_name: item?.assigned_admin_id ? (usersMap[item.assigned_admin_id] || 'Admin') : null
       });
       return acc;
     }, {});
