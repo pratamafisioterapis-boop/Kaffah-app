@@ -2642,6 +2642,19 @@ export const takeInventoryStock = async ({ item_id, quantity, taken_date, notes 
   }, 'takeInventoryStock');
 };
 
+export const getInventoryStockIns = async ({ itemId } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('inventory_stock_ins')
+      .select('*, inventory_items ( item_name, unit )')
+      .order('purchase_date', { ascending: false });
+    if (itemId) query = query.eq('item_id', itemId);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getInventoryStockIns');
+};
+
 export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {}) => {
   return safeQuery(async () => {
     let query = supabase
