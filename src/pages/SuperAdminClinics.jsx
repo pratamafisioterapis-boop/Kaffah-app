@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal } from 'lucide-react';
-import { ROLES, ROLE_LABELS, getFeatureCatalogForRole } from '@/lib/featureCatalog';
+import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, getDependentSubFeatureLabels } from '@/lib/featureCatalog';
 import { cn } from '@/lib/utils';
 
 const emptyForm = {
@@ -391,13 +391,22 @@ const SuperAdminClinics = () => {
                   {getFeatureCatalogForRole(featureRoleTab[clinic.id] || 'owner').map((feature) => {
                     const activeRole = featureRoleTab[clinic.id] || 'owner';
                     const disabledForRole = clinic.disabled_features_by_role?.[activeRole] || [];
+                    const hiddenAlongWith = getDependentSubFeatureLabels(feature.key);
                     return (
-                      <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                      <label key={feature.key} className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
                         <Checkbox
+                          className="mt-0.5"
                           checked={!disabledForRole.includes(feature.key)}
                           onCheckedChange={() => toggleFeature(clinic, activeRole, feature.key)}
                         />
-                        {feature.label}
+                        <span>
+                          {feature.label}
+                          {hiddenAlongWith.length > 0 && (
+                            <span className="block text-[10px] text-slate-400">
+                              Nonaktif ini juga menyembunyikan: {hiddenAlongWith.join(', ')}
+                            </span>
+                          )}
+                        </span>
                       </label>
                     );
                   })}

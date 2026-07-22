@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
@@ -47,6 +47,7 @@ import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { isFeatureBlockedByDependency } from '@/lib/featureCatalog';
 
 // --- Dedicated Discount Type Manager ---
 const DiscountTypeManager = () => {
@@ -964,8 +965,38 @@ const SETTINGS_TAB_GROUPS = [
 ];
 
 const SettingsPage = () => {
+  const { userDetails } = useAuth();
   const [reloadGallery, setReloadGallery] = useState(0);
-  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'account_clinic';
+  const [disabledFeatures, setDisabledFeatures] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchDisabledFeatures = async () => {
+      if (!userDetails?.clinic_id) return;
+      const { data } = await supabase
+        .from('clinics')
+        .select('disabled_features_by_role')
+        .eq('id', userDetails.clinic_id)
+        .single();
+      if (active) setDisabledFeatures(data?.disabled_features_by_role?.owner || []);
+    };
+    fetchDisabledFeatures();
+    return () => { active = false; };
+  }, [userDetails?.clinic_id]);
+
+  const visibleTabGroups = useMemo(() => (
+    SETTINGS_TAB_GROUPS
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !isFeatureBlockedByDependency(item.value, disabledFeatures)),
+      }))
+      .filter((group) => group.items.length > 0)
+  ), [disabledFeatures]);
+
+  const requestedTab = new URLSearchParams(window.location.search).get('tab');
+  const initialTab = requestedTab && !isFeatureBlockedByDependency(requestedTab, disabledFeatures)
+    ? requestedTab
+    : 'account_clinic';
 
   const handleUploadSuccess = () => {
     setReloadGallery(prev => prev + 1);
@@ -991,7 +1022,7 @@ const SettingsPage = () => {
 
       <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="flex flex-col h-auto gap-3 bg-transparent p-0 border-none items-stretch w-full">
-          {SETTINGS_TAB_GROUPS.map((group) => (
+          {visibleTabGroups.map((group) => (
             <div key={group.label} className="bg-slate-100/70 rounded-2xl border border-slate-200 p-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1 mb-2">{group.label}</p>
               <div className="flex flex-wrap gap-1.5">
