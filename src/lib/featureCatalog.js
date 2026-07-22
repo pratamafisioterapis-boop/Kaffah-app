@@ -37,46 +37,34 @@ export const FEATURE_CATALOG = [
 export const getFeatureCatalogForRole = (role) =>
   FEATURE_CATALOG.filter((f) => f.roles.includes(role));
 
-// Some setup/settings sections aren't standalone nav items (they're a tab
-// nested inside a bigger page, e.g. "WhatsApp" living inside Setup) but only
-// make sense when another feature is enabled. Declaring the relationship
-// here lets any page cascade-hide such a section without duplicating the
-// on/off logic — add an entry whenever a new "X only matters if Y is on"
-// pairing comes up, no need to touch the pages that consume this file.
-// Key: an arbitrary sub-feature id (used by the consuming page, e.g. a Setup
-// tab `value`). Value: FEATURE_CATALOG key(s) it depends on.
-export const FEATURE_DEPENDENCIES = {
-  whatsapp_settings: ['follow_up_management'],
-};
-
-// Human label for a sub-feature key, used only for super-admin UI hints.
-export const SUB_FEATURE_LABELS = {
-  whatsapp_settings: 'WhatsApp (Setup)',
-};
-
-// True if any dependency of `key` (a FEATURE_CATALOG key or a sub-feature
-// key from FEATURE_DEPENDENCIES) is disabled for this role at this clinic.
-export const isFeatureBlockedByDependency = (key, disabledFeaturesForRole) => {
-  const deps = FEATURE_DEPENDENCIES[key];
-  if (!deps || deps.length === 0 || !disabledFeaturesForRole?.length) return false;
-  return deps.some((dep) => disabledFeaturesForRole.includes(dep));
-};
-
-// Labels of sub-features that will also disappear if `featureKey` is turned
-// off, for showing a hint next to that feature's checkbox in super admin.
-export const getDependentSubFeatureLabels = (featureKey) =>
-  Object.entries(FEATURE_DEPENDENCIES)
-    .filter(([, deps]) => deps.includes(featureKey))
-    .map(([subKey]) => SUB_FEATURE_LABELS[subKey] || subKey);
-
 // Returns true if this nav item should be hidden for this role because its
-// matching feature key is in that role's disabled list at this clinic, or
-// because a feature it depends on is disabled.
+// matching feature key is in that role's disabled list at this clinic.
 export const isNavItemDisabled = (label, role, disabledFeaturesForRole) => {
   if (!disabledFeaturesForRole || disabledFeaturesForRole.length === 0) return false;
   const lowerLabel = (label || '').toLowerCase();
   const feature = getFeatureCatalogForRole(role).find((f) => f.match(lowerLabel));
-  if (!feature) return false;
-  if (disabledFeaturesForRole.includes(feature.key)) return true;
-  return isFeatureBlockedByDependency(feature.key, disabledFeaturesForRole);
+  return feature ? disabledFeaturesForRole.includes(feature.key) : false;
 };
+
+// The "Setup" menu (owner only) is itself a tabbed page (see
+// SETTINGS_TAB_GROUPS in SettingsPage.jsx). Super Admin can additionally
+// hide individual Setup tabs per clinic — e.g. hide the WhatsApp tab for a
+// clinic that doesn't use Follow Up features — independently of the
+// top-level "Setup" toggle. Keys here match each tab's `value`.
+export const SETUP_SUB_FEATURES = [
+  { key: 'account_clinic', label: 'Akun & Klinik' },
+  { key: 'bank_accounts', label: 'Akun Bank' },
+  { key: 'accounting_cats', label: 'Akunting' },
+  { key: 'service_rates', label: 'Tarif Jasa' },
+  { key: 'payment', label: 'Pembayaran' },
+  { key: 'discount', label: 'Jenis Diskon' },
+  { key: 'whatsapp_settings', label: 'WhatsApp' },
+  { key: 'google_drive', label: 'Google Drive' },
+  { key: 'google_sheets', label: 'Backup Google Sheets' },
+  { key: 'diagnosis_service', label: 'Diagnosa & Layanan' },
+  { key: 'source', label: 'Sumber' },
+  { key: 'type', label: 'Tipe Pasien' },
+  { key: 'package', label: 'Tipe Paket' },
+  { key: 'design_style', label: 'Tampilan' },
+  { key: 'media_assets', label: 'Media' },
+];

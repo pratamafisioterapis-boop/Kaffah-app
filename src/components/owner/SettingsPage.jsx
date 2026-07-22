@@ -47,7 +47,6 @@ import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { isFeatureBlockedByDependency } from '@/lib/featureCatalog';
 
 // --- Dedicated Discount Type Manager ---
 const DiscountTypeManager = () => {
@@ -988,15 +987,16 @@ const SettingsPage = () => {
     SETTINGS_TAB_GROUPS
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => !isFeatureBlockedByDependency(item.value, disabledFeatures)),
+        items: group.items.filter((item) => !disabledFeatures.includes(item.value)),
       }))
       .filter((group) => group.items.length > 0)
   ), [disabledFeatures]);
 
+  const firstVisibleTab = visibleTabGroups[0]?.items[0]?.value || 'account_clinic';
   const requestedTab = new URLSearchParams(window.location.search).get('tab');
-  const initialTab = requestedTab && !isFeatureBlockedByDependency(requestedTab, disabledFeatures)
+  const initialTab = requestedTab && !disabledFeatures.includes(requestedTab)
     ? requestedTab
-    : 'account_clinic';
+    : firstVisibleTab;
 
   const handleUploadSuccess = () => {
     setReloadGallery(prev => prev + 1);
