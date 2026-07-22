@@ -35,14 +35,17 @@ const DailyEvaluationReadOnly = () => {
   const fetchSoapRecords = async () => {
     setLoading(true);
     try {
-      const { data: patients, error: patientError } = await getPatients();
-      if (patientError) throw patientError;
-      const clinicPatientIds = (patients || []).map(p => p.id);
-      if (clinicPatientIds.length === 0) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      if (!userRow?.clinic_id) {
         setPatientGroups([]);
         return;
       }
-      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients(id, full_name, medical_record_number), therapist:users!created_by(full_name)`).in('patient_id', clinicPatientIds).order('created_at', { ascending: false });
+      // Filter via inner join ke patients.clinic_id di database. Sebelumnya memakai
+      // getPatients() yang dibatasi 50 pasien aktif teratas, sehingga evaluasi harian
+      // untuk klinik dengan banyak pasien (mis. >50) hanya menampilkan sebagian kecil data.
+      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients!inner(id, full_name, medical_record_number, clinic_id), therapist:users!created_by(full_name)`).eq('patient.clinic_id', userRow.clinic_id).order('created_at', { ascending: false });
       if (error) throw error;
       const grouped = {};
       data.forEach(record => {
@@ -62,7 +65,14 @@ const DailyEvaluationReadOnly = () => {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients(full_name), therapist:users!created_by(full_name)`).order('created_at', { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      if (!userRow?.clinic_id) {
+        toast({ title: "Tidak ada data", description: "Belum ada data evaluasi harian untuk diekspor." });
+        return;
+      }
+      const { data, error } = await supabase.from('medical_records').select(`*, patient:patients!inner(full_name, clinic_id), therapist:users!created_by(full_name)`).eq('patient.clinic_id', userRow.clinic_id).order('created_at', { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) { toast({ title: "Tidak ada data", description: "Belum ada data evaluasi harian untuk diekspor." }); return; }
       exportDailyRecapsToCSV(data);
