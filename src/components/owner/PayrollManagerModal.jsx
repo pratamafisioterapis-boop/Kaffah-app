@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import {
   getPayrollRecordsForTherapist, upsertPayrollRecord, deletePayrollRecord, getCurrentClinic,
-  getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getServiceRates,
+  getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getServiceRates, getRemunerationReport,
 } from '@/lib/api';
 import {
-  calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, getTherapistPeriodRange,
+  calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
+  getTherapistPeriodRange,
 } from '@/lib/utils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
@@ -48,11 +49,13 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [calculatingAuto, setCalculatingAuto] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [markingPaidId, setMarkingPaidId] = useState(null);
+  const [commissionBreakdown, setCommissionBreakdown] = useState(null);
 
   useEffect(() => {
     if (open && therapist?.id) {
       setForm(emptyForm(therapist));
       setAttendanceDays(0);
+      setCommissionBreakdown(null);
       fetchRecords();
       fetchClinic();
     }
@@ -127,10 +130,30 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
         }
       }
 
+      // Komisi remunerasi: 2% (atau tarif klinik) dari profit (omzet - take
+      // home pay sebelum komisi), discale oleh skor performa remunerasi.
+      const revenue = calculateFullSalary(therapistRecaps);
+      const { data: remunerationReport } = await getRemunerationReport(therapist.id, startDateStr, endDateStr);
+      const overallScore = remunerationReport?.overallScore || 0;
+      const ratePercent = parseFloat(clinic?.remuneration_commission_rate_percent) || 2;
+
+      const { profit, marginPercent, commission } = calculateRemunerationCommission({
+        revenue,
+        baseSalary: parseFloat(therapist.base_salary) || 0,
+        transportAllowance,
+        incentiveAmount,
+        overallScore,
+        remunerationEnabled: therapist.remuneration_enabled !== false,
+        ratePercent,
+      });
+
+      setCommissionBreakdown({ revenue, profit, marginPercent, overallScore, ratePercent });
+
       setForm((prev) => ({
         ...prev,
         transport_per_day: transportAllowance,
         incentive_amount: incentiveAmount,
+        custom_commission: commission,
       }));
     } catch (error) {
       toast({ variant: 'destructive', title: 'Gagal Menghitung Otomatis', description: error.message });
@@ -292,13 +315,38 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <Input type="number" value={form.incentive_amount} onChange={(e) => setForm({ ...form, incentive_amount: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Komisi (dari Remunerasi)</label>
+              <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                Komisi (dari Remunerasi)
+                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+              </label>
               <Input type="number" value={form.custom_commission} onChange={(e) => setForm({ ...form, custom_commission: e.target.value })} />
             </div>
           </div>
           <p className="text-[11px] text-slate-400 -mt-1">
             Uang Transport &amp; Jasa Insentif otomatis dihitung dari periode di atas (mengikuti hari kerja &amp; skema gaji terapis, sama seperti Simulasi Hitung Gaji). Nilainya tetap bisa diubah manual bila perlu.
           </p>
+          {commissionBreakdown && (
+            <div className="text-[11px] text-slate-500 rounded-lg border border-slate-200 bg-white px-3 py-2 space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span>Omzet periode</span>
+                <span className="font-medium text-slate-700">{formatCurrency(commissionBreakdown.revenue)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Profit (omzet − take home pay)</span>
+                <span className={`font-medium ${commissionBreakdown.profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                  {formatCurrency(commissionBreakdown.profit)} ({commissionBreakdown.marginPercent.toFixed(0)}%)
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Skor performa remunerasi</span>
+                <span className="font-medium text-slate-700">{commissionBreakdown.overallScore}%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Tarif komisi</span>
+                <span className="font-medium text-slate-700">{commissionBreakdown.ratePercent}% dari profit</span>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-200">
             <span className="text-sm font-medium text-slate-600">Total Take Home Pay</span>

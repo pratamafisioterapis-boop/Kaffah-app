@@ -19,7 +19,9 @@ import {
   updateRemunerationCriteria,
   deleteRemunerationCriteria,
   getRemunerationReport,
+  getCurrentClinic,
 } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 import { format } from 'date-fns';
 import { getTherapistPeriodRange, cn } from '@/lib/utils';
 import CircularScore from '@/components/shared/CircularScore';
@@ -70,15 +72,24 @@ const RemunerationManager = () => {
   const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  const [clinic, setClinic] = useState(null);
+  const [commissionRateInput, setCommissionRateInput] = useState('2');
+  const [savingCommissionRate, setSavingCommissionRate] = useState(false);
+
   const fetchBaseData = useCallback(async () => {
     setLoading(true);
     try {
-      const [therapistsRes, criteriaRes] = await Promise.all([
+      const [therapistsRes, criteriaRes, clinicRes] = await Promise.all([
         getActivePhysiotherapists(),
         getRemunerationCriteria(),
+        getCurrentClinic(),
       ]);
       setTherapists((therapistsRes.data || []).filter(t => t.remuneration_enabled !== false));
       setCriteria(criteriaRes.data || []);
+      if (clinicRes.data) {
+        setClinic(clinicRes.data);
+        setCommissionRateInput(String(clinicRes.data.remuneration_commission_rate_percent ?? 2));
+      }
     } catch (err) {
       toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat data remunerasi.' });
     } finally {
@@ -166,6 +177,27 @@ const RemunerationManager = () => {
     }
     toast({ title: 'Program kerja dihapus' });
     fetchBaseData();
+  };
+
+  const handleSaveCommissionRate = async () => {
+    if (!clinic?.id) return;
+    const rate = Number(commissionRateInput);
+    if (isNaN(rate) || rate < 0) {
+      toast({ variant: 'destructive', title: 'Tarif tidak valid' });
+      return;
+    }
+    setSavingCommissionRate(true);
+    const { error } = await supabase
+      .from('clinics')
+      .update({ remuneration_commission_rate_percent: rate })
+      .eq('id', clinic.id);
+    setSavingCommissionRate(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
+      return;
+    }
+    setClinic(prev => ({ ...prev, remuneration_commission_rate_percent: rate }));
+    toast({ title: 'Tarif komisi disimpan' });
   };
 
   const totalWeight = criteria.reduce((sum, c) => sum + Number(c.weight_percent || 0), 0);
@@ -298,6 +330,30 @@ const RemunerationManager = () => {
               <Button size="sm" onClick={() => handleOpenDialog()} className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 shadow-lg shadow-indigo-500/20 border-0">
                 <Plus className="w-4 h-4 mr-1.5" /> Tambah Program Kerja
               </Button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <Label className="text-xs font-semibold text-slate-700">Tarif Komisi Remunerasi (%)</Label>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Nilai komisi terapis = tarif ini × profit periode (omzet − take home pay) × skor performa. Dipakai otomatis saat membuat slip gaji.
+                </p>
+              </div>
+              <div className="flex items-end gap-2 shrink-0">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={commissionRateInput}
+                  onChange={(e) => setCommissionRateInput(e.target.value)}
+                  className="w-24 h-9 text-sm"
+                />
+                <Button size="sm" onClick={handleSaveCommissionRate} disabled={savingCommissionRate} className="bg-indigo-600 hover:bg-indigo-700 h-9">
+                  {savingCommissionRate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
             </div>
           </div>
 
