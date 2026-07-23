@@ -15,7 +15,10 @@ import {
   getMouDocumentsForTherapist, upsertMouDocument, deleteMouDocument, getCurrentClinic,
   uploadSignedMouFile, markMouAsSigned, getMouSignedFileUrl,
 } from '@/lib/api';
-import { generateMouAgreementPDF, mouAgreementFileName, MOU_DOCUMENT_THEMES } from '@/lib/mouAgreementGenerator';
+import {
+  generateMouAgreementPDF, mouAgreementFileName, MOU_DOCUMENT_THEMES,
+  replaceLastPageWithScan, fileToScanImageDataUrl,
+} from '@/lib/mouAgreementGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { addYears, subDays, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -196,7 +199,20 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   const handleUploadSigned = async (record, file) => {
     if (!file) return;
     setUploadingId(record.id);
-    const { data: uploaded, error: uploadError } = await uploadSignedMouFile(file, therapist.id, record.id);
+
+    let mergedFile;
+    try {
+      const scanDataUrl = await fileToScanImageDataUrl(file);
+      const mergedDoc = await replaceLastPageWithScan(record, clinic || {}, scanDataUrl);
+      const blob = mergedDoc.output('blob');
+      mergedFile = new File([blob], mouAgreementFileName(record, therapist), { type: 'application/pdf' });
+    } catch (buildError) {
+      setUploadingId(null);
+      toast({ variant: 'destructive', title: 'Gagal Memproses Scan', description: buildError?.message || 'File tidak dapat dibaca sebagai PDF atau gambar.' });
+      return;
+    }
+
+    const { data: uploaded, error: uploadError } = await uploadSignedMouFile(mergedFile, therapist.id, record.id);
     if (uploadError) {
       setUploadingId(null);
       toast({ variant: 'destructive', title: 'Gagal Upload', description: uploadError.message });
@@ -209,7 +225,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
       return;
     }
     setRecords((prev) => prev.map((r) => (r.id === record.id ? updated : r)));
-    toast({ title: 'Berhasil', description: 'Dokumen yang sudah ditandatangani berhasil diunggah dan tampil di akun terapis.' });
+    toast({ title: 'Berhasil', description: 'Halaman terakhir diganti dengan scan tanda tangan — dokumen lengkap kini tampil di akun terapis.' });
   };
 
   const handleViewSigned = async (record) => {
@@ -419,7 +435,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
             </Button>
           </div>
           <p className="text-[11px] text-slate-400 -mt-1">
-            Cetak &amp; tanda tangani draft di atas materai, lalu unggah hasil scan-nya pada baris riwayat di bawah — dokumen akan otomatis tampil di menu Dokumen milik terapis.
+            Cetak &amp; tanda tangani draft di atas materai, lalu unggah foto/scan HALAMAN TERAKHIR saja (yang ada tanda tangan) pada baris riwayat di bawah — sistem otomatis menggabungkannya dengan Pasal 1-11 sehingga dokumen lengkap tampil di menu Dokumen milik terapis.
           </p>
         </div>
 
@@ -460,10 +476,10 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                         </Button>
                       </>
                     ) : (
-                      <label className="cursor-pointer">
+                      <label className="cursor-pointer" title="Foto/scan halaman terakhir (bertanda tangan) — otomatis digabung dengan Pasal 1-11">
                         <span className="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                           {uploadingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
-                          Upload Tertandatangan
+                          Upload Scan Hal. Terakhir
                         </span>
                         <input
                           type="file"

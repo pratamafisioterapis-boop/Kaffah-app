@@ -1,6 +1,10 @@
 import { jsPDF } from 'jspdf';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // Two selectable color themes for the letterhead: the default "professional"
 // navy/gold family shared with payslipGenerator.js, and "blue" which mirrors
@@ -37,6 +41,45 @@ const CONTENT_W = PAGE_W - MARGIN_X * 2;
 // Semua paragraf/poin bernomor memakai satu ukuran font yang sama supaya
 // blok teks terbaca konsisten dari Pasal ke Pasal.
 const BODY_SIZE = 9.8;
+
+// Header/footer dipakai ulang oleh generateMouAgreementPDF (semua halaman
+// lanjutan) dan replaceLastPageWithScan (halaman terakhir hasil scan yang
+// menggantikan halaman tanda tangan asli).
+const drawContinuationHeader = (doc, clinicName, palette) => {
+  const { GOLD, GOLD_SOFT, MUTED } = palette;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(...GOLD);
+  doc.text(clinicName.toUpperCase(), MARGIN_X, 12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MUTED);
+  doc.text('PERJANJIAN KERJASAMA KEMITRAAN FISIOTERAPIS', PAGE_W - MARGIN_X, 12, { align: 'right' });
+  doc.setDrawColor(...GOLD_SOFT);
+  doc.setLineWidth(0.3);
+  doc.line(MARGIN_X, 15, PAGE_W - MARGIN_X, 15);
+};
+
+const drawFooterOn = (doc, pageNum, totalPages, palette) => {
+  doc.setPage(pageNum);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.3);
+  doc.setTextColor(...palette.MUTED);
+  doc.text(
+    `Dokumen ini bersifat rahasia — halaman ${pageNum} dari ${totalPages}`,
+    PAGE_W / 2,
+    PAGE_H - 10,
+    { align: 'center' }
+  );
+};
+
+// Mengukur dimensi asli gambar (data URL) supaya scan tanda tangan bisa
+// ditempatkan di halaman A4 tanpa distorsi (fit + center), bukan di-stretch.
+const loadImageDimensions = (dataUrl) => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+  img.onerror = () => reject(new Error('Gagal membaca dimensi gambar scan.'));
+  img.src = dataUrl;
+});
 
 const fmtMoney = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 const fmtDateLong = (value) => {
@@ -107,18 +150,8 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   // kertas asli klinik untuk fisioterapis baru vs. yang sudah 1+ tahun.
   const isFirstYear = (mou.period_number || 1) <= 1;
 
-  const drawRunningHeader = () => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...GOLD);
-    doc.text(clinicName.toUpperCase(), MARGIN_X, 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...MUTED);
-    doc.text('PERJANJIAN KERJASAMA KEMITRAAN FISIOTERAPIS', PAGE_W - MARGIN_X, 12, { align: 'right' });
-    doc.setDrawColor(...GOLD_SOFT);
-    doc.setLineWidth(0.3);
-    doc.line(MARGIN_X, 15, PAGE_W - MARGIN_X, 15);
-  };
+  const palette = { INK, NAVY, GOLD, GOLD_SOFT, MUTED };
+  const drawRunningHeader = () => drawContinuationHeader(doc, clinicName, palette);
 
   const newPage = () => {
     doc.addPage();
@@ -436,19 +469,87 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   // ---------- FOOTER (all pages) ----------
   const totalPages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= totalPages; p += 1) {
-    doc.setPage(p);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(7.3);
-    doc.setTextColor(...MUTED);
-    doc.text(
-      `Dokumen ini bersifat rahasia — halaman ${p} dari ${totalPages}`,
-      PAGE_W / 2,
-      PAGE_H - 10,
-      { align: 'center' }
-    );
+    drawFooterOn(doc, p, totalPages, palette);
   }
 
   return doc;
+};
+
+/**
+ * Builds the final MOU PDF for the therapist-facing "signed" copy: regenerates
+ * the full draft (Pasal 1-11 etc., identical to generateMouAgreementPDF), then
+ * swaps out only the last page (the one with blank signature lines) for the
+ * owner's scanned photo/scan of that same page after it was printed, signed
+ * above materai, and scanned. This is what makes "semua halaman lengkap,
+ * hanya halaman terakhir yang diganti scan" possible instead of the signed
+ * upload replacing the whole document.
+ *
+ * @param {object} mou - same shape as generateMouAgreementPDF's `mou` param
+ * @param {object} clinic - same shape as generateMouAgreementPDF's `clinic` param
+ * @param {string} scanDataUrl - data URL (image/jpeg or image/png) of the scanned page
+ * @returns {Promise<jsPDF>}
+ */
+export const replaceLastPageWithScan = async (mou = {}, clinic = {}, scanDataUrl) => {
+  const doc = generateMouAgreementPDF(mou, clinic);
+  const palette = PALETTES[mou.document_theme] || PALETTES.professional;
+  const clinicName = clinic.name || 'Klinik Fisioterapi';
+
+  const totalPages = doc.internal.getNumberOfPages();
+  doc.deletePage(totalPages);
+  doc.addPage();
+  drawContinuationHeader(doc, clinicName, palette);
+
+  const imageFormat = scanDataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+  const { width, height } = await loadImageDimensions(scanDataUrl);
+  const imgRatio = width / height;
+  const pageRatio = PAGE_W / PAGE_H;
+  const drawW = imgRatio > pageRatio ? PAGE_W : PAGE_H * imgRatio;
+  const drawH = imgRatio > pageRatio ? PAGE_W / imgRatio : PAGE_H;
+  const offsetX = (PAGE_W - drawW) / 2;
+  const offsetY = (PAGE_H - drawH) / 2;
+  doc.addImage(scanDataUrl, imageFormat, offsetX, offsetY, drawW, drawH);
+
+  drawFooterOn(doc, totalPages, totalPages, palette);
+
+  return doc;
+};
+
+/**
+ * Turns whatever the owner picked in the "Upload Tertandatangan" file input —
+ * a photo/scan saved as JPG/PNG, or a single-page PDF straight out of a
+ * scanner app — into one flat image data URL, so replaceLastPageWithScan can
+ * drop it onto the last page regardless of which format it came in as.
+ *
+ * @param {File} file
+ * @returns {Promise<string>} data URL (image/jpeg or image/png)
+ */
+export const fileToScanImageDataUrl = async (file) => {
+  if (file.type.startsWith('image/')) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (file.type === 'application/pdf') {
+    const buffer = await file.arrayBuffer();
+    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    // Ambil halaman terakhir dari file yang diunggah — itulah halaman yang
+    // seharusnya berisi tanda tangan, baik file berisi 1 halaman (scan
+    // halaman terakhir saja) maupun beberapa halaman.
+    const page = await pdfDoc.getPage(pdfDoc.numPages);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    pdfDoc.destroy();
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
+  throw new Error('Format file tidak didukung. Unggah PDF atau gambar (JPG/PNG) hasil scan halaman terakhir.');
 };
 
 export const mouAgreementFileName = (mou = {}, therapist = {}) => {
