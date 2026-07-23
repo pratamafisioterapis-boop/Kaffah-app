@@ -571,6 +571,40 @@ export const fileToScanImageDataUrl = async (file) => {
   throw new Error('Format file tidak didukung. Unggah PDF atau gambar (JPG/PNG) hasil scan halaman terakhir.');
 };
 
+/**
+ * Rotates a scan image data URL by a multiple of 90°. Some phone cameras
+ * (seen on a Samsung Galaxy S23 scan) save the frame itself sideways while
+ * writing EXIF Orientation=1 ("already upright") — there's no metadata to
+ * correct in that case, only a person looking at the preview can tell it's
+ * wrong, so the owner gets a manual "Putar 90°" control before confirming
+ * the upload.
+ *
+ * @param {string} dataUrl
+ * @param {number} degrees - 0, 90, 180, or 270
+ * @returns {Promise<string>} rotated data URL (image/jpeg)
+ */
+export const rotateImageDataUrl = (dataUrl, degrees) => new Promise((resolve, reject) => {
+  const normalized = ((degrees % 360) + 360) % 360;
+  if (normalized === 0) {
+    resolve(dataUrl);
+    return;
+  }
+  const img = new Image();
+  img.onload = () => {
+    const swap = normalized === 90 || normalized === 270;
+    const canvas = document.createElement('canvas');
+    canvas.width = swap ? img.naturalHeight : img.naturalWidth;
+    canvas.height = swap ? img.naturalWidth : img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((normalized * Math.PI) / 180);
+    ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+    resolve(canvas.toDataURL('image/jpeg', 0.92));
+  };
+  img.onerror = () => reject(new Error('Gagal memutar gambar scan.'));
+  img.src = dataUrl;
+});
+
 export const mouAgreementFileName = (mou = {}, therapist = {}) => {
   const year = mou?.period_start ? format(new Date(mou.period_start), 'yyyy', { locale: idLocale }) : 'periode';
   const name = (therapist.name || 'terapis').replace(/[^a-zA-Z0-9]+/g, '-');
