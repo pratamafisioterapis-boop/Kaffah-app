@@ -525,11 +525,30 @@ export const replaceLastPageWithScan = async (mou = {}, clinic = {}, scanDataUrl
  */
 export const fileToScanImageDataUrl = async (file) => {
   if (file.type.startsWith('image/')) {
-    return new Promise((resolve, reject) => {
+    const rawDataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
       reader.readAsDataURL(file);
+    });
+    // Foto dari HP biasanya membawa tag EXIF Orientation (mis. hasil ambil
+    // gambar dengan HP dipegang tegak). Browser memutar tampilannya sesuai
+    // tag itu, tapi parser JPEG internal jsPDF membaca frame mentahnya apa
+    // adanya dan mengabaikan EXIF — hasilnya foto tampil miring 90° di PDF.
+    // Menggambar ulang ke <canvas> di sini "membakar" orientasi yang benar
+    // ke dalam piksel sebelum diserahkan ke jsPDF, jadi tidak lagi bergantung
+    // pada EXIF yang tidak dibaca jsPDF.
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = () => reject(new Error('Gagal memproses gambar scan.'));
+      img.src = rawDataUrl;
     });
   }
 
