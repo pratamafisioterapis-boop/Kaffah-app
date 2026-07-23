@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, ExternalLink, RefreshCw, FolderOpen, Loader2, User } from 'lucide-react';
+import { Trash2, ExternalLink, RefreshCw, FolderOpen, Loader2, User, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { getClinicDriveUploads, deleteDriveUpload } from '@/lib/api';
@@ -14,6 +14,14 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+
+const getDriveDownloadLink = (webViewLink) => {
+  if (!webViewLink) return null;
+  const match = webViewLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  const fileId = match ? match[1] : null;
+  if (!fileId) return null;
+  return `https://drive.google.com/uc?export=download&id=${fileId}`;
+};
 
 const TherapistDriveUploadsManager = () => {
   const { toast } = useToast();
@@ -97,6 +105,11 @@ const TherapistDriveUploadsManager = () => {
                 {item.web_view_link && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => window.open(item.web_view_link, '_blank')} title="Buka di Drive">
                     <ExternalLink className="w-4 h-4" />
+                  </Button>
+                )}
+                {getDriveDownloadLink(item.web_view_link) && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => window.open(getDriveDownloadLink(item.web_view_link), '_blank')} title="Download">
+                    <Download className="w-4 h-4" />
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => setDeleteTarget(item)} title="Hapus">
