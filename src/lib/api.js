@@ -3855,9 +3855,10 @@ const notifyClinicOwnersAboutTransaction = async ({ clinicId, actorId, action, k
     const kindLabel = kind === 'expense' ? 'Pengeluaran' : 'Pemasukan';
     const actionVerb = { create: 'menambahkan', update: 'mengubah', delete: 'menghapus' }[action] || action;
     const actionTitle = { create: 'Baru', update: 'Diperbarui', delete: 'Dihapus' }[action] || '';
+    const actionEmoji = { create: '✅', update: '✏️', delete: '🗑️' }[action] || '💰';
     const formattedAmount = `Rp ${Number(amount || 0).toLocaleString('id-ID')}`;
 
-    const title = `${kindLabel} ${actionTitle}`.trim();
+    const title = `${actionEmoji} ${kindLabel} ${actionTitle}`.trim();
     const body = `${actorName} ${actionVerb} ${kindLabel.toLowerCase()} ${formattedAmount}${category ? ` (${category})` : ''}`;
 
     await Promise.all(owners.map(owner => sendPushNotification({
