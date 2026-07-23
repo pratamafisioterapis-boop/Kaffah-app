@@ -10,11 +10,12 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   getMouDocumentsForTherapist, upsertMouDocument, deleteMouDocument, getCurrentClinic,
   uploadSignedMouFile, markMouAsSigned, getMouSignedFileUrl,
 } from '@/lib/api';
-import { generateMouAgreementPDF, mouAgreementFileName } from '@/lib/mouAgreementGenerator';
+import { generateMouAgreementPDF, mouAgreementFileName, MOU_DOCUMENT_THEMES } from '@/lib/mouAgreementGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { addYears, subDays, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -48,6 +49,7 @@ const emptyForm = (therapist, clinic, records) => {
     period_end: next.period_end,
     agreement_date: format(new Date(), 'yyyy-MM-dd'),
     agreement_city: 'Balikpapan',
+    document_theme: 'professional',
     first_party: {
       name: clinic?.owner_full_name || '',
       birth_place: clinic?.owner_birth_place || '',
@@ -121,6 +123,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
       period_end: record.period_end,
       agreement_date: record.agreement_date,
       agreement_city: record.agreement_city,
+      document_theme: record.document_theme || 'professional',
       first_party: record.first_party || {},
       second_party: record.second_party || {},
       compensation: record.compensation || {},
@@ -133,6 +136,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
     period_end: f.period_end,
     agreement_date: f.agreement_date,
     agreement_city: f.agreement_city,
+    document_theme: f.document_theme,
     first_party: f.first_party,
     second_party: f.second_party,
     compensation: f.compensation,
@@ -310,9 +314,20 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600">Tanggal Perjanjian</label>
               <Input type="date" value={form.agreement_date} onChange={(e) => updateForm({ agreement_date: e.target.value })} />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Kota Perjanjian</label>
               <Input value={form.agreement_city} onChange={(e) => updateForm({ agreement_city: e.target.value })} placeholder="Balikpapan" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600">Warna Dokumen</label>
+              <Select value={form.document_theme} onValueChange={(val) => updateForm({ document_theme: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(MOU_DOCUMENT_THEMES).map(([key, theme]) => (
+                    <SelectItem key={key} value={key}>{theme.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

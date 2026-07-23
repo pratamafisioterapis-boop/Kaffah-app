@@ -4399,6 +4399,7 @@ export const upsertMouDocument = async (payload) => {
       first_party: payload.first_party || {},
       second_party: payload.second_party || {},
       compensation: payload.compensation || {},
+      document_theme: payload.document_theme || 'professional',
       updated_at: new Date().toISOString(),
     };
 
