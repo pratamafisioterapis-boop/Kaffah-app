@@ -23,7 +23,7 @@ const getDriveDownloadLink = (webViewLink) => {
   return `https://drive.google.com/uc?export=download&id=${fileId}`;
 };
 
-const TherapistDriveUploadsManager = () => {
+const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
   const { toast } = useToast();
   const [uploads, setUploads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,21 +87,21 @@ const TherapistDriveUploadsManager = () => {
               key={item.id}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">{item.file_name}</p>
-                  <p className="text-xs text-slate-400 truncate">
+                  <p className="text-sm font-medium text-slate-700 break-words">{item.file_name}</p>
+                  <p className="text-xs text-slate-400 break-words">
                     {item.therapist_name} • {item.created_at ? format(new Date(item.created_at), 'dd MMM yyyy, HH:mm', { locale: idLocale }) : '-'}
                     {item.label ? ` • ${item.label}` : ''}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                 {item.web_view_link && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => window.open(item.web_view_link, '_blank')} title="Buka di Drive">
                     <ExternalLink className="w-4 h-4" />
@@ -112,34 +112,38 @@ const TherapistDriveUploadsManager = () => {
                     <Download className="w-4 h-4" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => setDeleteTarget(item)} title="Hapus">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {allowDelete && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => setDeleteTarget(item)} title="Hapus">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </motion.div>
           ))}
         </div>
       )}
 
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="w-5 h-5" /> Hapus Konten Terapis
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              Hapus "{deleteTarget?.file_name}" milik {deleteTarget?.therapist_name} secara permanen dari Google Drive? Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Batal</Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
-              {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Ya, Hapus
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {allowDelete && (
+        <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5" /> Hapus Konten Terapis
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                Hapus "{deleteTarget?.file_name}" milik {deleteTarget?.therapist_name} secara permanen dari Google Drive? Tindakan ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Batal</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Ya, Hapus
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

@@ -102,7 +102,7 @@ const AdminAccountSettings = () => {
       </div>
 
       <div className="max-w-3xl">
-        <TherapistDriveUploadsManager />
+        <TherapistDriveUploadsManager allowDelete={false} />
       </div>
     </div>
   );
