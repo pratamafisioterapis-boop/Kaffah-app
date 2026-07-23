@@ -89,7 +89,7 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
               <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
                 {greeting}
               </p>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight leading-tight truncate">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight break-words">
                 {therapistName || 'Terapis'}
                 <span className="ml-2 text-2xl">👋</span>
               </h1>
