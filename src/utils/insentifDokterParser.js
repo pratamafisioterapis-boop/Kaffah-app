@@ -375,7 +375,11 @@ function detectFormatCBounds(pages) {
       }
 
       if (foundHeader1 && tunaiX === null) {
-        const tunaiWord = sorted.find((w) => w.text === 'TUNAI');
+        // pdf.js kadang menggabungkan label 2 kata "PASIEN TUNAI" jadi 1 token
+        // (bukan token "TUNAI" terpisah), jadi cocokkan dengan "includes" bukan
+        // kesamaan persis — supaya tidak fallback ke BOUNDS_C_FALLBACK yang
+        // salah skala dan bikin kolom Tanggal/Qty/Jasa Medis/Tunai tercampur.
+        const tunaiWord = sorted.find((w) => w.text.toUpperCase().includes('TUNAI'));
         if (tunaiWord) { tunaiX = tunaiWord.x; break; }
       }
     }
