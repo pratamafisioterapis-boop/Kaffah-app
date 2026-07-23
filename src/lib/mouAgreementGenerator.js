@@ -56,6 +56,11 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   const secondParty = mou.second_party || {};
   const comp = mou.compensation || {};
   const clinicName = clinic.name || 'Klinik Fisioterapi';
+  // Tahun ke-1 (belum genap 1 tahun bergabung) memakai format kontrak yang
+  // lebih ringkas: belum ada Remunerasi/Komisi Cuti Tahunan di Pasal 4, dan
+  // Pasal 6 masih "Izin Tidak Hadir" (bukan hak Cuti penuh) — sesuai template
+  // kertas asli klinik untuk fisioterapis baru vs. yang sudah 1+ tahun.
+  const isFirstYear = (mou.period_number || 1) <= 1;
 
   const drawRunningHeader = () => {
     doc.setFont('helvetica', 'bold');
@@ -188,7 +193,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   doc.line(MARGIN_X, y, PAGE_W - MARGIN_X, y);
   y += 10;
 
-  const periodTag = mou.period_number ? `Perpanjangan Tahun ke-${mou.period_number}` : 'Perpanjangan Tahunan';
+  const periodTag = isFirstYear ? 'Perjanjian Kemitraan Tahun Pertama' : `Perpanjangan Tahun ke-${mou.period_number}`;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(...GOLD);
@@ -276,9 +281,11 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   numberedItem(3, `PIHAK PERTAMA akan memberikan "Insentif Jasa Keprofesian" dengan besaran ${comp.professional_incentive_note || 'terlampir'}.`);
   numberedItem(4, 'PIHAK PERTAMA akan memberikan "Insentif Jasa Lainnya" apabila PIHAK KEDUA melakukan TINDAKAN FISIOTERAPI di luar jam kerja, seperti tanggal merah/hari libur, dengan besaran:');
   subLine(`${fmtMoney(comp.off_hour_incentive_per_patient)},- per pasien`);
-  numberedItem(5, 'PIHAK PERTAMA akan memberikan "Remunerasi" apabila PIHAK KEDUA mencapai target yang telah ditentukan oleh PIHAK PERTAMA dengan besaran proporsional setiap bulannya.');
-  numberedItem(6, `PIHAK PERTAMA akan memberikan "Komisi Cuti Tahunan" apabila PIHAK KEDUA tidak menggunakan cuti yang berhak diterima dan akan diberikan di akhir kontrak ini dengan besaran:`);
-  subLine(`${fmtMoney(comp.leave_commission_per_12_days)},- per ${comp.annual_leave_days || 12} hari cuti`);
+  if (!isFirstYear) {
+    numberedItem(5, 'PIHAK PERTAMA akan memberikan "Remunerasi" apabila PIHAK KEDUA mencapai target yang telah ditentukan oleh PIHAK PERTAMA dengan besaran proporsional setiap bulannya.');
+    numberedItem(6, `PIHAK PERTAMA akan memberikan "Komisi Cuti Tahunan" apabila PIHAK KEDUA tidak menggunakan cuti yang berhak diterima dan akan diberikan di akhir kontrak ini dengan besaran:`);
+    subLine(`${fmtMoney(comp.leave_commission_per_12_days)},- per ${comp.annual_leave_days || 12} hari cuti`);
+  }
 
   // ---------- PASAL 5 ----------
   pasalTitle(5, 'PERSYARATAN DAN PROSEDUR');
@@ -290,16 +297,24 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   ].forEach((t, i) => numberedItem(i + 1, t));
 
   // ---------- PASAL 6 ----------
-  pasalTitle(6, 'CUTI');
-  numberedItem(1, `PIHAK KEDUA berhak atas ${comp.annual_leave_days || 12} (${comp.annual_leave_days || 12}) hari cuti tahunan selama masa perjanjian 12 bulan, yang dapat digunakan secara bertahap sesuai kebutuhan PIHAK KEDUA.`);
-  numberedItem(2, `PIHAK KEDUA wajib mengajukan cuti kepada PIHAK PERTAMA secara tertulis minimal ${comp.leave_notice_days || 7} (${comp.leave_notice_days || 7}) hari sebelumnya, kecuali dalam kondisi sakit atau keadaan mendesak.`);
-  numberedItem(3, 'Pengajuan cuti disetujui oleh PIHAK PERTAMA berdasarkan kebutuhan pelayanan, kondisi operasional, serta penilaian profesional lainnya.');
-  numberedItem(4, 'PIHAK KEDUA dapat mengajukan cuti sakit dengan memberikan keterangan atau bukti medis kepada PIHAK PERTAMA.');
-  numberedItem(5, `PIHAK KEDUA berhak atas ${comp.marriage_leave_days || 3} (${comp.marriage_leave_days || 3}) hari cuti menikah yang dapat digunakan sebelum, pada saat, atau setelah hari pelaksanaan pernikahan. Cuti menikah wajib diajukan minimal ${comp.marriage_notice_days || 14} (${comp.marriage_notice_days || 14}) hari sebelumnya disertai bukti rencana pernikahan.`);
-  numberedItem(6, `PIHAK KEDUA berhak atas Cuti Hamil dan Melahirkan selama total ${comp.maternity_leave_months || 3} (${comp.maternity_leave_months || 3}) bulan, dengan rincian ${(comp.maternity_leave_months || 3) / 2} bulan sebelum perkiraan persalinan dan ${(comp.maternity_leave_months || 3) / 2} bulan setelah persalinan.`);
-  numberedItem(7, 'Mekanisme kompensasi dan pembayaran selama cuti hamil/melahirkan mengikuti kebijakan internal PIHAK PERTAMA dan dapat diatur lebih lanjut dalam addendum apabila diperlukan.');
-  numberedItem(8, 'Ketidakhadiran tanpa keterangan tertulis atau tanpa persetujuan PIHAK PERTAMA akan dianggap alpa, dan PIHAK PERTAMA berhak melakukan pemotongan Upah secara proporsional.');
-  numberedItem(9, 'Bila hak cuti tahunan tidak digunakan sampai masa perjanjian berakhir, PIHAK KEDUA berhak menerima Komisi Cuti Tahunan sebagaimana tercantum pada Pasal 4 ayat (6).');
+  // Fisioterapis tahun pertama belum punya hak cuti tahunan penuh — pasal ini
+  // memakai judul & isi "Izin Tidak Hadir" yang jauh lebih ringkas.
+  if (isFirstYear) {
+    pasalTitle(6, 'IZIN TIDAK HADIR');
+    numberedItem(1, 'PIHAK KEDUA dapat meminta izin untuk tidak masuk kerja karena sakit atau keperluan penting dan mendesak lainnya dengan memberikan informasi tertulis kepada PIHAK PERTAMA.');
+    numberedItem(2, 'Apabila PIHAK KEDUA tidak memberikan keterangan perihal ketidakhadirannya maka PIHAK PERTAMA akan melakukan pemotongan terhadap Upah secara proporsional.');
+  } else {
+    pasalTitle(6, 'CUTI');
+    numberedItem(1, `PIHAK KEDUA berhak atas ${comp.annual_leave_days || 12} (${comp.annual_leave_days || 12}) hari cuti tahunan selama masa perjanjian 12 bulan, yang dapat digunakan secara bertahap sesuai kebutuhan PIHAK KEDUA.`);
+    numberedItem(2, `PIHAK KEDUA wajib mengajukan cuti kepada PIHAK PERTAMA secara tertulis minimal ${comp.leave_notice_days || 7} (${comp.leave_notice_days || 7}) hari sebelumnya, kecuali dalam kondisi sakit atau keadaan mendesak.`);
+    numberedItem(3, 'Pengajuan cuti disetujui oleh PIHAK PERTAMA berdasarkan kebutuhan pelayanan, kondisi operasional, serta penilaian profesional lainnya.');
+    numberedItem(4, 'PIHAK KEDUA dapat mengajukan cuti sakit dengan memberikan keterangan atau bukti medis kepada PIHAK PERTAMA.');
+    numberedItem(5, `PIHAK KEDUA berhak atas ${comp.marriage_leave_days || 3} (${comp.marriage_leave_days || 3}) hari cuti menikah yang dapat digunakan sebelum, pada saat, atau setelah hari pelaksanaan pernikahan. Cuti menikah wajib diajukan minimal ${comp.marriage_notice_days || 14} (${comp.marriage_notice_days || 14}) hari sebelumnya disertai bukti rencana pernikahan.`);
+    numberedItem(6, `PIHAK KEDUA berhak atas Cuti Hamil dan Melahirkan selama total ${comp.maternity_leave_months || 3} (${comp.maternity_leave_months || 3}) bulan, dengan rincian ${(comp.maternity_leave_months || 3) / 2} bulan sebelum perkiraan persalinan dan ${(comp.maternity_leave_months || 3) / 2} bulan setelah persalinan.`);
+    numberedItem(7, 'Mekanisme kompensasi dan pembayaran selama cuti hamil/melahirkan mengikuti kebijakan internal PIHAK PERTAMA dan dapat diatur lebih lanjut dalam addendum apabila diperlukan.');
+    numberedItem(8, 'Ketidakhadiran tanpa keterangan tertulis atau tanpa persetujuan PIHAK PERTAMA akan dianggap alpa, dan PIHAK PERTAMA berhak melakukan pemotongan Upah secara proporsional.');
+    numberedItem(9, 'Bila hak cuti tahunan tidak digunakan sampai masa perjanjian berakhir, PIHAK KEDUA berhak menerima Komisi Cuti Tahunan sebagaimana tercantum pada Pasal 4 ayat (6).');
+  }
 
   // ---------- PASAL 7 ----------
   pasalTitle(7, 'JANGKA WAKTU PERJANJIAN KEMITRAAN');

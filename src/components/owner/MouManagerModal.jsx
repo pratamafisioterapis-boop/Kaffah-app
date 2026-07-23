@@ -236,6 +236,8 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   const updateParty = (key, patch) => setForm((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   const updateComp = (patch) => setForm((prev) => ({ ...prev, compensation: { ...prev.compensation, ...patch } }));
 
+  const isFirstYear = (form?.period_number || 1) <= 1;
+
   const periodLabel = useMemo(() => {
     if (!form?.period_start || !form?.period_end) return '-';
     try {
@@ -336,7 +338,14 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
           </div>
 
           <div className="space-y-3 pt-2 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-700">KOMPENSASI (Pasal 4)</p>
+            <div>
+              <p className="text-xs font-semibold text-slate-700">KOMPENSASI (Pasal 4)</p>
+              {isFirstYear && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5">
+                  Tahun ke-1 memakai format kontrak fisioterapis baru: belum ada Remunerasi &amp; Komisi Cuti Tahunan (Pasal 4), dan Pasal 6 memakai "Izin Tidak Hadir" — bukan hak Cuti penuh.
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-600">Gaji Pokok / bulan</label>
@@ -350,28 +359,34 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 <label className="text-xs font-medium text-slate-600">Insentif Jasa Lainnya / pasien (luar jam kerja)</label>
                 <Input type="number" value={form.compensation.off_hour_incentive_per_patient} onChange={(e) => updateComp({ off_hour_incentive_per_patient: e.target.value })} />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-600">Komisi Cuti Tahunan / {form.compensation.annual_leave_days || 12} hari</label>
-                <Input type="number" value={form.compensation.leave_commission_per_12_days} onChange={(e) => updateComp({ leave_commission_per_12_days: e.target.value })} />
-              </div>
+              {!isFirstYear && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-600">Komisi Cuti Tahunan / {form.compensation.annual_leave_days || 12} hari</label>
+                  <Input type="number" value={form.compensation.leave_commission_per_12_days} onChange={(e) => updateComp({ leave_commission_per_12_days: e.target.value })} />
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Keterangan Insentif Jasa Keprofesian</label>
               <Textarea rows={2} value={form.compensation.professional_incentive_note} onChange={(e) => updateComp({ professional_incentive_note: e.target.value })} placeholder="mis. sesuai lampiran ketentuan insentif jasa keprofesian klinik" />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-600">Cuti Tahunan (hari)</label>
-                <Input type="number" value={form.compensation.annual_leave_days} onChange={(e) => updateComp({ annual_leave_days: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-600">Cuti Menikah (hari)</label>
-                <Input type="number" value={form.compensation.marriage_leave_days} onChange={(e) => updateComp({ marriage_leave_days: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-600">Cuti Hamil (bulan)</label>
-                <Input type="number" value={form.compensation.maternity_leave_months} onChange={(e) => updateComp({ maternity_leave_months: e.target.value })} />
-              </div>
+              {!isFirstYear && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Cuti Tahunan (hari)</label>
+                    <Input type="number" value={form.compensation.annual_leave_days} onChange={(e) => updateComp({ annual_leave_days: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Cuti Menikah (hari)</label>
+                    <Input type="number" value={form.compensation.marriage_leave_days} onChange={(e) => updateComp({ marriage_leave_days: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Cuti Hamil (bulan)</label>
+                    <Input type="number" value={form.compensation.maternity_leave_months} onChange={(e) => updateComp({ maternity_leave_months: e.target.value })} />
+                  </div>
+                </>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-600">Notice Putus Kontrak (hari)</label>
                 <Input type="number" value={form.compensation.termination_notice_days} onChange={(e) => updateComp({ termination_notice_days: e.target.value })} />
