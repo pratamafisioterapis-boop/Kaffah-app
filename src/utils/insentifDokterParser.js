@@ -122,6 +122,7 @@ const REG_RE = /^R?\d{6,}$/;
 function detectFormat(firstPageWords) {
   const text = firstPageWords.map((w) => w.text).join(' ').toUpperCase();
   if (text.includes('BPJS INDIVIDU')) return 'B';
+  if (text.includes('PASIEN TUNAI')) return 'C';
   if (text.includes('PASIEN JAMINAN') || text.includes('STATUS PASIEN')) return 'A';
   return null;
 }
@@ -338,6 +339,144 @@ function parseFormatA(pages) {
   }
   if (cur) rows.push(cur);
 
+  return { rows, summary };
+}
+
+// â”€â”€ FORMAT C: PWTT/PWT Pasien Tunai â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Kolom: No, No Reg, Nama, Deskripsi, Tanggal, Qty, Jasa Medis, PASIEN TUNAI
+// Header: “PERINCIAN INSENTIF JASA DOKTER PASIEN TUNAI ( PWTT/PWT )”
+// Identik dengan Format A tapi hanya 1 sub-kolom uang: PASIEN TUNAI.
+const BOUNDS_C_FALLBACK = [
+  [0, 'no'], [46, 'noreg'], [100, 'nama'], [240, 'desk'],
+  [400, 'tanggal'], [465, 'qty'], [495, 'jasamedis'], [580, 'tunai'],
+];
+const MONEY_KEYS_C = new Set(['jasamedis', 'tunai']);
+
+function detectFormatCBounds(pages) {
+  for (const pageWords of pages.slice(0, 3)) {
+    const lines = clusterLines(pageWords);
+    let header1Anchors = [];
+    let tunaiX = null;
+    let foundHeader1 = false;
+
+    for (const line of lines) {
+      const sorted = [...line].sort((a, b) => a.x - b.x);
+
+      if (!foundHeader1) {
+        const classified = sorted
+          .map((w) => ({ key: classifyHeaderToken(w.text), x0: w.x }))
+          .filter((c) => c.key);
+        const keys = classified.map((c) => c.key);
+        if (keys.includes('nama') && keys.includes('desk') && keys.includes('tanggal') && keys.includes('qty')) {
+          header1Anchors = classified;
+          foundHeader1 = true;
+          continue;
+        }
+      }
+
+      if (foundHeader1 && tunaiX === null) {
+        const tunaiWord = sorted.find((w) => w.text === 'TUNAI');
+        if (tunaiWord) { tunaiX = tunaiWord.x; break; }
+      }
+    }
+
+    if (foundHeader1 && tunaiX !== null) {
+      let anchors = [...header1Anchors, { key: 'tunai', x0: tunaiX }];
+      anchors.sort((a, b) => a.x0 - b.x0);
+      const seen = new Set();
+      anchors = anchors.filter((a) => { if (seen.has(a.key)) return false; seen.add(a.key); return true; });
+      const bounds = [[0, anchors[0].key]];
+      for (let i = 1; i < anchors.length; i++) {
+        const K = MONEY_KEYS_C.has(anchors[i].key) ? 1.0 : 0.4;
+        bounds.push([anchors[i - 1].x0 + K * (anchors[i].x0 - anchors[i - 1].x0), anchors[i].key]);
+      }
+      return bounds;
+    }
+  }
+  return null;
+}
+
+function parseFormatC(pages) {
+  const bounds = detectFormatCBounds(pages) || BOUNDS_C_FALLBACK;
+  const rows = [];
+  let cur = null;
+  const summary = {};
+  let footerStarted = false;
+
+  for (const pageWords of pages) {
+    const lines = clusterLines(pageWords);
+    for (const line of lines) {
+      const sortedLine = [...line].sort((a, b) => a.x - b.x);
+      const lineText = sortedLine.map((w) => w.text).join(' ');
+      const firstWord = sortedLine[0]?.text || '';
+      const lineTextUpper = lineText.trim().toUpperCase();
+
+      if (
+        lineText.startsWith('Hal ') || lineText.startsWith('PERINCIAN') ||
+        lineText.startsWith('Periode') || lineText.startsWith('TIPE PASIEN') ||
+        lineText.startsWith('PASIEN TUNAI') || lineText.startsWith('STATUS PASIEN') ||
+        lineText.startsWith('No No Reg') || lineText.startsWith('No Reg Nama')
+      ) continue;
+
+      const isFooterLine = FOOTER_MARKERS_A.some((m) => firstWord === m || lineTextUpper.startsWith(m));
+      if (isFooterLine) {
+        footerStarted = true;
+        const rowType = lineTextUpper.split(/\s+/)[0];
+        if (['KONSUL', 'VISITE', 'TINDAKAN', 'TOTAL'].includes(rowType)) {
+          const toks = lineText.trim().split(/\s+/).slice(1);
+          summary[rowType.toLowerCase()] = { tunai: toks[0] || '' };
+        } else if (rowType === 'JUMLAH') {
+          const toks = lineText.trim().split(/\s+/);
+          summary.jumlahBersih = toks[toks.length - 1];
+        }
+        continue;
+      }
+      if (footerStarted) continue;
+
+      const cols = lineToCols(line, bounds);
+      const noreg = (cols.noreg || '').trim();
+      const isNewRow = REG_RE.test(noreg);
+
+      if (isNewRow) {
+        if (cur) rows.push(cur);
+        cur = {
+          no: String(rows.length + 1),
+          noReg: noreg,
+          namaPasien: (cols.nama || '').trim(),
+          deskripsi: (cols.desk || '').trim(),
+          tanggal: (cols.tanggal || '').trim(),
+          qty: (cols.qty || '').trim(),
+          jasaMedis: (cols.jasamedis || '').trim(),
+          tunai: (cols.tunai || '').trim(),
+        };
+      } else {
+        if (!cur) continue;
+        const tunaiVal = (cols.tunai || '').trim();
+        if (tunaiVal && cur.tunai) {
+          rows.push(cur);
+          cur = {
+            no: String(rows.length + 1),
+            noReg: cur.noReg,
+            namaPasien: cur.namaPasien,
+            deskripsi: (cols.desk || '').trim(),
+            tanggal: cur.tanggal,
+            qty: (cols.qty || '').trim(),
+            jasaMedis: (cols.jasamedis || '').trim(),
+            tunai: tunaiVal,
+          };
+          continue;
+        }
+        if (cols.desk) cur.deskripsi += ' ' + cols.desk.trim();
+        if (cols.nama) cur.namaPasien += ' ' + cols.nama.trim();
+        if (cols.tanggal && !cur.tanggal) cur.tanggal = cols.tanggal.trim();
+        if (cols.qty && !cur.qty) cur.qty = cols.qty.trim();
+        const jasaBaru = (cols.jasamedis || '').trim();
+        if (jasaBaru && !cur.jasaMedis) cur.jasaMedis = jasaBaru;
+        if (tunaiVal && !cur.tunai) cur.tunai = tunaiVal;
+      }
+    }
+  }
+  if (cur) rows.push(cur);
   return { rows, summary };
 }
 
@@ -569,9 +708,11 @@ const JAMINAN_SUBTYPE_LABELS = {
 export function buildInsentifDokterReport(results) {
   const bpjsRows = [];
   const jaminanRows = [];
+  const tunaiRows = [];
   (results || []).forEach((res) => {
     if (res.format === 'B') bpjsRows.push(...res.rows);
     else if (res.format === 'A') jaminanRows.push(...res.rows);
+    else if (res.format === 'C') tunaiRows.push(...res.rows);
   });
 
   // BPJS: baris "KONSUL DOKTER" menandai bahwa pasien tsb kontrol/periksa ke
@@ -641,7 +782,23 @@ export function buildInsentifDokterReport(results) {
     };
   });
 
-  return { bpjs, jaminan };
+  const tunaiByDesc = {};
+  tunaiRows.forEach((r) => {
+    const val = toNumber(r.tunai);
+    if (!val) return;
+    const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+    if (!tunaiByDesc[deskKey]) tunaiByDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+    tunaiByDesc[deskKey].count += 1;
+    tunaiByDesc[deskKey].total += val;
+  });
+  const tunaiByDeskripsi = Object.values(tunaiByDesc).sort((a, b) => b.total - a.total);
+  const tunai = {
+    count: tunaiRows.length,
+    total: tunaiByDeskripsi.reduce((s, r) => s + r.total, 0),
+    byDeskripsi: tunaiByDeskripsi,
+  };
+
+  return { bpjs, jaminan, tunai };
 }
 
 // â”€â”€ Fungsi utama: parse 1 file PDF â†’ { format, rows, summary, verification, meta } â”€
@@ -657,18 +814,17 @@ export async function parseInsentifDokterPdf(file) {
     );
   }
 
-  const parsed = format === 'A' ? parseFormatA(pages) : parseFormatB(pages);
+  const parsed = format === 'A' ? parseFormatA(pages) : format === 'C' ? parseFormatC(pages) : parseFormatB(pages);
 
-  // Format A: baris "TOTAL" (dari tabel KONSUL/VISITE/TINDAKAN/TOTAL) terbukti
-  // selalu terbaca akurat, dan nilainya SAMA dengan "JUMLAH PENDAPATAN...PPH".
-  // Pakai ini sebagai sumber utama karena posisi baris PPH kadang tidak stabil
-  // saat dirender pdf.js (suka kepisah baris dari angkanya).
+  // Format A/C: baris "TOTAL" dari tabel KONSUL/VISITE/TINDAKAN/TOTAL terbukti
+  // selalu terbaca akurat — pakai sebagai sumber jumlahBersih.
   if (format === 'A') {
     const t = parsed.summary.total || {};
     const totalFromTable = SUB_COL_KEYS.reduce((s, k) => s + toNumber(t[k]), 0);
-    if (totalFromTable > 0) {
-      parsed.summary.jumlahBersih = String(totalFromTable);
-    }
+    if (totalFromTable > 0) parsed.summary.jumlahBersih = String(totalFromTable);
+  } else if (format === 'C') {
+    const totalFromTable = toNumber((parsed.summary.total || {}).tunai);
+    if (totalFromTable > 0) parsed.summary.jumlahBersih = String(totalFromTable);
   }
 
   // Jaring pengaman terakhir: kalau masih kosong, cari lewat kata "PPH" langsung.
@@ -680,6 +836,8 @@ export async function parseInsentifDokterPdf(file) {
   // Verifikasi: total hasil parsing harus sama dengan total yang tercetak di PDF
   const calcTotal = format === 'A'
     ? parsed.rows.reduce((s, r) => s + SUB_COL_KEYS.reduce((s2, k) => s2 + toNumber(r[k]), 0), 0)
+    : format === 'C'
+    ? parsed.rows.reduce((s, r) => s + toNumber(r.tunai), 0)
     : parsed.rows.reduce((s, r) => s + toNumber(r.total), 0);
   const printedTotal = toNumber(parsed.summary.jumlahBersih);
   const selisihAbs = Math.abs(calcTotal - printedTotal);
@@ -751,6 +909,23 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
       if (res.summary.total) aoa.push(summaryRow('TOTAL'));
       aoa.push([]);
       aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', ...new Array(headerA.length - 2).fill(''), toNumber(res.summary.jumlahBersih)]);
+    } else if (res.format === 'C') {
+      aoa.push(['PERINCIAN INSENTIF JASA DOKTER PASIEN TUNAI ( PWTT/PWT )']);
+      if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
+      aoa.push([`File asal: ${res.fileName}`]);
+      aoa.push([]);
+      aoa.push(['No', 'No Reg', 'Nama Pasien', 'Deskripsi', 'Tanggal', 'Qty', 'Jasa Medis', 'Pasien Tunai']);
+      res.rows.forEach((r) => {
+        aoa.push([r.no, r.noReg, r.namaPasien, r.deskripsi, r.tanggal, r.qty, toNumber(r.jasaMedis), toNumber(r.tunai)]);
+      });
+      aoa.push([]);
+      const padC = ['', '', '', '', '', ''];
+      aoa.push([...padC, 'TIPE', 'PASIEN TUNAI']);
+      ['konsul', 'visite', 'tindakan', 'total'].forEach((t) => {
+        if (res.summary[t]) aoa.push([...padC, t.toUpperCase(), toNumber(res.summary[t].tunai)]);
+      });
+      aoa.push([]);
+      aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', '', '', '', '', '', '', toNumber(res.summary.jumlahBersih)]);
     } else {
       aoa.push(['PERINCIAN INSENTIF JASA DOKTER BPJS INDIVIDU (Rawat Jalan)']);
       if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
