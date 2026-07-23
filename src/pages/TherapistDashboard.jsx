@@ -23,7 +23,16 @@ const TherapistDashboard = () => {
   const [therapistProfile, setTherapistProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
-const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('profil');
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(location.search).get('settings');
+    if (requestedTab) {
+      setSettingsTab(requestedTab);
+      setSettingsOpen(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -108,6 +117,7 @@ const [settingsOpen, setSettingsOpen] = useState(false);
         onClose={() => setSettingsOpen(false)}
         therapist={therapistProfile}
         onTherapistUpdated={(updated) => setTherapistProfile(updated)}
+        initialTab={settingsTab}
       />
     </>
   );

@@ -483,7 +483,10 @@ const TabAkun = ({ user }) => {
   const handleChangeEmail = async () => {
     if (!emailForm.email || emailForm.email === user?.email) return;
     setEmailForm(f => ({ ...f, saving: true }));
-    const { error } = await supabase.auth.updateUser({ email: emailForm.email });
+    const { error } = await supabase.auth.updateUser(
+      { email: emailForm.email },
+      { emailRedirectTo: `${window.location.origin}/therapist?settings=akun` }
+    );
     setEmailForm(f => ({ ...f, saving: false }));
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal ganti email', description: error.message });
@@ -601,9 +604,13 @@ const TabAkun = ({ user }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated }) => {
+const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated, initialTab = 'profil' }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('profil');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   const activeTabData = TABS.find(t => t.id === activeTab);
 
