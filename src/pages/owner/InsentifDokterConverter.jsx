@@ -147,6 +147,50 @@ const CategoryPanel = ({ categoryKey, data, isBpjs }) => {
   );
 };
 
+const AsuransiPanel = ({ subtypes }) => {
+  const combinedTotal = subtypes.reduce((sum, [, v]) => sum + (v.total || 0), 0);
+  const combinedCount = subtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-indigo-700 p-4 sm:p-5 shadow-lg relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
+        <div className="relative flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+            <HeartPulse className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-lg leading-tight">Asuransi</p>
+            <p className="text-white/80 text-xs">{combinedCount} transaksi &middot; {rupiah(combinedTotal)}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile label="Jumlah Transaksi" value={combinedCount} />
+        <StatTile label="Total Nilai" value={rupiah(combinedTotal)} />
+      </div>
+      <div className="space-y-5">
+        {subtypes.map(([key, data]) => {
+          const theme = CATEGORY_THEME[key];
+          const Icon = theme.icon;
+          return (
+            <div key={key} className="space-y-2">
+              <div className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r ${theme.gradient} shadow-sm`}>
+                <Icon className="w-4 h-4 text-white shrink-0" />
+                <span className="font-semibold text-sm text-white">{theme.label}</span>
+                <span className="text-white/75 text-xs ml-auto tabular-nums">
+                  {data.count} transaksi &middot; {rupiah(data.total)}
+                </span>
+              </div>
+              <DeskripsiTable data={data} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const InsentifLaporan = ({ report, meta }) => {
   const jaminanSubtypes = useMemo(
     () => (report ? Object.entries(report.jaminan).filter(([, v]) => v.count > 0) : []),
@@ -162,7 +206,8 @@ const InsentifLaporan = ({ report, meta }) => {
     );
   }
 
-  const defaultTab = report.bpjs.count ? 'bpjs' : jaminanSubtypes[0]?.[0];
+  const asuransiCount = jaminanSubtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
+  const defaultTab = report.bpjs.count ? 'bpjs' : 'asuransi';
 
   return (
     <div className="space-y-4">
@@ -191,26 +236,23 @@ const InsentifLaporan = ({ report, meta }) => {
               <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{report.bpjs.count}</Badge>
             </TabsTrigger>
           )}
-          {jaminanSubtypes.map(([key, v]) => {
-            const Icon = CATEGORY_THEME[key].icon;
-            return (
-              <TabsTrigger key={key} value={key} className="gap-1.5">
-                <Icon className="w-3.5 h-3.5" /> {v.label}
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{v.count}</Badge>
-              </TabsTrigger>
-            );
-          })}
+          {jaminanSubtypes.length > 0 && (
+            <TabsTrigger value="asuransi" className="gap-1.5">
+              <HeartPulse className="w-3.5 h-3.5" /> Asuransi
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{asuransiCount}</Badge>
+            </TabsTrigger>
+          )}
         </TabsList>
         {report.bpjs.count > 0 && (
           <TabsContent value="bpjs" className="mt-4">
             <CategoryPanel categoryKey="bpjs" data={report.bpjs} isBpjs />
           </TabsContent>
         )}
-        {jaminanSubtypes.map(([key, v]) => (
-          <TabsContent key={key} value={key} className="mt-4">
-            <CategoryPanel categoryKey={key} data={v} />
+        {jaminanSubtypes.length > 0 && (
+          <TabsContent value="asuransi" className="mt-4">
+            <AsuransiPanel subtypes={jaminanSubtypes} />
           </TabsContent>
-        ))}
+        )}
       </Tabs>
     </div>
   );
