@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Loader2, Trash2, Eye, Download, ScrollText, CalendarClock, UploadCloud, FileCheck2, Pencil, Plus,
+  Loader2, Trash2, Eye, Download, ScrollText, CalendarClock, UploadCloud, FileCheck2, Pencil, Plus, RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import {
 } from '@/lib/api';
 import {
   generateMouAgreementPDF, mouAgreementFileName, MOU_DOCUMENT_THEMES,
-  replaceLastPageWithScan, fileToScanImageDataUrl,
+  replaceLastPageWithScan, fileToScanImageDataUrl, rotateImageDataUrl,
 } from '@/lib/mouAgreementGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { addYears, subDays, format } from 'date-fns';
@@ -91,6 +91,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
   const [viewingSignedId, setViewingSignedId] = useState(null);
+  const [scanPreview, setScanPreview] = useState(null);
 
   useEffect(() => {
     if (open && therapist?.id) {
@@ -196,19 +197,43 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
     }
   };
 
-  const handleUploadSigned = async (record, file) => {
+  // Beberapa HP (terlihat pada scan Samsung Galaxy S23) menyimpan frame
+  // fotonya sendiri dalam posisi miring sambil menulis EXIF Orientation=1
+  // ("sudah tegak") — tidak ada metadata yang bisa dikoreksi otomatis untuk
+  // kasus ini, jadi sebelum digabung ke PDF, owner selalu melihat pratinjau
+  // dulu dan bisa memutar manual kalau posisinya belum benar.
+  const handleFileSelected = async (record, file) => {
     if (!file) return;
+    setUploadingId(record.id);
+    try {
+      const dataUrl = await fileToScanImageDataUrl(file);
+      setUploadingId(null);
+      setScanPreview({ record, dataUrl, rotation: 0 });
+    } catch (readError) {
+      setUploadingId(null);
+      toast({ variant: 'destructive', title: 'Gagal Membaca File', description: readError?.message || 'File tidak dapat dibaca sebagai PDF atau gambar.' });
+    }
+  };
+
+  const handleRotatePreview = () => {
+    setScanPreview((prev) => (prev ? { ...prev, rotation: (prev.rotation + 90) % 360 } : prev));
+  };
+
+  const handleConfirmScanPreview = async () => {
+    if (!scanPreview) return;
+    const { record, dataUrl, rotation } = scanPreview;
+    setScanPreview(null);
     setUploadingId(record.id);
 
     let mergedFile;
     try {
-      const scanDataUrl = await fileToScanImageDataUrl(file);
-      const mergedDoc = await replaceLastPageWithScan(record, clinic || {}, scanDataUrl);
+      const finalDataUrl = await rotateImageDataUrl(dataUrl, rotation);
+      const mergedDoc = await replaceLastPageWithScan(record, clinic || {}, finalDataUrl);
       const blob = mergedDoc.output('blob');
       mergedFile = new File([blob], mouAgreementFileName(record, therapist), { type: 'application/pdf' });
     } catch (buildError) {
       setUploadingId(null);
-      toast({ variant: 'destructive', title: 'Gagal Memproses Scan', description: buildError?.message || 'File tidak dapat dibaca sebagai PDF atau gambar.' });
+      toast({ variant: 'destructive', title: 'Gagal Memproses Scan', description: buildError?.message || 'Gagal menggabungkan halaman.' });
       return;
     }
 
@@ -435,7 +460,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
             </Button>
           </div>
           <p className="text-[11px] text-slate-400 -mt-1">
-            Cetak &amp; tanda tangani draft di atas materai, lalu unggah foto/scan HALAMAN TERAKHIR saja (yang ada tanda tangan) pada baris riwayat di bawah — sistem otomatis menggabungkannya dengan Pasal 1-11 sehingga dokumen lengkap tampil di menu Dokumen milik terapis.
+            Cetak &amp; tanda tangani draft di atas materai, lalu unggah foto/scan HALAMAN TERAKHIR saja (yang ada tanda tangan) pada baris riwayat di bawah. Akan muncul pratinjau dulu — putar dulu di sana kalau posisi fotonya belum tegak — baru sistem menggabungkannya dengan Pasal 1-11 sehingga dokumen lengkap tampil di menu Dokumen milik terapis.
           </p>
         </div>
 
@@ -483,7 +508,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                             accept="application/pdf,image/*"
                             className="hidden"
                             disabled={uploadingId === r.id}
-                            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleUploadSigned(r, f); }}
+                            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleFileSelected(r, f); }}
                           />
                         </label>
                       </>
@@ -498,7 +523,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                           accept="application/pdf,image/*"
                           className="hidden"
                           disabled={uploadingId === r.id}
-                          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleUploadSigned(r, f); }}
+                          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleFileSelected(r, f); }}
                         />
                       </label>
                     )}
@@ -523,6 +548,39 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
         url={previewUrl}
         title="Preview MOU Kemitraan"
       />
+
+      <Dialog open={!!scanPreview} onOpenChange={(o) => !o && setScanPreview(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pratinjau Scan Halaman Terakhir</DialogTitle>
+            <DialogDescription>
+              Kalau posisinya belum tegak (mis. foto HP tersimpan miring), putar dulu sebelum digabung ke dokumen.
+            </DialogDescription>
+          </DialogHeader>
+          {scanPreview && (
+            <div className="flex justify-center items-center bg-slate-100 rounded-lg overflow-hidden" style={{ height: 360 }}>
+              <img
+                src={scanPreview.dataUrl}
+                alt="Pratinjau scan halaman terakhir"
+                style={{
+                  transform: `rotate(${scanPreview.rotation}deg)`,
+                  maxWidth: scanPreview.rotation % 180 === 0 ? '90%' : '80%',
+                  maxHeight: scanPreview.rotation % 180 === 0 ? '90%' : '55%',
+                }}
+              />
+            </div>
+          )}
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button type="button" variant="outline" onClick={handleRotatePreview}>
+              <RotateCw className="w-4 h-4 mr-2" /> Putar 90°
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => setScanPreview(null)}>Batal</Button>
+              <Button onClick={handleConfirmScanPreview} className="bg-emerald-600 hover:bg-emerald-700">Gunakan Foto Ini</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
