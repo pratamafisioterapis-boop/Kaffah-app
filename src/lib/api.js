@@ -4863,6 +4863,7 @@ export const savePhysiotherapist = async (payload) => {
         badges: payload.badges || [],
         theme_color: payload.theme_color || null,
         signature_url: payload.signature_url || null,
+        join_date: payload.join_date || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', payload.id)
@@ -5029,6 +5030,7 @@ export const createTherapistAccount = async (payload, password) => {
         badges: payload.badges || [],
         theme_color: payload.theme_color || null,
         signature_url: payload.signature_url || null,
+        join_date: payload.join_date || null,
         created_at: new Date().toISOString()
       })
       .select()
