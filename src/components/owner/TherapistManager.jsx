@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
-  Monitor, Smartphone, Shield, CalendarRange,
+  Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
   Wallet, Check, Megaphone, Stethoscope, Award, Receipt
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
@@ -103,7 +103,8 @@ const TherapistManager = () => {
       badges: [], // Array of badge IDs
       complaint_tags: [], // Array of complaint-tag slugs, for Smart Booking matching
       theme_color: '',
-      signature_url: ''
+      signature_url: '',
+      join_date: format(new Date(), 'yyyy-MM-dd')
     };
   }
 
@@ -201,7 +202,8 @@ const TherapistManager = () => {
         badges: Array.isArray(therapist.badges) ? therapist.badges : [],
         complaint_tags: Array.isArray(therapist.complaint_tags) ? therapist.complaint_tags : [],
         theme_color: therapist.theme_color || '',
-        signature_url: therapist.signature_url || ''
+        signature_url: therapist.signature_url || '',
+        join_date: therapist.join_date || (therapist.created_at ? format(new Date(therapist.created_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'))
       });
       setPassword(''); 
     } else {
@@ -295,7 +297,8 @@ const TherapistManager = () => {
       period_end_day: Math.min(31, Math.max(1, parseInt(formData.period_end_day) || 27)),
       show_on_landing: Boolean(formData.show_on_landing),
       show_on_booking: Boolean(formData.show_on_booking),
-      remuneration_enabled: Boolean(formData.remuneration_enabled)
+      remuneration_enabled: Boolean(formData.remuneration_enabled),
+      join_date: formData.join_date || null
     };
 
     let error = null;
@@ -568,6 +571,16 @@ const headerColorMap = {
                   <span className="shrink-0">{therapist.phone || '-'}</span>
                 </div>
 
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5 min-w-0">
+                  <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">
+                    Bergabung {(() => {
+                      const joinDate = therapist.join_date || therapist.created_at;
+                      return joinDate ? format(new Date(joinDate), 'dd MMM yyyy') : '-';
+                    })()}
+                  </span>
+                </div>
+
                 {(visibleBadges.length > 0 || therapist.show_on_landing || therapist.show_on_booking) && (
                   <div className="flex items-center justify-between gap-2 mt-3">
                     <div className="flex flex-wrap gap-1 min-w-0">
@@ -671,6 +684,10 @@ const headerColorMap = {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">No. Telepon</label>
                     <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Tanggal Bergabung</label>
+                    <Input type="date" value={formData.join_date} onChange={(e) => setFormData({...formData, join_date: e.target.value})} />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-xs font-medium text-slate-600">Warna Kartu</label>
