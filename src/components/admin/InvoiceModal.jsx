@@ -302,7 +302,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       const caption =
         `Berikut *Kwitansi Terapi* hari ini.\n\n` +
         `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
-        `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
+        `Semoga lekas membaik dan sehat selalu.\n\n` +
         `*Salam Sehat,*\n` +
         `${clinicName}`;
 
@@ -425,8 +425,8 @@ const handleSendManualWA = async () => {
     const message =
       `Berikut *Kwitansi Terapi* hari ini.\n\n` +
       `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
-      `Semoga lekas membaik dan sehat selalu 🌿\n\n` +
-      `📄 Lihat/unduh kwitansi:\n${invoiceLink}\n\n` +
+      `Semoga lekas membaik dan sehat selalu.\n\n` +
+      `Lihat/unduh kwitansi:\n${invoiceLink}\n\n` +
       `*Salam Sehat,*\n` +
       `${clinicName}`;
 
