@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Mail, Lock, UserCircle, Upload } from 'lucide-react';
+import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 
 const AdminAccountSettings = () => {
   const { user, userDetails } = useAuth();
@@ -65,37 +66,43 @@ const AdminAccountSettings = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-xl">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Foto Profil (Splash Screen)</h3>
-        <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border">
-            {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
+    <div className="space-y-6">
+      <div className="space-y-6 max-w-xl">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Foto Profil (Splash Screen)</h3>
+          <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border">
+              {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
+            </div>
+            <label className="cursor-pointer">
+              <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} disabled={uploadingAvatar} />
+            </label>
           </div>
-          <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
-              {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
-            </span>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} disabled={uploadingAvatar} />
-          </label>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Mail className="w-4 h-4" /> Ubah Email Login</h3>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Button onClick={handleUpdateEmail} disabled={savingEmail} className="bg-blue-600">
+            {savingEmail && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Email
+          </Button>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Lock className="w-4 h-4" /> Ubah Password</h3>
+          <Input type="password" placeholder="Password baru (min. 6 karakter)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-blue-600">
+            {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Mail className="w-4 h-4" /> Ubah Email Login</h3>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Button onClick={handleUpdateEmail} disabled={savingEmail} className="bg-blue-600">
-          {savingEmail && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Email
-        </Button>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Lock className="w-4 h-4" /> Ubah Password</h3>
-        <Input type="password" placeholder="Password baru (min. 6 karakter)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-blue-600">
-          {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
-        </Button>
+      <div className="max-w-3xl">
+        <TherapistDriveUploadsManager />
       </div>
     </div>
   );
