@@ -119,9 +119,33 @@ const DeskripsiTable = ({ data }) => (
   </div>
 );
 
+// Deskripsi yang dianggap "Terapi Wicara" / "Terapi Okupasi" (termasuk varian
+// "Biaya Terapi Wicara/Okupasi" dan "Terapi Wicara / Jam") — dicocokkan dengan
+// "includes" karena nama persisnya bisa beda-beda tergantung PDF asal.
+const WICARA_OKUPASI_RE = /TERAPI WICARA|TERAPI OKUPASI/i;
+
+function sumWicaraOkupasi(byDeskripsi) {
+  const totals = {
+    dengan: { count: 0, total: 0 },
+    tanpa: { count: 0, total: 0 },
+  };
+  byDeskripsi.forEach((row) => {
+    if (!WICARA_OKUPASI_RE.test(row.deskripsi)) return;
+    totals.dengan.count += row.denganKonsulDokter.count;
+    totals.dengan.total += row.denganKonsulDokter.total;
+    totals.tanpa.count += row.tanpaKonsulDokter.count;
+    totals.tanpa.total += row.tanpaKonsulDokter.total;
+  });
+  return totals;
+}
+
 const CategoryPanel = ({ categoryKey, data, isBpjs }) => {
   const theme = CATEGORY_THEME[categoryKey];
   const Icon = theme.icon;
+  const wicaraOkupasi = useMemo(
+    () => (isBpjs ? sumWicaraOkupasi(data.byDeskripsi) : null),
+    [isBpjs, data.byDeskripsi]
+  );
   if (!data.count) {
     return <p className="text-sm text-slate-500 py-10 text-center">Tidak ada data untuk kategori ini.</p>;
   }
@@ -143,6 +167,18 @@ const CategoryPanel = ({ categoryKey, data, isBpjs }) => {
         <StatTile label="Jumlah Transaksi" value={data.count} />
         <StatTile label="Total Nilai" value={rupiah(data.total)} />
       </div>
+      {wicaraOkupasi && (
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Terapi Wicara + Okupasi (Ada Konsul)"
+            value={`${rupiah(wicaraOkupasi.dengan.total)} · ${wicaraOkupasi.dengan.count}x`}
+          />
+          <StatTile
+            label="Terapi Wicara + Okupasi (Tanpa Konsul)"
+            value={`${rupiah(wicaraOkupasi.tanpa.total)} · ${wicaraOkupasi.tanpa.count}x`}
+          />
+        </div>
+      )}
       {isBpjs ? <BpjsTable data={data} /> : <DeskripsiTable data={data} />}
     </div>
   );
