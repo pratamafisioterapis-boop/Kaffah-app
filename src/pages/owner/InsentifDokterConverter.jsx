@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import {
   Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Trash2, FileText,
   BarChart3, History, Save, ShieldCheck, Fuel, HeartPulse, FileCheck2, User,
-  Sparkles, Clock, CalendarDays, Stethoscope,
+  Sparkles, Clock, CalendarDays, Stethoscope, Banknote,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ const CATEGORY_THEME = {
   pertamedika: { label: 'Pertamedika', icon: HeartPulse, gradient: 'from-teal-600 via-emerald-600 to-teal-700', chip: 'bg-teal-50 text-teal-700 border-teal-200' },
   jaminan: { label: 'Jaminan', icon: FileCheck2, gradient: 'from-indigo-600 via-violet-600 to-purple-700', chip: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   pribadi: { label: 'Pribadi', icon: User, gradient: 'from-amber-500 via-orange-500 to-amber-600', chip: 'bg-amber-50 text-amber-700 border-amber-200' },
+  tunai: { label: 'Tunai', icon: Banknote, gradient: 'from-green-600 via-emerald-600 to-green-700', chip: 'bg-green-50 text-green-700 border-green-200' },
 };
 
 const StatTile = ({ label, value }) => (
@@ -197,7 +198,9 @@ const InsentifLaporan = ({ report, meta }) => {
     [report]
   );
 
-  if (!report || (!report.bpjs.count && jaminanSubtypes.length === 0)) {
+  const hasTunai = (report?.tunai?.count || 0) > 0;
+
+  if (!report || (!report.bpjs.count && jaminanSubtypes.length === 0 && !hasTunai)) {
     return (
       <div className="py-14 text-center text-slate-500">
         <Sparkles className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -207,7 +210,7 @@ const InsentifLaporan = ({ report, meta }) => {
   }
 
   const asuransiCount = jaminanSubtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
-  const defaultTab = report.bpjs.count ? 'bpjs' : 'asuransi';
+  const defaultTab = report.bpjs.count ? 'bpjs' : jaminanSubtypes.length > 0 ? 'asuransi' : 'tunai';
 
   return (
     <div className="space-y-4">
@@ -242,6 +245,12 @@ const InsentifLaporan = ({ report, meta }) => {
               <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{asuransiCount}</Badge>
             </TabsTrigger>
           )}
+          {hasTunai && (
+            <TabsTrigger value="tunai" className="gap-1.5">
+              <Banknote className="w-3.5 h-3.5" /> Tunai
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{report.tunai.count}</Badge>
+            </TabsTrigger>
+          )}
         </TabsList>
         {report.bpjs.count > 0 && (
           <TabsContent value="bpjs" className="mt-4">
@@ -251,6 +260,11 @@ const InsentifLaporan = ({ report, meta }) => {
         {jaminanSubtypes.length > 0 && (
           <TabsContent value="asuransi" className="mt-4">
             <AsuransiPanel subtypes={jaminanSubtypes} />
+          </TabsContent>
+        )}
+        {hasTunai && (
+          <TabsContent value="tunai" className="mt-4">
+            <CategoryPanel categoryKey="tunai" data={report.tunai} />
           </TabsContent>
         )}
       </Tabs>
