@@ -471,6 +471,43 @@ export function calculateCustomSalary(recaps, rates) {
 }
 
 /**
+ * Computes therapist remuneration commission from performance score and profit margin.
+ * Profit = omzet (revenue) yang dihasilkan terapis dikurangi take-home pay
+ * sebelum komisi (base + transport + insentif). Komisi = ratePercent% dari
+ * profit, discale oleh overallScore (0-100), dan di-floor ke 0 kalau profit
+ * negatif atau remunerasi tidak aktif untuk terapis tsb.
+ * @param {Object} params
+ * @param {number} params.revenue - Omzet terapis pada periode (calculateFullSalary)
+ * @param {number} params.baseSalary
+ * @param {number} params.transportAllowance
+ * @param {number} params.incentiveAmount
+ * @param {number} params.overallScore - Skor performa remunerasi (0-100)
+ * @param {boolean} params.remunerationEnabled
+ * @param {number} [params.ratePercent=2] - Tarif komisi dalam persen dari profit
+ * @returns {{ profit: number, marginPercent: number, commission: number }}
+ */
+export function calculateRemunerationCommission({
+  revenue = 0,
+  baseSalary = 0,
+  transportAllowance = 0,
+  incentiveAmount = 0,
+  overallScore = 0,
+  remunerationEnabled = true,
+  ratePercent = 2,
+}) {
+  const takehomeBeforeCommission = baseSalary + transportAllowance + incentiveAmount;
+  const profit = revenue - takehomeBeforeCommission;
+  const marginPercent = revenue > 0 ? (profit / revenue) * 100 : 0;
+
+  if (!remunerationEnabled || profit <= 0) {
+    return { profit, marginPercent, commission: 0 };
+  }
+
+  const commission = Math.round((ratePercent / 100) * profit * (overallScore / 100));
+  return { profit, marginPercent, commission: Math.max(0, commission) };
+}
+
+/**
  * Stub function to calculate total salary based on complex schemes.
  * @param {Array} records - Attendance/Session records
  * @param {string} scheme - Payroll scheme identifier
