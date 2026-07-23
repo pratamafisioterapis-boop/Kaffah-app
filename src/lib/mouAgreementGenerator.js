@@ -2,14 +2,31 @@ import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-// Palette shared with payslipGenerator.js so every "official document" the
-// clinic issues reads as one consistent, professional family.
-const INK = [26, 30, 41];
-const NAVY = [30, 41, 82];
-const GOLD = [163, 130, 63];
-const GOLD_SOFT = [230, 219, 189];
-const MUTED = [100, 106, 122];
-const RULE = [225, 227, 232];
+// Two selectable color themes for the letterhead: the default "professional"
+// navy/gold family shared with payslipGenerator.js, and "blue" which mirrors
+// the clinic's original all-blue paper template (every line of text in one
+// blue ink, the way it was typed in Word).
+export const MOU_DOCUMENT_THEMES = {
+  professional: { label: 'Profesional (Navy & Emas)' },
+  blue: { label: 'Biru Penuh (seperti dokumen asli)' },
+};
+
+const PALETTES = {
+  professional: {
+    INK: [26, 30, 41],
+    NAVY: [30, 41, 82],
+    GOLD: [163, 130, 63],
+    GOLD_SOFT: [230, 219, 189],
+    MUTED: [100, 106, 122],
+  },
+  blue: {
+    INK: [13, 43, 150],
+    NAVY: [13, 43, 150],
+    GOLD: [13, 43, 150],
+    GOLD_SOFT: [178, 196, 235],
+    MUTED: [61, 91, 176],
+  },
+};
 
 const PAGE_W = 210;
 const PAGE_H = 297;
@@ -17,6 +34,9 @@ const MARGIN_X = 22;
 const MARGIN_TOP = 20;
 const MARGIN_BOTTOM = 22;
 const CONTENT_W = PAGE_W - MARGIN_X * 2;
+// Semua paragraf/poin bernomor memakai satu ukuran font yang sama supaya
+// blok teks terbaca konsisten dari Pasal ke Pasal.
+const BODY_SIZE = 9.8;
 
 const fmtMoney = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 const fmtDateLong = (value) => {
@@ -36,6 +56,29 @@ const fmtDateShort = (value) => {
   }
 };
 
+const SATUAN = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+
+// Terbilang sederhana (0-999) — cukup untuk field angka hari/bulan di
+// dokumen ini (mis. "60 (enam puluh) hari"), meniru gaya penulisan kontrak asli.
+const terbilang = (value) => {
+  const n = Math.round(Number(value) || 0);
+  if (n === 0) return 'nol';
+  if (n < 0) return String(n);
+  if (n < 10) return SATUAN[n];
+  if (n < 20) return n === 10 ? 'sepuluh' : n === 11 ? 'sebelas' : `${SATUAN[n - 10]} belas`;
+  if (n < 100) {
+    const puluh = Math.floor(n / 10);
+    const sisa = n % 10;
+    return `${SATUAN[puluh]} puluh${sisa ? ` ${SATUAN[sisa]}` : ''}`;
+  }
+  if (n < 1000) {
+    const ratus = Math.floor(n / 100);
+    const sisa = n % 100;
+    return `${ratus === 1 ? 'seratus' : `${SATUAN[ratus]} ratus`}${sisa ? ` ${terbilang(sisa)}` : ''}`;
+  }
+  return String(n);
+};
+
 /**
  * Builds the "PERJANJIAN KERJASAMA KEMITRAAN FISIOTERAPIS" agreement PDF —
  * the unsigned draft an owner downloads, prints, gets signed on materai,
@@ -51,6 +94,8 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   let y = MARGIN_TOP;
   let pageNum = 1;
+
+  const { INK, NAVY, GOLD, GOLD_SOFT, MUTED } = PALETTES[mou.document_theme] || PALETTES.professional;
 
   const firstParty = mou.first_party || {};
   const secondParty = mou.second_party || {};
@@ -86,7 +131,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
     if (y + needed > PAGE_H - MARGIN_BOTTOM) newPage();
   };
 
-  const paragraph = (text, { size = 10, style = 'normal', lineH = 5, indent = 0, gapAfter = 3 } = {}) => {
+  const paragraph = (text, { size = BODY_SIZE, style = 'normal', lineH = 5, indent = 0, gapAfter = 3 } = {}) => {
     doc.setFont('helvetica', style);
     doc.setFontSize(size);
     doc.setTextColor(...INK);
@@ -137,7 +182,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
 
   const numberedItem = (number, text, indent = 4) => {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.7);
+    doc.setFontSize(BODY_SIZE);
     const numW = 7;
     const lines = doc.splitTextToSize(text, CONTENT_W - indent - numW);
     ensureSpace(4.8 * lines.length + 1.5);
@@ -151,7 +196,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
 
   const subLine = (text, indent = 12) => {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
+    doc.setFontSize(BODY_SIZE);
     doc.setTextColor(...INK);
     const lines = doc.splitTextToSize(text, CONTENT_W - indent);
     ensureSpace(4.6 * lines.length + 1);
@@ -305,12 +350,12 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
     numberedItem(2, 'Apabila PIHAK KEDUA tidak memberikan keterangan perihal ketidakhadirannya maka PIHAK PERTAMA akan melakukan pemotongan terhadap Upah secara proporsional.');
   } else {
     pasalTitle(6, 'CUTI');
-    numberedItem(1, `PIHAK KEDUA berhak atas ${comp.annual_leave_days || 12} (${comp.annual_leave_days || 12}) hari cuti tahunan selama masa perjanjian 12 bulan, yang dapat digunakan secara bertahap sesuai kebutuhan PIHAK KEDUA.`);
-    numberedItem(2, `PIHAK KEDUA wajib mengajukan cuti kepada PIHAK PERTAMA secara tertulis minimal ${comp.leave_notice_days || 7} (${comp.leave_notice_days || 7}) hari sebelumnya, kecuali dalam kondisi sakit atau keadaan mendesak.`);
+    numberedItem(1, `PIHAK KEDUA berhak atas ${comp.annual_leave_days || 12} (${terbilang(comp.annual_leave_days || 12)}) hari cuti tahunan selama masa perjanjian 12 bulan, yang dapat digunakan secara bertahap sesuai kebutuhan PIHAK KEDUA.`);
+    numberedItem(2, `PIHAK KEDUA wajib mengajukan cuti kepada PIHAK PERTAMA secara tertulis minimal ${comp.leave_notice_days || 7} (${terbilang(comp.leave_notice_days || 7)}) hari sebelumnya, kecuali dalam kondisi sakit atau keadaan mendesak.`);
     numberedItem(3, 'Pengajuan cuti disetujui oleh PIHAK PERTAMA berdasarkan kebutuhan pelayanan, kondisi operasional, serta penilaian profesional lainnya.');
     numberedItem(4, 'PIHAK KEDUA dapat mengajukan cuti sakit dengan memberikan keterangan atau bukti medis kepada PIHAK PERTAMA.');
-    numberedItem(5, `PIHAK KEDUA berhak atas ${comp.marriage_leave_days || 3} (${comp.marriage_leave_days || 3}) hari cuti menikah yang dapat digunakan sebelum, pada saat, atau setelah hari pelaksanaan pernikahan. Cuti menikah wajib diajukan minimal ${comp.marriage_notice_days || 14} (${comp.marriage_notice_days || 14}) hari sebelumnya disertai bukti rencana pernikahan.`);
-    numberedItem(6, `PIHAK KEDUA berhak atas Cuti Hamil dan Melahirkan selama total ${comp.maternity_leave_months || 3} (${comp.maternity_leave_months || 3}) bulan, dengan rincian ${(comp.maternity_leave_months || 3) / 2} bulan sebelum perkiraan persalinan dan ${(comp.maternity_leave_months || 3) / 2} bulan setelah persalinan.`);
+    numberedItem(5, `PIHAK KEDUA berhak atas ${comp.marriage_leave_days || 3} (${terbilang(comp.marriage_leave_days || 3)}) hari cuti menikah yang dapat digunakan sebelum, pada saat, atau setelah hari pelaksanaan pernikahan. Cuti menikah wajib diajukan minimal ${comp.marriage_notice_days || 14} (${terbilang(comp.marriage_notice_days || 14)}) hari sebelumnya disertai bukti rencana pernikahan.`);
+    numberedItem(6, `PIHAK KEDUA berhak atas Cuti Hamil dan Melahirkan selama total ${comp.maternity_leave_months || 3} (${terbilang(comp.maternity_leave_months || 3)}) bulan, dengan rincian ${(comp.maternity_leave_months || 3) / 2} bulan sebelum perkiraan persalinan dan ${(comp.maternity_leave_months || 3) / 2} bulan setelah persalinan.`);
     numberedItem(7, 'Mekanisme kompensasi dan pembayaran selama cuti hamil/melahirkan mengikuti kebijakan internal PIHAK PERTAMA dan dapat diatur lebih lanjut dalam addendum apabila diperlukan.');
     numberedItem(8, 'Ketidakhadiran tanpa keterangan tertulis atau tanpa persetujuan PIHAK PERTAMA akan dianggap alpa, dan PIHAK PERTAMA berhak melakukan pemotongan Upah secara proporsional.');
     numberedItem(9, 'Bila hak cuti tahunan tidak digunakan sampai masa perjanjian berakhir, PIHAK KEDUA berhak menerima Komisi Cuti Tahunan sebagaimana tercantum pada Pasal 4 ayat (6).');
@@ -320,7 +365,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   pasalTitle(7, 'JANGKA WAKTU PERJANJIAN KEMITRAAN');
   numberedItem(1, `Jangka waktu perjanjian ini berlaku selama 12 (dua belas) bulan terhitung mulai tanggal ${fmtDateLong(mou.period_start)} - ${fmtDateLong(mou.period_end)}.`);
   numberedItem(2, 'Dengan berakhirnya tanggal perjanjian ini maka hubungan kerja PIHAK PERTAMA dan PIHAK KEDUA dianggap selesai atau berakhir tanpa suatu kewajiban apapun dari PIHAK PERTAMA maupun PIHAK KEDUA, kecuali apabila masih terdapat kewajiban-kewajiban atau hutang piutang yang harus diselesaikan oleh para pihak.');
-  numberedItem(3, `PIHAK PERTAMA dan PIHAK KEDUA dapat menyepakati untuk memutuskan Perjanjian ini sebelum berakhirnya jangka waktu Perjanjian dengan pemberitahuan tertulis ${comp.termination_notice_days || 60} (${comp.termination_notice_days || 60}) hari sebelumnya.`);
+  numberedItem(3, `PIHAK PERTAMA dan PIHAK KEDUA dapat menyepakati untuk memutuskan Perjanjian ini sebelum berakhirnya jangka waktu Perjanjian dengan pemberitahuan tertulis ${comp.termination_notice_days || 60} (${terbilang(comp.termination_notice_days || 60)}) hari sebelumnya.`);
 
   // ---------- PASAL 8 ----------
   pasalTitle(8, 'JAMINAN KERAHASIAAN');
