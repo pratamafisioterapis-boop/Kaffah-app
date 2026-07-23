@@ -1,10 +1,12 @@
 import React from 'react';
-import { UploadCloud, Image as ImageIcon, Receipt } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Receipt, ScrollText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TherapistDriveUpload from '@/components/therapist/TherapistDriveUpload';
 import TherapistSharedMedia from '@/components/therapist/TherapistSharedMedia';
 import TherapistPayrollList from '@/components/therapist/TherapistPayrollList';
 import PayrollAuthGate from '@/components/therapist/PayrollAuthGate';
+import TherapistMouList from '@/components/therapist/TherapistMouList';
+import MouAuthGate from '@/components/therapist/MouAuthGate';
 
 const TherapistDocuments = ({ therapist }) => {
   return (
@@ -20,6 +22,9 @@ const TherapistDocuments = ({ therapist }) => {
           <TabsTrigger value="payroll" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Receipt className="w-3.5 h-3.5" /> Payroll
           </TabsTrigger>
+          <TabsTrigger value="mou" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <ScrollText className="w-3.5 h-3.5" /> MOU Kemitraan
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -33,6 +38,11 @@ const TherapistDocuments = ({ therapist }) => {
             <PayrollAuthGate therapist={therapist}>
               <TherapistPayrollList therapist={therapist} />
             </PayrollAuthGate>
+          </TabsContent>
+          <TabsContent value="mou">
+            <MouAuthGate therapist={therapist}>
+              <TherapistMouList />
+            </MouAuthGate>
           </TabsContent>
         </div>
       </Tabs>

@@ -4,9 +4,10 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
-  Wallet, Check, Megaphone, Stethoscope, Award, Receipt
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
+import MouManagerModal from '@/components/owner/MouManagerModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -66,6 +67,10 @@ const TherapistManager = () => {
   const [payrollDialogOpen, setPayrollDialogOpen] = useState(false);
   const [selectedTherapistForPayroll, setSelectedTherapistForPayroll] = useState(null);
 
+  // MOU State
+  const [mouDialogOpen, setMouDialogOpen] = useState(false);
+  const [selectedTherapistForMou, setSelectedTherapistForMou] = useState(null);
+
   useEffect(() => {
     fetchTherapists();
     fetchClinicId();
@@ -104,7 +109,10 @@ const TherapistManager = () => {
       complaint_tags: [], // Array of complaint-tag slugs, for Smart Booking matching
       theme_color: '',
       signature_url: '',
-      join_date: format(new Date(), 'yyyy-MM-dd')
+      join_date: format(new Date(), 'yyyy-MM-dd'),
+      birth_place: '',
+      birth_date: '',
+      license_number: ''
     };
   }
 
@@ -203,7 +211,10 @@ const TherapistManager = () => {
         complaint_tags: Array.isArray(therapist.complaint_tags) ? therapist.complaint_tags : [],
         theme_color: therapist.theme_color || '',
         signature_url: therapist.signature_url || '',
-        join_date: therapist.join_date || (therapist.created_at ? format(new Date(therapist.created_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'))
+        join_date: therapist.join_date || (therapist.created_at ? format(new Date(therapist.created_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
+        birth_place: therapist.birth_place || '',
+        birth_date: therapist.birth_date || '',
+        license_number: therapist.license_number || ''
       });
       setPassword(''); 
     } else {
@@ -502,6 +513,9 @@ const headerColorMap = {
                    <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForPayroll(therapist); setPayrollDialogOpen(true); }} title="Payroll / Slip Gaji">
                      <Receipt className="w-3.5 h-3.5" />
                    </Button>
+                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForMou(therapist); setMouDialogOpen(true); }} title="MOU Kemitraan">
+                     <ScrollText className="w-3.5 h-3.5" />
+                   </Button>
                    <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
                      <Edit2 className="w-3.5 h-3.5" />
                    </Button>
@@ -688,6 +702,18 @@ const headerColorMap = {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">Tanggal Bergabung</label>
                     <Input type="date" value={formData.join_date} onChange={(e) => setFormData({...formData, join_date: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">No. STR / SIP</label>
+                    <Input value={formData.license_number} onChange={(e) => setFormData({...formData, license_number: e.target.value})} placeholder="FL00001233102233" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Tempat Lahir</label>
+                    <Input value={formData.birth_place} onChange={(e) => setFormData({...formData, birth_place: e.target.value})} placeholder="Balikpapan" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Tanggal Lahir</label>
+                    <Input type="date" value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-xs font-medium text-slate-600">Warna Kartu</label>
@@ -1021,6 +1047,12 @@ const headerColorMap = {
         open={payrollDialogOpen}
         onClose={() => setPayrollDialogOpen(false)}
         therapist={selectedTherapistForPayroll}
+      />
+
+      <MouManagerModal
+        open={mouDialogOpen}
+        onClose={() => setMouDialogOpen(false)}
+        therapist={selectedTherapistForMou}
       />
     </div>
   );

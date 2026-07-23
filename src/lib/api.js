@@ -4341,6 +4341,149 @@ export const deletePayrollRecord = async (id) => {
   }, 'deletePayrollRecord');
 };
 
+// ============================================
+// MOU KEMITRAAN (Perjanjian Kerjasama Tahunan)
+// ============================================
+export const getMouDocumentsForTherapist = async (physiotherapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_mou_documents')
+      .select('*')
+      .eq('physiotherapist_id', physiotherapistId)
+      .order('period_start', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getMouDocumentsForTherapist', { retry: true });
+};
+
+export const getMyMouDocuments = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [] };
+
+    const { data: therapistRow } = await supabase
+      .from('physiotherapists')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!therapistRow?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('therapist_mou_documents')
+      .select('*')
+      .eq('physiotherapist_id', therapistRow.id)
+      .eq('status', 'signed')
+      .order('period_start', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getMyMouDocuments', { retry: true });
+};
+
+export const upsertMouDocument = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const record = {
+      clinic_id: payload.clinic_id,
+      physiotherapist_id: payload.physiotherapist_id,
+      period_number: payload.period_number,
+      period_start: payload.period_start,
+      period_end: payload.period_end,
+      agreement_date: payload.agreement_date,
+      agreement_city: payload.agreement_city,
+      first_party: payload.first_party || {},
+      second_party: payload.second_party || {},
+      compensation: payload.compensation || {},
+      updated_at: new Date().toISOString(),
+    };
+
+    let result;
+    if (payload.id) {
+      result = await supabase
+        .from('therapist_mou_documents')
+        .update(record)
+        .eq('id', payload.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('therapist_mou_documents')
+        .insert({ ...record, created_by: userId || null })
+        .select()
+        .single();
+    }
+
+    if (result.error) return { error: result.error };
+    return { data: result.data, success: true, error: null };
+  }, 'upsertMouDocument');
+};
+
+export const deleteMouDocument = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('therapist_mou_documents').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteMouDocument');
+};
+
+// Bucket privat (data gaji + identitas pribadi) — mengikuti pola pemilih-ktp,
+// dibaca lewat signed URL, bukan public URL seperti bucket lainnya.
+export const uploadSignedMouFile = async (file, physiotherapistId, mouId) => {
+  return safeQuery(async () => {
+    if (!file) return { error: { message: 'File tidak ditemukan' } };
+    const ext = file.name.split('.').pop();
+    const path = `${physiotherapistId}/${mouId}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('mou-documents')
+      .upload(path, file, { upsert: true, contentType: file.type || 'application/pdf' });
+
+    if (uploadError) return { error: uploadError };
+    return { data: { path, name: file.name }, success: true, error: null };
+  }, 'uploadSignedMouFile');
+};
+
+export const markMouAsSigned = async (mouId, { path, name }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_mou_documents')
+      .update({
+        status: 'signed',
+        signed_file_path: path,
+        signed_file_name: name,
+        signed_file_uploaded_at: new Date().toISOString(),
+        signed_file_uploaded_by: userId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', mouId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'markMouAsSigned');
+};
+
+export const getMouSignedFileUrl = async (path) => {
+  return safeQuery(async () => {
+    if (!path) return { error: { message: 'Path file tidak ditemukan' } };
+    const { data, error } = await supabase.storage
+      .from('mou-documents')
+      .createSignedUrl(path, 60 * 10);
+
+    if (error) return { error };
+    return { data: data?.signedUrl, success: true, error: null };
+  }, 'getMouSignedFileUrl');
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,
@@ -4864,6 +5007,9 @@ export const savePhysiotherapist = async (payload) => {
         theme_color: payload.theme_color || null,
         signature_url: payload.signature_url || null,
         join_date: payload.join_date || null,
+        birth_place: payload.birth_place || null,
+        birth_date: payload.birth_date || null,
+        license_number: payload.license_number || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', payload.id)
@@ -5031,6 +5177,9 @@ export const createTherapistAccount = async (payload, password) => {
         theme_color: payload.theme_color || null,
         signature_url: payload.signature_url || null,
         join_date: payload.join_date || null,
+        birth_place: payload.birth_place || null,
+        birth_date: payload.birth_date || null,
+        license_number: payload.license_number || null,
         created_at: new Date().toISOString()
       })
       .select()

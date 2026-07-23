@@ -27,6 +27,12 @@ const AccountClinicManager = () => {
   const [uploadingStamp, setUploadingStamp] = useState(false);
   const [savingClinic, setSavingClinic] = useState(false);
 
+  const [ownerFullName, setOwnerFullName] = useState('');
+  const [ownerBirthPlace, setOwnerBirthPlace] = useState('');
+  const [ownerBirthDate, setOwnerBirthDate] = useState('');
+  const [ownerPosition, setOwnerPosition] = useState('');
+  const [savingOwnerIdentity, setSavingOwnerIdentity] = useState(false);
+
   useEffect(() => {
     if (user?.email) setEmail(user.email);
   }, [user]);
@@ -41,6 +47,10 @@ const AccountClinicManager = () => {
         setClinicAddress(data.address || '');
         setClinicEmail(data.email || '');
         setClinicPhone(data.phone || '');
+        setOwnerFullName(data.owner_full_name || '');
+        setOwnerBirthPlace(data.owner_birth_place || '');
+        setOwnerBirthDate(data.owner_birth_date || '');
+        setOwnerPosition(data.owner_position || '');
       }
     };
     fetchClinic();
@@ -150,6 +160,23 @@ const AccountClinicManager = () => {
     }
   };
 
+  const handleSaveOwnerIdentity = async () => {
+    if (!clinic) return;
+    setSavingOwnerIdentity(true);
+    const { error } = await supabase.from('clinics').update({
+      owner_full_name: ownerFullName || null,
+      owner_birth_place: ownerBirthPlace || null,
+      owner_birth_date: ownerBirthDate || null,
+      owner_position: ownerPosition || null,
+    }).eq('id', clinic.id);
+    setSavingOwnerIdentity(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan identitas', description: error.message });
+    } else {
+      toast({ title: 'Identitas Pihak Pertama tersimpan' });
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-xl">
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
@@ -228,6 +255,34 @@ const AccountClinicManager = () => {
         </div>
         <Button onClick={handleSaveClinicName} disabled={savingClinic} className="bg-blue-600">
           {savingClinic && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Profil Klinik
+        </Button>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Identitas Pihak Pertama</h3>
+        <p className="text-sm text-slate-500">
+          Dipakai sebagai data PIHAK PERTAMA pada dokumen MOU/Perjanjian Kemitraan yang diterbitkan untuk terapis.
+        </p>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Nama Lengkap & Gelar</label>
+          <Input value={ownerFullName} onChange={(e) => setOwnerFullName(e.target.value)} placeholder="Adi Pratama, S.Fis., Ftr" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tempat Lahir</label>
+            <Input value={ownerBirthPlace} onChange={(e) => setOwnerBirthPlace(e.target.value)} placeholder="Balikpapan" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tanggal Lahir</label>
+            <Input type="date" value={ownerBirthDate} onChange={(e) => setOwnerBirthDate(e.target.value)} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Jabatan</label>
+          <Input value={ownerPosition} onChange={(e) => setOwnerPosition(e.target.value)} placeholder="Pimpinan Klinik" />
+        </div>
+        <Button onClick={handleSaveOwnerIdentity} disabled={savingOwnerIdentity} className="bg-blue-600">
+          {savingOwnerIdentity && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Identitas
         </Button>
       </div>
     </div>
