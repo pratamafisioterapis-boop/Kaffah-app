@@ -12,6 +12,7 @@ import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardW
 import TherapistRemuneration from '@/components/therapist/TherapistRemuneration';
 import TherapistDocuments from '@/components/therapist/TherapistDocuments';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import { getPhysiotherapistByUserId } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -28,10 +29,35 @@ const TherapistDashboard = () => {
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('settings');
-    if (requestedTab) {
-      setSettingsTab(requestedTab);
-      setSettingsOpen(true);
+    if (!requestedTab) return;
+
+    setSettingsTab(requestedTab);
+    setSettingsOpen(true);
+
+    if (requestedTab !== 'akun') return;
+
+    // Balik dari link konfirmasi ganti email — cek apakah linknya gagal
+    // (misalnya kadaluarsa), kalau tidak, tunggu event USER_UPDATED dari
+    // supabase-js setelah token di URL selesai diproses.
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const hashErrorDescription = hashParams.get('error_description');
+
+    if (hashErrorDescription) {
+      toast({
+        variant: 'destructive',
+        title: 'Konfirmasi email gagal',
+        description: decodeURIComponent(hashErrorDescription.replace(/\+/g, ' ')),
+      });
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      return;
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'USER_UPDATED') {
+        toast({ title: 'Email berhasil diubah', description: 'Email login kamu sudah diperbarui.' });
+      }
+    });
+    return () => subscription.unsubscribe();
   }, [location.search]);
 
   useEffect(() => {
