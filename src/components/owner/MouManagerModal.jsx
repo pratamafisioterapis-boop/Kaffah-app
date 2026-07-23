@@ -474,6 +474,18 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-emerald-600" onClick={() => handleDownloadSigned(r)} disabled={viewingSignedId === r.id} title="Download">
                           <Download className="w-3.5 h-3.5" /> Download
                         </Button>
+                        <label className="cursor-pointer" title="Ganti scan halaman terakhir — pakai ini kalau file yang sudah diupload rusak/tidak bisa dibuka">
+                          <span className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50">
+                            {uploadingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                          </span>
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*"
+                            className="hidden"
+                            disabled={uploadingId === r.id}
+                            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleUploadSigned(r, f); }}
+                          />
+                        </label>
                       </>
                     ) : (
                       <label className="cursor-pointer" title="Foto/scan halaman terakhir (bertanda tangan) — otomatis digabung dengan Pasal 1-11">
