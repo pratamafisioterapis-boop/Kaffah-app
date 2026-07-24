@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Zap, Stethoscope, X, CalendarOff, AlertCircle } from 'lucide-react';
+import { Check, Zap, Stethoscope, X, CalendarOff, AlertCircle, Users, Repeat2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -25,6 +25,8 @@ const TherapistStatusCards = ({
   isLoading = false,
   unfilledSoapCounts = {},
   isLoadingSoap = false,
+  patientMetrics = {},
+  isLoadingPatientMetrics = false,
   dateRange
 }) => {
 
@@ -93,7 +95,7 @@ const TherapistStatusCards = ({
           <h3 className="text-base font-bold text-slate-800">Status Terapis Hari Ini</h3>
           {dateRange?.startDate && dateRange?.endDate && (
             <p className="text-[11px] text-slate-400 mt-0.5">
-              SOAP belum diisi mengikuti periode: {formatShortDate(dateRange.startDate)} – {formatShortDate(dateRange.endDate)}
+              SOAP & data pasien mengikuti periode: {formatShortDate(dateRange.startDate)} – {formatShortDate(dateRange.endDate)}
             </p>
           )}
         </div>
@@ -103,6 +105,7 @@ const TherapistStatusCards = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
         {sortedTherapists.map((therapist) => {
           const { label, icon: Icon, color, ring, text, badge, bar, percentage, sessions, totalSlots } = getStatusData(therapist);
+          const { uniquePatients = 0, returningPatients = 0 } = patientMetrics[therapist.id] || {};
 
           return (
             <div
@@ -176,9 +179,35 @@ const TherapistStatusCards = ({
                       </div>
                     </div>
 
+                    {/* Pasien unik & pasien kembali */}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-indigo-100 bg-gradient-to-br from-indigo-50 to-indigo-50/40">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                          <Users className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-indigo-700 leading-none">
+                            {isLoadingPatientMetrics ? '…' : uniquePatients}
+                          </p>
+                          <p className="text-[9px] text-indigo-400 font-semibold mt-1 uppercase tracking-wider leading-none">Pasien Unik</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-violet-100 bg-gradient-to-br from-violet-50 to-violet-50/40">
+                        <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                          <Repeat2 className="w-4 h-4 text-violet-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-violet-700 leading-none">
+                            {isLoadingPatientMetrics ? '…' : returningPatients}
+                          </p>
+                          <p className="text-[9px] text-violet-400 font-semibold mt-1 uppercase tracking-wider leading-none">Pasien Kembali</p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* SOAP belum diisi */}
                     <div
-                      className={`mt-3 flex items-center justify-between rounded-xl px-3 py-2 border ${
+                      className={`mt-2 flex items-center justify-between rounded-xl px-3 py-2 border ${
                         unfilledSoapCounts[therapist.id] > 0
                           ? 'bg-rose-50 border-rose-200'
                           : 'bg-emerald-50 border-emerald-100'
@@ -232,6 +261,20 @@ const TherapistStatusCards = ({
                   <div className="px-4 pb-3">
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${bar}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Pasien unik & pasien kembali */}
+                  <div className="mx-4 mb-2 grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-indigo-100 bg-indigo-50">
+                      <Users className="w-3 h-3 text-indigo-500 shrink-0" />
+                      <span className="text-xs font-black text-indigo-700">{isLoadingPatientMetrics ? '…' : uniquePatients}</span>
+                      <span className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wider truncate">Unik</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-violet-100 bg-violet-50">
+                      <Repeat2 className="w-3 h-3 text-violet-500 shrink-0" />
+                      <span className="text-xs font-black text-violet-700">{isLoadingPatientMetrics ? '…' : returningPatients}</span>
+                      <span className="text-[9px] font-semibold text-violet-400 uppercase tracking-wider truncate">Kembali</span>
                     </div>
                   </div>
 

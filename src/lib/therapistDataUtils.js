@@ -184,3 +184,58 @@ export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate 
     };
   }
 };
+
+/**
+ * Calculates unique patient count and returning patient count for a therapist
+ * within a given date range, based on daily_recaps.patient_type ("Pasien Baru" vs "Pasien Lama").
+ * A patient is counted as "returning" if any of their visits with this therapist in the
+ * period was recorded as a non-new (returning) patient type.
+ *
+ * @param {string} therapistId - The UUID of the therapist
+ * @param {string|null} startDate - yyyy-MM-dd
+ * @param {string|null} endDate - yyyy-MM-dd
+ * @returns {Promise<{uniquePatients: number, returningPatients: number, error: any}>}
+ */
+export const getTherapistPatientMetrics = async (therapistId, startDate = null, endDate = null) => {
+  if (!therapistId) {
+    return { uniquePatients: 0, returningPatients: 0, error: null };
+  }
+
+  try {
+    let query = supabase
+      .from('daily_recaps')
+      .select('patient_id, patient_type')
+      .eq('therapist_id', therapistId)
+      .not('patient_id', 'is', null);
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const returningByPatient = new Map();
+
+    (data || []).forEach(r => {
+      if (!r.patient_id) return;
+      const isNewVisit = (r.patient_type || '').toLowerCase().includes('baru');
+      const alreadyReturning = returningByPatient.get(r.patient_id) || false;
+      returningByPatient.set(r.patient_id, alreadyReturning || !isNewVisit);
+    });
+
+    const uniquePatients = returningByPatient.size;
+    const returningPatients = Array.from(returningByPatient.values()).filter(Boolean).length;
+
+    return { uniquePatients, returningPatients, error: null };
+
+  } catch (error) {
+    console.error('Error calculating therapist patient metrics:', error);
+
+    return {
+      uniquePatients: 0,
+      returningPatients: 0,
+      error
+    };
+  }
+};

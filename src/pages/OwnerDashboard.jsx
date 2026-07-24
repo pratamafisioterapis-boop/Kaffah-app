@@ -52,7 +52,7 @@ import {
   fetchAllTherapists,
   fetchTodaySessionsPerTherapist
 } from '@/lib/api';
-import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
+import { getUnfilledSOAPVisits, getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -122,6 +122,8 @@ const OwnerDashboardHome = () => {
   const [isLoadingTherapists, setIsLoadingTherapists] = useState(true);
   const [unfilledSoapCounts, setUnfilledSoapCounts] = useState({});
   const [isLoadingSoap, setIsLoadingSoap] = useState(true);
+  const [patientMetrics, setPatientMetrics] = useState({});
+  const [isLoadingPatientMetrics, setIsLoadingPatientMetrics] = useState(true);
 
   // Update localStorage whenever state changes
   useEffect(() => {
@@ -299,6 +301,33 @@ setTherapists(enrichedTherapists);
     }
   }, [therapists, dateRange]);
 
+  // Pasien unik & pasien kembali per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
+  const loadPatientMetrics = useCallback(async () => {
+    if (!therapists.length) {
+      setPatientMetrics({});
+      setIsLoadingPatientMetrics(false);
+      return;
+    }
+    setIsLoadingPatientMetrics(true);
+    try {
+      const results = await Promise.all(
+        therapists.map(async (t) => {
+          const { uniquePatients, returningPatients } = await getTherapistPatientMetrics(t.id, dateRange.startDate, dateRange.endDate);
+          return { id: t.id, uniquePatients, returningPatients };
+        })
+      );
+      const metrics = {};
+      results.forEach(r => {
+        metrics[r.id] = { uniquePatients: r.uniquePatients, returningPatients: r.returningPatients };
+      });
+      setPatientMetrics(metrics);
+    } catch (error) {
+      console.error("Failed to fetch therapist patient metrics:", error);
+    } finally {
+      setIsLoadingPatientMetrics(false);
+    }
+  }, [therapists, dateRange]);
+
   // Initial Load & Refresh on Location Change
   useEffect(() => {
     loadKPIData();
@@ -308,6 +337,10 @@ setTherapists(enrichedTherapists);
   useEffect(() => {
     loadUnfilledSoapCounts();
   }, [loadUnfilledSoapCounts]);
+
+  useEffect(() => {
+    loadPatientMetrics();
+  }, [loadPatientMetrics]);
 
 
   // Real-time Subscription
@@ -429,6 +462,8 @@ setTherapists(enrichedTherapists);
                   isLoading={isLoadingTherapists}
                   unfilledSoapCounts={unfilledSoapCounts}
                   isLoadingSoap={isLoadingSoap}
+                  patientMetrics={patientMetrics}
+                  isLoadingPatientMetrics={isLoadingPatientMetrics}
                   dateRange={dateRange}
                 />
              </section>
