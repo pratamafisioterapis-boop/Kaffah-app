@@ -31,6 +31,7 @@ export const FEATURE_CATALOG = [
   { key: 'setup', label: 'Setup', roles: ['owner'], match: (label) => label === 'setup' },
   { key: 'therapist_booking', label: 'Booking Calendar', roles: ['therapist'], match: (label) => label.includes('booking calendar') },
   { key: 'therapist_appointments', label: 'Riwayat Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat pasien') || label.includes('daftar appointment') },
+  { key: 'therapist_diagnosis_history', label: 'Riwayat Diagnosa Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat diagnosa') },
   { key: 'therapist_evaluation', label: 'Evaluasi Pasien', roles: ['therapist'], match: (label) => label.includes('evaluasi pasien') },
   { key: 'therapist_settings', label: 'Settings', roles: ['therapist'], match: (label) => label === 'settings' },
 ];
