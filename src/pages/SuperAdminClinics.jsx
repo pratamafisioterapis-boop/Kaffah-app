@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 const emptyForm = {
   id: null, name: '', address: '', phone: '', subscription_status: 'active',
   owner_full_name: '', owner_email: '', owner_phone: '', owner_password: '',
+  owner_role_label: '',
 };
 const emptyOwnerForm = { full_name: '', email: '', password: '', phone: '' };
 const emptyEditOwnerForm = { id: null, full_name: '', phone: '' };
@@ -155,6 +156,7 @@ const SuperAdminClinics = () => {
       address: form.address || null,
       phone: form.phone || null,
       subscription_status: form.subscription_status || 'active',
+      owner_role_label: form.owner_role_label?.trim() || null,
     };
 
     if (form.id) {
@@ -440,6 +442,10 @@ const SuperAdminClinics = () => {
               <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat" /></div>
             <div className="space-y-2"><label className="text-sm font-medium">No. Telepon</label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="No. Telepon" /></div>
+            <div className="space-y-2"><label className="text-sm font-medium">Label "Pemilik Klinik"</label>
+              <Input value={form.owner_role_label} onChange={(e) => setForm({ ...form, owner_role_label: e.target.value })} placeholder="Pemilik Klinik" />
+              <p className="text-xs text-slate-500">Teks yang tampil di badge peran owner pada layar sambutan (splash screen). Kosongkan untuk memakai default "Pemilik Klinik".</p>
+            </div>
 
             {!form.id && (
               <>

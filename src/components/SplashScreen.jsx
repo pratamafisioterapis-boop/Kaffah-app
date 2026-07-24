@@ -53,6 +53,7 @@ export default function SplashScreen({ onDone }) {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [ownerRoleLabel, setOwnerRoleLabel] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -70,10 +71,13 @@ export default function SplashScreen({ onDone }) {
       if ((userDetails.role === 'owner' || userDetails.role === 'admin') && userDetails.clinic_id) {
         const { data } = await supabase
           .from('clinics')
-          .select('logo_url')
+          .select('logo_url, owner_role_label')
           .eq('id', userDetails.clinic_id)
           .single();
-        if (active) setAvatarUrl(data?.logo_url || null);
+        if (active) {
+          setAvatarUrl(data?.logo_url || null);
+          setOwnerRoleLabel(data?.owner_role_label || null);
+        }
       } else if (userDetails.role === 'therapist') {
         const { data } = await supabase
           .from('physiotherapists')
@@ -94,7 +98,7 @@ export default function SplashScreen({ onDone }) {
   const quote = getTodayQuote();
   const name = userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || '';
   const role = userDetails?.role;
-  const roleLabel = role === 'owner' ? 'Pemilik Klinik' : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
+  const roleLabel = role === 'owner' ? (ownerRoleLabel || 'Pemilik Klinik') : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
   const monogram = (name || roleLabel || 'K').charAt(0).toUpperCase();
 
   useEffect(() => {
