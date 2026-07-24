@@ -13,6 +13,7 @@ import InvoiceTemplate from './InvoiceTemplate';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { stripSignatureBackground } from '@/lib/signatureImage';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -37,6 +38,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [waAutoAvailable, setWaAutoAvailable] = useState(false);
+  const [processedSignatureUrl, setProcessedSignatureUrl] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +47,31 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       fetchWaAvailability();
     }
   }, [isOpen, data?.id]);
+
+  // ── Bersihkan background & pertegas kontras tanda tangan terapis ─────────
+  // Beberapa hasil scan tanda tangan punya background abu-abu/blur. Diproses
+  // di sini (bukan lewat CSS filter) supaya hasilnya identik antara preview
+  // dan PDF/print yang dirasterisasi lewat html2canvas.
+  useEffect(() => {
+    const signatureUrl = data?.therapist?.signature_url;
+    if (!isOpen || !signatureUrl) {
+      setProcessedSignatureUrl(null);
+      return;
+    }
+    let cancelled = false;
+    stripSignatureBackground(signatureUrl).then((result) => {
+      if (!cancelled) setProcessedSignatureUrl(result);
+    });
+    return () => { cancelled = true; };
+  }, [isOpen, data?.therapist?.signature_url]);
+
+  const templateData = {
+    ...detailData,
+    ...data,
+    therapist: data?.therapist
+      ? { ...data.therapist, signature_url: processedSignatureUrl || data.therapist.signature_url }
+      : data?.therapist,
+  };
 
   // ── Skala preview agar invoice A4 tetap utuh terlihat di layar sempit (PWA/mobile) ──
   useEffect(() => {
@@ -632,7 +659,7 @@ const handleSendManualWA = async () => {
               >
                 <div style={{ width: INVOICE_BASE_WIDTH, height: INVOICE_BASE_HEIGHT, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
                   <InvoiceTemplate
-                    data={{ ...detailData, ...data }}
+                    data={templateData}
                     logoUrl={logoUrl}
                     invoiceTitle={invoiceSettings.invoiceTitle}
                     invoiceSubtitle={invoiceSettings.invoiceSubtitle}
@@ -650,7 +677,7 @@ const handleSendManualWA = async () => {
           <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} aria-hidden="true">
             <InvoiceTemplate
               ref={componentRef}
-              data={{ ...detailData, ...data }}
+              data={templateData}
               logoUrl={logoUrl}
               invoiceTitle={invoiceSettings.invoiceTitle}
               invoiceSubtitle={invoiceSettings.invoiceSubtitle}
