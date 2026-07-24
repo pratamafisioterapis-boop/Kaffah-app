@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -50,18 +50,18 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
     setLoading(false);
   };
 
-  const handleSave = async () => {
+  const persistConfig = async (nextConfig, successMessage) => {
     setSaving(true);
     const payload = {
         category,
-        is_enabled: config.is_enabled,
-        timing_type: config.timing_type,
-        timing_value: config.timing_value
+        is_enabled: nextConfig.is_enabled,
+        timing_type: nextConfig.timing_type,
+        timing_value: nextConfig.timing_value
     };
 
     // Check if exists
     const { data: existing } = await supabase.from('wa_schedule_config').select('id').eq('category', category).maybeSingle();
-    
+
     let result;
     if (existing) {
         result = await supabase.from('wa_schedule_config').update(payload).eq('id', existing.id);
@@ -72,10 +72,21 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
     if (result.error) {
         toast({ variant: "destructive", title: "Error", description: result.error.message });
     } else {
-        toast({ title: "Tersimpan", description: "Konfigurasi jadwal berhasil disimpan." });
+        setConfig(nextConfig);
+        toast({ title: "Tersimpan", description: successMessage || "Konfigurasi jadwal berhasil disimpan." });
         if (onSave) onSave();
     }
     setSaving(false);
+  };
+
+  const handleSave = () => persistConfig(config);
+
+  const handleDeleteGenerateTime = () => {
+    const { time, ...restTimingValue } = config.timing_value || {};
+    persistConfig(
+        { ...config, timing_value: restTimingValue },
+        "Jadwal generate antrian dihapus, kembali ke jam default 07:05."
+    );
   };
 
   if (loading) return <div className="py-4"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>;
@@ -99,19 +110,40 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
                <div className="space-y-3">
                    <div className="flex items-center gap-3">
                        <Label>Kirim setelah</Label>
-                       <Input 
-                          type="number" 
-                          className="w-20" 
+                       <Input
+                          type="number"
+                          className="w-20"
                           min="1" max="30"
                           value={config.timing_value?.days || 3}
                           onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, days: parseInt(e.target.value) }})}
                        />
                        <Label>hari sejak kunjungan terakhir.</Label>
                    </div>
+                   <div className="flex items-center gap-3 flex-wrap">
+                       <Label>Jam Generate Antrian (WITA)</Label>
+                       <Input
+                          type="time"
+                          className="w-32"
+                          value={config.timing_value?.time || "07:05"}
+                          onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, time: e.target.value }})}
+                       />
+                       <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={saving || !config.timing_value?.time}
+                          onClick={handleDeleteGenerateTime}
+                          title="Hapus jadwal, kembali ke default 07:05"
+                       >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Hapus Jadwal
+                       </Button>
+                       <span className="text-xs text-slate-500 w-full">Pesan follow up dibuat & masuk antrian pada jam ini setiap hari</span>
+                   </div>
                    <div className="flex items-center gap-3">
                        <Label>Jam Kirim ke Watzpad (WITA)</Label>
-                       <Input 
-                          type="time" 
+                       <Input
+                          type="time"
                           className="w-32"
                           value={config.timing_value?.send_time || "07:00"}
                           onChange={(e) => setConfig({...config, timing_value: { ...config.timing_value, send_time: e.target.value }})}
