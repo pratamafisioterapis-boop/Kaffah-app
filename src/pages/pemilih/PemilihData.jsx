@@ -23,12 +23,14 @@ const PemilihData = () => {
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const [kelurahanList, setKelurahanList] = useState([]);
+  const [kategoriProgramList, setKategoriProgramList] = useState([]);
   const [editRow, setEditRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const [viewingKtp, setViewingKtp] = useState(null);
 
   useEffect(() => {
     supabase.from('pemilih_kelurahan').select('id, nama').order('nama').then(({ data }) => setKelurahanList(data || []));
+    supabase.from('pemilih_kategori_program').select('id, nama').order('nama').then(({ data }) => setKategoriProgramList(data || []));
   }, []);
 
   const fetchRows = useCallback(async () => {
@@ -37,7 +39,7 @@ const PemilihData = () => {
     const to = from + pageSize - 1;
     let query = supabase
       .from('pemilih_data')
-      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, tps, foto_ktp_path, pemilih_kelurahan(nama)', { count: 'exact' })
+      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, kategori_program_id, tps, foto_ktp_path, pemilih_kelurahan(nama), pemilih_kategori_program(nama)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -71,6 +73,7 @@ const PemilihData = () => {
       rw: editRow.rw,
       tps: editRow.tps,
       kategori_dukungan: editRow.kategori_dukungan,
+      kategori_program_id: editRow.kategori_program_id || null,
     }).eq('id', editRow.id);
     if (error) toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Data diperbarui' }); setEditRow(null); fetchRows(); }
@@ -161,6 +164,7 @@ const PemilihData = () => {
                     <th>Alamat</th>
                     <th>Wilayah</th>
                     <th>Kategori</th>
+                    <th>Program</th>
                     <th style={{ textAlign: 'center' }}>KTP</th>
                     <th></th>
                   </tr>
@@ -185,6 +189,9 @@ const PemilihData = () => {
                         }}>
                           {KATEGORI_LABEL[r.kategori_dukungan]?.label}
                         </span>
+                      </td>
+                      <td style={{ color: '#4b5563' }}>
+                        {r.pemilih_kategori_program?.nama || '-'}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {r.foto_ktp_path ? (
@@ -232,6 +239,9 @@ const PemilihData = () => {
                   {r.alamat || '-'} {r.rt && `RT${r.rt}`}{r.rw && `/RW${r.rw}`}
                   <br />
                   <span style={{ color: '#9ca3af' }}>{r.pemilih_kelurahan?.nama || '-'}</span>
+                  {r.pemilih_kategori_program?.nama && (
+                    <span style={{ color: '#9ca3af' }}> · {r.pemilih_kategori_program.nama}</span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f1f1f3' }}>
                   {r.foto_ktp_path && (
@@ -284,6 +294,14 @@ const PemilihData = () => {
               <select className="p-select" value={editRow.kategori_dukungan} onChange={(e) => setEditRow({ ...editRow, kategori_dukungan: e.target.value })}>
                 {Object.entries(KATEGORI_LABEL).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
+              <PemilihSelect
+                value={editRow.kategori_program_id || ''}
+                onChange={(v) => setEditRow({ ...editRow, kategori_program_id: v })}
+                options={kategoriProgramList.map((k) => ({ value: k.id, label: k.nama }))}
+                allLabel="Belum Dipilih"
+                placeholder="Pilih Kategori Program"
+                title="Pilih Kategori Program"
+              />
             </div>
             <button className="p-btn-primary" style={{ marginTop: 18, width: '100%', justifyContent: 'center' }} onClick={saveEdit} disabled={saving}>
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />} Simpan
