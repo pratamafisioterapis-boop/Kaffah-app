@@ -7,6 +7,7 @@ import TherapistMetrics from './TherapistMetrics';
 import TherapistPerformanceWidget from './TherapistPerformanceWidget';
 import MonthlyReportWidget from './MonthlyReportWidget';
 import TherapistTodayPatientHistory from './TherapistTodayPatientHistory';
+import TherapistPatientTypeDistribution from './TherapistPatientTypeDistribution';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -96,8 +97,9 @@ const TherapistDashboardWidget = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
-      <TherapistTodayPatientHistory therapist={therapistProfile} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
+      <TherapistTodayPatientHistory therapist={therapistProfile} />
+      <TherapistPatientTypeDistribution therapist={therapistProfile} />
       <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
     </div>
   );
