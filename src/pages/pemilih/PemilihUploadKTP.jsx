@@ -27,11 +27,13 @@ const PemilihUploadKTP = () => {
   const [saving, setSaving] = useState(false);
   const [dapilKecamatanId, setDapilKecamatanId] = useState(null);
   const [kelurahanList, setKelurahanList] = useState([]);
+  const [kategoriProgramList, setKategoriProgramList] = useState([]);
   const [rejected, setRejected] = useState(null);
   const [form, setForm] = useState({
     nama: '', nik: '', jenis_kelamin: '', tempat_lahir: '', tanggal_lahir: '',
     alamat: '', rt: '', rw: '', kelurahan_id: '', no_hp: '',
     agama: '', status_perkawinan: '', pekerjaan: '', kategori_dukungan: 'belum_diketahui',
+    kategori_program_id: '',
   });
 
   useEffect(() => {
@@ -59,6 +61,12 @@ const PemilihUploadKTP = () => {
           .order('nama');
         setKelurahanList(kel || []);
       }
+
+      const { data: kategoriProgram } = await supabase
+        .from('pemilih_kategori_program')
+        .select('id, nama')
+        .order('nama');
+      setKategoriProgramList(kategoriProgram || []);
     };
     setup();
   }, []);
@@ -71,6 +79,7 @@ const PemilihUploadKTP = () => {
       nama: '', nik: '', jenis_kelamin: '', tempat_lahir: '', tanggal_lahir: '',
       alamat: '', rt: '', rw: '', kelurahan_id: '', no_hp: '',
       agama: '', status_perkawinan: '', pekerjaan: '', kategori_dukungan: 'belum_diketahui',
+      kategori_program_id: '',
     });
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -193,6 +202,7 @@ const PemilihUploadKTP = () => {
         status_perkawinan: form.status_perkawinan || null,
         pekerjaan: form.pekerjaan || null,
         kategori_dukungan: form.kategori_dukungan,
+        kategori_program_id: form.kategori_program_id || null,
         foto_ktp_path: fotoPath,
         sumber_data: 'ocr_ktp',
         petugas_input: user.id,
@@ -367,7 +377,7 @@ const PemilihUploadKTP = () => {
               <label className="p-label">Status Perkawinan</label>
               <input className="p-input" value={form.status_perkawinan} onChange={(e) => setForm({ ...form, status_perkawinan: e.target.value })} />
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div>
               <label className="p-label">Kategori Dukungan</label>
               <select className="p-select" value={form.kategori_dukungan} onChange={(e) => setForm({ ...form, kategori_dukungan: e.target.value })}>
                 <option value="belum_diketahui">Belum Diketahui</option>
@@ -376,6 +386,17 @@ const PemilihUploadKTP = () => {
                 <option value="netral">Netral</option>
                 <option value="tidak_mendukung">Tidak Mendukung</option>
               </select>
+            </div>
+            <div>
+              <label className="p-label">Kategori Program</label>
+              <PemilihSelect
+                value={form.kategori_program_id}
+                onChange={(v) => setForm({ ...form, kategori_program_id: v })}
+                options={kategoriProgramList.map((k) => ({ value: k.id, label: k.nama }))}
+                allLabel="Belum Dipilih"
+                placeholder="Pilih Kategori Program"
+                title="Pilih Kategori Program"
+              />
             </div>
           </div>
 

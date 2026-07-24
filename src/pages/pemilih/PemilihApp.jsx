@@ -7,6 +7,7 @@ import PemilihData from './PemilihData';
 import PemilihTimSukses from './PemilihTimSukses';
 import PemilihKegiatan from './PemilihKegiatan';
 import PemilihWilayah from './PemilihWilayah';
+import PemilihKategoriProgram from './PemilihKategoriProgram';
 import PemilihExtractPdf from './PemilihExtractPdf';
 
 const PemilihApp = () => {
@@ -20,6 +21,7 @@ const PemilihApp = () => {
         <Route path="/tim-sukses" element={<PemilihTimSukses />} />
         <Route path="/kegiatan" element={<PemilihKegiatan />} />
         <Route path="/wilayah" element={<PemilihWilayah />} />
+        <Route path="/kategori-program" element={<PemilihKategoriProgram />} />
         <Route path="/extract-pdf" element={<PemilihExtractPdf />} />
       </Routes>
     </PemilihLayout>
