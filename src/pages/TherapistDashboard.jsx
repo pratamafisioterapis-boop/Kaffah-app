@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import TherapistPatients from '@/components/therapist/TherapistPatients';
 import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
-import TherapistTodayPatientHistory from '@/components/therapist/TherapistTodayPatientHistory';
 import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
@@ -89,7 +88,6 @@ const TherapistDashboard = () => {
     { label: 'Dashboard', path: '/therapist', icon: 'Home' },
     { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' }, 
     { label: 'Riwayat Pasien', path: '/therapist/appointments', icon: 'ClipboardList' },
-    { label: 'Riwayat Diagnosa Pasien', path: '/therapist/patient-history', icon: 'Stethoscope' },
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
@@ -133,7 +131,6 @@ const TherapistDashboard = () => {
           <Route path="/booking" element={<TherapistBookingCalendar therapist={therapistProfile} />} />
           <Route path="/schedule-appointment" element={<TherapistAppointmentScheduler therapist={therapistProfile} />} />
           <Route path="/appointments" element={<TherapistPatientHistory therapist={therapistProfile} />} />
-          <Route path="/patient-history" element={<TherapistTodayPatientHistory therapist={therapistProfile} />} />
           <Route path="/records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
