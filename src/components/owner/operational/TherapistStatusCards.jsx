@@ -180,38 +180,32 @@ const TherapistStatusCards = ({
                       </div>
                     </div>
 
-                    {/* Pasien unik & pasien kembali */}
-                    <div className="relative mt-3 grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-indigo-100 bg-gradient-to-br from-indigo-50 to-indigo-50/40">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                          <Users className="w-4 h-4 text-indigo-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-indigo-700 leading-none">
-                            {isLoadingPatientMetrics ? '…' : uniquePatients}
-                          </p>
-                          <p className="text-[9px] text-indigo-400 font-semibold mt-1 uppercase tracking-wider leading-none">Patient</p>
-                        </div>
+                    {/* Retensi pasien */}
+                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Retensi Pasien</span>
+                        <span className="text-sm font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                          {isLoadingPatientMetrics ? '…' : `${returnRate}%`}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-violet-100 bg-gradient-to-br from-violet-50 to-violet-50/40">
-                        <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                          <Repeat2 className="w-4 h-4 text-violet-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-violet-700 leading-none">
-                            {isLoadingPatientMetrics ? '…' : returningPatients}
-                          </p>
-                          <p className="text-[9px] text-violet-400 font-semibold mt-1 uppercase tracking-wider leading-none">Returning</p>
-                        </div>
+                      <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden mb-2.5">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+                          style={{ width: `${isLoadingPatientMetrics ? 0 : Math.min(returnRate, 100)}%` }}
+                        />
                       </div>
-
-                      {!isLoadingPatientMetrics && uniquePatients > 0 && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                          <div className="flex flex-col items-center justify-center w-11 h-11 rounded-full bg-white border-2 border-slate-200 shadow-md">
-                            <span className="text-[11px] font-black text-slate-700 leading-none">{returnRate}%</span>
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-600">
+                          <Users className="w-3.5 h-3.5" />
+                          {isLoadingPatientMetrics ? '…' : uniquePatients}
+                          <span className="font-medium text-slate-400">patient</span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-violet-600">
+                          <Repeat2 className="w-3.5 h-3.5" />
+                          {isLoadingPatientMetrics ? '…' : returningPatients}
+                          <span className="font-medium text-slate-400">returning</span>
+                        </span>
+                      </div>
                     </div>
 
                     {/* SOAP belum diisi */}
@@ -273,26 +267,32 @@ const TherapistStatusCards = ({
                     </div>
                   </div>
 
-                  {/* Pasien unik & pasien kembali */}
-                  <div className="relative mx-4 mb-2 grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-indigo-100 bg-indigo-50">
-                      <Users className="w-3 h-3 text-indigo-500 shrink-0" />
-                      <span className="text-xs font-black text-indigo-700">{isLoadingPatientMetrics ? '…' : uniquePatients}</span>
-                      <span className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wider truncate">Patient</span>
+                  {/* Retensi pasien */}
+                  <div className="mx-4 mb-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2.5 py-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Retensi Pasien</span>
+                      <span className="text-xs font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                        {isLoadingPatientMetrics ? '…' : `${returnRate}%`}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-violet-100 bg-violet-50">
-                      <Repeat2 className="w-3 h-3 text-violet-500 shrink-0" />
-                      <span className="text-xs font-black text-violet-700">{isLoadingPatientMetrics ? '…' : returningPatients}</span>
-                      <span className="text-[9px] font-semibold text-violet-400 uppercase tracking-wider truncate">Returning</span>
+                    <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden mb-1.5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                        style={{ width: `${isLoadingPatientMetrics ? 0 : Math.min(returnRate, 100)}%` }}
+                      />
                     </div>
-
-                    {!isLoadingPatientMetrics && uniquePatients > 0 && (
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-slate-200 shadow-sm">
-                          <span className="text-[9px] font-black text-slate-700 leading-none">{returnRate}%</span>
-                        </div>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600">
+                        <Users className="w-2.5 h-2.5" />
+                        {isLoadingPatientMetrics ? '…' : uniquePatients}
+                        <span className="font-medium text-slate-400">patient</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-violet-600">
+                        <Repeat2 className="w-2.5 h-2.5" />
+                        {isLoadingPatientMetrics ? '…' : returningPatients}
+                        <span className="font-medium text-slate-400">returning</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* SOAP belum diisi */}
