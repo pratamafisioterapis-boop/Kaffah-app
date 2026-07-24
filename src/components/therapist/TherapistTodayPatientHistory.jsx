@@ -1,16 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { getDailyRecaps } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  Stethoscope, Search, Loader2, CalendarCheck, History,
-  ChevronRight, RefreshCcw
-} from 'lucide-react';
+import { Stethoscope, Loader2, History, ChevronRight, CalendarCheck } from 'lucide-react';
 import PatientClinicalHistoryDrawer from './PatientClinicalHistoryDrawer';
 
 const TYPE_COLOR_PALETTE = [
@@ -52,15 +44,17 @@ const getDiagnosisList = (recap) => {
   return recap.diagnosis ? [recap.diagnosis] : [];
 };
 
+// Dashboard widget (matches the white rounded-2xl card language used by
+// TherapistMetrics / TherapistPerformanceWidget) that lets a therapist
+// recognize the patients they're seeing today and jump into each one's
+// cross-therapist diagnosis + SOAP history.
 const TherapistTodayPatientHistory = ({ therapist }) => {
   const { toast } = useToast();
   const [recaps, setRecaps] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   const todayISO = getTodayISO();
-  const todayLabel = format(new Date(`${todayISO}T00:00:00`), 'EEEE, dd MMMM yyyy', { locale: idLocale });
 
   useEffect(() => {
     if (therapist?.id) fetchToday();
@@ -78,7 +72,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
     });
 
     if (error) {
-      toast({ variant: 'destructive', title: 'Gagal memuat data hari ini', description: error.message });
+      toast({ variant: 'destructive', title: 'Gagal memuat pasien hari ini', description: error.message });
       setRecaps([]);
     } else {
       setRecaps(data || []);
@@ -86,7 +80,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
     setLoading(false);
   };
 
-  // Dedupe visits into one card per patient treated today.
+  // Dedupe visits into one row per patient treated today.
   const todaysPatients = useMemo(() => {
     const map = new Map();
     recaps.forEach((r) => {
@@ -99,138 +93,87 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
     return Array.from(map.values());
   }, [recaps]);
 
-  const filteredPatients = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return todaysPatients;
-    return todaysPatients.filter((p) => {
-      const diagnosisText = p.visits.flatMap(getDiagnosisList).join(' ').toLowerCase();
-      return p.name.toLowerCase().includes(q) || p.rm.toLowerCase().includes(q) || diagnosisText.includes(q);
-    });
-  }, [todaysPatients, searchTerm]);
-
   return (
-    <div className="space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 shadow-xl">
-        <div className="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-10 w-56 h-56 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
-              <Stethoscope className="h-6 w-6 text-emerald-300" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-300 capitalize">{todayLabel}</p>
-              <h2 className="text-xl md:text-2xl font-bold text-white">Riwayat Diagnosa Pasien</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Kenali riwayat diagnosa &amp; SOAP pasien yang Anda tangani hari ini</p>
-            </div>
+      <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+            <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
           </div>
-
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
-            <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-center backdrop-blur">
-              <p className="text-lg font-bold text-white">{todaysPatients.length}</p>
-              <p className="text-[10px] uppercase tracking-wide text-slate-400 mt-0.5">Pasien Hari Ini</p>
-            </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-center backdrop-blur">
-              <p className="text-lg font-bold text-white">{recaps.length}</p>
-              <p className="text-[10px] uppercase tracking-wide text-slate-400 mt-0.5">Kunjungan</p>
-            </div>
-          </div>
+          <h3 className="text-sm font-bold text-slate-700 truncate">Riwayat Diagnosa Pasien</h3>
         </div>
+        <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
+          {todaysPatients.length} pasien hari ini
+        </span>
       </div>
 
-      {/* Toolbar */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Input
-              placeholder="Cari nama pasien, No. RM, atau diagnosa..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={fetchToday} className="gap-1.5 shrink-0">
-            <RefreshCcw className="w-3.5 h-3.5" /> Segarkan
-          </Button>
-        </div>
-      </Card>
+      <div className="h-px bg-slate-50 mx-5" />
 
       {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="animate-spin w-6 h-6 text-indigo-600" /></div>
-      ) : filteredPatients.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-          <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-600 font-semibold">
-            {todaysPatients.length === 0 ? 'Belum ada pasien yang ditangani hari ini.' : 'Tidak ada pasien yang cocok dengan pencarian.'}
-          </p>
-          {todaysPatients.length === 0 && (
-            <p className="text-xs text-slate-400 mt-1">Pasien akan muncul di sini setelah kunjungan hari ini tercatat di Daily Recap.</p>
-          )}
+        <div className="flex justify-center py-10"><Loader2 className="animate-spin w-5 h-5 text-indigo-500" /></div>
+      ) : todaysPatients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center px-5">
+          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mb-3">
+            <CalendarCheck className="w-5 h-5 text-slate-300" />
+          </div>
+          <p className="text-xs font-medium text-slate-400">Belum ada pasien yang ditangani hari ini</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredPatients.map((p) => {
+        <div className="px-3 py-2 max-h-80 overflow-y-auto divide-y divide-slate-50">
+          {todaysPatients.map((p) => {
             const latestVisit = p.visits[0];
             const diagnosisList = getDiagnosisList(latestVisit);
             return (
-              <Card
+              <button
                 key={p.key}
-                className={cn(
-                  'p-4 border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group',
-                  !p.patientId && 'opacity-70 cursor-not-allowed hover:shadow-none hover:border-slate-200'
-                )}
+                type="button"
+                disabled={!p.patientId}
                 onClick={() => p.patientId && setSelectedPatient({ id: p.patientId, name: p.name, rm: p.rm })}
-              >
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 text-sm truncate">{p.name}</p>
-                      <p className="text-xs text-slate-400">{p.rm}</p>
-                    </div>
-                  </div>
-                  {p.visits.length > 1 && (
-                    <span className="shrink-0 text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
-                      {p.visits.length}x hari ini
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5 mb-3 min-h-[22px]">
-                  {latestVisit.patient_type && (
-                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', colorForLabel(latestVisit.patient_type))}>
-                      {latestVisit.patient_type}
-                    </span>
-                  )}
-                  {diagnosisList.length === 0 ? (
-                    <span className="text-[10px] text-slate-400 italic">Belum ada diagnosa</span>
-                  ) : diagnosisList.map((d, idx) => (
-                    <span key={idx} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                      {d}
-                    </span>
-                  ))}
-                </div>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!p.patientId}
-                  className="w-full h-8 text-xs gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 group-hover:bg-indigo-50"
-                >
-                  <History className="w-3.5 h-3.5" /> Lihat Riwayat Lengkap
-                  <ChevronRight className="w-3.5 h-3.5 ml-auto" />
-                </Button>
-                {!p.patientId && (
-                  <p className="text-[10px] text-slate-400 mt-1.5 text-center">Pasien tamu tanpa data rekam medis</p>
+                className={cn(
+                  'w-full flex items-center gap-3 px-2 py-3 rounded-xl text-left transition-colors',
+                  p.patientId ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-60 cursor-not-allowed'
                 )}
-              </Card>
+              >
+                <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
+                  {p.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
+                    {p.visits.length > 1 && (
+                      <span className="shrink-0 text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">
+                        {p.visits.length}x
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 mt-1">
+                    <span className="text-[10px] text-slate-400">{p.rm}</span>
+                    {diagnosisList.slice(0, 2).map((d, idx) => (
+                      <span key={idx} className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border', colorForLabel(d))}>
+                        {d}
+                      </span>
+                    ))}
+                    {diagnosisList.length === 0 && (
+                      <span className="text-[10px] text-slate-400 italic">Belum ada diagnosa</span>
+                    )}
+                  </div>
+                </div>
+                {p.patientId ? (
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                ) : (
+                  <span className="text-[9px] text-slate-400 shrink-0">Tamu</span>
+                )}
+              </button>
             );
           })}
+        </div>
+      )}
+
+      {!loading && todaysPatients.length > 0 && (
+        <div className="px-5 py-3 border-t border-slate-50 flex items-center gap-1.5 text-[11px] text-slate-400">
+          <History className="w-3 h-3" /> Ketuk pasien untuk lihat riwayat diagnosa &amp; SOAP lengkap
         </div>
       )}
 
