@@ -146,7 +146,11 @@ const OwnerBookingCalendar = () => {
         startDate: `${dateStr}T00:00:00`,
         endDate: `${dateStr}T23:59:59`
       });
-      setAppointments(appsRes?.data || []);
+      // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
+      setAppointments((appsRes?.data || []).map(a => ({
+        ...a,
+        is_new_patient: !a.patient_id
+      })));
 
       // 2️⃣ SLOT + STATUS (SOURCE OF TRUTH)
       const { data, error } = await getAvailableSlots(dateStr);
