@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getDailyRecaps } from '@/lib/api';
+import { differenceInCalendarDays } from 'date-fns';
+import { getDailyRecaps, getPatientClinicalHistory } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import { Stethoscope, Loader2, History, ChevronRight, CalendarCheck } from 'lucide-react';
+import { Stethoscope, Loader2, History, ChevronRight, CalendarCheck, Clock } from 'lucide-react';
 import PatientClinicalHistoryDrawer from './PatientClinicalHistoryDrawer';
 
 const TYPE_COLOR_PALETTE = [
@@ -44,6 +45,16 @@ const getDiagnosisList = (recap) => {
   return recap.diagnosis ? [recap.diagnosis] : [];
 };
 
+// "3 hari lalu" up to a week, "2 minggu lalu" up to 4 weeks, "2 bulan lalu" beyond that.
+const formatLastVisitGap = (lastDateStr, todayStr) => {
+  if (!lastDateStr) return null;
+  const days = differenceInCalendarDays(new Date(`${todayStr}T00:00:00`), new Date(`${lastDateStr}T00:00:00`));
+  if (days <= 0) return null;
+  if (days <= 7) return `${days} hari lalu`;
+  if (days <= 28) return `${Math.max(1, Math.round(days / 7))} minggu lalu`;
+  return `${Math.max(1, Math.round(days / 30))} bulan lalu`;
+};
+
 // Dashboard widget (matches the white rounded-2xl card language used by
 // TherapistMetrics / TherapistPerformanceWidget) that lets a therapist
 // recognize the patients they're seeing today and jump into each one's
@@ -53,6 +64,8 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
   const [recaps, setRecaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  // patientId -> { lastVisitDate, fallbackDiagnosis }
+  const [enrichment, setEnrichment] = useState({});
 
   const todayISO = getTodayISO();
 
@@ -93,6 +106,32 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
     return Array.from(map.values());
   }, [recaps]);
 
+  // For each real patient, look up their last visit before today so the
+  // therapist can see "3 hari lalu" and — when today's session has no
+  // diagnosis yet — fall back to the most recent diagnosis on record.
+  useEffect(() => {
+    const ids = todaysPatients.map((p) => p.patientId).filter(Boolean);
+    if (ids.length === 0) {
+      setEnrichment({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(ids.map(async (id) => {
+        const { data } = await getPatientClinicalHistory(id);
+        const priorVisits = (data || []).filter((v) => v.recap_date !== todayISO);
+        const lastPriorVisit = priorVisits[0] || null;
+        const lastDiagnosedVisit = priorVisits.find((v) => getDiagnosisList(v).length > 0);
+        return [id, {
+          lastVisitDate: lastPriorVisit?.recap_date || null,
+          fallbackDiagnosis: lastDiagnosedVisit ? getDiagnosisList(lastDiagnosedVisit) : [],
+        }];
+      }));
+      if (!cancelled) setEnrichment(Object.fromEntries(results));
+    })();
+    return () => { cancelled = true; };
+  }, [todaysPatients, todayISO]);
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Header */}
@@ -124,7 +163,12 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
         <div className="px-3 py-2 max-h-80 overflow-y-auto divide-y divide-slate-50">
           {todaysPatients.map((p) => {
             const latestVisit = p.visits[0];
-            const diagnosisList = getDiagnosisList(latestVisit);
+            const todaysDiagnosis = getDiagnosisList(latestVisit);
+            const patientEnrichment = p.patientId ? enrichment[p.patientId] : null;
+            const usingFallback = todaysDiagnosis.length === 0 && (patientEnrichment?.fallbackDiagnosis?.length > 0);
+            const diagnosisList = usingFallback ? patientEnrichment.fallbackDiagnosis : todaysDiagnosis;
+            const gapLabel = formatLastVisitGap(patientEnrichment?.lastVisitDate, todayISO);
+
             return (
               <button
                 key={p.key}
@@ -140,16 +184,24 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
                   {p.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
                     {p.visits.length > 1 && (
                       <span className="shrink-0 text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">
                         {p.visits.length}x
                       </span>
                     )}
+                    {gapLabel && (
+                      <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
+                        <Clock className="w-2.5 h-2.5" /> {gapLabel}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1 mt-1">
                     <span className="text-[10px] text-slate-400">{p.rm}</span>
+                    {usingFallback && (
+                      <span className="text-[10px] text-slate-400 italic">riwayat:</span>
+                    )}
                     {diagnosisList.slice(0, 2).map((d, idx) => (
                       <span key={idx} className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border', colorForLabel(d))}>
                         {d}
@@ -163,7 +215,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
                 {p.patientId ? (
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
                 ) : (
-                  <span className="text-[9px] text-slate-400 shrink-0">Tamu</span>
+                  <span className="text-[9px] text-slate-400 shrink-0">Pasien Baru</span>
                 )}
               </button>
             );

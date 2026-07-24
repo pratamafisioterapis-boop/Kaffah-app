@@ -4,7 +4,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Loader2, Calendar, ChevronDown, ChevronUp, Stethoscope, Users,
   History, FileText, User,
@@ -160,7 +159,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
         </div>
 
         {/* Timeline */}
-        <ScrollArea className="flex-1 min-h-0 bg-slate-50">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50">
           <div className="px-4 py-3 space-y-2">
             {loading ? (
               <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-indigo-600" /></div>
@@ -261,7 +260,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer */}
         <div className="p-4 border-t bg-white flex justify-end shrink-0">
