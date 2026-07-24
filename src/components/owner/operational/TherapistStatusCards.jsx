@@ -106,6 +106,7 @@ const TherapistStatusCards = ({
         {sortedTherapists.map((therapist) => {
           const { label, icon: Icon, color, ring, text, badge, bar, percentage, sessions, totalSlots } = getStatusData(therapist);
           const { uniquePatients = 0, returningPatients = 0 } = patientMetrics[therapist.id] || {};
+          const returnRate = uniquePatients > 0 ? Math.round((returningPatients / uniquePatients) * 100) : 0;
 
           return (
             <div
@@ -180,7 +181,7 @@ const TherapistStatusCards = ({
                     </div>
 
                     {/* Pasien unik & pasien kembali */}
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="relative mt-3 grid grid-cols-2 gap-2">
                       <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-indigo-100 bg-gradient-to-br from-indigo-50 to-indigo-50/40">
                         <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
                           <Users className="w-4 h-4 text-indigo-600" />
@@ -203,6 +204,14 @@ const TherapistStatusCards = ({
                           <p className="text-[9px] text-violet-400 font-semibold mt-1 uppercase tracking-wider leading-none">Returning</p>
                         </div>
                       </div>
+
+                      {!isLoadingPatientMetrics && uniquePatients > 0 && (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                          <div className="flex flex-col items-center justify-center w-11 h-11 rounded-full bg-white border-2 border-slate-200 shadow-md">
+                            <span className="text-[11px] font-black text-slate-700 leading-none">{returnRate}%</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* SOAP belum diisi */}
@@ -265,7 +274,7 @@ const TherapistStatusCards = ({
                   </div>
 
                   {/* Pasien unik & pasien kembali */}
-                  <div className="mx-4 mb-2 grid grid-cols-2 gap-2">
+                  <div className="relative mx-4 mb-2 grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-indigo-100 bg-indigo-50">
                       <Users className="w-3 h-3 text-indigo-500 shrink-0" />
                       <span className="text-xs font-black text-indigo-700">{isLoadingPatientMetrics ? '…' : uniquePatients}</span>
@@ -276,6 +285,14 @@ const TherapistStatusCards = ({
                       <span className="text-xs font-black text-violet-700">{isLoadingPatientMetrics ? '…' : returningPatients}</span>
                       <span className="text-[9px] font-semibold text-violet-400 uppercase tracking-wider truncate">Returning</span>
                     </div>
+
+                    {!isLoadingPatientMetrics && uniquePatients > 0 && (
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-slate-200 shadow-sm">
+                          <span className="text-[9px] font-black text-slate-700 leading-none">{returnRate}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* SOAP belum diisi */}
