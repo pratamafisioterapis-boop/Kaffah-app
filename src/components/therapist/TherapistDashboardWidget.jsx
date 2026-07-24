@@ -96,8 +96,8 @@ const TherapistDashboardWidget = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
-      <TherapistMetrics therapist={therapistProfile} userId={user.id} />
       <TherapistTodayPatientHistory therapist={therapistProfile} />
+      <TherapistMetrics therapist={therapistProfile} userId={user.id} />
       <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
     </div>
   );
