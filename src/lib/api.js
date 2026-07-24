@@ -1204,7 +1204,8 @@ export const getDailyRecaps = async ({
   id,
   name,
   signature_url,
-  stamp_url
+  stamp_url,
+  license_number
 )
 `, { count: 'exact' });
  
