@@ -189,7 +189,7 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
                </div>
            )}
 
-           {(category === 'therapy_reminder' || category === 'birthday') && (
+           {(category === 'therapy_reminder' || category === 'therapy_reminder_homecare' || category === 'birthday') && (
                <div className="space-y-3">
                    <div className="flex items-center gap-3">
                        <Label>Jam Generate Pesan (WITA)</Label>
