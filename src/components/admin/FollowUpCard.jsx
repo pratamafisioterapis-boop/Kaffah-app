@@ -333,7 +333,7 @@ const packageRisk = getPackageRisk();
 
             <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 mt-1.5 sm:mt-2">
               <Calendar className="w-3 h-3" />
-              {formatDateDisplay()} • {formattedTime}
+              Jadwal kirim: {formatDateDisplay()} • {formattedTime}
             </div>
             {item.follow_up_type === 'package_expiry' && (() => {
 
