@@ -71,13 +71,10 @@ export default function SplashScreen({ onDone }) {
       if ((userDetails.role === 'owner' || userDetails.role === 'admin') && userDetails.clinic_id) {
         const { data } = await supabase
           .from('clinics')
-          .select('logo_url, owner_role_label')
+          .select('logo_url')
           .eq('id', userDetails.clinic_id)
           .single();
-        if (active) {
-          setAvatarUrl(data?.logo_url || null);
-          setOwnerRoleLabel(data?.owner_role_label || null);
-        }
+        if (active) setAvatarUrl(data?.logo_url || null);
       } else if (userDetails.role === 'therapist') {
         const { data } = await supabase
           .from('physiotherapists')
@@ -91,6 +88,23 @@ export default function SplashScreen({ onDone }) {
     };
 
     resolveAvatar();
+    return () => { active = false; };
+  }, [userDetails]);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveOwnerRoleLabel = async () => {
+      if (userDetails?.role !== 'owner' || !userDetails.clinic_id) { if (active) setOwnerRoleLabel(null); return; }
+      const { data } = await supabase
+        .from('clinics')
+        .select('owner_role_label')
+        .eq('id', userDetails.clinic_id)
+        .single();
+      if (active) setOwnerRoleLabel(data?.owner_role_label || null);
+    };
+
+    resolveOwnerRoleLabel();
     return () => { active = false; };
   }, [userDetails]);
 
