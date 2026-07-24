@@ -64,7 +64,11 @@ const [historyLoading, setHistoryLoading] = useState(false);
         endDate: `${dateStr}T23:59:59`,
         therapistId: therapist.id
       });
-      setAppointments(apps || []);
+      // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
+      setAppointments((apps || []).map(a => ({
+        ...a,
+        is_new_patient: !a.patient_id
+      })));
 
       // 3. Get Available Slots using unified API
       if (!leaveCheck.isOnLeave) {
