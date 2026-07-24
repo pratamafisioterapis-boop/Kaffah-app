@@ -146,6 +146,7 @@ const TrendSessionChart = () => {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
+                  padding={{ left: 16, right: 16 }}
                   dy={8}
                 />
                 <YAxis
