@@ -28,7 +28,7 @@ const AppointmentsPage = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <AdminAppointmentBooking />
       </div>
     </div>
