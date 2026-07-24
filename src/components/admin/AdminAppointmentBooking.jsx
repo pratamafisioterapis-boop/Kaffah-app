@@ -164,7 +164,32 @@ const formattedDate = date
         endDate: `${dateStr}T23:59:59`
       });
 
-      setAppointments(Array.isArray(apps) ? apps : []);
+      const rawApps = Array.isArray(apps) ? apps : [];
+
+      // Pasien baru = appointment ini adalah booking pertama (non-cancelled)
+      // milik pasien tersebut di seluruh riwayat, bukan cuma di hari ini.
+      const patientIds = [...new Set(rawApps.map(a => a.patient_id).filter(Boolean))];
+      const firstApptIdByPatient = {};
+
+      if (patientIds.length > 0) {
+        const { data: historyRows } = await supabase
+          .from('appointments')
+          .select('id, patient_id, appointment_date')
+          .in('patient_id', patientIds)
+          .neq('status', 'cancelled')
+          .order('appointment_date', { ascending: true });
+
+        (historyRows || []).forEach(row => {
+          if (!firstApptIdByPatient[row.patient_id]) {
+            firstApptIdByPatient[row.patient_id] = row.id;
+          }
+        });
+      }
+
+      setAppointments(rawApps.map(a => ({
+        ...a,
+        is_new_patient: a.patient_id ? firstApptIdByPatient[a.patient_id] === a.id : false
+      })));
 
       const { data: slots } = await getAvailableSlots(dateStr);
 

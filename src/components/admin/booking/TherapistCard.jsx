@@ -335,12 +335,13 @@ const TherapistCard = ({
                           {timeString}
                        </div>
                        <div className="flex-1 min-w-0">
-                        {isCancelled ? (
-                          <p className="text-sm font-semibold text-slate-800 truncate">
-                            {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
-                          </p>
-                        ) : (
-                          <button
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {isCancelled ? (
+                            <p className="text-sm font-semibold text-slate-800 truncate">
+                              {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
+                            </p>
+                          ) : (
+                            <button
   type="button"
   onClick={(e) => {
     e.stopPropagation();
@@ -348,9 +349,15 @@ const TherapistCard = ({
   }}
   className="text-sm font-semibold text-slate-800 truncate hover:text-blue-600 transition-colors text-left"
 >
-                            {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
-                          </button>
-                        )}
+                              {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
+                            </button>
+                          )}
+                          {app.is_new_patient && (
+                            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              Baru
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-400 truncate">
                             {app.duration_minutes} min • {app.status}
                           </p>
