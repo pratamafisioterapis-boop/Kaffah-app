@@ -187,9 +187,9 @@ export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate 
 
 /**
  * Calculates unique patient count and returning patient count for a therapist
- * within a given date range, based on daily_recaps.patient_type ("Pasien Baru" vs "Pasien Lama").
- * A patient is counted as "returning" if any of their visits with this therapist in the
- * period was recorded as a non-new (returning) patient type.
+ * within a given date range, based on daily_recaps visit counts per patient.
+ * "Unique patients" = distinct patients seen in the period.
+ * "Returning patients" = distinct patients with more than 1 visit in the period.
  *
  * @param {string} therapistId - The UUID of the therapist
  * @param {string|null} startDate - yyyy-MM-dd
@@ -204,7 +204,7 @@ export const getTherapistPatientMetrics = async (therapistId, startDate = null, 
   try {
     let query = supabase
       .from('daily_recaps')
-      .select('patient_id, patient_type')
+      .select('patient_id')
       .eq('therapist_id', therapistId)
       .not('patient_id', 'is', null);
 
@@ -215,17 +215,15 @@ export const getTherapistPatientMetrics = async (therapistId, startDate = null, 
 
     if (error) throw error;
 
-    const returningByPatient = new Map();
+    const visitCountByPatient = new Map();
 
     (data || []).forEach(r => {
       if (!r.patient_id) return;
-      const isNewVisit = (r.patient_type || '').toLowerCase().includes('baru');
-      const alreadyReturning = returningByPatient.get(r.patient_id) || false;
-      returningByPatient.set(r.patient_id, alreadyReturning || !isNewVisit);
+      visitCountByPatient.set(r.patient_id, (visitCountByPatient.get(r.patient_id) || 0) + 1);
     });
 
-    const uniquePatients = returningByPatient.size;
-    const returningPatients = Array.from(returningByPatient.values()).filter(Boolean).length;
+    const uniquePatients = visitCountByPatient.size;
+    const returningPatients = Array.from(visitCountByPatient.values()).filter(count => count > 1).length;
 
     return { uniquePatients, returningPatients, error: null };
 

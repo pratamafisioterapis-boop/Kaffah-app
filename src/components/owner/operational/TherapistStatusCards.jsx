@@ -189,7 +189,7 @@ const TherapistStatusCards = ({
                           <p className="text-sm font-black text-indigo-700 leading-none">
                             {isLoadingPatientMetrics ? '…' : uniquePatients}
                           </p>
-                          <p className="text-[9px] text-indigo-400 font-semibold mt-1 uppercase tracking-wider leading-none">Pasien Unik</p>
+                          <p className="text-[9px] text-indigo-400 font-semibold mt-1 uppercase tracking-wider leading-none">Patient</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border border-violet-100 bg-gradient-to-br from-violet-50 to-violet-50/40">
@@ -200,7 +200,7 @@ const TherapistStatusCards = ({
                           <p className="text-sm font-black text-violet-700 leading-none">
                             {isLoadingPatientMetrics ? '…' : returningPatients}
                           </p>
-                          <p className="text-[9px] text-violet-400 font-semibold mt-1 uppercase tracking-wider leading-none">Pasien Kembali</p>
+                          <p className="text-[9px] text-violet-400 font-semibold mt-1 uppercase tracking-wider leading-none">Returning</p>
                         </div>
                       </div>
                     </div>
@@ -269,12 +269,12 @@ const TherapistStatusCards = ({
                     <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-indigo-100 bg-indigo-50">
                       <Users className="w-3 h-3 text-indigo-500 shrink-0" />
                       <span className="text-xs font-black text-indigo-700">{isLoadingPatientMetrics ? '…' : uniquePatients}</span>
-                      <span className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wider truncate">Unik</span>
+                      <span className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wider truncate">Patient</span>
                     </div>
                     <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border border-violet-100 bg-violet-50">
                       <Repeat2 className="w-3 h-3 text-violet-500 shrink-0" />
                       <span className="text-xs font-black text-violet-700">{isLoadingPatientMetrics ? '…' : returningPatients}</span>
-                      <span className="text-[9px] font-semibold text-violet-400 uppercase tracking-wider truncate">Kembali</span>
+                      <span className="text-[9px] font-semibold text-violet-400 uppercase tracking-wider truncate">Returning</span>
                     </div>
                   </div>
 
