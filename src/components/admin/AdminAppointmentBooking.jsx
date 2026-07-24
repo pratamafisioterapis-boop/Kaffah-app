@@ -313,7 +313,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   };
 
   return (
-    <div className="w-full max-w-full px-3 sm:px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+    <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden">
