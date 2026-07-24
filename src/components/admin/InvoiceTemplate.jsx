@@ -280,15 +280,15 @@ const checked = (val) => payment === val ? '☑' : '☐';
     <p>Physiotherapist</p>
   {/* SIGNATURE CONTAINER */}
   <div style={{
-    height: '70px',
+    height: '80px',
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center'
   }}>
     {data?.therapist?.signature_url && (
-      <img 
-        src={data.therapist.signature_url} 
-        style={{ width: '70px' }}
+      <img
+        src={data.therapist.signature_url}
+        style={{ maxWidth: '110px', maxHeight: '78px', width: 'auto', height: 'auto' }}
       />
     )}
   </div>
