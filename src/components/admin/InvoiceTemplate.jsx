@@ -291,13 +291,35 @@ const checked = (val) => payment === val ? '☑' : '☐';
     justifyContent: 'center'
   }}>
     {data?.therapist?.stamp_url ? (
-  <img 
-    src={data.therapist.stamp_url} 
+  <img
+    src={data.therapist.stamp_url}
     style={{ width: '120px', marginTop: '5px' }}
   />
+) : data?.therapist?.license_number ? (
+  // Belum ada gambar stempel yang diunggah — tampilkan nama + No. STR/SIP
+  // sebagai teks bergaya stempel supaya kwitansi tetap terlihat resmi.
+  <div style={{ textAlign: 'center', marginTop: '6px' }}>
+    <p style={{
+      fontSize: '13px',
+      fontWeight: '700',
+      color: '#1e3a5f',
+      textDecoration: 'underline',
+      margin: 0,
+    }}>
+      {data?.therapist?.name || data?.therapist_name || '-'}
+    </p>
+    <p style={{
+      fontSize: '10px',
+      fontWeight: '600',
+      color: '#1e3a5f',
+      margin: '2px 0 0',
+    }}>
+      SIPF:{data.therapist.license_number}
+    </p>
+  </div>
 ) : (
-  <p style={{ 
-    fontSize: '12px', 
+  <p style={{
+    fontSize: '12px',
     fontWeight: '600',
     marginTop: '10px'
   }}>
