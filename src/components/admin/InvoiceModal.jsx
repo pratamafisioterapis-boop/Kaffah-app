@@ -14,10 +14,18 @@ import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
+// Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
+// skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
+// (lihat componentRef) sehingga hasil rasterisasi tidak terpengaruh skala tampilan.
+const INVOICE_BASE_WIDTH  = 794;
+const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
+
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
   const componentRef                       = useRef();
+  const previewWrapperRef                  = useRef(null);
+  const [previewScale, setPreviewScale]   = useState(1);
   const { toast }                          = useToast();
   const [isGenerating, setIsGenerating]   = useState(false);
   const [isSendingManualWA, setIsSendingManualWA] = useState(false);
@@ -37,6 +45,24 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       fetchWaAvailability();
     }
   }, [isOpen, data?.id]);
+
+  // ── Skala preview agar invoice A4 tetap utuh terlihat di layar sempit (PWA/mobile) ──
+  useEffect(() => {
+    if (!isOpen) return;
+    const node = previewWrapperRef.current;
+    if (!node) return;
+
+    const computeScale = () => {
+      const availableWidth = node.clientWidth;
+      if (!availableWidth) return;
+      setPreviewScale(Math.min(1, availableWidth / INVOICE_BASE_WIDTH));
+    };
+
+    computeScale();
+    const observer = new ResizeObserver(computeScale);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isOpen, loadingSettings]);
 
   // ── Cek apakah klinik ini sudah punya API Key WA (untuk kirim otomatis) ───
   const fetchWaAvailability = async () => {
@@ -526,18 +552,18 @@ const handleSendManualWA = async () => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100">
-        
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-white z-10 shrink-0">
-          <h2 className="text-lg font-semibold text-slate-900">Preview Invoice</h2>
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b bg-white z-10 shrink-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900 shrink-0">Preview Invoice</h2>
+          <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
 
             <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrinting}>
               {isPrinting
-                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                : <Printer className="w-4 h-4 mr-2" />
+                ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+                : <Printer className="w-4 h-4 sm:mr-2" />
               }
-              Cetak
+              <span className="hidden sm:inline">Cetak</span>
             </Button>
 
             <Button
@@ -547,10 +573,10 @@ const handleSendManualWA = async () => {
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isGenerating
-                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                : <Download className="w-4 h-4 mr-2" />
+                ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+                : <Download className="w-4 h-4 sm:mr-2" />
               }
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
             </Button>
 
             {waAutoAvailable && (
@@ -561,10 +587,10 @@ const handleSendManualWA = async () => {
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {isSendingWA
-                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  : <Send className="w-4 h-4 mr-2" />
+                  ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+                  : <Send className="w-4 h-4 sm:mr-2" />
                 }
-                {isSendingWA ? 'Mengirim...' : 'Kirim Otomatis'}
+                <span className="hidden sm:inline">{isSendingWA ? 'Mengirim...' : 'Kirim Otomatis'}</span>
               </Button>
             )}
 
@@ -575,10 +601,10 @@ const handleSendManualWA = async () => {
   className="bg-emerald-500 hover:bg-emerald-600 text-white"
 >
   {isSendingManualWA
-    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-    : <Send className="w-4 h-4 mr-2" />
+    ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+    : <Send className="w-4 h-4 sm:mr-2" />
   }
-  {isSendingManualWA ? 'Membuka...' : 'Kirim Manual'}
+  <span className="hidden sm:inline">{isSendingManualWA ? 'Membuka...' : 'Kirim Manual'}</span>
 </Button>
 
             <DialogClose asChild>
@@ -589,24 +615,48 @@ const handleSendManualWA = async () => {
           </div>
         </div>
 
-        {/* Preview Area */}
-        <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-slate-200/50">
-          <div className="shadow-2xl print:shadow-none">
+        {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
+          <div ref={previewWrapperRef} className="w-full flex justify-center">
             {loadingSettings ? (
-              <div className="flex items-center justify-center h-[297mm] w-[210mm] bg-white">
+              <div
+                className="flex items-center justify-center bg-white shadow-2xl shrink-0"
+                style={{ width: INVOICE_BASE_WIDTH * previewScale, height: INVOICE_BASE_HEIGHT * previewScale }}
+              >
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : (
-              <InvoiceTemplate
-                ref={componentRef}
-                data={{ ...detailData, ...data }}
-                logoUrl={logoUrl}
-                invoiceTitle={invoiceSettings.invoiceTitle}
-                invoiceSubtitle={invoiceSettings.invoiceSubtitle}
-              />
+              <div
+                className="shadow-2xl print:shadow-none overflow-hidden shrink-0"
+                style={{ width: INVOICE_BASE_WIDTH * previewScale, height: INVOICE_BASE_HEIGHT * previewScale }}
+              >
+                <div style={{ width: INVOICE_BASE_WIDTH, height: INVOICE_BASE_HEIGHT, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+                  <InvoiceTemplate
+                    data={{ ...detailData, ...data }}
+                    logoUrl={logoUrl}
+                    invoiceTitle={invoiceSettings.invoiceTitle}
+                    invoiceSubtitle={invoiceSettings.invoiceSubtitle}
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>
+
+        {/* Klon tersembunyi beresolusi penuh — target html2canvas untuk PDF/print,
+            dipisah dari elemen preview supaya transform skala di atas tidak ikut
+            terekam saat rasterisasi. */}
+        {!loadingSettings && (
+          <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} aria-hidden="true">
+            <InvoiceTemplate
+              ref={componentRef}
+              data={{ ...detailData, ...data }}
+              logoUrl={logoUrl}
+              invoiceTitle={invoiceSettings.invoiceTitle}
+              invoiceSubtitle={invoiceSettings.invoiceSubtitle}
+            />
+          </div>
+        )}
 
       </DialogContent>
     </Dialog>
