@@ -12,6 +12,24 @@ const InvoiceTemplate = forwardRef(({ data }, ref) => {
 const therapistName = data?.therapist_name ?? '-';
   const payment = (data?.payment_method || '').toLowerCase();
 
+  // ── Fallback stempel teks (nama + No. STR/SIP) ───────────────────────────
+  // Nama & nomor lisensi terapis panjangnya bervariasi, sedangkan kolom
+  // stempel di kwitansi sempit (selebar tanda tangan/logo di sebelahnya).
+  // Kecilkan ukuran font sesuai panjang teks supaya tetap proporsional,
+  // bukan malah membesar/wrap berantakan seperti gambar stempel asli.
+  const stampTherapistName = data?.therapist?.name || data?.therapist_name || '-';
+  const stampLicenseNumber = data?.therapist?.license_number || '';
+  const scaledFontSize = (text, breakpoints) => {
+    const found = breakpoints.find(([maxLen]) => text.length <= maxLen);
+    return (found || breakpoints[breakpoints.length - 1])[1];
+  };
+  const stampNameFontSize = scaledFontSize(stampTherapistName, [
+    [18, '10px'], [26, '9px'], [34, '8px'], [Infinity, '7px'],
+  ]);
+  const stampLicenseFontSize = scaledFontSize(`SIPF:${stampLicenseNumber}`, [
+    [24, '8px'], [32, '7px'], [Infinity, '6.5px'],
+  ]);
+
 const checked = (val) => payment === val ? '☑' : '☐';
   return (
     <div
@@ -298,23 +316,25 @@ const checked = (val) => payment === val ? '☑' : '☐';
 ) : data?.therapist?.license_number ? (
   // Belum ada gambar stempel yang diunggah — tampilkan nama + No. STR/SIP
   // sebagai teks bergaya stempel supaya kwitansi tetap terlihat resmi.
-  <div style={{ textAlign: 'center', marginTop: '6px' }}>
+  <div style={{ textAlign: 'center', marginTop: '6px', width: '130px', margin: '6px auto 0' }}>
     <p style={{
-      fontSize: '13px',
+      fontSize: stampNameFontSize,
       fontWeight: '700',
       color: '#1e3a5f',
       textDecoration: 'underline',
+      lineHeight: 1.25,
       margin: 0,
     }}>
-      {data?.therapist?.name || data?.therapist_name || '-'}
+      {stampTherapistName}
     </p>
     <p style={{
-      fontSize: '10px',
+      fontSize: stampLicenseFontSize,
       fontWeight: '600',
       color: '#1e3a5f',
+      lineHeight: 1.25,
       margin: '2px 0 0',
     }}>
-      SIPF:{data.therapist.license_number}
+      SIPF:{stampLicenseNumber}
     </p>
   </div>
 ) : (
