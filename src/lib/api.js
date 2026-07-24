@@ -3647,6 +3647,41 @@ export const getTherapistRecaps = async (
 
   }, 'getTherapistRecaps', { retry: true });
 };
+
+// 🔹 Full cross-therapist visit/diagnosis history for one patient — used by
+// the therapist dashboard's "Riwayat Diagnosa Pasien" panel so a therapist
+// can see every past diagnosis and which colleagues have treated this
+// patient before, regardless of who is logged in.
+export const getPatientClinicalHistory = async (patientId) => {
+  return safeQuery(async () => {
+    if (!patientId) return { data: [], error: null };
+
+    const { data, error } = await supabase
+      .from('daily_recaps')
+      .select(`
+  id,
+  recap_date,
+  diagnosis,
+  service_type,
+  patient_type,
+  patient_id,
+  actual_patient_id,
+  therapist_id,
+  therapist:physiotherapists!therapist_id(id, name),
+  patients!patient_id(id, full_name, medical_record_number),
+  actual_patients:patients!actual_patient_id(id, full_name, medical_record_number)
+`)
+      .or(`patient_id.eq.${patientId},actual_patient_id.eq.${patientId}`)
+      .order('recap_date', { ascending: false });
+
+    if (error) return { error };
+
+    const enriched = await enrichRecapsWithOptions(data);
+    return { data: enriched, error: null };
+
+  }, 'getPatientClinicalHistory', { retry: true });
+};
+
 export const getPatientById = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
