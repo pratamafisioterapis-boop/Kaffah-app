@@ -164,7 +164,14 @@ const formattedDate = date
         endDate: `${dateStr}T23:59:59`
       });
 
-      setAppointments(Array.isArray(apps) ? apps : []);
+      const rawApps = Array.isArray(apps) ? apps : [];
+
+      // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
+      // Pasien lama = sudah punya patient_id.
+      setAppointments(rawApps.map(a => ({
+        ...a,
+        is_new_patient: !a.patient_id
+      })));
 
       const { data: slots } = await getAvailableSlots(dateStr);
 
