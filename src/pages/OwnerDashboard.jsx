@@ -49,6 +49,8 @@ import {
   fetchCancelledAppointments,
   fetchActiveTherapists,
   fetchEmptySlots,
+  fetchTodayNewPatients,
+  fetchTodayReturningPatients,
   fetchAllTherapists,
   fetchTodaySessionsPerTherapist
 } from '@/lib/api';
@@ -113,6 +115,8 @@ const OwnerDashboardHome = () => {
   const [cancelledAppointments, setCancelledAppointments] = useState(0);
   const [activeTherapists, setActiveTherapists] = useState(0);
   const [emptySlots, setEmptySlots] = useState(0);
+  const [newPatientsToday, setNewPatientsToday] = useState(0);
+  const [returningPatientsToday, setReturningPatientsToday] = useState(0);
   const [isLoadingKPI, setIsLoadingKPI] = useState(true);
   const [kpiError, setKpiError] = useState(null);
 
@@ -147,7 +151,9 @@ const OwnerDashboardHome = () => {
         completedRes,
         cancelledRes,
         activeRes,
-        slotsRes
+        slotsRes,
+        newPatientsRes,
+        returningPatientsRes
       ] = await Promise.all([
         fetchTotalSessions(dateRange.startDate, dateRange.endDate),
         fetchTotalPatients(dateRange.startDate, dateRange.endDate),
@@ -157,7 +163,9 @@ const OwnerDashboardHome = () => {
         fetchCompletedSessions(),
         fetchCancelledAppointments(),
         fetchActiveTherapists(),
-        fetchEmptySlots()
+        fetchEmptySlots(),
+        fetchTodayNewPatients(),
+        fetchTodayReturningPatients()
       ]);
 
       // Safely extract values using helper
@@ -171,6 +179,8 @@ const OwnerDashboardHome = () => {
       setCancelledAppointments(safeExtractNumber(cancelledRes));
       setActiveTherapists(safeExtractNumber(activeRes));
       setEmptySlots(safeExtractNumber(slotsRes));
+      setNewPatientsToday(safeExtractNumber(newPatientsRes));
+      setReturningPatientsToday(safeExtractNumber(returningPatientsRes));
 
     } catch (error) {
       console.error("Failed to fetch KPI data:", error);
@@ -450,6 +460,8 @@ setTherapists(enrichedTherapists);
                   cancelledAppointments={cancelledAppointments}
                   activeTherapists={activeTherapists}
                   emptySlots={emptySlots}
+                  newPatientsToday={newPatientsToday}
+                  returningPatientsToday={returningPatientsToday}
                   isLoading={isLoading || isLoadingKPI}
                 />
              </section>
