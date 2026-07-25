@@ -33,7 +33,6 @@ const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 const [newDate, setNewDate] = useState("");
 const [availableSlots, setAvailableSlots] = useState([]);
 const [selectedTime, setSelectedTime] = useState("");
-const [bookedSlots, setBookedSlots] = useState([]);
 const [selectedTherapist, setSelectedTherapist] = useState("");
 const [therapists, setTherapists] = useState([]);
 const fetchAvailableSlots = async (date) => {
@@ -62,34 +61,10 @@ const fetchAvailableSlots = async (date) => {
 
   setAvailableSlots(slots);
 };
-const fetchBookedSlots = async (date) => {
-  if (!date) return;
-  if (!selectedTherapist) return;
-
-  const start = date + "T00:00:00";
-  const end = date + "T23:59:59";
-
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('appointment_date')
-    .eq('therapist_id', selectedTherapist)
-    .gte('appointment_date', start)
-    .lte('appointment_date', end);
-
-  if (error) return;
-
-  const times = data.map(a => {
-    const d = new Date(a.appointment_date);
-    return format(d, 'HH:mm');
-  });
-
-  setBookedSlots(times);
-};
 // 🔥 1. AUTO LOAD SAAT PILIH TANGGAL
 useEffect(() => {
   if (newDate) {
     fetchAvailableSlots(newDate);
-    fetchBookedSlots(newDate); // 🔥 TAMBAH INI
   }
 }, [newDate, selectedTherapist]);
 useEffect(() => {
@@ -97,7 +72,6 @@ useEffect(() => {
   if (!selectedTherapist) return;
 
   fetchAvailableSlots(newDate);
-fetchBookedSlots(newDate);
   const channel = supabase
     .channel('appointments-realtime')
     .on(
@@ -109,7 +83,6 @@ fetchBookedSlots(newDate);
       },
       () => {
         fetchAvailableSlots(newDate);
-        fetchBookedSlots(newDate);
       }
     )
     .subscribe();
@@ -281,31 +254,22 @@ useEffect(() => {
     <label className="text-[11px] tracking-wide font-semibold text-slate-400">JAM TERSEDIA</label>
 
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
-      {availableSlots.map((slot, i) => {
-        const isBooked = bookedSlots.includes(slot.time);
-
-        return (
-          <Button
-            key={i}
-            variant="outline"
-            onClick={() => !isBooked && setSelectedTime(slot.time)}
-            disabled={isBooked}
-            className={`
+      {availableSlots.map((slot, i) => (
+        <Button
+          key={i}
+          variant="outline"
+          onClick={() => setSelectedTime(slot.time)}
+          className={`
   text-xs sm:text-sm px-4 py-2 rounded-xl border transition-all
   min-w-[70px] text-center font-medium
-  ${selectedTime === slot.time 
-    ? "bg-blue-600 text-white shadow-md scale-105" 
-    : "bg-white text-slate-700"}
-  ${isBooked 
-    ? "opacity-30 line-through cursor-not-allowed" 
-    : "hover:bg-blue-50 hover:border-blue-300 active:scale-95"
-  }
+  ${selectedTime === slot.time
+    ? "bg-blue-600 text-white shadow-md scale-105"
+    : "bg-white text-slate-700 hover:bg-blue-50 hover:border-blue-300 active:scale-95"}
 `}
-          >
-            {slot.time}
-          </Button>
-        );
-      })}
+        >
+          {slot.time}
+        </Button>
+      ))}
     </div>
   </div>
 ) : (
