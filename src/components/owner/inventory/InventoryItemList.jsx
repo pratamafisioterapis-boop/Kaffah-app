@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, ArrowUpDown } from 'lucide-react';
 import { deleteInventoryItem } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 
 const PAGE_SIZE = 8;
+
+const SORT_OPTIONS = [
+  { value: 'name', label: 'Nama Barang (A-Z)' },
+  { value: 'latest', label: 'Input Barang Terbaru' },
+];
 
 const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) => {
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState('name');
 
   const handleDelete = async (item) => {
     if (!window.confirm(`Hapus barang "${item.item_name}" dari daftar? Riwayat pengambilan sebelumnya tidak akan terhapus.`)) return;
@@ -33,9 +39,25 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
     setPage(1);
   };
 
-  const filteredItems = items.filter(item =>
-    (item.item_name || '').toLowerCase().includes(search.trim().toLowerCase())
-  );
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    setPage(1);
+  };
+
+  const filteredItems = items
+    .filter(item => (item.item_name || '').toLowerCase().includes(search.trim().toLowerCase()))
+    .slice()
+    .sort((a, b) => {
+      if (sortBy === 'latest') {
+        const aTime = new Date(a.created_at || 0).getTime();
+        const bTime = new Date(b.created_at || 0).getTime();
+        return bTime - aTime;
+      }
+      const aEmpty = Number(a.current_stock) <= 0;
+      const bEmpty = Number(b.current_stock) <= 0;
+      if (aEmpty !== bEmpty) return aEmpty ? 1 : -1;
+      return (a.item_name || '').localeCompare(b.item_name || '', 'id-ID');
+    });
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -43,8 +65,8 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
       {items.length > 0 && (
-        <div className="p-3 border-b border-slate-100">
-          <div className="relative">
+        <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <Input
               value={search}
@@ -61,6 +83,18 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
                 <X className="w-4 h-4" />
               </button>
             )}
+          </div>
+          <div className="relative sm:w-56">
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="w-full h-9 pl-8 pr-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}
