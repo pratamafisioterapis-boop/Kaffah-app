@@ -109,11 +109,11 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
 
         <div className="space-y-3">
           {/* Mode: Dengan Nama Terapis / Global */}
-          <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
             <button
               type="button"
               onClick={() => setTemplateMode('named')}
-              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
                 templateMode === 'named'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -124,7 +124,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => setTemplateMode('global')}
-              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
                 templateMode === 'global'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -135,11 +135,11 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
           </div>
 
           {/* Filter Jenis Kelamin: Semua / Cowok / Cewek */}
-          <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+          <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-lg">
             <button
               type="button"
               onClick={() => handleGenderFilterChange('all')}
-              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -150,7 +150,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => handleGenderFilterChange('male')}
-              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'male'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -161,7 +161,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => handleGenderFilterChange('female')}
-              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'female'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -191,11 +191,11 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
           )}
 
           {/* Filter Terapis */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setSelectedTherapistId('all')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
+              className={`col-span-2 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
                 selectedTherapistId === 'all'
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -211,14 +211,14 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
                   key={t.id}
                   type="button"
                   onClick={() => setSelectedTherapistId(t.id)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
+                  className={`flex items-center gap-1.5 min-w-0 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
                     isActive
                       ? 'bg-slate-900 text-white border-slate-900'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full shrink-0 ${badgeDotClass[color]}`} />
-                  <span className="truncate max-w-[140px] sm:max-w-none">{t.name}</span>
+                  <span className="truncate">{t.name}</span>
                 </button>
               );
             })}
