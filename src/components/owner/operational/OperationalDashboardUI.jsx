@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, Activity, Calendar, Clock, 
-  CheckCircle, XCircle, PlayCircle, UserCheck
+import {
+  Users, Activity, Calendar, Clock,
+  CheckCircle, XCircle, PlayCircle, UserCheck,
+  UserPlus, UserCog
 } from 'lucide-react';
 
 const isPWA = (() => {
@@ -34,7 +35,9 @@ const OperationalDashboardUI = ({
   cancelledAppointments = 0,
   activeTherapists = 0,
   emptySlots = 0,
-  isLoading = false 
+  newPatientsToday = 0,
+  returningPatientsToday = 0,
+  isLoading = false
 }) => {
 
   const periodKPIs = [
@@ -50,6 +53,8 @@ const OperationalDashboardUI = ({
     { label: 'Dibatalkan', value: cancelledAppointments, icon: XCircle, iconColor: 'text-rose-600', iconBg: 'bg-rose-50', variant: 'danger' },
     { label: 'Terapis Aktif', value: activeTherapists, icon: UserCheck, iconColor: 'text-cyan-600', iconBg: 'bg-cyan-50', variant: 'normal' },
     { label: 'Slot Kosong', value: emptySlots, icon: Clock, iconColor: 'text-orange-600', iconBg: 'bg-orange-50', variant: 'warning' },
+    { label: 'Pasien Baru', value: newPatientsToday, icon: UserPlus, iconColor: 'text-sky-600', iconBg: 'bg-sky-50', variant: 'normal' },
+    { label: 'Pasien Lama', value: returningPatientsToday, icon: UserCog, iconColor: 'text-indigo-600', iconBg: 'bg-indigo-50', variant: 'normal' },
   ];
 
   if (isLoading) {
@@ -59,7 +64,7 @@ const OperationalDashboardUI = ({
           {[...Array(3)].map((_, i) => <KPISkeleton key={i} large />)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {[...Array(6)].map((_, i) => <KPISkeleton key={i} />)}
+          {[...Array(8)].map((_, i) => <KPISkeleton key={i} />)}
         </div>
       </div>
     );

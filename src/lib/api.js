@@ -5763,6 +5763,58 @@ export const fetchCancelledAppointments = async () => {
 };
 
 // ============================
+// NEW PATIENTS TODAY (guest booking, not yet linked to a patient record)
+// ============================
+export const fetchTodayNewPatients = async () => {
+  return safeQuery(async () => {
+    const today = getTodayWITA();
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { count, error } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', userRow?.clinic_id)
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lte('appointment_date', `${today}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .is('patient_id', null); // 🔥 belum punya rekam medis = pasien baru
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchTodayNewPatients');
+};
+
+// ============================
+// RETURNING PATIENTS TODAY (already has a patient record)
+// ============================
+export const fetchTodayReturningPatients = async () => {
+  return safeQuery(async () => {
+    const today = getTodayWITA();
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { count, error } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', userRow?.clinic_id)
+      .gte('appointment_date', `${today}T00:00:00`)
+      .lte('appointment_date', `${today}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .not('patient_id', 'is', null); // 🔥 sudah punya rekam medis = pasien lama
+
+    if (error) return { error };
+
+    return { data: count || 0 };
+  }, 'fetchTodayReturningPatients');
+};
+
+// ============================
 // EMPTY SLOTS (SIMPLE VERSION)
 // ============================
 export const fetchEmptySlots = async () => {
