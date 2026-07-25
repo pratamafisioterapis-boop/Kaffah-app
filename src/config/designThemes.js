@@ -1,3 +1,6 @@
+// `navActive` controls how the active sidebar menu item looks — each theme gets its own
+// shape language (solid tab, pill, glow, sharp outline, left-bar) instead of only recoloring
+// the same fixed pill shape.
 export const DESIGN_THEMES = {
   default: {
     label: 'Default (Navy Blue)',
@@ -11,6 +14,15 @@ export const DESIGN_THEMES = {
     textMain: '#0f172a',
     textMuted: '#64748b',
     shadow: '0 10px 25px rgba(0,0,0,0.08)',
+    navActive: {
+      background: '#2563eb',
+      color: '#ffffff',
+      border: 'none',
+      radius: '0.75rem',
+      shadow: '0 8px 18px rgba(37,99,235,0.35)',
+      weight: 600,
+      indicator: true,
+    },
   },
   emerald: {
     label: 'Modern Emerald',
@@ -24,6 +36,15 @@ export const DESIGN_THEMES = {
     textMain: '#022c22',
     textMuted: '#6b7280',
     shadow: '0 10px 25px rgba(6,95,70,0.10)',
+    navActive: {
+      background: '#10b981',
+      color: '#ffffff',
+      border: 'none',
+      radius: '9999px',
+      shadow: '0 8px 18px rgba(16,185,129,0.35)',
+      weight: 600,
+      indicator: false,
+    },
   },
   sunset: {
     label: 'Warm Sunset',
@@ -37,11 +58,20 @@ export const DESIGN_THEMES = {
     textMain: '#431407',
     textMuted: '#78716c',
     shadow: '0 10px 25px rgba(154,52,18,0.10)',
+    navActive: {
+      background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+      color: '#fff7ed',
+      border: 'none',
+      radius: '1.25rem',
+      shadow: '0 0 22px rgba(249,115,22,0.55)',
+      weight: 700,
+      indicator: false,
+    },
   },
   mono: {
     label: 'Minimalist Mono',
     font: "'Manrope', sans-serif",
-    radius: '0.5rem',
+    radius: '0.375rem',
     sidebarBg: 'linear-gradient(180deg, #18181b 0%, #27272a 100%)',
     accent: '#18181b',
     accentHover: '#000000',
@@ -50,6 +80,15 @@ export const DESIGN_THEMES = {
     textMain: '#18181b',
     textMuted: '#71717a',
     shadow: '0 4px 12px rgba(0,0,0,0.06)',
+    navActive: {
+      background: 'rgba(255,255,255,0.06)',
+      color: '#ffffff',
+      border: '1px solid rgba(255,255,255,0.4)',
+      radius: '0.25rem',
+      shadow: 'none',
+      weight: 700,
+      indicator: false,
+    },
   },
   royal: {
     label: 'Royal Purple',
@@ -63,6 +102,15 @@ export const DESIGN_THEMES = {
     textMain: '#3b0764',
     textMuted: '#6b7280',
     shadow: '0 10px 25px rgba(88,28,135,0.10)',
+    navActive: {
+      background: 'rgba(168,85,247,0.15)',
+      color: '#e9d5ff',
+      border: '4px solid #a855f7',
+      radius: '0.25rem',
+      shadow: 'none',
+      weight: 700,
+      indicator: false,
+    },
   },
 };
 

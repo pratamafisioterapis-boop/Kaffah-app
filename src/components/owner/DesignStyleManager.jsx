@@ -44,9 +44,24 @@ const DesignStyleManager = () => {
               </span>
             )}
             <div
-              className="w-full h-16 rounded-xl mb-3"
-              style={{ background: theme.sidebarBg }}
-            />
+              className="w-full h-16 mb-3 flex items-center px-3"
+              style={{ background: theme.sidebarBg, borderRadius: theme.radius }}
+            >
+              <span
+                className="text-[11px] px-2.5 py-1 inline-block"
+                style={{
+                  background: theme.navActive.background,
+                  color: theme.navActive.color,
+                  border: theme.navActive.border,
+                  borderRadius: theme.navActive.radius,
+                  boxShadow: theme.navActive.shadow,
+                  fontWeight: theme.navActive.weight,
+                  fontFamily: theme.font,
+                }}
+              >
+                Menu
+              </span>
+            </div>
             <p className="text-sm font-semibold" style={{ fontFamily: theme.font }}>
               {theme.label}
             </p>

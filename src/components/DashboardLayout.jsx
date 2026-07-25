@@ -13,6 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useDesignTheme } from '@/contexts/ThemeContext';
+import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
 import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
 
@@ -66,6 +68,9 @@ useEffect(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, userDetails } = useAuth();
+  const { themeKey } = useDesignTheme();
+  const activeTheme = DESIGN_THEMES[themeKey] || DESIGN_THEMES[DEFAULT_THEME_KEY];
+  const navActive = activeTheme.navActive;
   const [clinicInfo, setClinicInfo] = useState(null);
 
   useEffect(() => {
@@ -310,7 +315,7 @@ const isPWA =
         {role === 'super_admin' ? (
           <>
             <div className="relative">
-              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
+              <div className="w-14 h-14 bg-white flex items-center justify-center" style={{ borderRadius: activeTheme.radius, boxShadow: activeTheme.shadow }}>
                 <ShieldCheck className="w-7 h-7 text-blue-600" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
@@ -323,7 +328,7 @@ const isPWA =
         ) : (
           <>
             <div className="relative">
-               <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 overflow-hidden">
+               <div className="w-14 h-14 bg-white flex items-center justify-center overflow-hidden" style={{ borderRadius: activeTheme.radius, boxShadow: activeTheme.shadow }}>
                  {clinicInfo ? (
                    <img
                      src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
@@ -385,13 +390,20 @@ const isPWA =
                     cn(
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden",
                       linkActive || (isActive && item.path !== `/${role}`)
-                        ? "text-white shadow-lg" 
+                        ? ""
                         : "text-slate-400 hover:text-white hover:bg-white/5"
                     )
                   }
                   style={({ isActive: linkActive }) =>
                     linkActive || (isActive && item.path !== `/${role}`)
-                      ? { background: 'var(--app-accent, #2563eb)' }
+                      ? {
+                          background: navActive.background,
+                          color: navActive.color,
+                          border: navActive.border,
+                          borderRadius: navActive.radius,
+                          boxShadow: navActive.shadow,
+                          fontWeight: navActive.weight,
+                        }
                       : undefined
                   }
                 >
@@ -399,10 +411,10 @@ const isPWA =
                     const activeState = linkActive || (isActive && item.path !== `/${role}`);
                     return (
                     <>
-                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "text-white" : "text-slate-400 group-hover:text-blue-400")} />
+                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "" : "text-slate-400 group-hover:text-blue-400")} style={activeState ? { color: navActive.color } : undefined} />
                       <span className="font-medium text-sm flex-1">{item.label}</span>
                       {activeState && <ChevronRight className="w-4 h-4 opacity-50" />}
-                      {activeState && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-r-full" />}
+                      {activeState && navActive.indicator && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-r-full" />}
                     </>
                   )}}
                 </NavLink>
@@ -426,16 +438,16 @@ const isPWA =
                           className={({ isActive }) =>
                             cn(
                               "block px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
-                              isActive 
-                                ? "bg-white/5" 
+                              isActive
+                                ? "bg-white/5"
                                 : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
                             )
                           }
-                          style={({ isActive }) => isActive ? { color: 'var(--app-accent, #60a5fa)' } : undefined}
+                          style={({ isActive }) => isActive ? { color: navActive.color, fontWeight: navActive.weight } : undefined}
                         >
                           {({ isActive }) => (
                             <div className="flex items-center gap-2">
-                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-slate-600")} style={isActive ? { background: 'var(--app-accent, #60a5fa)' } : undefined} />
+                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-slate-600")} style={isActive ? { background: navActive.color } : undefined} />
                               {subItem.label}
                             </div>
                           )}
