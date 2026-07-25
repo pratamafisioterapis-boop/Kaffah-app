@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles, BarChart3, PieChart as PieChartIcon, Vote } from 'lucide-react';
 
 const KATEGORI_LABEL = {
   pendukung: { label: 'Pendukung', color: '#16a34a' },
@@ -56,6 +57,7 @@ const PemilihDashboard = () => {
   const [rawRows, setRawRows] = useState([]);
   const [kelurahanMap, setKelurahanMap] = useState({});
   const [timSuksesTotalTarget, setTimSuksesTotalTarget] = useState(0);
+  const [dptRows, setDptRows] = useState([]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -82,6 +84,9 @@ const PemilihDashboard = () => {
 
       const { data: tim } = await supabase.from('pemilih_tim_sukses').select('target_suara');
       setTimSuksesTotalTarget((tim || []).reduce((sum, t) => sum + (t.target_suara || 0), 0));
+
+      const { data: dpt } = await supabase.from('pemilih_tps').select('kelurahan_id, jumlah_dpt_2024');
+      setDptRows(dpt || []);
 
       setLoading(false);
     };
@@ -111,6 +116,18 @@ const PemilihDashboard = () => {
     });
     return Object.values(agg).sort((a, b) => b.total - a.total);
   }, [rawRows, kelurahanMap]);
+
+  const dpt2024Total = useMemo(() => dptRows.reduce((sum, t) => sum + (t.jumlah_dpt_2024 || 0), 0), [dptRows]);
+
+  const dpt2024PerKelurahan = useMemo(() => {
+    const agg = {};
+    Object.entries(kelurahanMap).forEach(([id, nama]) => { agg[id] = { nama, total: 0 }; });
+    dptRows.forEach((t) => {
+      if (!agg[t.kelurahan_id]) agg[t.kelurahan_id] = { nama: kelurahanMap[t.kelurahan_id] || 'Belum Diketahui', total: 0 };
+      agg[t.kelurahan_id].total += t.jumlah_dpt_2024 || 0;
+    });
+    return Object.values(agg).sort((a, b) => b.total - a.total);
+  }, [dptRows, kelurahanMap]);
 
   const kelurahanPrioritas = useMemo(() => {
     return perKelurahan
@@ -160,6 +177,7 @@ const PemilihDashboard = () => {
         <StatCard icon={HelpCircle} label="Simpatisan" value={stats.simpatisan} color="#2563eb" bg="#eff6ff" accentBar="linear-gradient(90deg,#60a5fa,#2563eb)" />
         <StatCard icon={ThumbsDown} label="Tidak Mendukung" value={stats.tidak_mendukung} color="#dc2626" bg="#fef2f2" accentBar="linear-gradient(90deg,#f87171,#dc2626)" />
         <StatCard icon={TrendingUp} label="Target Suara Tim Sukses" value={timSuksesTotalTarget} color="#d97706" bg="#fffbeb" accentBar="linear-gradient(90deg,#fbbf24,#d97706)" />
+        <StatCard icon={Vote} label="Total Pemilih 2024 (DPT)" value={dpt2024Total} color="#7c3aed" bg="#f5f3ff" accentBar="linear-gradient(90deg,#a78bfa,#7c3aed)" />
       </div>
 
       <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
@@ -289,6 +307,57 @@ const PemilihDashboard = () => {
                   </div>
                   <div style={{ marginTop: 12, height: 6, borderRadius: 4, background: '#f1f2f4', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
                     <div style={{ width: pct + '%', height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="p-card" style={{ padding: 24, marginBottom: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Vote size={15} color="#7c3aed" />
+            </div>
+            <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Data Pemilih 2024 (DPT) per Kelurahan</h3>
+          </div>
+          <Link to="/pemilih/data-2024" style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textDecoration: 'none' }}>
+            Kelola data 2024 →
+          </Link>
+        </div>
+        <p style={{ margin: '4px 0 18px 38px', fontSize: 11.5, color: '#9ca3af' }}>
+          Jumlah pemilih tetap (DPT) 2024 hasil rekap seluruh TPS, diurutkan dari terbanyak.
+        </p>
+        {dpt2024PerKelurahan.length === 0 ? (
+          <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data kelurahan.</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+            {dpt2024PerKelurahan.map((w, i) => {
+              const maxTotal = dpt2024PerKelurahan[0].total || 1;
+              const pct = Math.max(6, (w.total / maxTotal) * 100);
+              return (
+                <div key={w.nama} className="p-card-hover" style={{
+                  position: 'relative', borderRadius: 16, padding: '18px 18px 16px',
+                  background: 'linear-gradient(150deg, #ffffff 0%, #fafbfc 100%)',
+                  border: '1px solid #eceef1', overflow: 'hidden',
+                  boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
+                }}>
+                  <div style={{ position: 'absolute', top: -18, right: -18, width: 70, height: 70, borderRadius: '50%', background: 'radial-gradient(circle, #7c3aed22, transparent 70%)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 7, background: '#7c3aed1a', color: '#7c3aed',
+                      fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{i + 1}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a1d29' }}>{w.nama}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 12, position: 'relative', zIndex: 1 }}>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: '#1a1d29', letterSpacing: '-0.02em' }}>{w.total.toLocaleString('id-ID')}</span>
+                    <span style={{ fontSize: 11.5, color: '#9ca3af', fontWeight: 500 }}>pemilih</span>
+                  </div>
+                  <div style={{ marginTop: 12, height: 6, borderRadius: 4, background: '#f1f2f4', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+                    <div style={{ width: pct + '%', height: '100%', borderRadius: 4, background: 'linear-gradient(90deg, #7c3aed, #7c3aedcc)' }} />
                   </div>
                 </div>
               );
