@@ -950,7 +950,7 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Data Master',
     items: [
       { value: 'diagnosis_service', icon: FolderTree, label: 'Diagnosa & Layanan' },
-      { value: 'source', icon: null, label: 'Sumber' },
+      { value: 'source', icon: null, label: 'Referensi' },
       { value: 'type', icon: null, label: 'Tipe Pasien' },
       { value: 'package', icon: null, label: 'Tipe Paket' },
     ],
@@ -1100,7 +1100,7 @@ const SettingsPage = () => {
             <DiagnosisServiceManager />
           </TabsContent>
           <TabsContent value="source">
-            <OptionManager title="Sumber Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />
+            <OptionManager title="Referensi Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />
           </TabsContent>
           <TabsContent value="type">
             <OptionManager title="Kategori Tipe Pasien" description="Kategori pasien (Normal, Homecare, dll)." category="patient_type" />

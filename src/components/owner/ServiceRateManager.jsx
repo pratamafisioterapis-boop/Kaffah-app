@@ -69,7 +69,7 @@ const ServiceRateManager = () => {
       const match = rates.find(
         (r) => (r.service_name || '').trim().toLowerCase() === (pt.label || '').trim().toLowerCase()
       );
-      return { key: pt.id, label: pt.label, rateRow: match || null };
+      return { key: pt.id, id: pt.id, label: pt.label, rateRow: match || null };
     });
   }, [patientTypes, rates]);
 
@@ -79,10 +79,10 @@ const ServiceRateManager = () => {
     return rates.filter((r) => !typeLabels.includes((r.service_name || '').trim().toLowerCase()));
   }, [rates, patientTypes]);
 
-  const handleQuickSave = async (label, rateRow) => {
-    const inputValue = typeRateInputs[label];
+  const handleQuickSave = async (id, label, rateRow) => {
+    const inputValue = typeRateInputs[id];
     const rateValue = parseFloat(inputValue) || 0;
-    setSavingTypeLabel(label);
+    setSavingTypeLabel(id);
     try {
       if (rateRow) {
         const { data, error } = await supabase
@@ -205,42 +205,42 @@ const ServiceRateManager = () => {
             </div>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-              {mergedTypeRates.map(({ key, label, rateRow }) => {
-                const currentValue = typeRateInputs[label] !== undefined
-                  ? typeRateInputs[label]
+              {mergedTypeRates.map(({ key, id, label, rateRow }) => {
+                const currentValue = typeRateInputs[id] !== undefined
+                  ? typeRateInputs[id]
                   : (rateRow?.rate ?? '');
-                const isSaving = savingTypeLabel === label;
+                const isSaving = savingTypeLabel === id;
                 return (
                   <motion.div
                     key={key}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                       <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
                         <Wallet className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <div className="min-w-0">
-                        <span className="font-medium text-slate-700 truncate block">{label}</span>
+                      <div className="min-w-0 flex-1 sm:flex-initial">
+                        <span className="font-medium text-slate-700 truncate block">{label || '(Tanpa nama)'}</span>
                         <p className="text-xs text-slate-400 mt-0.5">
                           {rateRow ? `${formatCurrency(rateRow.rate)} / sesi` : 'Belum diatur'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Input
                         type="number"
                         value={currentValue}
-                        onChange={(e) => setTypeRateInputs((prev) => ({ ...prev, [label]: e.target.value }))}
+                        onChange={(e) => setTypeRateInputs((prev) => ({ ...prev, [id]: e.target.value }))}
                         placeholder="Rp 0"
-                        className="w-32 h-9 text-sm"
+                        className="flex-1 sm:w-32 h-9 text-sm"
                       />
                       <Button
                         size="icon"
-                        onClick={() => handleQuickSave(label, rateRow)}
+                        onClick={() => handleQuickSave(id, label, rateRow)}
                         disabled={isSaving}
-                        className="h-9 w-9 bg-blue-600 hover:bg-blue-700"
+                        className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700"
                       >
                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                       </Button>
