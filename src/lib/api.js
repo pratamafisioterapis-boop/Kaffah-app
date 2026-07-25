@@ -5047,6 +5047,7 @@ export const savePhysiotherapist = async (payload) => {
         birth_place: payload.birth_place || null,
         birth_date: payload.birth_date || null,
         license_number: payload.license_number || null,
+        gender: payload.gender || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', payload.id)
@@ -5217,6 +5218,7 @@ export const createTherapistAccount = async (payload, password) => {
         birth_place: payload.birth_place || null,
         birth_date: payload.birth_date || null,
         license_number: payload.license_number || null,
+        gender: payload.gender || null,
         created_at: new Date().toISOString()
       })
       .select()

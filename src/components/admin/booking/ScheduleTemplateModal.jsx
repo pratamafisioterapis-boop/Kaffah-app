@@ -27,6 +27,12 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
   const [copied, setCopied] = useState(false);
   const [selectedTherapistId, setSelectedTherapistId] = useState('all');
   const [templateMode, setTemplateMode] = useState('named'); // 'named' | 'global'
+  const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'male' | 'female'
+
+  const handleGenderFilterChange = (value) => {
+    setGenderFilter(value);
+    setSelectedTherapistId('all');
+  };
 
   const getTherapistBadgeColor = (therapist) => {
     const leave = therapistLeaveStatus?.[therapist.id];
@@ -43,19 +49,25 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
     gray: 'bg-slate-400'
   };
 
+  // Terapis yang sesuai filter jenis kelamin (Semua / Cowok / Cewek)
+  const genderFilteredTherapists = useMemo(() => {
+    if (genderFilter === 'all') return therapists;
+    return therapists.filter(t => t.gender === genderFilter);
+  }, [therapists, genderFilter]);
+
   // Terapis yang tampil di filter, sudah diurutkan: hijau → merah → abu-abu
   const sortedTherapists = useMemo(() => {
-    return [...therapists].sort((a, b) => {
+    return [...genderFilteredTherapists].sort((a, b) => {
       const orderA = STATUS_ORDER[getTherapistBadgeColor(a)];
       const orderB = STATUS_ORDER[getTherapistBadgeColor(b)];
       return orderA - orderB;
     });
-  }, [therapists, schedulesMap, therapistLeaveStatus]);
+  }, [genderFilteredTherapists, schedulesMap, therapistLeaveStatus]);
 
   const selectedTherapists = useMemo(() => {
-    if (selectedTherapistId === 'all') return therapists;
-    return therapists.filter(t => t.id === selectedTherapistId);
-  }, [selectedTherapistId, therapists]);
+    if (selectedTherapistId === 'all') return genderFilteredTherapists;
+    return genderFilteredTherapists.filter(t => t.id === selectedTherapistId);
+  }, [selectedTherapistId, genderFilteredTherapists]);
 
   const message = useMemo(() => {
     if (!open) return '';
@@ -122,6 +134,43 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             </button>
           </div>
 
+          {/* Filter Jenis Kelamin: Semua / Cowok / Cewek */}
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => handleGenderFilterChange('all')}
+              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+                genderFilter === 'all'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Gabungan
+            </button>
+            <button
+              type="button"
+              onClick={() => handleGenderFilterChange('male')}
+              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+                genderFilter === 'male'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Terapis Cowok
+            </button>
+            <button
+              type="button"
+              onClick={() => handleGenderFilterChange('female')}
+              className={`flex-1 px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors ${
+                genderFilter === 'female'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Terapis Cewek
+            </button>
+          </div>
+
           {/* Legenda warna */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-[11px] text-slate-500 px-0.5">
             <span className="flex items-center gap-1.5">
@@ -134,6 +183,12 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
               <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" /> Cuti/Libur
             </span>
           </div>
+
+          {genderFilter !== 'all' && sortedTherapists.length === 0 && (
+            <p className="text-[11px] sm:text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Belum ada terapis dengan jenis kelamin {genderFilter === 'male' ? 'laki-laki' : 'perempuan'} yang terdaftar. Lengkapi data jenis kelamin terapis di menu Physiotherapist Management.
+            </p>
+          )}
 
           {/* Filter Terapis */}
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
