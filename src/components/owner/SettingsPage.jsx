@@ -4,7 +4,8 @@ import {
   Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
-  FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet
+  FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -967,6 +968,20 @@ const SettingsPage = () => {
   const { userDetails } = useAuth();
   const [reloadGallery, setReloadGallery] = useState(0);
   const [disabledFeatures, setDisabledFeatures] = useState([]);
+  const [openGroups, setOpenGroups] = useState(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    const targetTab = requestedTab || SETTINGS_TAB_GROUPS[0]?.items[0]?.value;
+    const targetGroup = SETTINGS_TAB_GROUPS.find((g) => g.items.some((i) => i.value === targetTab));
+    return new Set([(targetGroup || SETTINGS_TAB_GROUPS[0])?.label]);
+  });
+
+  const toggleGroup = (label) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -1022,22 +1037,39 @@ const SettingsPage = () => {
 
       <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="flex flex-col h-auto gap-3 bg-transparent p-0 border-none items-stretch w-full">
-          {visibleTabGroups.map((group) => (
-            <div key={group.label} className="bg-slate-100/70 rounded-2xl border border-slate-200 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1 mb-2">{group.label}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {group.items.map(({ value, icon: Icon, label }) => (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium"
-                  >
-                    {Icon && <Icon className="w-3.5 h-3.5" />} {label}
-                  </TabsTrigger>
-                ))}
+          {visibleTabGroups.map((group) => {
+            const isOpen = openGroups.has(group.label);
+            return (
+              <div key={group.label} className="bg-slate-100/70 rounded-2xl border border-slate-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.label)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{group.label}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-slate-400">{group.items.length}</span>
+                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                  </div>
+                </button>
+                <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                  <div className="overflow-hidden">
+                    <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+                      {group.items.map(({ value, icon: Icon, label }) => (
+                        <TabsTrigger
+                          key={value}
+                          value={value}
+                          className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium"
+                        >
+                          {Icon && <Icon className="w-3.5 h-3.5" />} {label}
+                        </TabsTrigger>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </TabsList>
 
         <div className="mt-6">
