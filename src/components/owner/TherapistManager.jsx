@@ -112,7 +112,8 @@ const TherapistManager = () => {
       join_date: format(new Date(), 'yyyy-MM-dd'),
       birth_place: '',
       birth_date: '',
-      license_number: ''
+      license_number: '',
+      gender: ''
     };
   }
 
@@ -214,7 +215,8 @@ const TherapistManager = () => {
         join_date: therapist.join_date || (therapist.created_at ? format(new Date(therapist.created_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
         birth_place: therapist.birth_place || '',
         birth_date: therapist.birth_date || '',
-        license_number: therapist.license_number || ''
+        license_number: therapist.license_number || '',
+        gender: therapist.gender || ''
       });
       setPassword(''); 
     } else {
@@ -706,6 +708,19 @@ const headerColorMap = {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">No. STR / SIP</label>
                     <Input value={formData.license_number} onChange={(e) => setFormData({...formData, license_number: e.target.value})} placeholder="FL00001233102233" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">Jenis Kelamin</label>
+                    <Select
+                      value={formData.gender || ""}
+                      onValueChange={(val) => setFormData({ ...formData, gender: val })}
+                    >
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Pilih jenis kelamin" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Laki-laki</SelectItem>
+                        <SelectItem value="female">Perempuan</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">Tempat Lahir</label>
