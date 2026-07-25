@@ -6,11 +6,11 @@ const NAV = [
   { to: '/pemilih/dashboard', label: 'Dashboard', icon: '📊', full: 'Dashboard & Strategi' },
   { to: '/pemilih/upload-ktp', label: 'Scan KTP', icon: '🪪', full: 'Scan / Upload KTP' },
   { to: '/pemilih/data', label: 'Data Pemilih', icon: '👥', full: 'Data Pemilih' },
+  { to: '/pemilih/data-2024', label: 'Data 2024', icon: '🗳️', full: 'Data Pemilih 2024 (DPT)' },
   { to: '/pemilih/tim-sukses', label: 'Tim Sukses', icon: '🤝', full: 'Tim Sukses & Relawan' },
   { to: '/pemilih/kegiatan', label: 'Kegiatan', icon: '📝', full: 'Log Kegiatan' },
-  { to: '/pemilih/wilayah', label: 'Wilayah', icon: '🗺️', full: 'Setup Wilayah' },
-  { to: '/pemilih/kategori-program', label: 'Kat. Program', icon: '🏷️', full: 'Setup Kategori Program' },
   { to: '/pemilih/extract-pdf', label: 'Ekstrak PDF', icon: '📄', full: 'Ekstrak Data dari PDF' },
+  { to: '/pemilih/setup', label: 'Setup', icon: '⚙️', full: 'Setup & Pengaturan' },
 ];
 
 const CSS = `
@@ -252,7 +252,7 @@ const PemilihLayout = ({ children }) => {
     navigate('/login');
   };
 
-  const currentNav = NAV.find((n) => location.pathname.startsWith(n.to));
+  const currentNav = NAV.find((n) => location.pathname === n.to || location.pathname.startsWith(n.to + '/'));
 
   return (
     <>
