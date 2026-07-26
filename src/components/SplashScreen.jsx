@@ -54,6 +54,7 @@ export default function SplashScreen({ onDone }) {
   const [fadeOut, setFadeOut] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [ownerRoleLabel, setOwnerRoleLabel] = useState(null);
+  const [relawanNama, setRelawanNama] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -108,11 +109,28 @@ export default function SplashScreen({ onDone }) {
     return () => { active = false; };
   }, [userDetails]);
 
+  useEffect(() => {
+    let active = true;
+
+    const resolveRelawan = async () => {
+      if (!userDetails?.id) { if (active) setRelawanNama(null); return; }
+      const { data } = await supabase
+        .from('pemilih_relawan')
+        .select('nama')
+        .eq('user_id', userDetails.id)
+        .maybeSingle();
+      if (active) setRelawanNama(data?.nama || null);
+    };
+
+    resolveRelawan();
+    return () => { active = false; };
+  }, [userDetails]);
+
   const greeting = getGreeting();
   const quote = getTodayQuote();
-  const name = userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || '';
+  const name = relawanNama?.split(' ')[0] || userDetails?.full_name?.split(' ')[0] || userDetails?.name?.split(' ')[0] || '';
   const role = userDetails?.role;
-  const roleLabel = role === 'owner' ? (ownerRoleLabel || 'Pemilik Klinik') : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
+  const roleLabel = relawanNama ? 'Tim Pemenangan' : role === 'owner' ? (ownerRoleLabel || 'Pemilik Klinik') : role === 'admin' ? 'Admin' : role === 'therapist' ? 'Fisioterapis' : '';
   const monogram = (name || roleLabel || 'K').charAt(0).toUpperCase();
 
   useEffect(() => {
