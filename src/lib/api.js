@@ -851,20 +851,11 @@ export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) =
       ? nameParts[nameParts.length - 1]
       : nameParts[0];
 
-    const { data, error } = await supabase
-      .from('patients')
-      .select(`
-        id,
-        full_name,
-        birth_date,
-        phone,
-        medical_record_number,
-        gender,
-        nickname
-      `)
-      .eq('birth_date', birthDate)
-      .ilike('full_name', `%${lastName}`)
-      .eq('status', 'aktif');
+    const { data, error } = await supabase.rpc('search_patient_for_booking', {
+      p_last_name: lastName,
+      p_birth_date: birthDate,
+      p_clinic_id: PUBLIC_CLINIC_ID
+    });
 
     if (error) return { error };
 
@@ -878,25 +869,23 @@ export const getPatientTherapistHistory = async (patientId) => {
   return safeQuery(async () => {
     if (!patientId) return { data: [], error: null };
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('therapist_id, appointment_date, therapist:physiotherapists(id, name)')
-      .eq('patient_id', patientId)
-      .not('therapist_id', 'is', null)
-      .order('appointment_date', { ascending: false });
+    const { data, error } = await supabase.rpc('get_patient_therapist_history_public', {
+      p_patient_id: patientId,
+      p_clinic_id: PUBLIC_CLINIC_ID
+    });
 
     if (error) return { error };
 
     const byTherapist = new Map();
     (data || []).forEach(row => {
-      if (!row.therapist) return;
+      if (!row.therapist_id) return;
       const existing = byTherapist.get(row.therapist_id);
       if (existing) {
         existing.count += 1;
       } else {
         byTherapist.set(row.therapist_id, {
           id: row.therapist_id,
-          name: row.therapist.name,
+          name: row.therapist_name,
           lastAppointmentDate: row.appointment_date,
           count: 1
         });
