@@ -7,6 +7,14 @@ const inputStyle = { padding: '9px 12px', borderRadius: 8, border: '1px solid #c
 
 const emptyForm = { nama: '', no_hp: '', alamat: '', username: '', password: '' };
 
+// Default username/password dari nama depan, mis. "Umi Sari" -> "umi@tim.com" / "umi123".
+const deriveFirstName = (nama) => (nama || '').trim().split(/\s+/)[0]?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+const deriveDefaults = (nama) => {
+  const first = deriveFirstName(nama);
+  if (!first) return { username: '', password: '' };
+  return { username: `${first}@tim.com`, password: `${first}123`.padEnd(6, '0') };
+};
+
 const PemilihRelawanAkun = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState([]);
@@ -14,6 +22,7 @@ const PemilihRelawanAkun = () => {
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [credentialsTouched, setCredentialsTouched] = useState(false);
   const [resetTarget, setResetTarget] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetSaving, setResetSaving] = useState(false);
@@ -49,6 +58,7 @@ const PemilihRelawanAkun = () => {
     } else {
       toast({ title: 'Akun relawan dibuat' });
       setForm(emptyForm);
+      setCredentialsTouched(false);
       fetchAll();
     }
     setSaving(false);
@@ -102,14 +112,25 @@ const PemilihRelawanAkun = () => {
 
       <div className="p-card" style={{ padding: 20, marginBottom: 20 }}>
         <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          <input style={inputStyle} placeholder="Nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
+          <input
+            style={inputStyle}
+            placeholder="Nama"
+            value={form.nama}
+            onChange={(e) => {
+              const nama = e.target.value;
+              setForm((prev) => (credentialsTouched ? { ...prev, nama } : { ...prev, nama, ...deriveDefaults(nama) }));
+            }}
+          />
           <input style={inputStyle} placeholder="No. HP" value={form.no_hp} onChange={(e) => setForm({ ...form, no_hp: e.target.value })} />
           <input style={inputStyle} placeholder="Alamat" value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} />
           <input
             style={inputStyle}
             placeholder="Username, atau email lengkap"
             value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._@-]/g, '') })}
+            onChange={(e) => {
+              setCredentialsTouched(true);
+              setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._@-]/g, '') });
+            }}
           />
           <div style={{ position: 'relative' }}>
             <input
@@ -117,7 +138,10 @@ const PemilihRelawanAkun = () => {
               type={showPassword ? 'text' : 'password'}
               placeholder="Password (min. 6 karakter)"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => {
+                setCredentialsTouched(true);
+                setForm({ ...form, password: e.target.value });
+              }}
             />
             <button
               type="button"
@@ -129,7 +153,7 @@ const PemilihRelawanAkun = () => {
           </div>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
-          Username bebas huruf kecil/angka/titik/underscore (mis. "umisari"), atau isi email lengkap relawan (mis. "umisari@gmail.com") — dipakai untuk login.
+          Username & password otomatis terisi dari nama depan (mis. "Umi Sari" → username <code>umi@tim.com</code>, password <code>umi123</code>) — bisa diedit manual kalau perlu.
         </p>
         <button className="p-btn-primary" style={{ marginTop: 14 }} onClick={handleAdd} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} Tambah Akun Relawan
