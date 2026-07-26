@@ -107,9 +107,9 @@ const PemilihRelawanAkun = () => {
           <input style={inputStyle} placeholder="Alamat" value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} />
           <input
             style={inputStyle}
-            placeholder="Username (huruf kecil/angka)"
+            placeholder="Username, atau email lengkap"
             value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, '') })}
+            onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._@-]/g, '') })}
           />
           <div style={{ position: 'relative' }}>
             <input
@@ -128,6 +128,9 @@ const PemilihRelawanAkun = () => {
             </button>
           </div>
         </div>
+        <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
+          Username bebas huruf kecil/angka/titik/underscore (mis. "umisari"), atau isi email lengkap relawan (mis. "umisari@gmail.com") — dipakai untuk login.
+        </p>
         <button className="p-btn-primary" style={{ marginTop: 14 }} onClick={handleAdd} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} Tambah Akun Relawan
         </button>
