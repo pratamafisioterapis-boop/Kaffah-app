@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Save, Users, MapPin, ListChecks, Settings } from 'lucide-react';
+import { Loader2, Save, Users, MapPin, ListChecks, Settings, Plus } from 'lucide-react';
 
 const StatPill = ({ icon: Icon, label, value }) => (
   <div className="p-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 160 }}>
@@ -19,30 +19,57 @@ const StatPill = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-const PemilihData2024 = () => {
+const PemilihDataDpt = () => {
   const { toast } = useToast();
   const [kelurahanList, setKelurahanList] = useState([]);
   const [tpsRows, setTpsRows] = useState([]);
+  const [periodeRows, setPeriodeRows] = useState([]);
   const [editMap, setEditMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [savingKelurahan, setSavingKelurahan] = useState(null);
+  const [activeYear, setActiveYear] = useState(null);
+  const [newYear, setNewYear] = useState('');
+  const [addingYear, setAddingYear] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
-    const { data: kel } = await supabase.from('pemilih_kelurahan').select('id, nama').order('nama');
-    const { data: tps } = await supabase
-      .from('pemilih_tps')
-      .select('id, kelurahan_id, nomor_tps, jumlah_dpt_2024')
-      .order('nomor_tps');
+    const [{ data: kel }, { data: tps }, { data: periode }] = await Promise.all([
+      supabase.from('pemilih_kelurahan').select('id, nama').order('nama'),
+      supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').order('nomor_tps'),
+      supabase.from('pemilih_dpt_periode').select('tps_id, tahun, jumlah'),
+    ]);
     setKelurahanList(kel || []);
     setTpsRows(tps || []);
-    const initial = {};
-    (tps || []).forEach((t) => { initial[t.id] = String(t.jumlah_dpt_2024 ?? 0); });
-    setEditMap(initial);
+    setPeriodeRows(periode || []);
     setLoading(false);
+    return periode || [];
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll().then((periode) => {
+      const years = [...new Set(periode.map((p) => p.tahun))].sort((a, b) => b - a);
+      setActiveYear((prev) => prev ?? years[0] ?? new Date().getFullYear());
+    });
+  }, []);
+
+  const years = useMemo(() => {
+    const set = new Set(periodeRows.map((p) => p.tahun));
+    if (activeYear) set.add(activeYear);
+    return [...set].sort((a, b) => b - a);
+  }, [periodeRows, activeYear]);
+
+  const periodeByKey = useMemo(() => {
+    const map = {};
+    periodeRows.forEach((p) => { map[`${p.tps_id}-${p.tahun}`] = p.jumlah; });
+    return map;
+  }, [periodeRows]);
+
+  useEffect(() => {
+    if (!activeYear || tpsRows.length === 0) return;
+    const initial = {};
+    tpsRows.forEach((t) => { initial[t.id] = String(periodeByKey[`${t.id}-${activeYear}`] ?? 0); });
+    setEditMap(initial);
+  }, [activeYear, tpsRows, periodeByKey]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -57,36 +84,87 @@ const PemilihData2024 = () => {
   const grandTotal = tpsRows.reduce((sum, t) => sum + (parseInt(editMap[t.id], 10) || 0), 0);
   const totalTps = tpsRows.length;
 
+  const handleAddYear = () => {
+    const year = parseInt(newYear, 10);
+    if (!year || year < 1900 || year > 2100) {
+      toast({ title: 'Tahun tidak valid', variant: 'destructive' });
+      return;
+    }
+    setActiveYear(year);
+    setNewYear('');
+    setAddingYear(false);
+  };
+
   const saveKelurahan = async (kelurahanId, tpsList) => {
     setSavingKelurahan(kelurahanId);
-    const updates = tpsList.map((t) => {
-      const value = Math.max(0, parseInt(editMap[t.id], 10) || 0);
-      return supabase.from('pemilih_tps').update({ jumlah_dpt_2024: value, updated_at: new Date().toISOString() }).eq('id', t.id);
-    });
-    const results = await Promise.all(updates);
-    const failed = results.find((r) => r.error);
-    if (failed) {
-      toast({ title: 'Gagal menyimpan', description: failed.error.message, variant: 'destructive' });
+    const rows = tpsList.map((t) => ({
+      tps_id: t.id,
+      tahun: activeYear,
+      jumlah: Math.max(0, parseInt(editMap[t.id], 10) || 0),
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from('pemilih_dpt_periode').upsert(rows, { onConflict: 'tps_id,tahun' });
+    if (error) {
+      toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Tersimpan', description: 'Data pemilih 2024 berhasil diperbarui.' });
+      toast({ title: 'Tersimpan', description: `Data pemilih ${activeYear} berhasil diperbarui.` });
       fetchAll();
     }
     setSavingKelurahan(null);
   };
 
-  if (loading) {
+  if (loading || !activeYear) {
     return <div style={{ padding: 40, textAlign: 'center' }}><Loader2 className="animate-spin" /></div>;
   }
 
   return (
     <div>
-      <h1 className="p-page-title">Data Pemilih 2024</h1>
+      <h1 className="p-page-title">Data Pemilih Sebelumnya (DPT)</h1>
       <p className="p-page-subtitle">
-        Input dan kelola jumlah pemilih (DPT) tahun 2024 per TPS di setiap kelurahan/desa.
+        Input dan kelola jumlah pemilih (DPT) per periode/tahun pemilu, per TPS di setiap kelurahan/desa.
       </p>
 
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        {years.map((y) => (
+          <button
+            key={y}
+            onClick={() => setActiveYear(y)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '9px 16px', borderRadius: 11, border: '1.5px solid ' + (activeYear === y ? '#dc2626' : 'var(--p-border)'),
+              background: activeYear === y ? 'linear-gradient(135deg, #ef4444, #dc2626)' : '#fff',
+              color: activeYear === y ? '#fff' : '#4b5563',
+              fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
+            }}
+          >
+            Data {y}
+          </button>
+        ))}
+
+        {addingYear ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="number"
+              autoFocus
+              className="p-input"
+              style={{ width: 110, padding: '8px 10px' }}
+              placeholder="Tahun"
+              value={newYear}
+              onChange={(e) => setNewYear(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddYear()}
+            />
+            <button className="p-btn-primary" style={{ padding: '9px 14px' }} onClick={handleAddYear}>Tambah</button>
+            <button className="p-btn-ghost" style={{ padding: '9px 14px' }} onClick={() => { setAddingYear(false); setNewYear(''); }}>Batal</button>
+          </div>
+        ) : (
+          <button className="p-btn-ghost" onClick={() => setAddingYear(true)}>
+            <Plus size={15} /> Tambah Periode Tahun
+          </button>
+        )}
+      </div>
+
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatPill icon={Users} label="Total Pemilih 2024" value={grandTotal} />
+        <StatPill icon={Users} label={`Total Pemilih ${activeYear}`} value={grandTotal} />
         <StatPill icon={ListChecks} label="Total TPS" value={totalTps} />
         <StatPill icon={MapPin} label="Total Kelurahan" value={kelurahanList.length} />
       </div>
@@ -119,7 +197,7 @@ const PemilihData2024 = () => {
                       <thead>
                         <tr>
                           <th style={{ width: 100 }}>TPS</th>
-                          <th>Jumlah Pemilih 2024</th>
+                          <th>Jumlah Pemilih {activeYear}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -160,4 +238,4 @@ const PemilihData2024 = () => {
   );
 };
 
-export default PemilihData2024;
+export default PemilihDataDpt;
