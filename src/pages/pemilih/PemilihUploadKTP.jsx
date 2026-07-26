@@ -176,6 +176,24 @@ const PemilihUploadKTP = () => {
     }
     setSaving(true);
     try {
+      // Cek duplikat: NIK sama, atau nama+tanggal lahir sama (kemungkinan NIK salah baca OCR).
+      const { data: dupe, error: dupeError } = await supabase.rpc('pemilih_check_duplicate', {
+        p_nik: form.nik || null,
+        p_nama: form.nama,
+        p_tanggal_lahir: form.tanggal_lahir || null,
+      });
+      if (dupeError) throw new Error(`Gagal cek duplikat: ${dupeError.message}`);
+      if (dupe && dupe.length > 0) {
+        const { match_type, petugas_nama } = dupe[0];
+        const dupeErr = new Error(
+          match_type === 'nik'
+            ? `Data dengan NIK ini sudah diinput oleh ${petugas_nama}.`
+            : `Data dengan nama & tanggal lahir yang sama sudah diinput oleh ${petugas_nama} (kemungkinan NIK salah terbaca saat scan).`
+        );
+        dupeErr.isDuplicate = true;
+        throw dupeErr;
+      }
+
       let fotoPath = null;
       if (file) {
         const safeName = (form.nik || form.nama || 'ktp').replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -212,7 +230,7 @@ const PemilihUploadKTP = () => {
       toast({ title: 'Data pemilih tersimpan' });
       resetAll();
     } catch (err) {
-      toast({ title: 'Gagal menyimpan', description: err.message, variant: 'destructive' });
+      toast({ title: err.isDuplicate ? 'Data Sudah Ada' : 'Gagal menyimpan', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

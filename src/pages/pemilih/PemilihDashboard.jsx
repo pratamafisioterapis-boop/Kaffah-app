@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles, BarChart3, PieChart as PieChartIcon, Vote } from 'lucide-react';
+import { Loader2, Users, ThumbsUp, ThumbsDown, HelpCircle, TrendingUp, MapPin, Sparkles, BarChart3, PieChart as PieChartIcon, Vote, UserCheck } from 'lucide-react';
 
 const KATEGORI_LABEL = {
   pendukung: { label: 'Pendukung', color: '#16a34a' },
@@ -58,6 +58,7 @@ const PemilihDashboard = () => {
   const [kelurahanMap, setKelurahanMap] = useState({});
   const [timSuksesTotalTarget, setTimSuksesTotalTarget] = useState(0);
   const [dptRows, setDptRows] = useState([]);
+  const [relawanStats, setRelawanStats] = useState([]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -87,6 +88,9 @@ const PemilihDashboard = () => {
 
       const { data: dpt } = await supabase.from('pemilih_tps').select('kelurahan_id, jumlah_dpt_2024');
       setDptRows(dpt || []);
+
+      const { data: relawan } = await supabase.rpc('pemilih_relawan_contribution_stats');
+      setRelawanStats(relawan || []);
 
       setLoading(false);
     };
@@ -311,6 +315,54 @@ const PemilihDashboard = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      <div className="p-card" style={{ padding: 24, marginBottom: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <UserCheck size={15} color="#059669" />
+            </div>
+            <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Kontribusi Relawan</h3>
+          </div>
+          <Link to="/pemilih/setup?tab=relawan" style={{ fontSize: 12, fontWeight: 700, color: '#059669', textDecoration: 'none' }}>
+            Kelola akun relawan →
+          </Link>
+        </div>
+        <p style={{ margin: '4px 0 18px 38px', fontSize: 11.5, color: '#9ca3af' }}>
+          Jumlah data pemilih yang sudah diinput tiap relawan, diurutkan dari terbanyak.
+        </p>
+        {relawanStats.length === 0 ? (
+          <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada akun relawan.</p>
+        ) : (
+          <div className="p-table-wrap">
+            <table className="p-table">
+              <thead>
+                <tr>
+                  <th>Relawan</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Data Diinput</th>
+                </tr>
+              </thead>
+              <tbody>
+                {relawanStats.map((r) => (
+                  <tr key={r.relawan_id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{r.nama}</div>
+                      <div style={{ color: '#94a3b8', fontSize: 11.5, fontFamily: 'monospace' }}>{r.username}</div>
+                    </td>
+                    <td>
+                      <span className="p-badge" style={{ background: r.is_active ? '#ecfdf5' : '#f4f5f7', color: r.is_active ? '#059669' : '#6b7280' }}>
+                        {r.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 800, fontSize: 15, color: '#1a1d29' }}>{Number(r.jumlah_input).toLocaleString('id-ID')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
