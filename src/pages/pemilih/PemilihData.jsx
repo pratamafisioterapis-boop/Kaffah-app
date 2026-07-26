@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, Pencil, Trash2, X, Check, CreditCard, ImageOff, Download, Users } from 'lucide-react';
+import { Loader2, Search, Pencil, Trash2, X, Check, CreditCard, ImageOff, Download, Users, ArrowRightLeft } from 'lucide-react';
 import PemilihSelect from './PemilihSelect';
 
 const KATEGORI_LABEL = {
@@ -13,6 +14,7 @@ const KATEGORI_LABEL = {
 };
 
 const PemilihData = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -24,14 +26,30 @@ const PemilihData = () => {
   const pageSize = 25;
   const [kelurahanList, setKelurahanList] = useState([]);
   const [kategoriProgramList, setKategoriProgramList] = useState([]);
+  const [relawanList, setRelawanList] = useState([]);
   const [editRow, setEditRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const [viewingKtp, setViewingKtp] = useState(null);
+  const [moveRow, setMoveRow] = useState(null);
+  const [moveTargetUserId, setMoveTargetUserId] = useState('');
+  const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     supabase.from('pemilih_kelurahan').select('id, nama').order('nama').then(({ data }) => setKelurahanList(data || []));
     supabase.from('pemilih_kategori_program').select('id, nama').order('nama').then(({ data }) => setKategoriProgramList(data || []));
+    supabase.from('pemilih_relawan').select('user_id, nama, username').order('nama').then(({ data }) => setRelawanList(data || []));
   }, []);
+
+  const relawanByUserId = useMemo(() => {
+    const map = {};
+    relawanList.forEach((r) => { map[r.user_id] = r; });
+    return map;
+  }, [relawanList]);
+
+  const petugasLabel = (petugasInput) => {
+    if (!petugasInput) return '-';
+    return relawanByUserId[petugasInput]?.nama || 'Admin';
+  };
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -39,7 +57,7 @@ const PemilihData = () => {
     const to = from + pageSize - 1;
     let query = supabase
       .from('pemilih_data')
-      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, kategori_program_id, tps, foto_ktp_path, pemilih_kelurahan(nama), pemilih_kategori_program(nama)', { count: 'exact' })
+      .select('id, nama, nik, jenis_kelamin, alamat, rt, rw, no_hp, kategori_dukungan, kategori_program_id, tps, foto_ktp_path, petugas_input, pemilih_kelurahan(nama), pemilih_kategori_program(nama)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -90,6 +108,24 @@ const PemilihData = () => {
     }
     toast({ title: 'Data dihapus' });
     fetchRows();
+  };
+
+  const openMove = (row) => { setMoveRow(row); setMoveTargetUserId(''); };
+
+  const handleMove = async () => {
+    if (!moveTargetUserId) {
+      toast({ title: 'Pilih tujuan pemindahan', variant: 'destructive' });
+      return;
+    }
+    setMoving(true);
+    const { error } = await supabase.from('pemilih_data').update({ petugas_input: moveTargetUserId }).eq('id', moveRow.id);
+    if (error) toast({ title: 'Gagal memindahkan', description: error.message, variant: 'destructive' });
+    else {
+      toast({ title: `Data "${moveRow.nama}" dipindahkan ke ${petugasLabel(moveTargetUserId)}` });
+      setMoveRow(null);
+      fetchRows();
+    }
+    setMoving(false);
   };
 
   const openKtp = async (row) => {
@@ -165,6 +201,7 @@ const PemilihData = () => {
                     <th>Wilayah</th>
                     <th>Kategori</th>
                     <th>Program</th>
+                    <th>Diinput Oleh</th>
                     <th style={{ textAlign: 'center' }}>KTP</th>
                     <th></th>
                   </tr>
@@ -193,6 +230,9 @@ const PemilihData = () => {
                       <td style={{ color: '#4b5563' }}>
                         {r.pemilih_kategori_program?.nama || '-'}
                       </td>
+                      <td style={{ color: '#4b5563' }}>
+                        {petugasLabel(r.petugas_input)}
+                      </td>
                       <td style={{ textAlign: 'center' }}>
                         {r.foto_ktp_path ? (
                           <button
@@ -209,6 +249,7 @@ const PemilihData = () => {
                         )}
                       </td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => openMove(r)} style={{ marginRight: 10, color: '#7c3aed', padding: 4 }} title="Pindahkan ke relawan lain"><ArrowRightLeft size={15} /></button>
                         <button onClick={() => openEdit(r)} style={{ marginRight: 10, color: '#2563eb', padding: 4 }}><Pencil size={15} /></button>
                         <button onClick={() => deleteRow(r.id)} style={{ color: '#dc2626', padding: 4 }}><Trash2 size={15} /></button>
                       </td>
@@ -242,6 +283,8 @@ const PemilihData = () => {
                   {r.pemilih_kategori_program?.nama && (
                     <span style={{ color: '#9ca3af' }}> · {r.pemilih_kategori_program.nama}</span>
                   )}
+                  <br />
+                  <span style={{ color: '#9ca3af' }}>Diinput oleh: {petugasLabel(r.petugas_input)}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #f1f1f3' }}>
                   {r.foto_ktp_path && (
@@ -253,6 +296,9 @@ const PemilihData = () => {
                       <CreditCard size={13} /> KTP
                     </button>
                   )}
+                  <button onClick={() => openMove(r)} className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12, color: '#7c3aed' }}>
+                    <ArrowRightLeft size={13} /> Pindah
+                  </button>
                   <button onClick={() => openEdit(r)} className="p-btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px 10px', fontSize: 12, color: '#2563eb' }}>
                     <Pencil size={13} /> Edit
                   </button>
@@ -323,6 +369,33 @@ const PemilihData = () => {
               style={{ width: '100%', borderRadius: 12, border: '1px solid #e8e9ec', display: 'block', boxShadow: '0 4px 12px rgba(16,24,40,0.08)' }}
             />
             {React.createElement('a', downloadBtnProps, React.createElement(Download, { size: 16 }), ' Download')}
+          </div>
+        </div>
+      )}
+
+      {moveRow && (
+        <div className="p-modal-overlay" onClick={() => setMoveRow(null)}>
+          <div className="p-modal" style={{ padding: 26, width: 420, maxWidth: '90vw' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 15.5 }}>Pindahkan Data Pemilih</h3>
+              <button onClick={() => setMoveRow(null)} style={{ color: '#9ca3af' }}><X size={19} /></button>
+            </div>
+            <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
+              Data <b>{moveRow.nama}</b> — saat ini diinput oleh <b>{petugasLabel(moveRow.petugas_input)}</b>.
+            </p>
+            <PemilihSelect
+              value={moveTargetUserId}
+              onChange={setMoveTargetUserId}
+              options={[
+                { value: user?.id, label: 'Admin (saya)' },
+                ...relawanList.filter((r) => r.user_id !== moveRow.petugas_input).map((r) => ({ value: r.user_id, label: `${r.nama} (@${r.username})` })),
+              ]}
+              placeholder="Pilih tujuan pemindahan"
+              title="Pindahkan ke"
+            />
+            <button className="p-btn-primary" style={{ marginTop: 18, width: '100%', justifyContent: 'center' }} onClick={handleMove} disabled={moving}>
+              {moving ? <Loader2 className="animate-spin" size={16} /> : <ArrowRightLeft size={16} />} Pindahkan
+            </button>
           </div>
         </div>
       )}
