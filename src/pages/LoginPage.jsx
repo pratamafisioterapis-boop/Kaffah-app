@@ -96,6 +96,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Pemilih relawan status...");
+          const { data: relawanFallback } = await supabase
+            .from('pemilih_relawan')
+            .select('user_id, is_active')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (relawanFallback?.is_active) {
+            console.log("[LoginPage] Pemilih relawan detected, redirecting.");
+            navigate('/relawan', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Validating fallback metadata role...");
           // Fallback: Check metadata
           const metaRole = user.user_metadata?.role;
@@ -137,6 +150,19 @@ const LoginPage = () => {
         if (pemilihAdmin) {
           console.log("[LoginPage] Pemilih admin detected, redirecting.");
           navigate('/pemilih', { replace: true });
+          return;
+        }
+
+        console.log("[LoginPage] Checking Pemilih relawan status...");
+        const { data: relawan } = await supabase
+          .from('pemilih_relawan')
+          .select('user_id, is_active')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (relawan?.is_active) {
+          console.log("[LoginPage] Pemilih relawan detected, redirecting.");
+          navigate('/relawan', { replace: true });
           return;
         }
 
@@ -221,7 +247,12 @@ case 'clinic_admin':
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(email, password);
+      // Relawan login pakai username (tanpa "@"), diterjemahkan ke email sintetis
+      // yang dibuat saat akunnya dibuat lewat menu Setup > Akun Relawan.
+      const loginEmail = email.includes('@')
+        ? email
+        : `${email.trim().toLowerCase()}@relawan.pemilih.local`;
+      const { error } = await signIn(loginEmail, password);
       if (error) {
           throw error;
       }
@@ -324,12 +355,14 @@ case 'clinic_admin':
                 <div className="space-y-5">
                   <div className="group relative">
                     <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                      type="email" 
+                    <input
+                      type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
-                      placeholder="Email Address"
+                      placeholder="Email atau Username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
                       required
                     />
                   </div>
