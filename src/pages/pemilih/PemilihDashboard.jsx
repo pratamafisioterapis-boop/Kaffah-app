@@ -86,7 +86,7 @@ const PemilihDashboard = () => {
       const { data: tim } = await supabase.from('pemilih_tim_sukses').select('target_suara');
       setTimSuksesTotalTarget((tim || []).reduce((sum, t) => sum + (t.target_suara || 0), 0));
 
-      const { data: dpt } = await supabase.from('pemilih_tps').select('kelurahan_id, jumlah_dpt_2024');
+      const { data: dpt } = await supabase.from('pemilih_dpt_periode').select('tahun, jumlah, pemilih_tps(kelurahan_id)');
       setDptRows(dpt || []);
 
       const { data: relawan } = await supabase.rpc('pemilih_relawan_contribution_stats');
@@ -121,17 +121,26 @@ const PemilihDashboard = () => {
     return Object.values(agg).sort((a, b) => b.total - a.total);
   }, [rawRows, kelurahanMap]);
 
-  const dpt2024Total = useMemo(() => dptRows.reduce((sum, t) => sum + (t.jumlah_dpt_2024 || 0), 0), [dptRows]);
+  const dptLatestYear = useMemo(() => {
+    const years = dptRows.map((t) => t.tahun);
+    return years.length ? Math.max(...years) : null;
+  }, [dptRows]);
 
-  const dpt2024PerKelurahan = useMemo(() => {
+  const dptLatestRows = useMemo(() => dptRows.filter((t) => t.tahun === dptLatestYear), [dptRows, dptLatestYear]);
+
+  const dptLatestTotal = useMemo(() => dptLatestRows.reduce((sum, t) => sum + (t.jumlah || 0), 0), [dptLatestRows]);
+
+  const dptLatestPerKelurahan = useMemo(() => {
     const agg = {};
     Object.entries(kelurahanMap).forEach(([id, nama]) => { agg[id] = { nama, total: 0 }; });
-    dptRows.forEach((t) => {
-      if (!agg[t.kelurahan_id]) agg[t.kelurahan_id] = { nama: kelurahanMap[t.kelurahan_id] || 'Belum Diketahui', total: 0 };
-      agg[t.kelurahan_id].total += t.jumlah_dpt_2024 || 0;
+    dptLatestRows.forEach((t) => {
+      const kelurahanId = t.pemilih_tps?.kelurahan_id;
+      if (!kelurahanId) return;
+      if (!agg[kelurahanId]) agg[kelurahanId] = { nama: kelurahanMap[kelurahanId] || 'Belum Diketahui', total: 0 };
+      agg[kelurahanId].total += t.jumlah || 0;
     });
     return Object.values(agg).sort((a, b) => b.total - a.total);
-  }, [dptRows, kelurahanMap]);
+  }, [dptLatestRows, kelurahanMap]);
 
   const kelurahanPrioritas = useMemo(() => {
     return perKelurahan
@@ -181,7 +190,7 @@ const PemilihDashboard = () => {
         <StatCard icon={HelpCircle} label="Simpatisan" value={stats.simpatisan} color="#2563eb" bg="#eff6ff" accentBar="linear-gradient(90deg,#60a5fa,#2563eb)" />
         <StatCard icon={ThumbsDown} label="Tidak Mendukung" value={stats.tidak_mendukung} color="#dc2626" bg="#fef2f2" accentBar="linear-gradient(90deg,#f87171,#dc2626)" />
         <StatCard icon={TrendingUp} label="Target Suara Tim Sukses" value={timSuksesTotalTarget} color="#d97706" bg="#fffbeb" accentBar="linear-gradient(90deg,#fbbf24,#d97706)" />
-        <StatCard icon={Vote} label="Total Pemilih 2024 (DPT)" value={dpt2024Total} color="#7c3aed" bg="#f5f3ff" accentBar="linear-gradient(90deg,#a78bfa,#7c3aed)" />
+        <StatCard icon={Vote} label={`Total Pemilih ${dptLatestYear || ''} (DPT)`} value={dptLatestTotal} color="#7c3aed" bg="#f5f3ff" accentBar="linear-gradient(90deg,#a78bfa,#7c3aed)" />
       </div>
 
       <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 26 }}>
@@ -373,21 +382,21 @@ const PemilihDashboard = () => {
             <div style={{ width: 30, height: 30, borderRadius: 9, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Vote size={15} color="#7c3aed" />
             </div>
-            <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Data Pemilih 2024 (DPT) per Kelurahan</h3>
+            <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Data Pemilih {dptLatestYear || ''} (DPT) per Kelurahan</h3>
           </div>
-          <Link to="/pemilih/data-2024" style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textDecoration: 'none' }}>
-            Kelola data 2024 →
+          <Link to="/pemilih/data-dpt" style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textDecoration: 'none' }}>
+            Kelola data DPT →
           </Link>
         </div>
         <p style={{ margin: '4px 0 18px 38px', fontSize: 11.5, color: '#9ca3af' }}>
-          Jumlah pemilih tetap (DPT) 2024 hasil rekap seluruh TPS, diurutkan dari terbanyak.
+          Jumlah pemilih tetap (DPT) {dptLatestYear || ''} hasil rekap seluruh TPS, diurutkan dari terbanyak.
         </p>
-        {dpt2024PerKelurahan.length === 0 ? (
+        {dptLatestPerKelurahan.length === 0 ? (
           <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data kelurahan.</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
-            {dpt2024PerKelurahan.map((w, i) => {
-              const maxTotal = dpt2024PerKelurahan[0].total || 1;
+            {dptLatestPerKelurahan.map((w, i) => {
+              const maxTotal = dptLatestPerKelurahan[0].total || 1;
               const pct = Math.max(6, (w.total / maxTotal) * 100);
               return (
                 <div key={w.nama} className="p-card-hover" style={{

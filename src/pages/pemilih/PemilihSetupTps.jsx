@@ -72,7 +72,7 @@ const PemilihSetupTps = () => {
     <div>
       <h1 className="p-page-title">Setup Jumlah TPS</h1>
       <p className="p-page-subtitle">
-        Atur jumlah TPS untuk setiap kelurahan/desa. Jumlah TPS di tiap kelurahan bisa berbeda-beda. TPS yang dibuat di sini akan muncul di menu <strong>Data 2024</strong> untuk diisi jumlah pemilihnya.
+        Atur jumlah TPS untuk setiap kelurahan/desa. Jumlah TPS di tiap kelurahan bisa berbeda-beda. TPS yang dibuat di sini akan muncul di menu <strong>Data DPT</strong> untuk diisi jumlah pemilihnya per tahun.
       </p>
 
       <div className="p-card" style={{ padding: 20 }}>

@@ -7,7 +7,7 @@ import PemilihData from './PemilihData';
 import PemilihTimSukses from './PemilihTimSukses';
 import PemilihKegiatan from './PemilihKegiatan';
 import PemilihSetup from './PemilihSetup';
-import PemilihData2024 from './PemilihData2024';
+import PemilihDataDpt from './PemilihDataDpt';
 import PemilihExtractPdf from './PemilihExtractPdf';
 
 const PemilihApp = () => {
@@ -18,7 +18,8 @@ const PemilihApp = () => {
         <Route path="/dashboard" element={<PemilihDashboard />} />
         <Route path="/upload-ktp" element={<PemilihUploadKTP />} />
         <Route path="/data" element={<PemilihData />} />
-        <Route path="/data-2024" element={<PemilihData2024 />} />
+        <Route path="/data-dpt" element={<PemilihDataDpt />} />
+        <Route path="/data-2024" element={<Navigate to="/pemilih/data-dpt" replace />} />
         <Route path="/tim-sukses" element={<PemilihTimSukses />} />
         <Route path="/kegiatan" element={<PemilihKegiatan />} />
         <Route path="/setup" element={<PemilihSetup />} />
