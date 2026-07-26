@@ -1,14 +1,16 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Tag, ListChecks } from 'lucide-react';
+import { MapPin, Tag, ListChecks, UserPlus } from 'lucide-react';
 import PemilihWilayahPanel from './PemilihWilayah';
 import PemilihKategoriProgramPanel from './PemilihKategoriProgram';
 import PemilihSetupTps from './PemilihSetupTps';
+import PemilihRelawanAkun from './PemilihRelawanAkun';
 
 const TABS = [
   { key: 'wilayah', label: 'Wilayah', icon: MapPin },
   { key: 'kategori', label: 'Kategori Program', icon: Tag },
   { key: 'tps', label: 'Jumlah TPS', icon: ListChecks },
+  { key: 'relawan', label: 'Akun Relawan', icon: UserPlus },
 ];
 
 const PemilihSetup = () => {
@@ -49,6 +51,7 @@ const PemilihSetup = () => {
       {activeTab === 'wilayah' && <PemilihWilayahPanel />}
       {activeTab === 'kategori' && <PemilihKategoriProgramPanel />}
       {activeTab === 'tps' && <PemilihSetupTps />}
+      {activeTab === 'relawan' && <PemilihRelawanAkun />}
     </div>
   );
 };
