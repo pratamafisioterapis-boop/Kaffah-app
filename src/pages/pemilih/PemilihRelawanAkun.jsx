@@ -22,7 +22,6 @@ const PemilihRelawanAkun = () => {
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState(emptyForm);
-  const [credentialsTouched, setCredentialsTouched] = useState(false);
   const [resetTarget, setResetTarget] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetSaving, setResetSaving] = useState(false);
@@ -58,7 +57,6 @@ const PemilihRelawanAkun = () => {
     } else {
       toast({ title: 'Akun relawan dibuat' });
       setForm(emptyForm);
-      setCredentialsTouched(false);
       fetchAll();
     }
     setSaving(false);
@@ -118,7 +116,7 @@ const PemilihRelawanAkun = () => {
             value={form.nama}
             onChange={(e) => {
               const nama = e.target.value;
-              setForm((prev) => (credentialsTouched ? { ...prev, nama } : { ...prev, nama, ...deriveDefaults(nama) }));
+              setForm((prev) => ({ ...prev, nama, ...deriveDefaults(nama) }));
             }}
           />
           <input style={inputStyle} placeholder="No. HP" value={form.no_hp} onChange={(e) => setForm({ ...form, no_hp: e.target.value })} />
@@ -127,10 +125,7 @@ const PemilihRelawanAkun = () => {
             style={inputStyle}
             placeholder="Username, atau email lengkap"
             value={form.username}
-            onChange={(e) => {
-              setCredentialsTouched(true);
-              setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._@-]/g, '') });
-            }}
+            onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._@-]/g, '') })}
           />
           <div style={{ position: 'relative' }}>
             <input
@@ -138,10 +133,7 @@ const PemilihRelawanAkun = () => {
               type={showPassword ? 'text' : 'password'}
               placeholder="Password (min. 6 karakter)"
               value={form.password}
-              onChange={(e) => {
-                setCredentialsTouched(true);
-                setForm({ ...form, password: e.target.value });
-              }}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
             <button
               type="button"
@@ -153,7 +145,7 @@ const PemilihRelawanAkun = () => {
           </div>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
-          Username & password otomatis terisi dari nama depan (mis. "Umi Sari" → username <code>umi@tim.com</code>, password <code>umi123</code>) — bisa diedit manual kalau perlu.
+          Username & password otomatis mengikuti nama depan selama diketik (mis. "Umi Sari" → username <code>umi@tim.com</code>, password <code>umi123</code>). Kalau diedit manual, isikan Nama dulu sampai selesai baru sesuaikan username/password — karena mengubah Nama lagi akan menimpanya ulang.
         </p>
         <button className="p-btn-primary" style={{ marginTop: 14 }} onClick={handleAdd} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} Tambah Akun Relawan
