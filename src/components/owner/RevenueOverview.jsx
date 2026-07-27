@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
 import { useToast } from '@/components/ui/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import {
   DollarSign, TrendingUp, TrendingDown,
   AlertTriangle, RefreshCw, Loader2, Plus,
@@ -83,10 +83,9 @@ const RevenueOverview = ({ dateRange }) => {
     pkgRecaps: [],
   });
   const [serviceRates, setServiceRates] = useState([]);
-  // Financial Health Overview & KPI di atas memakai logika biaya yang sama
-  // dengan widget Break Even Point (fixed cost + pengeluaran + transport +
-  // insentif terapis), tapi mengikuti date filter yang dipilih di halaman ini
-  // — lihat getBepFinancials(dateRange) di src/lib/api.js.
+  // Financial Health Overview & KPI di atas memakai angka yang sama dengan
+  // widget Break Even Point (bulan berjalan) — bukan angka dateRange yang
+  // bisa dipilih bebas — supaya kedua ringkasan selalu konsisten satu sama lain.
   const [bepFinancials, setBepFinancials] = useState(null);
 
   const fetchData = async (silent = false) => {
@@ -117,7 +116,7 @@ const RevenueOverview = ({ dateRange }) => {
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
         getServiceRates(),
-        getBepFinancials(dateRange),
+        getBepFinancials(),
       ]);
       setBepFinancials(bepRes?.data || null);
 // Fetch dana paket aktif
@@ -407,7 +406,7 @@ const RevenueOverview = ({ dateRange }) => {
                 </div>
               </div>
               <p className="text-slate-400 text-xs mb-4">
-                {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
+                {format(startOfMonth(new Date()), 'dd MMM yyyy')} — {format(endOfMonth(new Date()), 'dd MMM yyyy')} (bulan berjalan, sama seperti Break Even Point)
               </p>
               <div className="mt-2">
                 <div className="flex justify-between text-[11px] mb-1.5">
