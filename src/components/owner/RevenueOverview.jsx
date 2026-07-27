@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
+import ProfitMarginTrendWidget from '@/components/owner/ProfitMarginTrendWidget';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -440,6 +441,9 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── Break Even Point ── */}
       <BreakEvenPointWidget />
+
+      {/* ── Tren Margin Profit Bulanan ── */}
+      <ProfitMarginTrendWidget />
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
