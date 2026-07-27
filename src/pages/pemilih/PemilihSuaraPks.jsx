@@ -114,11 +114,12 @@ const PemilihSuaraPks = () => {
   const [rows, setRows] = useState([]);
   const [kelurahanList, setKelurahanList] = useState([]);
   const [filterKelurahan, setFilterKelurahan] = useState('');
+  const [selectedYear, setSelectedYear] = useState(null);
 
   const fetchAll = async () => {
     setLoading(true);
     const [{ data: suara }, { data: kel }] = await Promise.all([
-      supabase.from('pemilih_suara_caleg').select('id, kelurahan_id, candidate_number, candidate_name, total_suara, sheet_info, updated_at').order('candidate_number'),
+      supabase.from('pemilih_suara_caleg').select('id, kelurahan_id, candidate_number, candidate_name, total_suara, sheet_info, updated_at, election_year').order('candidate_number'),
       supabase.from('pemilih_kelurahan').select('id, nama').order('nama'),
     ]);
     setRows(suara || []);
@@ -128,18 +129,32 @@ const PemilihSuaraPks = () => {
 
   useEffect(() => { fetchAll(); }, []);
 
+  const availableYears = useMemo(() => {
+    const years = new Set(rows.map((r) => r.election_year));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [rows]);
+
+  useEffect(() => {
+    if (selectedYear === null && availableYears.length > 0) setSelectedYear(availableYears[0]);
+  }, [availableYears, selectedYear]);
+
   const kelurahanMap = useMemo(() => {
     const map = {};
     kelurahanList.forEach((k) => { map[k.id] = k.nama; });
     return map;
   }, [kelurahanList]);
 
-  const filteredRows = useMemo(
-    () => (filterKelurahan ? rows.filter((r) => r.kelurahan_id === filterKelurahan) : rows),
-    [rows, filterKelurahan]
+  const yearRows = useMemo(
+    () => rows.filter((r) => r.election_year === selectedYear),
+    [rows, selectedYear]
   );
 
-  const kelurahanTercakup = useMemo(() => new Set(rows.map((r) => r.kelurahan_id)), [rows]);
+  const filteredRows = useMemo(
+    () => (filterKelurahan ? yearRows.filter((r) => r.kelurahan_id === filterKelurahan) : yearRows),
+    [yearRows, filterKelurahan]
+  );
+
+  const kelurahanTercakup = useMemo(() => new Set(yearRows.map((r) => r.kelurahan_id)), [yearRows]);
 
   const totalSuaraPartai = useMemo(
     () => filteredRows.reduce((sum, r) => sum + (r.total_suara || 0), 0),
@@ -191,24 +206,25 @@ const PemilihSuaraPks = () => {
 
   const perKelurahanTotal = useMemo(() => {
     const agg = {};
-    rows.forEach((r) => {
+    yearRows.forEach((r) => {
       const nama = kelurahanMap[r.kelurahan_id] || 'Belum Diketahui';
       agg[nama] = (agg[nama] || 0) + (r.total_suara || 0);
     });
     return Object.entries(agg).map(([nama, total]) => ({ nama, total })).sort((a, b) => b.total - a.total);
-  }, [rows, kelurahanMap]);
+  }, [yearRows, kelurahanMap]);
 
-  // Daftar caleg induk (nomor + nama) dari data yang sudah ada, dipakai sebagai
+  // Daftar caleg induk (nomor + nama) untuk tahun terpilih, dipakai sebagai
   // acuan kolom di tab Detail per TPS supaya urutannya konsisten antar kelurahan.
+  // Nomor & nama caleg bisa berbeda antar tahun pemilu, jadi harus per tahun.
   const candidateMasterList = useMemo(() => {
     const map = new Map();
-    rows.forEach((r) => {
+    yearRows.forEach((r) => {
       if (!map.has(r.candidate_number)) {
         map.set(r.candidate_number, { number: r.candidate_number, name: r.candidate_name || 'Suara Partai' });
       }
     });
     return Array.from(map.values()).sort((a, b) => a.number - b.number);
-  }, [rows]);
+  }, [yearRows]);
 
   return (
     <div>
@@ -260,6 +276,28 @@ const PemilihSuaraPks = () => {
         })}
       </div>
 
+      {availableYears.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Tahun Pemilu:</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {availableYears.map((y) => (
+              <button
+                key={y}
+                onClick={() => setSelectedYear(y)}
+                style={{
+                  padding: '7px 16px', borderRadius: 999, border: '1.5px solid ' + (selectedYear === y ? '#059669' : 'var(--p-border)'),
+                  background: selectedYear === y ? '#ecfdf5' : '#fff',
+                  color: selectedYear === y ? '#059669' : '#6b7280',
+                  fontWeight: 800, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
+                }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {tab === 'dashboard' ? (
         loading ? (
           <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#059669" /></div>
@@ -288,10 +326,11 @@ const PemilihSuaraPks = () => {
           kelurahanList={kelurahanList}
           kelurahanTercakup={kelurahanTercakup}
           candidateMasterList={candidateMasterList}
+          selectedYear={selectedYear}
           toast={toast}
         />
       ) : (
-        <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} />
+        <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
       )}
     </div>
   );
@@ -483,7 +522,7 @@ const PksDashboard = ({
   );
 };
 
-const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, toast }) => {
+const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, selectedYear, toast }) => {
   const availableKelurahan = useMemo(
     () => kelurahanList.filter((k) => kelurahanTercakup.has(k.id)),
     [kelurahanList, kelurahanTercakup]
@@ -500,13 +539,14 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, t
   }, [availableKelurahan, kelurahanId]);
 
   useEffect(() => {
-    if (!kelurahanId) return;
+    if (!kelurahanId || !selectedYear) return;
     let active = true;
     setLoading(true);
     supabase
       .from('pemilih_suara_caleg_tps')
       .select('tps_number, candidate_number, candidate_name, votes')
       .eq('kelurahan_id', kelurahanId)
+      .eq('election_year', selectedYear)
       .order('tps_number')
       .then(({ data, error }) => {
         if (!active) return;
@@ -520,7 +560,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, t
         setLoading(false);
       });
     return () => { active = false; };
-  }, [kelurahanId, toast]);
+  }, [kelurahanId, selectedYear, toast]);
 
   const table = useMemo(() => {
     const byTps = new Map();
@@ -663,11 +703,13 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, t
   );
 };
 
-const PksUpload = ({ kelurahanList, onSaved, toast }) => {
+const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
   const fileInputRef = useRef(null);
   const cancelRef = useRef(false);
 
   const [kelurahanId, setKelurahanId] = useState('');
+  const [electionYear, setElectionYear] = useState(defaultYear || 2024);
+  useEffect(() => { if (defaultYear) setElectionYear(defaultYear); }, [defaultYear]);
   const [file, setFile] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [pageFrom, setPageFrom] = useState(1);
@@ -834,10 +876,11 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
         total_suara: it.total,
         source_file_name: file?.name || null,
         sheet_info: pksResult.sheetInfo,
+        election_year: electionYear,
         updated_by: authData?.user?.id || null,
         updated_at: new Date().toISOString(),
       }));
-    const { error } = await supabase.from('pemilih_suara_caleg').upsert(payload, { onConflict: 'kelurahan_id,candidate_number' });
+    const { error } = await supabase.from('pemilih_suara_caleg').upsert(payload, { onConflict: 'kelurahan_id,candidate_number,election_year' });
     if (error) {
       setSaving(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
@@ -855,13 +898,14 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
           candidate_number: it.candidateNumber ?? 0,
           candidate_name: it.candidateName,
           votes,
+          election_year: electionYear,
         });
       });
     });
     for (let i = 0; i < tpsPayload.length; i += 500) {
       const { error: tpsError } = await supabase
         .from('pemilih_suara_caleg_tps')
-        .upsert(tpsPayload.slice(i, i + 500), { onConflict: 'kelurahan_id,tps_number,candidate_number' });
+        .upsert(tpsPayload.slice(i, i + 500), { onConflict: 'kelurahan_id,tps_number,candidate_number,election_year' });
       if (tpsError) {
         setSaving(false);
         toast({ variant: 'destructive', title: 'Total tersimpan, tapi rincian per TPS gagal', description: tpsError.message });
@@ -878,15 +922,27 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
   return (
     <div>
       <div className="p-card" style={{ padding: 20, marginBottom: 20 }}>
-        <label className="p-label">Data ini untuk kelurahan mana?</label>
-        <PemilihSelect
-          value={kelurahanId}
-          onChange={setKelurahanId}
-          options={kelurahanList.map((k) => ({ value: k.id, label: k.nama }))}
-          placeholder="Pilih Kelurahan"
-          title="Pilih Kelurahan"
-          style={{ maxWidth: 320 }}
-        />
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <label className="p-label">Data ini untuk kelurahan mana?</label>
+            <PemilihSelect
+              value={kelurahanId}
+              onChange={setKelurahanId}
+              options={kelurahanList.map((k) => ({ value: k.id, label: k.nama }))}
+              placeholder="Pilih Kelurahan"
+              title="Pilih Kelurahan"
+            />
+          </div>
+          <div style={{ width: 140 }}>
+            <label className="p-label">Tahun Pemilu</label>
+            <PemilihSelect
+              value={String(electionYear)}
+              onChange={(v) => setElectionYear(Number(v))}
+              options={[2019, 2024].map((y) => ({ value: String(y), label: String(y) }))}
+              title="Pilih Tahun"
+            />
+          </div>
+        </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 16 }}>
           <button className="p-btn-ghost" onClick={() => fileInputRef.current?.click()} disabled={processing}>
