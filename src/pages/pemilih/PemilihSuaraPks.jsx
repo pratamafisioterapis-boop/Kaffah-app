@@ -11,6 +11,7 @@ import PemilihSelect from './PemilihSelect';
 import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
+  Pencil, Plus,
 } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -533,14 +534,16 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
   const [loading, setLoading] = useState(false);
   const [tpsRows, setTpsRows] = useState([]);
   const [hasData, setHasData] = useState(true);
+  const [editingTps, setEditingTps] = useState(null); // { tps, values: { [candidate_number]: votes } } atau null
+  const [addingTps, setAddingTps] = useState(false);
+  const [savingTps, setSavingTps] = useState(false);
 
   useEffect(() => {
     if (!kelurahanId && availableKelurahan.length > 0) setKelurahanId(availableKelurahan[0].id);
   }, [availableKelurahan, kelurahanId]);
 
-  useEffect(() => {
+  const reloadTpsRows = React.useCallback(() => {
     if (!kelurahanId || !selectedYear) return;
-    let active = true;
     setLoading(true);
     supabase
       .from('pemilih_suara_caleg_tps')
@@ -549,7 +552,6 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
       .eq('election_year', selectedYear)
       .order('tps_number')
       .then(({ data, error }) => {
-        if (!active) return;
         if (error) {
           toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
           setTpsRows([]);
@@ -559,8 +561,53 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
         }
         setLoading(false);
       });
-    return () => { active = false; };
   }, [kelurahanId, selectedYear, toast]);
+
+  useEffect(() => { reloadTpsRows(); }, [reloadTpsRows]);
+
+  const openEditTps = (row) => {
+    const values = {};
+    candidateMasterList.forEach((c) => { values[c.number] = row.byCandidate[c.number] ?? ''; });
+    setEditingTps({ tps: row.tps, values });
+    setAddingTps(false);
+  };
+
+  const openAddTps = () => {
+    const nextTps = table.length > 0 ? Math.max(...table.map((r) => r.tps)) + 1 : 1;
+    const values = {};
+    candidateMasterList.forEach((c) => { values[c.number] = ''; });
+    setEditingTps({ tps: nextTps, values });
+    setAddingTps(true);
+  };
+
+  const saveEditingTps = async () => {
+    if (!editingTps) return;
+    const tpsNumber = Number(editingTps.tps);
+    if (!tpsNumber || tpsNumber < 1) {
+      toast({ variant: 'destructive', title: 'Nomor TPS tidak valid' });
+      return;
+    }
+    setSavingTps(true);
+    const payload = candidateMasterList.map((c) => ({
+      kelurahan_id: kelurahanId,
+      tps_number: tpsNumber,
+      candidate_number: c.number,
+      candidate_name: c.number === 0 ? null : c.name,
+      votes: Number(editingTps.values[c.number]) || 0,
+      election_year: selectedYear,
+    }));
+    const { error } = await supabase
+      .from('pemilih_suara_caleg_tps')
+      .upsert(payload, { onConflict: 'kelurahan_id,tps_number,candidate_number,election_year' });
+    setSavingTps(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan TPS', description: error.message });
+      return;
+    }
+    toast({ title: `TPS ${String(tpsNumber).padStart(2, '0')} tersimpan` });
+    setEditingTps(null);
+    reloadTpsRows();
+  };
 
   const table = useMemo(() => {
     const byTps = new Map();
@@ -664,7 +711,12 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
           </div>
 
           <div className="p-card" style={{ padding: 24 }}>
-            <CardHeader title="Tabel Rincian per TPS" subtitle="Geser ke samping untuk lihat semua caleg" icon={Table2} iconColor="#2563eb" iconBg="#eff6ff" />
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <CardHeader title="Tabel Rincian per TPS" subtitle="Geser ke samping untuk lihat semua caleg — klik ikon pensil untuk koreksi angka" icon={Table2} iconColor="#2563eb" iconBg="#eff6ff" />
+              <button className="p-btn-ghost" onClick={openAddTps} style={{ flexShrink: 0 }}>
+                <Plus size={14} /> Tambah TPS
+              </button>
+            </div>
             <div className="p-table-wrap">
               <table className="p-table">
                 <thead>
@@ -676,6 +728,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                       </th>
                     ))}
                     <th style={{ textAlign: 'right' }}>Total</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -688,6 +741,11 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                         </td>
                       ))}
                       <td style={{ textAlign: 'right', fontWeight: 800 }}>{r.total.toLocaleString('id-ID')}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button onClick={() => openEditTps(r)} style={{ color: '#2563eb', padding: 4 }} title="Koreksi angka TPS ini">
+                          <Pencil size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -698,6 +756,51 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
             </p>
           </div>
         </>
+      )}
+
+      {editingTps && (
+        <div className="p-modal-overlay" onClick={() => setEditingTps(null)}>
+          <div className="p-modal" style={{ padding: 26, width: 440, maxWidth: '90vw' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 15.5 }}>
+                {addingTps ? 'Tambah TPS' : `Koreksi TPS ${String(editingTps.tps).padStart(2, '0')}`}
+              </h3>
+              <button onClick={() => setEditingTps(null)} style={{ color: '#9ca3af' }}><X size={19} /></button>
+            </div>
+            <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 12.5 }}>
+              {selectedKelurahanName} — Tahun {selectedYear}. Kosongkan/isi 0 kalau tidak ada suara.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {addingTps && (
+                <div>
+                  <label className="p-label">Nomor TPS</label>
+                  <input
+                    type="number" className="p-input" min={1}
+                    value={editingTps.tps}
+                    onChange={(e) => setEditingTps({ ...editingTps, tps: e.target.value })}
+                  />
+                </div>
+              )}
+              <div className="p-scrollbar" style={{ maxHeight: '50vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
+                {candidateMasterList.map((c) => (
+                  <div key={c.number} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label style={{ flex: 1, fontSize: 12.5, color: '#4b5563' }}>
+                      {c.number === 0 ? 'Suara Partai (tanpa calon)' : `${c.number}. ${c.name}`}
+                    </label>
+                    <input
+                      type="number" className="p-input" style={{ width: 90, textAlign: 'right' }} min={0}
+                      value={editingTps.values[c.number]}
+                      onChange={(e) => setEditingTps({ ...editingTps, values: { ...editingTps.values, [c.number]: e.target.value } })}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button className="p-btn-primary" style={{ marginTop: 18, width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #10b981, #059669)' }} onClick={saveEditingTps} disabled={savingTps}>
+              {savingTps ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
