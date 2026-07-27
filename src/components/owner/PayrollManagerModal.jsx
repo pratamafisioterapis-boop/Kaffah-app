@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,6 +15,7 @@ import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
   getTherapistPeriodRange,
 } from '@/lib/utils';
+import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
@@ -50,12 +51,14 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [markingPaidId, setMarkingPaidId] = useState(null);
   const [commissionBreakdown, setCommissionBreakdown] = useState(null);
+  const [soapStatus, setSoapStatus] = useState(null);
 
   useEffect(() => {
     if (open && therapist?.id) {
       setForm(emptyForm(therapist));
       setAttendanceDays(0);
       setCommissionBreakdown(null);
+      setSoapStatus(null);
       fetchRecords();
       fetchClinic();
     }
@@ -125,6 +128,13 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       setAttendanceDays(days);
 
       const therapistRecaps = recapsRes.data || [];
+
+      getUnfilledSOAPVisits(null, therapist.id, startDateStr, endDateStr).then(({ count, error: soapError }) => {
+        if (!soapError) {
+          setSoapStatus({ total: therapistRecaps.length, unfilled: count });
+        }
+      });
+
       let transportAllowance = 0;
       let incentiveAmount = 0;
 
@@ -173,6 +183,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
         custom_commission: commission,
       }));
     } catch (error) {
+      setSoapStatus(null);
       toast({ variant: 'destructive', title: 'Gagal Menghitung Otomatis', description: error.message });
     } finally {
       setCalculatingAuto(false);
@@ -369,6 +380,22 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 </div>
               )}
             </div>
+          )}
+
+          {soapStatus && soapStatus.total > 0 && (
+            soapStatus.unfilled > 0 ? (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>
+                  <strong>{soapStatus.unfilled}</strong> dari {soapStatus.total} sesi pada periode ini belum memiliki catatan SOAP. Mohon lengkapi sebelum slip gaji difinalisasi.
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
+                <ClipboardCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>Semua {soapStatus.total} sesi pada periode ini sudah memiliki catatan SOAP lengkap.</span>
+              </div>
+            )
           )}
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-200">
