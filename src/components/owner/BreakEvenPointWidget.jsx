@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -18,6 +20,13 @@ const formatCurrency = (value) =>
 // supaya widget ini dan ringkasan Financial Health selalu konsisten.
 const BreakEvenPointWidget = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+  // Label periode yang benar-benar dipakai getBepFinancials(): pengeluaran
+  // dihitung tgl 1 bulan ini s/d hari ini, pemasukan tgl 1 s/d akhir bulan.
+  const expensePeriodLabel = `${format(monthStart, 'd MMM', { locale: idLocale })} – ${format(today, 'd MMM yyyy', { locale: idLocale })}`;
+  const revenuePeriodLabel = `${format(monthStart, 'd MMM', { locale: idLocale })} – ${format(monthEnd, 'd MMM yyyy', { locale: idLocale })}`;
   const { userDetails } = useAuth();
   const clinicId = userDetails?.clinic_id;
   const { toast } = useToast();
@@ -135,6 +144,7 @@ const BreakEvenPointWidget = () => {
             <div className="min-w-0">
               <h3 className="text-white font-bold text-base tracking-tight">Break Even Point</h3>
               <p className="text-slate-400 text-xs mt-0.5">Total biaya bulan ini vs total pemasukan bulan ini</p>
+              <p className="text-slate-500 text-[11px] mt-0.5">Per {format(today, 'd MMM yyyy', { locale: idLocale })}</p>
             </div>
           </div>
           <button
@@ -165,11 +175,13 @@ const BreakEvenPointWidget = () => {
                 <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Biaya Bulan Ini</p>
                 <p className="text-lg font-bold text-white tabular-nums break-words">{formatCurrency(totalCost)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">fixed cost + pengeluaran + transport + insentif</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{expensePeriodLabel}</p>
               </div>
               <div className="rounded-xl bg-white/5 border border-white/10 p-4">
                 <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Pemasukan Bulan Ini</p>
                 <p className="text-lg font-bold text-white tabular-nums break-words">{formatCurrency(revenueThisMonth)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">tgl 1 s/d akhir bulan</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{revenuePeriodLabel}</p>
               </div>
             </div>
 
@@ -205,7 +217,7 @@ const BreakEvenPointWidget = () => {
               <div className="flex items-start gap-2 text-xs text-slate-400">
                 <Receipt className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <p>Pengeluaran (s/d hari ini):</p>
+                  <p>Pengeluaran ({expensePeriodLabel}):</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
                 </div>
               </div>
@@ -225,7 +237,7 @@ const BreakEvenPointWidget = () => {
               </div>
             </div>
             <p className="text-[10px] text-slate-500 italic">
-              *Pengeluaran dihitung dari tgl 1 bulan ini s/d hari ini. Transport &amp; insentif terapis dihitung harian dari awal periode gaji masing-masing s/d hari ini.
+              *Pengeluaran dihitung dari {expensePeriodLabel}. Transport &amp; insentif terapis dihitung harian dari awal periode gaji masing-masing s/d {format(today, 'd MMM yyyy', { locale: idLocale })}.
             </p>
           </>
         )}
