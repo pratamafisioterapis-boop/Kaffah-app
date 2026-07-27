@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Edit2, Trash2, Save, Target,
-  Loader2, CheckCircle, CalendarDays
+  Loader2, CheckCircle, CalendarDays, ArrowRightCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,17 +12,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   getActivePhysiotherapists,
-  getAllTherapistTargets, 
-  createTherapistTarget, 
-  updateTherapistTarget, 
+  getAllTherapistTargets,
+  createTherapistTarget,
+  updateTherapistTarget,
   deleteTherapistTarget,
   getOperationalOptions,
-  getTherapistTargetProgress
+  getTherapistTargetProgress,
+  getTherapistSchedules,
+  getTherapistTimeOff
 } from '@/lib/api';
-import { format } from 'date-fns';
-import { getTherapistPeriodRange } from '@/lib/utils';
+import { format, addDays } from 'date-fns';
+import { getTherapistPeriodRange, calculateMaxPatientCapacity, calculateNextPeriodTarget } from '@/lib/utils';
 import SearchableSelect from '@/components/ui/searchable-select';
 
 const TherapistTargetManager = () => {
@@ -35,6 +37,7 @@ const TherapistTargetManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTarget, setEditingTarget] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [generatingId, setGeneratingId] = useState(null);
 
   const [formData, setFormData] = useState({
     therapist_id: '',
@@ -191,6 +194,63 @@ const TherapistTargetManager = () => {
     }
   };
 
+  // Cari apakah target periode berikutnya (mulai tepat 1 hari setelah
+  // item.end_date, untuk terapis yg sama) sudah pernah dibuat.
+  const nextTargetExists = (item) => {
+    const nextStartStr = format(addDays(new Date(item.end_date), 1), 'yyyy-MM-dd');
+    return targets.some(t => t.therapist_id === item.therapist_id && t.start_date === nextStartStr);
+  };
+
+  // Target periode berikutnya = target sekarang + 2% dari kapasitas maksimal
+  // pasien periode ini (jam kerja x 5 pasien/hari) kalau target periode ini
+  // tercapai; kalau belum tercapai, target periode berikutnya disamakan
+  // dengan target periode ini (tidak naik).
+  const handleGenerateNextTarget = async (item) => {
+    setGeneratingId(item.id);
+    try {
+      const therapist = therapists.find(t => t.id === item.therapist_id) || null;
+      const [schedRes, timeOffRes] = await Promise.all([
+        getTherapistSchedules(item.therapist_id),
+        getTherapistTimeOff(item.therapist_id),
+      ]);
+
+      const maxCapacity = calculateMaxPatientCapacity(
+        schedRes.data || [], timeOffRes.data || [], item.start_date, item.end_date
+      );
+      const achieved = (item.actual_visits || 0) >= (item.target_visits || 0) && (item.target_visits || 0) > 0;
+      const nextTargetVisits = calculateNextPeriodTarget({
+        previousTarget: item.target_visits || 0,
+        achieved,
+        maxCapacity,
+      });
+
+      const nextStart = addDays(new Date(item.end_date), 1);
+      const { startDate, endDate } = getTherapistPeriodRange(therapist, nextStart);
+
+      const { error } = await createTherapistTarget({
+        therapist_id: item.therapist_id,
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: format(endDate, 'yyyy-MM-dd'),
+        target_visits: nextTargetVisits,
+        excluded_patient_types: item.excluded_patient_types || [],
+        clinic_id: null,
+      });
+      if (error) throw error;
+
+      toast({
+        title: 'Target Periode Berikutnya Dibuat',
+        description: achieved
+          ? `Target naik jadi ${nextTargetVisits} kunjungan (+2% x kapasitas maksimal ${maxCapacity} pasien, karena target periode ini tercapai).`
+          : `Target disamakan jadi ${nextTargetVisits} kunjungan (target periode ini belum tercapai).`,
+      });
+      fetchData();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal Membuat Target', description: err.message });
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
   const handlePatientTypeToggle = (typeLabel) => {
     setFormData(prev => {
       const current = prev.excluded_patient_types || [];
@@ -336,6 +396,27 @@ const TherapistTargetManager = () => {
                         <Badge variant="outline" className="text-[10px] bg-slate-50 font-normal">+{item.excluded_patient_types.length - 3}</Badge>
                       )}
                     </div>
+                  )}
+
+                  {item.end_date && new Date(item.end_date) < new Date() && (
+                    nextTargetExists(item) ? (
+                      <p className="text-[10px] text-slate-400 pt-3 mt-1 border-t border-slate-100 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3 text-emerald-500" /> Target periode berikutnya sudah dibuat
+                      </p>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={generatingId === item.id}
+                        onClick={() => handleGenerateNextTarget(item)}
+                        className="w-full mt-3 h-8 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                      >
+                        {generatingId === item.id
+                          ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          : <ArrowRightCircle className="w-3.5 h-3.5 mr-1.5" />}
+                        Buat Target Periode Berikutnya
+                      </Button>
+                    )
                   )}
                 </div>
               </div>

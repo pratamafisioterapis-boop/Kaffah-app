@@ -9,7 +9,7 @@ import {
   upsertRemunerationRealization,
   uploadRemunerationProof,
 } from '@/lib/api';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { getTherapistPeriodRange } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import CircularScore from '@/components/shared/CircularScore';
@@ -93,11 +93,30 @@ const TherapistRemuneration = ({ therapist }) => {
   const [report, setReport] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [drafts, setDrafts] = useState({});
+  const [viewingPrevious, setViewingPrevious] = useState(false);
 
-  const period = React.useMemo(() => {
+  const currentPeriod = React.useMemo(() => {
     const { startDate, endDate } = getTherapistPeriodRange(therapist);
-    return { start: format(startDate, 'yyyy-MM-dd'), end: format(endDate, 'yyyy-MM-dd') };
+    return { start: format(startDate, 'yyyy-MM-dd'), end: format(endDate, 'yyyy-MM-dd'), startDateObj: startDate };
   }, [therapist]);
+
+  const previousPeriod = React.useMemo(() => {
+    const { startDate, endDate } = getTherapistPeriodRange(therapist, addDays(currentPeriod.startDateObj, -1));
+    return { start: format(startDate, 'yyyy-MM-dd'), end: format(endDate, 'yyyy-MM-dd') };
+  }, [therapist, currentPeriod]);
+
+  // Terapis masih boleh mengisi realisasi periode sebelumnya sampai batas
+  // tanggal mulai siklus baru (mis. periode 28-27, batasnya tgl 28) — lewat
+  // dari tanggal itu, periode sebelumnya terkunci.
+  const canFillPrevious = React.useMemo(() => {
+    const startDay = therapist?.period_start_day ?? 28;
+    return new Date().getDate() === startDay;
+  }, [therapist]);
+
+  const period = React.useMemo(
+    () => ((viewingPrevious && canFillPrevious) ? previousPeriod : currentPeriod),
+    [viewingPrevious, canFillPrevious, previousPeriod, currentPeriod]
+  );
 
   const fetchReport = useCallback(async () => {
     if (!therapist?.id) return;
@@ -118,6 +137,10 @@ const TherapistRemuneration = ({ therapist }) => {
   }, [therapist, period]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
+
+  useEffect(() => {
+    if (!canFillPrevious && viewingPrevious) setViewingPrevious(false);
+  }, [canFillPrevious, viewingPrevious]);
 
   const handleSaveRealization = async (row) => {
     const draft = drafts[row.id];
@@ -175,6 +198,39 @@ const TherapistRemuneration = ({ therapist }) => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
+      {canFillPrevious && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-2xl p-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800">Hari terakhir mengisi realisasi periode sebelumnya</p>
+            <p className="text-[11px] text-amber-600">
+              Periode {format(new Date(previousPeriod.start), 'dd MMM')} - {format(new Date(previousPeriod.end), 'dd MMM yyyy')} bisa diisi sampai hari ini saja.
+            </p>
+          </div>
+          <div className="flex rounded-xl border border-amber-200 bg-white p-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewingPrevious(false)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                !viewingPrevious ? "bg-amber-600 text-white" : "text-amber-700"
+              )}
+            >
+              Periode Ini
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewingPrevious(true)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors",
+                viewingPrevious ? "bg-amber-600 text-white" : "text-amber-700"
+              )}
+            >
+              Periode Sebelumnya
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-6 md:p-8 shadow-2xl">
         <div className="absolute -top-16 -right-10 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />

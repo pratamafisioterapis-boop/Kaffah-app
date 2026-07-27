@@ -429,6 +429,39 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate)
 }
 
 /**
+ * Kapasitas maksimal pasien dalam 1 periode = jumlah hari kerja (setelah
+ * dikurangi cuti/ijin/libur, lihat calculateAttendanceDays) x kapasitas
+ * maksimal pasien per hari.
+ * @param {Array} schedules - Jadwal aktif terapis (therapist_schedules)
+ * @param {Array} timeOffs - Data cuti/izin terapis (therapist_time_off)
+ * @param {string|Date} startDate - Awal periode
+ * @param {string|Date} endDate - Akhir periode
+ * @param {number} [perDayCapacity=5] - Kapasitas maksimal pasien per hari kerja
+ * @returns {number}
+ */
+export function calculateMaxPatientCapacity(schedules, timeOffs, startDate, endDate, perDayCapacity = 5) {
+  const workDays = calculateAttendanceDays(schedules, timeOffs, startDate, endDate);
+  return workDays * perDayCapacity;
+}
+
+/**
+ * Target kunjungan periode berikutnya berdasarkan capaian periode berjalan:
+ * - Kalau target periode ini TERCAPAI: target baru = target sebelumnya + 2%
+ *   dari kapasitas maksimal pasien periode ini (dibulatkan).
+ * - Kalau BELUM TERCAPAI: target baru = disamakan dengan target sebelumnya.
+ * @param {Object} params
+ * @param {number} params.previousTarget - Target kunjungan periode berjalan
+ * @param {boolean} params.achieved - Apakah target periode berjalan tercapai
+ * @param {number} params.maxCapacity - Kapasitas maksimal pasien periode berjalan (calculateMaxPatientCapacity)
+ * @param {number} [params.bonusPercent=2] - Persentase kenaikan dari kapasitas maksimal
+ * @returns {number}
+ */
+export function calculateNextPeriodTarget({ previousTarget = 0, achieved = false, maxCapacity = 0, bonusPercent = 2 }) {
+  if (!achieved) return previousTarget;
+  return previousTarget + Math.round((bonusPercent / 100) * maxCapacity);
+}
+
+/**
  * Calculates standard full salary (base salary + (transport allowance * days)).
  * @param {number|string} base - Base monthly salary
  * @param {number|string} transport - Transport allowance per day
