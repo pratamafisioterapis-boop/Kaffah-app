@@ -20,10 +20,20 @@ const formatCurrency = (value) =>
 
 const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
 
+// autoPostFixedCosts() menyalin item fixed cost ke owner_expenditures dengan
+// category 'FIXED COST' begitu tanggal postingnya tiba bulan ini. Entri itu
+// harus dibuang dari "pengeluaran" di sini karena nilainya sudah dihitung
+// penuh lewat totalFixedCost — kalau tidak, biaya fixed cost yang sudah
+// terpost akan ketambah dua kali (sekali sebagai fixed cost, sekali lagi
+// sebagai pengeluaran owner).
+const excludeAutoPostedFixedCost = (rows) =>
+  (rows || []).filter(r => (r.category || '').toUpperCase() !== 'FIXED COST');
+
 // BEP itu "sudah balik modal atau belum bulan ini", jadi biayanya harus biaya
 // yang benar-benar sudah/akan terjadi bulan ini — bukan estimasi per pasien:
 // - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
-// - Pengeluaran owner & admin: yang sudah tercatat dari tgl 1 s/d hari ini
+// - Pengeluaran owner & admin: yang sudah tercatat dari tgl 1 s/d hari ini,
+//   di luar fixed cost yang sudah otomatis terpost (lihat excludeAutoPostedFixedCost)
 // - Transport & insentif terapis: dihitung harian dari awal periode s/d hari ini
 // Pemasukan dihitung terpisah: total bulan berjalan (tgl 1 s/d akhir bulan),
 // bukan mengikuti periode gaji terapis.
@@ -78,7 +88,7 @@ const BreakEvenPointWidget = () => {
       getServiceRates()
     ]);
 
-    setOwnerExpense(sumAmount(ownerExpRes.data));
+    setOwnerExpense(sumAmount(excludeAutoPostedFixedCost(ownerExpRes.data)));
     setAdminExpense(sumAmount(adminExpRes.data));
     setRevenueThisMonth(sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data));
 
