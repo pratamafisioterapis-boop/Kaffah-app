@@ -16,6 +16,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 //   2. `party_filter` bikin model cuma menyalin baris partai yang diminta;
 //   3. max_tokens dinaikkan, dan kondisi terpotong (stop_reason max_tokens)
 //      dideteksi eksplisit supaya pesan errornya jelas, bukan "gagal parsing".
+//
+// Catatan: model ini TIDAK mendukung assistant message prefill (percakapan
+// wajib diakhiri pesan role "user"), jadi kalimat pembuka di luar JSON diatasi
+// lewat parseModelJson (ambil objek JSON pertama), bukan lewat prefill "{".
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -202,8 +206,6 @@ Deno.serve(async (req: Request) => {
                 { type: "text", text: "Transkripsikan tabel perolehan suara pada halaman ini menjadi JSON ringkas sesuai format yang ditentukan." },
               ],
             },
-            // Prefill: memaksa jawaban langsung mulai dari JSON, tanpa kalimat pembuka.
-            { role: "assistant", content: "{" },
           ],
         }),
       });
@@ -232,8 +234,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const textBlock = (data.content || []).find((b: any) => b.type === "text");
-    // Prefill "{" tidak ikut dikembalikan model, jadi harus dipasang lagi di depan.
-    const rawText = "{" + (textBlock?.text || "");
+    const rawText = textBlock?.text || "";
     const parsed = parseModelJson(rawText);
 
     if (!parsed || typeof parsed !== "object") {
