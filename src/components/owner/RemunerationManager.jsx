@@ -294,7 +294,9 @@ const RemunerationManager = () => {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-[11px] font-mono text-slate-700">
-                                {row.realizationValue}{row.unit === '%' ? '%' : ''} / {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}
+                                {row.metric_key === 'target_pasien'
+                                  ? `${row.realizationValue} / ${row.targetValue}`
+                                  : <>{row.realizationValue}{row.unit === '%' ? '%' : ''} / {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</>}
                               </p>
                               <p className={cn("text-xs font-bold", achieved ? "text-emerald-600" : "text-amber-600")}>
                                 {row.achievementPercent}%

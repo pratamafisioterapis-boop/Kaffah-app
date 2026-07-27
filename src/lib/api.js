@@ -6573,6 +6573,7 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
       if (c.metric_key === 'target_pasien') {
         realizationValue = targetProgress?.actual_visits || 0;
         targetValue = patientTargetVisits;
+        unit = 'pasien';
       } else if (c.metric_key === 'kehadiran') {
         realizationValue = attendance?.rate || 0;
       } else if (c.metric_key === 'kelengkapan_soap') {

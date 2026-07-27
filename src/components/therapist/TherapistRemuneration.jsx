@@ -231,7 +231,7 @@ const TherapistRemuneration = ({ therapist }) => {
               <div className="flex items-start justify-between pt-1 gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900 text-sm truncate">{row.name}</p>
-                  <p className="text-[11px] text-slate-400 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</p>
+                  <p className="text-[11px] text-slate-400 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</p>
                 </div>
                 <span className={cn(
                   "text-xs font-bold px-2 py-1 rounded-lg shrink-0",
@@ -243,7 +243,7 @@ const TherapistRemuneration = ({ therapist }) => {
 
               {!isManual ? (
                 <p className="text-sm text-slate-600 pt-2">
-                  Realisasi otomatis: <span className="font-semibold text-slate-800">{row.realizationValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</span>
+                  Realisasi otomatis: <span className="font-semibold text-slate-800">{row.realizationValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</span>
                 </p>
               ) : (
                 <ManualMetricUploader
