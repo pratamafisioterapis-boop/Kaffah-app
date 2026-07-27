@@ -90,9 +90,19 @@ const cleanDailyRecapPayload = (data) => {
 const enrichRecapsWithOptions = async (recaps) => {
   if (!recaps || recaps.length === 0) return recaps;
 
+  // Scope by clinic_id: without this filter the query pulls every clinic's
+  // operational_options (1000s of rows) and silently gets truncated by
+  // Supabase's default row cap, dropping recently-added options (e.g. a
+  // diagnosa just created) out of the map and showing "Diagnosa tidak
+  // dikenal" even though the option exists.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
   const { data: options } = await supabase
     .from('operational_options')
     .select('id, label, category')
+    .eq('clinic_id', userRow?.clinic_id)
     .in('category', ['diagnosa', 'service_type', 'patient_type', 'tipe_paket', 'service', 'payment_method']);
 
   if (!options) return recaps;
