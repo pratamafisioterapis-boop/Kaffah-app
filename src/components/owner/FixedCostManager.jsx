@@ -147,37 +147,48 @@ const FixedCostManager = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex items-center gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                className="group flex flex-col md:flex-row md:items-center gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
               >
-                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                  <Wallet className="w-4 h-4 text-amber-600" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                    <Wallet className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <Input
+                    value={item.item_name}
+                    onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
+                    onBlur={() => handleSaveItem(item.id)}
+                    placeholder="Nama item"
+                    className="flex-1 min-w-0"
+                  />
                 </div>
-                <Input
-                  value={item.item_name}
-                  onChange={(e) => handleUpdateItem(item.id, 'item_name', e.target.value)}
-                  onBlur={() => handleSaveItem(item.id)}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  value={item.amount}
-                  onChange={(e) => handleUpdateItem(item.id, 'amount', e.target.value)}
-                  onBlur={() => handleSaveItem(item.id)}
-                  className="w-40"
-                />
-                <Input
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={item.post_day}
-                  onChange={(e) => handleUpdateItem(item.id, 'post_day', e.target.value)}
-                  onBlur={() => handleSaveItem(item.id)}
-                  title="Tanggal posting tiap bulan"
-                  className="w-20"
-                />
-                <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 shrink-0">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex items-end gap-2 pl-12 md:pl-0">
+                  <div className="flex-1 md:w-40">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1 md:hidden">Jumlah/bulan</label>
+                    <Input
+                      type="number"
+                      value={item.amount}
+                      onChange={(e) => handleUpdateItem(item.id, 'amount', e.target.value)}
+                      onBlur={() => handleSaveItem(item.id)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="w-16 shrink-0">
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1 md:hidden">Tgl posting</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={item.post_day}
+                      onChange={(e) => handleUpdateItem(item.id, 'post_day', e.target.value)}
+                      onBlur={() => handleSaveItem(item.id)}
+                      title="Tanggal posting tiap bulan"
+                      className="w-full"
+                    />
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-10 w-10 text-slate-500 hover:text-red-600 hover:bg-red-50 shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </motion.div>
             ))
           )}
