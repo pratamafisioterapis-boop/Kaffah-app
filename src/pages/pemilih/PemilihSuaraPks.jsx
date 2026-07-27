@@ -11,7 +11,7 @@ import PemilihSelect from './PemilihSelect';
 import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
-  Pencil, Plus,
+  Pencil, Plus, AlertTriangle,
 } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -547,7 +547,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
     setLoading(true);
     supabase
       .from('pemilih_suara_caleg_tps')
-      .select('tps_number, candidate_number, candidate_name, votes')
+      .select('tps_number, candidate_number, candidate_name, votes, is_uncertain')
       .eq('kelurahan_id', kelurahanId)
       .eq('election_year', selectedYear)
       .order('tps_number')
@@ -568,7 +568,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
   const openEditTps = (row) => {
     const values = {};
     candidateMasterList.forEach((c) => { values[c.number] = row.byCandidate[c.number] ?? ''; });
-    setEditingTps({ tps: row.tps, values });
+    setEditingTps({ tps: row.tps, values, uncertain: row.byCandidateUncertain });
     setAddingTps(false);
   };
 
@@ -595,6 +595,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
       candidate_name: c.number === 0 ? null : c.name,
       votes: Number(editingTps.values[c.number]) || 0,
       election_year: selectedYear,
+      is_uncertain: false,
     }));
     const { error } = await supabase
       .from('pemilih_suara_caleg_tps')
@@ -612,9 +613,11 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
   const table = useMemo(() => {
     const byTps = new Map();
     tpsRows.forEach((r) => {
-      if (!byTps.has(r.tps_number)) byTps.set(r.tps_number, { tps: r.tps_number, byCandidate: {}, total: 0 });
+      if (!byTps.has(r.tps_number)) byTps.set(r.tps_number, { tps: r.tps_number, byCandidate: {}, byCandidateUncertain: {}, total: 0, hasUncertain: false });
       const row = byTps.get(r.tps_number);
       row.byCandidate[r.candidate_number] = r.votes;
+      row.byCandidateUncertain[r.candidate_number] = !!r.is_uncertain;
+      if (r.is_uncertain) row.hasUncertain = true;
       row.total += r.votes || 0;
     });
     return Array.from(byTps.values()).sort((a, b) => a.tps - b.tps);
@@ -717,6 +720,14 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                 <Plus size={14} /> Tambah TPS
               </button>
             </div>
+            {table.some((r) => r.hasUncertain) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, padding: '10px 14px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#92400e' }}>
+                  {table.filter((r) => r.hasUncertain).length} TPS punya angka yang buram/kurang jelas di dokumen sumber (ditandai kuning) — mohon dicek &amp; dikoreksi manual bila perlu.
+                </span>
+              </div>
+            )}
             <div className="p-table-wrap">
               <table className="p-table">
                 <thead>
@@ -734,9 +745,21 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                 <tbody>
                   {table.map((r) => (
                     <tr key={r.tps}>
-                      <td style={{ fontWeight: 700 }}>{String(r.tps).padStart(2, '0')}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {String(r.tps).padStart(2, '0')}
+                        {r.hasUncertain && (
+                          <AlertTriangle size={11} color="#d97706" style={{ marginLeft: 5, verticalAlign: 'middle' }} />
+                        )}
+                      </td>
                       {candidateMasterList.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#4b5563' }}>
+                        <td
+                          key={c.number}
+                          style={{
+                            textAlign: 'right', fontFamily: 'monospace', color: '#4b5563',
+                            background: r.byCandidateUncertain[c.number] ? '#fef3c7' : undefined,
+                          }}
+                          title={r.byCandidateUncertain[c.number] ? 'Angka buram/kurang jelas di dokumen sumber — mohon cek manual' : undefined}
+                        >
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
@@ -784,8 +807,11 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
               <div className="p-scrollbar" style={{ maxHeight: '50vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {candidateMasterList.map((c) => (
                   <div key={c.number} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <label style={{ flex: 1, fontSize: 12.5, color: '#4b5563' }}>
+                    <label style={{ flex: 1, fontSize: 12.5, color: '#4b5563', display: 'flex', alignItems: 'center', gap: 5 }}>
                       {c.number === 0 ? 'Suara Partai (tanpa calon)' : `${c.number}. ${c.name}`}
+                      {editingTps.uncertain?.[c.number] && (
+                        <AlertTriangle size={12} color="#d97706" title="Angka buram/kurang jelas di dokumen sumber" />
+                      )}
                     </label>
                     <input
                       type="number" className="p-input" style={{ width: 90, textAlign: 'right' }} min={0}
