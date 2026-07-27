@@ -34,10 +34,14 @@ const json = (body: unknown, status = 200) =>
   });
 
 const DEFAULT_MAX_TOKENS = 16000;
-// Batas waktu panggilan ke Anthropic. Edge function punya batas wall-clock
-// sendiri, jadi lebih baik kita yang menyerah duluan dengan pesan yang jelas
-// daripada koneksinya diputus runtime tanpa keterangan.
-const ANTHROPIC_TIMEOUT_MS = 120000;
+// Batas waktu panggilan ke Anthropic. Halaman dengan tabel padat (banyak
+// kolom TPS) butuh waktu jauh lebih lama untuk dibaca teliti daripada halaman
+// "sisa" yang kolomnya sedikit — dari log produksi, halaman padat rutin lewat
+// 120 detik sementara halaman ringan selesai dalam ~15 detik. Edge function
+// punya batas wall-clock sendiri (~150 detik di Supabase), jadi kita ambil
+// margin di bawahnya dan menyerah duluan dengan pesan yang jelas daripada
+// koneksinya diputus runtime tanpa keterangan.
+const ANTHROPIC_TIMEOUT_MS = 140000;
 
 const buildSystemPrompt = (partyFilter: string | null) => {
   const scope = partyFilter
