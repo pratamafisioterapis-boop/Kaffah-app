@@ -89,7 +89,17 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handlePeriodeIni = () => {
-    const { startDate, endDate } = getTherapistPeriodRange(therapist);
+    // Payroll dibuat untuk periode yang baru saja SELESAI (dibayar setelah
+    // periode tutup). Kalau hari ini persis tanggal mulai siklus baru,
+    // getTherapistPeriodRange akan mengembalikan siklus baru yang baru mulai
+    // (belum ada datanya) — jadi mundurkan referensi 1 hari supaya yang
+    // kepilih periode sebelumnya yang baru saja berakhir kemarin.
+    const startDay = therapist?.period_start_day ?? 28;
+    const today = new Date();
+    const referenceDate = today.getDate() === startDay
+      ? new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
+      : today;
+    const { startDate, endDate } = getTherapistPeriodRange(therapist, referenceDate);
     setForm((prev) => ({
       ...prev,
       payroll_period_start: format(startDate, 'yyyy-MM-dd'),
@@ -137,17 +147,24 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       const overallScore = remunerationReport?.overallScore || 0;
       const ratePercent = parseFloat(clinic?.remuneration_commission_rate_percent) || 2;
 
+      // Komisi hanya cair kalau remunerasi aktif secara global UNTUK terapis
+      // ini DAN target pasien periode ini tercapai (remunerationReport.isActive) —
+      // sebelumnya field isActive ini tidak dipakai sama sekali di sini,
+      // jadi komisi tetap muncul walau target pasien periode berjalan belum tercapai.
       const { profit, marginPercent, commission } = calculateRemunerationCommission({
         revenue,
         baseSalary: parseFloat(therapist.base_salary) || 0,
         transportAllowance,
         incentiveAmount,
         overallScore,
-        remunerationEnabled: therapist.remuneration_enabled !== false,
+        remunerationEnabled: therapist.remuneration_enabled !== false && remunerationReport?.isActive === true,
         ratePercent,
       });
 
-      setCommissionBreakdown({ revenue, profit, marginPercent, overallScore, ratePercent });
+      setCommissionBreakdown({
+        revenue, profit, marginPercent, overallScore, ratePercent,
+        isActive: remunerationReport?.isActive === true,
+      });
 
       setForm((prev) => ({
         ...prev,
@@ -345,6 +362,12 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 <span>Tarif komisi</span>
                 <span className="font-medium text-slate-700">{commissionBreakdown.ratePercent}% dari profit</span>
               </div>
+              {!commissionBreakdown.isActive && (
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-amber-600">Status remunerasi periode ini</span>
+                  <span className="font-medium text-amber-600">Nonaktif (target pasien belum tercapai)</span>
+                </div>
+              )}
             </div>
           )}
 
