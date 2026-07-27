@@ -1272,6 +1272,17 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
 
   const selectedKelurahanName = availableKelurahan.find((k) => k.id === kelurahanId)?.nama || '';
 
+  const columnTotals = useMemo(() => {
+    const byCandidate = {};
+    candidateMasterList.forEach((c) => { byCandidate[c.number] = 0; });
+    let total = 0;
+    table.forEach((r) => {
+      candidateMasterList.forEach((c) => { byCandidate[c.number] += r.byCandidate[c.number] || 0; });
+      total += r.total;
+    });
+    return { byCandidate, total };
+  }, [table, candidateMasterList]);
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -1354,8 +1365,8 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                   <tr>
                     <th>TPS</th>
                     {candidateMasterList.map((c) => (
-                      <th key={c.number} style={{ textAlign: 'right' }}>
-                        {c.number === 0 ? 'Partai' : c.number}
+                      <th key={c.number} style={{ textAlign: 'right', whiteSpace: 'nowrap' }} title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}>
+                        {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
                     <th style={{ textAlign: 'right' }}>Total</th>
@@ -1379,11 +1390,21 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                       </td>
                     </tr>
                   ))}
+                  <tr>
+                    <td style={{ fontWeight: 800 }}>Total</td>
+                    {candidateMasterList.map((c) => (
+                      <td key={c.number} style={{ textAlign: 'right', fontWeight: 800 }}>
+                        {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
+                      </td>
+                    ))}
+                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{columnTotals.total.toLocaleString('id-ID')}</td>
+                    <td></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
             <p style={{ margin: '10px 0 0', fontSize: 10.5, color: '#9ca3af' }}>
-              Kolom angka menunjukkan nomor urut caleg ("Partai" = suara partai tanpa calon).
+              Kolom "Partai" menunjukkan suara partai tanpa calon; baris terakhir adalah total seluruh TPS.
             </p>
           </div>
         </>
