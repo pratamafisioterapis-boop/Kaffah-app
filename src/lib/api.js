@@ -5571,6 +5571,10 @@ export const getTherapistTargetProgress = async (therapistId, startDate, endDate
 
     const targetVisits = targetData?.target_visits || 0;
     const excludedTypes = targetData?.excluded_patient_types || [];
+    // 'registered'/'guest' are booking placeholders, not yet recap'd with a
+    // real visit category — never count them, same as the target-vs-realization
+    // chart (BulletChartTargetVsRealization) already excludes them.
+    const alwaysExcludedTypes = [...excludedTypes, 'registered', 'guest'];
 
     // 2. Ambil recaps dalam periode, filter excluded types
     let query = supabase
@@ -5584,10 +5588,7 @@ export const getTherapistTargetProgress = async (therapistId, startDate, endDate
     if (recapsError) return { error: recapsError };
 
     // 3. Filter recap yang bukan excluded type
-    const filteredRecaps = (recaps || []).filter(r => {
-      if (excludedTypes.length === 0) return true;
-      return !excludedTypes.includes(r.patient_type);
-    });
+    const filteredRecaps = (recaps || []).filter(r => !alwaysExcludedTypes.includes(r.patient_type));
 
     const actualVisits = filteredRecaps.length;
     const achievement = targetVisits > 0 
