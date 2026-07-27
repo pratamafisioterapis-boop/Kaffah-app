@@ -6470,31 +6470,44 @@ export const uploadRemunerationProof = async (file, therapistId) => {
 // Kedisiplinan kehadiran: proporsi appointment yang benar-benar direalisasikan
 // (ada daily_recap dengan start_time) dari seluruh appointment yang dijadwalkan
 // (tidak termasuk yang dibatalkan) pada periode tsb.
+// Kedisiplinan Kehadiran: berbasis kalender (bukan appointment/rekap kunjungan).
+// "Libur" (jatah libur mingguan) tidak dihitung sebagai hari kerja sama sekali.
+// Reason lain (Sakit, Training, Izin Pribadi, Lainnya) dihitung sebagai tidak masuk.
+// Izin parsial (jam tertentu, start_time terisi) tidak menghilangkan satu hari penuh.
 export const getTherapistAttendanceRate = async (therapistId, startDate, endDate) => {
   return safeQuery(async () => {
-    const { data: appts, error: apptError } = await supabase
-      .from('appointments')
-      .select('id, status')
+    const { data: timeOffs, error: timeOffError } = await supabase
+      .from('therapist_time_off')
+      .select('start_date, end_date, reason, start_time')
       .eq('therapist_id', therapistId)
-      .gte('appointment_date', `${startDate}T00:00:00`)
-      .lte('appointment_date', `${endDate}T23:59:59`)
-      .neq('status', 'cancelled');
+      .lte('start_date', endDate)
+      .gte('end_date', startDate);
 
-    if (apptError) return { error: apptError };
+    if (timeOffError) return { error: timeOffError };
 
-    const totalScheduled = (appts || []).length;
+    const periodDays = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) })
+      .map(d => format(d, 'yyyy-MM-dd'));
+    const periodDaySet = new Set(periodDays);
 
-    const { data: recaps, error: recapError } = await supabase
-      .from('daily_recaps')
-      .select('id, start_time')
-      .eq('therapist_id', therapistId)
-      .gte('recap_date', startDate)
-      .lte('recap_date', endDate)
-      .not('start_time', 'is', null);
+    const liburDates = new Set();
+    const absentDates = new Set();
 
-    if (recapError) return { error: recapError };
+    (timeOffs || []).forEach(t => {
+      if (t.start_time) return;
+      const isLibur = (t.reason || '').trim().startsWith('Libur');
+      eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
+        const key = format(d, 'yyyy-MM-dd');
+        if (periodDaySet.has(key)) {
+          (isLibur ? liburDates : absentDates).add(key);
+        }
+      });
+    });
 
-    const totalAttended = (recaps || []).length;
+    // Kalau satu tanggal tercatat baik libur maupun cuti/izin, anggap tidak masuk (lebih spesifik).
+    liburDates.forEach(key => { if (absentDates.has(key)) liburDates.delete(key); });
+
+    const totalScheduled = periodDays.length - liburDates.size;
+    const totalAttended = Math.max(totalScheduled - absentDates.size, 0);
     const rate = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 100;
 
     return {
