@@ -186,7 +186,6 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           model: "claude-sonnet-5",
           max_tokens: maxTokens,
-          temperature: 0,
           system: buildSystemPrompt(typeof party_filter === "string" && party_filter.trim() ? party_filter.trim() : null),
           messages: [
             {
