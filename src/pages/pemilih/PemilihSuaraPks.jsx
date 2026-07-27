@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LabelList,
@@ -11,7 +12,7 @@ import PemilihSelect from './PemilihSelect';
 import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
-  Pencil, Plus,
+  Pencil, Plus, Presentation, ChevronLeft, ChevronRight, Play, Pause,
 } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -30,6 +31,12 @@ const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#059669'];
 const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#059669', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+
+const chunkArray = (arr, size) => {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
 
 const withTimeout = (promise, ms, message) => Promise.race([
   promise,
@@ -110,6 +117,7 @@ const CardHeader = ({ title, subtitle, icon: Icon, iconColor, iconBg }) => (
 const PemilihSuaraPks = () => {
   const { toast } = useToast();
   const [tab, setTab] = useState('dashboard');
+  const [slideshowOpen, setSlideshowOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
@@ -278,24 +286,35 @@ const PemilihSuaraPks = () => {
       </div>
 
       {availableYears.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Tahun Pemilu:</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {availableYears.map((y) => (
-              <button
-                key={y}
-                onClick={() => setSelectedYear(y)}
-                style={{
-                  padding: '7px 16px', borderRadius: 999, border: '1.5px solid ' + (selectedYear === y ? '#059669' : 'var(--p-border)'),
-                  background: selectedYear === y ? '#ecfdf5' : '#fff',
-                  color: selectedYear === y ? '#059669' : '#6b7280',
-                  fontWeight: 800, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
-                }}
-              >
-                {y}
-              </button>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Tahun Pemilu:</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {availableYears.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => setSelectedYear(y)}
+                  style={{
+                    padding: '7px 16px', borderRadius: 999, border: '1.5px solid ' + (selectedYear === y ? '#059669' : 'var(--p-border)'),
+                    background: selectedYear === y ? '#ecfdf5' : '#fff',
+                    color: selectedYear === y ? '#059669' : '#6b7280',
+                    fontWeight: 800, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
+                  }}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
           </div>
+          {tab === 'dashboard' && rows.length > 0 && (
+            <button
+              className="p-btn-primary"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+              onClick={() => setSlideshowOpen(true)}
+            >
+              <Presentation size={15} /> Mode Slideshow
+            </button>
+          )}
         </div>
       )}
 
@@ -332,6 +351,23 @@ const PemilihSuaraPks = () => {
         />
       ) : (
         <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
+      )}
+
+      {slideshowOpen && (
+        <PksSlideshow
+          onClose={() => setSlideshowOpen(false)}
+          selectedYear={selectedYear}
+          filterKelurahanName={kelurahanMap[filterKelurahan] || null}
+          kelurahanTercakupCount={kelurahanTercakup.size}
+          kelurahanTotalCount={kelurahanList.length}
+          totalSuaraPartai={totalSuaraPartai}
+          totalSuaraTanpaCalon={totalSuaraTanpaCalon}
+          perCaleg={perCaleg}
+          calegOnly={calegOnly}
+          chartData={chartData}
+          pieData={pieData}
+          perKelurahanTotal={perKelurahanTotal}
+        />
       )}
     </div>
   );
@@ -522,6 +558,331 @@ const PksDashboard = ({
     </div>
   );
 };
+
+const SLIDE_INTERVAL_MS = 8000;
+const SLIDESHOW_GROUP_SIZE = 6;
+
+// Widget-widget di tab Dashboard dipecah jadi "slide" terpisah (mirip slide show
+// PPT) supaya bisa dipresentasikan layar penuh tanpa perlu bikin file PPT lagi.
+// Daftar caleg & kelurahan yang panjang dipecah lagi per beberapa item per slide
+// supaya tetap terbaca dari jarak jauh.
+const PksSlideshow = ({
+  onClose, selectedYear, filterKelurahanName, kelurahanTercakupCount, kelurahanTotalCount,
+  totalSuaraPartai, totalSuaraTanpaCalon, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
+}) => {
+  const containerRef = useRef(null);
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  const slides = useMemo(() => {
+    const list = [{ kind: 'cover' }, { kind: 'stats' }];
+    if (chartData.length > 0) list.push({ kind: 'bar' });
+    if (pieData.length > 0) list.push({ kind: 'pie' });
+    const legerGroups = chunkArray(perCaleg, SLIDESHOW_GROUP_SIZE);
+    legerGroups.forEach((group, i) => list.push({ kind: 'leaderboard', group, part: i + 1, totalParts: legerGroups.length }));
+    const kelurahanGroups = chunkArray(perKelurahanTotal, SLIDESHOW_GROUP_SIZE);
+    kelurahanGroups.forEach((group, i) => list.push({ kind: 'kelurahan', group, part: i + 1, totalParts: kelurahanGroups.length }));
+    return list;
+  }, [chartData.length, pieData.length, perCaleg, perKelurahanTotal]);
+
+  useEffect(() => { if (index > slides.length - 1) setIndex(0); }, [slides.length, index]);
+
+  const goNext = useCallback(() => setIndex((i) => (i + 1 >= slides.length ? 0 : i + 1)), [slides.length]);
+  const goPrev = useCallback(() => setIndex((i) => (i - 1 < 0 ? slides.length - 1 : i - 1)), [slides.length]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'ArrowRight') goNext();
+      else if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [goNext, goPrev, onClose]);
+
+  useEffect(() => {
+    if (!playing) return undefined;
+    const t = setInterval(goNext, SLIDE_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [playing, goNext]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
+    return () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+  }, []);
+
+  const handleClose = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    onClose();
+  };
+
+  const slide = slides[index] || slides[0];
+  const maxCaleg = calegOnly[0]?.total || 1;
+  const maxKelurahan = perKelurahanTotal[0]?.total || 1;
+
+  return (
+    <div ref={containerRef} style={{
+      position: 'fixed', inset: 0, zIndex: 300, display: 'flex', flexDirection: 'column',
+      background: 'linear-gradient(160deg, #14151c 0%, #0f2a1c 55%, #06170d 100%)', color: '#fff',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 34px 6px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Vote size={16} color="#86efac" />
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Perolehan Suara PKS {selectedYear || ''}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: '#a1a1aa', fontWeight: 600, marginRight: 4 }}>{index + 1} / {slides.length}</span>
+          <button onClick={() => setPlaying((p) => !p)} title={playing ? 'Jeda' : 'Putar otomatis'} style={slideIconBtnStyle}>
+            {playing ? <Pause size={16} /> : <Play size={16} />}
+          </button>
+          <button onClick={handleClose} title="Tutup (Esc)" style={slideIconBtnStyle}><X size={18} /></button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            style={{ position: 'absolute', inset: 0, padding: '18px 60px 10px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            {slide.kind === 'cover' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#86efac', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
+                  Rekap Perolehan Suara Pileg {selectedYear || ''}
+                </div>
+                <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: '-0.02em', maxWidth: 760 }}>
+                  Partai Keadilan Sejahtera
+                </h1>
+                <p style={{ margin: '10px 0 0', fontSize: 16, color: '#d4d4d8' }}>DPRD Kota Balikpapan</p>
+                <p style={{ margin: '22px 0 0', fontSize: 13, color: '#a1a1aa' }}>
+                  {filterKelurahanName ? `Kelurahan: ${filterKelurahanName}` : `Seluruh kelurahan tercakup (${kelurahanTercakupCount} / ${kelurahanTotalCount})`}
+                </p>
+                <div style={{ marginTop: 36, display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{ fontSize: 64, fontWeight: 800, color: '#4ade80', letterSpacing: '-0.03em' }}>
+                    {totalSuaraPartai.toLocaleString('id-ID')}
+                  </span>
+                  <span style={{ fontSize: 16, color: '#a1a1aa', fontWeight: 600 }}>total suara</span>
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'stats' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <SlideHeading title="Ringkasan Perolehan Suara" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 22, marginTop: 30 }}>
+                  <SlideStat icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#4ade80" />
+                  <SlideStat icon={Trophy} label="Suara Partai (tanpa calon)" value={totalSuaraTanpaCalon.toLocaleString('id-ID')} color="#fbbf24" />
+                  <SlideStat icon={Users} label="Caleg Terdaftar" value={calegOnly.length} color="#60a5fa" />
+                  <SlideStat icon={MapPin} label="Kelurahan Tercakup" value={`${kelurahanTercakupCount} / ${kelurahanTotalCount}`} color="#f87171" />
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'bar' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading title="Perolehan Suara per Caleg" subtitle="Diurutkan dari yang terbanyak" />
+                <div style={{ flex: 1, minHeight: 0, marginTop: 14 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 50, left: 10, bottom: 5 }} barCategoryGap="26%">
+                      <defs>
+                        <linearGradient id="gradCalegSlide" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#4ade80" />
+                          <stop offset="100%" stopColor="#059669" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.08)" />
+                      <XAxis type="number" tick={{ fontSize: 12, fill: '#a1a1aa' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" width={190} tick={{ fontSize: 13, fill: '#e4e4e7', fontWeight: 600 }} axisLine={{ stroke: 'rgba(255,255,255,0.15)' }} tickLine={false} />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                        formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Suara']}
+                        labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''}
+                        contentStyle={{ borderRadius: 12, fontSize: 12, border: '1px solid #27272a', background: '#18181b', color: '#fff' }}
+                      />
+                      <Bar dataKey="total" fill="url(#gradCalegSlide)" radius={[0, 8, 8, 0]} maxBarSize={30}>
+                        <LabelList dataKey="total" position="right" style={{ fontSize: 12.5, fontWeight: 700, fill: '#fff' }} formatter={(v) => v.toLocaleString('id-ID')} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'pie' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading title="Distribusi Suara" subtitle="Proporsi suara caleg vs suara partai" />
+                <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 40, marginTop: 10 }}>
+                  <div style={{ flex: '0 0 auto', width: '46%', height: '100%', position: 'relative' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={3} cornerRadius={8}>
+                          {pieData.map((entry, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#0f172a" strokeWidth={2} />)}
+                        </Pie>
+                        <Tooltip formatter={(value) => Number(value).toLocaleString('id-ID')} contentStyle={{ borderRadius: 12, fontSize: 12, border: '1px solid #27272a', background: '#18181b', color: '#fff' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                        {totalSuaraPartai.toLocaleString('id-ID')}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#a1a1aa', fontWeight: 600, marginTop: 4 }}>Total Suara</div>
+                    </div>
+                  </div>
+                  <div className="p-scrollbar" style={{ flex: 1, maxHeight: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {pieData.map((d, i) => (
+                      <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
+                        <span style={{ width: 12, height: 12, borderRadius: 4, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                        <span style={{ color: '#d4d4d8', flex: 1 }}>{d.name}</span>
+                        <span style={{ color: '#fff', fontWeight: 700 }}>{d.value.toLocaleString('id-ID')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'leaderboard' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading
+                  title="Peringkat Caleg"
+                  subtitle={slide.totalParts > 1 ? `Bagian ${slide.part} dari ${slide.totalParts}` : 'Daftar lengkap seluruh caleg PKS'}
+                />
+                <div className="p-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+                  {slide.group.map((c) => {
+                    const rank = c.isPartyRow ? null : calegOnly.findIndex((x) => x.candidate_number === c.candidate_number);
+                    const rankColor = rank !== null && rank >= 0 ? (RANK_COLORS[rank] || '#94a3b8') : '#94a3b8';
+                    const pct = c.isPartyRow ? 0 : Math.max(4, (c.total / maxCaleg) * 100);
+                    const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : null;
+                    return (
+                      <div key={c.candidate_number} style={{
+                        padding: '14px 18px', borderRadius: 14,
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                            <span style={{
+                              width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                              background: rankColor + '26', color: rankColor,
+                              fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              {medal || (c.isPartyRow ? '★' : (rank >= 0 ? rank + 1 : c.candidate_number))}
+                            </span>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {c.isPartyRow ? 'Suara Partai (tanpa calon)' : `${c.candidate_number}. ${c.candidate_name}`}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>
+                            {c.total.toLocaleString('id-ID')} <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>suara</span>
+                          </div>
+                        </div>
+                        {!c.isPartyRow && (
+                          <div style={{ marginTop: 10, height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                            <div style={{ width: pct + '%', height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)` }} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'kelurahan' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading
+                  title="Total Suara PKS per Kelurahan"
+                  subtitle={slide.totalParts > 1 ? `Bagian ${slide.part} dari ${slide.totalParts}` : 'Jumlah seluruh suara (partai + caleg) per kelurahan'}
+                />
+                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 18, marginTop: 16, alignContent: 'start' }}>
+                  {slide.group.map((w) => {
+                    const globalRank = perKelurahanTotal.findIndex((x) => x.nama === w.nama);
+                    const rankColor = RANK_COLORS[globalRank] || '#94a3b8';
+                    const pct = Math.max(6, (w.total / maxKelurahan) * 100);
+                    return (
+                      <div key={w.nama} style={{
+                        borderRadius: 16, padding: '18px 20px',
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                          <span style={{ width: 24, height: 24, borderRadius: 7, background: rankColor + '26', color: rankColor, fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {globalRank >= 0 ? globalRank + 1 : '-'}
+                          </span>
+                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{w.nama}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 12 }}>
+                          <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{w.total.toLocaleString('id-ID')}</span>
+                          <span style={{ fontSize: 11.5, color: '#a1a1aa', fontWeight: 500 }}>suara</span>
+                        </div>
+                        <div style={{ marginTop: 12, height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                          <div style={{ width: pct + '%', height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '14px 28px 30px', flexShrink: 0 }}>
+        <button onClick={goPrev} style={slideNavBtnStyle} title="Sebelumnya (←)"><ChevronLeft size={22} /></button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {slides.map((_, i) => (
+            <span
+              key={i}
+              onClick={() => setIndex(i)}
+              style={{
+                width: i === index ? 22 : 7, height: 7, borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s',
+                background: i === index ? '#22c55e' : 'rgba(255,255,255,0.25)',
+              }}
+            />
+          ))}
+        </div>
+        <button onClick={goNext} style={slideNavBtnStyle} title="Berikutnya (→)"><ChevronRight size={22} /></button>
+      </div>
+    </div>
+  );
+};
+
+const slideIconBtnStyle = {
+  width: 36, height: 36, borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(255,255,255,0.06)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer',
+};
+
+const slideNavBtnStyle = {
+  width: 44, height: 44, borderRadius: 12, border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(255,255,255,0.06)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', flexShrink: 0,
+};
+
+const SlideHeading = ({ title, subtitle }) => (
+  <div>
+    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{title}</h2>
+    {subtitle && <p style={{ margin: '4px 0 0', fontSize: 13, color: '#a1a1aa' }}>{subtitle}</p>}
+  </div>
+);
+
+const SlideStat = ({ icon: Icon, label, value, color }) => (
+  <div style={{
+    borderRadius: 18, padding: '24px 26px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+  }}>
+    <div style={{ width: 44, height: 44, borderRadius: 12, background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+      <Icon size={20} color={color} strokeWidth={2.3} />
+    </div>
+    <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+    <div style={{ fontSize: 13, color: '#a1a1aa', marginTop: 8, fontWeight: 500 }}>{label}</div>
+  </div>
+);
 
 const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, selectedYear, toast }) => {
   const availableKelurahan = useMemo(
