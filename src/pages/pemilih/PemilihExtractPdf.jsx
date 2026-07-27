@@ -7,11 +7,11 @@ import { Loader2, FileUp, Search, AlertTriangle, CheckCircle2, FileText, X } fro
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-// Halaman dengan tabel padat (banyak kolom TPS) butuh waktu jauh lebih lama
-// untuk dibaca teliti daripada halaman ringan (dari log produksi: halaman
-// padat rutin >120 detik, halaman ringan ~15 detik). Concurrency diturunkan
-// dari 3 ke 2 supaya tidak terlalu banyak permintaan berat berjalan bersamaan.
-const CONCURRENCY = 2;
+// Tiap halaman sekarang dipecah jadi 2 potongan (atas+bawah) yang diproses
+// BERSAMAAN (lihat splitCanvasForOcr), jadi CONCURRENCY di sini = jumlah
+// HALAMAN yang diproses sekaligus, bukan jumlah permintaan OCR — total
+// permintaan OCR yang berjalan bersamaan tetap CONCURRENCY x 2.
+const CONCURRENCY = 1;
 // Harus lebih besar dari ANTHROPIC_TIMEOUT_MS di edge function (140 detik)
 // plus margin jaringan, supaya halaman yang sebenarnya berhasil (hanya lambat)
 // tidak keburu dianggap gagal oleh sisi frontend duluan.
@@ -45,7 +45,25 @@ const describeFunctionError = async (error) => {
   return error?.message || 'Gagal memanggil server OCR';
 };
 
-const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
+// Satu panggilan OCR untuk satu potongan gambar (bisa halaman penuh atau
+// potongan atas/bawah hasil splitCanvasForOcr). `isPartial` memberi tahu
+// server bahwa gambar ini mungkin tidak memuat judul tabel/baris header
+// (karena sudah kepotong), supaya model tidak salah menyimpulkan "bukan tabel
+// suara" hanya karena tidak melihat judulnya.
+const callOcrHalf = async (imageBase64, partyFilter, isPartial, invokeTimeoutMs) => {
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('pemilih-ocr-suara-pdf', {
+      body: { image_base64: imageBase64, media_type: 'image/jpeg', party_filter: partyFilter || undefined, is_partial: isPartial },
+    }),
+    invokeTimeoutMs,
+    `Waktu tunggu server OCR habis (${invokeTimeoutMs / 1000}s)`
+  );
+  if (error) throw new Error(await describeFunctionError(error));
+  if (data?.error) throw new Error(data.error);
+  return data?.data || { is_vote_table: false, rows: [], column_headers: [] };
+};
+
+const renderPageCanvas = async (pdf, pageNumber, rotate) => {
   const page = await pdf.getPage(pageNumber);
   const baseViewport = page.getViewport({ scale: 1 });
   const longestSide = Math.max(baseViewport.width, baseViewport.height);
@@ -60,22 +78,88 @@ const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  let finalCanvas = canvas;
-  if (rotate) {
-    const rotated = document.createElement('canvas');
-    rotated.width = canvas.height;
-    rotated.height = canvas.width;
-    const rctx = rotated.getContext('2d');
-    rctx.translate(rotated.width / 2, rotated.height / 2);
-    rctx.rotate(-Math.PI / 2);
-    rctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-    finalCanvas = rotated;
-  }
+  if (!rotate) return canvas;
 
-  // JPEG jauh lebih kecil dari PNG untuk halaman seperti ini (garis tabel +
-  // teks di atas latar putih), yang paling menentukan cepat/lambatnya OCR.
-  const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.88);
-  return dataUrl.split(',')[1];
+  const rotated = document.createElement('canvas');
+  rotated.width = canvas.height;
+  rotated.height = canvas.width;
+  const rctx = rotated.getContext('2d');
+  rctx.translate(rotated.width / 2, rotated.height / 2);
+  rctx.rotate(-Math.PI / 2);
+  rctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+  return rotated;
+};
+
+// JPEG jauh lebih kecil dari PNG untuk halaman seperti ini (garis tabel +
+// teks di atas latar putih), yang paling menentukan cepat/lambatnya OCR.
+const canvasToBase64 = (canvas) => canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+
+// Tabel rekap yang panjang (banyak partai/calon) butuh model membaca/menyisir
+// puluhan baris untuk menemukan baris yang relevan, dan itu yang bikin satu
+// permintaan OCR bisa lewat dari 2 menit untuk halaman padat (lihat log
+// produksi). Solusinya: potong tiap halaman jadi 2 gambar (atas & bawah,
+// overlap 20% di tengah supaya baris yang persis di batas tidak terlewat),
+// proses paralel, lalu gabung hasilnya — tiap permintaan jadi jauh lebih
+// ringan (~60% dari total baris) sehingga lebih cepat & jarang timeout.
+const SPLIT_FRACTION = 0.6;
+
+const splitCanvasForOcr = (canvas) => {
+  const w = canvas.width;
+  const h = canvas.height;
+  const topHeight = Math.round(h * SPLIT_FRACTION);
+  const bottomStart = h - topHeight;
+  const bottomHeight = h - bottomStart;
+
+  const topCanvas = document.createElement('canvas');
+  topCanvas.width = w;
+  topCanvas.height = topHeight;
+  topCanvas.getContext('2d').drawImage(canvas, 0, 0, w, topHeight, 0, 0, w, topHeight);
+
+  const bottomCanvas = document.createElement('canvas');
+  bottomCanvas.width = w;
+  bottomCanvas.height = bottomHeight;
+  bottomCanvas.getContext('2d').drawImage(canvas, 0, bottomStart, w, bottomHeight, 0, 0, w, bottomHeight);
+
+  return [topCanvas, bottomCanvas];
+};
+
+// Kunci unik per baris untuk menggabungkan hasil potongan atas & bawah tanpa
+// duplikat (baris yang jatuh di zona overlap bisa muncul di kedua potongan).
+const rowMergeKey = (row) => (row.is_party_row && !row.candidate_name
+  ? `party::${normalize(row.party_name)}`
+  : `cand::${normalize(row.candidate_name)}::${normalize(row.party_name)}`);
+
+// Baris yang sama dari kedua potongan dipilih versi dengan sel terisi paling
+// lengkap (paling sedikit null), karena posisinya di tepi potongan kadang
+// bikin satu sisi terbaca lebih jelas dari sisi lainnya.
+const rowCompleteness = (row) => (row.values || []).filter((v) => v !== null && v !== undefined).length;
+
+const mergePageHalves = (top, bottom) => {
+  const parts = [top, bottom].filter(Boolean);
+  const isVoteTable = parts.some((p) => p.is_vote_table);
+  if (!isVoteTable) return { is_vote_table: false, rows: [], column_headers: [], sheet_info: null };
+
+  const column_headers = parts.find((p) => (p.column_headers || []).length > 0)?.column_headers || [];
+
+  const sheet_info = parts.reduce((acc, p) => {
+    if (!p.sheet_info) return acc;
+    const merged = { ...acc };
+    Object.keys(p.sheet_info).forEach((k) => {
+      if ((merged[k] === undefined || merged[k] === null) && p.sheet_info[k] != null) merged[k] = p.sheet_info[k];
+    });
+    return merged;
+  }, {});
+
+  const rowMap = new Map();
+  parts.forEach((p) => {
+    (p.rows || []).forEach((row) => {
+      const key = rowMergeKey(row);
+      const existing = rowMap.get(key);
+      if (!existing || rowCompleteness(row) > rowCompleteness(existing)) rowMap.set(key, row);
+    });
+  });
+
+  return { is_vote_table: true, rows: Array.from(rowMap.values()), column_headers, sheet_info: Object.keys(sheet_info).length ? sheet_info : null };
 };
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
@@ -139,34 +223,42 @@ const PemilihExtractPdf = () => {
         const idx = cursor++;
         const pageNumber = pageNumbers[idx];
         let lastError = null;
-        let ok = false;
-        // Kalau percobaan gagal karena timeout, mengulang dengan budget waktu
-        // yang sama nyaris pasti timeout lagi juga (halaman ini memang butuh
-        // waktu lebih dari INVOKE_TIMEOUT_MS untuk dibaca) — jadi tidak retry,
-        // langsung tandai gagal supaya tidak buang waktu 2x lipat tanpa hasil.
-        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        let merged = null;
+        // Kalau percobaan gagal total (dua potongan sekaligus) karena timeout,
+        // mengulang dengan budget waktu yang sama nyaris pasti timeout lagi
+        // juga — jadi tidak retry pada kasus itu. Tapi kalau sudah dapat hasil
+        // sebagian (satu potongan berhasil), langsung dipakai — tidak perlu
+        // mengulang dari nol.
+        for (let attempt = 0; attempt < 2 && !merged; attempt++) {
           let isTimeout = false;
           try {
-            const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
+            const pageCanvas = await renderPageCanvas(pdf, pageNumber, rotate);
+            const [topCanvas, bottomCanvas] = splitCanvasForOcr(pageCanvas);
             if (cancelRef.current) return;
-            const { data, error } = await withTimeout(
-              supabase.functions.invoke('pemilih-ocr-suara-pdf', {
-                body: { image_base64, media_type: 'image/jpeg' },
-              }),
-              INVOKE_TIMEOUT_MS,
-              `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s). Halaman ini kemungkinan memuat tabel yang sangat padat — coba proses sendirian atau perkecil rentang halaman.`
-            );
-            if (error) throw new Error(await describeFunctionError(error));
-            if (data?.error) throw new Error(data.error);
-            results.push({ pageNumber, ...(data?.data || { is_vote_table: false, rows: [], column_headers: [] }) });
-            ok = true;
+            const [topSettled, bottomSettled] = await Promise.allSettled([
+              callOcrHalf(canvasToBase64(topCanvas), null, true, INVOKE_TIMEOUT_MS),
+              callOcrHalf(canvasToBase64(bottomCanvas), null, true, INVOKE_TIMEOUT_MS),
+            ]);
+            if (cancelRef.current) return;
+            const topData = topSettled.status === 'fulfilled' ? topSettled.value : null;
+            const bottomData = bottomSettled.status === 'fulfilled' ? bottomSettled.value : null;
+            if (!topData && !bottomData) {
+              throw new Error(topSettled.reason?.message || bottomSettled.reason?.message || 'Gagal memproses halaman');
+            }
+            merged = mergePageHalves(topData, bottomData);
+            if (!topData || !bottomData) {
+              const halfErrMsg = (topSettled.reason || bottomSettled.reason)?.message;
+              lastError = halfErrMsg ? `Sebagian halaman mungkin belum terbaca lengkap: ${halfErrMsg}` : null;
+            }
           } catch (err) {
             lastError = err.message;
             isTimeout = /waktu tunggu|tidak merespons/i.test(err.message || '');
           }
           if (isTimeout) break;
         }
-        if (!ok) {
+        if (merged) {
+          results.push({ pageNumber, ...merged, error: lastError || undefined });
+        } else {
           results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: lastError });
         }
         setProgress((p) => ({ ...p, done: p.done + 1 }));

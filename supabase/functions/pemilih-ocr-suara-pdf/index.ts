@@ -43,14 +43,23 @@ const DEFAULT_MAX_TOKENS = 16000;
 // koneksinya diputus runtime tanpa keterangan.
 const ANTHROPIC_TIMEOUT_MS = 140000;
 
-const buildSystemPrompt = (partyFilter: string | null) => {
+const buildSystemPrompt = (partyFilter: string | null, isPartial: boolean) => {
   const scope = partyFilter
     ? `RUANG LINGKUP: pada halaman ini kamu HANYA menyalin baris milik partai "${partyFilter}" (cocokkan secara longgar, abaikan beda huruf besar/kecil dan singkatan). Baris partai lain JANGAN disertakan sama sekali. Kolom "h" tetap diisi seluruh kolom angka pada tabel, karena posisi kolom dipakai untuk memetakan suara per TPS.`
     : `RUANG LINGKUP: salin SEMUA baris partai dan calon yang ada di tabel halaman ini.`;
 
+  // Frontend memecah halaman yang tabelnya panjang jadi 2 potongan (atas &
+  // bawah) supaya tiap permintaan lebih ringan/cepat — potongan bawah biasanya
+  // TIDAK memuat judul dokumen atau baris header kolom TPS (karena sudah
+  // terpotong di atasnya). Tanpa catatan ini model bisa salah menyimpulkan
+  // "bukan tabel suara" hanya karena tidak melihat judulnya.
+  const partialNote = isPartial
+    ? `\n\nCATATAN: gambar ini kemungkinan hanya POTONGAN (bagian atas atau bagian bawah) dari satu halaman, BUKAN halaman utuh — judul dokumen atau baris header kolom TPS bisa saja tidak terlihat karena sudah terpotong. Kalau kamu melihat baris-baris berpola tabel suara (nomor + nama partai/calon + angka-angka), tetap perlakukan sebagai bagian dari tabel tersebut meskipun judulnya tidak terlihat di gambar ini. Kalau baris header kolom TPS ("TPS 01", dst) tidak terlihat di gambar ini, isi "h" dengan array kosong — jangan menebak nama kolom.`
+    : '';
+
   return `Kamu adalah OCR khusus dokumen resmi rekapitulasi hasil pemilu Indonesia (formulir Model DAA1/DA1/DB1 dan sejenisnya dari KPU). Gambar yang diberikan adalah SATU HALAMAN dari dokumen tersebut, sudah diputar ke orientasi baca normal.
 
-Tugasmu: cari tabel berjudul "DATA PEROLEHAN SUARA PARTAI POLITIK DAN CALON" (atau judul sangat mirip) di halaman ini. Tabel ini berisi baris "NOMOR, NAMA PARTAI DAN CALON" — setiap partai punya baris header (nomor + nama partai, biasanya di baris hitam/gelap), diikuti baris-baris calon (nomor urut + nama calon) di bawahnya, dengan kolom-kolom angka suara per TPS ke kanan, dan biasanya kolom terakhir "JUMLAH PINDAHAN" atau "JUMLAH AKHIR" (total baris tersebut).
+Tugasmu: cari tabel berjudul "DATA PEROLEHAN SUARA PARTAI POLITIK DAN CALON" (atau judul sangat mirip) di halaman ini. Tabel ini berisi baris "NOMOR, NAMA PARTAI DAN CALON" — setiap partai punya baris header (nomor + nama partai, biasanya di baris hitam/gelap), diikuti baris-baris calon (nomor urut + nama calon) di bawahnya, dengan kolom-kolom angka suara per TPS ke kanan, dan biasanya kolom terakhir "JUMLAH PINDAHAN" atau "JUMLAH AKHIR" (total baris tersebut).${partialNote}
 
 ${scope}
 
@@ -166,7 +175,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { image_base64, media_type, party_filter } = body || {};
+    const { image_base64, media_type, party_filter, is_partial } = body || {};
     const maxTokens = Number(body?.max_tokens) > 0 ? Math.min(Number(body.max_tokens), 32000) : DEFAULT_MAX_TOKENS;
 
     if (!image_base64) {
@@ -194,7 +203,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           model: "claude-sonnet-5",
           max_tokens: maxTokens,
-          system: buildSystemPrompt(typeof party_filter === "string" && party_filter.trim() ? party_filter.trim() : null),
+          system: buildSystemPrompt(typeof party_filter === "string" && party_filter.trim() ? party_filter.trim() : null, is_partial === true),
           messages: [
             {
               role: "user",
