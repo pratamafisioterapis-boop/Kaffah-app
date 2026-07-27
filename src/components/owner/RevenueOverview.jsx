@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
 import { useToast } from '@/components/ui/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import {
   DollarSign, TrendingUp, TrendingDown,
   AlertTriangle, RefreshCw, Loader2, Plus,
@@ -16,7 +16,8 @@ import {
 } from 'recharts';
 import {
   getOwnerIncome, getOwnerExpenditures, getAdminIncome,
-  getAdminExpenses, getPatientIncomeFromPackages, getServiceRates
+  getAdminExpenses, getPatientIncomeFromPackages, getServiceRates,
+  getBepFinancials
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
@@ -81,6 +82,10 @@ const RevenueOverview = ({ dateRange }) => {
     pkgRecaps: [],
   });
   const [serviceRates, setServiceRates] = useState([]);
+  // Financial Health Overview & KPI di atas memakai angka yang sama dengan
+  // widget Break Even Point (bulan berjalan) — bukan angka dateRange yang
+  // bisa dipilih bebas — supaya kedua ringkasan selalu konsisten satu sama lain.
+  const [bepFinancials, setBepFinancials] = useState(null);
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -91,7 +96,7 @@ const RevenueOverview = ({ dateRange }) => {
       const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
       const clinicId = currentUserRow?.clinic_id;
 
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes, bepRes] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
         getPatientIncomeFromPackages(dateRange),
@@ -110,7 +115,9 @@ const RevenueOverview = ({ dateRange }) => {
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
         getServiceRates(),
+        getBepFinancials(),
       ]);
+      setBepFinancials(bepRes?.data || null);
 // Fetch dana paket aktif
       const { data: activePkgs } = await supabase
         .from('package_tracking')
@@ -164,18 +171,20 @@ const RevenueOverview = ({ dateRange }) => {
   }, [dateRange]);
 
   // ── Computed Metrics ──
+  // Financial Health Overview & KPI (Total Revenue/Net Profit/Total
+  // Pengeluaran/alerts) memakai totalCost & revenueThisMonth dari
+  // getBepFinancials() — sama seperti widget Break Even Point — supaya
+  // "biaya" di sini selalu mencakup fixed cost, transport & insentif
+  // terapis, bukan cuma transaksi pengeluaran owner/admin yang tercatat.
   const metrics = useMemo(() => {
     const sum = (arr, key = 'amount') => arr.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
 
     const ownerIncome = sum(data.ownerIncome);
     const adminIncome = sum(data.adminIncome);
     const patientIncome = sum(data.patientIncome);
-    const totalRevenue = ownerIncome + adminIncome + patientIncome;
 
-    const ownerExpenses = sum(data.ownerExpenses);
-    const adminExpenses = sum(data.adminExpenses);
-    const totalExpenses = ownerExpenses + adminExpenses;
-
+    const totalRevenue = bepFinancials?.revenueThisMonth ?? (ownerIncome + adminIncome + patientIncome);
+    const totalExpenses = bepFinancials?.totalCost ?? (sum(data.ownerExpenses) + sum(data.adminExpenses));
     const netProfit = totalRevenue - totalExpenses;
 
     const totalReceivable = data.receivables
@@ -185,7 +194,7 @@ const RevenueOverview = ({ dateRange }) => {
     const totalCash = data.bankAccounts.reduce((acc, b) => acc + (Number(b.balance) || 0), 0);
 
     return { totalRevenue, totalExpenses, netProfit, totalReceivable, totalCash, ownerIncome, adminIncome, patientIncome };
-  }, [data]);
+  }, [data, bepFinancials]);
 
   // ── Revenue Trend Data (group by date) ──
   const revenueTrendData = useMemo(() => {
@@ -396,7 +405,7 @@ const RevenueOverview = ({ dateRange }) => {
                 </div>
               </div>
               <p className="text-slate-400 text-xs mb-4">
-                {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
+                {format(startOfMonth(new Date()), 'dd MMM yyyy')} — {format(endOfMonth(new Date()), 'dd MMM yyyy')} (bulan berjalan, sama seperti Break Even Point)
               </p>
               <div className="mt-2">
                 <div className="flex justify-between text-[11px] mb-1.5">

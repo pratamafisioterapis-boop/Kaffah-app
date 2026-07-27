@@ -1,14 +1,18 @@
 import { supabase } from '@/lib/customSupabaseClient';
-import { 
-    validatePackageTypeId, 
-    validateBirthDate, 
-    validateGender, 
+import {
+    validatePackageTypeId,
+    validateBirthDate,
+    validateGender,
     validateUUIDFormatted,
-    isValidUUID
+    isValidUUID,
+    calculateAttendanceDays,
+    getTherapistPeriodRange,
+    calculateFullSalary,
+    calculateCustomSalary
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -6561,4 +6565,112 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
       error: null
     };
   }, 'getRemunerationReport');
+};
+
+// Total biaya & pemasukan bulan berjalan — satu-satunya sumber untuk logika
+// Break Even Point, dipakai baik oleh widget BEP maupun ringkasan Financial
+// Health, supaya keduanya selalu menampilkan angka yang konsisten:
+// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
+// - Pengeluaran owner & admin: tercatat dari tgl 1 s/d hari ini, di luar
+//   entri fixed cost yang sudah otomatis terpost oleh autoPostFixedCosts()
+//   (category 'FIXED COST') — kalau tidak, nilainya kehitung dua kali.
+// - Transport & insentif terapis: dihitung harian dari awal periode gaji
+//   masing-masing terapis s/d hari ini, mengikuti skema gaji masing-masing
+//   (probation = tidak ada transport/komisi, mengikuti logic Salary Calculator)
+// - Pemasukan: total bulan berjalan (tgl 1 s/d akhir bulan)
+export const getBepFinancials = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: null, error: null };
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const clinicId = userRow?.clinic_id;
+    if (!clinicId) return { data: null, error: null };
+
+    await autoPostFixedCosts();
+
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const monthStartStr = format(startOfMonth(today), 'yyyy-MM-dd');
+    const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
+
+    const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    const excludeAutoPostedFixedCost = (rows) =>
+      (rows || []).filter(r => (r.category || '').toUpperCase() !== 'FIXED COST');
+
+    const [
+      fixedCostItemsRes, ownerExpRes, adminExpRes, ownerIncRes, adminIncRes,
+      patientIncRes, therapistsRes, serviceRatesRes
+    ] = await Promise.all([
+      supabase.from('clinic_fixed_costs').select('id, item_name, amount').eq('clinic_id', clinicId).order('created_at', { ascending: true }),
+      getOwnerExpenditures({ startDate: monthStartStr, endDate: todayStr }),
+      getAdminExpenses({ startDate: monthStartStr, endDate: todayStr }),
+      getOwnerIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getAdminIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getPatientIncomeFromPackages({ startDate: monthStartStr, endDate: monthEndStr }),
+      getActivePhysiotherapists(),
+      getServiceRates()
+    ]);
+
+    const fixedCostItems = fixedCostItemsRes?.data || [];
+    const totalFixedCost = fixedCostItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const ownerExpense = sumAmount(excludeAutoPostedFixedCost(ownerExpRes.data));
+    const adminExpense = sumAmount(adminExpRes.data);
+    const revenueThisMonth = sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data);
+
+    const therapists = therapistsRes.data || [];
+    const ratesMap = {};
+    (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
+
+    let transportTotal = 0;
+    let incentiveTotal = 0;
+
+    await Promise.all(therapists.map(async (t) => {
+      const salaryScheme = t.salary_scheme || 'full_salary';
+      const isProbation = salaryScheme === 'probation';
+
+      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
+      const periodStartStr = format(periodStart, 'yyyy-MM-dd');
+      // Period start could be after today right after a cycle rollover — clamp.
+      const effectiveEnd = periodStart > today ? periodStart : today;
+      const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
+
+      const [schedRes, timeOffRes, recapsRes] = await Promise.all([
+        getTherapistSchedules(t.id),
+        getTherapistTimeOff(t.id),
+        supabase.from('daily_recaps')
+          .select('amount, amount_package, package_tracking_id, patient_type')
+          .eq('therapist_id', t.id)
+          .gte('recap_date', periodStartStr)
+          .lte('recap_date', effectiveEndStr)
+      ]);
+
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
+      if (isProbation) return;
+
+      transportTotal += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+
+      const recaps = recapsRes.data || [];
+      incentiveTotal += salaryScheme === 'full_salary'
+        ? calculateFullSalary(recaps)
+        : calculateCustomSalary(recaps, ratesMap);
+    }));
+
+    const totalCost = totalFixedCost + ownerExpense + adminExpense + transportTotal + incentiveTotal;
+
+    return {
+      data: {
+        fixedCostItems,
+        totalFixedCost,
+        ownerExpense,
+        adminExpense,
+        transportTotal,
+        incentiveTotal,
+        totalCost,
+        revenueThisMonth,
+        isBreakEven: revenueThisMonth >= totalCost,
+      },
+      error: null
+    };
+  }, 'getBepFinancials', { retry: true });
 };

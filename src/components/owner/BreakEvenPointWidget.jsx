@@ -2,41 +2,20 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Settings2, Loader2, TrendingUp, Users, Wallet, Info, Plus, Trash2, Receipt, Bus, Coins } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
-import {
-  autoPostFixedCosts, getOwnerExpenditures, getAdminExpenses, getOwnerIncome, getAdminIncome,
-  getPatientIncomeFromPackages, getActivePhysiotherapists, getTherapistSchedules, getTherapistTimeOff,
-  getServiceRates
-} from '@/lib/api';
+import { autoPostFixedCosts, getBepFinancials } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn, calculateAttendanceDays, getTherapistPeriodRange, calculateFullSalary, calculateCustomSalary } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
 
-const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
-
-// autoPostFixedCosts() menyalin item fixed cost ke owner_expenditures dengan
-// category 'FIXED COST' begitu tanggal postingnya tiba bulan ini. Entri itu
-// harus dibuang dari "pengeluaran" di sini karena nilainya sudah dihitung
-// penuh lewat totalFixedCost — kalau tidak, biaya fixed cost yang sudah
-// terpost akan ketambah dua kali (sekali sebagai fixed cost, sekali lagi
-// sebagai pengeluaran owner).
-const excludeAutoPostedFixedCost = (rows) =>
-  (rows || []).filter(r => (r.category || '').toUpperCase() !== 'FIXED COST');
-
-// BEP itu "sudah balik modal atau belum bulan ini", jadi biayanya harus biaya
-// yang benar-benar sudah/akan terjadi bulan ini — bukan estimasi per pasien:
-// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
-// - Pengeluaran owner & admin: yang sudah tercatat dari tgl 1 s/d hari ini,
-//   di luar fixed cost yang sudah otomatis terpost (lihat excludeAutoPostedFixedCost)
-// - Transport & insentif terapis: dihitung harian dari awal periode s/d hari ini
-// Pemasukan dihitung terpisah: total bulan berjalan (tgl 1 s/d akhir bulan),
-// bukan mengikuti periode gaji terapis.
+// Perhitungan biaya & pemasukan bulan berjalan (fixed cost, pengeluaran,
+// transport & insentif terapis) dipusatkan di getBepFinancials() (src/lib/api.js)
+// supaya widget ini dan ringkasan Financial Health selalu konsisten.
 const BreakEvenPointWidget = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { userDetails } = useAuth();
@@ -71,70 +50,16 @@ const BreakEvenPointWidget = () => {
     if (!clinicId) { setLoading(false); return; }
     setLoading(true);
 
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const monthStartStr = format(startOfMonth(today), 'yyyy-MM-dd');
-    const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
-
     await fetchFixedCostItems();
 
-    const [ownerExpRes, adminExpRes, ownerIncRes, adminIncRes, patientIncRes, therapistsRes, serviceRatesRes] = await Promise.all([
-      getOwnerExpenditures({ startDate: monthStartStr, endDate: todayStr }),
-      getAdminExpenses({ startDate: monthStartStr, endDate: todayStr }),
-      getOwnerIncome({ startDate: monthStartStr, endDate: monthEndStr }),
-      getAdminIncome({ startDate: monthStartStr, endDate: monthEndStr }),
-      getPatientIncomeFromPackages({ startDate: monthStartStr, endDate: monthEndStr }),
-      getActivePhysiotherapists(),
-      getServiceRates()
-    ]);
-
-    setOwnerExpense(sumAmount(excludeAutoPostedFixedCost(ownerExpRes.data)));
-    setAdminExpense(sumAmount(adminExpRes.data));
-    setRevenueThisMonth(sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data));
-
-    const therapists = therapistsRes.data || [];
-    const ratesMap = {};
-    (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
-
-    let transportSum = 0;
-    let incentiveSum = 0;
-
-    // Mengikuti skema gaji yang sama dengan Salary Calculator: probation tidak
-    // dapat transport/jasa, full_salary dihitung dari nominal per sesi/paket,
-    // custom_salary dihitung dari rate layanan per sesi.
-    await Promise.all(therapists.map(async (t) => {
-      const salaryScheme = t.salary_scheme || 'full_salary';
-      const isProbation = salaryScheme === 'probation';
-
-      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
-      const periodStartStr = format(periodStart, 'yyyy-MM-dd');
-      // Period start could be after today right after a cycle rollover — clamp.
-      const effectiveEnd = periodStart > today ? periodStart : today;
-      const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
-
-      const [schedRes, timeOffRes, recapsRes] = await Promise.all([
-        getTherapistSchedules(t.id),
-        getTherapistTimeOff(t.id),
-        supabase.from('daily_recaps')
-          .select('amount, amount_package, package_tracking_id, patient_type')
-          .eq('therapist_id', t.id)
-          .gte('recap_date', periodStartStr)
-          .lte('recap_date', effectiveEndStr)
-      ]);
-
-      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
-      if (isProbation) return;
-
-      transportSum += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
-
-      const recaps = recapsRes.data || [];
-      incentiveSum += salaryScheme === 'full_salary'
-        ? calculateFullSalary(recaps)
-        : calculateCustomSalary(recaps, ratesMap);
-    }));
-
-    setTransportTotal(transportSum);
-    setIncentiveTotal(incentiveSum);
+    const { data } = await getBepFinancials();
+    if (data) {
+      setOwnerExpense(data.ownerExpense);
+      setAdminExpense(data.adminExpense);
+      setRevenueThisMonth(data.revenueThisMonth);
+      setTransportTotal(data.transportTotal);
+      setIncentiveTotal(data.incentiveTotal);
+    }
     setLoading(false);
   }, [clinicId, fetchFixedCostItems]);
 
