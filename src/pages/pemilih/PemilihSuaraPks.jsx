@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import PemilihSelect from './PemilihSelect';
 import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
-  PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw,
+  PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
 } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -198,6 +198,18 @@ const PemilihSuaraPks = () => {
     return Object.entries(agg).map(([nama, total]) => ({ nama, total })).sort((a, b) => b.total - a.total);
   }, [rows, kelurahanMap]);
 
+  // Daftar caleg induk (nomor + nama) dari data yang sudah ada, dipakai sebagai
+  // acuan kolom di tab Detail per TPS supaya urutannya konsisten antar kelurahan.
+  const candidateMasterList = useMemo(() => {
+    const map = new Map();
+    rows.forEach((r) => {
+      if (!map.has(r.candidate_number)) {
+        map.set(r.candidate_number, { number: r.candidate_number, name: r.candidate_name || 'Suara Partai' });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.number - b.number);
+  }, [rows]);
+
   return (
     <div>
       <div style={{
@@ -225,6 +237,7 @@ const PemilihSuaraPks = () => {
       <div style={{ display: 'flex', gap: 6, marginBottom: 22, flexWrap: 'wrap', borderBottom: '1.5px solid var(--p-border)', paddingBottom: 12 }}>
         {[
           { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+          { key: 'tps', label: 'Detail per TPS', icon: Table2 },
           { key: 'upload', label: 'Upload PDF per Kelurahan', icon: UploadCloud },
         ].map((t) => {
           const Icon = t.icon;
@@ -270,6 +283,13 @@ const PemilihSuaraPks = () => {
             perKelurahanTotal={perKelurahanTotal}
           />
         )
+      ) : tab === 'tps' ? (
+        <PksTpsDetail
+          kelurahanList={kelurahanList}
+          kelurahanTercakup={kelurahanTercakup}
+          candidateMasterList={candidateMasterList}
+          toast={toast}
+        />
       ) : (
         <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} />
       )}
@@ -463,6 +483,186 @@ const PksDashboard = ({
   );
 };
 
+const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, toast }) => {
+  const availableKelurahan = useMemo(
+    () => kelurahanList.filter((k) => kelurahanTercakup.has(k.id)),
+    [kelurahanList, kelurahanTercakup]
+  );
+
+  const [kelurahanId, setKelurahanId] = useState('');
+  const [candidateFilter, setCandidateFilter] = useState('total');
+  const [loading, setLoading] = useState(false);
+  const [tpsRows, setTpsRows] = useState([]);
+  const [hasData, setHasData] = useState(true);
+
+  useEffect(() => {
+    if (!kelurahanId && availableKelurahan.length > 0) setKelurahanId(availableKelurahan[0].id);
+  }, [availableKelurahan, kelurahanId]);
+
+  useEffect(() => {
+    if (!kelurahanId) return;
+    let active = true;
+    setLoading(true);
+    supabase
+      .from('pemilih_suara_caleg_tps')
+      .select('tps_number, candidate_number, candidate_name, votes')
+      .eq('kelurahan_id', kelurahanId)
+      .order('tps_number')
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
+          setTpsRows([]);
+        } else {
+          setTpsRows(data || []);
+          setHasData((data || []).length > 0);
+        }
+        setLoading(false);
+      });
+    return () => { active = false; };
+  }, [kelurahanId, toast]);
+
+  const table = useMemo(() => {
+    const byTps = new Map();
+    tpsRows.forEach((r) => {
+      if (!byTps.has(r.tps_number)) byTps.set(r.tps_number, { tps: r.tps_number, byCandidate: {}, total: 0 });
+      const row = byTps.get(r.tps_number);
+      row.byCandidate[r.candidate_number] = r.votes;
+      row.total += r.votes || 0;
+    });
+    return Array.from(byTps.values()).sort((a, b) => a.tps - b.tps);
+  }, [tpsRows]);
+
+  const candidateOptions = useMemo(
+    () => [
+      { value: 'total', label: 'Total (Partai + Semua Caleg)' },
+      ...candidateMasterList.map((c) => ({
+        value: String(c.number),
+        label: c.number === 0 ? 'Suara Partai (tanpa calon)' : `${c.number}. ${c.name}`,
+      })),
+    ],
+    [candidateMasterList]
+  );
+
+  const chartData = useMemo(() => {
+    if (candidateFilter === 'total') {
+      return table.map((r) => ({ name: `TPS ${String(r.tps).padStart(2, '0')}`, votes: r.total }));
+    }
+    const num = Number(candidateFilter);
+    return table.map((r) => ({ name: `TPS ${String(r.tps).padStart(2, '0')}`, votes: r.byCandidate[num] || 0 }));
+  }, [table, candidateFilter]);
+
+  const selectedKelurahanName = availableKelurahan.find((k) => k.id === kelurahanId)?.nama || '';
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 20 }}>
+        <div style={{ minWidth: 220 }}>
+          <label className="p-label">Kelurahan</label>
+          <PemilihSelect
+            value={kelurahanId}
+            onChange={setKelurahanId}
+            options={availableKelurahan.map((k) => ({ value: k.id, label: k.nama }))}
+            placeholder="Pilih Kelurahan"
+            title="Pilih Kelurahan"
+          />
+        </div>
+        <div style={{ minWidth: 260 }}>
+          <label className="p-label">Tampilkan</label>
+          <PemilihSelect
+            value={candidateFilter}
+            onChange={setCandidateFilter}
+            options={candidateOptions}
+            title="Pilih Caleg"
+          />
+        </div>
+      </div>
+
+      {availableKelurahan.length === 0 ? (
+        <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
+          <Table2 size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
+          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Belum ada data suara PKS sama sekali.</p>
+        </div>
+      ) : loading ? (
+        <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#059669" /></div>
+      ) : !hasData ? (
+        <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
+          <ListFilter size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
+          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>
+            Rincian per TPS untuk <b>{selectedKelurahanName}</b> belum tersedia. Data ini hanya total per kelurahan (diinput manual).
+            Upload ulang PDF kelurahan ini lewat tab "Upload PDF per Kelurahan" untuk mengisi rincian per TPS.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="p-card" style={{ padding: 24, marginBottom: 24 }}>
+            <CardHeader
+              title={`Suara per TPS — ${selectedKelurahanName}`}
+              subtitle={`${table.length} TPS tercatat`}
+              icon={BarChart3} iconColor="#059669" iconBg="#ecfdf5"
+            />
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 40 }} barCategoryGap="24%">
+                  <defs>
+                    <linearGradient id="gradTps" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f3" />
+                  <XAxis dataKey="name" angle={-60} textAnchor="end" interval={Math.max(0, Math.floor(chartData.length / 30))} tick={{ fontSize: 9.5, fill: '#9ca3af' }} height={60} axisLine={{ stroke: '#e8e9ec' }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} width={30} />
+                  <Tooltip
+                    formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Suara']}
+                    contentStyle={{ borderRadius: 14, fontSize: 12, border: '1px solid #e8e9ec', boxShadow: '0 12px 32px rgba(16,24,40,0.12)', padding: '10px 14px' }}
+                  />
+                  <Bar dataKey="votes" fill="url(#gradTps)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="p-card" style={{ padding: 24 }}>
+            <CardHeader title="Tabel Rincian per TPS" subtitle="Geser ke samping untuk lihat semua caleg" icon={Table2} iconColor="#2563eb" iconBg="#eff6ff" />
+            <div className="p-table-wrap">
+              <table className="p-table">
+                <thead>
+                  <tr>
+                    <th>TPS</th>
+                    {candidateMasterList.map((c) => (
+                      <th key={c.number} style={{ textAlign: 'right' }}>
+                        {c.number === 0 ? 'Partai' : c.number}
+                      </th>
+                    ))}
+                    <th style={{ textAlign: 'right' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {table.map((r) => (
+                    <tr key={r.tps}>
+                      <td style={{ fontWeight: 700 }}>{String(r.tps).padStart(2, '0')}</td>
+                      {candidateMasterList.map((c) => (
+                        <td key={c.number} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#4b5563' }}>
+                          {r.byCandidate[c.number] ?? '-'}
+                        </td>
+                      ))}
+                      <td style={{ textAlign: 'right', fontWeight: 800 }}>{r.total.toLocaleString('id-ID')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 10.5, color: '#9ca3af' }}>
+              Kolom angka menunjukkan nomor urut caleg ("Partai" = suara partai tanpa calon).
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const PksUpload = ({ kelurahanList, onSaved, toast }) => {
   const fileInputRef = useRef(null);
   const cancelRef = useRef(false);
@@ -589,6 +789,33 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
     return { items, sheetInfo };
   }, [pageResults]);
 
+  // Rincian suara per TPS per caleg — kolom "TPS 01".."TPS NN" pada tiap
+  // halaman (bukan kolom "JUMLAH PINDAHAN/AKHIR", itu cuma total berjalan).
+  // key sama dengan pksResult.items[].key supaya gampang dipasangkan saat simpan.
+  const pksTpsByCandidate = useMemo(() => {
+    const perCandidate = new Map();
+    pageResults.forEach((page) => {
+      if (!page.is_vote_table) return;
+      const headers = page.column_headers || [];
+      (page.rows || []).forEach((row) => {
+        if (!PARTY_MATCH.test(row.party_name || '')) return;
+        const isPartyRow = !!row.is_party_row && !row.candidate_name;
+        const key = isPartyRow ? 'party' : `cand::${normalize(row.candidate_name)}`;
+        if (!perCandidate.has(key)) perCandidate.set(key, new Map());
+        const tpsMap = perCandidate.get(key);
+        const values = row.values || [];
+        headers.forEach((h, i) => {
+          const m = /TPS\s*0*(\d+)/i.exec(h || '');
+          if (!m) return;
+          const votes = values[i];
+          if (votes === null || votes === undefined) return;
+          tpsMap.set(parseInt(m[1], 10), votes);
+        });
+      });
+    });
+    return perCandidate;
+  }, [pageResults]);
+
   const handleSave = async () => {
     if (!kelurahanId) return;
     if (pksResult.items.length === 0) {
@@ -611,12 +838,40 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
         updated_at: new Date().toISOString(),
       }));
     const { error } = await supabase.from('pemilih_suara_caleg').upsert(payload, { onConflict: 'kelurahan_id,candidate_number' });
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
       return;
     }
-    toast({ title: 'Data tersimpan', description: `${payload.length} baris suara PKS disimpan untuk kelurahan terpilih.` });
+
+    const tpsPayload = [];
+    pksResult.items.forEach((it) => {
+      const tpsMap = pksTpsByCandidate.get(it.key);
+      if (!tpsMap) return;
+      tpsMap.forEach((votes, tpsNumber) => {
+        tpsPayload.push({
+          kelurahan_id: kelurahanId,
+          tps_number: tpsNumber,
+          candidate_number: it.candidateNumber ?? 0,
+          candidate_name: it.candidateName,
+          votes,
+        });
+      });
+    });
+    for (let i = 0; i < tpsPayload.length; i += 500) {
+      const { error: tpsError } = await supabase
+        .from('pemilih_suara_caleg_tps')
+        .upsert(tpsPayload.slice(i, i + 500), { onConflict: 'kelurahan_id,tps_number,candidate_number' });
+      if (tpsError) {
+        setSaving(false);
+        toast({ variant: 'destructive', title: 'Total tersimpan, tapi rincian per TPS gagal', description: tpsError.message });
+        onSaved();
+        return;
+      }
+    }
+
+    setSaving(false);
+    toast({ title: 'Data tersimpan', description: `${payload.length} baris total + ${tpsPayload.length} baris rincian per TPS disimpan.` });
     onSaved();
   };
 
