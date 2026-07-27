@@ -8,7 +8,10 @@ import { Loader2, FileUp, Search, AlertTriangle, CheckCircle2, FileText, X } fro
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const CONCURRENCY = 3;
-const INVOKE_TIMEOUT_MS = 60000;
+// Halaman rekap KPU tabelnya besar; transkripsi satu halaman bisa lewat dari
+// satu menit. Batas 60 detik sebelumnya bikin halaman yang sebenarnya berhasil
+// ikut ditandai gagal.
+const INVOKE_TIMEOUT_MS = 150000;
 
 // Target sisi terpanjang ~1500px — cukup tajam untuk baca angka, tapi tetap
 // di bawah batas resolusi yang dipakai Claude vision (di atas itu gambar

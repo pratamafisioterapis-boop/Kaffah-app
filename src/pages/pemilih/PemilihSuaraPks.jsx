@@ -19,14 +19,23 @@ import {
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const CONCURRENCY = 3;
-const INVOKE_TIMEOUT_MS = 60000;
+// Satu halaman tabel rekap bisa butuh lebih dari satu menit untuk ditranskripsi
+// (tabelnya besar dan tiap angka harus dibaca teliti), jadi batas tunggunya
+// harus longgar — sebelumnya 60 detik dan halaman yang sebenarnya berhasil ikut
+// dianggap gagal.
+const INVOKE_TIMEOUT_MS = 150000;
 // Skala dihitung dari ukuran halaman asli (bukan angka tetap) supaya sisi
 // terpanjang selalu ~1500px — PDF hasil scan/olahan tool lain kadang punya
 // MediaBox jauh lebih besar dari A4; skala tetap bisa menghasilkan gambar
 // raksasa yang bikin OCR lambat/gagal (timeout ~40an detik, lalu 502 dari
 // Anthropic karena payload terlalu besar).
 const TARGET_MAX_DIMENSION = 1500;
-const PARTY_MATCH = /keadilan\s*sejahtera/i;
+const PARTY_MATCH = /keadilan\s*sejahtera|\bpks\b/i;
+// Halaman ini cuma butuh baris PKS, jadi server OCR diberi tahu supaya tidak
+// menyalin ~18 partai lain sekalian. Selain jauh lebih cepat, ini yang bikin
+// hasilnya tidak lagi kepotong di tengah (jawaban model terlalu panjang dulunya
+// bikin semua halaman gagal parsing).
+const PARTY_FILTER = 'Partai Keadilan Sejahtera';
 
 const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#ea580c'];
 const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
@@ -1497,7 +1506,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
             if (cancelRef.current) return;
             const { data, error } = await withTimeout(
               supabase.functions.invoke('pemilih-ocr-suara-pdf', {
-                body: { image_base64, media_type: 'image/jpeg' },
+                body: { image_base64, media_type: 'image/jpeg', party_filter: PARTY_FILTER },
               }),
               INVOKE_TIMEOUT_MS,
               `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s)`
