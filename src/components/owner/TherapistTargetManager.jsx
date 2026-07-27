@@ -20,8 +20,7 @@ import {
   deleteTherapistTarget,
   getOperationalOptions,
   getTherapistTargetProgress,
-  getTherapistSchedules,
-  getTherapistTimeOff
+  getTherapistSchedules
 } from '@/lib/api';
 import { format, addDays } from 'date-fns';
 import { getTherapistPeriodRange, calculateMaxPatientCapacity, calculateNextPeriodTarget } from '@/lib/utils';
@@ -209,13 +208,10 @@ const TherapistTargetManager = () => {
     setGeneratingId(item.id);
     try {
       const therapist = therapists.find(t => t.id === item.therapist_id) || null;
-      const [schedRes, timeOffRes] = await Promise.all([
-        getTherapistSchedules(item.therapist_id),
-        getTherapistTimeOff(item.therapist_id),
-      ]);
+      const { data: schedules } = await getTherapistSchedules(item.therapist_id);
 
       const maxCapacity = calculateMaxPatientCapacity(
-        schedRes.data || [], timeOffRes.data || [], item.start_date, item.end_date
+        schedules || [], item.start_date, item.end_date
       );
       const achieved = (item.actual_visits || 0) >= (item.target_visits || 0) && (item.target_visits || 0) > 0;
       const nextTargetVisits = calculateNextPeriodTarget({

@@ -429,18 +429,44 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate)
 }
 
 /**
- * Kapasitas maksimal pasien dalam 1 periode = jumlah hari kerja (setelah
- * dikurangi cuti/ijin/libur, lihat calculateAttendanceDays) x kapasitas
- * maksimal pasien per hari.
+ * Jumlah hari kerja terjadwal dalam 1 periode, HANYA dikurangi hari libur
+ * jadwal (day_of_week yang tidak aktif) — cuti/izin TIDAK mengurangi,
+ * karena ini dipakai sebagai kapasitas nominal/baseline untuk target, bukan
+ * kehadiran aktual (beda dengan calculateAttendanceDays yang dipakai payroll).
  * @param {Array} schedules - Jadwal aktif terapis (therapist_schedules)
- * @param {Array} timeOffs - Data cuti/izin terapis (therapist_time_off)
+ * @param {string|Date} startDate - Awal periode
+ * @param {string|Date} endDate - Akhir periode
+ * @returns {number}
+ */
+export function calculateScheduledWorkDays(schedules, startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  let totalDays = 0;
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const day = d.getDay(); // 0=minggu, 1=senin ...
+    const hasSchedule = (schedules || []).some(s => s.day_of_week === day && s.is_active);
+    if (hasSchedule) totalDays++;
+  }
+
+  return totalDays;
+}
+
+/**
+ * Kapasitas maksimal pasien dalam 1 periode = jumlah hari kerja terjadwal
+ * (dikurangi hari libur jadwal saja, cuti/izin tetap dihitung — lihat
+ * calculateScheduledWorkDays) x kapasitas maksimal pasien per hari.
+ * @param {Array} schedules - Jadwal aktif terapis (therapist_schedules)
  * @param {string|Date} startDate - Awal periode
  * @param {string|Date} endDate - Akhir periode
  * @param {number} [perDayCapacity=5] - Kapasitas maksimal pasien per hari kerja
  * @returns {number}
  */
-export function calculateMaxPatientCapacity(schedules, timeOffs, startDate, endDate, perDayCapacity = 5) {
-  const workDays = calculateAttendanceDays(schedules, timeOffs, startDate, endDate);
+export function calculateMaxPatientCapacity(schedules, startDate, endDate, perDayCapacity = 5) {
+  const workDays = calculateScheduledWorkDays(schedules, startDate, endDate);
   return workDays * perDayCapacity;
 }
 
