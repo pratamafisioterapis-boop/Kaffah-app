@@ -6567,27 +6567,18 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
   }, 'getRemunerationReport');
 };
 
-// Total biaya & pemasukan periode berjalan — satu-satunya sumber untuk logika
+// Total biaya & pemasukan bulan berjalan — satu-satunya sumber untuk logika
 // Break Even Point, dipakai baik oleh widget BEP maupun ringkasan Financial
 // Health, supaya keduanya selalu menampilkan angka yang konsisten:
-// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan,
-//   tidak diprorata mengikuti rentang tanggal yang dipilih)
-// - Pengeluaran owner & admin: tercatat dalam rentang tanggal yang dipakai,
-//   di luar entri fixed cost yang sudah otomatis terpost oleh
-//   autoPostFixedCosts() (category 'FIXED COST') — kalau tidak, nilainya
-//   kehitung dua kali.
-// - Transport & insentif terapis: dihitung harian dalam rentang tanggal yang
-//   dipakai, mengikuti skema gaji masing-masing terapis (probation = tidak
-//   ada transport/komisi, mengikuti logic Salary Calculator)
-// - Pemasukan: total dalam rentang tanggal yang dipakai
-//
-// dateRange { startDate, endDate } opsional — kalau tidak diisi (dipakai
-// widget BEP), default ke "tgl 1 bulan ini s/d hari ini" untuk pengeluaran &
-// "tgl 1 s/d akhir bulan ini" untuk pemasukan, seperti semula. Kalau diisi
-// (dipakai Financial Health Overview yang punya date filter sendiri),
-// pengeluaran, pemasukan, transport & insentif terapis semua mengikuti
-// rentang itu apa adanya.
-export const getBepFinancials = async (dateRange) => {
+// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
+// - Pengeluaran owner & admin: tercatat dari tgl 1 s/d hari ini, di luar
+//   entri fixed cost yang sudah otomatis terpost oleh autoPostFixedCosts()
+//   (category 'FIXED COST') — kalau tidak, nilainya kehitung dua kali.
+// - Transport & insentif terapis: dihitung harian dari awal periode gaji
+//   masing-masing terapis s/d hari ini, mengikuti skema gaji masing-masing
+//   (probation = tidak ada transport/komisi, mengikuti logic Salary Calculator)
+// - Pemasukan: total bulan berjalan (tgl 1 s/d akhir bulan)
+export const getBepFinancials = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
@@ -6599,11 +6590,9 @@ export const getBepFinancials = async (dateRange) => {
     await autoPostFixedCosts();
 
     const today = new Date();
-    const usesCustomRange = Boolean(dateRange?.startDate && dateRange?.endDate);
-    const expenseStartStr = usesCustomRange ? dateRange.startDate : format(startOfMonth(today), 'yyyy-MM-dd');
-    const expenseEndStr = usesCustomRange ? dateRange.endDate : format(today, 'yyyy-MM-dd');
-    const revenueStartStr = usesCustomRange ? dateRange.startDate : format(startOfMonth(today), 'yyyy-MM-dd');
-    const revenueEndStr = usesCustomRange ? dateRange.endDate : format(endOfMonth(today), 'yyyy-MM-dd');
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const monthStartStr = format(startOfMonth(today), 'yyyy-MM-dd');
+    const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
 
     const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
     const excludeAutoPostedFixedCost = (rows) =>
@@ -6614,11 +6603,11 @@ export const getBepFinancials = async (dateRange) => {
       patientIncRes, therapistsRes, serviceRatesRes
     ] = await Promise.all([
       supabase.from('clinic_fixed_costs').select('id, item_name, amount').eq('clinic_id', clinicId).order('created_at', { ascending: true }),
-      getOwnerExpenditures({ startDate: expenseStartStr, endDate: expenseEndStr }),
-      getAdminExpenses({ startDate: expenseStartStr, endDate: expenseEndStr }),
-      getOwnerIncome({ startDate: revenueStartStr, endDate: revenueEndStr }),
-      getAdminIncome({ startDate: revenueStartStr, endDate: revenueEndStr }),
-      getPatientIncomeFromPackages({ startDate: revenueStartStr, endDate: revenueEndStr }),
+      getOwnerExpenditures({ startDate: monthStartStr, endDate: todayStr }),
+      getAdminExpenses({ startDate: monthStartStr, endDate: todayStr }),
+      getOwnerIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getAdminIncome({ startDate: monthStartStr, endDate: monthEndStr }),
+      getPatientIncomeFromPackages({ startDate: monthStartStr, endDate: monthEndStr }),
       getActivePhysiotherapists(),
       getServiceRates()
     ]);
@@ -6640,17 +6629,10 @@ export const getBepFinancials = async (dateRange) => {
       const salaryScheme = t.salary_scheme || 'full_salary';
       const isProbation = salaryScheme === 'probation';
 
-      let periodStart;
-      let effectiveEnd;
-      if (usesCustomRange) {
-        periodStart = parseISO(dateRange.startDate);
-        effectiveEnd = parseISO(dateRange.endDate);
-      } else {
-        ({ startDate: periodStart } = getTherapistPeriodRange(t, today));
-        // Period start could be after today right after a cycle rollover — clamp.
-        effectiveEnd = periodStart > today ? periodStart : today;
-      }
+      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
       const periodStartStr = format(periodStart, 'yyyy-MM-dd');
+      // Period start could be after today right after a cycle rollover — clamp.
+      const effectiveEnd = periodStart > today ? periodStart : today;
       const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
 
       const [schedRes, timeOffRes, recapsRes] = await Promise.all([
