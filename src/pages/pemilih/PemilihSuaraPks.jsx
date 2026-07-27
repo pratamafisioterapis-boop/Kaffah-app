@@ -16,7 +16,13 @@ import {
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const CONCURRENCY = 3;
-const RENDER_SCALE = 1.8;
+const INVOKE_TIMEOUT_MS = 60000;
+// Skala dihitung dari ukuran halaman asli (bukan angka tetap) supaya sisi
+// terpanjang selalu ~1500px — PDF hasil scan/olahan tool lain kadang punya
+// MediaBox jauh lebih besar dari A4; skala tetap bisa menghasilkan gambar
+// raksasa yang bikin OCR lambat/gagal (timeout ~40an detik, lalu 502 dari
+// Anthropic karena payload terlalu besar).
+const TARGET_MAX_DIMENSION = 1500;
 const PARTY_MATCH = /keadilan\s*sejahtera/i;
 
 const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#059669'];
@@ -24,9 +30,30 @@ const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#059
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
+const withTimeout = (promise, ms, message) => Promise.race([
+  promise,
+  new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+]);
+
+// supabase-js hanya kasih pesan generik ("Edge Function returned a non-2xx
+// status code") untuk FunctionsHttpError — pesan asli dari edge function
+// (mis. error dari Anthropic API) ada di body response, harus dibaca manual.
+const describeFunctionError = async (error) => {
+  try {
+    if (error?.context?.json) {
+      const body = await error.context.json();
+      if (body?.error) return body.error;
+    }
+  } catch (_e) { /* body bukan JSON atau sudah kebaca, pakai pesan default */ }
+  return error?.message || 'Gagal memanggil server OCR';
+};
+
 const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
   const page = await pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: RENDER_SCALE });
+  const baseViewport = page.getViewport({ scale: 1 });
+  const longestSide = Math.max(baseViewport.width, baseViewport.height);
+  const scale = Math.min(3, Math.max(0.5, TARGET_MAX_DIMENSION / longestSide));
+  const viewport = page.getViewport({ scale });
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
@@ -501,10 +528,14 @@ const PksUpload = ({ kelurahanList, onSaved, toast }) => {
           try {
             const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
             if (cancelRef.current) return;
-            const { data, error } = await supabase.functions.invoke('pemilih-ocr-suara-pdf', {
-              body: { image_base64, media_type: 'image/jpeg' },
-            });
-            if (error) throw new Error(error.message);
+            const { data, error } = await withTimeout(
+              supabase.functions.invoke('pemilih-ocr-suara-pdf', {
+                body: { image_base64, media_type: 'image/jpeg' },
+              }),
+              INVOKE_TIMEOUT_MS,
+              `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s)`
+            );
+            if (error) throw new Error(await describeFunctionError(error));
             if (data?.error) throw new Error(data.error);
             results.push({ pageNumber, ...(data?.data || { is_vote_table: false, rows: [], column_headers: [] }) });
             ok = true;
