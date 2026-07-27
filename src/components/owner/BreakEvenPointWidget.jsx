@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
 const formatCurrency = (value) =>
@@ -43,6 +43,7 @@ const BreakEvenPointWidget = () => {
   const [transportTotal, setTransportTotal] = useState(0);
   const [incentiveTotal, setIncentiveTotal] = useState(0);
   const [revenueThisMonth, setRevenueThisMonth] = useState(0);
+  const [breakEvenDate, setBreakEvenDate] = useState(null);
 
   const fetchFixedCostItems = useCallback(async () => {
     if (!clinicId) return;
@@ -68,6 +69,7 @@ const BreakEvenPointWidget = () => {
       setRevenueThisMonth(data.revenueThisMonth);
       setTransportTotal(data.transportTotal);
       setIncentiveTotal(data.incentiveTotal);
+      setBreakEvenDate(data.breakEvenDate || null);
     }
     setLoading(false);
   }, [clinicId, fetchFixedCostItems]);
@@ -201,7 +203,7 @@ const BreakEvenPointWidget = () => {
               </div>
               <p className="text-[11px] text-slate-400">
                 {isBreakEven
-                  ? `Sudah melewati titik impas — profit ${formatCurrency(revenueThisMonth - totalCost)} 🎉`
+                  ? `Sudah melewati titik impas${breakEvenDate ? ` pada ${format(parseISO(breakEvenDate), 'd MMM yyyy', { locale: idLocale })}` : ''} — profit ${formatCurrency(revenueThisMonth - totalCost)} 🎉`
                   : `Kurang ${formatCurrency(totalCost - revenueThisMonth)} lagi untuk mencapai titik impas`}
               </p>
             </div>
