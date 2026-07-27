@@ -175,6 +175,11 @@ const PemilihSuaraPks = () => {
     [filteredRows]
   );
 
+  const totalSuaraCaleg = useMemo(
+    () => filteredRows.filter((r) => r.candidate_number !== 0).reduce((sum, r) => sum + (r.total_suara || 0), 0),
+    [filteredRows]
+  );
+
   const perCaleg = useMemo(() => {
     const agg = {};
     filteredRows.forEach((r) => {
@@ -334,6 +339,7 @@ const PemilihSuaraPks = () => {
             kelurahanTercakup={kelurahanTercakup}
             totalSuaraPartai={totalSuaraPartai}
             totalSuaraTanpaCalon={totalSuaraTanpaCalon}
+            totalSuaraCaleg={totalSuaraCaleg}
             perCaleg={perCaleg}
             calegOnly={calegOnly}
             chartData={chartData}
@@ -362,6 +368,7 @@ const PemilihSuaraPks = () => {
           kelurahanTotalCount={kelurahanList.length}
           totalSuaraPartai={totalSuaraPartai}
           totalSuaraTanpaCalon={totalSuaraTanpaCalon}
+          totalSuaraCaleg={totalSuaraCaleg}
           perCaleg={perCaleg}
           calegOnly={calegOnly}
           chartData={chartData}
@@ -375,7 +382,7 @@ const PemilihSuaraPks = () => {
 
 const PksDashboard = ({
   kelurahanList, filterKelurahan, setFilterKelurahan, kelurahanTercakup,
-  totalSuaraPartai, totalSuaraTanpaCalon, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
+  totalSuaraPartai, totalSuaraTanpaCalon, totalSuaraCaleg, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
 }) => {
   const maxCaleg = calegOnly[0]?.total || 1;
 
@@ -385,7 +392,7 @@ const PksDashboard = ({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, flex: 1 }}>
           <StatPill icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#ea580c" bg="#fff7ed" />
           <StatPill icon={Trophy} label="Suara Partai (tanpa calon)" value={totalSuaraTanpaCalon.toLocaleString('id-ID')} color="#d97706" bg="#fffbeb" />
-          <StatPill icon={Users} label="Caleg Terdaftar" value={calegOnly.length} color="#2563eb" bg="#eff6ff" />
+          <StatPill icon={Users} label="Suara Caleg" value={totalSuaraCaleg.toLocaleString('id-ID')} color="#2563eb" bg="#eff6ff" />
           <StatPill icon={MapPin} label="Kelurahan Tercakup" value={`${kelurahanTercakup.size} / ${kelurahanList.length}`} color="#dc2626" bg="#fef2f2" />
         </div>
       </div>
@@ -568,7 +575,7 @@ const SLIDESHOW_GROUP_SIZE = 6;
 // supaya tetap terbaca dari jarak jauh.
 const PksSlideshow = ({
   onClose, selectedYear, filterKelurahanName, kelurahanTercakupCount, kelurahanTotalCount,
-  totalSuaraPartai, totalSuaraTanpaCalon, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
+  totalSuaraPartai, totalSuaraTanpaCalon, totalSuaraCaleg, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
 }) => {
   const containerRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -679,7 +686,7 @@ const PksSlideshow = ({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 22, marginTop: 30 }}>
                   <SlideStat icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#fb923c" />
                   <SlideStat icon={Trophy} label="Suara Partai (tanpa calon)" value={totalSuaraTanpaCalon.toLocaleString('id-ID')} color="#fbbf24" />
-                  <SlideStat icon={Users} label="Caleg Terdaftar" value={calegOnly.length} color="#60a5fa" />
+                  <SlideStat icon={Users} label="Suara Caleg" value={totalSuaraCaleg.toLocaleString('id-ID')} color="#60a5fa" />
                   <SlideStat icon={MapPin} label="Kelurahan Tercakup" value={`${kelurahanTercakupCount} / ${kelurahanTotalCount}`} color="#f87171" />
                 </div>
               </div>
