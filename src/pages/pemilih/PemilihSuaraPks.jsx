@@ -27,8 +27,8 @@ const INVOKE_TIMEOUT_MS = 60000;
 const TARGET_MAX_DIMENSION = 1500;
 const PARTY_MATCH = /keadilan\s*sejahtera/i;
 
-const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#059669'];
-const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#059669', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
+const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#ea580c'];
+const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -239,14 +239,14 @@ const PemilihSuaraPks = () => {
     <div>
       <div style={{
         borderRadius: 20, padding: '26px 30px', marginBottom: 24,
-        background: 'linear-gradient(135deg, #17181f 0%, #142b1e 60%, #0d3b1f 100%)',
+        background: 'linear-gradient(135deg, #17181f 0%, #2b1a0f 60%, #431f08 100%)',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', top: -40, right: -30, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.25), transparent 70%)' }} />
+        <div style={{ position: 'absolute', top: -40, right: -30, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.28), transparent 70%)' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Vote size={16} color="#86efac" />
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <Vote size={16} color="#fdba74" />
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: '#fdba74', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Perolehan Suara Pileg
             </span>
           </div>
@@ -273,8 +273,8 @@ const PemilihSuaraPks = () => {
               onClick={() => setTab(t.key)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                padding: '9px 16px', borderRadius: 11, border: '1.5px solid ' + (active ? '#059669' : 'var(--p-border)'),
-                background: active ? 'linear-gradient(135deg, #10b981, #059669)' : '#fff',
+                padding: '9px 16px', borderRadius: 11, border: '1.5px solid ' + (active ? '#ea580c' : 'var(--p-border)'),
+                background: active ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#fff',
                 color: active ? '#fff' : '#4b5563',
                 fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
               }}
@@ -295,9 +295,9 @@ const PemilihSuaraPks = () => {
                   key={y}
                   onClick={() => setSelectedYear(y)}
                   style={{
-                    padding: '7px 16px', borderRadius: 999, border: '1.5px solid ' + (selectedYear === y ? '#059669' : 'var(--p-border)'),
-                    background: selectedYear === y ? '#ecfdf5' : '#fff',
-                    color: selectedYear === y ? '#059669' : '#6b7280',
+                    padding: '7px 16px', borderRadius: 999, border: '1.5px solid ' + (selectedYear === y ? '#ea580c' : 'var(--p-border)'),
+                    background: selectedYear === y ? '#fff7ed' : '#fff',
+                    color: selectedYear === y ? '#ea580c' : '#6b7280',
                     fontWeight: 800, fontSize: 13, cursor: 'pointer', transition: 'all 0.16s',
                   }}
                 >
@@ -309,7 +309,7 @@ const PemilihSuaraPks = () => {
           {tab === 'dashboard' && rows.length > 0 && (
             <button
               className="p-btn-primary"
-              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
               onClick={() => setSlideshowOpen(true)}
             >
               <Presentation size={15} /> Mode Slideshow
@@ -320,7 +320,7 @@ const PemilihSuaraPks = () => {
 
       {tab === 'dashboard' ? (
         loading ? (
-          <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#059669" /></div>
+          <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#ea580c" /></div>
         ) : rows.length === 0 ? (
           <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
             <Vote size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
@@ -383,7 +383,7 @@ const PksDashboard = ({
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, flex: 1 }}>
-          <StatPill icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#059669" bg="#ecfdf5" />
+          <StatPill icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#ea580c" bg="#fff7ed" />
           <StatPill icon={Trophy} label="Suara Partai (tanpa calon)" value={totalSuaraTanpaCalon.toLocaleString('id-ID')} color="#d97706" bg="#fffbeb" />
           <StatPill icon={Users} label="Caleg Terdaftar" value={calegOnly.length} color="#2563eb" bg="#eff6ff" />
           <StatPill icon={MapPin} label="Kelurahan Tercakup" value={`${kelurahanTercakup.size} / ${kelurahanList.length}`} color="#dc2626" bg="#fef2f2" />
@@ -403,14 +403,14 @@ const PksDashboard = ({
 
       <div className="p-grid-collapse" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 24 }}>
         <div className="p-card" style={{ padding: 24 }}>
-          <CardHeader title="Perolehan Suara per Caleg" subtitle="Total suara sah tiap caleg PKS, diurutkan dari terbanyak" icon={BarChart3} iconColor="#059669" iconBg="#ecfdf5" />
+          <CardHeader title="Perolehan Suara per Caleg" subtitle="Total suara sah tiap caleg PKS, diurutkan dari terbanyak" icon={BarChart3} iconColor="#ea580c" iconBg="#fff7ed" />
           <div style={{ height: Math.max(300, chartData.length * 34) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 34, left: 10, bottom: 5 }} barCategoryGap="28%">
                 <defs>
                   <linearGradient id="gradCaleg" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#34d399" />
-                    <stop offset="100%" stopColor="#059669" />
+                    <stop offset="0%" stopColor="#fb923c" />
+                    <stop offset="100%" stopColor="#ea580c" />
                   </linearGradient>
                   <filter id="barShadowPks" x="-20%" y="-40%" width="150%" height="180%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.12" />
@@ -435,7 +435,7 @@ const PksDashboard = ({
         </div>
 
         <div className="p-card" style={{ padding: 24 }}>
-          <CardHeader title="Distribusi Suara" subtitle="Proporsi suara caleg vs suara partai" icon={PieChartIcon} iconColor="#059669" iconBg="#ecfdf5" />
+          <CardHeader title="Distribusi Suara" subtitle="Proporsi suara caleg vs suara partai" icon={PieChartIcon} iconColor="#ea580c" iconBg="#fff7ed" />
           <div style={{ height: 300, position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -624,12 +624,12 @@ const PksSlideshow = ({
   return (
     <div ref={containerRef} style={{
       position: 'fixed', inset: 0, zIndex: 300, display: 'flex', flexDirection: 'column',
-      background: 'linear-gradient(160deg, #14151c 0%, #0f2a1c 55%, #06170d 100%)', color: '#fff',
+      background: 'linear-gradient(160deg, #14151c 0%, #2a1810 55%, #170a06 100%)', color: '#fff',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 34px 6px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Vote size={16} color="#86efac" />
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <Vote size={16} color="#fdba74" />
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: '#fdba74', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Perolehan Suara PKS {selectedYear || ''}
           </span>
         </div>
@@ -654,7 +654,7 @@ const PksSlideshow = ({
           >
             {slide.kind === 'cover' && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#86efac', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fdba74', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
                   Rekap Perolehan Suara Pileg {selectedYear || ''}
                 </div>
                 <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: '-0.02em', maxWidth: 760 }}>
@@ -665,7 +665,7 @@ const PksSlideshow = ({
                   {filterKelurahanName ? `Kelurahan: ${filterKelurahanName}` : `Seluruh kelurahan tercakup (${kelurahanTercakupCount} / ${kelurahanTotalCount})`}
                 </p>
                 <div style={{ marginTop: 36, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span style={{ fontSize: 64, fontWeight: 800, color: '#4ade80', letterSpacing: '-0.03em' }}>
+                  <span style={{ fontSize: 64, fontWeight: 800, color: '#fb923c', letterSpacing: '-0.03em' }}>
                     {totalSuaraPartai.toLocaleString('id-ID')}
                   </span>
                   <span style={{ fontSize: 16, color: '#a1a1aa', fontWeight: 600 }}>total suara</span>
@@ -677,7 +677,7 @@ const PksSlideshow = ({
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <SlideHeading title="Ringkasan Perolehan Suara" />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 22, marginTop: 30 }}>
-                  <SlideStat icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#4ade80" />
+                  <SlideStat icon={Vote} label="Total Suara PKS" value={totalSuaraPartai.toLocaleString('id-ID')} color="#fb923c" />
                   <SlideStat icon={Trophy} label="Suara Partai (tanpa calon)" value={totalSuaraTanpaCalon.toLocaleString('id-ID')} color="#fbbf24" />
                   <SlideStat icon={Users} label="Caleg Terdaftar" value={calegOnly.length} color="#60a5fa" />
                   <SlideStat icon={MapPin} label="Kelurahan Tercakup" value={`${kelurahanTercakupCount} / ${kelurahanTotalCount}`} color="#f87171" />
@@ -693,8 +693,8 @@ const PksSlideshow = ({
                     <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 50, left: 10, bottom: 5 }} barCategoryGap="26%">
                       <defs>
                         <linearGradient id="gradCalegSlide" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#4ade80" />
-                          <stop offset="100%" stopColor="#059669" />
+                          <stop offset="0%" stopColor="#fb923c" />
+                          <stop offset="100%" stopColor="#ea580c" />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.08)" />
@@ -842,7 +842,7 @@ const PksSlideshow = ({
               onClick={() => setIndex(i)}
               style={{
                 width: i === index ? 22 : 7, height: 7, borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s',
-                background: i === index ? '#22c55e' : 'rgba(255,255,255,0.25)',
+                background: i === index ? '#f97316' : 'rgba(255,255,255,0.25)',
               }}
             />
           ))}
@@ -1032,7 +1032,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
           <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Belum ada data suara PKS sama sekali.</p>
         </div>
       ) : loading ? (
-        <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#059669" /></div>
+        <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#ea580c" /></div>
       ) : !hasData ? (
         <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
           <ListFilter size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
@@ -1047,15 +1047,15 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
             <CardHeader
               title={`Suara per TPS — ${selectedKelurahanName}`}
               subtitle={`${table.length} TPS tercatat`}
-              icon={BarChart3} iconColor="#059669" iconBg="#ecfdf5"
+              icon={BarChart3} iconColor="#ea580c" iconBg="#fff7ed"
             />
             <div style={{ height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 40 }} barCategoryGap="24%">
                   <defs>
                     <linearGradient id="gradTps" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34d399" />
-                      <stop offset="100%" stopColor="#059669" />
+                      <stop offset="0%" stopColor="#fb923c" />
+                      <stop offset="100%" stopColor="#ea580c" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f3" />
@@ -1157,7 +1157,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                 ))}
               </div>
             </div>
-            <button className="p-btn-primary" style={{ marginTop: 18, width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #10b981, #059669)' }} onClick={saveEditingTps} disabled={savingTps}>
+            <button className="p-btn-primary" style={{ marginTop: 18, width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #f97316, #ea580c)' }} onClick={saveEditingTps} disabled={savingTps}>
               {savingTps ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
             </button>
           </div>
@@ -1433,7 +1433,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
               Putar halaman 90°
             </label>
             {!processing ? (
-              <button className="p-btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }} onClick={handleProcess}>
+              <button className="p-btn-primary" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }} onClick={handleProcess}>
                 <Search size={15} /> Mulai Ekstrak
               </button>
             ) : (
@@ -1450,7 +1450,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
               <Loader2 className="animate-spin" size={14} /> Memproses halaman {progress.done} dari {progress.total}...
             </div>
             <div style={{ height: 6, borderRadius: 4, background: '#f1f2f4', overflow: 'hidden' }}>
-              <div style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%`, height: '100%', background: 'linear-gradient(90deg, #34d399, #059669)', transition: 'width 0.2s' }} />
+              <div style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%`, height: '100%', background: 'linear-gradient(90deg, #fb923c, #ea580c)', transition: 'width 0.2s' }} />
             </div>
           </div>
         )}
@@ -1466,7 +1466,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
                 {pksResult.sheetInfo?.desa_kelurahan && ` Terdeteksi: ${pksResult.sheetInfo.desa_kelurahan}.`}
               </p>
             </div>
-            <button className="p-btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }} onClick={handleSave} disabled={saving || pksResult.items.length === 0}>
+            <button className="p-btn-primary" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }} onClick={handleSave} disabled={saving || pksResult.items.length === 0}>
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan ke Database
             </button>
           </div>
@@ -1521,9 +1521,9 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 14px', borderRadius: 10, background: '#ecfdf5', border: '1px solid #bbf7d0' }}>
-            <CheckCircle2 size={16} color="#16a34a" />
-            <span style={{ fontSize: 12, color: '#166534' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 14px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa' }}>
+            <CheckCircle2 size={16} color="#ea580c" />
+            <span style={{ fontSize: 12, color: '#9a3412' }}>
               Klik "Simpan ke Database" untuk menyimpan/memperbarui total suara kelurahan ini. Mengunggah ulang PDF yang sama akan menimpa data sebelumnya.
             </span>
           </div>
