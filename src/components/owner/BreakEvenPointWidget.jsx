@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn, calculateAttendanceDays, getTherapistPeriodRange } from '@/lib/utils';
+import { cn, calculateAttendanceDays, getTherapistPeriodRange, calculateFullSalary, calculateCustomSalary } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const formatCurrency = (value) =>
@@ -83,12 +83,19 @@ const BreakEvenPointWidget = () => {
     setRevenueThisMonth(sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data));
 
     const therapists = therapistsRes.data || [];
-    const serviceRates = serviceRatesRes.data || [];
+    const ratesMap = {};
+    (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
 
     let transportSum = 0;
     let incentiveSum = 0;
 
+    // Mengikuti skema gaji yang sama dengan Salary Calculator: probation tidak
+    // dapat transport/jasa, full_salary dihitung dari nominal per sesi/paket,
+    // custom_salary dihitung dari rate layanan per sesi.
     await Promise.all(therapists.map(async (t) => {
+      const salaryScheme = t.salary_scheme || 'full_salary';
+      const isProbation = salaryScheme === 'probation';
+
       const { startDate: periodStart } = getTherapistPeriodRange(t, today);
       const periodStartStr = format(periodStart, 'yyyy-MM-dd');
       // Period start could be after today right after a cycle rollover — clamp.
@@ -99,23 +106,21 @@ const BreakEvenPointWidget = () => {
         getTherapistSchedules(t.id),
         getTherapistTimeOff(t.id),
         supabase.from('daily_recaps')
-          .select('amount, patient_type')
+          .select('amount, amount_package, package_tracking_id, patient_type')
           .eq('therapist_id', t.id)
           .gte('recap_date', periodStartStr)
           .lte('recap_date', effectiveEndStr)
       ]);
 
       const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
+      if (isProbation) return;
+
       transportSum += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
 
-      (recapsRes.data || []).forEach(r => {
-        const typeLabel = (r.patient_type || '').toUpperCase();
-        const matched = serviceRates.find(sr => {
-          const svc = (sr.service_name || '').toUpperCase();
-          return svc === typeLabel || svc.includes(typeLabel) || typeLabel.includes(svc);
-        });
-        incentiveSum += Number(matched?.rate) || 0;
-      });
+      const recaps = recapsRes.data || [];
+      incentiveSum += salaryScheme === 'full_salary'
+        ? calculateFullSalary(recaps)
+        : calculateCustomSalary(recaps, ratesMap);
     }));
 
     setTransportTotal(transportSum);
