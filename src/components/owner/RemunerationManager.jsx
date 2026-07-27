@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Edit2, Trash2, Save, Loader2, Award, Settings2, CheckCircle2, XCircle,
-  Image as ImageIcon, Target, ThumbsUp, Star, Clock, FileCheck2, Sparkles, Scale
+  Image as ImageIcon, Target, ThumbsUp, Star, Clock, FileCheck2, Sparkles, Scale,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,7 @@ import {
   getCurrentClinic,
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
-import { format } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { getTherapistPeriodRange, cn } from '@/lib/utils';
 import CircularScore from '@/components/shared/CircularScore';
 
@@ -66,6 +67,7 @@ const RemunerationManager = () => {
   const [criteria, setCriteria] = useState([]);
   const [reports, setReports] = useState({});
   const [loadingReports, setLoadingReports] = useState(false);
+  const [periodOffset, setPeriodOffset] = useState(0); // 0 = periode berjalan saat ini, 1 = satu periode lalu, dst.
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCriteria, setEditingCriteria] = useState(null);
@@ -109,8 +111,9 @@ const RemunerationManager = () => {
       // everyone caused the owner's numbers to silently diverge from the
       // therapist's own Remunerasi page (and made saved realizations
       // invisible here, since they're keyed by the therapist's real period).
+      const referenceDate = subMonths(new Date(), periodOffset);
       const entries = await Promise.all(therapists.map(async (t) => {
-        const { startDate, endDate } = getTherapistPeriodRange(t);
+        const { startDate, endDate } = getTherapistPeriodRange(t, referenceDate);
         const periodStart = format(startDate, 'yyyy-MM-dd');
         const periodEnd = format(endDate, 'yyyy-MM-dd');
         const { data } = await getRemunerationReport(t.id, periodStart, periodEnd);
@@ -120,7 +123,7 @@ const RemunerationManager = () => {
     } finally {
       setLoadingReports(false);
     }
-  }, [therapists]);
+  }, [therapists, periodOffset]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
 
@@ -221,8 +224,33 @@ const RemunerationManager = () => {
         {/* ================= PENILAIAN PERFORMA ================= */}
         <TabsContent value="performance" className="space-y-4 mt-4">
           <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
-            Setiap terapis dinilai berdasarkan periode gajinya masing-masing (lihat label periode di tiap kartu).
+            <span>Setiap terapis dinilai berdasarkan periode gajinya masing-masing (lihat label periode di tiap kartu).</span>
             {loadingReports && <Loader2 className="w-4 h-4 animate-spin text-slate-400 ml-auto" />}
+            <div className={cn("flex items-center gap-1 shrink-0", !loadingReports && "ml-auto")}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setPeriodOffset(p => p + 1)}
+                disabled={loadingReports}
+                title="Periode sebelumnya"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+              <span className="min-w-[110px] text-center font-semibold text-slate-600">
+                {periodOffset === 0 ? 'Periode Berjalan' : `${periodOffset} Periode Lalu`}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setPeriodOffset(p => Math.max(0, p - 1))}
+                disabled={loadingReports || periodOffset === 0}
+                title="Periode berikutnya"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
 
           {criteria.length === 0 ? (
