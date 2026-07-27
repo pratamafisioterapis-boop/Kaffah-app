@@ -11,7 +11,7 @@ import { format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from
 import { id as idLocale } from 'date-fns/locale';
 import {
   getOwnerIncome, getAdminIncome, getPatientIncomeFromPackages,
-  getOwnerExpenditures, getAdminExpenses
+  getOwnerExpenditures, getAdminExpenses, getBepFinancials
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -33,13 +33,17 @@ const formatShort = (value) => {
 // Widget ini menghitung revenue & pengeluaran per bulan (owner/admin income,
 // pemasukan pasien dari daily_recaps, owner/admin expenditures) lalu
 // mengelompokkannya per bulan untuk melihat tren margin profit bulan ke bulan.
-// Tidak memakai getBepFinancials() (fixed cost + transport + insentif terapis)
-// supaya tidak perlu N kali query berat per bulan yang ditampilkan.
+// Bulan berjalan (bucket terakhir) dikecualikan dari perhitungan mentah itu dan
+// ditimpa dengan angka dari getBepFinancials() — sama seperti widget Break Even
+// Point & Financial Health Overview — supaya "margin bulan ini" di sini selalu
+// konsisten dengan kedua widget tersebut (fixed cost + pengeluaran tgl 1 s/d
+// hari ini + transport & insentif terapis, bukan cuma transaksi mentah).
 const ProfitMarginTrendWidget = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const [monthsToShow, setMonthsToShow] = useState(6);
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState({ income: [], expense: [] });
+  const [bepFinancials, setBepFinancials] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -48,12 +52,13 @@ const ProfitMarginTrendWidget = () => {
     const endDate = format(endOfMonth(today), 'yyyy-MM-dd');
 
     try {
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, bepRes] = await Promise.all([
         getOwnerIncome({ startDate, endDate }),
         getAdminIncome({ startDate, endDate }),
         getPatientIncomeFromPackages({ startDate, endDate }),
         getOwnerExpenditures({ startDate, endDate }),
         getAdminExpenses({ startDate, endDate }),
+        getBepFinancials(),
       ]);
 
       const income = [
@@ -68,6 +73,7 @@ const ProfitMarginTrendWidget = () => {
       ];
 
       setRaw({ income, expense });
+      setBepFinancials(bepRes?.data || null);
     } finally {
       setLoading(false);
     }
@@ -104,12 +110,21 @@ const ProfitMarginTrendWidget = () => {
       if (buckets[key]) buckets[key].expense += item.amount;
     });
 
+    // Bulan berjalan memakai angka getBepFinancials() (fixed cost + transport +
+    // insentif terapis, pengeluaran tgl 1 s/d hari ini) supaya sama dengan
+    // widget Break Even Point & Financial Health Overview.
+    const currentMonthKey = format(today, 'yyyy-MM');
+    if (bepFinancials && buckets[currentMonthKey]) {
+      buckets[currentMonthKey].revenue = bepFinancials.revenueThisMonth || 0;
+      buckets[currentMonthKey].expense = bepFinancials.totalCost || 0;
+    }
+
     return Object.values(buckets).map(b => {
       const profit = b.revenue - b.expense;
       const margin = b.revenue > 0 ? (profit / b.revenue) * 100 : 0;
       return { ...b, profit, margin: Math.round(margin * 10) / 10 };
     });
-  }, [raw, monthsToShow]);
+  }, [raw, monthsToShow, bepFinancials]);
 
   const hasAnyData = monthlyData.some(m => m.revenue > 0 || m.expense > 0);
 
