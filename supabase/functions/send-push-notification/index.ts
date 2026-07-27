@@ -32,9 +32,21 @@ console.log("BODY RECEIVED:", body);
     );
 const { data: userData } = await supabase
   .from("users")
-  .select("role")
+  .select("role, clinic_id")
   .eq("id", body.user_id)
   .single();
+
+// Logo klinik dipakai sebagai icon notifikasi supaya tiap klinik lihat
+// logonya sendiri, bukan logo Kaffah Tech generik.
+let clinicLogoUrl = null;
+if (userData?.clinic_id) {
+  const { data: clinicData } = await supabase
+    .from("clinics")
+    .select("logo_url")
+    .eq("id", userData.clinic_id)
+    .single();
+  clinicLogoUrl = clinicData?.logo_url || null;
+}
 
 // Kalau caller sudah kirim url tujuan sendiri (mis. notifikasi accounting),
 // pakai itu. Kalau tidak, fallback ke default lama berbasis appointment.
@@ -90,7 +102,8 @@ console.log("PUSH PAYLOAD:", {
                 body: body.body,
                 appointment_date: body.appointment_date,
                 appointment_id: body.appointment_id,
-                url: targetUrl
+                url: targetUrl,
+                icon_url: clinicLogoUrl || ""
               },
               // Tanpa ini, FCM mengirim pesan dengan prioritas normal.
               // Saat browser/PWA benar-benar ditutup (bukan cuma minimize),
