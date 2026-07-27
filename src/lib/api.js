@@ -16,6 +16,30 @@ import { format, parseISO, isValid, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
+// Supabase/PostgREST caps unbounded selects at a server-side max row count
+// (commonly 1000). Queries that can plausibly return more rows than that
+// (e.g. multi-month date ranges over dense tables) must paginate explicitly
+// with .range(), otherwise older rows are silently dropped with no error.
+const PAGE_SIZE = 1000;
+const fetchAllRows = async (buildQuery) => {
+  let allRows = [];
+  let from = 0;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    // eslint-disable-next-line no-await-in-loop
+    const { data, error } = await buildQuery().range(from, to);
+    if (error) return { data: null, error };
+
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return { data: allRows, error: null };
+};
+
 const getTodayWITA = () => {
   const now = new Date();
 
@@ -1756,22 +1780,26 @@ export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase
-      .from('owner_expenditures')
-      .select(`
+    const buildQuery = () => {
+      let query = supabase
+        .from('owner_expenditures')
+        .select(`
   *,
   subcategory:sub_category (
     id,
     subcategory_name
   )
 `)
-      .eq('clinic_id', userRow?.clinic_id)
-      .order('date', { ascending: false });
+        .eq('clinic_id', userRow?.clinic_id)
+        .order('date', { ascending: false });
 
-    if (startDate) query = query.gte('date', startDate);
-    if (endDate) query = query.lte('date', endDate);
+      if (startDate) query = query.gte('date', startDate);
+      if (endDate) query = query.lte('date', endDate);
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await fetchAllRows(buildQuery);
 
     if (error) return { error };
 
@@ -1784,22 +1812,26 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase
-      .from('owner_income')
-      .select(`
+    const buildQuery = () => {
+      let query = supabase
+        .from('owner_income')
+        .select(`
   *,
   subcategory:sub_category (
     id,
     subcategory_name
   )
 `)
-      .eq('clinic_id', userRow?.clinic_id)
-      .order('date', { ascending: false });
+        .eq('clinic_id', userRow?.clinic_id)
+        .order('date', { ascending: false });
 
-    if (startDate) query = query.gte('date', startDate);
-    if (endDate) query = query.lte('date', endDate);
+      if (startDate) query = query.gte('date', startDate);
+      if (endDate) query = query.lte('date', endDate);
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await fetchAllRows(buildQuery);
 
     if (error) return { error };
 
@@ -1812,9 +1844,10 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase
-      .from('admin_expenses')
-      .select(`
+    const buildQuery = () => {
+      let query = supabase
+        .from('admin_expenses')
+        .select(`
         *,
         bank_accounts (
           id,
@@ -1823,18 +1856,21 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
           holder_name
         )
       `)
-      .eq('clinic_id', userRow?.clinic_id)
-      .order('transaction_date', { ascending: false });
+        .eq('clinic_id', userRow?.clinic_id)
+        .order('transaction_date', { ascending: false });
 
-    if (startDate) {
-      query = query.gte('transaction_date', startDate);
-    }
+      if (startDate) {
+        query = query.gte('transaction_date', startDate);
+      }
 
-    if (endDate) {
-      query = query.lte('transaction_date', endDate);
-    }
+      if (endDate) {
+        query = query.lte('transaction_date', endDate);
+      }
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await fetchAllRows(buildQuery);
 
     if (error) return { error };
 
@@ -1869,21 +1905,25 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase
-      .from('admin_income')
-      .select('*')
-      .eq('clinic_id', userRow?.clinic_id)
-      .order('date', { ascending: false });
+    const buildQuery = () => {
+      let query = supabase
+        .from('admin_income')
+        .select('*')
+        .eq('clinic_id', userRow?.clinic_id)
+        .order('date', { ascending: false });
 
-    if (startDate) {
-      query = query.gte('date', startDate);
-    }
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
 
-    if (endDate) {
-      query = query.lte('date', endDate);
-    }
+      if (endDate) {
+        query = query.lte('date', endDate);
+      }
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await fetchAllRows(buildQuery);
 
     if (error) return { error };
 
@@ -1918,9 +1958,10 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase
-      .from('daily_recaps')
-      .select(`
+    const buildQuery = () => {
+      let query = supabase
+        .from('daily_recaps')
+        .select(`
         id,
         recap_date,
         amount,
@@ -1939,19 +1980,22 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
           full_name
         )
       `)
-      .eq('clinic_id', userRow?.clinic_id)
-      .or('amount.not.is.null,amount_package.not.is.null')
-      .order('recap_date', { ascending: false });
+        .eq('clinic_id', userRow?.clinic_id)
+        .or('amount.not.is.null,amount_package.not.is.null')
+        .order('recap_date', { ascending: false });
 
-    if (startDate) {
-      query = query.gte('recap_date', startDate);
-    }
+      if (startDate) {
+        query = query.gte('recap_date', startDate);
+      }
 
-    if (endDate) {
-      query = query.lte('recap_date', endDate);
-    }
+      if (endDate) {
+        query = query.lte('recap_date', endDate);
+      }
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await fetchAllRows(buildQuery);
 
     if (error) return { error };
 
