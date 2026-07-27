@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -6702,6 +6702,47 @@ export const getBepFinancials = async () => {
 
     const totalCost = totalFixedCost + ownerExpense + adminExpense + transportTotal + incentiveTotal;
 
+    // ── Tanggal tercapainya titik impas ──
+    // Fixed cost, transport & insentif terapis tidak bertanggal per transaksi
+    // (dihitung sebagai akumulasi bulanan/attendance), jadi diperlakukan sebagai
+    // beban yang sudah ada sejak tgl 1 (baseline). Pengeluaran & pemasukan yang
+    // bertanggal diakumulasikan harian; tanggal pertama saat pemasukan kumulatif
+    // menyamai/melebihi baseline + pengeluaran kumulatif adalah tanggal impas.
+    const baselineCost = totalFixedCost + transportTotal + incentiveTotal;
+    const sumByDay = (rows, dateKey = 'date') => {
+      const map = {};
+      (rows || []).forEach(r => {
+        const d = r[dateKey];
+        if (!d) return;
+        const key = String(d).slice(0, 10);
+        map[key] = (map[key] || 0) + (Number(r.amount) || 0);
+      });
+      return map;
+    };
+    const expenseByDay = sumByDay(excludeAutoPostedFixedCost(ownerExpRes.data));
+    Object.entries(sumByDay(adminExpRes.data, 'transaction_date')).forEach(([key, amt]) => {
+      expenseByDay[key] = (expenseByDay[key] || 0) + amt;
+    });
+    const revenueByDay = sumByDay(ownerIncRes.data);
+    [adminIncRes.data, patientIncRes.data].forEach(rows => {
+      Object.entries(sumByDay(rows)).forEach(([key, amt]) => {
+        revenueByDay[key] = (revenueByDay[key] || 0) + amt;
+      });
+    });
+
+    let breakEvenDate = null;
+    let cumRevenue = 0;
+    let cumExpense = 0;
+    for (const day of eachDayOfInterval({ start: startOfMonth(today), end: today })) {
+      const key = format(day, 'yyyy-MM-dd');
+      cumRevenue += revenueByDay[key] || 0;
+      cumExpense += expenseByDay[key] || 0;
+      if (cumRevenue >= baselineCost + cumExpense) {
+        breakEvenDate = key;
+        break;
+      }
+    }
+
     return {
       data: {
         fixedCostItems,
@@ -6713,6 +6754,7 @@ export const getBepFinancials = async () => {
         totalCost,
         revenueThisMonth,
         isBreakEven: revenueThisMonth >= totalCost,
+        breakEvenDate,
       },
       error: null
     };
