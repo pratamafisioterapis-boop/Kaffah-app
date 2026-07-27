@@ -1272,6 +1272,15 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
 
   const selectedKelurahanName = availableKelurahan.find((k) => k.id === kelurahanId)?.nama || '';
 
+  // Tabel ikut filter "Tampilkan" seperti grafik — kalau satu caleg dipilih,
+  // kolom lain disembunyikan supaya tabel dan grafik selalu menunjukkan data
+  // yang sama, dan kolom Total (jumlah semua caleg) disembunyikan karena tidak
+  // relevan lagi saat hanya satu caleg yang ditampilkan.
+  const displayedCandidates = useMemo(
+    () => (candidateFilter === 'total' ? candidateMasterList : candidateMasterList.filter((c) => String(c.number) === candidateFilter)),
+    [candidateMasterList, candidateFilter]
+  );
+
   const columnTotals = useMemo(() => {
     const byCandidate = {};
     candidateMasterList.forEach((c) => { byCandidate[c.number] = 0; });
@@ -1364,12 +1373,12 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                 <thead>
                   <tr>
                     <th>TPS</th>
-                    {candidateMasterList.map((c) => (
-                      <th key={c.number} style={{ textAlign: 'right', whiteSpace: 'nowrap' }} title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}>
+                    {displayedCandidates.map((c) => (
+                      <th key={c.number} style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}>
                         {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
-                    <th style={{ textAlign: 'right' }}>Total</th>
+                    {candidateFilter === 'total' && <th style={{ textAlign: 'center' }}>Total</th>}
                     <th></th>
                   </tr>
                 </thead>
@@ -1377,12 +1386,12 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                   {table.map((r) => (
                     <tr key={r.tps}>
                       <td style={{ fontWeight: 700 }}>{String(r.tps).padStart(2, '0')}</td>
-                      {candidateMasterList.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#4b5563' }}>
+                      {displayedCandidates.map((c) => (
+                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563' }}>
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
-                      <td style={{ textAlign: 'right', fontWeight: 800 }}>{r.total.toLocaleString('id-ID')}</td>
+                      {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800 }}>{r.total.toLocaleString('id-ID')}</td>}
                       <td style={{ textAlign: 'right' }}>
                         <button onClick={() => openEditTps(r)} style={{ color: '#2563eb', padding: 4 }} title="Koreksi angka TPS ini">
                           <Pencil size={14} />
@@ -1392,12 +1401,12 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                   ))}
                   <tr>
                     <td style={{ fontWeight: 800 }}>Total</td>
-                    {candidateMasterList.map((c) => (
-                      <td key={c.number} style={{ textAlign: 'right', fontWeight: 800 }}>
+                    {displayedCandidates.map((c) => (
+                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800 }}>
                         {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
                       </td>
                     ))}
-                    <td style={{ textAlign: 'right', fontWeight: 800 }}>{columnTotals.total.toLocaleString('id-ID')}</td>
+                    {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800 }}>{columnTotals.total.toLocaleString('id-ID')}</td>}
                     <td></td>
                   </tr>
                 </tbody>
