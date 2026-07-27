@@ -3,7 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LabelList,
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -13,6 +13,7 @@ import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
   Pencil, Plus, Presentation, ChevronLeft, ChevronRight, Play, Pause,
+  GitCompare, TrendingUp, TrendingDown, Minus,
 } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -36,6 +37,18 @@ const chunkArray = (arr, size) => {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
+};
+
+// Dua tahun pemilu yang dibandingkan di slide analisa — PKS baru punya data
+// Pileg 2019 & 2024, jadi tetap (bukan otomatis dari data yang ada) supaya
+// slide perbandingan tidak muncul untuk kombinasi tahun yang tidak relevan.
+const COMPARE_YEARS = [2019, 2024];
+
+const computeDelta = (oldVal, newVal) => {
+  const diff = (newVal || 0) - (oldVal || 0);
+  const pct = oldVal ? (diff / oldVal) * 100 : (newVal ? 100 : 0);
+  const direction = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+  return { diff, pct, direction };
 };
 
 const withTimeout = (promise, ms, message) => Promise.race([
@@ -235,6 +248,65 @@ const PemilihSuaraPks = () => {
     return Array.from(map.values()).sort((a, b) => a.number - b.number);
   }, [yearRows]);
 
+  // Data perbandingan 2019 vs 2024 untuk slide analisa di Mode Slideshow —
+  // dihitung dari seluruh `rows` (bukan yearRows) karena harus mencakup kedua
+  // tahun sekaligus, tapi tetap ikut filter kelurahan yang aktif di dashboard.
+  const compareRowsByYear = useMemo(() => {
+    const out = {};
+    COMPARE_YEARS.forEach((y) => {
+      out[y] = rows.filter((r) => r.election_year === y && (!filterKelurahan || r.kelurahan_id === filterKelurahan));
+    });
+    return out;
+  }, [rows, filterKelurahan]);
+
+  const compareAvailable = COMPARE_YEARS.every((y) => compareRowsByYear[y].length > 0);
+
+  const compareTotals = useMemo(() => {
+    const out = {};
+    COMPARE_YEARS.forEach((y) => {
+      const rs = compareRowsByYear[y];
+      out[y] = {
+        totalSuara: rs.reduce((s, r) => s + (r.total_suara || 0), 0),
+        totalPartai: rs.filter((r) => r.candidate_number === 0).reduce((s, r) => s + (r.total_suara || 0), 0),
+        calegCount: new Set(rs.filter((r) => r.candidate_number !== 0).map((r) => r.candidate_number)).size,
+        kelurahanCount: new Set(rs.map((r) => r.kelurahan_id)).size,
+      };
+    });
+    return out;
+  }, [compareRowsByYear]);
+
+  const compareByKelurahan = useMemo(() => {
+    const map = new Map();
+    COMPARE_YEARS.forEach((y) => {
+      compareRowsByYear[y].forEach((r) => {
+        const id = r.kelurahan_id;
+        if (!map.has(id)) map.set(id, { id, nama: kelurahanMap[id] || 'Belum Diketahui', values: {} });
+        const entry = map.get(id);
+        entry.values[y] = (entry.values[y] || 0) + (r.total_suara || 0);
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => (b.values[COMPARE_YEARS[1]] || 0) - (a.values[COMPARE_YEARS[1]] || 0));
+  }, [compareRowsByYear, kelurahanMap]);
+
+  // Hanya caleg yang muncul di kedua tahun (petahana / maju lagi) yang bisa
+  // dibandingkan apel-ke-apel; dicocokkan dari nama yang dinormalisasi karena
+  // nomor urut caleg bisa berubah antar pemilu.
+  const compareByCaleg = useMemo(() => {
+    const map = new Map();
+    COMPARE_YEARS.forEach((y) => {
+      compareRowsByYear[y].forEach((r) => {
+        if (r.candidate_number === 0 || !r.candidate_name) return;
+        const key = normalize(r.candidate_name);
+        if (!map.has(key)) map.set(key, { key, name: r.candidate_name, values: {} });
+        const entry = map.get(key);
+        entry.values[y] = (entry.values[y] || 0) + (r.total_suara || 0);
+      });
+    });
+    return Array.from(map.values())
+      .filter((c) => COMPARE_YEARS.every((y) => c.values[y] !== undefined))
+      .sort((a, b) => (b.values[COMPARE_YEARS[1]] || 0) - (a.values[COMPARE_YEARS[1]] || 0));
+  }, [compareRowsByYear]);
+
   return (
     <div>
       <div style={{
@@ -367,6 +439,11 @@ const PemilihSuaraPks = () => {
           chartData={chartData}
           pieData={pieData}
           perKelurahanTotal={perKelurahanTotal}
+          compareAvailable={compareAvailable}
+          compareYears={COMPARE_YEARS}
+          compareTotals={compareTotals}
+          compareByKelurahan={compareByKelurahan}
+          compareByCaleg={compareByCaleg}
         />
       )}
     </div>
@@ -569,6 +646,7 @@ const SLIDESHOW_GROUP_SIZE = 6;
 const PksSlideshow = ({
   onClose, selectedYear, filterKelurahanName, kelurahanTercakupCount, kelurahanTotalCount,
   totalSuaraPartai, totalSuaraTanpaCalon, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
+  compareAvailable = false, compareYears = COMPARE_YEARS, compareTotals = {}, compareByKelurahan = [], compareByCaleg = [],
 }) => {
   const containerRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -582,8 +660,17 @@ const PksSlideshow = ({
     legerGroups.forEach((group, i) => list.push({ kind: 'leaderboard', group, part: i + 1, totalParts: legerGroups.length }));
     const kelurahanGroups = chunkArray(perKelurahanTotal, SLIDESHOW_GROUP_SIZE);
     kelurahanGroups.forEach((group, i) => list.push({ kind: 'kelurahan', group, part: i + 1, totalParts: kelurahanGroups.length }));
+    if (compareAvailable) {
+      list.push({ kind: 'compare-total' });
+      const compKelurahanGroups = chunkArray(compareByKelurahan, SLIDESHOW_GROUP_SIZE);
+      compKelurahanGroups.forEach((group, i) => list.push({ kind: 'compare-kelurahan', group, part: i + 1, totalParts: compKelurahanGroups.length }));
+      if (compareByCaleg.length > 0) {
+        const compCalegGroups = chunkArray(compareByCaleg, SLIDESHOW_GROUP_SIZE);
+        compCalegGroups.forEach((group, i) => list.push({ kind: 'compare-caleg', group, part: i + 1, totalParts: compCalegGroups.length }));
+      }
+    }
     return list;
-  }, [chartData.length, pieData.length, perCaleg, perKelurahanTotal]);
+  }, [chartData.length, pieData.length, perCaleg, perKelurahanTotal, compareAvailable, compareByKelurahan, compareByCaleg]);
 
   useEffect(() => { if (index > slides.length - 1) setIndex(0); }, [slides.length, index]);
 
@@ -829,6 +916,159 @@ const PksSlideshow = ({
                 </div>
               </div>
             )}
+
+            {slide.kind === 'compare-total' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <SlideHeading
+                  title={`Analisa Perbandingan ${compareYears[0]} vs ${compareYears[1]}`}
+                  subtitle="Pertumbuhan perolehan suara PKS antar dua pemilu terakhir"
+                  icon={GitCompare}
+                />
+                {(() => {
+                  const oldTotal = compareTotals[compareYears[0]]?.totalSuara || 0;
+                  const newTotal = compareTotals[compareYears[1]]?.totalSuara || 0;
+                  const { pct, direction } = computeDelta(oldTotal, newTotal);
+                  const trendColor = direction === 'up' ? '#4ade80' : direction === 'down' ? '#f87171' : '#a1a1aa';
+                  const TrendIcon = direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus;
+                  const detailMetrics = [
+                    { label: 'Suara Partai (tanpa calon)', key: 'totalPartai', icon: Trophy },
+                    { label: 'Caleg Terdaftar', key: 'calegCount', icon: Users },
+                    { label: 'Kelurahan Tercakup', key: 'kelurahanCount', icon: MapPin },
+                  ];
+                  return (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 28, margin: '26px 0 30px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 12, color: '#a1a1aa', fontWeight: 700 }}>{compareYears[0]}</div>
+                          <div style={{ fontSize: 38, fontWeight: 800, color: '#cbd5e1', letterSpacing: '-0.02em' }}>{oldTotal.toLocaleString('id-ID')}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 46, height: 46, borderRadius: '50%', background: trendColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <TrendIcon size={22} color={trendColor} strokeWidth={2.4} />
+                          </div>
+                          <span style={{ fontSize: 18, fontWeight: 800, color: trendColor }}>
+                            {direction === 'up' ? '+' : ''}{pct.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 12, color: '#fb923c', fontWeight: 700 }}>{compareYears[1]}</div>
+                          <div style={{ fontSize: 38, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{newTotal.toLocaleString('id-ID')}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {detailMetrics.map((m) => {
+                          const oldVal = compareTotals[compareYears[0]]?.[m.key] || 0;
+                          const newVal = compareTotals[compareYears[1]]?.[m.key] || 0;
+                          const Icon = m.icon;
+                          return (
+                            <div key={m.key} style={{
+                              display: 'flex', alignItems: 'center', gap: 16, padding: '14px 22px', borderRadius: 14,
+                              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 200px', minWidth: 0 }}>
+                                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(249,115,22,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Icon size={16} color="#fb923c" />
+                                </div>
+                                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#e4e4e7' }}>{m.label}</span>
+                              </div>
+                              <div style={{ textAlign: 'right', minWidth: 84 }}>
+                                <div style={{ fontSize: 10, color: '#71717a', fontWeight: 700 }}>{compareYears[0]}</div>
+                                <div style={{ fontSize: 17, fontWeight: 700, color: '#a1a1aa' }}>{oldVal.toLocaleString('id-ID')}</div>
+                              </div>
+                              <ChevronRight size={16} color="#52525b" style={{ flexShrink: 0 }} />
+                              <div style={{ textAlign: 'right', minWidth: 84 }}>
+                                <div style={{ fontSize: 10, color: '#fb923c', fontWeight: 700 }}>{compareYears[1]}</div>
+                                <div style={{ fontSize: 19, fontWeight: 800, color: '#fff' }}>{newVal.toLocaleString('id-ID')}</div>
+                              </div>
+                              <div style={{ minWidth: 88, display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+                                <DeltaBadge oldVal={oldVal} newVal={newVal} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            {slide.kind === 'compare-kelurahan' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading
+                  title={`Suara per Kelurahan — ${compareYears[0]} vs ${compareYears[1]}`}
+                  subtitle={slide.totalParts > 1 ? `Bagian ${slide.part} dari ${slide.totalParts}` : 'Perbandingan total suara PKS tiap kelurahan'}
+                  icon={GitCompare}
+                />
+                <div style={{ flex: 1, minHeight: 0, marginTop: 14 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={slide.group.map((k) => ({
+                        name: k.nama,
+                        [compareYears[0]]: k.values[compareYears[0]] || 0,
+                        [compareYears[1]]: k.values[compareYears[1]] || 0,
+                      }))}
+                      margin={{ top: 24, right: 10, left: -10, bottom: 30 }}
+                      barGap={6}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
+                      <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={56} tick={{ fontSize: 11.5, fill: '#d4d4d8', fontWeight: 600 }} axisLine={{ stroke: 'rgba(255,255,255,0.15)' }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} axisLine={false} tickLine={false} allowDecimals={false} width={44} />
+                      <Tooltip
+                        formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Suara']}
+                        contentStyle={{ borderRadius: 12, fontSize: 12, border: '1px solid #27272a', background: '#18181b', color: '#fff' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12, color: '#d4d4d8' }} />
+                      <Bar dataKey={compareYears[0]} fill="#64748b" radius={[6, 6, 0, 0]} maxBarSize={34} />
+                      <Bar dataKey={compareYears[1]} fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={34}>
+                        <LabelList dataKey={compareYears[1]} position="top" style={{ fontSize: 10.5, fontWeight: 700, fill: '#fdba74' }} formatter={(v) => v.toLocaleString('id-ID')} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {slide.kind === 'compare-caleg' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <SlideHeading
+                  title="Caleg Petahana — Perbandingan Suara"
+                  subtitle={slide.totalParts > 1 ? `Bagian ${slide.part} dari ${slide.totalParts}` : `Caleg yang maju di ${compareYears[0]} maupun ${compareYears[1]}`}
+                  icon={GitCompare}
+                />
+                <div className="p-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+                  {slide.group.map((c) => {
+                    const oldVal = c.values[compareYears[0]] || 0;
+                    const newVal = c.values[compareYears[1]] || 0;
+                    const maxVal = Math.max(oldVal, newVal, 1);
+                    return (
+                      <div key={c.key} style={{ padding: '14px 18px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{c.name}</span>
+                          <DeltaBadge oldVal={oldVal} newVal={newVal} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 10.5, color: '#a1a1aa', width: 42, fontWeight: 700, flexShrink: 0 }}>{compareYears[0]}</span>
+                            <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                              <div style={{ width: `${(oldVal / maxVal) * 100}%`, height: '100%', borderRadius: 4, background: '#64748b' }} />
+                            </div>
+                            <span style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 700, width: 68, textAlign: 'right', flexShrink: 0 }}>{oldVal.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 10.5, color: '#fb923c', width: 42, fontWeight: 700, flexShrink: 0 }}>{compareYears[1]}</span>
+                            <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                              <div style={{ width: `${(newVal / maxVal) * 100}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg, #fb923c, #ea580c)' }} />
+                            </div>
+                            <span style={{ fontSize: 12, color: '#fff', fontWeight: 800, width: 68, textAlign: 'right', flexShrink: 0 }}>{newVal.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -865,10 +1105,17 @@ const slideNavBtnStyle = {
   cursor: 'pointer', flexShrink: 0,
 };
 
-const SlideHeading = ({ title, subtitle }) => (
-  <div>
-    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{title}</h2>
-    {subtitle && <p style={{ margin: '4px 0 0', fontSize: 13, color: '#a1a1aa' }}>{subtitle}</p>}
+const SlideHeading = ({ title, subtitle, icon: Icon }) => (
+  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+    {Icon && (
+      <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(249,115,22,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+        <Icon size={16} color="#fb923c" />
+      </div>
+    )}
+    <div>
+      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{title}</h2>
+      {subtitle && <p style={{ margin: '4px 0 0', fontSize: 13, color: '#a1a1aa' }}>{subtitle}</p>}
+    </div>
   </div>
 );
 
@@ -883,6 +1130,20 @@ const SlideStat = ({ icon: Icon, label, value, color }) => (
     <div style={{ fontSize: 13, color: '#a1a1aa', marginTop: 8, fontWeight: 500 }}>{label}</div>
   </div>
 );
+
+const DeltaBadge = ({ oldVal, newVal }) => {
+  const { pct, direction } = computeDelta(oldVal, newVal);
+  const color = direction === 'up' ? '#4ade80' : direction === 'down' ? '#f87171' : '#a1a1aa';
+  const Icon = direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999,
+      background: color + '1f', color, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap',
+    }}>
+      <Icon size={12} strokeWidth={2.6} /> {direction === 'flat' ? '0%' : `${direction === 'up' ? '+' : ''}${pct.toFixed(1)}%`}
+    </span>
+  );
+};
 
 const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, selectedYear, toast }) => {
   const availableKelurahan = useMemo(
