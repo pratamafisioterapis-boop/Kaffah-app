@@ -18,12 +18,15 @@ import {
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-const CONCURRENCY = 3;
-// Satu halaman tabel rekap bisa butuh lebih dari satu menit untuk ditranskripsi
-// (tabelnya besar dan tiap angka harus dibaca teliti), jadi batas tunggunya
-// harus longgar — sebelumnya 60 detik dan halaman yang sebenarnya berhasil ikut
-// dianggap gagal.
-const INVOKE_TIMEOUT_MS = 150000;
+// Halaman dengan tabel padat (banyak kolom TPS) butuh waktu jauh lebih lama
+// untuk dibaca teliti daripada halaman ringan (dari log produksi: halaman
+// padat rutin >120 detik, halaman ringan ~15 detik). Concurrency diturunkan
+// dari 3 ke 2 supaya tidak terlalu banyak permintaan berat berjalan bersamaan.
+const CONCURRENCY = 2;
+// Harus lebih besar dari ANTHROPIC_TIMEOUT_MS di edge function (140 detik)
+// plus margin jaringan, supaya halaman yang sebenarnya berhasil (hanya lambat)
+// tidak keburu dianggap gagal oleh sisi frontend duluan.
+const INVOKE_TIMEOUT_MS = 165000;
 // Skala dihitung dari ukuran halaman asli (bukan angka tetap) supaya sisi
 // terpanjang selalu ~1500px — PDF hasil scan/olahan tool lain kadang punya
 // MediaBox jauh lebih besar dari A4; skala tetap bisa menghasilkan gambar
@@ -1530,7 +1533,12 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
         const pageNumber = pageNumbers[idx];
         let lastError = null;
         let ok = false;
+        // Kalau percobaan gagal karena timeout, mengulang dengan budget waktu
+        // yang sama nyaris pasti timeout lagi juga (halaman ini memang butuh
+        // waktu lebih dari INVOKE_TIMEOUT_MS untuk dibaca) — jadi tidak retry,
+        // langsung tandai gagal supaya tidak buang waktu 2x lipat tanpa hasil.
         for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+          let isTimeout = false;
           try {
             const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
             if (cancelRef.current) return;
@@ -1539,7 +1547,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
                 body: { image_base64, media_type: 'image/jpeg', party_filter: PARTY_FILTER },
               }),
               INVOKE_TIMEOUT_MS,
-              `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s)`
+              `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s). Halaman ini kemungkinan memuat tabel yang sangat padat — coba proses sendirian atau perkecil rentang halaman.`
             );
             if (error) throw new Error(await describeFunctionError(error));
             if (data?.error) throw new Error(data.error);
@@ -1547,7 +1555,9 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
             ok = true;
           } catch (err) {
             lastError = err.message;
+            isTimeout = /waktu tunggu|tidak merespons/i.test(err.message || '');
           }
+          if (isTimeout) break;
         }
         if (!ok) results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: lastError });
         setProgress((p) => ({ ...p, done: p.done + 1 }));
