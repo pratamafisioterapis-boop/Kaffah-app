@@ -204,6 +204,10 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Periode wajib diisi.' });
       return;
     }
+    if (calculatingAuto) {
+      toast({ variant: 'destructive', title: 'Belum Selesai', description: 'Tunggu perhitungan otomatis selesai sebelum menyimpan.' });
+      return;
+    }
 
     setSaving(true);
     const { data, error } = await upsertPayrollRecord({
@@ -376,9 +380,9 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             <span className="text-lg font-bold text-emerald-700">{formatCurrency(total)}</span>
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="w-full bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-            Simpan Slip Gaji
+          <Button onClick={handleSave} disabled={saving || calculatingAuto} className="w-full bg-emerald-600 hover:bg-emerald-700">
+            {saving || calculatingAuto ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+            {calculatingAuto ? 'Menghitung...' : 'Simpan Slip Gaji'}
           </Button>
         </div>
 
