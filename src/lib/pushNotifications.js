@@ -109,7 +109,7 @@ export const listenForegroundNotifications = () => {
 
       new Notification(title, {
         body,
-        icon: "/logo192.png?v=kaffahtech1",
+        icon: payload?.data?.icon_url || "/logo192.png?v=kaffahtech1",
       });
     });
   } catch (err) {

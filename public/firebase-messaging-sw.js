@@ -33,7 +33,7 @@ messaging.onBackgroundMessage((payload) => {
     title,
     {
       body,
-      icon: "/logo192.png?v=kaffahtech1",
+      icon: payload?.data?.icon_url || "/logo192.png?v=kaffahtech1",
       data: {
         url: payload?.data?.url,
         appointment_date: payload?.data?.appointment_date,
