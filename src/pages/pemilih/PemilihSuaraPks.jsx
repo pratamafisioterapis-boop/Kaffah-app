@@ -18,11 +18,11 @@ import {
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-// Halaman dengan tabel padat (banyak kolom TPS) butuh waktu jauh lebih lama
-// untuk dibaca teliti daripada halaman ringan (dari log produksi: halaman
-// padat rutin >120 detik, halaman ringan ~15 detik). Concurrency diturunkan
-// dari 3 ke 2 supaya tidak terlalu banyak permintaan berat berjalan bersamaan.
-const CONCURRENCY = 2;
+// Tiap halaman sekarang dipecah jadi 2 potongan (atas+bawah) yang diproses
+// BERSAMAAN (lihat splitCanvasForOcr), jadi CONCURRENCY di sini = jumlah
+// HALAMAN yang diproses sekaligus, bukan jumlah permintaan OCR — total
+// permintaan OCR yang berjalan bersamaan tetap CONCURRENCY x 2.
+const CONCURRENCY = 1;
 // Harus lebih besar dari ANTHROPIC_TIMEOUT_MS di edge function (140 detik)
 // plus margin jaringan, supaya halaman yang sebenarnya berhasil (hanya lambat)
 // tidak keburu dianggap gagal oleh sisi frontend duluan.
@@ -81,7 +81,25 @@ const describeFunctionError = async (error) => {
   return error?.message || 'Gagal memanggil server OCR';
 };
 
-const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
+// Satu panggilan OCR untuk satu potongan gambar (bisa halaman penuh atau
+// potongan atas/bawah hasil splitCanvasForOcr). `isPartial` memberi tahu
+// server bahwa gambar ini mungkin tidak memuat judul tabel/baris header
+// (karena sudah kepotong), supaya model tidak salah menyimpulkan "bukan tabel
+// suara" hanya karena tidak melihat judulnya.
+const callOcrHalf = async (imageBase64, partyFilter, isPartial, invokeTimeoutMs) => {
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('pemilih-ocr-suara-pdf', {
+      body: { image_base64: imageBase64, media_type: 'image/jpeg', party_filter: partyFilter || undefined, is_partial: isPartial },
+    }),
+    invokeTimeoutMs,
+    `Waktu tunggu server OCR habis (${invokeTimeoutMs / 1000}s)`
+  );
+  if (error) throw new Error(await describeFunctionError(error));
+  if (data?.error) throw new Error(data.error);
+  return data?.data || { is_vote_table: false, rows: [], column_headers: [] };
+};
+
+const renderPageCanvas = async (pdf, pageNumber, rotate) => {
   const page = await pdf.getPage(pageNumber);
   const baseViewport = page.getViewport({ scale: 1 });
   const longestSide = Math.max(baseViewport.width, baseViewport.height);
@@ -95,19 +113,88 @@ const renderPageToBase64 = async (pdf, pageNumber, rotate) => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  let finalCanvas = canvas;
-  if (rotate) {
-    const rotated = document.createElement('canvas');
-    rotated.width = canvas.height;
-    rotated.height = canvas.width;
-    const rctx = rotated.getContext('2d');
-    rctx.translate(rotated.width / 2, rotated.height / 2);
-    rctx.rotate(-Math.PI / 2);
-    rctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-    finalCanvas = rotated;
-  }
-  const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.88);
-  return dataUrl.split(',')[1];
+  if (!rotate) return canvas;
+
+  const rotated = document.createElement('canvas');
+  rotated.width = canvas.height;
+  rotated.height = canvas.width;
+  const rctx = rotated.getContext('2d');
+  rctx.translate(rotated.width / 2, rotated.height / 2);
+  rctx.rotate(-Math.PI / 2);
+  rctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+  return rotated;
+};
+
+const canvasToBase64 = (canvas) => canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+
+// Tabel rekap yang panjang (banyak partai/calon) butuh model membaca/menyisir
+// puluhan baris untuk menemukan baris yang relevan, dan itu yang bikin satu
+// permintaan OCR bisa lewat dari 2 menit untuk halaman padat (lihat log
+// produksi). Solusinya: potong tiap halaman jadi 2 gambar (atas & bawah,
+// overlap 20% di tengah supaya baris yang persis di batas tidak terlewat),
+// proses paralel, lalu gabung hasilnya — tiap permintaan jadi jauh lebih
+// ringan (~60% dari total baris) sehingga lebih cepat & jarang timeout.
+const SPLIT_FRACTION = 0.6;
+
+const splitCanvasForOcr = (canvas) => {
+  const w = canvas.width;
+  const h = canvas.height;
+  const topHeight = Math.round(h * SPLIT_FRACTION);
+  const bottomStart = h - topHeight;
+  const bottomHeight = h - bottomStart;
+
+  const topCanvas = document.createElement('canvas');
+  topCanvas.width = w;
+  topCanvas.height = topHeight;
+  topCanvas.getContext('2d').drawImage(canvas, 0, 0, w, topHeight, 0, 0, w, topHeight);
+
+  const bottomCanvas = document.createElement('canvas');
+  bottomCanvas.width = w;
+  bottomCanvas.height = bottomHeight;
+  bottomCanvas.getContext('2d').drawImage(canvas, 0, bottomStart, w, bottomHeight, 0, 0, w, bottomHeight);
+
+  return [topCanvas, bottomCanvas];
+};
+
+// Kunci unik per baris untuk menggabungkan hasil potongan atas & bawah tanpa
+// duplikat (baris yang jatuh di zona overlap bisa muncul di kedua potongan).
+const rowMergeKey = (row) => (row.is_party_row && !row.candidate_name
+  ? `party::${normalize(row.party_name)}`
+  : `cand::${normalize(row.candidate_name)}::${normalize(row.party_name)}`);
+
+// Baris yang sama dari kedua potongan dipilih versi dengan sel terisi paling
+// lengkap (paling sedikit null), karena posisinya di tepi potongan kadang
+// bikin satu sisi terbaca lebih jelas dari sisi lainnya.
+const rowCompleteness = (row) => (row.values || []).filter((v) => v !== null && v !== undefined).length;
+
+const mergePageHalves = (top, bottom) => {
+  const parts = [top, bottom].filter(Boolean);
+  const isVoteTable = parts.some((p) => p.is_vote_table);
+  if (!isVoteTable) return { is_vote_table: false, rows: [], column_headers: [], sheet_info: null };
+
+  // Header kolom TPS biasanya cuma tercetak sekali di bagian atas tabel, jadi
+  // ambil dari potongan mana pun yang berhasil membacanya (biasanya potongan atas).
+  const column_headers = parts.find((p) => (p.column_headers || []).length > 0)?.column_headers || [];
+
+  const sheet_info = parts.reduce((acc, p) => {
+    if (!p.sheet_info) return acc;
+    const merged = { ...acc };
+    Object.keys(p.sheet_info).forEach((k) => {
+      if ((merged[k] === undefined || merged[k] === null) && p.sheet_info[k] != null) merged[k] = p.sheet_info[k];
+    });
+    return merged;
+  }, {});
+
+  const rowMap = new Map();
+  parts.forEach((p) => {
+    (p.rows || []).forEach((row) => {
+      const key = rowMergeKey(row);
+      const existing = rowMap.get(key);
+      if (!existing || rowCompleteness(row) > rowCompleteness(existing)) rowMap.set(key, row);
+    });
+  });
+
+  return { is_vote_table: true, rows: Array.from(rowMap.values()), column_headers, sheet_info: Object.keys(sheet_info).length ? sheet_info : null };
 };
 
 const StatPill = ({ icon: Icon, label, value, color, bg }) => (
@@ -1486,12 +1573,18 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [pageResults, setPageResults] = useState([]);
   const [saving, setSaving] = useState(false);
+  // Isian manual untuk sel yang OCR tidak yakin membacanya (nilainya null),
+  // key: `${candidateKey}::${tpsNumber}` -> string angka dari input pengguna.
+  // Ini sengaja terpisah dari data OCR supaya sel yang SUDAH terbaca tidak
+  // perlu disentuh sama sekali — pengguna hanya mengisi yang benar-benar kosong.
+  const [manualOverrides, setManualOverrides] = useState({});
 
   const handleFile = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
     setPageResults([]);
+    setManualOverrides({});
     try {
       const buf = await f.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -1519,6 +1612,7 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
     setProcessing(true);
     cancelRef.current = false;
     setPageResults([]);
+    setManualOverrides({});
     setProgress({ done: 0, total: pageNumbers.length });
 
     const buf = await file.arrayBuffer();
@@ -1532,34 +1626,44 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
         const idx = cursor++;
         const pageNumber = pageNumbers[idx];
         let lastError = null;
-        let ok = false;
-        // Kalau percobaan gagal karena timeout, mengulang dengan budget waktu
-        // yang sama nyaris pasti timeout lagi juga (halaman ini memang butuh
-        // waktu lebih dari INVOKE_TIMEOUT_MS untuk dibaca) — jadi tidak retry,
-        // langsung tandai gagal supaya tidak buang waktu 2x lipat tanpa hasil.
-        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        let merged = null;
+        // Kalau percobaan gagal total (dua potongan sekaligus) karena timeout,
+        // mengulang dengan budget waktu yang sama nyaris pasti timeout lagi
+        // juga — jadi tidak retry pada kasus itu. Tapi kalau sudah dapat hasil
+        // sebagian (satu potongan berhasil), langsung dipakai — tidak perlu
+        // mengulang dari nol.
+        for (let attempt = 0; attempt < 2 && !merged; attempt++) {
           let isTimeout = false;
           try {
-            const image_base64 = await renderPageToBase64(pdf, pageNumber, rotate);
+            const pageCanvas = await renderPageCanvas(pdf, pageNumber, rotate);
+            const [topCanvas, bottomCanvas] = splitCanvasForOcr(pageCanvas);
             if (cancelRef.current) return;
-            const { data, error } = await withTimeout(
-              supabase.functions.invoke('pemilih-ocr-suara-pdf', {
-                body: { image_base64, media_type: 'image/jpeg', party_filter: PARTY_FILTER },
-              }),
-              INVOKE_TIMEOUT_MS,
-              `Waktu tunggu server OCR habis (${INVOKE_TIMEOUT_MS / 1000}s). Halaman ini kemungkinan memuat tabel yang sangat padat — coba proses sendirian atau perkecil rentang halaman.`
-            );
-            if (error) throw new Error(await describeFunctionError(error));
-            if (data?.error) throw new Error(data.error);
-            results.push({ pageNumber, ...(data?.data || { is_vote_table: false, rows: [], column_headers: [] }) });
-            ok = true;
+            const [topSettled, bottomSettled] = await Promise.allSettled([
+              callOcrHalf(canvasToBase64(topCanvas), PARTY_FILTER, true, INVOKE_TIMEOUT_MS),
+              callOcrHalf(canvasToBase64(bottomCanvas), PARTY_FILTER, true, INVOKE_TIMEOUT_MS),
+            ]);
+            if (cancelRef.current) return;
+            const topData = topSettled.status === 'fulfilled' ? topSettled.value : null;
+            const bottomData = bottomSettled.status === 'fulfilled' ? bottomSettled.value : null;
+            if (!topData && !bottomData) {
+              throw new Error(topSettled.reason?.message || bottomSettled.reason?.message || 'Gagal memproses halaman');
+            }
+            merged = mergePageHalves(topData, bottomData);
+            if (!topData || !bottomData) {
+              const halfErrMsg = (topSettled.reason || bottomSettled.reason)?.message;
+              lastError = halfErrMsg ? `Sebagian halaman mungkin belum terbaca lengkap: ${halfErrMsg}` : null;
+            }
           } catch (err) {
             lastError = err.message;
             isTimeout = /waktu tunggu|tidak merespons/i.test(err.message || '');
           }
           if (isTimeout) break;
         }
-        if (!ok) results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: lastError });
+        if (merged) {
+          results.push({ pageNumber, ...merged, error: lastError || undefined });
+        } else {
+          results.push({ pageNumber, is_vote_table: false, rows: [], column_headers: [], error: lastError });
+        }
         setProgress((p) => ({ ...p, done: p.done + 1 }));
       }
     };
@@ -1608,6 +1712,9 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
   // Rincian suara per TPS per caleg — kolom "TPS 01".."TPS NN" pada tiap
   // halaman (bukan kolom "JUMLAH PINDAHAN/AKHIR", itu cuma total berjalan).
   // key sama dengan pksResult.items[].key supaya gampang dipasangkan saat simpan.
+  // Sel yang OCR tidak yakin membacanya TETAP dicatat (nilainya null), bukan
+  // dilewati begitu saja, supaya bisa ditandai untuk diisi manual di panel
+  // "Sel Perlu Diperiksa" alih-alih diam-diam hilang dari data.
   const pksTpsByCandidate = useMemo(() => {
     const perCandidate = new Map();
     pageResults.forEach((page) => {
@@ -1623,14 +1730,63 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
         headers.forEach((h, i) => {
           const m = /TPS\s*0*(\d+)/i.exec(h || '');
           if (!m) return;
+          const tpsNumber = parseInt(m[1], 10);
           const votes = values[i];
-          if (votes === null || votes === undefined) return;
-          tpsMap.set(parseInt(m[1], 10), votes);
+          if (votes === null || votes === undefined) {
+            if (!tpsMap.has(tpsNumber)) tpsMap.set(tpsNumber, null);
+            return;
+          }
+          tpsMap.set(tpsNumber, votes);
         });
       });
     });
     return perCandidate;
   }, [pageResults]);
+
+  // Daftar sel (TPS x caleg) yang OCR tidak yakin membacanya dan belum diisi
+  // manual — inilah satu-satunya bagian yang perlu disentuh pengguna, bukan
+  // seluruh tabel. Halaman yang gagal total tidak muncul di sini karena kita
+  // tidak tahu rentang TPS-nya sama sekali (lihat catatan di handleProcess).
+  const uncertainCells = useMemo(() => {
+    const out = [];
+    pksTpsByCandidate.forEach((tpsMap, key) => {
+      const item = pksResult.items.find((it) => it.key === key);
+      const label = item ? (item.isPartyRow ? 'Suara Partai (tanpa calon)' : item.candidateName) : key;
+      tpsMap.forEach((votes, tpsNumber) => {
+        if (votes !== null) return;
+        const overrideKey = `${key}::${tpsNumber}`;
+        out.push({ overrideKey, tpsNumber, label });
+      });
+    });
+    return out
+      .filter((c) => manualOverrides[c.overrideKey] === undefined || manualOverrides[c.overrideKey] === '')
+      .sort((a, b) => a.tpsNumber - b.tpsNumber || a.label.localeCompare(b.label));
+  }, [pksTpsByCandidate, pksResult.items, manualOverrides]);
+
+  // Total resmi ambil dari kolom "JUMLAH PINDAHAN/AKHIR" (running total yang
+  // dicetak dokumen). Kalau itu null (OCR tidak yakin di halaman terakhir),
+  // fallback ke jumlah semua nilai per-TPS (termasuk yang sudah diisi manual)
+  // — tapi HANYA kalau semua sel TPS caleg itu sudah terisi (baik dari OCR
+  // atau isian manual), supaya tidak diam-diam menyimpan total yang salah
+  // karena masih ada sel yang bolong.
+  const effectiveTotals = useMemo(() => {
+    const out = {};
+    pksResult.items.forEach((it) => {
+      if (it.total !== null && it.total !== undefined) { out[it.key] = { value: it.total, isFallback: false }; return; }
+      const tpsMap = pksTpsByCandidate.get(it.key);
+      if (!tpsMap || tpsMap.size === 0) { out[it.key] = { value: null, isFallback: false }; return; }
+      let sum = 0;
+      let complete = true;
+      tpsMap.forEach((votes, tpsNumber) => {
+        const overrideRaw = manualOverrides[`${it.key}::${tpsNumber}`];
+        const val = overrideRaw !== undefined && overrideRaw !== '' ? Number(overrideRaw) : votes;
+        if (val === null || val === undefined || Number.isNaN(val)) { complete = false; return; }
+        sum += val;
+      });
+      out[it.key] = { value: complete ? sum : null, isFallback: true };
+    });
+    return out;
+  }, [pksResult.items, pksTpsByCandidate, manualOverrides]);
 
   const handleSave = async () => {
     if (!kelurahanId) return;
@@ -1641,13 +1797,13 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
     setSaving(true);
     const { data: authData } = await supabase.auth.getUser();
     const payload = pksResult.items
-      .filter((it) => it.total !== null && it.total !== undefined)
+      .filter((it) => effectiveTotals[it.key]?.value !== null && effectiveTotals[it.key]?.value !== undefined)
       .map((it) => ({
         kelurahan_id: kelurahanId,
         party_name: 'Partai Keadilan Sejahtera',
         candidate_number: it.candidateNumber ?? 0,
         candidate_name: it.candidateName,
-        total_suara: it.total,
+        total_suara: effectiveTotals[it.key].value,
         source_file_name: file?.name || null,
         sheet_info: pksResult.sheetInfo,
         election_year: electionYear,
@@ -1666,12 +1822,15 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
       const tpsMap = pksTpsByCandidate.get(it.key);
       if (!tpsMap) return;
       tpsMap.forEach((votes, tpsNumber) => {
+        const overrideRaw = manualOverrides[`${it.key}::${tpsNumber}`];
+        const finalVotes = overrideRaw !== undefined && overrideRaw !== '' ? Number(overrideRaw) : votes;
+        if (finalVotes === null || finalVotes === undefined || Number.isNaN(finalVotes)) return; // masih kosong, jangan disimpan sebagai 0 diam-diam
         tpsPayload.push({
           kelurahan_id: kelurahanId,
           tps_number: tpsNumber,
           candidate_number: it.candidateNumber ?? 0,
           candidate_name: it.candidateName,
-          votes,
+          votes: finalVotes,
           election_year: electionYear,
         });
       });
@@ -1807,27 +1966,63 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pksResult.items.map((it) => (
-                    <tr key={it.key}>
-                      <td>{it.isPartyRow ? '—' : it.candidateNumber}</td>
-                      <td style={{ fontWeight: 700, color: '#1a1d29' }}>{it.isPartyRow ? 'Suara Partai (tanpa calon)' : it.candidateName}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
-                        {it.total === null || it.total === undefined ? '?' : it.total.toLocaleString('id-ID')}
-                      </td>
-                      <td style={{ color: '#9ca3af', fontSize: 11.5 }}>Halaman {it.pageNumber}</td>
-                    </tr>
-                  ))}
+                  {pksResult.items.map((it) => {
+                    const eff = effectiveTotals[it.key] || { value: null, isFallback: false };
+                    return (
+                      <tr key={it.key}>
+                        <td>{it.isPartyRow ? '—' : it.candidateNumber}</td>
+                        <td style={{ fontWeight: 700, color: '#1a1d29' }}>{it.isPartyRow ? 'Suara Partai (tanpa calon)' : it.candidateName}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
+                          {eff.value === null || eff.value === undefined ? '?' : eff.value.toLocaleString('id-ID')}
+                          {eff.isFallback && eff.value !== null && (
+                            <span title="Dihitung dari jumlah semua TPS, bukan dari kolom total dokumen (nilainya tidak terbaca jelas)" style={{ marginLeft: 5, fontSize: 10, color: '#d97706', fontWeight: 600 }}>∑</span>
+                          )}
+                        </td>
+                        <td style={{ color: '#9ca3af', fontSize: 11.5 }}>Halaman {it.pageNumber}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan={2} style={{ fontWeight: 800 }}>Total</td>
                     <td style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'monospace' }}>
-                      {pksResult.items.reduce((s, it) => s + (it.total || 0), 0).toLocaleString('id-ID')}
+                      {pksResult.items.reduce((s, it) => s + (effectiveTotals[it.key]?.value || 0), 0).toLocaleString('id-ID')}
                     </td>
                     <td></td>
                   </tr>
                 </tfoot>
               </table>
+            </div>
+          )}
+
+          {uncertainCells.length > 0 && (
+            <div style={{ marginTop: 16, padding: 16, borderRadius: 12, background: '#fffbeb', border: '1px solid #fde68a' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Pencil size={15} color="#b45309" />
+                <h4 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: '#92400e' }}>
+                  Sel Perlu Diperiksa ({uncertainCells.length})
+                </h4>
+              </div>
+              <p style={{ margin: '2px 0 12px', fontSize: 11.5, color: '#92400e' }}>
+                Angka berikut tidak terbaca jelas oleh OCR — cek dokumen aslinya lalu isi di sini. Sel lain yang sudah berhasil terbaca tidak perlu diubah.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                {uncertainCells.map((c) => (
+                  <div key={c.overrideKey} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 8, padding: '8px 10px', border: '1px solid #fed7aa' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>TPS {String(c.tpsNumber).padStart(2, '0')}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1d29', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</div>
+                    </div>
+                    <input
+                      type="number" className="p-input" style={{ width: 76, padding: '6px 8px', fontSize: 12.5 }}
+                      placeholder="?" min={0}
+                      value={manualOverrides[c.overrideKey] ?? ''}
+                      onChange={(e) => setManualOverrides((prev) => ({ ...prev, [c.overrideKey]: e.target.value }))}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
