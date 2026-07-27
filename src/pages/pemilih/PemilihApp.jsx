@@ -9,6 +9,7 @@ import PemilihKegiatan from './PemilihKegiatan';
 import PemilihSetup from './PemilihSetup';
 import PemilihDataDpt from './PemilihDataDpt';
 import PemilihExtractPdf from './PemilihExtractPdf';
+import PemilihSuaraPks from './PemilihSuaraPks';
 
 const PemilihApp = () => {
   return (
@@ -26,6 +27,7 @@ const PemilihApp = () => {
         <Route path="/wilayah" element={<Navigate to="/pemilih/setup?tab=wilayah" replace />} />
         <Route path="/kategori-program" element={<Navigate to="/pemilih/setup?tab=kategori" replace />} />
         <Route path="/extract-pdf" element={<PemilihExtractPdf />} />
+        <Route path="/suara-pks" element={<PemilihSuaraPks />} />
       </Routes>
     </PemilihLayout>
   );

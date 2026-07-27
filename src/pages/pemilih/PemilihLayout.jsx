@@ -7,6 +7,7 @@ const NAV = [
   { to: '/pemilih/upload-ktp', label: 'Scan KTP', icon: '🪪', full: 'Scan / Upload KTP' },
   { to: '/pemilih/data', label: 'Data Pemilih', icon: '👥', full: 'Data Pemilih' },
   { to: '/pemilih/data-dpt', label: 'Data DPT', icon: '🗳️', full: 'Data Pemilih Sebelumnya (DPT)' },
+  { to: '/pemilih/suara-pks', label: 'Suara PKS', icon: '🌿', full: 'Perolehan Suara PKS' },
   { to: '/pemilih/tim-sukses', label: 'Tim Sukses', icon: '🤝', full: 'Tim Sukses & Relawan' },
   { to: '/pemilih/kegiatan', label: 'Kegiatan', icon: '📝', full: 'Log Kegiatan' },
   { to: '/pemilih/extract-pdf', label: 'Ekstrak PDF', icon: '📄', full: 'Ekstrak Data dari PDF' },
