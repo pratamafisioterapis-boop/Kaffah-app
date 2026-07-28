@@ -1864,6 +1864,10 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
           bank_name,
           account_number,
           holder_name
+        ),
+        subcategory:sub_category_id (
+          id,
+          subcategory_name
         )
       `)
         .eq('clinic_id', userRow?.clinic_id)
@@ -1884,21 +1888,11 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
 
     if (error) return { error };
 
-    // 🔥 ambil subcategory manual
-    const { data: subcategories } = await supabase
-      .from('accounting_subcategories')
-      .select('id, subcategory_name');
-
-    const subMap = (subcategories || []).reduce((acc, item) => {
-      acc[item.id] = item;
-      return acc;
-    }, {});
-
+    // sub_category_id gives a live-joined subcategory (renames cascade automatically);
+    // rows written before sub_category_id existed only have the plain text sub_category.
     const enriched = (data || []).map(item => ({
       ...item,
-      subcategory: item.sub_category
-        ? subMap[item.sub_category] || null
-        : null
+      subcategory: item.subcategory || (item.sub_category ? { id: null, subcategory_name: item.sub_category } : null)
     }));
 
     return {
@@ -2550,6 +2544,7 @@ export const updateAdminExpense = async (id, payload) => {
         amount: payload.amount,
         category: payload.category,
         sub_category: payload.sub_category || null,
+        sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
         updated_at: new Date().toISOString()
@@ -2586,6 +2581,7 @@ export const createAdminExpense = async (payload) => {
         amount: payload.amount,
         category: payload.category,
         sub_category: payload.sub_category || null,
+        sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
         created_by: payload.created_by || null,
@@ -2615,7 +2611,14 @@ export const getInventoryItems = async ({ activeOnly = true } = {}) => {
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    let query = supabase.from('inventory_items').select('*').eq('clinic_id', userRow?.clinic_id);
+    let query = supabase
+      .from('inventory_items')
+      .select(`
+        *,
+        category:category_id ( id, category_name ),
+        subcategory:subcategory_id ( id, subcategory_name )
+      `)
+      .eq('clinic_id', userRow?.clinic_id);
     if (activeOnly) query = query.eq('is_active', true);
     const { data, error } = await query;
     if (error) return { error };
@@ -2650,6 +2653,8 @@ export const createInventoryItem = async (payload) => {
         current_stock: quantity,
         price_per_unit: pricePerUnit,
         minimum_stock: payload.minimum_stock || 0,
+        category_id: payload.category_id || null,
+        subcategory_id: payload.subcategory_id || null,
         created_by: payload.created_by || null,
         clinic_id: userRow?.clinic_id
       })
@@ -2685,6 +2690,8 @@ export const updateInventoryItem = async (id, payload) => {
         unit: payload.unit,
         minimum_stock: payload.minimum_stock,
         is_active: payload.is_active,
+        category_id: payload.category_id || null,
+        subcategory_id: payload.subcategory_id || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

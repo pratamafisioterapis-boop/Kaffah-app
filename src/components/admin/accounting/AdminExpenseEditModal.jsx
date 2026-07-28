@@ -21,6 +21,7 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
     input_time: '',
     category: '',
     sub_category: '',
+    sub_category_id: '',
     bank_account_id: '',
     amount: '',
     description: ''
@@ -54,6 +55,7 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
         input_time: expense.input_time ? expense.input_time.substring(0, 5) : '',
         category: expense.category || '',
         sub_category: expense.sub_category || '',
+        sub_category_id: expense.sub_category_id || '',
         bank_account_id: expense.bank_account_id || '',
         amount: expense.amount || '',
         description: expense.description || ''
@@ -144,8 +146,8 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Kategori</Label>
             <Select 
-              value={formData.category} 
-              onValueChange={(val) => setFormData({...formData, category: val, sub_category: ''})}
+              value={formData.category}
+              onValueChange={(val) => setFormData({...formData, category: val, sub_category: '', sub_category_id: ''})}
             >
               <SelectTrigger className="bg-slate-50 border-slate-200">
                 <SelectValue placeholder="Pilih Kategori" />
@@ -165,8 +167,11 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Sub Kategori</Label>
              <Select 
-              value={formData.sub_category} 
-              onValueChange={(val) => setFormData({...formData, sub_category: val})}
+              value={formData.sub_category}
+              onValueChange={(val) => {
+                const match = filteredSubCategories.find(s => s.subcategory_name === val);
+                setFormData({...formData, sub_category: val, sub_category_id: match?.id || null});
+              }}
               disabled={!formData.category && filteredSubCategories.length === 0}
             >
               <SelectTrigger className="bg-slate-50 border-slate-200">

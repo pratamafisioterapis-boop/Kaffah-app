@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, ArrowUpDown } from 'lucide-react';
+import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, ArrowUpDown, Pencil } from 'lucide-react';
 import { deleteInventoryItem } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -12,7 +12,7 @@ const SORT_OPTIONS = [
   { value: 'latest', label: 'Input Barang Terbaru' },
 ];
 
-const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) => {
+const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, onEdit }) => {
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState('');
@@ -137,8 +137,20 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
                           <AlertTriangle className="w-3 h-3" /> Menipis
                         </span>
                       )}
+                      {item.subcategory?.subcategory_name ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
+                          {item.category?.category_name}: {item.subcategory.subcategory_name}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200 shrink-0">
+                          Belum ada kategori
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" onClick={() => onRestock(item)} title="Tambah Stok">
                         <PackagePlus className="w-4 h-4" />
                       </Button>
@@ -201,6 +213,15 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
                               <AlertTriangle className="w-3 h-3" /> Menipis
                             </span>
                           )}
+                          {item.subcategory?.subcategory_name ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                              {item.category?.category_name}: {item.subcategory.subcategory_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200">
+                              Belum ada kategori
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right font-mono text-slate-700">{Number(item.current_stock).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item.unit}</td>
@@ -208,6 +229,9 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory }) 
                       <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-105" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all hover:scale-105" onClick={() => onRestock(item)} title="Tambah Stok">
                             <PackagePlus className="w-4 h-4" />
                           </Button>

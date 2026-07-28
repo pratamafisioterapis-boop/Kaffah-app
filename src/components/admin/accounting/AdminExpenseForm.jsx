@@ -18,8 +18,9 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
 
   const [form, setForm] = useState({
     amount: '',
-    category: '', 
-    sub_category: '', 
+    category: '',
+    sub_category: '',
+    sub_category_id: '',
     description: '',
     transaction_date: format(new Date(), 'yyyy-MM-dd'),
     bank_account_id: ''
@@ -37,6 +38,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
         amount: initialData.amount || '',
         category: initialData.category || '',
         sub_category: initialData.sub_category || '',
+        sub_category_id: initialData.sub_category_id || '',
         description: initialData.description || '',
         transaction_date: initialData.transaction_date || format(new Date(), 'yyyy-MM-dd'),
         bank_account_id: initialData.bank_account_id || ''
@@ -54,6 +56,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
           .map(sub => ({
             label: sub.subcategory_name,
             value: sub.subcategory_name,
+            id: sub.id,
             description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`,
             categoryName: sub.parent_category?.category_name
           }));
@@ -88,7 +91,8 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
     setForm(prev => ({
       ...prev,
       sub_category: val,
-      category: selected ? selected.categoryName : prev.category 
+      sub_category_id: selected ? selected.id : prev.sub_category_id,
+      category: selected ? selected.categoryName : prev.category
     }));
   };
 
@@ -119,6 +123,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
           amount: '',
           category: '',
           sub_category: '',
+          sub_category_id: '',
           description: '',
           transaction_date: format(new Date(), 'yyyy-MM-dd'),
           bank_account_id: ''
