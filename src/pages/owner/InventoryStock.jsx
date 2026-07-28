@@ -5,6 +5,7 @@ import InventoryItemForm from '@/components/owner/inventory/InventoryItemForm';
 import InventoryItemList from '@/components/owner/inventory/InventoryItemList';
 import InventoryRestockModal from '@/components/owner/inventory/InventoryRestockModal';
 import InventoryPurchaseHistoryModal from '@/components/owner/inventory/InventoryPurchaseHistoryModal';
+import InventoryItemEditModal from '@/components/owner/inventory/InventoryItemEditModal';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -19,6 +20,7 @@ const InventoryStockPage = () => {
   const [loading, setLoading] = useState(true);
   const [restockTarget, setRestockTarget] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -101,7 +103,7 @@ const InventoryStockPage = () => {
             {loading ? (
               <div className="text-center py-12 text-slate-400">Memuat data...</div>
             ) : (
-              <InventoryItemList items={items} onRefresh={fetchItems} onRestock={(item) => setRestockTarget(item)} onViewHistory={(item) => setHistoryTarget(item)} />
+              <InventoryItemList items={items} onRefresh={fetchItems} onRestock={(item) => setRestockTarget(item)} onViewHistory={(item) => setHistoryTarget(item)} onEdit={(item) => setEditTarget(item)} />
             )}
           </div>
         </div>
@@ -109,6 +111,7 @@ const InventoryStockPage = () => {
 
       <InventoryRestockModal isOpen={!!restockTarget} onClose={() => setRestockTarget(null)} item={restockTarget} onSuccess={fetchItems} />
       <InventoryPurchaseHistoryModal isOpen={!!historyTarget} onClose={() => setHistoryTarget(null)} item={historyTarget} />
+      <InventoryItemEditModal isOpen={!!editTarget} onClose={() => setEditTarget(null)} item={editTarget} onSuccess={fetchItems} />
     </DashboardLayout>
   );
 };
