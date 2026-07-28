@@ -482,8 +482,7 @@ setFormData(prev => ({
 ...prev,
 package_type_id: packageInfo.package_type_id,
 package_type: packageInfo.package_name,
-amount: 0,
-payment_method: 'Package'
+...(mode === 'add' ? { amount: 0, payment_method: 'Package' } : {})
 }));
 } catch (err) {
 console.error("Failed to extend package", err);
