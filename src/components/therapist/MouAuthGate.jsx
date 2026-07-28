@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { sendPayrollAccessCode, verifyPayrollAccessCode } from '@/lib/payrollOtpClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Gerbang verifikasi email OTP untuk dokumen MOU — pola & sesi identik dengan
 // PayrollAuthGate (dokumen ini juga memuat data gaji & identitas pribadi),
@@ -42,6 +43,12 @@ const remainingCooldown = (therapistId) => {
 
 const MouAuthGate = ({ therapist, children }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  // Kode verifikasi harus dikirim ke email login yang sedang aktif di Supabase
+  // Auth, bukan kolom email di tabel physiotherapists — kolom itu bisa basi
+  // begitu terapis ganti email sendiri lewat Settings > Akun (yang hanya
+  // mengubah auth.users, tidak menyentuh tabel ini).
+  const verifyEmail = user?.email || therapist?.email;
   const [verified, setVerified] = useState(() => (therapist?.id ? isSessionValid(therapist.id) : false));
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -69,12 +76,12 @@ const MouAuthGate = ({ therapist, children }) => {
   }, []);
 
   const handleSendCode = async () => {
-    if (!therapist?.email) {
+    if (!verifyEmail) {
       toast({ variant: 'destructive', title: 'Gagal', description: 'Email terapis belum terdaftar. Hubungi admin klinik.' });
       return;
     }
     setSending(true);
-    const { error } = await sendPayrollAccessCode(therapist.email);
+    const { error } = await sendPayrollAccessCode(verifyEmail);
     setSending(false);
 
     if (error) {
@@ -85,13 +92,13 @@ const MouAuthGate = ({ therapist, children }) => {
     setCode('');
     setCooldown(RESEND_COOLDOWN_S);
     runCooldownTimer();
-    toast({ title: 'Kode Terkirim', description: `Kode verifikasi telah dikirim ke ${maskEmail(therapist.email)}. Gunakan kode dari email terbaru — kode sebelumnya tidak berlaku lagi.` });
+    toast({ title: 'Kode Terkirim', description: `Kode verifikasi telah dikirim ke ${maskEmail(verifyEmail)}. Gunakan kode dari email terbaru — kode sebelumnya tidak berlaku lagi.` });
   };
 
   const handleVerify = async () => {
     if (code.length < 6) return;
     setVerifying(true);
-    const { error } = await verifyPayrollAccessCode(therapist.email, code);
+    const { error } = await verifyPayrollAccessCode(verifyEmail, code);
     setVerifying(false);
 
     if (error) {
@@ -119,7 +126,7 @@ const MouAuthGate = ({ therapist, children }) => {
               <h3 className="font-semibold text-slate-800">Verifikasi Diperlukan</h3>
               <p className="text-sm text-slate-500 mt-1">
                 Untuk membuka dokumen MOU, masukkan kode verifikasi yang dikirim ke email Anda
-                {therapist?.email && <> (<span className="font-medium text-slate-600">{maskEmail(therapist.email)}</span>)</>}.
+                {verifyEmail && <> (<span className="font-medium text-slate-600">{maskEmail(verifyEmail)}</span>)</>}.
               </p>
             </div>
 
