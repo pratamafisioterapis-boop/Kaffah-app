@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense } from 'react';
-import { Helmet } from 'react-helmet';
+import PageSEO from '@/components/seo/PageSEO';
 const Navbar = React.lazy(() => import('@/components/landing/Navbar'));
 const HeroSection = React.lazy(() => import('@/components/landing/HeroSection'));
 const AboutSection = React.lazy(() => import('@/components/landing/AboutSection'));
@@ -40,10 +40,11 @@ const LandingPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Kaffah Physiotherapy - Solusi Fisioterapi Profesional & Terpercaya</title>
-        <meta name="description" content="Klinik fisioterapi profesional dengan pendekatan evidence-based untuk pemulihan cedera, pasca operasi, saraf kejepit, dan stroke. Booking online sekarang." />
-      </Helmet>
+      <PageSEO
+        title="Fisioterapi Balikpapan | Kaffah Physiotherapy - Klinik Terpercaya di Batu Ampar"
+        description="Klinik fisioterapi di Balikpapan Utara dengan terapis bersertifikat STR dan pendekatan evidence-based. Tangani nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, hingga stroke. Booking online sekarang."
+        path="/"
+      />
 <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-kaffah-blue selection:text-white">
         <SafeSection><Navbar /></SafeSection>

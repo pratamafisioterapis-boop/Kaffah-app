@@ -1,41 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bone, Activity, Users, Zap, Briefcase, Home } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { SERVICES } from '@/data/services';
 
-const services = [
-  {
-    icon: Bone,
-    title: "Musculoskeletal Pain",
-    description: "Terapi untuk nyeri otot, sendi, sakit pinggang, leher, dan masalah tulang belakang lainnya."
-  },
-  {
-    icon: Zap,
-    title: "Cedera Olahraga",
-    description: "Pemulihan cedera akibat olahraga seperti sprain, strain, ACL, dan peningkatan performa atlet."
-  },
-  {
-    icon: Activity,
-    title: "Rehabilitasi Pasca Operasi",
-    description: "Program pemulihan optimal setelah operasi orthopedi (tulang) maupun bedah lainnya."
-  },
-  {
-    icon: Users,
-    title: "Neuromuskular",
-    description: "Terapi untuk kondisi saraf seperti stroke, parkinson, HNP (saraf kejepit), dan bells palsy."
-  },
-  {
-    icon: Briefcase,
-    title: "Ergonomic Therapy",
-    description: "Koreksi postur tubuh dan penanganan keluhan akibat posisi kerja yang salah."
-  },
-  {
-    icon: Home,
-    title: "Home Care",
-    description: "Layanan fisioterapi panggilan ke rumah untuk kenyamanan pasien yang sulit mobilisasi."
-  }
-];
+const services = SERVICES.map((s) => ({
+  slug: s.slug,
+  icon: s.icon,
+  title: s.title,
+  description: s.shortDescription,
+}));
 
 const ServicesSection = () => {
   return (
@@ -48,7 +23,7 @@ const ServicesSection = () => {
               Kami menyediakan berbagai layanan fisioterapi komprehensif untuk menangani berbagai kondisi kesehatan Anda.
             </p>
           </div>
-          <Link to="/booking">
+          <Link to="/layanan">
             <span className="text-kaffah-navy font-semibold hover:text-kaffah-blue flex items-center gap-2 transition-colors">
               Lihat Semua Layanan <ArrowRight className="w-4 h-4" />
             </span>
@@ -77,8 +52,8 @@ const ServicesSection = () => {
                   </p>
                 </CardContent>
                 <CardFooter>
-                  <Link to="/booking" className="text-kaffah-navy font-medium text-sm hover:text-kaffah-blue flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Booking Sesi <ArrowRight className="w-4 h-4" />
+                  <Link to={`/layanan/${service.slug}`} className="text-kaffah-navy font-medium text-sm hover:text-kaffah-blue flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Selengkapnya <ArrowRight className="w-4 h-4" />
                   </Link>
                 </CardFooter>
               </Card>
