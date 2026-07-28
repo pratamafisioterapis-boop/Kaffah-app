@@ -794,6 +794,7 @@ setFormData({
     
     useEffect(() => {
         if (!selectedPackage) return;
+        if (mode !== 'add') return; // jangan autofill amount/payment_method saat edit recap yang sudah ada
 
         const pkg = selectedPackage;
 
@@ -821,7 +822,7 @@ setFormData({
             payment_method: isPending ? pkg.payment_method : 'Package'
         }));
 
-    }, [selectedPackage]);
+    }, [selectedPackage, mode]);
 
     const handlePatientChange = (selectedId) => {
         // RESET SEMUA DATA TERKAIT PAKET DULU
