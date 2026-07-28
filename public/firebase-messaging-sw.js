@@ -34,10 +34,6 @@ messaging.onBackgroundMessage((payload) => {
     {
       body,
       icon: payload?.data?.icon_url || "/logo192.png?v=kaffahtech1",
-      // `badge` = ikon monokrom kecil yang dipakai Android di status bar.
-      // Tanpa ini, Android/Chrome fallback ke ikon lonceng generik alih-alih
-      // logo Kaffah Tech.
-      badge: "/logo192.png?v=kaffahtech1",
       data: {
         url: payload?.data?.url,
         appointment_date: payload?.data?.appointment_date,
