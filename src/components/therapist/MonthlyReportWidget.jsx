@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { FileBarChart2, Users, ClipboardCheck, ClipboardX, Loader2, ChevronDown, ChevronUp, X, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FileBarChart2, Users, ClipboardCheck, ClipboardX, Loader2, ChevronDown, ChevronUp, X, Calendar, AlertCircle, CheckCircle2, History, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { createMedicalRecord, getTherapistSoapLockStatus } from '@/lib/api';
+import { createMedicalRecord, getTherapistSoapLockStatus, getMedicalRecords } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -44,6 +44,9 @@ const MonthlyReportWidget = ({ therapistId, therapistUserId }) => {
   const [selectedRecap, setSelectedRecap] = useState(null);
   const [soapForm, setSoapForm] = useState({ subjective: '', objective: '', assessment: '', plan: '' });
   const [savingSOAP, setSavingSOAP] = useState(false);
+  const [previousRecords, setPreviousRecords] = useState([]);
+  const [loadingPrevious, setLoadingPrevious] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
   const { toast } = useToast();
 
   const period = getReportPeriod();
@@ -163,12 +166,42 @@ const handleOpenSoapModal = () => {
     if (!report || report.unfilledSoap === 0) return;
     setSelectedRecap(null);
     setSoapForm({ subjective: '', objective: '', assessment: '', plan: '' });
+    setPreviousRecords([]);
+    setShowPrevious(false);
     setSoapModalOpen(true);
   };
 
   const handleSelectRecap = (recap) => {
     setSelectedRecap(recap);
     setSoapForm({ subjective: '', objective: '', assessment: '', plan: '' });
+    setShowPrevious(false);
+    setPreviousRecords([]);
+    loadPreviousRecords(recap.patient_id);
+  };
+
+  const loadPreviousRecords = async (patientId) => {
+    if (!patientId) return;
+    setLoadingPrevious(true);
+    try {
+      const { data, error } = await getMedicalRecords({ patientId, limit: 5 });
+      if (error) throw new Error(error.message);
+      setPreviousRecords(data || []);
+    } catch (err) {
+      console.error('loadPreviousRecords error:', err);
+    } finally {
+      setLoadingPrevious(false);
+    }
+  };
+
+  const handleCopyPrevious = (record) => {
+    setSoapForm({
+      subjective: record.subjective || '',
+      objective: record.objective || '',
+      assessment: record.assessment || '',
+      plan: record.plan || '',
+    });
+    setShowPrevious(false);
+    toast({ title: 'SOAP Disalin', description: 'Isi SOAP sebelumnya telah disalin ke form. Silakan sesuaikan bila perlu.' });
   };
 
   const handleSaveSOAP = async () => {
@@ -467,6 +500,62 @@ const handleOpenSoapModal = () => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Riwayat SOAP Sebelumnya */}
+                  {(loadingPrevious || previousRecords.length > 0) && (
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/60 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setShowPrevious(prev => !prev)}
+                        disabled={loadingPrevious}
+                        className="w-full flex items-center justify-between px-3 py-2 text-left"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <History className="w-3.5 h-3.5 text-amber-600" />
+                          <span className="text-xs font-semibold text-amber-700">
+                            {loadingPrevious ? 'Memuat SOAP sebelumnya...' : `Lihat SOAP Sebelumnya (${previousRecords.length})`}
+                          </span>
+                        </div>
+                        {!loadingPrevious && (
+                          showPrevious ? <ChevronUp className="w-3.5 h-3.5 text-amber-500" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-500" />
+                        )}
+                      </button>
+
+                      {showPrevious && !loadingPrevious && (
+                        <div className="px-3 pb-3 space-y-2 max-h-56 overflow-y-auto">
+                          {previousRecords.map(record => (
+                            <div key={record.id} className="bg-white rounded-lg border border-amber-100 p-2.5">
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="text-[10px] font-semibold text-slate-500">
+                                  {format(new Date(record.daily_recap?.recap_date || record.created_at), 'dd MMMM yyyy', { locale: idLocale })}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPrevious(record)}
+                                  className="flex items-center gap-1 text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-md px-2 py-1 transition-colors shrink-0"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  Salin ke Form
+                                </button>
+                              </div>
+                              <div className="space-y-1">
+                                {[
+                                  { short: 'S', text: record.subjective, color: 'text-blue-600' },
+                                  { short: 'O', text: record.objective, color: 'text-teal-600' },
+                                  { short: 'A', text: record.assessment, color: 'text-violet-600' },
+                                  { short: 'P', text: record.plan, color: 'text-rose-600' },
+                                ].map(item => (
+                                  <p key={item.short} className="text-[11px] text-slate-500 line-clamp-1">
+                                    <span className={`font-bold ${item.color}`}>{item.short}:</span> {item.text || '-'}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* SOAP Fields */}
                   {[
