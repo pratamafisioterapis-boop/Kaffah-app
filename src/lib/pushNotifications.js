@@ -94,7 +94,7 @@ export const listenForegroundNotifications = () => {
   try {
     const messaging = getMessaging(firebaseApp);
 
-    onMessage(messaging, (payload) => {
+    onMessage(messaging, async (payload) => {
       console.log("Foreground Message:", payload);
 
       const title =
@@ -107,10 +107,28 @@ export const listenForegroundNotifications = () => {
         payload?.data?.body ||
         "NO BODY";
 
-      new Notification(title, {
-        body,
-        icon: payload?.data?.icon_url || "/logo192.png?v=kaffahtech1",
-      });
+      const icon = payload?.data?.icon_url || "/logo192.png?v=kaffahtech1";
+      const data = {
+        url: payload?.data?.url,
+        appointment_date: payload?.data?.appointment_date,
+        appointment_id: payload?.data?.appointment_id,
+      };
+
+      // Di Android/Chrome PWA, `new Notification()` yang dipanggil langsung
+      // dari halaman dilarang ("Illegal constructor"), jadi notifikasi
+      // foreground gagal tampil secara silent walau app sedang dibuka.
+      // Harus lewat ServiceWorkerRegistration.showNotification() supaya
+      // konsisten dengan yang dipakai firebase-messaging-sw.js untuk pesan
+      // background.
+      const registration = await navigator.serviceWorker.getRegistration(
+        "/firebase-messaging-sw.js"
+      );
+
+      if (registration) {
+        registration.showNotification(title, { body, icon, data });
+      } else {
+        new Notification(title, { body, icon, data });
+      }
     });
   } catch (err) {
     console.error(err);
