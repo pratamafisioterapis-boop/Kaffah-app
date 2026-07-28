@@ -9,7 +9,7 @@ const TeamPage = () => {
     <div className="min-h-screen bg-white font-sans text-slate-900">
       <PageSEO
         title="Tim Fisioterapis Balikpapan | Kaffah Physiotherapy"
-        description="Kenali tim fisioterapis bersertifikat STR di Kaffah Physiotherapy, Balikpapan Utara. Berpengalaman menangani nyeri otot & sendi, cedera olahraga, hingga neuromuskular."
+        description="Kenali tim fisioterapis bersertifikat SIPF di Kaffah Physiotherapy, Balikpapan Utara. Berpengalaman menangani nyeri otot & sendi, cedera olahraga, hingga neuromuskular."
         path="/tim-fisioterapis"
       />
       <Navbar />
@@ -20,7 +20,7 @@ const TeamPage = () => {
               Tim Fisioterapis Kaffah Physiotherapy
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed">
-              Ditangani oleh fisioterapis dengan STR (Surat Tanda Registrasi) aktif dan pengalaman klinis di Balikpapan.
+              Ditangani oleh fisioterapis dengan SIPF (Surat Izin Praktik Fisioterapis) aktif dan pengalaman klinis di Balikpapan.
             </p>
           </div>
         </section>

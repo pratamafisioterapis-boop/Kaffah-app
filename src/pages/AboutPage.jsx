@@ -13,7 +13,7 @@ const features = [
   {
     icon: UserCheck,
     title: 'Terapis Tersertifikasi',
-    description: 'Ditangani oleh fisioterapis lulusan universitas terkemuka dan memiliki STR (Surat Tanda Registrasi) aktif.',
+    description: 'Ditangani oleh fisioterapis lulusan universitas terkemuka dan memiliki SIPF (Surat Izin Praktik Fisioterapis) aktif.',
   },
   {
     icon: HeartHandshake,
@@ -37,7 +37,7 @@ const AboutPage = () => {
     <div className="min-h-screen bg-white font-sans text-slate-900">
       <PageSEO
         title="Tentang Kami | Kaffah Physiotherapy Balikpapan"
-        description="Kaffah Physiotherapy adalah klinik fisioterapi di Batu Ampar, Balikpapan Utara dengan terapis bersertifikat STR dan pendekatan evidence-based, personal, dan aman."
+        description="Kaffah Physiotherapy adalah klinik fisioterapi di Batu Ampar, Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based, personal, dan aman."
         path="/tentang-kami"
       />
       <Navbar />
@@ -48,7 +48,7 @@ const AboutPage = () => {
               Tentang Kaffah Physiotherapy
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed">
-              Kami berdedikasi untuk membantu masyarakat Balikpapan kembali bergerak bebas tanpa rasa sakit. Misi kami adalah menyediakan layanan fisioterapi berkualitas tinggi yang mudah diakses dan berpusat pada pasien, ditangani langsung oleh fisioterapis dengan STR (Surat Tanda Registrasi) aktif.
+              Kami berdedikasi untuk membantu masyarakat Balikpapan kembali bergerak bebas tanpa rasa sakit. Misi kami adalah menyediakan layanan fisioterapi berkualitas tinggi yang mudah diakses dan berpusat pada pasien, ditangani langsung oleh fisioterapis dengan SIPF (Surat Izin Praktik Fisioterapis) aktif.
             </p>
           </div>
         </section>

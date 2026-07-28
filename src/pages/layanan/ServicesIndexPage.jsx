@@ -24,7 +24,7 @@ const ServicesIndexPage = () => {
               Layanan Fisioterapi di Balikpapan
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed">
-              Kaffah Physiotherapy menyediakan layanan fisioterapi komprehensif dengan pendekatan evidence-based, ditangani oleh terapis bersertifikat STR di Balikpapan Utara.
+              Kaffah Physiotherapy menyediakan layanan fisioterapi komprehensif dengan pendekatan evidence-based, ditangani oleh terapis bersertifikat SIPF di Balikpapan Utara.
             </p>
           </div>
         </section>

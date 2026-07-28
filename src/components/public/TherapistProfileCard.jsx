@@ -90,11 +90,16 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
 
           <div className="inline-flex items-center gap-1 mb-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#b8935f]" />
-            <span className="text-[10px] font-bold tracking-[0.12em] text-[#b8935f] uppercase">Certified Therapist</span>
+            <span className="text-[10px] font-bold tracking-[0.12em] text-[#b8935f] uppercase">
+              {therapist.license_number ? 'SIPF Terverifikasi' : 'Certified Therapist'}
+            </span>
           </div>
 
           <h3 className="font-bold text-lg text-[#0f1e3d] mb-1">{therapist.name}</h3>
           <p className="text-slate-500 font-medium text-sm">{therapist.specialization || 'Fisioterapis'}</p>
+          {therapist.license_number && (
+            <p className="text-[11px] text-slate-400 font-medium mt-1 tracking-wide">SIPF: {therapist.license_number}</p>
+          )}
 
           {/* Badges */}
           {Array.isArray(therapist.badges) && therapist.badges.length > 0 && (
@@ -190,6 +195,9 @@ const TherapistProfileCard = ({ therapist, isSelected, onSelect, showSelectButto
              </div>
              <DialogTitle className="text-white text-xl font-bold mb-1">{therapist.name}</DialogTitle>
              <p className="text-[#e8c98a] font-medium text-sm">{therapist.specialization || 'Fisioterapis'}</p>
+             {therapist.license_number && (
+               <p className="text-[#e8c98a]/70 text-xs mt-1">SIPF: {therapist.license_number}</p>
+             )}
           </div>
 
           <div className="p-6">

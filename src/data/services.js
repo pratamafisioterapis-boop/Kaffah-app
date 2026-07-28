@@ -77,7 +77,7 @@ export const SERVICES = [
     title: 'Fisioterapi Rehabilitasi Pasca Operasi',
     shortDescription: 'Program pemulihan optimal setelah operasi ortopedi maupun bedah lainnya.',
     metaTitle: 'Fisioterapi Pasca Operasi di Balikpapan | Kaffah Physiotherapy',
-    metaDescription: 'Program rehabilitasi pasca operasi ortopedi (penggantian sendi, operasi tulang, ligamen) di Kaffah Physiotherapy, Balikpapan Utara. Terapis bersertifikat STR.',
+    metaDescription: 'Program rehabilitasi pasca operasi ortopedi (penggantian sendi, operasi tulang, ligamen) di Kaffah Physiotherapy, Balikpapan Utara. Terapis bersertifikat SIPF.',
     h1: 'Fisioterapi Rehabilitasi Pasca Operasi di Balikpapan',
     intro:
       'Operasi ortopedi seperti penggantian sendi, operasi tulang, atau rekonstruksi ligamen membutuhkan rehabilitasi terarah agar fungsi gerak pulih maksimal. Kaffah Physiotherapy mendampingi proses pemulihan pasca operasi sesuai anjuran dokter bedah yang menangani.',

@@ -177,7 +177,7 @@ function App() {
 
           <Helmet>
             <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
-            <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat STR, pendekatan evidence-based." />
+            <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
             <meta name="theme-color" content="#1e3a5f" />
             <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
             <link rel="manifest" href="/manifest.json" />

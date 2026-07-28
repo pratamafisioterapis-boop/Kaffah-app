@@ -42,7 +42,7 @@ const LandingPage = () => {
     <>
       <PageSEO
         title="Fisioterapi Balikpapan | Kaffah Physiotherapy - Klinik Terpercaya di Batu Ampar"
-        description="Klinik fisioterapi di Balikpapan Utara dengan terapis bersertifikat STR dan pendekatan evidence-based. Tangani nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, hingga stroke. Booking online sekarang."
+        description="Klinik fisioterapi di Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based. Tangani nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, hingga stroke. Booking online sekarang."
         path="/"
       />
 <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
