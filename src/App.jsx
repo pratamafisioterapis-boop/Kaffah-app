@@ -26,6 +26,8 @@ const LocationPage = React.lazy(() => import('@/pages/LocationPage'));
 const FaqPage = React.lazy(() => import('@/pages/FaqPage'));
 const ServicesIndexPage = React.lazy(() => import('@/pages/layanan/ServicesIndexPage'));
 const ServiceDetailPage = React.lazy(() => import('@/pages/layanan/ServiceDetailPage'));
+const BlogIndexPage = React.lazy(() => import('@/pages/artikel/BlogIndexPage'));
+const BlogArticlePage = React.lazy(() => import('@/pages/artikel/BlogArticlePage'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
 const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
 const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
@@ -199,6 +201,8 @@ function App() {
                 <Route path="/faq" element={<FaqPage />} />
                 <Route path="/layanan" element={<ServicesIndexPage />} />
                 <Route path="/layanan/:slug" element={<ServiceDetailPage />} />
+                <Route path="/artikel" element={<BlogIndexPage />} />
+                <Route path="/artikel/:slug" element={<BlogArticlePage />} />
                 <Route path="/i/:recapId" element={<InvoiceViewPage />} />
                 
                 {/* Protected Routes */}

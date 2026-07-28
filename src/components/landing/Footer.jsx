@@ -33,6 +33,7 @@ const Footer = () => {
               <li><Link to="/tentang-kami" className="hover:text-kaffah-blue transition-colors">Tentang Kami</Link></li>
               <li><Link to="/layanan" className="hover:text-kaffah-blue transition-colors">Layanan</Link></li>
               <li><Link to="/tim-fisioterapis" className="hover:text-kaffah-blue transition-colors">Tim Kami</Link></li>
+              <li><Link to="/artikel" className="hover:text-kaffah-blue transition-colors">Artikel</Link></li>
               <li><Link to="/lokasi" className="hover:text-kaffah-blue transition-colors">Lokasi</Link></li>
               <li><Link to="/faq" className="hover:text-kaffah-blue transition-colors">FAQ</Link></li>
               <li><Link to="/pricing" className="hover:text-kaffah-blue transition-colors">Tarif</Link></li>

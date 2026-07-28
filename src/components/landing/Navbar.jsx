@@ -28,6 +28,7 @@ const Navbar = () => {
     { name: 'Layanan', href: '/layanan', isHash: false },
     { name: 'Terapis', href: '/tim-fisioterapis', isHash: false },
     { name: 'Tarif', href: '/pricing', isHash: false },
+    { name: 'Artikel', href: '/artikel', isHash: false },
     { name: 'Lokasi', href: '/lokasi', isHash: false },
     { name: 'FAQ', href: '/faq', isHash: false },
   ];
