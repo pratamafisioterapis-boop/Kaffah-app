@@ -314,10 +314,14 @@ const RemunerationManager = () => {
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-semibold text-slate-800 truncate">{row.name}</p>
                               <p className="text-[10px] text-slate-400">Bobot {row.weight_percent}%</p>
-                              {row.proofUrl && (
-                                <a href={row.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:underline mt-0.5">
-                                  <ImageIcon className="w-3 h-3" /> Lihat bukti
-                                </a>
+                              {(row.proofUrls || (row.proofUrl ? [row.proofUrl] : [])).length > 0 && (
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                  {(row.proofUrls || [row.proofUrl]).map((url, i) => (
+                                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:underline">
+                                      <ImageIcon className="w-3 h-3" /> Lihat bukti {(row.proofUrls || []).length > 1 ? `#${i + 1}` : ''}
+                                    </a>
+                                  ))}
+                                </div>
                               )}
                             </div>
                             <div className="text-right shrink-0">

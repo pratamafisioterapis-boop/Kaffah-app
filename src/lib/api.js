@@ -6414,13 +6414,15 @@ export const getRemunerationRealizations = async (therapistId, periodStart, peri
   }, 'getRemunerationRealizations', { retry: true });
 };
 
-export const upsertRemunerationRealization = async ({ therapistId, criteriaId, periodStart, periodEnd, value, proofUrl, note }) => {
+export const upsertRemunerationRealization = async ({ therapistId, criteriaId, periodStart, periodEnd, value, proofUrls, note }) => {
   return safeQuery(async () => {
     const clinicId = await getCurrentClinicId();
     if (!clinicId) return { error: { message: 'Klinik tidak ditemukan.' } };
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
+
+    const urls = Array.isArray(proofUrls) ? proofUrls.filter(Boolean) : [];
 
     const payload = {
       clinic_id: clinicId,
@@ -6429,7 +6431,10 @@ export const upsertRemunerationRealization = async ({ therapistId, criteriaId, p
       period_start: periodStart,
       period_end: periodEnd,
       realization_value: value,
-      proof_url: proofUrl || null,
+      proof_urls: urls,
+      // Kolom lama dipertahankan (diisi url pertama) supaya laporan/kode lain
+      // yang belum dimigrasi ke proof_urls tetap dapat pratinjau bukti.
+      proof_url: urls[0] || null,
       note: note || null,
       input_by: userId || null,
       updated_at: new Date().toISOString(),
@@ -6449,7 +6454,7 @@ export const upsertRemunerationRealization = async ({ therapistId, criteriaId, p
 export const uploadRemunerationProof = async (file, therapistId) => {
   return safeQuery(async () => {
     const ext = file.name.split('.').pop();
-    const fileName = `${therapistId}/${Date.now()}.${ext}`;
+    const fileName = `${therapistId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     const { error: uploadError } = await supabase
       .storage
@@ -6465,6 +6470,19 @@ export const uploadRemunerationProof = async (file, therapistId) => {
 
     return { data: publicUrlData.publicUrl, success: true, error: null };
   }, 'uploadRemunerationProof');
+};
+
+// Unggah beberapa bukti sekaligus untuk satu kriteria remunerasi. Mengembalikan
+// url yang berhasil diunggah; jika sebagian gagal, error dari upload pertama
+// yang gagal ikut dikembalikan supaya UI bisa memberi tahu user.
+export const uploadRemunerationProofs = async (files, therapistId) => {
+  const urls = [];
+  for (const file of files) {
+    const { data, error } = await uploadRemunerationProof(file, therapistId);
+    if (error) return { data: urls, error };
+    urls.push(data);
+  }
+  return { data: urls, success: true, error: null };
 };
 
 // Kedisiplinan kehadiran: proporsi appointment yang benar-benar direalisasikan
@@ -6578,6 +6596,7 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
       let realizationValue = 0;
       let unit = c.unit;
       let proofUrl = null;
+      let proofUrls = [];
 
       if (c.target_mode === 'percent_of_patient_target') {
         targetValue = Math.round(patientTargetVisits * (c.target_value / 100));
@@ -6594,7 +6613,10 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
       } else {
         const r = realizationMap[c.id];
         realizationValue = r?.realization_value || 0;
-        proofUrl = r?.proof_url || null;
+        proofUrls = Array.isArray(r?.proof_urls) && r.proof_urls.length > 0
+          ? r.proof_urls
+          : (r?.proof_url ? [r.proof_url] : []);
+        proofUrl = proofUrls[0] || null;
       }
 
       const achievementPercent = targetValue > 0
@@ -6612,6 +6634,7 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
         realizationValue,
         unit,
         proofUrl,
+        proofUrls,
         achievementPercent,
         weightedScore,
       };
