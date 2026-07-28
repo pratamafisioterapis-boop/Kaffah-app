@@ -6,6 +6,7 @@ const AboutSection = React.lazy(() => import('@/components/landing/AboutSection'
 const ServicesSection = React.lazy(() => import('@/components/landing/ServicesSection'));
 const AdvantagesSection = React.lazy(() => import('@/components/landing/AdvantagesSection'));
 const TherapistsSection = React.lazy(() => import('@/components/landing/TherapistsSection'));
+const TestimonialsSection = React.lazy(() => import('@/components/landing/TestimonialsSection'));
 const LocationSection = React.lazy(() => import('@/components/landing/LocationSection'));
 const PricingTeaser = React.lazy(() => import('@/components/landing/PricingTeaser'));
 const CTASection = React.lazy(() => import('@/components/landing/CTASection'));
@@ -54,6 +55,7 @@ const LandingPage = () => {
           <SafeSection><ServicesSection /></SafeSection>
           <SafeSection><AdvantagesSection /></SafeSection>
           <SafeSection><TherapistsSection /></SafeSection>
+          <SafeSection><TestimonialsSection /></SafeSection>
           <SafeSection><PricingTeaser /></SafeSection>
           <SafeSection><CTASection /></SafeSection>
           <SafeSection><LocationSection /></SafeSection>

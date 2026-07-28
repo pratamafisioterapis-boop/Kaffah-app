@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { BUSINESS } from '@/lib/businessInfo';
+import { TESTIMONIALS, GOOGLE_RATING_SUMMARY } from '@/data/testimonials';
 
 const localBusinessSchema = {
   '@context': 'https://schema.org',
@@ -23,6 +24,19 @@ const localBusinessSchema = {
   },
   openingHoursSpecification: BUSINESS.openingHoursSpecification,
   sameAs: [BUSINESS.instagramUrl, BUSINESS.facebookUrl],
+  // Real Google reviews (transcribed from the clinic's actual listing) and
+  // the true rating summary confirmed by the owner — not derived/estimated.
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: GOOGLE_RATING_SUMMARY.ratingValue,
+    reviewCount: GOOGLE_RATING_SUMMARY.reviewCount,
+  },
+  review: TESTIMONIALS.map((t) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: t.name },
+    reviewRating: { '@type': 'Rating', ratingValue: t.rating, bestRating: 5 },
+    reviewBody: t.text,
+  })),
 };
 
 /**
