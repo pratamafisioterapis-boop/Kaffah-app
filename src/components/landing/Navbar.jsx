@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, LogIn, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { BUSINESS } from '@/lib/businessInfo';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -23,11 +24,13 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', href: '/', isHash: false },
-    { name: 'Tentang Kami', href: '/#about', isHash: true },
-    { name: 'Layanan', href: '/#services', isHash: true },
+    { name: 'Tentang Kami', href: '/tentang-kami', isHash: false },
+    { name: 'Layanan', href: '/layanan', isHash: false },
+    { name: 'Terapis', href: '/tim-fisioterapis', isHash: false },
     { name: 'Tarif', href: '/pricing', isHash: false },
-    { name: 'Terapis', href: '/#therapists', isHash: true },
-    { name: 'Kontak', href: '/#footer', isHash: true }
+    { name: 'Artikel', href: '/artikel', isHash: false },
+    { name: 'Lokasi', href: '/lokasi', isHash: false },
+    { name: 'FAQ', href: '/faq', isHash: false },
   ];
 
   const handleNavClick = (e, link) => {
@@ -79,7 +82,7 @@ const Navbar = () => {
                 </Link>
             )
           ))}
-          <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
+          <a href={BUSINESS.whatsappUrl} target="_blank" rel="noopener noreferrer">
              <Button variant={showBackground ? "secondary" : "outline"} className={`gap-2 ${!showBackground && 'border-kaffah-navy text-kaffah-navy hover:bg-kaffah-navy hover:text-white'}`}>
               <MessageCircle className="w-4 h-4" /> Konsultasi WA
             </Button>
@@ -129,7 +132,7 @@ const Navbar = () => {
                 )
               ))}
               <div className="h-px bg-white/10 my-2" />
-              <a href="https://wa.me/6281233339435" target="_blank" rel="noopener noreferrer">
+              <a href={BUSINESS.whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
                     <MessageCircle className="w-4 h-4" /> Konsultasi WhatsApp
                 </Button>

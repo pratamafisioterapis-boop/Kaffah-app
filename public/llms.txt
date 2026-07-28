@@ -1,6 +1,11 @@
 ## Pages
+- [Artikel Fisioterapi | Kaffah Physiotherapy Balikpapan](/artikel): Artikel seputar fisioterapi: biaya, kapan harus konsultasi, pemulihan cedera olahraga, stroke, dan tips kesehatan gerak dari Kaffah Physiotherapy Balikpapan.
 - [Dashboard Overview | Kaffah Physiotherapy](/dashboard): Comprehensive overview of operational performance for Kaffah Physiotherapy.
-- [Kaffah Physiotherapy - Solusi Fisioterapi Profesional & Terpercaya](/landing): Klinik fisioterapi profesional dengan pendekatan evidence-based untuk pemulihan cedera, pasca operasi, saraf kejepit, dan stroke. Booking online sekarang.
+- [FAQ | Pertanyaan Seputar Fisioterapi di Kaffah Physiotherapy](/faq): Pertanyaan umum seputar booking, jam operasional, rujukan dokter, dan layanan home care di Kaffah Physiotherapy Balikpapan.
+- [Fisioterapi Balikpapan | Kaffah Physiotherapy - Klinik Terpercaya di Batu Ampar](/): Klinik fisioterapi di Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based. Tangani nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, hingga stroke. Booking online sekarang.
+- [Layanan Fisioterapi di Balikpapan | Kaffah Physiotherapy](/layanan): Daftar layanan fisioterapi Kaffah Physiotherapy di Balikpapan Utara: nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, neuromuskular, terapi ergonomis, dan home care.
 - [Owner Dashboard - Kaffah System Care](/ownerdashboard): Owner dashboard for Kaffah System Care
 - [Tarif Layanan - Kaffah Physiotherapy](/pricing): Daftar tarif dan paket fisioterapi Kaffah Physiotherapy. Transparan, terjangkau, dan profesional. Pilih paket yang sesuai kebutuhan pemulihan Anda.
+- [Tentang Kami | Kaffah Physiotherapy Balikpapan](/tentang-kami): Kaffah Physiotherapy adalah klinik fisioterapi di Batu Ampar, Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based, personal, dan aman.
 - [Therapist Dashboard - Kaffah System Care](/therapistdashboard): Therapist dashboard
+- [Tim Fisioterapis Balikpapan | Kaffah Physiotherapy](/tim-fisioterapis): Kenali tim fisioterapis bersertifikat SIPF di Kaffah Physiotherapy, Balikpapan Utara. Berpengalaman menangani nyeri otot & sendi, cedera olahraga, hingga neuromuskular.

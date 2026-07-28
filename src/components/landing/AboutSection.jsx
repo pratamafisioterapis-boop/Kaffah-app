@@ -7,7 +7,7 @@ const features = [
   {
     icon: UserCheck,
     title: "Terapis Tersertifikasi",
-    description: "Ditangani oleh fisioterapis lulusan universitas terkemuka dan memiliki STR aktif."
+    description: "Ditangani oleh fisioterapis lulusan universitas terkemuka dan memiliki SIPF (Surat Izin Praktik Fisioterapis) aktif."
   },
   {
     icon: HeartHandshake,

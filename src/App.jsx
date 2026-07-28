@@ -20,6 +20,14 @@ const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
 const SmartBookingPage = React.lazy(() => import('@/pages/SmartBookingPage'));
 const InvoiceViewPage = React.lazy(() => import('@/pages/InvoiceViewPage'));
 const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
+const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
+const TeamPage = React.lazy(() => import('@/pages/TeamPage'));
+const LocationPage = React.lazy(() => import('@/pages/LocationPage'));
+const FaqPage = React.lazy(() => import('@/pages/FaqPage'));
+const ServicesIndexPage = React.lazy(() => import('@/pages/layanan/ServicesIndexPage'));
+const ServiceDetailPage = React.lazy(() => import('@/pages/layanan/ServiceDetailPage'));
+const BlogIndexPage = React.lazy(() => import('@/pages/artikel/BlogIndexPage'));
+const BlogArticlePage = React.lazy(() => import('@/pages/artikel/BlogArticlePage'));
 const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
 const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
 const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
@@ -168,23 +176,12 @@ function App() {
   
 
           <Helmet>
-            <title>Kaffah Physiotherapy</title>
-            <meta name="description" content="Kaffah Physiotherapy - Professional Management System" />
+            <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
+            <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
             <meta name="theme-color" content="#1e3a5f" />
+            <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
             <link rel="manifest" href="/manifest.json" />
           </Helmet>
-          <Helmet>
-  <title>Kaffah Physiotherapy</title>
-  <meta name="description" content="Kaffah Physiotherapy - Professional Management System" />
-  <meta name="theme-color" content="#1e3a5f" />
-
-  <meta
-    name="facebook-domain-verification"
-    content="mbetron48yku8aj5ixdi8u68irh8sf"
-  />
-
-  <link rel="manifest" href="/manifest.json" />
-</Helmet>
           <Router>
             {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
             {/* <PWAInstallPrompt /> */}
@@ -198,6 +195,14 @@ function App() {
                 <Route path="/book" element={<Navigate to="/booking" replace />} />
                 <Route path="/booking/smart" element={<Navigate to="/booking" replace />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/tentang-kami" element={<AboutPage />} />
+                <Route path="/tim-fisioterapis" element={<TeamPage />} />
+                <Route path="/lokasi" element={<LocationPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/layanan" element={<ServicesIndexPage />} />
+                <Route path="/layanan/:slug" element={<ServiceDetailPage />} />
+                <Route path="/artikel" element={<BlogIndexPage />} />
+                <Route path="/artikel/:slug" element={<BlogArticlePage />} />
                 <Route path="/i/:recapId" element={<InvoiceViewPage />} />
                 
                 {/* Protected Routes */}

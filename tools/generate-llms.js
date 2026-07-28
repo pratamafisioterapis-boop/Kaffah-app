@@ -18,13 +18,22 @@ const CLEAN_CONTENT_REGEX = {
 };
 
 const EXTRACTION_REGEX = {
-  route: /<Route\s+[^>]*>/g,
-  path: /path=["']([^"']+)["']/,
-  element: /element=\{<(\w+)[^}]*\/?\s*>\}/,
+  // Matches a Route's path + element component name directly, regardless of
+  // whitespace/newlines between attributes. A generic "<Route ...>" capture
+  // followed by separate path/element regexes doesn't work here because
+  // element={<Component />} contains a "/>" that prematurely closes a
+  // "[^>]*>" match before it reaches the Route tag's own closing "/>".
+  routeWithElement: /<Route\s+path=["']([^"']+)["'][\s\S]*?element=\{<(\w+)/g,
   helmet: /<Helmet[^>]*?>([\s\S]*?)<\/Helmet>/i,
   helmetTest: /<Helmet[\s\S]*?<\/Helmet>/i,
   title: /<title[^>]*?>\s*(.*?)\s*<\/title>/i,
-  description: /<meta\s+name=["']description["']\s+content=["'](.*?)["']/i
+  description: /<meta\s+name=["']description["']\s+content=["'](.*?)["']/i,
+  // PageSEO is the shared SEO component (title/description/path passed as
+  // literal string props) used by pages instead of a raw <Helmet> block.
+  pageSeoTest: /<PageSEO\b[\s\S]*?\/?>/i,
+  pageSeoTag: /<PageSEO\b([\s\S]*?)\/?>/i,
+  pageSeoTitle: /\btitle=["']([^"']+)["']/i,
+  pageSeoDescription: /\bdescription=["']([^"']+)["']/i
 };
 
 function cleanContent(content) {
@@ -53,25 +62,12 @@ function extractRoutes(appJsxPath) {
   try {
     const content = fs.readFileSync(appJsxPath, 'utf8');
     const routes = new Map();
-    const routeMatches = [...content.matchAll(EXTRACTION_REGEX.route)];
-    
-    for (const match of routeMatches) {
-      const routeTag = match[0];
-      const pathMatch = routeTag.match(EXTRACTION_REGEX.path);
-      const elementMatch = routeTag.match(EXTRACTION_REGEX.element);
-      const isIndex = routeTag.includes('index');
-      
-      if (elementMatch) {
-        const componentName = elementMatch[1];
-        let routePath;
-        
-        if (isIndex) {
-          routePath = '/';
-        } else if (pathMatch) {
-          routePath = pathMatch[1].startsWith('/') ? pathMatch[1] : `/${pathMatch[1]}`;
-        }
-        
-        routes.set(componentName, routePath);
+    const routeMatches = [...content.matchAll(EXTRACTION_REGEX.routeWithElement)];
+
+    for (const [, routePath, componentName] of routeMatches) {
+      // First Route wins if a component is reused across paths/redirects.
+      if (!routes.has(componentName)) {
+        routes.set(componentName, routePath.startsWith('/') ? routePath : `/${routePath}`);
       }
     }
 
@@ -82,31 +78,62 @@ function extractRoutes(appJsxPath) {
 }
 
 function findReactFiles(dir) {
-  return fs.readdirSync(dir).map(item => path.join(dir, item));
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findReactFiles(fullPath));
+    } else if (/\.jsx?$/.test(entry.name)) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+function extractPageSeoData(content, filePath, routes) {
+  if (!EXTRACTION_REGEX.pageSeoTest.test(content)) return null;
+
+  const tagMatch = content.match(EXTRACTION_REGEX.pageSeoTag);
+  if (!tagMatch) return null;
+
+  const propsSource = tagMatch[1];
+  const title = cleanText(propsSource.match(EXTRACTION_REGEX.pageSeoTitle)?.[1]);
+  const description = cleanText(propsSource.match(EXTRACTION_REGEX.pageSeoDescription)?.[1]);
+
+  // Dynamic-route pages (e.g. title={service.metaTitle}) don't have a
+  // literal title to extract — skip rather than emit a bogus entry.
+  if (!title || !description) return null;
+
+  const fileName = path.basename(filePath, path.extname(filePath));
+  const url = routes.size && routes.has(fileName)
+    ? routes.get(fileName)
+    : generateFallbackUrl(fileName);
+
+  return { url, title, description };
 }
 
 function extractHelmetData(content, filePath, routes) {
   const cleanedContent = cleanContent(content);
-  
+
   if (!EXTRACTION_REGEX.helmetTest.test(cleanedContent)) {
-    return null;
+    return extractPageSeoData(content, filePath, routes);
   }
-  
+
   const helmetMatch = content.match(EXTRACTION_REGEX.helmet);
   if (!helmetMatch) return null;
-  
+
   const helmetContent = helmetMatch[1];
   const titleMatch = helmetContent.match(EXTRACTION_REGEX.title);
   const descMatch = helmetContent.match(EXTRACTION_REGEX.description);
-  
+
   const title = cleanText(titleMatch?.[1]);
   const description = cleanText(descMatch?.[1]);
-  
+
   const fileName = path.basename(filePath, path.extname(filePath));
-  const url = routes.length && routes.has(fileName) 
-    ? routes.get(fileName) 
+  const url = routes.size && routes.has(fileName)
+    ? routes.get(fileName)
     : generateFallbackUrl(fileName);
-  
+
   return {
     url,
     title: title || 'Untitled Page',

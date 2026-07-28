@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle2, MessageCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MessageCircle, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BUSINESS } from '@/lib/businessInfo';
 const HeroSection = () => {
   return <section id="home" className="relative min-h-screen flex items-center pt-20 pb-12 overflow-hidden bg-gradient-to-br from-blue-50 to-white">
       {/* Background Shapes */}
@@ -92,8 +93,12 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Floating Card */}
-            <motion.div initial={{
+            {/* Floating Card: honest link to the real Google listing instead of an unverified rating claim */}
+            <motion.a
+              href={BUSINESS.googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{
             opacity: 0,
             scale: 0.8
           }} animate={{
@@ -101,15 +106,15 @@ const HeroSection = () => {
             scale: 1
           }} transition={{
             delay: 0.6
-          }} className="absolute -bottom-6 -left-6 md:bottom-10 md:-left-10 bg-white p-4 rounded-xl shadow-xl border border-blue-50 flex items-center gap-4 max-w-[200px]">
-               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">
-                  4.9
+          }} className="absolute -bottom-6 -left-6 md:bottom-10 md:-left-10 bg-white p-4 rounded-xl shadow-xl border border-blue-50 flex items-center gap-4 max-w-[220px] hover:shadow-2xl transition-shadow">
+               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                  <Star className="w-5 h-5 fill-current" />
                </div>
                <div>
-                  <p className="font-bold text-slate-900">Rating Tinggi</p>
-                  <p className="text-xs text-slate-500">Dari pasien puas</p>
+                  <p className="font-bold text-slate-900 text-sm leading-snug">Lihat Ulasan Kami</p>
+                  <p className="text-xs text-slate-500">di Google Maps</p>
                </div>
-            </motion.div>
+            </motion.a>
           </motion.div>
 
         </div>
