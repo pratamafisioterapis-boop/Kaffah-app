@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, Save, Award, CheckCircle2, XCircle, Camera, FolderOpen, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Loader2, Save, Award, CheckCircle2, XCircle, Camera, FolderOpen, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   getRemunerationReport,
   upsertRemunerationRealization,
-  uploadRemunerationProof,
+  uploadRemunerationProofs,
 } from '@/lib/api';
 import { format, addDays } from 'date-fns';
 import { getTherapistPeriodRange } from '@/lib/utils';
@@ -19,6 +19,17 @@ const MANUAL_METRICS = ['feedback_positif', 'google_review', 'custom'];
 const ManualMetricUploader = ({ row, draft, onChange, onSave, saving }) => {
   const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const storedProofs = row.proofUrls || (row.proofUrl ? [row.proofUrl] : []);
+
+  const addFiles = (fileList) => {
+    const newFiles = Array.from(fileList || []);
+    if (newFiles.length === 0) return;
+    onChange({ ...draft, files: [...(draft.files || []), ...newFiles] });
+  };
+
+  const removeFile = (index) => {
+    onChange({ ...draft, files: (draft.files || []).filter((_, i) => i !== index) });
+  };
 
   return (
     <div className="space-y-3 pt-3 border-t border-slate-100">
@@ -61,27 +72,47 @@ const ManualMetricUploader = ({ row, draft, onChange, onSave, saving }) => {
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => onChange({ ...draft, file: e.target.files?.[0] || null })}
+          onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
         />
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
-          onChange={(e) => onChange({ ...draft, file: e.target.files?.[0] || null })}
+          onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
         />
       </div>
 
-      {draft.file && (
-        <p className="text-[11px] text-indigo-600 truncate flex items-center gap-1">
-          <ImageIcon className="w-3 h-3 shrink-0" /> {draft.file.name}
-        </p>
+      {(draft.files || []).length > 0 && (
+        <ul className="space-y-1">
+          {draft.files.map((f, i) => (
+            <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-1.5 text-[11px] text-indigo-600 bg-indigo-50/60 rounded-lg px-2 py-1">
+              <span className="flex items-center gap-1 min-w-0 truncate">
+                <ImageIcon className="w-3 h-3 shrink-0" /> <span className="truncate">{f.name}</span>
+              </span>
+              <button type="button" onClick={() => removeFile(i)} className="text-indigo-400 hover:text-indigo-700 shrink-0">
+                <X className="w-3 h-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
-      {row.proofUrl && !draft.file && (
-        <a href={row.proofUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-indigo-600 hover:underline">
-          <ImageIcon className="w-3 h-3" /> Lihat bukti tersimpan
-        </a>
+      {storedProofs.length > 0 && (
+        <div className="space-y-1">
+          {storedProofs.map((url, i) => (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-indigo-600 hover:underline"
+            >
+              <ImageIcon className="w-3 h-3" /> Lihat bukti tersimpan {storedProofs.length > 1 ? `#${i + 1}` : ''}
+            </a>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -127,7 +158,7 @@ const TherapistRemuneration = ({ therapist }) => {
       const nextDrafts = {};
       (data?.rows || []).forEach(row => {
         if (MANUAL_METRICS.includes(row.metric_key)) {
-          nextDrafts[row.id] = { value: row.realizationValue || '', file: null };
+          nextDrafts[row.id] = { value: row.realizationValue || '', files: [] };
         }
       });
       setDrafts(nextDrafts);
@@ -150,11 +181,12 @@ const TherapistRemuneration = ({ therapist }) => {
     }
     setSavingId(row.id);
     try {
-      let proofUrl = row.proofUrl || null;
-      if (draft.file) {
-        const { data: uploadedUrl, error: uploadError } = await uploadRemunerationProof(draft.file, therapist.id);
+      const existingProofUrls = row.proofUrls || (row.proofUrl ? [row.proofUrl] : []);
+      let proofUrls = existingProofUrls;
+      if (draft.files && draft.files.length > 0) {
+        const { data: uploadedUrls, error: uploadError } = await uploadRemunerationProofs(draft.files, therapist.id);
         if (uploadError) throw uploadError;
-        proofUrl = uploadedUrl;
+        proofUrls = [...existingProofUrls, ...uploadedUrls];
       }
 
       const { error } = await upsertRemunerationRealization({
@@ -163,7 +195,7 @@ const TherapistRemuneration = ({ therapist }) => {
         periodStart: period.start,
         periodEnd: period.end,
         value: Number(draft.value),
-        proofUrl,
+        proofUrls,
       });
       if (error) throw error;
 
