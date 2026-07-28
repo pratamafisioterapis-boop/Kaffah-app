@@ -124,8 +124,13 @@ export const listenForegroundNotifications = () => {
         "/firebase-messaging-sw.js"
       );
 
+      // `badge` = ikon monokrom kecil yang dipakai Android di status bar.
+      // Tanpa ini, Android/Chrome fallback ke ikon lonceng generik alih-alih
+      // logo Kaffah Tech.
+      const badge = "/logo192.png?v=kaffahtech1";
+
       if (registration) {
-        registration.showNotification(title, { body, icon, data });
+        registration.showNotification(title, { body, icon, badge, data });
       } else {
         new Notification(title, { body, icon, data });
       }
