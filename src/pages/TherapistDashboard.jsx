@@ -52,9 +52,20 @@ const TherapistDashboard = () => {
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'USER_UPDATED') {
         toast({ title: 'Email berhasil diubah', description: 'Email login kamu sudah diperbarui.' });
+        // Kolom email di tabel physiotherapists cuma dipakai untuk tampilan
+        // (mis. daftar terapis di panel owner) — sinkronkan supaya tidak basi
+        // dibanding email login yang baru saja dikonfirmasi di auth.users.
+        const newEmail = session?.user?.email;
+        setTherapistProfile((prev) => {
+          if (!prev || !newEmail || prev.email === newEmail) return prev;
+          supabase.from('physiotherapists').update({ email: newEmail }).eq('id', prev.id).then(({ error }) => {
+            if (error) console.error('Gagal sinkron email physiotherapists:', error);
+          });
+          return { ...prev, email: newEmail };
+        });
       }
     });
     return () => subscription.unsubscribe();
