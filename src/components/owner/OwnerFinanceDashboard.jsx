@@ -739,7 +739,16 @@ const OwnerFinanceDashboard = () => {
                       { header: 'Kategori', accessor: 'category', render: row => (
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
                       )},
-                      { header: 'Sub Kategori', accessor: 'sub_category', className: 'text-slate-500' },
+                      { header: 'Sub Kategori', accessor: 'sub_category', render: row => (
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          {row.sub_category}
+                          {row.description?.startsWith('Ambil barang gudang:') && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }} title="Diambil dari Stok Gudang">
+                              Stok Gudang
+                            </span>
+                          )}
+                        </span>
+                      )},
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
