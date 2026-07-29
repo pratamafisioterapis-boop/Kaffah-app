@@ -1278,25 +1278,37 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
     if (!kelurahanId && availableKelurahan.length > 0) setKelurahanId(availableKelurahan[0].id);
   }, [availableKelurahan, kelurahanId]);
 
-  const reloadTpsRows = React.useCallback(() => {
+  const reloadTpsRows = React.useCallback(async () => {
     if (!kelurahanId || !selectedYear) return;
     setLoading(true);
-    supabase
-      .from('pemilih_suara_caleg_tps')
-      .select('tps_number, candidate_number, candidate_name, votes')
-      .eq('kelurahan_id', kelurahanId)
-      .eq('election_year', selectedYear)
-      .order('tps_number')
-      .then(({ data, error }) => {
-        if (error) {
-          toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
-          setTpsRows([]);
-        } else {
-          setTpsRows(data || []);
-          setHasData((data || []).length > 0);
-        }
+    // PostgREST membatasi jumlah baris per request (default 1000), sedangkan
+    // tabel ini punya 1 baris per kandidat per TPS — jadi kelurahan dengan
+    // banyak TPS bisa melewati batas itu dalam satu request. Ambil per
+    // halaman sampai habis supaya TPS di ujung tidak hilang diam-diam.
+    const pageSize = 1000;
+    let allRows = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('pemilih_suara_caleg_tps')
+        .select('tps_number, candidate_number, candidate_name, votes')
+        .eq('kelurahan_id', kelurahanId)
+        .eq('election_year', selectedYear)
+        .order('tps_number')
+        .range(from, from + pageSize - 1);
+      if (error) {
+        toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
+        setTpsRows([]);
         setLoading(false);
-      });
+        return;
+      }
+      allRows = allRows.concat(data || []);
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
+    }
+    setTpsRows(allRows);
+    setHasData(allRows.length > 0);
+    setLoading(false);
   }, [kelurahanId, selectedYear, toast]);
 
   useEffect(() => { reloadTpsRows(); }, [reloadTpsRows]);
