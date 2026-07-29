@@ -183,7 +183,7 @@ const FixedCostManager = () => {
       </div>
 
       <div className="p-6">
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+        <div className="space-y-2">
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : items.length === 0 ? (
