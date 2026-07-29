@@ -1718,6 +1718,16 @@ export const deleteAccountingCategory = async (id) => {
     return { success: true, error: null };
   }, 'deleteAccountingCategory');
 };
+export const mergeAccountingSubcategory = async (sourceId, targetId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('merge_accounting_subcategory', {
+      p_source_id: sourceId,
+      p_target_id: targetId
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'mergeAccountingSubcategory');
+};
 export const deleteAccountingSubcategory = async (id) => {
   return safeQuery(async () => {
     const { error } = await supabase

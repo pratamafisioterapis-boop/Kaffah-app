@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Edit2, Trash2, Loader2, ChevronRight, ChevronDown, Folder
+import {
+  Plus, Edit2, Trash2, Loader2, ChevronRight, ChevronDown, Folder, GitMerge
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
+import SearchableSelect from '@/components/ui/searchable-select';
 import {
   getAccountingCategories, createAccountingCategory, updateAccountingCategory, deleteAccountingCategory,
-  getAccountingSubcategories, createAccountingSubcategory, updateAccountingSubcategory, deleteAccountingSubcategory
+  getAccountingSubcategories, createAccountingSubcategory, updateAccountingSubcategory, deleteAccountingSubcategory,
+  mergeAccountingSubcategory
 } from '@/lib/api';
 
 const AccountingCategoryManager = () => {
@@ -25,6 +27,7 @@ const AccountingCategoryManager = () => {
   const [isSubCatDialogOpen, setIsSubCatDialogOpen] = useState(false);
   const [isDeleteCatOpen, setIsDeleteCatOpen] = useState(false);
   const [isDeleteSubCatOpen, setIsDeleteSubCatOpen] = useState(false);
+  const [isMergeSubCatOpen, setIsMergeSubCatOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Selection/Form Data
@@ -32,6 +35,7 @@ const AccountingCategoryManager = () => {
   const [selectedSubCat, setSelectedSubCat] = useState(null);
   const [catForm, setCatForm] = useState({ name: '', type: 'expense' });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', name: '' });
+  const [mergeTargetId, setMergeTargetId] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -151,6 +155,38 @@ const AccountingCategoryManager = () => {
     setIsProcessing(false);
   };
 
+  const handleOpenMergeSubCat = (sub) => {
+    setSelectedSubCat(sub);
+    setMergeTargetId('');
+    setIsMergeSubCatOpen(true);
+  };
+
+  const handleMergeSubCat = async () => {
+    if (!mergeTargetId) return toast({ variant: "destructive", title: "Validasi Gagal", description: "Pilih sub-kategori tujuan." });
+
+    setIsProcessing(true);
+    const result = await mergeAccountingSubcategory(selectedSubCat.id, mergeTargetId);
+    if (!result.error) {
+      const { owner_expenditures_updated = 0, admin_expenses_updated = 0, inventory_items_updated = 0 } = result.data || {};
+      toast({
+        title: "Berhasil digabungkan",
+        description: `${selectedSubCat.subcategory_name} dipindahkan (${owner_expenditures_updated + admin_expenses_updated} transaksi, ${inventory_items_updated} barang) dan dihapus.`
+      });
+      fetchData();
+      setIsMergeSubCatOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Gagal menggabungkan", description: result.error.message });
+    }
+    setIsProcessing(false);
+  };
+
+  const subcategoryOptions = subcategories
+    .filter(sub => !selectedSubCat || sub.id !== selectedSubCat.id)
+    .map(sub => ({
+      label: sub.subcategory_name,
+      value: sub.id,
+      description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`
+    }));
 
   const renderCategoryList = (list) => (
     <div className="space-y-3">
@@ -191,6 +227,9 @@ const AccountingCategoryManager = () => {
                         <span className="text-sm text-slate-600 truncate">{sub.subcategory_name}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Pindahkan ke sub-kategori lain">
+                          <GitMerge className="w-3 h-3" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-blue-600">
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -337,6 +376,35 @@ const AccountingCategoryManager = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteSubCatOpen(false)}>Batal</Button>
             <Button variant="destructive" onClick={handleDeleteSubCat} disabled={isProcessing}>{isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge Subcategory Dialog */}
+      <Dialog open={isMergeSubCatOpen} onOpenChange={setIsMergeSubCatOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Pindahkan Sub-Kategori</DialogTitle>
+            <DialogDescription>
+              Semua transaksi dan barang yang memakai <span className="font-semibold">{selectedSubCat?.subcategory_name}</span> akan dipindahkan ke sub-kategori tujuan, lalu <span className="font-semibold">{selectedSubCat?.subcategory_name}</span> akan otomatis terhapus.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium mb-2 block">Pindahkan ke Sub-Kategori</label>
+            <SearchableSelect
+              options={subcategoryOptions}
+              value={mergeTargetId}
+              onChange={setMergeTargetId}
+              placeholder="Pilih sub-kategori tujuan..."
+              allowCreate={false}
+              notFoundText="Sub-kategori tidak ditemukan."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMergeSubCatOpen(false)}>Batal</Button>
+            <Button onClick={handleMergeSubCat} disabled={isProcessing} className="bg-purple-600 hover:bg-purple-700">
+              {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Pindahkan & Hapus
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
