@@ -4405,6 +4405,53 @@ export const getMyPayrollRecords = async () => {
   }, 'getMyPayrollRecords', { retry: true });
 };
 
+// Setiap item slip gaji dicatat sebagai satu baris owner_expenditures terpisah
+// (bukan digabung jadi satu total) supaya breakdown per komponen tetap terlihat
+// di pembukuan owner. `date` dipakai sama persis dengan `created_at` slip gaji
+// (bukan `new Date()` baru) supaya tanggal pembukuan selalu konsisten dengan
+// tanggal payroll tersimpan, walau proses posting ini berjalan belakangan.
+const PAYROLL_EXPENSE_ITEMS = [
+  { field: 'base_salary', label: 'Gaji Karyawan Tetap' },
+  { field: 'transport_per_day', label: 'Uang Transport Harian' },
+  { field: 'incentive_amount', label: 'Jasa Insentif per Terapis' },
+  { field: 'custom_commission', label: 'Komisi' },
+];
+
+const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
+  const { data: therapist } = await supabase
+    .from('physiotherapists')
+    .select('name, clinic_id')
+    .eq('id', record.physiotherapist_id)
+    .single();
+
+  const clinicId = therapist?.clinic_id;
+  if (!clinicId) return;
+
+  const therapistName = therapist?.name || 'Terapis';
+  const postDate = (record.created_at || new Date().toISOString()).slice(0, 10);
+
+  const items = PAYROLL_EXPENSE_ITEMS
+    .map(({ field, label }) => ({ amount: parseFloat(record[field]) || 0, label }))
+    .filter((item) => item.amount > 0);
+
+  if (!items.length) return;
+
+  const { error: insertError } = await supabase.from('owner_expenditures').insert(
+    items.map((item) => ({
+      clinic_id: clinicId,
+      date: postDate,
+      amount: item.amount,
+      category: 'HR & PAYROLL',
+      description: `${item.label} - ${therapistName}`,
+      created_by: actingUserId || null,
+      created_at: new Date().toISOString(),
+    }))
+  );
+  if (insertError) return;
+
+  await supabase.from('payroll_records').update({ posted_to_accounting: true }).eq('id', record.id);
+};
+
 export const upsertPayrollRecord = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -4423,8 +4470,17 @@ export const upsertPayrollRecord = async (payload) => {
       status: payload.status || 'paid',
     };
 
+    let previousStatus = null;
+    let alreadyPosted = false;
     let result;
     if (payload.id) {
+      const { data: existing } = await supabase
+        .from('payroll_records')
+        .select('status, posted_to_accounting')
+        .eq('id', payload.id)
+        .single();
+      previousStatus = existing?.status || null;
+      alreadyPosted = existing?.posted_to_accounting || false;
       result = await supabase
         .from('payroll_records')
         .update(record)
@@ -4440,6 +4496,12 @@ export const upsertPayrollRecord = async (payload) => {
     }
 
     if (result.error) return { error: result.error };
+
+    const justBecamePaid = result.data.status === 'paid' && previousStatus !== 'paid' && !alreadyPosted;
+    if (justBecamePaid) {
+      await postPayrollToOwnerExpenditures(result.data, userId);
+    }
+
     return { data: result.data, success: true, error: null };
   }, 'upsertPayrollRecord');
 };
