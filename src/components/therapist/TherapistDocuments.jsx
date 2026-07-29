@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UploadCloud, Image as ImageIcon, Receipt, ScrollText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TherapistDriveUpload from '@/components/therapist/TherapistDriveUpload';
@@ -8,10 +8,29 @@ import PayrollAuthGate from '@/components/therapist/PayrollAuthGate';
 import TherapistMouList from '@/components/therapist/TherapistMouList';
 import MouAuthGate from '@/components/therapist/MouAuthGate';
 
+const ACTIVE_TAB_KEY = 'kaffah_therapist_documents_tab';
+const VALID_TABS = ['upload_konten', 'sharing_media', 'payroll', 'mou'];
+
+// Tab aktif disimpan di sessionStorage supaya saat terapis pindah ke aplikasi
+// email untuk mengecek kode OTP lalu kembali, tampilan tetap di tab
+// Payroll/MOU (sesi verifikasi OTP-nya sendiri sudah persist di localStorage
+// lewat PayrollAuthGate/MouAuthGate) — bukan balik ke tab default.
+const getInitialTab = () => {
+  const stored = sessionStorage.getItem(ACTIVE_TAB_KEY);
+  return VALID_TABS.includes(stored) ? stored : 'upload_konten';
+};
+
 const TherapistDocuments = ({ therapist }) => {
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    sessionStorage.setItem(ACTIVE_TAB_KEY, value);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-      <Tabs defaultValue="upload_konten" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           <TabsTrigger value="upload_konten" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <UploadCloud className="w-3.5 h-3.5" /> Upload Konten
