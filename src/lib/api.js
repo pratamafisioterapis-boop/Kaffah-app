@@ -1718,6 +1718,17 @@ export const deleteAccountingCategory = async (id) => {
     return { success: true, error: null };
   }, 'deleteAccountingCategory');
 };
+export const moveAccountingSubcategory = async (id, subcategory_name, category_id) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('move_accounting_subcategory', {
+      p_id: id,
+      p_name: subcategory_name,
+      p_category_id: category_id
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'moveAccountingSubcategory');
+};
 export const mergeAccountingSubcategory = async (sourceId, targetId) => {
   return safeQuery(async () => {
     const { data, error } = await supabase.rpc('merge_accounting_subcategory', {

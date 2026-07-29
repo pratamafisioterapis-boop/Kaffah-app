@@ -11,8 +11,8 @@ import {
 import SearchableSelect from '@/components/ui/searchable-select';
 import {
   getAccountingCategories, createAccountingCategory, updateAccountingCategory, deleteAccountingCategory,
-  getAccountingSubcategories, createAccountingSubcategory, updateAccountingSubcategory, deleteAccountingSubcategory,
-  mergeAccountingSubcategory
+  getAccountingSubcategories, createAccountingSubcategory, deleteAccountingSubcategory,
+  mergeAccountingSubcategory, moveAccountingSubcategory
 } from '@/lib/api';
 
 const AccountingCategoryManager = () => {
@@ -119,23 +119,28 @@ const AccountingCategoryManager = () => {
 
   const handleSaveSubCat = async () => {
     if (!subCatForm.name.trim()) return toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama sub-kategori harus diisi." });
+    if (!subCatForm.categoryId) return toast({ variant: "destructive", title: "Validasi Gagal", description: "Kategori induk harus dipilih." });
 
     setIsProcessing(true);
     let result;
     if (selectedSubCat) {
-      result = await updateAccountingSubcategory(selectedSubCat.id, subCatForm.name);
+      result = await moveAccountingSubcategory(selectedSubCat.id, subCatForm.name, subCatForm.categoryId);
     } else {
       result = await createAccountingSubcategory(subCatForm.name, subCatForm.categoryId);
     }
 
     if (!result.error) {
-      toast({ title: "Berhasil", description: selectedSubCat ? "Sub-kategori diperbarui." : "Sub-kategori ditambahkan." });
+      const moved = selectedSubCat && selectedSubCat.category_id !== subCatForm.categoryId;
+      toast({
+        title: "Berhasil",
+        description: moved
+          ? "Sub-kategori dipindahkan ke kategori baru beserta transaksinya."
+          : selectedSubCat ? "Sub-kategori diperbarui." : "Sub-kategori ditambahkan."
+      });
       fetchData();
       setIsSubCatDialogOpen(false);
-      // Auto expand parent
-      if (!selectedSubCat) {
-        setExpandedCategories(prev => ({ ...prev, [subCatForm.categoryId]: true }));
-      }
+      // Auto expand the (new) parent category so the moved/added subcategory is visible
+      setExpandedCategories(prev => ({ ...prev, [subCatForm.categoryId]: true }));
     } else {
       toast({ variant: "destructive", title: "Gagal", description: result.error.message });
     }
@@ -227,7 +232,7 @@ const AccountingCategoryManager = () => {
                         <span className="text-sm text-slate-600 break-words">{sub.subcategory_name}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Pindahkan ke sub-kategori lain">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Gabungkan ke sub-kategori lain (transaksi lama ikut pindah, ini terhapus)">
                           <GitMerge className="w-3 h-3" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-blue-600">
@@ -339,9 +344,25 @@ const AccountingCategoryManager = () => {
       <Dialog open={isSubCatDialogOpen} onOpenChange={setIsSubCatDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader><DialogTitle>{selectedSubCat ? 'Edit Sub-Kategori' : 'Tambah Sub-Kategori'}</DialogTitle></DialogHeader>
-          <div className="py-4">
-             <label className="text-sm font-medium mb-2 block">Nama Sub-Kategori</label>
-             <Input value={subCatForm.name} onChange={(e) => setSubCatForm({...subCatForm, name: e.target.value})} placeholder="Contoh: Listrik" />
+          <div className="py-4 space-y-4">
+             <div>
+               <label className="text-sm font-medium mb-2 block">Nama Sub-Kategori</label>
+               <Input value={subCatForm.name} onChange={(e) => setSubCatForm({...subCatForm, name: e.target.value})} placeholder="Contoh: Listrik" />
+             </div>
+             <div>
+               <label className="text-sm font-medium mb-2 block">Kategori Induk</label>
+               <SearchableSelect
+                 options={categories.map(cat => ({ label: cat.category_name, value: cat.id }))}
+                 value={subCatForm.categoryId}
+                 onChange={(val) => setSubCatForm({...subCatForm, categoryId: val})}
+                 placeholder="Pilih kategori induk..."
+                 allowCreate={false}
+                 notFoundText="Kategori tidak ditemukan."
+               />
+               {selectedSubCat && (
+                 <p className="text-xs text-slate-500 mt-1.5">Mengubah kategori induk akan memindahkan seluruh transaksi & barang yang memakai sub-kategori ini.</p>
+               )}
+             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSubCatDialogOpen(false)}>Batal</Button>
@@ -384,13 +405,13 @@ const AccountingCategoryManager = () => {
       <Dialog open={isMergeSubCatOpen} onOpenChange={setIsMergeSubCatOpen}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Pindahkan Sub-Kategori</DialogTitle>
+            <DialogTitle>Gabungkan Sub-Kategori</DialogTitle>
             <DialogDescription>
               Semua transaksi dan barang yang memakai <span className="font-semibold">{selectedSubCat?.subcategory_name}</span> akan dipindahkan ke sub-kategori tujuan, lalu <span className="font-semibold">{selectedSubCat?.subcategory_name}</span> akan otomatis terhapus.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <label className="text-sm font-medium mb-2 block">Pindahkan ke Sub-Kategori</label>
+            <label className="text-sm font-medium mb-2 block">Gabungkan ke Sub-Kategori</label>
             <SearchableSelect
               options={subcategoryOptions}
               value={mergeTargetId}
