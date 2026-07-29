@@ -1749,12 +1749,15 @@ export const deleteAccountingSubcategory = async (id) => {
     return { success: true, error: null };
   }, 'deleteAccountingSubcategory');
 };
-// Fixed cost items are meant to auto-post as an owner expenditure once their
-// `post_day` has passed each month. There's no cron/edge-function in this
-// project to do that on a schedule, so this runs opportunistically whenever
-// the owner opens a page that needs the fixed-cost total (Fixed Cost
-// manager, BEP widget) — idempotent via `last_posted_month` so it only
-// posts once per item per calendar month no matter how many times it runs.
+// Recurring monthly items are meant to auto-post as an owner expenditure
+// once their `post_day` has passed each month. There's no cron/edge-function
+// in this project to do that on a schedule, so this runs opportunistically
+// whenever the owner opens a page that needs the total (Fixed Cost manager,
+// BEP widget) — idempotent via `last_posted_month` so it only posts once per
+// item per calendar month no matter how many times it runs.
+// Items with `auto_post = false` (salary/"gaji" items by default) are
+// skipped here on purpose: they post to accounting once their payroll
+// record is marked paid instead, so they aren't double-counted.
 export const autoPostFixedCosts = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -1766,7 +1769,10 @@ export const autoPostFixedCosts = async () => {
 
     const { data: items, error: fetchError } = await supabase
       .from('clinic_fixed_costs')
-      .select('id, item_name, amount, post_day, last_posted_month')
+      .select(`
+        id, item_name, amount, post_day, last_posted_month, auto_post,
+        subcategory:subcategory_id ( id, subcategory_name, parent_category:accounting_categories ( category_name ) )
+      `)
       .eq('clinic_id', clinicId);
     if (fetchError) return { error: fetchError };
 
@@ -1776,6 +1782,7 @@ export const autoPostFixedCosts = async () => {
     const today = now.getDate();
 
     const due = (items || []).filter(i => {
+      if (i.auto_post === false) return false;
       if (i.last_posted_month === currentMonth) return false;
       const effectiveDay = Math.min(i.post_day || 1, daysInMonth);
       return effectiveDay <= today;
@@ -1790,8 +1797,10 @@ export const autoPostFixedCosts = async () => {
         clinic_id: clinicId,
         date: postDate,
         amount: item.amount,
-        category: 'FIXED COST',
+        category: item.subcategory?.parent_category?.category_name || 'FIXED COST',
+        sub_category: item.subcategory?.id || null,
         description: item.item_name,
+        is_auto_fixed_cost: true,
         created_by: userId,
         created_at: new Date().toISOString()
       });
@@ -6817,7 +6826,9 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
 // - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
 // - Pengeluaran owner & admin: tercatat dari tgl 1 s/d hari ini, di luar
 //   entri fixed cost yang sudah otomatis terpost oleh autoPostFixedCosts()
-//   (category 'FIXED COST') — kalau tidak, nilainya kehitung dua kali.
+//   (ditandai is_auto_fixed_cost = true) — kalau tidak, nilainya kehitung
+//   dua kali. Item "gaji" (auto_post = false) tidak diposting di sini sama
+//   sekali — nanti terposting lewat payroll — jadi tidak perlu dikecualikan.
 // - Transport & insentif terapis: dihitung harian dari awal periode gaji
 //   masing-masing terapis s/d hari ini, mengikuti skema gaji masing-masing
 //   (probation = tidak ada transport/komisi, mengikuti logic Salary Calculator)
@@ -6840,7 +6851,7 @@ export const getBepFinancials = async () => {
 
     const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
     const excludeAutoPostedFixedCost = (rows) =>
-      (rows || []).filter(r => (r.category || '').toUpperCase() !== 'FIXED COST');
+      (rows || []).filter(r => !r.is_auto_fixed_cost);
 
     const [
       fixedCostItemsRes, ownerExpRes, adminExpRes, ownerIncRes, adminIncRes,
