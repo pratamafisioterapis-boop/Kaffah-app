@@ -23,6 +23,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 import ProfitMarginTrendWidget from '@/components/owner/ProfitMarginTrendWidget';
+import ExpenseCategoryWidget from '@/components/owner/ExpenseCategoryWidget';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -519,6 +520,9 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
         </div>
       </div>
+
+      {/* ── Pengeluaran per Kategori ── */}
+      <ExpenseCategoryWidget dateRange={dateRange} />
 
       {/* ── Revenue per Terapis ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
