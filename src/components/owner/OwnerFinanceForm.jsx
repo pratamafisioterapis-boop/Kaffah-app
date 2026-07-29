@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { getBankAccounts, getBankAccountFees, getOperationalOptions, createOwnerExpenditure, createOwnerIncome, createOwnerReceivable, getAccountingSubcategories } from '@/lib/api';
+import { getBankAccounts, getBankAccountFees, getOperationalOptions, createOwnerExpenditure, createOwnerIncome, createOwnerReceivable, updateOwnerExpenditure, updateOwnerIncome, getAccountingSubcategories } from '@/lib/api';
 import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
 
@@ -24,12 +24,13 @@ const computeFeePreview = (fees, bankAccountId, paymentMethod, amount) => {
   return { fee, net: (Number(amount) || 0) - fee, rule };
 };
 
-const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
+const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange, editRecord }) => {
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
     document.referrer.includes('android-app://');
   const { toast } = useToast();
+  const isEditing = !!editRecord;
   const [loading, setLoading] = useState(false);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -40,15 +41,15 @@ const OwnerFinanceForm = ({ type, onSuccess, onCancel, dateRange }) => {
   const defaultDate = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    date: defaultDate,
-    category: '',
-    sub_category: '',
-    bank_account_id: '',
-    payment_method: '',
-    description: '',
-    amount: '',
+    date: editRecord?.date || defaultDate,
+    category: editRecord?.category || '',
+    sub_category: editRecord?.sub_category || '',
+    bank_account_id: editRecord?.bank_account_id || '',
+    payment_method: editRecord?.payment_method || '',
+    description: editRecord?.description || '',
+    amount: editRecord?.amount ?? '',
     // Receivables specific
-    custom_name: ''
+    custom_name: editRecord?.custom_name || ''
   });
 
   useEffect(() => {
@@ -157,13 +158,17 @@ if (
 
       if (type === 'expenditure') {
         payload.category = formData.category;
-        result = await createOwnerExpenditure(payload);
+        result = isEditing
+          ? await updateOwnerExpenditure(editRecord.id, payload)
+          : await createOwnerExpenditure(payload);
       } else if (type === 'income') {
         payload.category = formData.category;
         if (formData.payment_method) {
           payload.payment_method = formData.payment_method;
         }
-        result = await createOwnerIncome(payload);
+        result = isEditing
+          ? await updateOwnerIncome(editRecord.id, payload)
+          : await createOwnerIncome(payload);
       } else if (type === 'receivable') {
         payload.custom_name = formData.custom_name;
         result = await createOwnerReceivable(payload);
@@ -173,7 +178,9 @@ if (
 
       toast({
         title: "Success",
-        description: `Successfully created new ${type} record.`
+        description: isEditing
+          ? `Successfully updated ${type} record.`
+          : `Successfully created new ${type} record.`
       });
       
       onSuccess?.();
@@ -301,7 +308,7 @@ if (
           className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
           style={{ background: type === 'expenditure' ? '#e11d48' : type === 'income' ? '#059669' : '#0891b2' }}>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {loading ? 'Menyimpan...' : 'Simpan'}
+          {loading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan')}
         </button>
       </div>
     </form>

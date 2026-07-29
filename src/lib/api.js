@@ -2143,6 +2143,27 @@ export const createOwnerExpenditure = async (payload) => {
     return { data, success: true, error: null };
   }, 'createOwnerExpenditure');
 };
+export const updateOwnerExpenditure = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_expenditures')
+      .update({
+        date: payload.date,
+        amount: payload.amount,
+        category: payload.category,
+        sub_category: payload.sub_category || null,
+        description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateOwnerExpenditure');
+};
 export const createOwnerIncome = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -2169,6 +2190,28 @@ export const createOwnerIncome = async (payload) => {
     if (error) return { error };
     return { data, success: true, error: null };
   }, 'createOwnerIncome');
+};
+export const updateOwnerIncome = async (id, payload) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('owner_income')
+      .update({
+        date: payload.date,
+        amount: payload.amount,
+        category: payload.category,
+        sub_category: payload.sub_category || null,
+        description: payload.description || null,
+        bank_account_id: payload.bank_account_id || null,
+        payment_method: payload.payment_method || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateOwnerIncome');
 };
 // ============================================
 // OWNER MODAL AWAL (INITIAL CAPITAL)

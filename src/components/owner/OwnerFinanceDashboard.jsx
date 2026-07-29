@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, Edit2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package, CheckCircle2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable } from '@/lib/api';
@@ -63,7 +63,7 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
 };
 
 // --- Reusable Table Component ---
-const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, accentColor = '#64748b' }) => {
+const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, onEdit, showEdit = false, accentColor = '#64748b' }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
@@ -95,12 +95,23 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                   {columns[0].render ? columns[0].render(row) : row[columns[0].accessor]}
                 </span>
               )}
-              {showDelete && (
-                <button onClick={() => onDelete && onDelete(row.id)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+              {(showEdit || showDelete) && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {showEdit && (
+                    <button onClick={() => onEdit && onEdit(row)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center"
+                      style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {showDelete && (
+                    <button onClick={() => onDelete && onDelete(row.id)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center"
+                      style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -131,7 +142,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                   {col.header}
                 </th>
               ))}
-              {showDelete && <th className="px-5 py-3 w-14" style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px' }} />}
+              {(showEdit || showDelete) && <th className="px-5 py-3 w-20" style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px' }} />}
             </tr>
           </thead>
           <tbody>
@@ -146,13 +157,24 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                     {col.render ? col.render(row) : row[col.accessor]}
                   </td>
                 ))}
-                {showDelete && (
+                {(showEdit || showDelete) && (
                   <td className="px-5 py-3 text-right">
-                    <button onClick={() => onDelete && onDelete(row.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-lg flex items-center justify-center ml-auto"
-                      style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                      {showEdit && (
+                        <button onClick={() => onEdit && onEdit(row)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {showDelete && (
+                        <button onClick={() => onDelete && onDelete(row.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>
@@ -268,6 +290,7 @@ const OwnerFinanceDashboard = () => {
   // Dialog States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState('expenditure');
+  const [editingRecord, setEditingRecord] = useState(null);
   const [markPaidReceivable, setMarkPaidReceivable] = useState(null);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 
@@ -378,6 +401,12 @@ const OwnerFinanceDashboard = () => {
   const formatDate = dateStr => dateStr ? format(new Date(dateStr), 'dd/MM/yyyy') : '-';
   const openForm = type => {
     setActiveFormType(type);
+    setEditingRecord(null);
+    setIsFormOpen(true);
+  };
+  const openEditForm = (type, record) => {
+    setActiveFormType(type);
+    setEditingRecord(record);
     setIsFormOpen(true);
   };
   return <div className="w-full space-y-6 font-sans text-slate-900">
@@ -426,19 +455,21 @@ const OwnerFinanceDashboard = () => {
         </div>
       </div>
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingRecord(null); }}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="capitalize text-xl">Add New {activeFormType}</DialogTitle>
+            <DialogTitle className="capitalize text-xl">{editingRecord ? 'Edit' : 'Add New'} {activeFormType}</DialogTitle>
           </DialogHeader>
-          <OwnerFinanceForm 
-             type={activeFormType} 
-             dateRange={dateRange} 
+          <OwnerFinanceForm
+             type={activeFormType}
+             dateRange={dateRange}
+             editRecord={editingRecord}
              onSuccess={() => {
                setIsFormOpen(false);
+               setEditingRecord(null);
                fetchOwnerData();
-             }} 
-             onCancel={() => setIsFormOpen(false)} 
+             }}
+             onCancel={() => { setIsFormOpen(false); setEditingRecord(null); }}
           />
         </DialogContent>
       </Dialog>
@@ -553,6 +584,7 @@ const OwnerFinanceDashboard = () => {
                   <DataTable accentColor="#e11d48" loading={ownerLoading} emptyMessage="Belum ada pengeluaran."
                     data={ownerData.expenditures}
                     onDelete={id => handleDelete(deleteOwnerExpenditure, id, 'expenditure', fetchOwnerData)}
+                    showEdit onEdit={row => openEditForm('expenditure', row)}
                     columns={[
                       { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
@@ -591,6 +623,7 @@ const OwnerFinanceDashboard = () => {
                   <DataTable accentColor="#059669" loading={ownerLoading} emptyMessage="Belum ada pemasukan."
                     data={ownerData.income}
                     onDelete={id => handleDelete(deleteOwnerIncome, id, 'income', fetchOwnerData)}
+                    showEdit onEdit={row => openEditForm('income', row)}
                     columns={[
                       { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
