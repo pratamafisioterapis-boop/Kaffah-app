@@ -559,7 +559,7 @@ const OwnerFinanceDashboard = () => {
               <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
               <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} color="cyan" />
-              <SubTabButton isActive={activeOwnerTab === 'fixed_cost'} onClick={() => setActiveOwnerTab('fixed_cost')} label="Fixed Cost" icon={Wallet} color="blue" />
+              <SubTabButton isActive={activeOwnerTab === 'fixed_cost'} onClick={() => setActiveOwnerTab('fixed_cost')} label="Rutin Bulanan" icon={Wallet} color="blue" />
             </div>
 
             <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
