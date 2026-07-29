@@ -229,6 +229,8 @@ const CardHeader = ({ title, subtitle, icon: Icon, iconColor, iconBg }) => (
 const PemilihSuaraPks = () => {
   const { toast } = useToast();
   const [tab, setTab] = useState('dashboard');
+  const [manualTabOpened, setManualTabOpened] = useState(false);
+  useEffect(() => { if (tab === 'manual') setManualTabOpened(true); }, [tab]);
   const [slideshowOpen, setSlideshowOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -521,16 +523,20 @@ const PemilihSuaraPks = () => {
           selectedYear={selectedYear}
           toast={toast}
         />
-      ) : tab === 'manual' ? (
-        <PksManualInput
-          kelurahanList={kelurahanList}
-          candidateMasterList={candidateMasterList}
-          onSaved={fetchAll}
-          toast={toast}
-          defaultYear={selectedYear || 2024}
-        />
-      ) : (
+      ) : tab === 'upload' ? (
         <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
+      ) : null}
+
+      {manualTabOpened && (
+        <div style={{ display: tab === 'manual' ? 'block' : 'none' }}>
+          <PksManualInput
+            kelurahanList={kelurahanList}
+            candidateMasterList={candidateMasterList}
+            onSaved={fetchAll}
+            toast={toast}
+            defaultYear={selectedYear || 2024}
+          />
+        </div>
       )}
 
       {slideshowOpen && (
