@@ -197,9 +197,9 @@ const AccountingCategoryManager = () => {
         return (
           <div key={cat.id} className="border border-slate-200 rounded-lg overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-slate-50 hover:bg-slate-100 transition-colors">
-              <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpand(cat.id)}>
-                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />}
-                <span className="font-medium text-slate-700 truncate">{cat.category_name}</span>
+              <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpand(cat.id)}>
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />}
+                <span className="font-medium text-slate-700 break-words min-w-0">{cat.category_name}</span>
                 <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full shrink-0">{catSubs.length} Sub</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 pl-7 sm:pl-0">
@@ -221,12 +221,12 @@ const AccountingCategoryManager = () => {
                   <p className="text-xs text-slate-400 pl-9 py-2 italic">Belum ada sub-kategori.</p>
                 ) : (
                   catSubs.map(sub => (
-                    <div key={sub.id} className="flex items-center justify-between gap-2 pl-9 pr-2 py-2 rounded hover:bg-slate-50 group">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Folder className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                        <span className="text-sm text-slate-600 truncate">{sub.subcategory_name}</span>
+                    <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pl-9 pr-2 py-2 rounded hover:bg-slate-50 group">
+                      <div className="flex items-start sm:items-center gap-2 min-w-0">
+                        <Folder className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5 sm:mt-0" />
+                        <span className="text-sm text-slate-600 break-words">{sub.subcategory_name}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Pindahkan ke sub-kategori lain">
                           <GitMerge className="w-3 h-3" />
                         </Button>
