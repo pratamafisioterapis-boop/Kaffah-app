@@ -4410,11 +4410,18 @@ export const getMyPayrollRecords = async () => {
 // di pembukuan owner. `date` dipakai sama persis dengan `created_at` slip gaji
 // (bukan `new Date()` baru) supaya tanggal pembukuan selalu konsisten dengan
 // tanggal payroll tersimpan, walau proses posting ini berjalan belakangan.
+//
+// subcategoryNames dicocokkan (case-insensitive) ke accounting_subcategories
+// milik klinik yang sama, supaya Sub Kategori & Kategori Utama-nya konsisten
+// dengan skema yang owner sudah buat sendiri di Manajemen Kategori Akuntansi
+// (bukan di-hardcode 'HR & PAYROLL' begitu saja). Kalau klinik belum punya
+// sub kategori yang cocok, fallback ke kategori teks 'HR & PAYROLL' tanpa
+// sub kategori (lebih baik daripada gagal insert sama sekali).
 const PAYROLL_EXPENSE_ITEMS = [
-  { field: 'base_salary', label: 'Gaji Karyawan Tetap' },
-  { field: 'transport_per_day', label: 'Uang Transport Harian' },
-  { field: 'incentive_amount', label: 'Jasa Insentif per Terapis' },
-  { field: 'custom_commission', label: 'Komisi' },
+  { field: 'base_salary', label: 'Gaji Karyawan Tetap', subcategoryNames: ['gaji karyawan tetap'] },
+  { field: 'transport_per_day', label: 'Uang Transport Harian', subcategoryNames: ['uang transport harian'] },
+  { field: 'incentive_amount', label: 'Jasa Insentif per Terapis', subcategoryNames: ['jasa/fee fisioterapis (per sesi/insentif)'] },
+  { field: 'custom_commission', label: 'Komisi', subcategoryNames: ['komisi'] },
 ];
 
 const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
@@ -4431,21 +4438,34 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
   const postDate = (record.created_at || new Date().toISOString()).slice(0, 10);
 
   const items = PAYROLL_EXPENSE_ITEMS
-    .map(({ field, label }) => ({ amount: parseFloat(record[field]) || 0, label }))
+    .map(({ field, label, subcategoryNames }) => ({ amount: parseFloat(record[field]) || 0, label, subcategoryNames }))
     .filter((item) => item.amount > 0);
 
   if (!items.length) return;
 
+  const { data: subcategories } = await supabase
+    .from('accounting_subcategories')
+    .select('id, subcategory_name, parent_category:accounting_categories(category_name)')
+    .eq('clinic_id', clinicId);
+
+  const findSubcategory = (names) => (subcategories || []).find(
+    (sub) => names.includes((sub.subcategory_name || '').trim().toLowerCase())
+  );
+
   const { error: insertError } = await supabase.from('owner_expenditures').insert(
-    items.map((item) => ({
-      clinic_id: clinicId,
-      date: postDate,
-      amount: item.amount,
-      category: 'HR & PAYROLL',
-      description: `${item.label} - ${therapistName}`,
-      created_by: actingUserId || null,
-      created_at: new Date().toISOString(),
-    }))
+    items.map((item) => {
+      const match = findSubcategory(item.subcategoryNames);
+      return {
+        clinic_id: clinicId,
+        date: postDate,
+        amount: item.amount,
+        category: match?.parent_category?.category_name || 'HR & PAYROLL',
+        sub_category: match?.id || null,
+        description: `${item.label} - ${therapistName}`,
+        created_by: actingUserId || null,
+        created_at: new Date().toISOString(),
+      };
+    })
   );
   if (insertError) return;
 
