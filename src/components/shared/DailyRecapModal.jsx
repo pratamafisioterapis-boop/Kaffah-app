@@ -814,12 +814,20 @@ setFormData({
 
         const isPending = pkg.status === 'pending';
 
+        // 🔒 Guard: "Package" (amount 0) hanya boleh untuk sesi ke-2 dst pada
+        // paket multi-sesi yang sudah pernah dipakai minimal 1x. Sesi pertama
+        // (sessions_used === 0 / paket masih pending) WAJIB diisi manual oleh
+        // staff dengan metode pembayaran asli, jangan di-auto-fill 'Package'.
+        const isMultiSession = (pkg.total_sessions || 0) > 1;
+        const hasStartedUsage = (pkg.sessions_used || 0) > 0;
+        const shouldAutoFillPackage = !isPending && isMultiSession && hasStartedUsage;
+
         setFormData(prev => ({
             ...prev,
             package_type_id: packageTypeId,   // ✅ INI YANG PENTING
             package_type: packageLabel,
-            amount: isPending ? pkg.nominal : 0,
-            payment_method: isPending ? pkg.payment_method : 'Package'
+            amount: shouldAutoFillPackage ? 0 : prev.amount,
+            payment_method: shouldAutoFillPackage ? 'Package' : prev.payment_method
         }));
 
     }, [selectedPackage, mode]);
