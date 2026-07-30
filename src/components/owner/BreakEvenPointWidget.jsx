@@ -35,6 +35,11 @@ const BreakEvenPointWidget = () => {
   const [incentiveTotal, setIncentiveTotal] = useState(0);
   const [revenueThisMonth, setRevenueThisMonth] = useState(0);
   const [breakEvenDate, setBreakEvenDate] = useState(null);
+  const [salarySource, setSalarySource] = useState({
+    transportFromPayroll: 0, transportLive: 0,
+    incentiveFromPayroll: 0, incentiveLive: 0,
+    payrollTherapistCount: 0,
+  });
 
   const fetchFixedCostItems = useCallback(async () => {
     if (!clinicId) return;
@@ -61,6 +66,13 @@ const BreakEvenPointWidget = () => {
       setTransportTotal(data.transportTotal);
       setIncentiveTotal(data.incentiveTotal);
       setBreakEvenDate(data.breakEvenDate || null);
+      setSalarySource({
+        transportFromPayroll: data.transportFromPayroll || 0,
+        transportLive: data.transportLive || 0,
+        incentiveFromPayroll: data.incentiveFromPayroll || 0,
+        incentiveLive: data.incentiveLive || 0,
+        payrollTherapistCount: data.payrollTherapistCount || 0,
+      });
     }
     setLoading(false);
   }, [clinicId, fetchFixedCostItems]);
@@ -72,6 +84,19 @@ const BreakEvenPointWidget = () => {
   const progressPct = totalCost > 0 ? Math.min(Math.round((revenueThisMonth / totalCost) * 100), 100) : 0;
   const isConfigured = totalFixedCost > 0;
   const isBreakEven = revenueThisMonth >= totalCost;
+  // Transport & insentif bisa berasal dari dua fase sekaligus dalam satu bulan:
+  // slip gaji yang sudah dibuat (angkanya terkunci) dan akrual harian terapis
+  // yang periodenya belum dibayar. Dijelaskan supaya owner tahu angka itu masih
+  // bergerak tiap hari atau sudah final.
+  const describeSource = useCallback((fromPayroll, live) => {
+    const { payrollTherapistCount } = salarySource;
+    if (fromPayroll > 0 && live > 0) return `payroll ${payrollTherapistCount} terapis + akrual harian`;
+    if (fromPayroll > 0) return `mengikuti payroll ${payrollTherapistCount} terapis bulan ini`;
+    if (live > 0) return 'akrual harian, belum ada payroll bulan ini';
+    return null;
+  }, [salarySource]);
+  const transportSource = describeSource(salarySource.transportFromPayroll, salarySource.transportLive);
+  const incentiveSource = describeSource(salarySource.incentiveFromPayroll, salarySource.incentiveLive);
 
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-800/50" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%)' }}>
@@ -159,6 +184,7 @@ const BreakEvenPointWidget = () => {
                 <div className="min-w-0">
                   <p>Transport Terapis:</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
+                  {transportSource && <p className="text-[10px] text-slate-500">{transportSource}</p>}
                 </div>
               </div>
               <div className="flex items-start gap-2 text-xs text-slate-400">
@@ -166,11 +192,12 @@ const BreakEvenPointWidget = () => {
                 <div className="min-w-0">
                   <p>Insentif Terapis:</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
+                  {incentiveSource && <p className="text-[10px] text-slate-500">{incentiveSource}</p>}
                 </div>
               </div>
             </div>
             <p className="text-[10px] text-slate-500 italic">
-              *Pengeluaran dihitung dari {expensePeriodLabel}. Transport &amp; insentif terapis dihitung harian dari awal periode gaji masing-masing s/d {format(today, 'd MMM yyyy', { locale: idLocale })}.
+              *Pengeluaran dihitung dari {expensePeriodLabel}, di luar pos yang sudah masuk Fixed Cost &amp; slip gaji supaya tidak dobel. Gaji pokok karyawan tetap sudah termasuk di Fixed Cost. Transport &amp; insentif terapis diakrual harian dari awal periode gaji masing-masing s/d {format(today, 'd MMM yyyy', { locale: idLocale })}; begitu payroll periode itu dibuat, angkanya mengikuti slip gaji dan akrual harian berhenti sampai akhir bulan.
             </p>
           </>
         )}
