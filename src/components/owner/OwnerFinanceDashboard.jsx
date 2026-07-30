@@ -18,6 +18,8 @@ import SalaryCalculator from '@/components/owner/SalaryCalculator';
 import PackageHistory from '@/components/owner/PackageHistory'; 
 import PackageFunds from '@/components/owner/PackageFunds';
 import FixedCostManager from '@/components/owner/FixedCostManager';
+import AdminExpenseEditModal from '@/components/admin/accounting/AdminExpenseEditModal';
+import AdminIncomeEditModal from '@/components/admin/accounting/AdminIncomeEditModal';
 import { formatTime } from '@/lib/dateFormatHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -293,6 +295,10 @@ const OwnerFinanceDashboard = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [markPaidReceivable, setMarkPaidReceivable] = useState(null);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+  const [editingAdminExpense, setEditingAdminExpense] = useState(null);
+  const [isAdminExpenseEditOpen, setIsAdminExpenseEditOpen] = useState(false);
+  const [editingAdminIncome, setEditingAdminIncome] = useState(null);
+  const [isAdminIncomeEditOpen, setIsAdminIncomeEditOpen] = useState(false);
 
   // Fetch Data Functions
   const fetchOwnerData = async () => {
@@ -409,6 +415,14 @@ const OwnerFinanceDashboard = () => {
     setEditingRecord(record);
     setIsFormOpen(true);
   };
+  const openAdminExpenseEdit = (record) => {
+    setEditingAdminExpense(record);
+    setIsAdminExpenseEditOpen(true);
+  };
+  const openAdminIncomeEdit = (record) => {
+    setEditingAdminIncome(record);
+    setIsAdminIncomeEditOpen(true);
+  };
   return <div className="w-full space-y-6 font-sans text-slate-900">
 
       {/* Hero Banner */}
@@ -480,6 +494,20 @@ const OwnerFinanceDashboard = () => {
         open={isMarkPaidOpen}
         onOpenChange={setIsMarkPaidOpen}
         onSuccess={() => { setIsMarkPaidOpen(false); fetchOwnerData(); }}
+      />
+
+      <AdminExpenseEditModal
+        isOpen={isAdminExpenseEditOpen}
+        onClose={() => { setIsAdminExpenseEditOpen(false); setEditingAdminExpense(null); }}
+        expense={editingAdminExpense}
+        onSuccess={fetchAdminData}
+      />
+
+      <AdminIncomeEditModal
+        isOpen={isAdminIncomeEditOpen}
+        onClose={() => { setIsAdminIncomeEditOpen(false); setEditingAdminIncome(null); }}
+        income={editingAdminIncome}
+        onSuccess={fetchAdminData}
       />
 
       {/* Custom Tab Navigation */}
@@ -734,6 +762,7 @@ const OwnerFinanceDashboard = () => {
                   <DataTable accentColor="#e11d48" loading={adminLoading} emptyMessage="Belum ada pengeluaran admin."
                     data={adminData.expenses}
                     onDelete={id => handleDelete(deleteAdminExpense, id, 'admin expense', fetchAdminData)}
+                    showEdit onEdit={openAdminExpenseEdit}
                     columns={[
                       { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
@@ -771,6 +800,7 @@ const OwnerFinanceDashboard = () => {
                   <DataTable accentColor="#059669" loading={adminLoading} emptyMessage="Belum ada pemasukan admin."
                     data={adminData.income}
                     onDelete={id => handleDelete(deleteAdminIncome, id, 'admin income', fetchAdminData)}
+                    showEdit onEdit={openAdminIncomeEdit}
                     columns={[
                       { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date || row.date) },
                       { header: 'Sub Kategori', accessor: 'sub_category', className: 'text-slate-500' },
