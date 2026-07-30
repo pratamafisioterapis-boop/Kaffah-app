@@ -10,12 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Save, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import { updateAdminExpense, getAccountingCategories, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
+import { updateAdminExpense, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
 
 const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
@@ -35,13 +34,11 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [catsRes, subCatsRes, banksRes] = await Promise.all([
-          getAccountingCategories(),
+        const [subCatsRes, banksRes] = await Promise.all([
           getAccountingSubcategories(),
           getBankAccounts()
         ]);
-        
-        if (catsRes.data) setCategories(catsRes.data);
+
         if (subCatsRes.data) setSubCategories(subCatsRes.data);
         if (banksRes.data) setBankAccounts(banksRes.data);
       } catch (error) {
@@ -101,8 +98,10 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
     }
   };
 
+  // Show every expense sub kategori at once (not gated by the currently
+  // selected Kategori) so this matches the create form and the owner form.
   const filteredSubCategories = subCategories.filter(
-    sub => !formData.category || sub.parent_category?.category_name === formData.category
+    sub => sub.subcategory_name && sub.parent_category?.type !== 'income'
   );
 
   return (
@@ -148,27 +147,6 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-500 uppercase">Kategori</Label>
-            <Select 
-              value={formData.category}
-              onValueChange={(val) => setFormData({...formData, category: val, sub_category: '', sub_category_id: ''})}
-            >
-              <SelectTrigger className="bg-slate-50 border-slate-200">
-                <SelectValue placeholder="Pilih Kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(cat => (
-                  <SelectItem key={cat.id} value={cat.category_name}>{cat.category_name}</SelectItem>
-                ))}
-                {/* Fallback if category not in list */}
-                {formData.category && !categories.find(c => c.category_name === formData.category) && (
-                   <SelectItem value={formData.category}>{formData.category}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Sub Kategori</Label>
             <Popover open={subCategoryPopoverOpen} onOpenChange={setSubCategoryPopoverOpen}>
               <PopoverTrigger asChild>
@@ -177,7 +155,6 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
                   variant="outline"
                   role="combobox"
                   aria-expanded={subCategoryPopoverOpen}
-                  disabled={!formData.category && filteredSubCategories.length === 0}
                   className="w-full justify-between bg-slate-50 border-slate-200 font-normal text-slate-900 hover:bg-slate-50"
                 >
                   {formData.sub_category || 'Pilih Sub Kategori'}
@@ -198,7 +175,12 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
                             const match = filteredSubCategories.find(
                               s => s.subcategory_name.toLowerCase() === val.toLowerCase()
                             );
-                            setFormData({...formData, sub_category: match?.subcategory_name || val, sub_category_id: match?.id || null});
+                            setFormData({
+                              ...formData,
+                              sub_category: match?.subcategory_name || val,
+                              sub_category_id: match?.id || null,
+                              category: match?.parent_category?.category_name || formData.category
+                            });
                             setSubCategoryPopoverOpen(false);
                           }}
                         >
@@ -220,6 +202,16 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-slate-500 uppercase">Kategori (Auto-terisi)</Label>
+            <Input
+              value={formData.category}
+              readOnly
+              className="bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed"
+              placeholder="Terisi otomatis dari Sub Kategori"
+            />
           </div>
 
           <div className="space-y-2">
