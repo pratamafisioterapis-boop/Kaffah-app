@@ -6,7 +6,6 @@ import {
     validateUUIDFormatted,
     isValidUUID,
     calculateAttendanceDays,
-    getTherapistPeriodRange,
     calculateFullSalary,
     calculateCustomSalary
 } from '@/lib/utils';
@@ -6851,8 +6850,17 @@ export const getBepFinancials = async () => {
     const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
 
     const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    // Fixed-cost rows are already represented by totalFixedCost. Payroll rows
+    // for base salary / transport / insentif are already represented by
+    // totalFixedCost (base salary) or the live per-day transport/incentive
+    // accrual below (which now always runs tgl 1 s/d hari ini regardless of
+    // each therapist's own payroll cycle), so they're excluded here to avoid
+    // double-counting. Komisi (performance remuneration) has no such live
+    // equivalent, so it stays in Pengeluaran like any other real expense.
+    const isReplacedPayrollRow = (r) =>
+      r.payroll_record_id && !(r.description || '').startsWith('Komisi - ');
     const excludeAutoPostedFixedCost = (rows) =>
-      (rows || []).filter(r => !r.is_auto_fixed_cost);
+      (rows || []).filter(r => !r.is_auto_fixed_cost && !isReplacedPayrollRow(r));
 
     const [
       fixedCostItemsRes, ownerExpRes, adminExpRes, ownerIncRes, adminIncRes,
@@ -6885,23 +6893,24 @@ export const getBepFinancials = async () => {
       const salaryScheme = t.salary_scheme || 'full_salary';
       const isProbation = salaryScheme === 'probation';
 
-      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
-      const periodStartStr = format(periodStart, 'yyyy-MM-dd');
-      // Period start could be after today right after a cycle rollover — clamp.
-      const effectiveEnd = periodStart > today ? periodStart : today;
-      const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
-
+      // BEP is a tgl-1-s/d-hari-ini break-even calc, so transport & insentif
+      // must accrue over the calendar month like everything else here — not
+      // each therapist's own payroll cycle (e.g. 28→27), which would leave
+      // most of the month's accrual sitting in a not-yet-paid cycle and make
+      // BEP understate the month's true cost. Rows already posted from a
+      // payroll record are excluded above (payroll_record_id), so recomputing
+      // the full month here from raw attendance/recap data doesn't double-count.
       const [schedRes, timeOffRes, recapsRes] = await Promise.all([
         getTherapistSchedules(t.id),
         getTherapistTimeOff(t.id),
         supabase.from('daily_recaps')
           .select('amount, amount_package, package_tracking_id, patient_type')
           .eq('therapist_id', t.id)
-          .gte('recap_date', periodStartStr)
-          .lte('recap_date', effectiveEndStr)
+          .gte('recap_date', monthStartStr)
+          .lte('recap_date', todayStr)
       ]);
 
-      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], startOfMonth(today), today);
       if (isProbation) return;
 
       transportTotal += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
