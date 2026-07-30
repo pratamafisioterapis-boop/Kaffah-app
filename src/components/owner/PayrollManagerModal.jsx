@@ -238,11 +238,14 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus slip gaji ini?')) return;
-    const { success, error } = await deletePayrollRecord(id);
+  const handleDelete = async (record) => {
+    const warnAccounting = record.posted_to_accounting
+      ? ' Slip ini sudah diposting ke Accounting — entri pengeluaran terkait akan ikut terhapus.'
+      : '';
+    if (!window.confirm(`Yakin ingin menghapus slip gaji ini?${warnAccounting}`)) return;
+    const { success, error } = await deletePayrollRecord(record.id);
     if (success) {
-      setRecords((prev) => prev.filter((r) => r.id !== id));
+      setRecords((prev) => prev.filter((r) => r.id !== record.id));
       toast({ title: 'Terhapus', description: 'Slip gaji telah dihapus.' });
     } else {
       toast({ variant: 'destructive', title: 'Gagal', description: error?.message });
@@ -455,7 +458,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => handleDownload(r)} title="Download">
                       <Download className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleDelete(r.id)} title="Hapus">
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleDelete(r)} title="Hapus">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

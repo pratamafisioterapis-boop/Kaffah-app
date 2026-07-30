@@ -4514,6 +4514,7 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
         category: match?.parent_category?.category_name || 'HR & PAYROLL',
         sub_category: match?.id || null,
         description: `${item.label} - ${therapistName}`,
+        payroll_record_id: record.id,
         created_by: actingUserId || null,
         created_at: new Date().toISOString(),
       };
