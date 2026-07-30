@@ -418,8 +418,8 @@ return;
 const endDate = new Date(pkg.extended_until || pkg.end_date);
 const today = new Date();
 today.setHours(0,0,0,0);
-const isExpired = 
-endDate < today || 
+const isExpired =
+endDate < today ||
 pkg.sessions_used >= pkg.total_sessions;
 setPackageInfo({
 ...pkg,
@@ -429,13 +429,20 @@ isExpired
 
 const isPackageAlreadySelected = !!formData.package_type_id;
 
+// 🔒 Guard: 'Package' (amount 0) hanya untuk sesi ke-2 dst pada paket
+// multi-sesi yang sudah pernah dipakai. Sesi pertama wajib diisi manual
+// dengan metode pembayaran asli oleh staff.
+const isMultiSession = (pkg.total_sessions || 0) > 1;
+const hasStartedUsage = (pkg.sessions_used || 0) > 0;
+const shouldAutoFillPackage = pkg.status === 'aktif' && isMultiSession && hasStartedUsage;
+
 if (mode === 'add' && !isPackageAlreadySelected) {
 setFormData(prev => ({
 ...prev,
 package_type_id: pkg.package_type_id,
 package_type: pkg.package_name,
-amount: 0,
-payment_method: 'Package'
+amount: shouldAutoFillPackage ? 0 : prev.amount,
+payment_method: shouldAutoFillPackage ? 'Package' : prev.payment_method
 }));
 }
 } else {
