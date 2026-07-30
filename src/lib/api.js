@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -4514,6 +4514,10 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
         category: match?.parent_category?.category_name || 'HR & PAYROLL',
         sub_category: match?.id || null,
         description: `${item.label} - ${therapistName}`,
+        // Ditandai supaya getBepFinancials() bisa mengenali baris ini sebagai
+        // hasil posting payroll: di BEP komponen gaji dihitung dari
+        // payroll_records / fixed cost, bukan dari baris pengeluaran ini.
+        payroll_record_id: record.id,
         created_by: actingUserId || null,
         created_at: new Date().toISOString(),
       };
@@ -6822,16 +6826,36 @@ export const getRemunerationReport = async (therapistId, startDate, endDate) => 
 
 // Total biaya & pemasukan bulan berjalan — satu-satunya sumber untuk logika
 // Break Even Point, dipakai baik oleh widget BEP maupun ringkasan Financial
-// Health, supaya keduanya selalu menampilkan angka yang konsisten:
-// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan)
-// - Pengeluaran owner & admin: tercatat dari tgl 1 s/d hari ini, di luar
-//   entri fixed cost yang sudah otomatis terpost oleh autoPostFixedCosts()
-//   (ditandai is_auto_fixed_cost = true) — kalau tidak, nilainya kehitung
-//   dua kali. Item "gaji" (auto_post = false) tidak diposting di sini sama
-//   sekali — nanti terposting lewat payroll — jadi tidak perlu dikecualikan.
-// - Transport & insentif terapis: dihitung harian dari awal periode gaji
-//   masing-masing terapis s/d hari ini, mengikuti skema gaji masing-masing
-//   (probation = tidak ada transport/komisi, mengikuti logic Salary Calculator)
+// Health, supaya keduanya selalu menampilkan angka yang konsisten.
+//
+// Aturan pokoknya: satu rupiah biaya hanya boleh masuk SEKALI, walaupun
+// komponen yang sama bisa nyangkut di beberapa tempat (fixed cost, auto post,
+// payroll, pengeluaran manual). Rinciannya:
+//
+// - Fixed cost: total bulanan penuh (item ini memang berulang tiap bulan),
+//   termasuk gaji pokok karyawan tetap (terapis maupun admin). Fixed cost
+//   adalah SUMBER KEBENARAN untuk gaji pokok.
+// - Pengeluaran owner & admin: tercatat dari tgl 1 s/d hari ini, KECUALI
+//   dua jenis baris yang sudah terhitung di komponen lain — kalau ikut
+//   dijumlah, nilainya kehitung dua kali:
+//     1. entri fixed cost yang otomatis terpost oleh autoPostFixedCosts()
+//        (is_auto_fixed_cost = true) → sudah masuk di totalFixedCost
+//     2. entri hasil posting payroll (payroll_record_id != null) → gaji
+//        pokoknya sudah masuk di totalFixedCost, sedangkan transport &
+//        insentifnya dihitung ulang di bawah dari payroll_records
+// - Transport & insentif terapis punya dua fase dalam satu bulan kalender:
+//     1. SEBELUM payroll periode berjalan dibuat → diakrual harian dari awal
+//        periode gaji terapis s/d hari ini (dinamis, naik tiap hari kerja),
+//        mengikuti skema gaji masing-masing (probation = tanpa transport &
+//        insentif, sama seperti Salary Calculator)
+//     2. SESUDAH payroll dibuat bulan ini → angkanya langsung ikut payroll
+//        yang tersimpan dan akrual harian BERHENTI sampai akhir bulan. Akrual
+//        periode baru (mis. tgl 28 s/d akhir bulan) baru muncul lagi tgl 1
+//        bulan berikutnya, karena periode itu memang baru akan dibayar di
+//        payroll bulan depan.
+//   Pengecualian akrual: kalau periode sebelumnya sudah tutup tapi payroll-nya
+//   belum dibuat sama sekali (payroll telat), akrual tetap dimulai dari awal
+//   periode yang belum dibayar itu supaya biayanya tidak hilang dari BEP.
 // - Pemasukan: total bulan berjalan (tgl 1 s/d akhir bulan)
 export const getBepFinancials = async () => {
   return safeQuery(async () => {
@@ -6846,16 +6870,20 @@ export const getBepFinancials = async () => {
 
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
-    const monthStartStr = format(startOfMonth(today), 'yyyy-MM-dd');
+    const monthStart = startOfMonth(today);
+    const monthStartStr = format(monthStart, 'yyyy-MM-dd');
     const monthEndStr = format(endOfMonth(today), 'yyyy-MM-dd');
 
     const sumAmount = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
-    const excludeAutoPostedFixedCost = (rows) =>
-      (rows || []).filter(r => !r.is_auto_fixed_cost);
+    // Baris pengeluaran owner yang komponennya sudah dihitung di tempat lain
+    // (fixed cost bulanan & posting payroll) harus dibuang dari "pengeluaran"
+    // supaya tidak dobel.
+    const excludeAlreadyCountedRows = (rows) =>
+      (rows || []).filter(r => !r.is_auto_fixed_cost && !r.payroll_record_id);
 
     const [
       fixedCostItemsRes, ownerExpRes, adminExpRes, ownerIncRes, adminIncRes,
-      patientIncRes, therapistsRes, serviceRatesRes
+      patientIncRes, therapistsRes, serviceRatesRes, clinicTherapistsRes
     ] = await Promise.all([
       supabase.from('clinic_fixed_costs').select('id, item_name, amount').eq('clinic_id', clinicId).order('created_at', { ascending: true }),
       getOwnerExpenditures({ startDate: monthStartStr, endDate: todayStr }),
@@ -6864,12 +6892,28 @@ export const getBepFinancials = async () => {
       getAdminIncome({ startDate: monthStartStr, endDate: monthEndStr }),
       getPatientIncomeFromPackages({ startDate: monthStartStr, endDate: monthEndStr }),
       getActivePhysiotherapists(),
-      getServiceRates()
+      getServiceRates(),
+      // Semua terapis klinik ini (termasuk yang sudah non-aktif) — dipakai untuk
+      // membatasi query payroll ke klinik yang benar; terapis yang resign di
+      // tengah bulan tetap punya biaya payroll yang harus masuk BEP.
+      supabase.from('physiotherapists').select('id').eq('clinic_id', clinicId)
     ]);
+
+    // Payroll beberapa periode terakhir: dipakai untuk tahu terapis mana yang
+    // transport & insentifnya sudah dibayar (jadi akrual hariannya berhenti)
+    // dan mana yang periodenya masih menggantung.
+    const clinicTherapistIds = (clinicTherapistsRes?.data || []).map(t => t.id);
+    const payrollRes = clinicTherapistIds.length
+      ? await supabase
+        .from('payroll_records')
+        .select('id, physiotherapist_id, payroll_period_start, payroll_period_end, transport_per_day, incentive_amount, custom_commission, created_at')
+        .in('physiotherapist_id', clinicTherapistIds)
+        .gte('payroll_period_end', format(subMonths(monthStart, 2), 'yyyy-MM-dd'))
+      : { data: [] };
 
     const fixedCostItems = fixedCostItemsRes?.data || [];
     const totalFixedCost = fixedCostItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-    const ownerExpense = sumAmount(excludeAutoPostedFixedCost(ownerExpRes.data));
+    const ownerExpense = sumAmount(excludeAlreadyCountedRows(ownerExpRes.data));
     const adminExpense = sumAmount(adminExpRes.data);
     const revenueThisMonth = sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data);
 
@@ -6877,17 +6921,49 @@ export const getBepFinancials = async () => {
     const ratesMap = {};
     (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
 
-    let transportTotal = 0;
-    let incentiveTotal = 0;
+    // ── Fase 2: transport & insentif yang sudah terkunci di payroll ──
+    // Payroll yang dibuat dalam bulan kalender berjalan menggantikan akrual
+    // harian terapis yang bersangkutan sampai akhir bulan. Angkanya diambil
+    // dari payroll_records (bukan dari baris owner_expenditures hasil posting)
+    // supaya tetap benar walau slip gaji belum sempat terpost ke accounting.
+    const payrollRecords = payrollRes?.data || [];
+    const payrollThisMonth = payrollRecords.filter(r => {
+      const createdAt = r.created_at ? new Date(r.created_at) : null;
+      return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+    });
+    const paidTherapistIds = new Set(payrollThisMonth.map(r => r.physiotherapist_id));
+
+    let transportFromPayroll = 0;
+    let incentiveFromPayroll = 0;
+    payrollThisMonth.forEach(r => {
+      transportFromPayroll += Number(r.transport_per_day) || 0;
+      incentiveFromPayroll += (Number(r.incentive_amount) || 0) + (Number(r.custom_commission) || 0);
+    });
+
+    // ── Fase 1: akrual harian untuk terapis yang periodenya belum dibayar ──
+    let transportLive = 0;
+    let incentiveLive = 0;
 
     await Promise.all(therapists.map(async (t) => {
-      const salaryScheme = t.salary_scheme || 'full_salary';
-      const isProbation = salaryScheme === 'probation';
+      // Sudah ada payroll bulan ini → pakai angka payroll, tidak ada akrual lagi.
+      if (paidTherapistIds.has(t.id)) return;
 
-      const { startDate: periodStart } = getTherapistPeriodRange(t, today);
-      const periodStartStr = format(periodStart, 'yyyy-MM-dd');
+      const salaryScheme = t.salary_scheme || 'full_salary';
+      if (salaryScheme === 'probation') return;
+
+      const { startDate: currentPeriodStart } = getTherapistPeriodRange(t, today);
+      const { startDate: previousPeriodStart } = getTherapistPeriodRange(t, addDays(currentPeriodStart, -1));
+      const previousPeriodStartStr = format(previousPeriodStart, 'yyyy-MM-dd');
+      const therapistPayrolls = payrollRecords.filter(r => r.physiotherapist_id === t.id);
+      // Kalau terapis ini memang dibayar lewat payroll tapi periode sebelumnya
+      // belum ada slipnya (payroll telat dibuat), akrual dimulai dari periode
+      // itu supaya biaya yang belum dibayar tidak hilang dari BEP bulan ini.
+      const previousPeriodUnpaid = therapistPayrolls.length > 0
+        && !therapistPayrolls.some(r => r.payroll_period_start === previousPeriodStartStr);
+      const accrualStart = previousPeriodUnpaid ? previousPeriodStart : currentPeriodStart;
+      const accrualStartStr = format(accrualStart, 'yyyy-MM-dd');
       // Period start could be after today right after a cycle rollover — clamp.
-      const effectiveEnd = periodStart > today ? periodStart : today;
+      const effectiveEnd = accrualStart > today ? accrualStart : today;
       const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
 
       const [schedRes, timeOffRes, recapsRes] = await Promise.all([
@@ -6896,30 +6972,34 @@ export const getBepFinancials = async () => {
         supabase.from('daily_recaps')
           .select('amount, amount_package, package_tracking_id, patient_type')
           .eq('therapist_id', t.id)
-          .gte('recap_date', periodStartStr)
+          .gte('recap_date', accrualStartStr)
           .lte('recap_date', effectiveEndStr)
       ]);
 
-      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
-      if (isProbation) return;
-
-      transportTotal += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], accrualStart, effectiveEnd);
+      transportLive += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
 
       const recaps = recapsRes.data || [];
-      incentiveTotal += salaryScheme === 'full_salary'
+      incentiveLive += salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
         : calculateCustomSalary(recaps, ratesMap);
     }));
 
+    const transportTotal = transportFromPayroll + transportLive;
+    const incentiveTotal = incentiveFromPayroll + incentiveLive;
+
     const totalCost = totalFixedCost + ownerExpense + adminExpense + transportTotal + incentiveTotal;
 
     // ── Tanggal tercapainya titik impas ──
-    // Fixed cost, transport & insentif terapis tidak bertanggal per transaksi
-    // (dihitung sebagai akumulasi bulanan/attendance), jadi diperlakukan sebagai
-    // beban yang sudah ada sejak tgl 1 (baseline). Pengeluaran & pemasukan yang
-    // bertanggal diakumulasikan harian; tanggal pertama saat pemasukan kumulatif
-    // menyamai/melebihi baseline + pengeluaran kumulatif adalah tanggal impas.
-    const baselineCost = totalFixedCost + transportTotal + incentiveTotal;
+    // Fixed cost & akrual harian transport/insentif tidak bertanggal per
+    // transaksi (dihitung sebagai akumulasi bulanan/attendance), jadi
+    // diperlakukan sebagai beban yang sudah ada sejak tgl 1 (baseline).
+    // Transport & insentif yang sudah terkunci di payroll punya tanggal nyata
+    // (tanggal slip gaji dibuat), jadi dibebankan di tanggal itu. Pengeluaran &
+    // pemasukan yang bertanggal diakumulasikan harian; tanggal pertama saat
+    // pemasukan kumulatif menyamai/melebihi baseline + pengeluaran kumulatif
+    // adalah tanggal impas.
+    const baselineCost = totalFixedCost + transportLive + incentiveLive;
     const sumByDay = (rows, dateKey = 'date') => {
       const map = {};
       (rows || []).forEach(r => {
@@ -6930,9 +7010,16 @@ export const getBepFinancials = async () => {
       });
       return map;
     };
-    const expenseByDay = sumByDay(excludeAutoPostedFixedCost(ownerExpRes.data));
+    const expenseByDay = sumByDay(excludeAlreadyCountedRows(ownerExpRes.data));
     Object.entries(sumByDay(adminExpRes.data, 'transaction_date')).forEach(([key, amt]) => {
       expenseByDay[key] = (expenseByDay[key] || 0) + amt;
+    });
+    payrollThisMonth.forEach(r => {
+      const key = format(new Date(r.created_at), 'yyyy-MM-dd');
+      const amount = (Number(r.transport_per_day) || 0)
+        + (Number(r.incentive_amount) || 0)
+        + (Number(r.custom_commission) || 0);
+      expenseByDay[key] = (expenseByDay[key] || 0) + amount;
     });
     const revenueByDay = sumByDay(ownerIncRes.data);
     [adminIncRes.data, patientIncRes.data].forEach(rows => {
@@ -6944,7 +7031,7 @@ export const getBepFinancials = async () => {
     let breakEvenDate = null;
     let cumRevenue = 0;
     let cumExpense = 0;
-    for (const day of eachDayOfInterval({ start: startOfMonth(today), end: today })) {
+    for (const day of eachDayOfInterval({ start: monthStart, end: today })) {
       const key = format(day, 'yyyy-MM-dd');
       cumRevenue += revenueByDay[key] || 0;
       cumExpense += expenseByDay[key] || 0;
@@ -6962,6 +7049,13 @@ export const getBepFinancials = async () => {
         adminExpense,
         transportTotal,
         incentiveTotal,
+        // Rincian sumber transport & insentif supaya widget bisa menjelaskan
+        // mana yang sudah terkunci di payroll dan mana yang masih akrual harian.
+        transportFromPayroll,
+        incentiveFromPayroll,
+        transportLive,
+        incentiveLive,
+        payrollTherapistCount: paidTherapistIds.size,
         totalCost,
         revenueThisMonth,
         isBreakEven: revenueThisMonth >= totalCost,
