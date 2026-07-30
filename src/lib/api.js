@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -6855,10 +6855,11 @@ export const getBepFinancials = async () => {
     // payroll record posts, are already represented by totalFixedCost (which
     // sums the full clinic_fixed_costs config regardless of posting status),
     // so they're excluded here to avoid double-counting. Transport/insentif/
-    // komisi payroll rows stay in Pengeluaran: with each therapist's cycle
-    // rolling forward after it posts (see the per-therapist loop below), a
-    // closed cycle's posted row and the new cycle's live accrual cover
-    // non-overlapping dates, so no exclusion is needed there.
+    // komisi payroll rows stay in Pengeluaran: the per-therapist loop below
+    // starts its live recap query the day AFTER any payroll slip already
+    // saved for the current cycle, so a closed (or mid-cycle-paid) slip and
+    // the live accrual never cover the same dates, no matter which day the
+    // slip was posted on.
     const isPostedBaseSalaryRow = (r) =>
       r.payroll_record_id && (r.description || '').startsWith('Gaji Karyawan Tetap - ');
     const excludeAutoPostedFixedCost = (rows) =>
@@ -6899,39 +6900,53 @@ export const getBepFinancials = async () => {
       // cycle (e.g. 28 bulan lalu → 27 bulan ini), not the calendar month —
       // that's the period that will actually get posted to payroll/accounting
       // once it closes, so BEP should reflect that in-progress cycle live.
-      // A closed cycle's posted transport/insentif rows stay in Pengeluaran
-      // (see excludeAutoPostedFixedCost above) rather than being filtered out,
-      // because they cover dates the new cycle's live query never re-visits —
-      // UNLESS a therapist's period_start_day/period_end_day don't roll past a
-      // mid-cycle payout (e.g. 1→31 instead of 28→27): in that case a new
-      // payroll record posted mid-period will double-count against this same
-      // live query, so those therapists should be configured with a rolling
-      // cycle instead.
       const { startDate: periodStart } = getTherapistPeriodRange(t, today);
       const periodStartStr = format(periodStart, 'yyyy-MM-dd');
       // Period start could be after today right after a cycle rollover — clamp.
       const effectiveEnd = periodStart > today ? periodStart : today;
       const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
 
-      const [schedRes, timeOffRes, recapsRes] = await Promise.all([
+      const [schedRes, timeOffRes, existingPayrollRes] = await Promise.all([
         getTherapistSchedules(t.id),
         getTherapistTimeOff(t.id),
-        supabase.from('daily_recaps')
-          .select('amount, amount_package, package_tracking_id, patient_type')
-          .eq('therapist_id', t.id)
-          .gte('recap_date', periodStartStr)
-          .lte('recap_date', effectiveEndStr)
+        // A payroll slip can be saved for THIS SAME cycle before it closes
+        // (e.g. a period 1→31 that doesn't roll mid-month, or simply paid
+        // early). If one exists, only accrue the days AFTER it was posted —
+        // otherwise re-summing recaps from periodStart would double-count
+        // whatever that slip already paid out, no matter which day it lands
+        // on (21st, 28th, even the 31st itself).
+        supabase.from('payroll_records')
+          .select('created_at')
+          .eq('physiotherapist_id', t.id)
+          .eq('payroll_period_start', periodStartStr)
+          .eq('status', 'paid')
+          .order('created_at', { ascending: false })
+          .limit(1)
       ]);
 
-      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], periodStart, effectiveEnd);
+      const lastPostedAt = existingPayrollRes.data?.[0]?.created_at
+        ? new Date(existingPayrollRes.data[0].created_at)
+        : null;
+      const liveStart = lastPostedAt && lastPostedAt >= periodStart
+        ? addDays(new Date(lastPostedAt.getFullYear(), lastPostedAt.getMonth(), lastPostedAt.getDate()), 1)
+        : periodStart;
+      const effectiveLiveStart = liveStart > effectiveEnd ? addDays(effectiveEnd, 1) : liveStart;
+      const liveStartStr = format(effectiveLiveStart, 'yyyy-MM-dd');
+
+      const { data: recaps } = await supabase.from('daily_recaps')
+        .select('amount, amount_package, package_tracking_id, patient_type')
+        .eq('therapist_id', t.id)
+        .gte('recap_date', liveStartStr)
+        .lte('recap_date', effectiveEndStr);
+
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], effectiveLiveStart, effectiveEnd);
       if (isProbation) return;
 
       transportTotal += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
 
-      const recaps = recapsRes.data || [];
       incentiveTotal += salaryScheme === 'full_salary'
-        ? calculateFullSalary(recaps)
-        : calculateCustomSalary(recaps, ratesMap);
+        ? calculateFullSalary(recaps || [])
+        : calculateCustomSalary(recaps || [], ratesMap);
     }));
 
     const totalCost = totalFixedCost + ownerExpense + adminExpense + transportTotal + incentiveTotal;
