@@ -296,6 +296,11 @@ const RevenueOverview = ({ dateRange }) => {
       .sort((a, b) => b.amount - a.amount);
   }, [data.nonPkgRecaps, data.pkgRecaps, paymentMethodMap]);
 
+  const totalPemasukanMetode = useMemo(
+    () => paymentMethodBreakdown.reduce((s, pm) => s + pm.amount, 0),
+    [paymentMethodBreakdown]
+  );
+
   // ── Alerts ──
   const alerts = useMemo(() => {
     const items = [];
@@ -564,12 +569,16 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── Pemasukan per Metode Pembayaran ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-start justify-between mb-5 gap-3">
           <div>
             <h3 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h3>
             <p className="text-xs text-slate-400 mt-0.5">
               {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
             </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(totalPemasukanMetode)}</p>
+            <p className="text-xs text-slate-400 font-medium mt-1">Total Pemasukan</p>
           </div>
         </div>
 
