@@ -4,20 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save, Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { updateAdminExpense, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
-  const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     transaction_date: '',
@@ -101,9 +98,26 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   // Show every expense sub kategori at once (not gated by the currently
   // selected Kategori) so this matches the create form and the owner form.
   // Sorted alphabetically so items are easy to scan without typing a search.
-  const filteredSubCategories = subCategories
+  const subCategoryOptions = subCategories
     .filter(sub => sub.subcategory_name && sub.parent_category?.type !== 'income')
-    .sort((a, b) => a.subcategory_name.localeCompare(b.subcategory_name));
+    .sort((a, b) => a.subcategory_name.localeCompare(b.subcategory_name))
+    .map(sub => ({
+      label: sub.subcategory_name,
+      value: sub.subcategory_name,
+      id: sub.id,
+      description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`,
+      categoryName: sub.parent_category?.category_name
+    }));
+
+  const handleSubCategoryChange = (val) => {
+    const selected = subCategoryOptions.find(opt => opt.value === val);
+    setFormData(prev => ({
+      ...prev,
+      sub_category: val,
+      sub_category_id: selected ? selected.id : prev.sub_category_id,
+      category: selected ? selected.categoryName : prev.category
+    }));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose(val)}>
@@ -149,60 +163,14 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Sub Kategori</Label>
-            <Popover open={subCategoryPopoverOpen} onOpenChange={setSubCategoryPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={subCategoryPopoverOpen}
-                  className="w-full justify-between bg-slate-50 border-slate-200 font-normal text-slate-900 hover:bg-slate-50"
-                >
-                  {formData.sub_category || 'Pilih Sub Kategori'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Cari sub kategori..." />
-                  <CommandList>
-                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                    <CommandGroup>
-                      {filteredSubCategories.map(sub => (
-                        <CommandItem
-                          key={sub.id}
-                          value={sub.subcategory_name}
-                          onSelect={(val) => {
-                            const match = filteredSubCategories.find(
-                              s => s.subcategory_name.toLowerCase() === val.toLowerCase()
-                            );
-                            setFormData({
-                              ...formData,
-                              sub_category: match?.subcategory_name || val,
-                              sub_category_id: match?.id || null,
-                              category: match?.parent_category?.category_name || formData.category
-                            });
-                            setSubCategoryPopoverOpen(false);
-                          }}
-                        >
-                          <Check className={cn('mr-2 h-4 w-4', formData.sub_category === sub.subcategory_name ? 'opacity-100' : 'opacity-0')} />
-                          {sub.subcategory_name}
-                        </CommandItem>
-                      ))}
-                      {formData.sub_category && !filteredSubCategories.find(s => s.subcategory_name === formData.sub_category) && (
-                        <CommandItem
-                          value={formData.sub_category}
-                          onSelect={() => setSubCategoryPopoverOpen(false)}
-                        >
-                          <Check className="mr-2 h-4 w-4 opacity-100" />
-                          {formData.sub_category}
-                        </CommandItem>
-                      )}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <SearchableSelect
+              options={subCategoryOptions}
+              value={formData.sub_category}
+              onChange={handleSubCategoryChange}
+              placeholder="Cari sub kategori..."
+              allowCreate={false}
+              notFoundText="Sub kategori tidak ditemukan."
+            />
           </div>
 
           <div className="space-y-2">
