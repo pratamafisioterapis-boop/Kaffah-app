@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { updateAdminExpense, getAccountingCategories, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
 
@@ -15,6 +18,7 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [subCategoryPopoverOpen, setSubCategoryPopoverOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     transaction_date: '',
@@ -166,26 +170,56 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Sub Kategori</Label>
-             <Select 
-              value={formData.sub_category}
-              onValueChange={(val) => {
-                const match = filteredSubCategories.find(s => s.subcategory_name === val);
-                setFormData({...formData, sub_category: val, sub_category_id: match?.id || null});
-              }}
-              disabled={!formData.category && filteredSubCategories.length === 0}
-            >
-              <SelectTrigger className="bg-slate-50 border-slate-200">
-                <SelectValue placeholder="Pilih Sub Kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredSubCategories.map(sub => (
-                  <SelectItem key={sub.id} value={sub.subcategory_name}>{sub.subcategory_name}</SelectItem>
-                ))}
-                 {formData.sub_category && !filteredSubCategories.find(s => s.subcategory_name === formData.sub_category) && (
-                   <SelectItem value={formData.sub_category}>{formData.sub_category}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <Popover open={subCategoryPopoverOpen} onOpenChange={setSubCategoryPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={subCategoryPopoverOpen}
+                  disabled={!formData.category && filteredSubCategories.length === 0}
+                  className="w-full justify-between bg-slate-50 border-slate-200 font-normal text-slate-900 hover:bg-slate-50"
+                >
+                  {formData.sub_category || 'Pilih Sub Kategori'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Cari sub kategori..." />
+                  <CommandList>
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {filteredSubCategories.map(sub => (
+                        <CommandItem
+                          key={sub.id}
+                          value={sub.subcategory_name}
+                          onSelect={(val) => {
+                            const match = filteredSubCategories.find(
+                              s => s.subcategory_name.toLowerCase() === val.toLowerCase()
+                            );
+                            setFormData({...formData, sub_category: match?.subcategory_name || val, sub_category_id: match?.id || null});
+                            setSubCategoryPopoverOpen(false);
+                          }}
+                        >
+                          <Check className={cn('mr-2 h-4 w-4', formData.sub_category === sub.subcategory_name ? 'opacity-100' : 'opacity-0')} />
+                          {sub.subcategory_name}
+                        </CommandItem>
+                      ))}
+                      {formData.sub_category && !filteredSubCategories.find(s => s.subcategory_name === formData.sub_category) && (
+                        <CommandItem
+                          value={formData.sub_category}
+                          onSelect={() => setSubCategoryPopoverOpen(false)}
+                        >
+                          <Check className="mr-2 h-4 w-4 opacity-100" />
+                          {formData.sub_category}
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
