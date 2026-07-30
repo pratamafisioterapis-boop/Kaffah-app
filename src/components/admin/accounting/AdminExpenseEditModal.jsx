@@ -100,9 +100,10 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
 
   // Show every expense sub kategori at once (not gated by the currently
   // selected Kategori) so this matches the create form and the owner form.
-  const filteredSubCategories = subCategories.filter(
-    sub => sub.subcategory_name && sub.parent_category?.type !== 'income'
-  );
+  // Sorted alphabetically so items are easy to scan without typing a search.
+  const filteredSubCategories = subCategories
+    .filter(sub => sub.subcategory_name && sub.parent_category?.type !== 'income')
+    .sort((a, b) => a.subcategory_name.localeCompare(b.subcategory_name));
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose(val)}>
