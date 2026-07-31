@@ -1488,7 +1488,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
             </div>
             <div className="p-table-wrap">
               <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}` }}>
-                <thead>
+                <thead className="p-table-sticky-head">
                   <tr>
                     <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
                     {displayedCandidates.map((c) => (
