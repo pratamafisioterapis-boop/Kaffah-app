@@ -1486,21 +1486,21 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                 <Plus size={14} /> Tambah TPS
               </button>
             </div>
-            <div className="p-table-wrap">
+            <div className="p-table-wrap p-table-wrap-scroll">
               <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}` }}>
                 <thead className="p-table-sticky-head">
                   <tr>
-                    <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
+                    <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', fontWeight: 800, border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
                     {displayedCandidates.map((c) => (
                       <th
                         key={c.number}
-                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'middle', padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}
+                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'middle', fontWeight: 800, color: '#1a1d29', padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}
                         title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}
                       >
                         {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
-                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', verticalAlign: 'middle', width: 60, border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</th>}
+                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', verticalAlign: 'middle', width: 60, fontWeight: 800, border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</th>}
                     <th style={{ width: 28, border: `1px solid ${TPS_TABLE_BORDER}` }}></th>
                   </tr>
                 </thead>
