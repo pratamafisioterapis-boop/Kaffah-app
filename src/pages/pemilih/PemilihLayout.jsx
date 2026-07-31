@@ -193,6 +193,9 @@ const CSS = `
   /* Wrapper wajib dipakai di sekeliling <table> agar tabel bisa di-scroll horizontal, bukan mendorong layout melebar di layar HP/PWA */
   .p-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+  /* Bikin baris header ikut ketika halaman di-scroll ke bawah, supaya nama kolom tetap terlihat di baris manapun */
+  .p-table-sticky-head th { position: sticky; top: 0; z-index: 2; background: #fafafa; }
+
   /* Pasangan kelas untuk tabel (desktop) vs kartu (mobile) — dipakai bareng supaya
      daftar panjang tidak perlu di-swipe horizontal di layar HP/PWA */
   .p-mobile-only { display: none; }
@@ -218,6 +221,7 @@ const CSS = `
     .p-table th, .p-table td { padding: 10px 11px; font-size: 12.5px; }
     .p-mobile-only { display: block; }
     .p-desktop-only { display: none; }
+    .p-table-sticky-head th { top: 58px; }
   }
   @media (min-width: 769px) and (max-width: 1100px) {
     :root { --sidebar-w: 210px; }
@@ -225,6 +229,7 @@ const CSS = `
   }
   @media (display-mode: standalone) {
     .pmh-topbar { padding-top: env(safe-area-inset-top,0); height: calc(58px + env(safe-area-inset-top,0)); }
+    .p-table-sticky-head th { top: calc(58px + env(safe-area-inset-top,0)); }
     .pmh-main { padding-top: calc(74px + env(safe-area-inset-top,0)); }
     .pmh-main { padding-bottom: calc(48px + env(safe-area-inset-bottom,0)); }
     .pmh-drawer { padding-bottom: env(safe-area-inset-bottom,0); }
