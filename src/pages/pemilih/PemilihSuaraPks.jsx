@@ -1480,36 +1480,40 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
 
           <div className="p-card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-              <CardHeader title="Tabel Rincian per TPS" subtitle="Geser ke samping untuk lihat semua caleg — klik ikon pensil untuk koreksi angka" icon={Table2} iconColor="#2563eb" iconBg="#eff6ff" />
+              <CardHeader title="Tabel Rincian per TPS" subtitle="Semua caleg langsung tampil sejajar — klik ikon pensil untuk koreksi angka" icon={Table2} iconColor="#2563eb" iconBg="#eff6ff" />
               <button className="p-btn-ghost" onClick={openAddTps} style={{ flexShrink: 0 }}>
                 <Plus size={14} /> Tambah TPS
               </button>
             </div>
             <div className="p-table-wrap">
-              <table className="p-table">
+              <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0 }}>
                 <thead>
                   <tr>
-                    <th>TPS</th>
+                    <th style={{ width: 44 }}>TPS</th>
                     {displayedCandidates.map((c) => (
-                      <th key={c.number} style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}>
+                      <th
+                        key={c.number}
+                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'bottom', padding: '10px 4px' }}
+                        title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}
+                      >
                         {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
-                    {candidateFilter === 'total' && <th style={{ textAlign: 'center' }}>Total</th>}
-                    <th></th>
+                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', width: 60 }}>Total</th>}
+                    <th style={{ width: 28 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {table.map((r) => (
                     <tr key={r.tps}>
-                      <td style={{ fontWeight: 700 }}>{String(r.tps).padStart(2, '0')}</td>
+                      <td style={{ fontWeight: 700, padding: '10px 6px' }}>{String(r.tps).padStart(2, '0')}</td>
                       {displayedCandidates.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563' }}>
+                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12 }}>
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
-                      {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800 }}>{r.total.toLocaleString('id-ID')}</td>}
-                      <td style={{ textAlign: 'right' }}>
+                      {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px' }}>{r.total.toLocaleString('id-ID')}</td>}
+                      <td style={{ textAlign: 'right', padding: '10px 4px' }}>
                         <button onClick={() => openEditTps(r)} style={{ color: '#2563eb', padding: 4 }} title="Koreksi angka TPS ini">
                           <Pencil size={14} />
                         </button>
@@ -1517,13 +1521,13 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                     </tr>
                   ))}
                   <tr>
-                    <td style={{ fontWeight: 800 }}>Total</td>
+                    <td style={{ fontWeight: 800, padding: '10px 6px' }}>Total</td>
                     {displayedCandidates.map((c) => (
-                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800 }}>
+                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12 }}>
                         {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
                       </td>
                     ))}
-                    {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800 }}>{columnTotals.total.toLocaleString('id-ID')}</td>}
+                    {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px' }}>{columnTotals.total.toLocaleString('id-ID')}</td>}
                     <td></td>
                   </tr>
                 </tbody>
