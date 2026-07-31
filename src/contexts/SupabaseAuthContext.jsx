@@ -273,10 +273,22 @@ export const AuthProvider = ({ children }) => {
       }
 
       console.log(`[AuthContext] Attempting to sign in: ${email}`);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // supabase-js resolves network failures as { error } rather than throwing,
+      // so transient "Failed to fetch" errors (flaky connection, cold Supabase edge)
+      // are retried a few times here before surfacing as a login failure.
+      let data, error;
+      for (let attempt = 0; ; attempt++) {
+        ({ data, error } = await supabase.auth.signInWithPassword({ email, password }));
+
+        const isNetworkError =
+          error?.message === 'Failed to fetch' ||
+          error?.message?.includes('Network request failed');
+
+        if (!isNetworkError || attempt >= 2) break;
+
+        console.warn(`[AuthContext] signIn network error, retrying (${attempt + 1}/2)...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
 
       if (error) {
         if (error.message === 'Invalid login credentials') {
