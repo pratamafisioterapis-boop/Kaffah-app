@@ -41,7 +41,7 @@ const PARTY_MATCH = /keadilan\s*sejahtera|\bpks\b/i;
 const PARTY_FILTER = 'Partai Keadilan Sejahtera';
 
 const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#ea580c'];
-const TPS_TABLE_BORDER = '#e2e4e8';
+const TPS_TABLE_BORDER = '#9aa1ab';
 // Warna pastel per kolom caleg di Tabel Rincian per TPS — tiap caleg dapat satu warna
 // tetap (bukan warna selang-seling per baris/zebra) supaya kolomnya mudah dibedakan.
 const PASTEL_COLUMN_COLORS = [
