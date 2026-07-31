@@ -41,6 +41,7 @@ const PARTY_MATCH = /keadilan\s*sejahtera|\bpks\b/i;
 const PARTY_FILTER = 'Partai Keadilan Sejahtera';
 
 const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#ea580c'];
+const TPS_TABLE_BORDER = '#e2e4e8';
 const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
@@ -1486,49 +1487,49 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
               </button>
             </div>
             <div className="p-table-wrap">
-              <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0 }}>
+              <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}` }}>
                 <thead>
                   <tr>
-                    <th style={{ width: 44 }}>TPS</th>
+                    <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
                     {displayedCandidates.map((c) => (
                       <th
                         key={c.number}
-                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'bottom', padding: '10px 4px' }}
+                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'middle', padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}
                         title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}
                       >
                         {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
-                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', width: 60 }}>Total</th>}
-                    <th style={{ width: 28 }}></th>
+                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', verticalAlign: 'middle', width: 60, border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</th>}
+                    <th style={{ width: 28, border: `1px solid ${TPS_TABLE_BORDER}` }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {table.map((r) => (
-                    <tr key={r.tps}>
-                      <td style={{ fontWeight: 700, padding: '10px 6px' }}>{String(r.tps).padStart(2, '0')}</td>
+                  {table.map((r, i) => (
+                    <tr key={r.tps} style={{ background: i % 2 === 1 ? '#f7f8fa' : '#fff' }}>
+                      <td style={{ fontWeight: 700, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>{String(r.tps).padStart(2, '0')}</td>
                       {displayedCandidates.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12 }}>
+                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}` }}>
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
-                      {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px' }}>{r.total.toLocaleString('id-ID')}</td>}
-                      <td style={{ textAlign: 'right', padding: '10px 4px' }}>
+                      {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}>{r.total.toLocaleString('id-ID')}</td>}
+                      <td style={{ textAlign: 'center', padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}>
                         <button onClick={() => openEditTps(r)} style={{ color: '#2563eb', padding: 4 }} title="Koreksi angka TPS ini">
                           <Pencil size={14} />
                         </button>
                       </td>
                     </tr>
                   ))}
-                  <tr>
-                    <td style={{ fontWeight: 800, padding: '10px 6px' }}>Total</td>
+                  <tr style={{ background: '#fff7ed' }}>
+                    <td style={{ fontWeight: 800, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</td>
                     {displayedCandidates.map((c) => (
-                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12 }}>
+                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}` }}>
                         {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
                       </td>
                     ))}
-                    {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px' }}>{columnTotals.total.toLocaleString('id-ID')}</td>}
-                    <td></td>
+                    {candidateFilter === 'total' && <td style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}>{columnTotals.total.toLocaleString('id-ID')}</td>}
+                    <td style={{ border: `1px solid ${TPS_TABLE_BORDER}` }}></td>
                   </tr>
                 </tbody>
               </table>
