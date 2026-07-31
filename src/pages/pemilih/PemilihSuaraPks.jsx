@@ -42,6 +42,12 @@ const PARTY_FILTER = 'Partai Keadilan Sejahtera';
 
 const RANK_COLORS = ['#dc2626', '#d97706', '#2563eb', '#7c3aed', '#ea580c'];
 const TPS_TABLE_BORDER = '#e2e4e8';
+// Warna pastel per kolom caleg di Tabel Rincian per TPS — tiap caleg dapat satu warna
+// tetap (bukan warna selang-seling per baris/zebra) supaya kolomnya mudah dibedakan.
+const PASTEL_COLUMN_COLORS = [
+  '#FFE3E3', '#FFE8CC', '#FFF9DB', '#E9FAC8', '#D3F9D8', '#C5F6FA',
+  '#D0EBFF', '#DBE4FF', '#E5DBFF', '#F3D9FA', '#FFDEEB', '#F1F3F5',
+];
 const PIE_COLORS = ['#dc2626', '#ef4444', '#f59e0b', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#db2777', '#65a30d', '#9333ea', '#0d9488', '#94a3b8'];
 
 const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
@@ -1399,6 +1405,14 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
     [candidateMasterList, candidateFilter]
   );
 
+  // Warna kolom dipetakan dari posisi caleg di daftar lengkap (bukan daftar yang sedang
+  // ditampilkan) supaya warnanya tidak berubah-ubah saat filter "Tampilkan" diganti.
+  const candidateColorMap = useMemo(() => {
+    const map = {};
+    candidateMasterList.forEach((c, i) => { map[c.number] = PASTEL_COLUMN_COLORS[i % PASTEL_COLUMN_COLORS.length]; });
+    return map;
+  }, [candidateMasterList]);
+
   const columnTotals = useMemo(() => {
     const byCandidate = {};
     candidateMasterList.forEach((c) => { byCandidate[c.number] = 0; });
@@ -1490,26 +1504,30 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
               <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}` }}>
                 <thead className="p-table-sticky-head">
                   <tr>
-                    <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', fontWeight: 800, border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
+                    <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29', border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
                     {displayedCandidates.map((c) => (
                       <th
                         key={c.number}
-                        style={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25, verticalAlign: 'middle', fontWeight: 800, color: '#1a1d29', padding: '10px 4px', border: `1px solid ${TPS_TABLE_BORDER}` }}
+                        style={{
+                          textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25,
+                          verticalAlign: 'middle', fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29', padding: '10px 4px',
+                          border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number],
+                        }}
                         title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}
                       >
                         {c.number === 0 ? 'Partai' : c.name}
                       </th>
                     ))}
-                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', verticalAlign: 'middle', width: 60, fontWeight: 800, border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</th>}
+                    {candidateFilter === 'total' && <th style={{ textAlign: 'center', verticalAlign: 'middle', width: 60, fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29', border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</th>}
                     <th style={{ width: 28, border: `1px solid ${TPS_TABLE_BORDER}` }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {table.map((r, i) => (
-                    <tr key={r.tps} style={{ background: i % 2 === 1 ? '#f7f8fa' : '#fff' }}>
+                  {table.map((r) => (
+                    <tr key={r.tps}>
                       <td style={{ fontWeight: 700, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>{String(r.tps).padStart(2, '0')}</td>
                       {displayedCandidates.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}` }}>
+                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
@@ -1521,10 +1539,10 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                       </td>
                     </tr>
                   ))}
-                  <tr style={{ background: '#fff7ed' }}>
+                  <tr>
                     <td style={{ fontWeight: 800, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</td>
                     {displayedCandidates.map((c) => (
-                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}` }}>
+                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
                         {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
                       </td>
                     ))}
