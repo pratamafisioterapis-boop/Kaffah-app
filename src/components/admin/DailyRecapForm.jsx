@@ -72,6 +72,12 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 const [showDatePicker, setShowDatePicker] = useState(false);
 const [packageInfo, setPackageInfo] = useState(null);
 const [showExtendModal, setShowExtendModal] = useState(false);
+// Terkunci kalau recap ini SUDAH tertaut ke paket dengan nominal Rp 0 (sesi
+// pakai kuota paket, bukan transaksi pembelian) - dicek langsung ke DB (bukan
+// dari initialData yang bisa basi) supaya tidak kejadian lagi kasus salah
+// ketik nominal di sesi gratis (jadi bikin "paket hantu" baru & sesi lain
+// yang harusnya kepakai malah tidak kehitung).
+const [isPackageSessionLocked, setIsPackageSessionLocked] = useState(false);
 
 const [formData, setFormData] = useState({
 recap_date: formatDateDisplay(new Date().toISOString()),
@@ -103,6 +109,25 @@ if (patients.length > 0 && initialData && mode === 'edit') {
 initializeForm(initialData);
 }
 }, [patients, initialData, mode]);
+
+useEffect(() => {
+if (mode !== 'edit' || !initialData?.id) {
+  setIsPackageSessionLocked(false);
+  return;
+}
+let cancelled = false;
+(async () => {
+  const { data, error } = await supabase
+    .from('daily_recaps')
+    .select('package_tracking_id, amount, amount_original')
+    .eq('id', initialData.id)
+    .maybeSingle();
+  if (cancelled || error || !data) return;
+  const currentAmount = Number(data.amount_original ?? data.amount ?? 0);
+  setIsPackageSessionLocked(!!data.package_tracking_id && currentAmount === 0);
+})();
+return () => { cancelled = true; };
+}, [mode, initialData?.id]);
 
 // Inject missing patients after options are loaded
 useEffect(() => {
@@ -772,9 +797,10 @@ allowCreate={true}
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 <div className="space-y-2">
 <Label>Nominal (Rp)</Label>
-<Input 
+<Input
   type="number"
   value={formData.amount}
+  disabled={isPackageSessionLocked}
   onChange={(e) => {
     const value = Number(e.target.value || 0);
     setFormData(prev => ({
@@ -793,8 +819,14 @@ options={paymentMethods}
 value={formData.payment_method}
 onChange={(val) => handleChange('payment_method', val)}
 allowCreate={true}
+disabled={isPackageSessionLocked}
 />
 </div>
+{isPackageSessionLocked && (
+  <p className="text-xs text-slate-500 md:col-span-2 -mt-2">
+    Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
+  </p>
+)}
 </div>
 
 <div className="space-y-2">
