@@ -422,9 +422,12 @@ const TabCuti = ({ therapistId }) => {
             <Umbrella className="w-5 h-5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Sisa Cuti Tahunan {balance.year}</p>
+            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Sisa Cuti Tahunan</p>
             <p className="text-2xl font-bold text-emerald-800 leading-none mt-0.5">
               {balance.remaining} <span className="text-sm font-medium text-emerald-600">/ {balance.quota} hari</span>
+            </p>
+            <p className="text-[11px] text-emerald-600/80 mt-1">
+              Periode {formatTgl(balance.periodStart)} – {formatTgl(balance.periodEnd)}
             </p>
           </div>
         </div>
