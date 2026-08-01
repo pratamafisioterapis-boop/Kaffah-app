@@ -1151,6 +1151,17 @@ export const updateDailyRecap = async (id, payload) => {
 
 cleanedPayload.amount_original = payload.amount_original;
 
+    // Never let an ordinary edit silently unlink an already-assigned package.
+    // Callers build package_tracking_id from local form state that can be
+    // stale by the time the user saves; writing that stale null for real wipes
+    // a valid link (the session then stops counting against the package, and
+    // a later recap silently gets auto-assigned into the "freed" slot instead).
+    // Omitting the key leaves the column untouched — only an explicit non-null
+    // value can (re)point it, matching how the DB-side package triggers expect
+    // to receive updates.
+    if (cleanedPayload.package_tracking_id === null || cleanedPayload.package_tracking_id === undefined) {
+      delete cleanedPayload.package_tracking_id;
+    }
 
     const { data, error } = await supabase
       .from('daily_recaps')
