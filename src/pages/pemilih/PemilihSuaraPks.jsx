@@ -58,6 +58,27 @@ const chunkArray = (arr, size) => {
   return out;
 };
 
+// Supabase/PostgREST membatasi select tanpa .range() ke jumlah baris maksimum
+// di server (umumnya 1000). Rincian per TPS gampang melewati itu (jumlah TPS x
+// jumlah caleg), jadi baris lama akan diam-diam terpotong tanpa error kalau
+// tidak di-paginate secara eksplisit di sini.
+const TPS_ROWS_PAGE_SIZE = 1000;
+const fetchAllTpsRows = async (buildQuery) => {
+  let allRows = [];
+  let from = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const to = from + TPS_ROWS_PAGE_SIZE - 1;
+    // eslint-disable-next-line no-await-in-loop
+    const { data, error } = await buildQuery().range(from, to);
+    if (error) return { data: null, error };
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < TPS_ROWS_PAGE_SIZE) break;
+    from += TPS_ROWS_PAGE_SIZE;
+  }
+  return { data: allRows, error: null };
+};
+
 // Dua tahun pemilu yang dibandingkan di slide analisa — PKS baru punya data
 // Pileg 2019 & 2024, jadi tetap (bukan otomatis dari data yang ada) supaya
 // slide perbandingan tidak muncul untuk kombinasi tahun yang tidak relevan.
@@ -2125,12 +2146,14 @@ const PksManualInput = ({ kelurahanList, candidateMasterList, onSaved, toast, de
     if (!kelurahanId || !electionYear) return;
     let cancelled = false;
     setLoadingExisting(true);
-    supabase
-      .from('pemilih_suara_caleg_tps')
-      .select('tps_number, candidate_number, candidate_name, votes')
-      .eq('kelurahan_id', kelurahanId)
-      .eq('election_year', electionYear)
-      .order('tps_number')
+    fetchAllTpsRows(() =>
+      supabase
+        .from('pemilih_suara_caleg_tps')
+        .select('tps_number, candidate_number, candidate_name, votes')
+        .eq('kelurahan_id', kelurahanId)
+        .eq('election_year', electionYear)
+        .order('tps_number')
+    )
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
