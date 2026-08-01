@@ -14,7 +14,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Loader2, CalendarX, CheckCircle } from 'lucide-react';
 
-const REASONS = ['Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const REASONS = ['Cuti Tahunan', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+
+const REASON_TO_LEAVE_TYPE = {
+  'Cuti Tahunan': 'annual',
+  'Sakit': 'sick',
+  'Libur': 'weekly_off',
+  'Training': 'training',
+  'Izin Pribadi': 'personal',
+  'Lainnya': 'other'
+};
 
 const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
   const { toast } = useToast();
@@ -61,7 +70,8 @@ const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
       end_date: formattedEndDate,
       start_time: formData.is_partial ? `${formData.start_time}:00` : null,
       end_time: formData.is_partial ? `${formData.end_time}:00` : null,
-      reason: formData.notes ? `${formData.reason} - ${formData.notes}` : formData.reason
+      reason: formData.notes ? `${formData.reason} - ${formData.notes}` : formData.reason,
+      leave_type: REASON_TO_LEAVE_TYPE[formData.reason] || 'other'
     };
 
     console.log("Submitting Time Off Payload:", payload);

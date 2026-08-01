@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { getTherapistAnnualLeaveBalance } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +11,14 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 
 import {
   User, Bell, CalendarOff, KeyRound,
   Camera, Loader2, Plus, Trash2, ChevronRight,
-  Check, X, Eye, EyeOff
+  Check, X, Eye, EyeOff, Umbrella
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -322,13 +326,23 @@ const TabNotifikasi = ({ userId }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: CUTI
 // ═══════════════════════════════════════════════════════════════════════════════
+const LEAVE_REASONS = [
+  { value: 'annual', label: 'Cuti Tahunan' },
+  { value: 'sick', label: 'Sakit' },
+  { value: 'weekly_off', label: 'Libur' },
+  { value: 'training', label: 'Training' },
+  { value: 'personal', label: 'Izin Pribadi' },
+  { value: 'other', label: 'Lainnya' },
+];
+
 const TabCuti = ({ therapistId }) => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
-  const [form, setForm] = useState({ start_date: '', end_date: '', reason: '' });
+  const [form, setForm] = useState({ start_date: '', end_date: '', leave_type: 'annual', reason: '' });
+  const [balance, setBalance] = useState(null);
 
   const fetchCuti = async () => {
     setLoading(true);
@@ -341,7 +355,12 @@ const TabCuti = ({ therapistId }) => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchCuti(); }, [therapistId]);
+  const fetchBalance = async () => {
+    const { data } = await getTherapistAnnualLeaveBalance(therapistId);
+    setBalance(data || null);
+  };
+
+  useEffect(() => { fetchCuti(); fetchBalance(); }, [therapistId]);
 
   const handleAdd = async () => {
     if (!form.start_date || !form.end_date) {
@@ -353,11 +372,13 @@ const TabCuti = ({ therapistId }) => {
       return;
     }
     setSaving(true);
+    const reasonLabel = LEAVE_REASONS.find(r => r.value === form.leave_type)?.label || 'Lainnya';
     const { error } = await supabase.from('therapist_time_off').insert({
       therapist_id: therapistId,
       start_date: form.start_date,
       end_date: form.end_date,
-      reason: form.reason || null,
+      leave_type: form.leave_type,
+      reason: form.reason ? `${reasonLabel} - ${form.reason}` : reasonLabel,
       created_at: new Date().toISOString(),
     });
     setSaving(false);
@@ -365,9 +386,10 @@ const TabCuti = ({ therapistId }) => {
       toast({ variant: 'destructive', title: 'Gagal menambah cuti', description: error.message });
     } else {
       toast({ title: 'Cuti berhasil ditambahkan' });
-      setForm({ start_date: '', end_date: '', reason: '' });
+      setForm({ start_date: '', end_date: '', leave_type: 'annual', reason: '' });
       setShowForm(false);
       fetchCuti();
+      fetchBalance();
     }
   };
 
@@ -380,6 +402,7 @@ const TabCuti = ({ therapistId }) => {
     } else {
       toast({ title: 'Cuti dihapus' });
       setList(l => l.filter(x => x.id !== id));
+      fetchBalance();
     }
   };
 
@@ -392,6 +415,21 @@ const TabCuti = ({ therapistId }) => {
 
   return (
     <div className="space-y-4">
+      {/* Ringkasan sisa cuti tahunan */}
+      {balance && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-100 bg-emerald-50/60">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <Umbrella className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Sisa Cuti Tahunan {balance.year}</p>
+            <p className="text-2xl font-bold text-emerald-800 leading-none mt-0.5">
+              {balance.remaining} <span className="text-sm font-medium text-emerald-600">/ {balance.quota} hari</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Tombol tambah */}
       {!showForm && (
         <Button onClick={() => setShowForm(true)} variant="outline" className="w-full rounded-xl border-dashed border-blue-300 text-blue-600 hover:bg-blue-50">
@@ -414,8 +452,17 @@ const TabCuti = ({ therapistId }) => {
             </div>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Alasan (opsional)</Label>
-            <Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Sakit, keperluan keluarga, dll." className="rounded-xl text-sm" />
+            <Label className="text-xs text-slate-500">Jenis Cuti</Label>
+            <Select value={form.leave_type} onValueChange={v => setForm(f => ({ ...f, leave_type: v }))}>
+              <SelectTrigger className="rounded-xl text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {LEAVE_REASONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-slate-500">Catatan (opsional)</Label>
+            <Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Keterangan tambahan..." className="rounded-xl text-sm" />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleAdd} disabled={saving} className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm">
