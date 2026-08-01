@@ -946,8 +946,8 @@ const end = formatLocal(lastDay);
                      <td className="px-5 py-4 text-center max-w-[220px] whitespace-normal text-slate-600">{renderDiagnoses(recap.diagnosis)}</td>
                      <td className="px-5 py-4 text-center text-slate-600">{serviceLabel}</td>
                      <td className="px-5 py-4 text-center">
-                        <div className="inline-block max-w-full" onClick={(e) => e.stopPropagation()}>
-                          <Badge className={cn("text-sm font-medium px-3 py-1 rounded-md border-0 transition-none whitespace-normal break-words text-center leading-tight", getPremiumPastelBadge(patientTypeLabel))}>
+                        <div className="max-w-full" onClick={(e) => e.stopPropagation()}>
+                          <Badge className={cn("!inline-block max-w-full text-sm font-medium px-3 py-1 rounded-md border-0 transition-none whitespace-normal break-words [overflow-wrap:anywhere] text-center leading-tight", getPremiumPastelBadge(patientTypeLabel))}>
                             {patientTypeLabel}
                           </Badge>
                         </div>
