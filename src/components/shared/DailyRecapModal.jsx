@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PackageInfoCard from './PackageInfoCard';
 import ExtendPackageModal from './ExtendPackageModal';
+import { supabase } from '@/lib/customSupabaseClient';
 import { 
     getPhysiotherapists, 
     createDailyRecap, 
@@ -162,6 +163,11 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    // Terkunci kalau recap ini SUDAH tertaut ke paket dengan nominal Rp 0 (sesi
+    // pakai kuota paket, bukan transaksi pembelian) - dicek langsung ke DB
+    // (bukan dari initialData yang bisa basi) supaya admin tidak bisa lagi
+    // salah ketik nominal di sesi yang seharusnya gratis.
+    const [isPackageSessionLocked, setIsPackageSessionLocked] = useState(false);
 
     // DEBUG: Log initial data
     useEffect(() => {
@@ -170,6 +176,25 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
             console.log("DailyRecapModal initialData:", initialData);
         }
     }, [isOpen, initialData, mode]);
+
+    useEffect(() => {
+        if (!isOpen || mode !== 'edit' || !initialData?.id) {
+            setIsPackageSessionLocked(false);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            const { data, error } = await supabase
+                .from('daily_recaps')
+                .select('package_tracking_id, amount, amount_original')
+                .eq('id', initialData.id)
+                .maybeSingle();
+            if (cancelled || error || !data) return;
+            const currentAmount = Number(data.amount_original ?? data.amount ?? 0);
+            setIsPackageSessionLocked(!!data.package_tracking_id && currentAmount === 0);
+        })();
+        return () => { cancelled = true; };
+    }, [isOpen, mode, initialData?.id]);
 
     const initializeForm = () => {
         try {
@@ -1136,13 +1161,18 @@ setFormData({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label>Nominal (Rp)</Label>
-                                        <Input type="number" value={formData.amount ?? ''} onChange={e => handleChange('amount', e.target.value)} placeholder="0"/>
+                                        <Input type="number" value={formData.amount ?? ''} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={isPackageSessionLocked}/>
                                     </div>
                                     <div className="space-y-1">
                                         <Label>Metode Pembayaran</Label>
-                                        <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} />
+                                        <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked} />
                                     </div>
                                 </div>
+                                {isPackageSessionLocked && (
+                                    <p className="text-xs text-slate-500 -mt-1">
+                                        Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
+                                    </p>
+                                )}
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
                                     <div className="space-y-1">
