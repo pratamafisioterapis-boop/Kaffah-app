@@ -895,7 +895,7 @@ const end = formatLocal(lastDay);
           <table className="w-full text-xs text-left table-fixed">
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
-                <th className="px-2 py-3 text-center text-slate-700 font-semibold w-[110px]">Tanggal</th>
+                <th className="px-2 py-3 text-center text-slate-700 font-semibold w-[130px]">Tanggal</th>
 
 <th className="px-2 py-3 text-center text-slate-700 font-semibold w-[140px]">Nama Pasien</th>
 
@@ -939,7 +939,7 @@ const end = formatLocal(lastDay);
                     className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-all duration-200 cursor-pointer hover:bg-transparent")}
                     onClick={() => handleRowClick(recap)}
                   >
-                     <td className="px-5 py-4 text-center text-black font-normal whitespace-nowrap">
+                     <td className="px-5 py-4 text-center text-black font-normal whitespace-normal break-words">
   {formatDateIndonesian(recap.date)}
 </td>
                      <td className="px-5 py-4 text-center">{renderPatientName(recap)}</td>
