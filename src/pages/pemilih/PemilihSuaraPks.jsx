@@ -1301,6 +1301,20 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
   const [editingTps, setEditingTps] = useState(null); // { tps, values: { [candidate_number]: votes } } atau null
   const [addingTps, setAddingTps] = useState(false);
   const [savingTps, setSavingTps] = useState(false);
+  // Tabel Rincian per TPS sengaja TIDAK diubah di layar sempit (PWA/HP) — kolom
+  // caleg tetap sama rata (tableLayout fixed) supaya semua kolom kelihatan tanpa
+  // scroll horizontal, meski nama caleg jadi terpotong per-huruf. Di layar desktop
+  // kolom dilebarkan (tableLayout auto + minWidth) supaya nama caleg terbaca utuh,
+  // sambil tetap pakai warna pastel per kolom yang sama seperti di HP.
+  const [isDesktopTable, setIsDesktopTable] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 769px)').matches
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 769px)');
+    const handler = (e) => setIsDesktopTable(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     if (!kelurahanId && availableKelurahan.length > 0) setKelurahanId(availableKelurahan[0].id);
@@ -1522,7 +1536,13 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
               </button>
             </div>
             <div className="p-table-wrap p-table-wrap-scroll">
-              <table className="p-table" style={{ tableLayout: 'fixed', minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}` }}>
+              <table
+                className="p-table"
+                style={{
+                  tableLayout: isDesktopTable ? 'auto' : 'fixed',
+                  minWidth: 0, border: `1px solid ${TPS_TABLE_BORDER}`,
+                }}
+              >
                 <thead className="p-table-sticky-head">
                   <tr>
                     <th style={{ width: 44, textAlign: 'center', verticalAlign: 'middle', fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29', border: `1px solid ${TPS_TABLE_BORDER}` }}>TPS</th>
@@ -1530,8 +1550,13 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                       <th
                         key={c.number}
                         style={{
-                          textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: 9.5, lineHeight: 1.25,
-                          verticalAlign: 'middle', fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29', padding: '10px 4px',
+                          textAlign: 'center', whiteSpace: 'normal',
+                          wordBreak: isDesktopTable ? 'normal' : 'break-word',
+                          overflowWrap: 'break-word',
+                          minWidth: isDesktopTable ? 78 : undefined,
+                          fontSize: isDesktopTable ? 11 : 9.5, lineHeight: 1.25,
+                          verticalAlign: 'middle', fontWeight: 900, letterSpacing: '-0.01em', color: '#1a1d29',
+                          padding: isDesktopTable ? '10px 8px' : '10px 4px',
                           border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number],
                         }}
                         title={c.number === 0 ? 'Suara Partai (tanpa calon)' : c.name}
@@ -1548,7 +1573,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                     <tr key={r.tps}>
                       <td style={{ fontWeight: 700, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>{String(r.tps).padStart(2, '0')}</td>
                       {displayedCandidates.map((c) => (
-                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
+                        <td key={c.number} style={{ textAlign: 'center', fontFamily: 'monospace', color: '#4b5563', padding: '10px 4px', fontSize: 12, minWidth: isDesktopTable ? 78 : undefined, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
                           {r.byCandidate[c.number] ?? '-'}
                         </td>
                       ))}
@@ -1563,7 +1588,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
                   <tr>
                     <td style={{ fontWeight: 800, padding: '10px 6px', textAlign: 'center', border: `1px solid ${TPS_TABLE_BORDER}` }}>Total</td>
                     {displayedCandidates.map((c) => (
-                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
+                      <td key={c.number} style={{ textAlign: 'center', fontWeight: 800, padding: '10px 4px', fontSize: 12, minWidth: isDesktopTable ? 78 : undefined, border: `1px solid ${TPS_TABLE_BORDER}`, background: candidateColorMap[c.number] }}>
                         {columnTotals.byCandidate[c.number].toLocaleString('id-ID')}
                       </td>
                     ))}
