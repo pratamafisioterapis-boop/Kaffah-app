@@ -111,7 +111,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
             {clinic?.stamp_url && (
               <img
                 src={clinic.stamp_url}
-                style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '-10px', maxHeight: '62px', maxWidth: '62px', objectFit: 'contain', opacity: 0.92 }}
+                style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '62px', maxWidth: '62px', objectFit: 'contain', opacity: 0.92 }}
               />
             )}
           </div>

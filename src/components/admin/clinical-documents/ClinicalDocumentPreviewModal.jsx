@@ -6,6 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Printer, Download, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
+// Waits for every <img> inside the document (signature, stamp, logo) to
+// actually finish loading before html2canvas rasterizes it — a fixed delay
+// isn't reliable for remote Supabase Storage images on a slow/first fetch,
+// and html2canvas silently captures a blank box for an unloaded <img>.
+const waitForImages = (root) => {
+  const imgs = Array.from(root.querySelectorAll('img'));
+  return Promise.all(
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise((resolve) => {
+        const done = () => {
+          img.removeEventListener('load', done);
+          img.removeEventListener('error', done);
+          resolve();
+        };
+        img.addEventListener('load', done);
+        img.addEventListener('error', done);
+        setTimeout(done, 8000);
+      });
+    })
+  );
+};
+
 // Generic A4 preview / print / PDF export shell shared by clinical document
 // templates (Resume Medis, Surat Keterangan). Mirrors the InvoiceModal pattern.
 const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, children }) => {
@@ -17,7 +40,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
     const element = componentRef.current;
     if (!element) throw new Error('Elemen dokumen tidak ditemukan');
 
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await waitForImages(element);
 
     const canvas = await html2canvas(element, {
       scale: 2,
