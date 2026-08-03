@@ -5238,6 +5238,79 @@ export const getTherapistTimeOff = async (therapistId) => {
 
   }, 'getTherapistTimeOff');
 };
+
+// Jatah cuti tahunan per terapis (hari kerja per periode), berlaku sama untuk semua terapis
+export const ANNUAL_LEAVE_QUOTA_DAYS = 12;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// Hitung periode cuti berjalan berbasis tanggal masuk kerja (anniversary date), bukan tahun kalender.
+// Periode pertama (dari join_date sampai anniversary berikutnya) diberi kuota pro-rata jika kurang dari 1 tahun penuh.
+export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate = new Date()) => {
+  return safeQuery(async () => {
+    const { data: therapist, error: therapistError } = await supabase
+      .from('physiotherapists')
+      .select('join_date')
+      .eq('id', therapistId)
+      .single();
+
+    if (therapistError) return { error: therapistError };
+
+    const ref = new Date(referenceDate);
+    const joinDate = therapist?.join_date ? new Date(therapist.join_date) : null;
+
+    let periodStart;
+    if (joinDate && !isNaN(joinDate.getTime())) {
+      periodStart = new Date(joinDate);
+      periodStart.setFullYear(ref.getFullYear());
+      if (periodStart > ref) periodStart.setFullYear(periodStart.getFullYear() - 1);
+      if (periodStart < joinDate) periodStart = new Date(joinDate);
+    } else {
+      // Fallback ke tahun kalender jika join_date tidak tersedia
+      periodStart = new Date(ref.getFullYear(), 0, 1);
+    }
+
+    const periodEnd = new Date(periodStart);
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    periodEnd.setDate(periodEnd.getDate() - 1);
+
+    const toISO = (d) => d.toISOString().slice(0, 10);
+    const periodStartISO = toISO(periodStart);
+    const periodEndISO = toISO(periodEnd);
+
+    // Pro-rata kuota untuk periode pertama yang kurang dari 1 tahun penuh
+    const periodDays = Math.round((periodEnd - periodStart) / MS_PER_DAY) + 1;
+    const quota = periodDays < 360
+      ? Math.round(ANNUAL_LEAVE_QUOTA_DAYS * (periodDays / 365))
+      : ANNUAL_LEAVE_QUOTA_DAYS;
+
+    const { data, error } = await supabase
+      .from('therapist_time_off')
+      .select('start_date, end_date, start_time, end_time')
+      .eq('therapist_id', therapistId)
+      .eq('leave_type', 'annual')
+      .lte('start_date', periodEndISO)
+      .gte('end_date', periodStartISO);
+
+    if (error) return { error };
+
+    const usedDays = (data || []).reduce((total, row) => {
+      // Cuti parsial (dengan jam mulai/selesai) dihitung setengah hari
+      if (row.start_time && row.end_time) return total + 0.5;
+
+      const start = new Date(Math.max(new Date(row.start_date), periodStart));
+      const end = new Date(Math.min(new Date(row.end_date), periodEnd));
+      const days = Math.round((end - start) / MS_PER_DAY) + 1;
+      return total + Math.max(days, 0);
+    }, 0);
+
+    const remaining = Math.max(quota - usedDays, 0);
+
+    return {
+      data: { quota, used: usedDays, remaining, periodStart: periodStartISO, periodEnd: periodEndISO },
+      error: null
+    };
+  }, 'getTherapistAnnualLeaveBalance');
+};
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
     if (!payload?.id) {
@@ -5531,6 +5604,7 @@ export const addTherapistTimeOff = async (payload) => {
       start_date: payload.start_date,
       end_date: payload.end_date,
       reason: payload.reason || null,
+      leave_type: payload.leave_type || 'other',
       start_time: payload.start_time || null,
       end_time: payload.end_time || null,
       created_by: userId || null

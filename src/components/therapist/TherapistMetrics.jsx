@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Calendar, 
+import {
+  Users,
+  Calendar,
   Target,
   AlertCircle,
   RefreshCw,
   Ban,
   CalendarDays,
-  Lightbulb
+  Lightbulb,
+  Umbrella
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -32,7 +33,9 @@ const TherapistMetrics = ({ therapist, userId }) => {
     unfilledSoapCount: 0,
     activeTargetPeriod: null,
     excludedTypes: [],
-    targetStatus: null
+    targetStatus: null,
+    annualLeaveRemaining: 0,
+    annualLeaveQuota: 0
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,13 +90,15 @@ const [
   activeTargetRes,
   unfilledRes,
   patientTypeRes,
-  todayAppointmentsRes
+  todayAppointmentsRes,
+  leaveBalanceRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
   getUnfilledSOAPVisits(null, therapist.id, startCustom, endCustom),
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom }),
-  getAppointments({ date: todayISO, therapistId: therapist.id })
+  getAppointments({ date: todayISO, therapistId: therapist.id }),
+  getTherapistAnnualLeaveBalance(therapist.id)
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -141,7 +146,9 @@ const rawMonthlyRecaps = recapsRes.data || [];
         unfilledSoapCount: unfilledCount,
         activeTargetPeriod: targetInfo.period,
         excludedTypes: targetInfo.excluded,
-        targetStatus: targetInfo.status
+        targetStatus: targetInfo.status,
+        annualLeaveRemaining: leaveBalanceRes?.data?.remaining ?? 0,
+        annualLeaveQuota: leaveBalanceRes?.data?.quota ?? 0
       });
 
     } catch (error) {
@@ -189,8 +196,8 @@ const rawMonthlyRecaps = recapsRes.data || [];
         </Button>
       </div>
 
-      {/* ── Row 1: 4 stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── Row 1: stat cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
 
         {/* Card: Jadwal Hari Ini */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
@@ -278,6 +285,26 @@ const rawMonthlyRecaps = recapsRes.data || [];
             <div
               className={cn("h-full rounded-full transition-all duration-700", progressColors.bar)}
               style={{ width: `${progressCapped}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Card: Sisa Cuti Tahunan */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cuti Tahunan</span>
+            <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
+              <Umbrella className="w-4 h-4 text-teal-600" />
+            </div>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.annualLeaveRemaining}</p>
+            <p className="text-xs text-slate-400 mt-1">dari {metrics.annualLeaveQuota} hari tersisa</p>
+          </div>
+          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-teal-400 rounded-full"
+              style={{ width: `${metrics.annualLeaveQuota ? Math.min((metrics.annualLeaveRemaining / metrics.annualLeaveQuota) * 100, 100) : 0}%` }}
             />
           </div>
         </div>
