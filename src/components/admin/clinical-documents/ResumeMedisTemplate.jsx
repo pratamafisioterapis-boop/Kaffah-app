@@ -178,7 +178,7 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
               {clinic?.stamp_url && (
                 <img
                   src={clinic.stamp_url}
-                  style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '8px', maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }}
+                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }}
                 />
               )}
             </div>
