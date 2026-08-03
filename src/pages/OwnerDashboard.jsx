@@ -52,9 +52,10 @@ import {
   fetchTodayNewPatients,
   fetchTodayReturningPatients,
   fetchAllTherapists,
-  fetchTodaySessionsPerTherapist
+  fetchTodaySessionsPerTherapist,
+  getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
-import { getUnfilledSOAPVisits, getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
+import { getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -294,7 +295,9 @@ setTherapists(enrichedTherapists);
     }
   }, [toast]);
 
-  // SOAP belum diisi per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
+  // SOAP belum diisi per terapis. Menggunakan RPC get_clinic_therapists_soap_lock_status
+  // yang sama dengan Booking Calendar, agar kedua tempat menampilkan angka yang konsisten
+  // (periode per-terapis, clamp ke hari ini, dan grace period 60 menit setelah sesi selesai).
   const loadUnfilledSoapCounts = useCallback(async () => {
     if (!therapists.length) {
       setUnfilledSoapCounts({});
@@ -303,21 +306,17 @@ setTherapists(enrichedTherapists);
     }
     setIsLoadingSoap(true);
     try {
-      const results = await Promise.all(
-        therapists.map(async (t) => {
-          const { count } = await getUnfilledSOAPVisits(null, t.id, dateRange.startDate, dateRange.endDate);
-          return { id: t.id, count: count || 0 };
-        })
-      );
+      const { data, error } = await getClinicTherapistsSoapLockStatus();
+      if (error) throw error;
       const counts = {};
-      results.forEach(r => { counts[r.id] = r.count; });
+      (data || []).forEach(r => { counts[r.therapist_id] = r.unfilled_count || 0; });
       setUnfilledSoapCounts(counts);
     } catch (error) {
       console.error("Failed to fetch unfilled SOAP counts:", error);
     } finally {
       setIsLoadingSoap(false);
     }
-  }, [therapists, dateRange]);
+  }, [therapists]);
 
   // Pasien unik & pasien kembali per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
   const loadPatientMetrics = useCallback(async () => {
