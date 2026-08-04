@@ -52,25 +52,21 @@ const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
 // Input Suara per TPS untuk akun DPC — sama fungsinya dengan tab "Detail per
 // TPS" di modul admin (tambah/koreksi angka per TPS), ditambah kemampuan
 // menghapus satu TPS sekaligus, TANPA grafik apapun.
-const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, defaultYear, toast }) => {
+const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, knownYears, defaultYear, toast }) => {
   const [year, setYear] = useState(defaultYear);
   useEffect(() => { setYear(defaultYear); }, [defaultYear]);
 
+  // Tahun di dropdown ini tidak boleh cuma dari roster caleg (calegMasterRows)
+  // — dapil lama yang sudah punya data suara sebelum fitur roster ini ada
+  // (mis. Pileg 2019/2024) belum tentu punya baris roster sama sekali, jadi
+  // knownYears (tahun-tahun yang sudah ada data suaranya, dari PemilihDpcApp)
+  // ikut disertakan supaya tahun itu tetap bisa dipilih.
   const yearOptions = useMemo(() => {
     const years = new Set(calegMasterRows.map((c) => c.election_year));
+    (knownYears || []).forEach((y) => years.add(y));
     years.add(year);
     return Array.from(years).sort((a, b) => b - a);
-  }, [calegMasterRows, year]);
-
-  // Nomor 0 (Suara Partai tanpa calon) selalu tersedia sebagai kolom input,
-  // di luar caleg yang terdaftar di roster.
-  const candidateMasterList = useMemo(() => {
-    const map = new Map([[0, { number: 0, name: 'Suara Partai' }]]);
-    calegMasterRows
-      .filter((c) => c.election_year === year)
-      .forEach((c) => map.set(c.candidate_number, { number: c.candidate_number, name: c.candidate_name }));
-    return Array.from(map.values()).sort((a, b) => a.number - b.number);
-  }, [calegMasterRows, year]);
+  }, [calegMasterRows, knownYears, year]);
 
   const [kelurahanId, setKelurahanId] = useState('');
   useEffect(() => {
@@ -107,6 +103,25 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, def
   }, [kelurahanId, year, toast]);
 
   useEffect(() => { reloadTpsRows(); }, [reloadTpsRows]);
+
+  // Nomor 0 (Suara Partai tanpa calon) selalu tersedia sebagai kolom input.
+  // Roster caleg (calegMasterRows) diseed dulu, lalu dilengkapi dari
+  // tpsRows yang baru dimuat — kelurahan/tahun yang datanya sudah ada dari
+  // sebelum fitur roster ini dibuat (mis. Pileg 2019/2024) tetap harus
+  // menampilkan semua kolom calegnya walau roster masih kosong, supaya
+  // datanya tetap bisa dilihat/diedit/dihapus di sini.
+  const candidateMasterList = useMemo(() => {
+    const map = new Map([[0, { number: 0, name: 'Suara Partai' }]]);
+    calegMasterRows
+      .filter((c) => c.election_year === year)
+      .forEach((c) => map.set(c.candidate_number, { number: c.candidate_number, name: c.candidate_name }));
+    tpsRows.forEach((r) => {
+      if (!map.has(r.candidate_number)) {
+        map.set(r.candidate_number, { number: r.candidate_number, name: r.candidate_name || 'Suara Partai' });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.number - b.number);
+  }, [calegMasterRows, year, tpsRows]);
 
   const table = useMemo(() => {
     const byTps = new Map();

@@ -15,7 +15,7 @@ import {
 // komponen yang sama tapi dengan manageDapil=false — dapilnya sudah
 // ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
-  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, defaultYear, toast, onChanged, manageDapil = true,
+  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, knownYears, defaultYear, toast, onChanged, manageDapil = true,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -51,7 +51,7 @@ const PemilihSuaraPksSetup = ({
       {selectedDapil ? (
         <>
           <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} toast={toast} onChanged={onChanged} />
-          <CalegSection selectedDapil={selectedDapil} kelurahanCount={kelurahanList.length} calegMasterRows={calegMasterRows} defaultYear={defaultYear} toast={toast} onChanged={onChanged} />
+          <CalegSection selectedDapil={selectedDapil} kelurahanCount={kelurahanList.length} calegMasterRows={calegMasterRows} knownYears={knownYears} defaultYear={defaultYear} toast={toast} onChanged={onChanged} />
         </>
       ) : (
         <div className="p-card" style={{ padding: 40, textAlign: 'center' }}>
@@ -375,15 +375,21 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
   );
 };
 
-const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, defaultYear, toast, onChanged }) => {
+const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYears, defaultYear, toast, onChanged }) => {
   const [year, setYear] = useState(defaultYear);
   useEffect(() => { setYear(defaultYear); }, [selectedDapil, defaultYear]);
 
+  // Tahun di dropdown ini tidak boleh cuma dari roster caleg (calegMasterRows)
+  // — dapil lama yang sudah punya data suara sebelum fitur roster ini ada
+  // (mis. Pileg 2019/2024) belum tentu punya baris roster sama sekali, jadi
+  // knownYears (tahun-tahun yang sudah ada data suaranya) ikut disertakan
+  // supaya tahun itu tetap bisa dipilih.
   const yearOptions = useMemo(() => {
     const years = new Set(calegMasterRows.map((c) => c.election_year));
+    (knownYears || []).forEach((y) => years.add(y));
     years.add(year);
     return Array.from(years).sort((a, b) => b - a);
-  }, [calegMasterRows, year]);
+  }, [calegMasterRows, knownYears, year]);
 
   const rowsForYear = useMemo(
     () => calegMasterRows.filter((c) => c.election_year === year).sort((a, b) => a.candidate_number - b.candidate_number),
