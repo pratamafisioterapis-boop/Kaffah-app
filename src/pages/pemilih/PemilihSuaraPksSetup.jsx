@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
+import { BALIKPAPAN_KECAMATAN_DEFAULTS } from '@/data/balikpapanKecamatan';
 import PemilihSelect from './PemilihSelect';
 import {
   Loader2, Plus, Trash2, Pencil, Check, X, MapPin, ListChecks, Users, Save, Info,
@@ -15,7 +16,7 @@ import {
 // komponen yang sama tapi dengan manageDapil=false — dapilnya sudah
 // ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
-  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
+  dapilList, selectedDapil, onSelectDapil, kelurahanList, allKelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
 }) => {
   // Tahun pemilu dipakai bersama oleh Daftar Caleg maupun Kelurahan/Jumlah
   // TPS — jumlah TPS per kelurahan bisa berbeda tiap periode, jadi kedua
@@ -56,7 +57,7 @@ const PemilihSuaraPksSetup = ({
       </div>
 
       {manageDapil ? (
-        <DapilSection dapilList={dapilList} selectedDapil={selectedDapil} onSelectDapil={onSelectDapil} toast={toast} onChanged={onChanged} />
+        <DapilSection dapilList={dapilList} selectedDapil={selectedDapil} onSelectDapil={onSelectDapil} allKelurahanList={allKelurahanList} toast={toast} onChanged={onChanged} />
       ) : (
         <div className="p-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
           <MapPin size={16} color="#ea580c" style={{ flexShrink: 0 }} />
@@ -113,11 +114,60 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
   </div>
 );
 
-const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, toast, onChanged }) => {
+const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, allKelurahanList, toast, onChanged }) => {
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [applyingDefault, setApplyingDefault] = useState(null);
+
+  // Status tiap kecamatan resmi Kota Balikpapan terhadap dapil yang sudah
+  // ada di sini — dipakai tombol "Tambahkan Kelurahan Default" di bawah,
+  // baik untuk bikin dapil barunya sekaligus maupun cuma melengkapi
+  // kelurahan yang belum ada di dapil yang sudah dibuat.
+  const kecamatanDefaultStatus = useMemo(() => BALIKPAPAN_KECAMATAN_DEFAULTS.map((def) => {
+    const dapil = dapilList.find((d) => d.nama.trim().toLowerCase() === def.nama.toLowerCase());
+    if (!dapil) return { ...def, dapilId: null, missingCount: def.kelurahan.length };
+    const existingNames = new Set(
+      (allKelurahanList || []).filter((k) => k.kecamatan_id === dapil.id).map((k) => k.nama.trim().toLowerCase())
+    );
+    const missingCount = def.kelurahan.filter((nama) => !existingNames.has(nama.toLowerCase())).length;
+    return { ...def, dapilId: dapil.id, missingCount };
+  }), [dapilList, allKelurahanList]);
+
+  const applyKecamatanDefault = async (def) => {
+    setApplyingDefault(def.nama);
+    let dapilId = def.dapilId;
+    if (!dapilId) {
+      const { data, error } = await supabase.from('pemilih_kecamatan').insert({ nama: def.nama }).select('id').single();
+      if (error) {
+        toast({ variant: 'destructive', title: 'Gagal menambah dapil', description: error.message });
+        setApplyingDefault(null);
+        return;
+      }
+      dapilId = data.id;
+    }
+    const existingNames = new Set(
+      (allKelurahanList || []).filter((k) => k.kecamatan_id === dapilId).map((k) => k.nama.trim().toLowerCase())
+    );
+    const missing = def.kelurahan.filter((nama) => !existingNames.has(nama.toLowerCase()));
+    if (missing.length > 0) {
+      const { error } = await supabase.from('pemilih_kelurahan').insert(missing.map((nama) => ({ nama, kecamatan_id: dapilId })));
+      if (error) {
+        toast({ variant: 'destructive', title: 'Gagal menambah kelurahan', description: error.message });
+        setApplyingDefault(null);
+        return;
+      }
+    }
+    setApplyingDefault(null);
+    await onChanged();
+    onSelectDapil(dapilId);
+    toast({
+      title: missing.length > 0
+        ? `${missing.length} kelurahan default ditambahkan untuk ${def.nama}`
+        : `${def.nama} sudah lengkap`,
+    });
+  };
 
   const addDapil = async () => {
     if (!newName.trim()) return;
@@ -201,7 +251,7 @@ const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, toast, onChange
         {dapilList.length === 0 && <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Belum ada dapil.</p>}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
         <input
           className="p-input"
           style={{ flex: 1, minWidth: 200 }}
@@ -213,6 +263,35 @@ const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, toast, onChange
         <button className="p-btn-primary" onClick={addDapil} disabled={saving || !newName.trim()}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />} Tambah Dapil
         </button>
+      </div>
+
+      <div style={{ paddingTop: 14, borderTop: '1px dashed var(--p-border)' }}>
+        <p style={{ margin: '0 0 10px', fontSize: 11.5, color: '#9ca3af' }}>
+          Atau pilih salah satu dari 6 kecamatan resmi Kota Balikpapan — otomatis membuat dapilnya (kalau belum ada) sekaligus mengisi daftar kelurahannya. Nama kelurahan bisa diedit/dihapus lagi kalau perlu.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {kecamatanDefaultStatus.map((def) => {
+            const complete = def.dapilId && def.missingCount === 0;
+            const busy = applyingDefault === def.nama;
+            return (
+              <button
+                key={def.nama}
+                type="button"
+                onClick={() => applyKecamatanDefault(def)}
+                disabled={busy || complete}
+                className="p-btn-ghost"
+                style={{ fontWeight: 600, opacity: complete ? 0.6 : 1, cursor: complete ? 'default' : 'pointer' }}
+                title={complete ? `${def.nama} sudah lengkap` : `${def.kelurahan.length} kelurahan default`}
+              >
+                {busy ? <Loader2 className="animate-spin" size={13} /> : complete ? <Check size={13} color="#16a34a" /> : <Plus size={13} />}
+                {def.nama}
+                {!complete && def.dapilId && (
+                  <span style={{ color: '#d97706', fontWeight: 700 }}>({def.missingCount} belum ada)</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
