@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -86,7 +87,9 @@ const PemilihDashboard = () => {
       const { data: tim } = await supabase.from('pemilih_tim_sukses').select('target_suara');
       setTimSuksesTotalTarget((tim || []).reduce((sum, t) => sum + (t.target_suara || 0), 0));
 
-      const { data: dpt } = await supabase.from('pemilih_dpt_periode').select('tahun, jumlah, pemilih_tps(kelurahan_id)');
+      // Tanpa paginasi eksplisit, select ini kena batas 1000 baris PostgREST
+      // — sudah ~950 baris di produksi untuk satu kecamatan saja.
+      const { data: dpt } = await fetchAllRows(() => supabase.from('pemilih_dpt_periode').select('tahun, jumlah, pemilih_tps(kelurahan_id)'));
       setDptRows(dpt || []);
 
       const { data: relawan } = await supabase.rpc('pemilih_relawan_contribution_stats');

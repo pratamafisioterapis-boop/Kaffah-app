@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
@@ -14,7 +15,9 @@ const PemilihSetupTps = () => {
   const fetchAll = async () => {
     setLoading(true);
     const { data: kel } = await supabase.from('pemilih_kelurahan').select('id, nama').order('nama');
-    const { data: tps } = await supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps');
+    // Tanpa paginasi eksplisit, select ini kena batas 1000 baris PostgREST —
+    // satu kecamatan saja sudah >500 TPS di data produksi.
+    const { data: tps } = await fetchAllRows(() => supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps'));
     setKelurahanList(kel || []);
     setTpsRows(tps || []);
     const counts = {};

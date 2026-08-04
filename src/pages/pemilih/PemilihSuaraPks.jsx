@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell, LabelList,
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { useToast } from '@/components/ui/use-toast';
 import PemilihSelect from './PemilihSelect';
 import {
@@ -59,26 +60,10 @@ const chunkArray = (arr, size) => {
   return out;
 };
 
-// Supabase/PostgREST membatasi select tanpa .range() ke jumlah baris maksimum
-// di server (umumnya 1000). Rincian per TPS gampang melewati itu (jumlah TPS x
-// jumlah caleg), jadi baris lama akan diam-diam terpotong tanpa error kalau
-// tidak di-paginate secara eksplisit di sini.
-const TPS_ROWS_PAGE_SIZE = 1000;
-const fetchAllTpsRows = async (buildQuery) => {
-  let allRows = [];
-  let from = 0;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const to = from + TPS_ROWS_PAGE_SIZE - 1;
-    // eslint-disable-next-line no-await-in-loop
-    const { data, error } = await buildQuery().range(from, to);
-    if (error) return { data: null, error };
-    allRows = allRows.concat(data || []);
-    if (!data || data.length < TPS_ROWS_PAGE_SIZE) break;
-    from += TPS_ROWS_PAGE_SIZE;
-  }
-  return { data: allRows, error: null };
-};
+// Rincian per TPS gampang melewati batas 1000 baris PostgREST (jumlah TPS x
+// jumlah caleg) — pakai fetchAllRows (src/lib/supabasePaginate.js) untuk
+// semua query di sini yang bisa melewati itu.
+const fetchAllTpsRows = fetchAllRows;
 
 // Dua tahun pemilu yang dibandingkan di slide analisa — PKS baru punya data
 // Pileg 2019 & 2024, jadi tetap (bukan otomatis dari data yang ada) supaya
@@ -275,11 +260,14 @@ const PemilihSuaraPks = () => {
 
   const fetchAll = async () => {
     setLoading(true);
+    // pemilih_suara_caleg tumbuh langsung dengan jumlah dapil (dapil x
+    // kelurahan x caleg), jadi wajib di-paginate — sudah ratusan baris untuk
+    // satu dapil saja, gampang lewat 1000 begitu dapil lain ditambahkan.
     const [{ data: suara }, { data: kel }, { data: kec }, { data: caleg }] = await Promise.all([
-      supabase.from('pemilih_suara_caleg').select('id, kelurahan_id, candidate_number, candidate_name, total_suara, sheet_info, updated_at, election_year').order('candidate_number'),
+      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('id, kelurahan_id, candidate_number, candidate_name, total_suara, sheet_info, updated_at, election_year').order('candidate_number')),
       supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').order('nama'),
       supabase.from('pemilih_kecamatan').select('id, nama').order('nama'),
-      supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').order('candidate_number'),
+      fetchAllRows(() => supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').order('candidate_number')),
     ]);
     setRows(suara || []);
     setKelurahanList(kel || []);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import PemilihSelect from '../pemilih/PemilihSelect';
 import { Loader2, Plus, Pencil, Trash2, Save, X, Table2 } from 'lucide-react';
 
@@ -14,11 +15,15 @@ const PASTEL_COLUMN_COLORS = [
 // dipanggil setiap kali nilai per TPS ditambah/diedit/dihapus di sini,
 // supaya total kelurahan tidak pernah basi dibanding rincian per TPS-nya.
 const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
-  const { data: allTpsRows, error: fetchError } = await supabase
-    .from('pemilih_suara_caleg_tps')
-    .select('candidate_number, votes')
-    .eq('kelurahan_id', kelurahanId)
-    .eq('election_year', year);
+  // Sebuah kelurahan bisa punya puluhan TPS x banyak caleg — tanpa paginasi
+  // eksplisit ini gampang lewat batas 1000 baris PostgREST.
+  const { data: allTpsRows, error: fetchError } = await fetchAllRows(() =>
+    supabase
+      .from('pemilih_suara_caleg_tps')
+      .select('candidate_number, votes')
+      .eq('kelurahan_id', kelurahanId)
+      .eq('election_year', year)
+  );
   if (fetchError) return fetchError;
 
   const totals = new Map();
@@ -83,29 +88,21 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, def
   const reloadTpsRows = React.useCallback(async () => {
     if (!kelurahanId || !year) { setTpsRows([]); return; }
     setLoading(true);
-    const pageSize = 1000;
-    let allRows = [];
-    let from = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { data, error } = await supabase
+    const { data, error } = await fetchAllRows(() =>
+      supabase
         .from('pemilih_suara_caleg_tps')
         .select('tps_number, candidate_number, candidate_name, votes')
         .eq('kelurahan_id', kelurahanId)
         .eq('election_year', year)
         .order('tps_number')
-        .range(from, from + pageSize - 1);
-      if (error) {
-        toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
-        setTpsRows([]);
-        setLoading(false);
-        return;
-      }
-      allRows = allRows.concat(data || []);
-      if (!data || data.length < pageSize) break;
-      from += pageSize;
+    );
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal memuat data per TPS', description: error.message });
+      setTpsRows([]);
+      setLoading(false);
+      return;
     }
-    setTpsRows(allRows);
+    setTpsRows(data || []);
     setLoading(false);
   }, [kelurahanId, year, toast]);
 
