@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { bumpTpsCountIfNeeded } from '@/lib/pemilihTpsCount';
+import { PKS_ELECTION_YEARS } from '@/data/electionYears';
 import PemilihSelect from '../pemilih/PemilihSelect';
 import { Loader2, Plus, Pencil, Trash2, Save, X, Table2 } from 'lucide-react';
 
@@ -57,17 +58,17 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
   const [year, setYear] = useState(defaultYear);
   useEffect(() => { setYear(defaultYear); }, [defaultYear]);
 
-  // Tahun di dropdown ini tidak boleh cuma dari roster caleg (calegMasterRows)
-  // — dapil lama yang sudah punya data suara sebelum fitur roster ini ada
-  // (mis. Pileg 2019/2024) belum tentu punya baris roster sama sekali, jadi
-  // knownYears (tahun-tahun yang sudah ada data suaranya, dari PemilihDpcApp)
-  // ikut disertakan supaya tahun itu tetap bisa dipilih.
+  // Tahun di dropdown ini selalu dimulai dari PKS_ELECTION_YEARS (periode
+  // pemilu yang nyata) supaya SEMUA dapil menawarkan 2019 & 2024 walau belum
+  // punya data/roster sama sekali, bukan jatuh ke tahun berjalan (mis.
+  // 2026). calegMasterRows dan knownYears tetap ikut disertakan untuk
+  // jaga-jaga ada tahun pemilu lain yang datanya sudah mulai diisi.
   const yearOptions = useMemo(() => {
-    const years = new Set(calegMasterRows.map((c) => c.election_year));
+    const years = new Set(PKS_ELECTION_YEARS);
+    calegMasterRows.forEach((c) => years.add(c.election_year));
     (knownYears || []).forEach((y) => years.add(y));
-    years.add(year);
     return Array.from(years).sort((a, b) => b - a);
-  }, [calegMasterRows, knownYears, year]);
+  }, [calegMasterRows, knownYears]);
 
   const [kelurahanId, setKelurahanId] = useState('');
   useEffect(() => {
