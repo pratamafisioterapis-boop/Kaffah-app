@@ -15,7 +15,7 @@ import {
 // komponen yang sama tapi dengan manageDapil=false — dapilnya sudah
 // ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
-  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, knownYears, defaultYear, toast, onChanged, manageDapil = true,
+  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -24,12 +24,12 @@ const PemilihSuaraPksSetup = ({
         <p style={{ margin: 0, fontSize: 12.5, color: '#7c3212', lineHeight: 1.5 }}>
           {manageDapil ? (
             <>
-              Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya,
-              <strong> 3)</strong> daftarkan nomor &amp; nama Caleg. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
+              Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> daftarkan nomor &amp; nama Caleg,
+              <strong> 3)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
             </>
           ) : (
             <>
-              Urutan setup: <strong>1)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya, <strong>2)</strong> daftarkan nomor &amp; nama Caleg.
+              Urutan setup: <strong>1)</strong> daftarkan nomor &amp; nama Caleg, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya.
               Setelah itu nilai suara per TPS bisa diisi di tab Input Suara per TPS.
             </>
           )}
@@ -50,8 +50,17 @@ const PemilihSuaraPksSetup = ({
 
       {selectedDapil ? (
         <>
+          <CalegSection
+            selectedDapil={selectedDapil}
+            kelurahanCount={kelurahanList.length}
+            calegMasterRows={calegMasterRows}
+            knownYears={knownYears}
+            voteCandidateRows={voteCandidateRows}
+            defaultYear={defaultYear}
+            toast={toast}
+            onChanged={onChanged}
+          />
           <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} toast={toast} onChanged={onChanged} />
-          <CalegSection selectedDapil={selectedDapil} kelurahanCount={kelurahanList.length} calegMasterRows={calegMasterRows} knownYears={knownYears} defaultYear={defaultYear} toast={toast} onChanged={onChanged} />
         </>
       ) : (
         <div className="p-card" style={{ padding: 40, textAlign: 'center' }}>
@@ -375,7 +384,7 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
   );
 };
 
-const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYears, defaultYear, toast, onChanged }) => {
+const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged }) => {
   const [year, setYear] = useState(defaultYear);
   useEffect(() => { setYear(defaultYear); }, [selectedDapil, defaultYear]);
 
@@ -395,6 +404,49 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYea
     () => calegMasterRows.filter((c) => c.election_year === year).sort((a, b) => a.candidate_number - b.candidate_number),
     [calegMasterRows, year]
   );
+
+  // Caleg yang sudah punya data suara asli (mis. dari upload PDF/input manual
+  // sebelum roster ini ada) tapi belum pernah didaftarkan ke roster —
+  // nomor 0 dikecualikan karena itu representasi "Suara Partai tanpa calon",
+  // bukan caleg sungguhan.
+  const discoveredForYear = useMemo(() => {
+    const map = new Map();
+    (voteCandidateRows || [])
+      .filter((r) => r.election_year === year && r.candidate_number !== 0 && r.candidate_name)
+      .forEach((r) => {
+        if (!map.has(r.candidate_number)) map.set(r.candidate_number, { candidate_number: r.candidate_number, candidate_name: r.candidate_name });
+      });
+    return Array.from(map.values()).sort((a, b) => a.candidate_number - b.candidate_number);
+  }, [voteCandidateRows, year]);
+
+  const [seeding, setSeeding] = useState(false);
+  useEffect(() => {
+    // Roster tahun ini masih kosong tapi datanya sendiri sudah ada (dapil
+    // lama) — isikan roster dari nama caleg yang ditemukan di data suara,
+    // sekali saja, supaya "Daftar Caleg" tidak diam-diam kosong padahal
+    // datanya sudah ada.
+    if (seeding || rowsForYear.length > 0 || discoveredForYear.length === 0) return;
+    setSeeding(true);
+    supabase
+      .from('pemilih_caleg_master')
+      .upsert(
+        discoveredForYear.map((d) => ({
+          kecamatan_id: selectedDapil,
+          election_year: year,
+          candidate_number: d.candidate_number,
+          candidate_name: d.candidate_name,
+        })),
+        { onConflict: 'kecamatan_id,election_year,candidate_number' }
+      )
+      .then(({ error }) => {
+        setSeeding(false);
+        if (error) {
+          toast({ variant: 'destructive', title: 'Gagal memuat caleg dari data suara', description: error.message });
+          return;
+        }
+        onChanged();
+      });
+  }, [seeding, rowsForYear.length, discoveredForYear, selectedDapil, year, toast, onChanged]);
 
   const [newNumber, setNewNumber] = useState('');
   const [newName, setNewName] = useState('');
@@ -469,11 +521,15 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYea
 
       {kelurahanCount === 0 && (
         <p style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginBottom: 16 }}>
-          Tips: tambahkan dulu minimal satu kelurahan di atas supaya nanti data suara caleg ini bisa langsung diisi.
+          Tips: setelah caleg didaftarkan, tambahkan juga minimal satu kelurahan di bawah supaya data suaranya bisa langsung diisi.
         </p>
       )}
 
-      {rowsForYear.length === 0 ? (
+      {seeding ? (
+        <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Loader2 className="animate-spin" size={13} /> Memuat caleg dari data suara yang sudah ada...
+        </p>
+      ) : rowsForYear.length === 0 ? (
         <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16 }}>Belum ada caleg terdaftar untuk tahun {year}.</p>
       ) : (
         <div className="p-table-wrap" style={{ marginBottom: 16 }}>
