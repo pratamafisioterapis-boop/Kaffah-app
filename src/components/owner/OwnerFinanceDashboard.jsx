@@ -623,6 +623,10 @@ const OwnerFinanceDashboard = () => {
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -662,6 +666,10 @@ const OwnerFinanceDashboard = () => {
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -779,6 +787,10 @@ const OwnerFinanceDashboard = () => {
                         </span>
                       )},
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -811,6 +823,10 @@ const OwnerFinanceDashboard = () => {
                           ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{val}</span>
                           : <span style={{ color: '#cbd5e1' }}>—</span>;
                       }},
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -820,7 +836,7 @@ const OwnerFinanceDashboard = () => {
             </div>
           </motion.div>}
 
-        
+
           {/* --- PACKAGE FUNDS SECTION --- */}
 {activeTab === 'package_funds' && (
   <motion.div
