@@ -317,9 +317,16 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
   const [tpsInputMap, setTpsInputMap] = useState({});
   const [savingTpsId, setSavingTpsId] = useState(null);
   const [seeding, setSeeding] = useState(false);
+  // Kelurahan yang sudah pernah dicoba di-auto-isi (berhasil ketemu maupun
+  // memang tidak ada data suara sama sekali untuk kelurahan itu) — dicatat
+  // supaya efek di bawah tidak mengulang RPC yang sama tanpa henti untuk
+  // kelurahan yang memang belum pernah punya data suara (mis. baru dibuat).
+  const [seededIds, setSeededIds] = useState(() => new Set());
 
   const kelurahanIds = useMemo(() => kelurahanList.map((k) => k.id), [kelurahanList]);
   const kelurahanIdsKey = kelurahanIds.join(',');
+
+  useEffect(() => { setSeededIds(new Set()); }, [kelurahanIdsKey, year]);
 
   const fetchCounts = React.useCallback(async () => {
     setLoading(true);
@@ -348,7 +355,7 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
   // itu, sekali saja, supaya jumlah TPS-nya tidak diam-diam kosong/0.
   useEffect(() => {
     if (seeding || loading || kelurahanIds.length === 0 || !year) return;
-    const missingIds = kelurahanIds.filter((id) => !countRows.some((r) => r.kelurahan_id === id));
+    const missingIds = kelurahanIds.filter((id) => !countRows.some((r) => r.kelurahan_id === id) && !seededIds.has(id));
     if (missingIds.length === 0) return;
 
     let cancelled = false;
@@ -364,28 +371,36 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
         const payload = (data || [])
           .filter((d) => d.max_tps_number)
           .map((d) => ({ kelurahan_id: d.kelurahan_id, election_year: year, jumlah_tps: d.max_tps_number }));
-        if (payload.length === 0) return;
-        const { error: upsertError } = await supabase
-          .from('pemilih_suara_tps_count')
-          .upsert(payload, { onConflict: 'kelurahan_id,election_year' });
-        if (cancelled) return;
-        if (upsertError) {
-          toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: upsertError.message });
-          return;
+        if (payload.length > 0) {
+          const { error: upsertError } = await supabase
+            .from('pemilih_suara_tps_count')
+            .upsert(payload, { onConflict: 'kelurahan_id,election_year' });
+          if (cancelled) return;
+          if (upsertError) {
+            toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: upsertError.message });
+            return;
+          }
+          await fetchCounts();
         }
-        await fetchCounts();
       } catch (e) {
         // Jaring pengaman: kalau panggilan network-nya reject (bukan cuma
         // balik {error}), tetap harus lolos ke finally supaya "seeding"
         // tidak macet true selamanya (layar loading tidak pernah hilang).
         if (!cancelled) toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: e?.message || String(e) });
       } finally {
-        if (!cancelled) setSeeding(false);
+        // Kelurahan yang sudah dicoba (ketemu ataupun memang tidak ada data
+        // suaranya sama sekali) ditandai selesai supaya efek ini tidak
+        // memanggil RPC yang sama berulang-ulang tanpa henti untuk
+        // kelurahan yang memang belum pernah punya data suara.
+        if (!cancelled) {
+          setSeededIds((prev) => new Set([...prev, ...missingIds]));
+          setSeeding(false);
+        }
       }
     };
     run();
     return () => { cancelled = true; };
-  }, [seeding, loading, countRows, kelurahanIds, year, toast, fetchCounts]);
+  }, [seeding, loading, countRows, kelurahanIds, year, toast, fetchCounts, seededIds]);
 
   const currentCount = (kelurahanId) => countRows.find((r) => r.kelurahan_id === kelurahanId)?.jumlah_tps ?? 0;
 
