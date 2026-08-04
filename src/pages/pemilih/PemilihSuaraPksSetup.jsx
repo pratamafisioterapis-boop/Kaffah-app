@@ -17,6 +17,25 @@ import {
 const PemilihSuaraPksSetup = ({
   dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
 }) => {
+  // Tahun pemilu dipakai bersama oleh Daftar Caleg maupun Kelurahan/Jumlah
+  // TPS — jumlah TPS per kelurahan bisa berbeda tiap periode, jadi kedua
+  // bagian itu harus selalu melihat tahun yang sama, bukan masing-masing
+  // punya pilihan tahun sendiri-sendiri.
+  const [year, setYear] = useState(defaultYear);
+  useEffect(() => { setYear(defaultYear); }, [selectedDapil, defaultYear]);
+
+  // Tahun di dropdown ini tidak boleh cuma dari roster caleg (calegMasterRows)
+  // — dapil lama yang sudah punya data suara sebelum fitur roster ini ada
+  // (mis. Pileg 2019/2024) belum tentu punya baris roster sama sekali, jadi
+  // knownYears (tahun-tahun yang sudah ada data suaranya) ikut disertakan
+  // supaya tahun itu tetap bisa dipilih.
+  const yearOptions = useMemo(() => {
+    const years = new Set(calegMasterRows.map((c) => c.election_year));
+    (knownYears || []).forEach((y) => years.add(y));
+    years.add(year);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [calegMasterRows, knownYears, year]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="p-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fff7ed', border: '1px solid #fed7aa' }}>
@@ -24,12 +43,12 @@ const PemilihSuaraPksSetup = ({
         <p style={{ margin: 0, fontSize: 12.5, color: '#7c3212', lineHeight: 1.5 }}>
           {manageDapil ? (
             <>
-              Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> daftarkan nomor &amp; nama Caleg,
-              <strong> 3)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
+              Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> pilih tahun pemilu &amp; daftarkan nomor/nama Caleg,
+              <strong> 3)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya untuk tahun itu. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
             </>
           ) : (
             <>
-              Urutan setup: <strong>1)</strong> daftarkan nomor &amp; nama Caleg, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya.
+              Urutan setup: <strong>1)</strong> pilih tahun pemilu &amp; daftarkan nomor/nama Caleg, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya untuk tahun itu.
               Setelah itu nilai suara per TPS bisa diisi di tab Input Suara per TPS.
             </>
           )}
@@ -50,17 +69,27 @@ const PemilihSuaraPksSetup = ({
 
       {selectedDapil ? (
         <>
+          <div className="p-card" style={{ padding: 20, maxWidth: 260 }}>
+            <label className="p-label">Tahun Pemilu</label>
+            <PemilihSelect
+              value={String(year)}
+              onChange={(v) => setYear(Number(v))}
+              options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
+              title="Pilih Tahun Pemilu"
+            />
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: '#9ca3af' }}>Daftar caleg dan jumlah TPS di bawah ini berlaku untuk tahun ini.</p>
+          </div>
+
           <CalegSection
             selectedDapil={selectedDapil}
             kelurahanCount={kelurahanList.length}
             calegMasterRows={calegMasterRows}
-            knownYears={knownYears}
             voteCandidateRows={voteCandidateRows}
-            defaultYear={defaultYear}
+            year={year}
             toast={toast}
             onChanged={onChanged}
           />
-          <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} toast={toast} onChanged={onChanged} />
+          <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} year={year} toast={toast} onChanged={onChanged} />
         </>
       ) : (
         <div className="p-card" style={{ padding: 40, textAlign: 'center' }}>
@@ -189,8 +218,12 @@ const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, toast, onChange
   );
 };
 
-const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged }) => {
-  const [tpsRows, setTpsRows] = useState([]);
+// Jumlah TPS per kelurahan disimpan per tahun pemilu (pemilih_suara_tps_count)
+// — jumlahnya memang bisa berbeda antar periode (mis. pemekaran/penggabungan
+// TPS), jadi sengaja tidak dipakaikan tabel pemilih_tps yang dipakai modul
+// Data Pemilih/DPT (itu global per kelurahan, tanpa tahun).
+const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChanged }) => {
+  const [countRows, setCountRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newNama, setNewNama] = useState('');
   const [newTps, setNewTps] = useState('');
@@ -199,38 +232,68 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
   const [editValue, setEditValue] = useState('');
   const [tpsInputMap, setTpsInputMap] = useState({});
   const [savingTpsId, setSavingTpsId] = useState(null);
+  const [seeding, setSeeding] = useState(false);
 
   const kelurahanIds = useMemo(() => kelurahanList.map((k) => k.id), [kelurahanList]);
+  const kelurahanIdsKey = kelurahanIds.join(',');
 
-  const fetchTps = async () => {
+  const fetchCounts = React.useCallback(async () => {
     setLoading(true);
-    if (kelurahanIds.length === 0) {
-      setTpsRows([]);
+    if (kelurahanIds.length === 0 || !year) {
+      setCountRows([]);
       setTpsInputMap({});
       setLoading(false);
       return;
     }
-    // .in('kelurahan_id', kelurahanIds) tanpa paginasi gampang lewat batas
-    // 1000 baris PostgREST begitu satu dapil punya banyak kelurahan/TPS —
-    // satu kecamatan saja sudah bisa >500 TPS.
     const { data } = await fetchAllRows(() =>
-      supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').in('kelurahan_id', kelurahanIds)
+      supabase.from('pemilih_suara_tps_count').select('kelurahan_id, election_year, jumlah_tps').eq('election_year', year).in('kelurahan_id', kelurahanIds)
     );
-    setTpsRows(data || []);
-    const counts = {};
-    kelurahanList.forEach((k) => {
-      counts[k.id] = String((data || []).filter((t) => t.kelurahan_id === k.id).length);
-    });
-    setTpsInputMap(counts);
+    setCountRows(data || []);
+    const map = {};
+    (data || []).forEach((r) => { map[r.kelurahan_id] = String(r.jumlah_tps); });
+    setTpsInputMap(map);
     setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchTps();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDapil, kelurahanList.length]);
+  }, [kelurahanIdsKey, year]);
 
-  const currentCount = (kelurahanId) => tpsRows.filter((t) => t.kelurahan_id === kelurahanId).length;
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+
+  // Kelurahan yang belum punya baris jumlah TPS untuk tahun ini tapi sudah
+  // punya data suara per TPS asli (dapil lama, diinput sebelum fitur ini
+  // ada) — isikan otomatis dari nomor TPS tertinggi yang ditemukan di data
+  // itu, sekali saja, supaya jumlah TPS-nya tidak diam-diam kosong/0.
+  useEffect(() => {
+    if (seeding || loading || kelurahanIds.length === 0 || !year) return;
+    const missingIds = kelurahanIds.filter((id) => !countRows.some((r) => r.kelurahan_id === id));
+    if (missingIds.length === 0) return;
+    setSeeding(true);
+    supabase
+      .rpc('pemilih_suara_tps_discover', { p_kelurahan_ids: missingIds, p_election_year: year })
+      .then(({ data, error }) => {
+        if (error) {
+          setSeeding(false);
+          toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: error.message });
+          return;
+        }
+        const payload = (data || [])
+          .filter((d) => d.max_tps_number)
+          .map((d) => ({ kelurahan_id: d.kelurahan_id, election_year: year, jumlah_tps: d.max_tps_number }));
+        if (payload.length === 0) { setSeeding(false); return; }
+        supabase
+          .from('pemilih_suara_tps_count')
+          .upsert(payload, { onConflict: 'kelurahan_id,election_year' })
+          .then(({ error: upsertError }) => {
+            setSeeding(false);
+            if (upsertError) {
+              toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: upsertError.message });
+              return;
+            }
+            fetchCounts();
+          });
+      });
+  }, [seeding, loading, countRows, kelurahanIds, year, toast, fetchCounts]);
+
+  const currentCount = (kelurahanId) => countRows.find((r) => r.kelurahan_id === kelurahanId)?.jumlah_tps ?? 0;
 
   const saveJumlahTps = async (kelurahanId) => {
     const target = parseInt(tpsInputMap[kelurahanId], 10);
@@ -238,27 +301,16 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
       toast({ variant: 'destructive', title: 'Jumlah TPS tidak valid' });
       return;
     }
-    const existing = tpsRows.filter((t) => t.kelurahan_id === kelurahanId).sort((a, b) => a.nomor_tps - b.nomor_tps);
-    if (target === existing.length) return;
-
     setSavingTpsId(kelurahanId);
-    if (target > existing.length) {
-      const toInsert = [];
-      for (let n = existing.length + 1; n <= target; n++) toInsert.push({ kelurahan_id: kelurahanId, nomor_tps: n });
-      const { error } = await supabase.from('pemilih_tps').insert(toInsert);
-      if (error) toast({ variant: 'destructive', title: 'Gagal menambah TPS', description: error.message });
-    } else {
-      const toRemove = existing.slice(target);
-      if (!window.confirm(`Mengurangi jumlah TPS akan menghapus ${toRemove.length} TPS terakhir beserta data DPT-nya. Lanjutkan?`)) {
-        setTpsInputMap((prev) => ({ ...prev, [kelurahanId]: String(existing.length) }));
-        setSavingTpsId(null);
-        return;
-      }
-      const { error } = await supabase.from('pemilih_tps').delete().in('id', toRemove.map((r) => r.id));
-      if (error) toast({ variant: 'destructive', title: 'Gagal mengurangi TPS', description: error.message });
-    }
-    await fetchTps();
+    const { error } = await supabase
+      .from('pemilih_suara_tps_count')
+      .upsert({ kelurahan_id: kelurahanId, election_year: year, jumlah_tps: target }, { onConflict: 'kelurahan_id,election_year' });
     setSavingTpsId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan jumlah TPS', description: error.message });
+      return;
+    }
+    await fetchCounts();
   };
 
   const addKelurahan = async () => {
@@ -276,16 +328,16 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
     }
     const tpsCount = parseInt(newTps, 10);
     if (data?.id && !Number.isNaN(tpsCount) && tpsCount > 0) {
-      const toInsert = [];
-      for (let n = 1; n <= tpsCount; n++) toInsert.push({ kelurahan_id: data.id, nomor_tps: n });
-      const { error: tpsError } = await supabase.from('pemilih_tps').insert(toInsert);
-      if (tpsError) toast({ variant: 'destructive', title: 'Kelurahan tersimpan, tapi gagal membuat TPS', description: tpsError.message });
+      const { error: countError } = await supabase
+        .from('pemilih_suara_tps_count')
+        .upsert({ kelurahan_id: data.id, election_year: year, jumlah_tps: tpsCount }, { onConflict: 'kelurahan_id,election_year' });
+      if (countError) toast({ variant: 'destructive', title: 'Kelurahan tersimpan, tapi gagal menyimpan jumlah TPS', description: countError.message });
     }
     setNewNama('');
     setNewTps('');
     setAddingRow(false);
     await onChanged();
-    await fetchTps();
+    await fetchCounts();
     toast({ title: 'Kelurahan ditambahkan' });
   };
 
@@ -298,18 +350,21 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
   };
 
   const deleteKelurahan = async (k) => {
-    if (!window.confirm(`Hapus kelurahan "${k.nama}"? Semua TPS dan data suara di kelurahan ini juga akan ikut terhapus/terputus.`)) return;
+    if (!window.confirm(`Hapus kelurahan "${k.nama}"? Jumlah TPS dan data suara di kelurahan ini juga akan ikut terhapus/terputus.`)) return;
     const { error } = await supabase.from('pemilih_kelurahan').delete().eq('id', k.id);
     if (error) toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
-    else { await onChanged(); await fetchTps(); }
+    else { await onChanged(); await fetchCounts(); }
   };
 
   return (
     <div className="p-card" style={{ padding: 20 }}>
-      <SectionHeader icon={ListChecks} title="Kelurahan/Desa & Jumlah TPS" subtitle="Untuk dapil yang sedang aktif — nama kelurahan dan jumlah TPS bisa diatur di sini sekaligus" />
+      <SectionHeader icon={ListChecks} title={`Kelurahan/Desa & Jumlah TPS — Tahun ${year}`} subtitle="Untuk dapil yang sedang aktif — nama kelurahan berlaku semua tahun, jumlah TPS bisa berbeda tiap tahun pemilu" />
 
-      {loading ? (
-        <div style={{ padding: 30, textAlign: 'center' }}><Loader2 className="animate-spin" size={22} color="#ea580c" /></div>
+      {loading || seeding ? (
+        <div style={{ padding: 30, textAlign: 'center' }}>
+          <Loader2 className="animate-spin" size={22} color="#ea580c" />
+          {seeding && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#9ca3af' }}>Memuat jumlah TPS dari data suara yang sudah ada...</p>}
+        </div>
       ) : kelurahanList.length === 0 ? (
         <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16 }}>Belum ada kelurahan/desa untuk dapil ini.</p>
       ) : (
@@ -318,7 +373,7 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
             <thead>
               <tr>
                 <th>Kelurahan/Desa</th>
-                <th style={{ width: 220 }}>Jumlah TPS</th>
+                <th style={{ width: 220 }}>Jumlah TPS ({year})</th>
                 <th style={{ width: 80 }}></th>
               </tr>
             </thead>
@@ -373,7 +428,7 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
         />
         <input
           type="number" min="0" className="p-input" style={{ flex: 1, minWidth: 110 }}
-          placeholder="Jumlah TPS"
+          placeholder={`Jumlah TPS (${year})`}
           value={newTps} onChange={(e) => setNewTps(e.target.value)}
         />
         <button className="p-btn-primary" onClick={addKelurahan} disabled={addingRow || !newNama.trim()}>
@@ -384,22 +439,7 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
   );
 };
 
-const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged }) => {
-  const [year, setYear] = useState(defaultYear);
-  useEffect(() => { setYear(defaultYear); }, [selectedDapil, defaultYear]);
-
-  // Tahun di dropdown ini tidak boleh cuma dari roster caleg (calegMasterRows)
-  // — dapil lama yang sudah punya data suara sebelum fitur roster ini ada
-  // (mis. Pileg 2019/2024) belum tentu punya baris roster sama sekali, jadi
-  // knownYears (tahun-tahun yang sudah ada data suaranya) ikut disertakan
-  // supaya tahun itu tetap bisa dipilih.
-  const yearOptions = useMemo(() => {
-    const years = new Set(calegMasterRows.map((c) => c.election_year));
-    (knownYears || []).forEach((y) => years.add(y));
-    years.add(year);
-    return Array.from(years).sort((a, b) => b - a);
-  }, [calegMasterRows, knownYears, year]);
-
+const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCandidateRows, year, toast, onChanged }) => {
   const rowsForYear = useMemo(
     () => calegMasterRows.filter((c) => c.election_year === year).sort((a, b) => a.candidate_number - b.candidate_number),
     [calegMasterRows, year]
@@ -507,17 +547,7 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, knownYea
 
   return (
     <div className="p-card" style={{ padding: 20 }}>
-      <SectionHeader icon={Users} title="Daftar Caleg" subtitle="Nomor urut & nama caleg untuk dapil ini — bisa diisi sebelum ada data suara sama sekali" />
-
-      <div style={{ marginBottom: 16, maxWidth: 200 }}>
-        <label className="p-label">Tahun Pemilu</label>
-        <PemilihSelect
-          value={String(year)}
-          onChange={(v) => setYear(Number(v))}
-          options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
-          title="Pilih Tahun Pemilu"
-        />
-      </div>
+      <SectionHeader icon={Users} title={`Daftar Caleg — Tahun ${year}`} subtitle="Nomor urut & nama caleg untuk dapil ini — bisa diisi sebelum ada data suara sama sekali" />
 
       {kelurahanCount === 0 && (
         <p style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginBottom: 16 }}>
