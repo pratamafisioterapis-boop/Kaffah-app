@@ -400,7 +400,13 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
     };
     run();
     return () => { cancelled = true; };
-  }, [seeding, loading, countRows, kelurahanIds, year, toast, fetchCounts, seededIds]);
+    // `seeding` sengaja tidak dimasukkan ke deps: setSeeding(true) di atas
+    // baru saja mengubah state itu, jadi kalau dimasukkan efek ini langsung
+    // dianggap "berubah" dan di-cleanup (cancelled=true) oleh React sebelum
+    // RPC-nya sempat selesai — akibatnya finally di atas selalu melewati
+    // setSeeding(false) dan spinner "Memuat jumlah TPS..." macet selamanya.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, countRows, kelurahanIds, year, toast, fetchCounts, seededIds]);
 
   const currentCount = (kelurahanId) => countRows.find((r) => r.kelurahan_id === kelurahanId)?.jumlah_tps ?? 0;
 
@@ -608,7 +614,10 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
     };
     run();
     return () => { cancelled = true; };
-  }, [seeding, rowsForYear.length, discoveredForYear, selectedDapil, year, toast, onChanged]);
+    // `seeding` sengaja tidak dimasukkan ke deps — lihat penjelasan di efek
+    // seed serupa pada KelurahanTpsSection di atas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowsForYear.length, discoveredForYear, selectedDapil, year, toast, onChanged]);
 
   const [newNumber, setNewNumber] = useState('');
   const [newName, setNewName] = useState('');
