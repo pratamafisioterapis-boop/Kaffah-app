@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
+import { PKS_ELECTION_YEARS } from '@/data/electionYears';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, LogOut, ListChecks, Table2 } from 'lucide-react';
@@ -97,13 +98,13 @@ const PemilihDpcApp = () => {
   // Tahun pemilu terakhir yang punya data suara diutamakan (paling relevan
   // untuk dilihat/diedit); kalau belum ada data sama sekali, jatuh ke tahun
   // roster caleg terbaru; kalau roster juga masih kosong (dapil baru sama
-  // sekali), baru pakai tahun berjalan sebagai titik awal.
-  const currentYear = new Date().getFullYear();
+  // sekali), pakai periode pemilu terbaru (PKS_ELECTION_YEARS) sebagai
+  // titik awal — bukan tahun berjalan, karena itu bukan tahun pemilu.
   const defaultYear = voteYears.length > 0
     ? voteYears[0]
     : calegMasterRows.length > 0
       ? Math.max(...calegMasterRows.map((c) => c.election_year))
-      : currentYear;
+      : PKS_ELECTION_YEARS[0];
 
   return (
     <div className="d-wrapper">

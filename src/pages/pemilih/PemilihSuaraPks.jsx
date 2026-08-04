@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { bumpTpsCountIfNeeded } from '@/lib/pemilihTpsCount';
+import { PKS_ELECTION_YEARS } from '@/data/electionYears';
 import { useToast } from '@/components/ui/use-toast';
 import PemilihSelect from './PemilihSelect';
 import {
@@ -625,7 +626,7 @@ const PemilihSuaraPks = () => {
           toast={toast}
         />
       ) : tab === 'upload' ? (
-        <PksUpload kelurahanList={scopedKelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
+        <PksUpload kelurahanList={scopedKelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || PKS_ELECTION_YEARS[0]} />
       ) : tab === 'setup' ? (
         <PemilihSuaraPksSetup
           dapilList={dapilList}
@@ -636,7 +637,7 @@ const PemilihSuaraPks = () => {
           calegMasterRows={calegMasterRows.filter((c) => c.kecamatan_id === selectedDapil)}
           knownYears={availableYears}
           voteCandidateRows={dapilRows}
-          defaultYear={selectedYear || availableYears[0] || new Date().getFullYear()}
+          defaultYear={selectedYear || availableYears[0] || PKS_ELECTION_YEARS[0]}
           toast={toast}
           onChanged={fetchAll}
         />
@@ -649,7 +650,7 @@ const PemilihSuaraPks = () => {
             candidateMasterList={candidateMasterList}
             onSaved={fetchAll}
             toast={toast}
-            defaultYear={selectedYear || 2024}
+            defaultYear={selectedYear || PKS_ELECTION_YEARS[0]}
           />
         </div>
       )}
