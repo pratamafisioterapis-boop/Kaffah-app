@@ -12,6 +12,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
+import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
@@ -42,6 +43,7 @@ const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard')
 const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
 const PemilihApp = React.lazy(() => import('@/pages/pemilih/PemilihApp'));
 const RelawanUploadKTP = React.lazy(() => import('@/pages/relawan/RelawanUploadKTP'));
+const PemilihDpcApp = React.lazy(() => import('@/pages/dpc/PemilihDpcApp'));
 
 
 // Loading Component
@@ -314,6 +316,15 @@ function App() {
                     <PemilihRelawanProtectedRoute>
                       <RelawanUploadKTP />
                     </PemilihRelawanProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/pemilih-dpc"
+                  element={
+                    <PemilihDpcProtectedRoute>
+                      <PemilihDpcApp />
+                    </PemilihDpcProtectedRoute>
                   }
                 />
 
