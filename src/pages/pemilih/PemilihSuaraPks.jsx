@@ -13,8 +13,9 @@ import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
   Pencil, Plus, Presentation, ChevronLeft, ChevronRight, Play, Pause,
-  GitCompare, TrendingUp, TrendingDown, Minus,
+  GitCompare, TrendingUp, TrendingDown, Minus, Settings2,
 } from 'lucide-react';
+import PemilihSuaraPksSetup from './PemilihSuaraPksSetup';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -264,29 +265,75 @@ const PemilihSuaraPks = () => {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
   const [kelurahanList, setKelurahanList] = useState([]);
+  const [dapilList, setDapilList] = useState([]);
+  const [calegMasterRows, setCalegMasterRows] = useState([]);
+  const [selectedDapil, setSelectedDapil] = useState(() => {
+    try { return localStorage.getItem('pemilih_suara_pks_dapil') || ''; } catch { return ''; }
+  });
   const [filterKelurahan, setFilterKelurahan] = useState('');
   const [selectedYear, setSelectedYear] = useState(null);
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: suara }, { data: kel }] = await Promise.all([
+    const [{ data: suara }, { data: kel }, { data: kec }, { data: caleg }] = await Promise.all([
       supabase.from('pemilih_suara_caleg').select('id, kelurahan_id, candidate_number, candidate_name, total_suara, sheet_info, updated_at, election_year').order('candidate_number'),
-      supabase.from('pemilih_kelurahan').select('id, nama').order('nama'),
+      supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').order('nama'),
+      supabase.from('pemilih_kecamatan').select('id, nama').order('nama'),
+      supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').order('candidate_number'),
     ]);
     setRows(suara || []);
     setKelurahanList(kel || []);
+    setDapilList(kec || []);
+    setCalegMasterRows(caleg || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
 
-  const availableYears = useMemo(() => {
-    const years = new Set(rows.map((r) => r.election_year));
-    return Array.from(years).sort((a, b) => b - a);
-  }, [rows]);
+  // Dapil aktif: pakai yang tersimpan di localStorage kalau masih ada di
+  // daftar, kalau tidak jatuh ke dapil pertama — supaya pilihan terakhir
+  // diingat lintas kunjungan tanpa perlu login/preferensi server.
+  useEffect(() => {
+    if (dapilList.length === 0) return;
+    if (dapilList.some((d) => d.id === selectedDapil)) return;
+    setSelectedDapil(dapilList[0].id);
+  }, [dapilList, selectedDapil]);
 
   useEffect(() => {
-    if (selectedYear === null && availableYears.length > 0) setSelectedYear(availableYears[0]);
+    try {
+      if (selectedDapil) localStorage.setItem('pemilih_suara_pks_dapil', selectedDapil);
+    } catch { /* localStorage tidak tersedia, abaikan */ }
+    // Filter kelurahan di dashboard mengacu ke ID kelurahan — kalau dapil
+    // pindah, ID lama itu milik dapil lain dan harus direset supaya tidak
+    // diam-diam membuat filteredRows kosong.
+    setFilterKelurahan('');
+  }, [selectedDapil]);
+
+  const dapilKelurahanIds = useMemo(
+    () => new Set(kelurahanList.filter((k) => k.kecamatan_id === selectedDapil).map((k) => k.id)),
+    [kelurahanList, selectedDapil]
+  );
+
+  // Semua tab lain (dashboard, TPS, upload, manual) hanya boleh melihat
+  // kelurahan & data suara milik dapil yang sedang aktif.
+  const scopedKelurahanList = useMemo(
+    () => kelurahanList.filter((k) => dapilKelurahanIds.has(k.id)),
+    [kelurahanList, dapilKelurahanIds]
+  );
+
+  const dapilRows = useMemo(
+    () => rows.filter((r) => dapilKelurahanIds.has(r.kelurahan_id)),
+    [rows, dapilKelurahanIds]
+  );
+
+  const availableYears = useMemo(() => {
+    const years = new Set(dapilRows.map((r) => r.election_year));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [dapilRows]);
+
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) setSelectedYear(availableYears[0]);
+    else if (availableYears.length === 0 && selectedYear !== null) setSelectedYear(null);
   }, [availableYears, selectedYear]);
 
   const kelurahanMap = useMemo(() => {
@@ -296,8 +343,8 @@ const PemilihSuaraPks = () => {
   }, [kelurahanList]);
 
   const yearRows = useMemo(
-    () => rows.filter((r) => r.election_year === selectedYear),
-    [rows, selectedYear]
+    () => dapilRows.filter((r) => r.election_year === selectedYear),
+    [dapilRows, selectedYear]
   );
 
   const filteredRows = useMemo(
@@ -364,29 +411,44 @@ const PemilihSuaraPks = () => {
     return Object.entries(agg).map(([nama, total]) => ({ nama, total })).sort((a, b) => b.total - a.total);
   }, [yearRows, kelurahanMap]);
 
-  // Daftar caleg induk (nomor + nama) untuk tahun terpilih, dipakai sebagai
-  // acuan kolom di tab Detail per TPS supaya urutannya konsisten antar kelurahan.
-  // Nomor & nama caleg bisa berbeda antar tahun pemilu, jadi harus per tahun.
+  // Daftar caleg induk (nomor + nama) untuk dapil & tahun terpilih, dipakai
+  // sebagai acuan kolom di tab Detail per TPS supaya urutannya konsisten
+  // antar kelurahan. Diseed dari roster yang diatur di tab Setup (supaya
+  // nama caleg sudah muncul walau belum ada suara masuk sama sekali), lalu
+  // dilengkapi dari data suara yang sudah ada (kalau ada caleg yang muncul
+  // di data tapi belum didaftarkan di roster). Nomor & nama caleg bisa
+  // berbeda antar tahun pemilu, jadi harus per dapil + per tahun.
+  const dapilCalegMaster = useMemo(
+    () => calegMasterRows
+      .filter((c) => c.kecamatan_id === selectedDapil && c.election_year === selectedYear)
+      .sort((a, b) => a.candidate_number - b.candidate_number),
+    [calegMasterRows, selectedDapil, selectedYear]
+  );
+
   const candidateMasterList = useMemo(() => {
     const map = new Map();
+    dapilCalegMaster.forEach((c) => {
+      map.set(c.candidate_number, { number: c.candidate_number, name: c.candidate_name });
+    });
     yearRows.forEach((r) => {
       if (!map.has(r.candidate_number)) {
         map.set(r.candidate_number, { number: r.candidate_number, name: r.candidate_name || 'Suara Partai' });
       }
     });
     return Array.from(map.values()).sort((a, b) => a.number - b.number);
-  }, [yearRows]);
+  }, [dapilCalegMaster, yearRows]);
 
   // Data perbandingan 2019 vs 2024 untuk slide analisa di Mode Slideshow —
-  // dihitung dari seluruh `rows` (bukan yearRows) karena harus mencakup kedua
-  // tahun sekaligus, tapi tetap ikut filter kelurahan yang aktif di dashboard.
+  // dihitung dari seluruh `dapilRows` (bukan yearRows) karena harus mencakup
+  // kedua tahun sekaligus, tapi tetap ikut filter kelurahan yang aktif di
+  // dashboard dan tetap dibatasi ke dapil yang sedang aktif.
   const compareRowsByYear = useMemo(() => {
     const out = {};
     COMPARE_YEARS.forEach((y) => {
-      out[y] = rows.filter((r) => r.election_year === y && (!filterKelurahan || r.kelurahan_id === filterKelurahan));
+      out[y] = dapilRows.filter((r) => r.election_year === y && (!filterKelurahan || r.kelurahan_id === filterKelurahan));
     });
     return out;
-  }, [rows, filterKelurahan]);
+  }, [dapilRows, filterKelurahan]);
 
   const compareAvailable = COMPARE_YEARS.every((y) => compareRowsByYear[y].length > 0);
 
@@ -436,6 +498,8 @@ const PemilihSuaraPks = () => {
       .sort((a, b) => (b.values[COMPARE_YEARS[1]] || 0) - (a.values[COMPARE_YEARS[1]] || 0));
   }, [compareRowsByYear]);
 
+  const activeDapilName = dapilList.find((d) => d.id === selectedDapil)?.nama || '';
+
   return (
     <div>
       <div style={{
@@ -452,7 +516,7 @@ const PemilihSuaraPks = () => {
             </span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-            Partai Keadilan Sejahtera — DPRD Kota Balikpapan
+            Partai Keadilan Sejahtera{activeDapilName ? ` — ${activeDapilName}` : ''}
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: 13, color: '#d4d4d8' }}>
             Rekap suara caleg PKS per kelurahan, berdasarkan Formulir Model DAA1-DPRD yang diupload.
@@ -460,12 +524,25 @@ const PemilihSuaraPks = () => {
         </div>
       </div>
 
+      {dapilList.length > 0 && (
+        <div style={{ marginBottom: 18, maxWidth: 320 }}>
+          <label className="p-label">Dapil / Kecamatan Aktif</label>
+          <PemilihSelect
+            value={selectedDapil}
+            onChange={setSelectedDapil}
+            options={dapilList.map((d) => ({ value: d.id, label: d.nama }))}
+            title="Pilih Dapil / Kecamatan"
+          />
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 22, flexWrap: 'wrap', borderBottom: '1.5px solid var(--p-border)', paddingBottom: 12 }}>
         {[
           { key: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
           { key: 'tps', label: 'Detail per TPS', icon: Table2 },
           { key: 'manual', label: 'Input Manual per TPS', icon: Pencil },
           { key: 'upload', label: 'Upload PDF per Kelurahan', icon: UploadCloud },
+          { key: 'setup', label: 'Setup Dapil & Caleg', icon: Settings2 },
         ].map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -487,7 +564,7 @@ const PemilihSuaraPks = () => {
         })}
       </div>
 
-      {availableYears.length > 0 && (
+      {tab !== 'setup' && availableYears.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22, flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Tahun Pemilu:</span>
@@ -508,7 +585,7 @@ const PemilihSuaraPks = () => {
               ))}
             </div>
           </div>
-          {tab === 'dashboard' && rows.length > 0 && (
+          {tab === 'dashboard' && yearRows.length > 0 && (
             <button
               className="p-btn-primary"
               style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
@@ -523,14 +600,21 @@ const PemilihSuaraPks = () => {
       {tab === 'dashboard' ? (
         loading ? (
           <div style={{ padding: 80, textAlign: 'center' }}><Loader2 className="animate-spin" size={30} color="#ea580c" /></div>
-        ) : rows.length === 0 ? (
+        ) : scopedKelurahanList.length === 0 ? (
+          <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
+            <MapPin size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
+            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>
+              Dapil ini belum punya kelurahan/desa. Buka tab "Setup Dapil & Caleg" untuk menambahkannya.
+            </p>
+          </div>
+        ) : yearRows.length === 0 ? (
           <div className="p-card" style={{ padding: 50, textAlign: 'center' }}>
             <Vote size={32} color="#d4d4d8" style={{ marginBottom: 10 }} />
-            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Belum ada data suara PKS. Upload PDF Model DAA1-DPRD per kelurahan di tab "Upload PDF per Kelurahan".</p>
+            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Belum ada data suara PKS untuk dapil ini. Upload PDF Model DAA1-DPRD per kelurahan di tab "Upload PDF per Kelurahan".</p>
           </div>
         ) : (
           <PksDashboard
-            kelurahanList={kelurahanList}
+            kelurahanList={scopedKelurahanList}
             filterKelurahan={filterKelurahan}
             setFilterKelurahan={setFilterKelurahan}
             kelurahanTercakup={kelurahanTercakup}
@@ -545,20 +629,31 @@ const PemilihSuaraPks = () => {
         )
       ) : tab === 'tps' ? (
         <PksTpsDetail
-          kelurahanList={kelurahanList}
+          kelurahanList={scopedKelurahanList}
           kelurahanTercakup={kelurahanTercakup}
           candidateMasterList={candidateMasterList}
           selectedYear={selectedYear}
           toast={toast}
         />
       ) : tab === 'upload' ? (
-        <PksUpload kelurahanList={kelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
+        <PksUpload kelurahanList={scopedKelurahanList} onSaved={fetchAll} toast={toast} defaultYear={selectedYear || 2024} />
+      ) : tab === 'setup' ? (
+        <PemilihSuaraPksSetup
+          dapilList={dapilList}
+          selectedDapil={selectedDapil}
+          onSelectDapil={setSelectedDapil}
+          kelurahanList={scopedKelurahanList}
+          calegMasterRows={calegMasterRows.filter((c) => c.kecamatan_id === selectedDapil)}
+          defaultYear={selectedYear || availableYears[0] || new Date().getFullYear()}
+          toast={toast}
+          onChanged={fetchAll}
+        />
       ) : null}
 
       {manualTabOpened && (
         <div style={{ display: tab === 'manual' ? 'block' : 'none' }}>
           <PksManualInput
-            kelurahanList={kelurahanList}
+            kelurahanList={scopedKelurahanList}
             candidateMasterList={candidateMasterList}
             onSaved={fetchAll}
             toast={toast}
@@ -571,9 +666,10 @@ const PemilihSuaraPks = () => {
         <PksSlideshow
           onClose={() => setSlideshowOpen(false)}
           selectedYear={selectedYear}
+          dapilName={activeDapilName}
           filterKelurahanName={kelurahanMap[filterKelurahan] || null}
           kelurahanTercakupCount={kelurahanTercakup.size}
-          kelurahanTotalCount={kelurahanList.length}
+          kelurahanTotalCount={scopedKelurahanList.length}
           totalSuaraPartai={totalSuaraPartai}
           totalSuaraTanpaCalon={totalSuaraTanpaCalon}
           perCaleg={perCaleg}
@@ -786,7 +882,7 @@ const SLIDESHOW_GROUP_SIZE = 6;
 // Daftar caleg & kelurahan yang panjang dipecah lagi per beberapa item per slide
 // supaya tetap terbaca dari jarak jauh.
 const PksSlideshow = ({
-  onClose, selectedYear, filterKelurahanName, kelurahanTercakupCount, kelurahanTotalCount,
+  onClose, selectedYear, dapilName, filterKelurahanName, kelurahanTercakupCount, kelurahanTotalCount,
   totalSuaraPartai, totalSuaraTanpaCalon, perCaleg, calegOnly, chartData, pieData, perKelurahanTotal,
   compareAvailable = false, compareYears = COMPARE_YEARS, compareTotals = {}, compareByKelurahan = [], compareByCaleg = [],
 }) => {
@@ -889,7 +985,7 @@ const PksSlideshow = ({
                 <h1 style={{ margin: 0, fontSize: 42, fontWeight: 800, letterSpacing: '-0.02em', maxWidth: 760 }}>
                   Partai Keadilan Sejahtera
                 </h1>
-                <p style={{ margin: '10px 0 0', fontSize: 16, color: '#d4d4d8' }}>DPRD Kota Balikpapan</p>
+                <p style={{ margin: '10px 0 0', fontSize: 16, color: '#d4d4d8' }}>{dapilName || 'DPRD Kota Balikpapan'}</p>
                 <p style={{ margin: '22px 0 0', fontSize: 13, color: '#a1a1aa' }}>
                   {filterKelurahanName ? `Kelurahan: ${filterKelurahanName}` : `Seluruh kelurahan tercakup (${kelurahanTercakupCount} / ${kelurahanTotalCount})`}
                 </p>
@@ -1317,7 +1413,11 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
   }, []);
 
   useEffect(() => {
-    if (!kelurahanId && availableKelurahan.length > 0) setKelurahanId(availableKelurahan[0].id);
+    // availableKelurahan berubah kalau dapil aktif diganti — kalau kelurahan
+    // yang sedang dipilih bukan lagi milik dapil ini, pindah ke pilihan
+    // pertama yang valid supaya tidak diam-diam menampilkan data dapil lama.
+    if (availableKelurahan.length === 0) { if (kelurahanId) setKelurahanId(''); return; }
+    if (!availableKelurahan.some((k) => k.id === kelurahanId)) setKelurahanId(availableKelurahan[0].id);
   }, [availableKelurahan, kelurahanId]);
 
   const reloadTpsRows = React.useCallback(async () => {
@@ -1660,6 +1760,12 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
   const [kelurahanId, setKelurahanId] = useState('');
   const [electionYear, setElectionYear] = useState(defaultYear || 2024);
   useEffect(() => { if (defaultYear) setElectionYear(defaultYear); }, [defaultYear]);
+  // kelurahanList berubah kalau dapil aktif diganti — kalau kelurahan yang
+  // sedang dipilih bukan lagi milik dapil ini, kosongkan supaya upload tidak
+  // diam-diam tersimpan ke kelurahan dapil yang lain.
+  useEffect(() => {
+    if (kelurahanId && !kelurahanList.some((k) => k.id === kelurahanId)) setKelurahanId('');
+  }, [kelurahanList, kelurahanId]);
   const [file, setFile] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [pageFrom, setPageFrom] = useState(1);
@@ -2152,7 +2258,14 @@ const PksManualInput = ({ kelurahanList, candidateMasterList, onSaved, toast, de
   const [kelurahanId, setKelurahanId] = useState('');
   const [electionYear, setElectionYear] = useState(defaultYear || 2024);
   useEffect(() => { if (defaultYear) setElectionYear(defaultYear); }, [defaultYear]);
-  useEffect(() => { if (!kelurahanId && kelurahanList.length > 0) setKelurahanId(kelurahanList[0].id); }, [kelurahanList, kelurahanId]);
+  useEffect(() => {
+    // kelurahanList berubah kalau dapil aktif diganti — kalau kelurahan yang
+    // sedang dipilih bukan lagi milik dapil ini, pindah ke pilihan pertama
+    // yang valid supaya input manual tidak diam-diam tersimpan ke kelurahan
+    // dapil yang lain.
+    if (kelurahanList.length === 0) { if (kelurahanId) setKelurahanId(''); return; }
+    if (!kelurahanList.some((k) => k.id === kelurahanId)) setKelurahanId(kelurahanList[0].id);
+  }, [kelurahanList, kelurahanId]);
 
   const [candidates, setCandidates] = useState([]);
   const [jumlahTps, setJumlahTps] = useState(1);
