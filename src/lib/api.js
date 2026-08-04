@@ -1614,7 +1614,8 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     if (startDate) expenseQuery = expenseQuery.gte('transaction_date', startDate);
     if (endDate) expenseQuery = expenseQuery.lte('transaction_date', endDate);
 
-    const { data: expenses } = await expenseQuery;
+    const { data: expenses, error: expenseError } = await expenseQuery;
+    if (expenseError) throw expenseError;
 
     // 🔥 INCOME
     let incomeQuery = supabase
@@ -1634,7 +1635,8 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     if (startDate) incomeQuery = incomeQuery.gte('date', startDate);
     if (endDate) incomeQuery = incomeQuery.lte('date', endDate);
 
-    const { data: income } = await incomeQuery;
+    const { data: income, error: incomeError } = await incomeQuery;
+    if (incomeError) throw incomeError;
 
     return {
       data: {
