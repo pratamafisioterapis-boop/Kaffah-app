@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, LogOut, ListChecks, Table2 } from 'lucide-react';
@@ -48,6 +49,7 @@ const PemilihDpcApp = () => {
   const [dapilList, setDapilList] = useState([]);
   const [kelurahanList, setKelurahanList] = useState([]);
   const [calegMasterRows, setCalegMasterRows] = useState([]);
+  const [voteYears, setVoteYears] = useState([]);
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -64,14 +66,22 @@ const PemilihDpcApp = () => {
     setDpcNama(dpc.nama);
     setSelectedDapil(dpc.kecamatan_id);
 
-    const [{ data: kec }, { data: kel }, { data: caleg }] = await Promise.all([
+    // pemilih_suara_caleg dipakai murni untuk menemukan tahun-tahun pemilu
+    // yang sudah punya data suara (mis. dapil lama yang datanya diinput
+    // sebelum fitur roster caleg ini ada, jadi belum tentu punya baris di
+    // pemilih_caleg_master sama sekali). Tidak perlu filter kecamatan_id di
+    // sini — RLS pemilih_suara_caleg_dpc_all sudah otomatis membatasi ke
+    // kelurahan milik dapil akun ini.
+    const [{ data: kec }, { data: kel }, { data: caleg }, { data: suara }] = await Promise.all([
       supabase.from('pemilih_kecamatan').select('id, nama').eq('id', dpc.kecamatan_id),
       supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').eq('kecamatan_id', dpc.kecamatan_id).order('nama'),
       supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').eq('kecamatan_id', dpc.kecamatan_id).order('candidate_number'),
+      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year')),
     ]);
     setDapilList(kec || []);
     setKelurahanList(kel || []);
     setCalegMasterRows(caleg || []);
+    setVoteYears(Array.from(new Set((suara || []).map((r) => r.election_year))).sort((a, b) => b - a));
     setLoading(false);
   }, [user.id]);
 
@@ -82,10 +92,16 @@ const PemilihDpcApp = () => {
     navigate('/login');
   };
 
+  // Tahun pemilu terakhir yang punya data suara diutamakan (paling relevan
+  // untuk dilihat/diedit); kalau belum ada data sama sekali, jatuh ke tahun
+  // roster caleg terbaru; kalau roster juga masih kosong (dapil baru sama
+  // sekali), baru pakai tahun berjalan sebagai titik awal.
   const currentYear = new Date().getFullYear();
-  const defaultYear = calegMasterRows.length > 0
-    ? Math.max(...calegMasterRows.map((c) => c.election_year))
-    : currentYear;
+  const defaultYear = voteYears.length > 0
+    ? voteYears[0]
+    : calegMasterRows.length > 0
+      ? Math.max(...calegMasterRows.map((c) => c.election_year))
+      : currentYear;
 
   return (
     <div className="d-wrapper">
@@ -147,6 +163,7 @@ const PemilihDpcApp = () => {
                 onSelectDapil={() => {}}
                 kelurahanList={kelurahanList}
                 calegMasterRows={calegMasterRows}
+                knownYears={voteYears}
                 defaultYear={defaultYear}
                 toast={toast}
                 onChanged={fetchAll}
@@ -156,6 +173,7 @@ const PemilihDpcApp = () => {
                 selectedDapil={selectedDapil}
                 kelurahanList={kelurahanList}
                 calegMasterRows={calegMasterRows}
+                knownYears={voteYears}
                 defaultYear={defaultYear}
                 toast={toast}
               />
