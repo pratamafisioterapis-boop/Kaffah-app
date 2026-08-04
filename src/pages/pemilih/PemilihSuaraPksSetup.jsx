@@ -137,36 +137,39 @@ const DapilSection = ({ dapilList, selectedDapil, onSelectDapil, allKelurahanLis
 
   const applyKecamatanDefault = async (def) => {
     setApplyingDefault(def.nama);
-    let dapilId = def.dapilId;
-    if (!dapilId) {
-      const { data, error } = await supabase.from('pemilih_kecamatan').insert({ nama: def.nama }).select('id').single();
-      if (error) {
-        toast({ variant: 'destructive', title: 'Gagal menambah dapil', description: error.message });
-        setApplyingDefault(null);
-        return;
+    try {
+      let dapilId = def.dapilId;
+      if (!dapilId) {
+        const { data, error } = await supabase.from('pemilih_kecamatan').insert({ nama: def.nama }).select('id').single();
+        if (error) {
+          toast({ variant: 'destructive', title: 'Gagal menambah dapil', description: error.message });
+          return;
+        }
+        dapilId = data.id;
       }
-      dapilId = data.id;
-    }
-    const existingNames = new Set(
-      (allKelurahanList || []).filter((k) => k.kecamatan_id === dapilId).map((k) => k.nama.trim().toLowerCase())
-    );
-    const missing = def.kelurahan.filter((nama) => !existingNames.has(nama.toLowerCase()));
-    if (missing.length > 0) {
-      const { error } = await supabase.from('pemilih_kelurahan').insert(missing.map((nama) => ({ nama, kecamatan_id: dapilId })));
-      if (error) {
-        toast({ variant: 'destructive', title: 'Gagal menambah kelurahan', description: error.message });
-        setApplyingDefault(null);
-        return;
+      const existingNames = new Set(
+        (allKelurahanList || []).filter((k) => k.kecamatan_id === dapilId).map((k) => k.nama.trim().toLowerCase())
+      );
+      const missing = def.kelurahan.filter((nama) => !existingNames.has(nama.toLowerCase()));
+      if (missing.length > 0) {
+        const { error } = await supabase.from('pemilih_kelurahan').insert(missing.map((nama) => ({ nama, kecamatan_id: dapilId })));
+        if (error) {
+          toast({ variant: 'destructive', title: 'Gagal menambah kelurahan', description: error.message });
+          return;
+        }
       }
+      await onChanged();
+      onSelectDapil(dapilId);
+      toast({
+        title: missing.length > 0
+          ? `${missing.length} kelurahan default ditambahkan untuk ${def.nama}`
+          : `${def.nama} sudah lengkap`,
+      });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Gagal menerapkan kecamatan default', description: e?.message || String(e) });
+    } finally {
+      setApplyingDefault(null);
     }
-    setApplyingDefault(null);
-    await onChanged();
-    onSelectDapil(dapilId);
-    toast({
-      title: missing.length > 0
-        ? `${missing.length} kelurahan default ditambahkan untuk ${def.nama}`
-        : `${def.nama} sudah lengkap`,
-    });
   };
 
   const addDapil = async () => {
@@ -345,31 +348,41 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
     if (seeding || loading || kelurahanIds.length === 0 || !year) return;
     const missingIds = kelurahanIds.filter((id) => !countRows.some((r) => r.kelurahan_id === id));
     if (missingIds.length === 0) return;
-    setSeeding(true);
-    supabase
-      .rpc('pemilih_suara_tps_discover', { p_kelurahan_ids: missingIds, p_election_year: year })
-      .then(({ data, error }) => {
+
+    let cancelled = false;
+    const run = async () => {
+      setSeeding(true);
+      try {
+        const { data, error } = await supabase.rpc('pemilih_suara_tps_discover', { p_kelurahan_ids: missingIds, p_election_year: year });
+        if (cancelled) return;
         if (error) {
-          setSeeding(false);
           toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: error.message });
           return;
         }
         const payload = (data || [])
           .filter((d) => d.max_tps_number)
           .map((d) => ({ kelurahan_id: d.kelurahan_id, election_year: year, jumlah_tps: d.max_tps_number }));
-        if (payload.length === 0) { setSeeding(false); return; }
-        supabase
+        if (payload.length === 0) return;
+        const { error: upsertError } = await supabase
           .from('pemilih_suara_tps_count')
-          .upsert(payload, { onConflict: 'kelurahan_id,election_year' })
-          .then(({ error: upsertError }) => {
-            setSeeding(false);
-            if (upsertError) {
-              toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: upsertError.message });
-              return;
-            }
-            fetchCounts();
-          });
-      });
+          .upsert(payload, { onConflict: 'kelurahan_id,election_year' });
+        if (cancelled) return;
+        if (upsertError) {
+          toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: upsertError.message });
+          return;
+        }
+        await fetchCounts();
+      } catch (e) {
+        // Jaring pengaman: kalau panggilan network-nya reject (bukan cuma
+        // balik {error}), tetap harus lolos ke finally supaya "seeding"
+        // tidak macet true selamanya (layar loading tidak pernah hilang).
+        if (!cancelled) toast({ variant: 'destructive', title: 'Gagal memuat jumlah TPS dari data suara', description: e?.message || String(e) });
+      } finally {
+        if (!cancelled) setSeeding(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [seeding, loading, countRows, kelurahanIds, year, toast, fetchCounts]);
 
   const currentCount = (kelurahanId) => countRows.find((r) => r.kelurahan_id === kelurahanId)?.jumlah_tps ?? 0;
@@ -545,26 +558,39 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
     // sekali saja, supaya "Daftar Caleg" tidak diam-diam kosong padahal
     // datanya sudah ada.
     if (seeding || rowsForYear.length > 0 || discoveredForYear.length === 0) return;
-    setSeeding(true);
-    supabase
-      .from('pemilih_caleg_master')
-      .upsert(
-        discoveredForYear.map((d) => ({
-          kecamatan_id: selectedDapil,
-          election_year: year,
-          candidate_number: d.candidate_number,
-          candidate_name: d.candidate_name,
-        })),
-        { onConflict: 'kecamatan_id,election_year,candidate_number' }
-      )
-      .then(({ error }) => {
-        setSeeding(false);
+
+    let cancelled = false;
+    const run = async () => {
+      setSeeding(true);
+      try {
+        const { error } = await supabase
+          .from('pemilih_caleg_master')
+          .upsert(
+            discoveredForYear.map((d) => ({
+              kecamatan_id: selectedDapil,
+              election_year: year,
+              candidate_number: d.candidate_number,
+              candidate_name: d.candidate_name,
+            })),
+            { onConflict: 'kecamatan_id,election_year,candidate_number' }
+          );
+        if (cancelled) return;
         if (error) {
           toast({ variant: 'destructive', title: 'Gagal memuat caleg dari data suara', description: error.message });
           return;
         }
-        onChanged();
-      });
+        await onChanged();
+      } catch (e) {
+        // Jaring pengaman: kalau panggilan network-nya reject (bukan cuma
+        // balik {error}), tetap harus lolos ke finally supaya "seeding"
+        // tidak macet true selamanya.
+        if (!cancelled) toast({ variant: 'destructive', title: 'Gagal memuat caleg dari data suara', description: e?.message || String(e) });
+      } finally {
+        if (!cancelled) setSeeding(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [seeding, rowsForYear.length, discoveredForYear, selectedDapil, year, toast, onChanged]);
 
   const [newNumber, setNewNumber] = useState('');
