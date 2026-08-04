@@ -1599,7 +1599,15 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     // 🔥 EXPENSE
     let expenseQuery = supabase
       .from('admin_expenses')
-      .select('*')
+      .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
       .eq('clinic_id', userRow?.clinic_id)
       .order('transaction_date', { ascending: false });
 
@@ -1611,7 +1619,15 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     // 🔥 INCOME
     let incomeQuery = supabase
       .from('admin_income')
-      .select('*')
+      .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
       .eq('clinic_id', userRow?.clinic_id)
       .order('date', { ascending: false });
 
@@ -1839,6 +1855,12 @@ export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
   subcategory:sub_category (
     id,
     subcategory_name
+  ),
+  bank_accounts (
+    id,
+    bank_name,
+    account_number,
+    holder_name
   )
 `)
         .eq('clinic_id', userRow?.clinic_id)
@@ -1871,6 +1893,12 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
   subcategory:sub_category (
     id,
     subcategory_name
+  ),
+  bank_accounts (
+    id,
+    bank_name,
+    account_number,
+    holder_name
   )
 `)
         .eq('clinic_id', userRow?.clinic_id)
@@ -1953,7 +1981,15 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
     const buildQuery = () => {
       let query = supabase
         .from('admin_income')
-        .select('*')
+        .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
         .eq('clinic_id', userRow?.clinic_id)
         .order('date', { ascending: false });
 

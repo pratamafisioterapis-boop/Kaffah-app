@@ -237,6 +237,7 @@ const handleExportExcel = () => {
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
+      bank: item.bank_accounts?.bank_name || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -247,6 +248,7 @@ const handleExportExcel = () => {
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
+      bank: item.bank_accounts?.bank_name || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -257,6 +259,7 @@ const handleExportExcel = () => {
       deskripsi: '-',
       nama: item.patient_name || '-',
       paket: item.package_name || '-',
+      bank: '-',
       jumlah: Number(item.amount) || 0
     }))
   ];
@@ -279,6 +282,7 @@ const handleExportExcel = () => {
       sumber: 'Pengeluaran Owner',
       kategori: item.category || '-',
       deskripsi: item.description || '-',
+      bank: item.bank_accounts?.bank_name || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -287,6 +291,7 @@ const handleExportExcel = () => {
       sumber: 'Pengeluaran Admin',
       kategori: item.category || '-',
       deskripsi: item.description || '-',
+      bank: item.bank_accounts?.bank_name || '-',
       jumlah: Number(item.amount) || 0
     }))
   ];
@@ -394,6 +399,7 @@ combinedExpenses.sort((a, b) => {
             body: tableData.map(row => columns.map(c => {
                  if (c.id === 'amount') return new Intl.NumberFormat('id-ID').format(row.amount);
                  if (c.id === 'date') return formatDate(row[c.accessor]);
+                 if (c.id === 'bank') return row.bank_accounts?.bank_name || '-';
                  return row[c.accessor];
             })),
             theme: 'grid',
@@ -411,6 +417,7 @@ combinedExpenses.sort((a, b) => {
         { header: "Tanggal", accessor: "date", id: "date" },
         { header: "Kategori", accessor: "category" },
         { header: "Deskripsi", accessor: "description" },
+        { header: "Bank", accessor: "bank_accounts", id: "bank" },
         { header: "Jumlah", accessor: "amount", id: "amount" }
     ], subTotalOwnerInc, 'green');
 
@@ -418,6 +425,7 @@ combinedExpenses.sort((a, b) => {
         { header: "Tanggal", accessor: "transaction_date", id: "date" },
         { header: "Kategori", accessor: "category" },
         { header: "Deskripsi", accessor: "description" },
+        { header: "Bank", accessor: "bank_accounts", id: "bank" },
         { header: "Jumlah", accessor: "amount", id: "amount" }
     ], subTotalAdminInc, 'green');
 
@@ -436,6 +444,7 @@ combinedExpenses.sort((a, b) => {
         { header: "Tanggal", accessor: "date", id: "date" },
         { header: "Kategori", accessor: "category" },
         { header: "Deskripsi", accessor: "description" },
+        { header: "Bank", accessor: "bank_accounts", id: "bank" },
         { header: "Jumlah", accessor: "amount", id: "amount" }
     ], subTotalOwnerExp, 'red');
 
@@ -443,6 +452,7 @@ combinedExpenses.sort((a, b) => {
         { header: "Tanggal", accessor: "transaction_date", id: "date" },
         { header: "Kategori", accessor: "category" },
         { header: "Deskripsi", accessor: "description" },
+        { header: "Bank", accessor: "bank_accounts", id: "bank" },
         { header: "Jumlah", accessor: "amount", id: "amount" }
     ], subTotalAdminExp, 'red');
 
@@ -563,7 +573,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -575,7 +586,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -612,7 +624,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -624,7 +637,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
         </div>
