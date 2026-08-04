@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Save, Users, MapPin, ListChecks, Settings, Plus } from 'lucide-react';
 
@@ -33,10 +34,13 @@ const PemilihDataDpt = () => {
 
   const fetchAll = async () => {
     setLoading(true);
+    // pemilih_tps & pemilih_dpt_periode tanpa paginasi eksplisit kena batas
+    // 1000 baris PostgREST — dpt_periode saja sudah ~950 baris di produksi
+    // untuk satu kecamatan, jadi ini bukan risiko teoretis.
     const [{ data: kel }, { data: tps }, { data: periode }] = await Promise.all([
       supabase.from('pemilih_kelurahan').select('id, nama').order('nama'),
-      supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').order('nomor_tps'),
-      supabase.from('pemilih_dpt_periode').select('tps_id, tahun, jumlah'),
+      fetchAllRows(() => supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').order('nomor_tps')),
+      fetchAllRows(() => supabase.from('pemilih_dpt_periode').select('tps_id, tahun, jumlah')),
     ]);
     setKelurahanList(kel || []);
     setTpsRows(tps || []);

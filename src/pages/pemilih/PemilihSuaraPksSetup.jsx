@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import PemilihSelect from './PemilihSelect';
 import {
   Loader2, Plus, Trash2, Pencil, Check, X, MapPin, ListChecks, Users, Save, Info,
@@ -200,7 +201,12 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, toast, onChanged })
       setLoading(false);
       return;
     }
-    const { data } = await supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').in('kelurahan_id', kelurahanIds);
+    // .in('kelurahan_id', kelurahanIds) tanpa paginasi gampang lewat batas
+    // 1000 baris PostgREST begitu satu dapil punya banyak kelurahan/TPS —
+    // satu kecamatan saja sudah bisa >500 TPS.
+    const { data } = await fetchAllRows(() =>
+      supabase.from('pemilih_tps').select('id, kelurahan_id, nomor_tps').in('kelurahan_id', kelurahanIds)
+    );
     setTpsRows(data || []);
     const counts = {};
     kelurahanList.forEach((k) => {
