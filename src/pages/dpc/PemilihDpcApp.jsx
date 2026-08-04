@@ -50,6 +50,7 @@ const PemilihDpcApp = () => {
   const [kelurahanList, setKelurahanList] = useState([]);
   const [calegMasterRows, setCalegMasterRows] = useState([]);
   const [voteYears, setVoteYears] = useState([]);
+  const [voteCandidateRows, setVoteCandidateRows] = useState([]);
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -66,7 +67,7 @@ const PemilihDpcApp = () => {
     setDpcNama(dpc.nama);
     setSelectedDapil(dpc.kecamatan_id);
 
-    // pemilih_suara_caleg dipakai murni untuk menemukan tahun-tahun pemilu
+    // pemilih_suara_caleg dipakai untuk menemukan tahun pemilu & nama caleg
     // yang sudah punya data suara (mis. dapil lama yang datanya diinput
     // sebelum fitur roster caleg ini ada, jadi belum tentu punya baris di
     // pemilih_caleg_master sama sekali). Tidak perlu filter kecamatan_id di
@@ -76,12 +77,13 @@ const PemilihDpcApp = () => {
       supabase.from('pemilih_kecamatan').select('id, nama').eq('id', dpc.kecamatan_id),
       supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').eq('kecamatan_id', dpc.kecamatan_id).order('nama'),
       supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').eq('kecamatan_id', dpc.kecamatan_id).order('candidate_number'),
-      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year')),
+      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year, candidate_number, candidate_name')),
     ]);
     setDapilList(kec || []);
     setKelurahanList(kel || []);
     setCalegMasterRows(caleg || []);
     setVoteYears(Array.from(new Set((suara || []).map((r) => r.election_year))).sort((a, b) => b - a));
+    setVoteCandidateRows(suara || []);
     setLoading(false);
   }, [user.id]);
 
@@ -164,6 +166,7 @@ const PemilihDpcApp = () => {
                 kelurahanList={kelurahanList}
                 calegMasterRows={calegMasterRows}
                 knownYears={voteYears}
+                voteCandidateRows={voteCandidateRows}
                 defaultYear={defaultYear}
                 toast={toast}
                 onChanged={fetchAll}

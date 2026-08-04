@@ -633,6 +633,7 @@ const PemilihSuaraPks = () => {
           kelurahanList={scopedKelurahanList}
           calegMasterRows={calegMasterRows.filter((c) => c.kecamatan_id === selectedDapil)}
           knownYears={availableYears}
+          voteCandidateRows={dapilRows}
           defaultYear={selectedYear || availableYears[0] || new Date().getFullYear()}
           toast={toast}
           onChanged={fetchAll}
