@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
+import { bumpTpsCountIfNeeded } from '@/lib/pemilihTpsCount';
 import { useToast } from '@/components/ui/use-toast';
 import PemilihSelect from './PemilihSelect';
 import {
@@ -631,6 +632,7 @@ const PemilihSuaraPks = () => {
           selectedDapil={selectedDapil}
           onSelectDapil={setSelectedDapil}
           kelurahanList={scopedKelurahanList}
+          allKelurahanList={kelurahanList}
           calegMasterRows={calegMasterRows.filter((c) => c.kecamatan_id === selectedDapil)}
           knownYears={availableYears}
           voteCandidateRows={dapilRows}
@@ -1484,6 +1486,7 @@ const PksTpsDetail = ({ kelurahanList, kelurahanTercakup, candidateMasterList, s
       toast({ variant: 'destructive', title: 'Gagal menyimpan TPS', description: error.message });
       return;
     }
+    bumpTpsCountIfNeeded(kelurahanId, selectedYear, tpsNumber);
     toast({ title: `TPS ${String(tpsNumber).padStart(2, '0')} tersimpan` });
     setEditingTps(null);
     reloadTpsRows();
@@ -2039,6 +2042,9 @@ const PksUpload = ({ kelurahanList, onSaved, toast, defaultYear }) => {
       }
     }
 
+    if (tpsPayload.length > 0) {
+      bumpTpsCountIfNeeded(kelurahanId, electionYear, Math.max(...tpsPayload.map((r) => r.tps_number)));
+    }
     setSaving(false);
     toast({ title: 'Data tersimpan', description: `${payload.length} baris total + ${tpsPayload.length} baris rincian per TPS disimpan.` });
     onSaved();
@@ -2427,6 +2433,9 @@ const PksManualInput = ({ kelurahanList, candidateMasterList, onSaved, toast, de
       }
     }
 
+    if (tpsNumbers.length > 0) {
+      bumpTpsCountIfNeeded(kelurahanId, electionYear, Math.max(...tpsNumbers));
+    }
     setSaving(false);
     toast({ title: 'Data tersimpan', description: `${candidates.length} caleg × ${jumlahTps} TPS untuk ${selectedKelurahanName} tersimpan.` });
     onSaved();

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
+import { bumpTpsCountIfNeeded } from '@/lib/pemilihTpsCount';
 import PemilihSelect from '../pemilih/PemilihSelect';
 import { Loader2, Plus, Pencil, Trash2, Save, X, Table2 } from 'lucide-react';
 
@@ -191,6 +192,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
       return;
     }
     const syncError = await syncKelurahanTotals(kelurahanId, year, candidateMasterList);
+    bumpTpsCountIfNeeded(kelurahanId, year, tpsNumber);
     setSavingTps(false);
     if (syncError) {
       toast({ variant: 'destructive', title: 'TPS tersimpan, tapi gagal memperbarui total', description: syncError.message });
