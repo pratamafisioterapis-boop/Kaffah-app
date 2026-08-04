@@ -8,20 +8,44 @@ import {
 // Panel setup "sekali jalan" untuk modul Suara PKS: kelola Dapil/Kecamatan,
 // Kelurahan + jumlah TPS-nya, dan daftar Caleg — semuanya di satu halaman
 // supaya menyiapkan dapil baru dari nol tidak perlu lompat-lompat menu.
+//
+// `manageDapil` (default true) mengontrol apakah bagian Dapil/Kecamatan bisa
+// ditambah/ubah/hapus di sini. Akun DPC (lihat PemilihDpcApp) memakai
+// komponen yang sama tapi dengan manageDapil=false — dapilnya sudah
+// ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
-  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, defaultYear, toast, onChanged,
+  dapilList, selectedDapil, onSelectDapil, kelurahanList, calegMasterRows, defaultYear, toast, onChanged, manageDapil = true,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="p-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fff7ed', border: '1px solid #fed7aa' }}>
         <Info size={16} color="#ea580c" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ margin: 0, fontSize: 12.5, color: '#7c3212', lineHeight: 1.5 }}>
-          Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya,
-          <strong> 3)</strong> daftarkan nomor &amp; nama Caleg. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
+          {manageDapil ? (
+            <>
+              Urutan setup dapil baru: <strong>1)</strong> tambah Dapil/Kecamatan, <strong>2)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya,
+              <strong> 3)</strong> daftarkan nomor &amp; nama Caleg. Setelah itu data suara bisa diisi lewat tab Upload PDF atau Input Manual.
+            </>
+          ) : (
+            <>
+              Urutan setup: <strong>1)</strong> tambah Kelurahan/Desa beserta jumlah TPS-nya, <strong>2)</strong> daftarkan nomor &amp; nama Caleg.
+              Setelah itu nilai suara per TPS bisa diisi di tab Input Suara per TPS.
+            </>
+          )}
         </p>
       </div>
 
-      <DapilSection dapilList={dapilList} selectedDapil={selectedDapil} onSelectDapil={onSelectDapil} toast={toast} onChanged={onChanged} />
+      {manageDapil ? (
+        <DapilSection dapilList={dapilList} selectedDapil={selectedDapil} onSelectDapil={onSelectDapil} toast={toast} onChanged={onChanged} />
+      ) : (
+        <div className="p-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MapPin size={16} color="#ea580c" style={{ flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dapil / Kecamatan Anda</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1d29' }}>{dapilList.find((d) => d.id === selectedDapil)?.nama || '-'}</div>
+          </div>
+        </div>
+      )}
 
       {selectedDapil ? (
         <>

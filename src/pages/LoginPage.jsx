@@ -109,6 +109,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Pemilih DPC status...");
+          const { data: dpcFallback } = await supabase
+            .from('pemilih_dpc')
+            .select('user_id, is_active')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (dpcFallback?.is_active) {
+            console.log("[LoginPage] Pemilih DPC detected, redirecting.");
+            navigate('/pemilih-dpc', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Validating fallback metadata role...");
           // Fallback: Check metadata
           const metaRole = user.user_metadata?.role;
@@ -163,6 +176,19 @@ const LoginPage = () => {
         if (relawan?.is_active) {
           console.log("[LoginPage] Pemilih relawan detected, redirecting.");
           navigate('/relawan', { replace: true });
+          return;
+        }
+
+        console.log("[LoginPage] Checking Pemilih DPC status...");
+        const { data: dpc } = await supabase
+          .from('pemilih_dpc')
+          .select('user_id, is_active')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (dpc?.is_active) {
+          console.log("[LoginPage] Pemilih DPC detected, redirecting.");
+          navigate('/pemilih-dpc', { replace: true });
           return;
         }
 
