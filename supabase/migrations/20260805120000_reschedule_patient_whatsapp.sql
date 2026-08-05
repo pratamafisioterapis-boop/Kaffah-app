@@ -16,9 +16,13 @@
 --
 -- 'reschedule_appointment' is also added to wa_templates_category_check (it
 -- only listed booking/birthday/follow_up/package/reminder categories) and a
--- default per-clinic template is seeded so the message is live immediately;
--- owners can still customize it later from Settings the same way as
--- booking_appointment.
+-- default template is seeded for Kaffah Physiotherapy so the message is live
+-- immediately (content confirmed with the clinic owner); it's still
+-- customizable later from Settings the same way as booking_appointment.
+-- Other clinics get no seeded row on purpose (per the owner, this rollout is
+-- Kaffah-only for now) — they'll fall back to the generic in-trigger default
+-- text until/unless they configure their own template, same as any other
+-- category without a clinic-specific row.
 --
 -- Applied directly against the Supabase project via MCP apply_migration on
 -- 2026-08-05.
@@ -51,19 +55,6 @@ values
   '["sapaan","nickname","nama","tanggal","jam","hari","hari_booking","tanggal_lama","jam_lama","hari_lama","terapis","layanan"]'::jsonb,
   true,
   'bfdc3fd8-a052-4753-a5b7-229930b3237a'
-),
-(
-  'reschedule_appointment',
-  'Mohon perhatian, jadwal fisioterapi Anda di Grand Physiocare telah kami ubah (reschedule) dengan rincian berikut:' || E'\n\n' ||
-  '📅 Jadwal sebelumnya : [hari_lama], [tanggal_lama] pukul [jam_lama]' || E'\n' ||
-  '📅 Jadwal baru        : [hari_booking], [tanggal] pukul [jam]' || E'\n\n' ||
-  'Mohon konfirmasi kehadiran Anda sesuai jadwal terbaru. Apabila jadwal baru ini masih belum sesuai, silakan hubungi kami agar dapat kami bantu atur ulang.' || E'\n\n' ||
-  'Terima kasih atas pengertiannya.' || E'\n\n' ||
-  'Salam sehat,' || E'\n' ||
-  'Grand Physiocare',
-  '["sapaan","nickname","nama","tanggal","jam","hari_booking","tanggal_lama","jam_lama","hari_lama","terapis","layanan"]'::jsonb,
-  true,
-  '61c1dd29-3bab-40df-932f-db6b298f52bb'
 )
 on conflict (category, clinic_id) do nothing;
 
