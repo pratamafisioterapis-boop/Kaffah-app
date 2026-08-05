@@ -166,6 +166,24 @@ const CATEGORIES = [
   ]
 },
   {
+  id: 'reschedule_appointment',
+  label: 'Reschedule',
+  placeholders: [
+    'sapaan',
+    'nickname',
+    'nama',
+    'tanggal',
+    'jam',
+    'hari',
+    'hari_booking',
+    'tanggal_lama',
+    'jam_lama',
+    'hari_lama',
+    'terapis',
+    'layanan'
+  ]
+},
+  {
     id: 'follow_up',
     label: 'Follow Up',
     placeholders: [
@@ -258,7 +276,10 @@ const SAMPLE_DATA = {
     hari: 'Senin',
     tanggal_lahir: '15 Januari 1994',
     hari_expiry: 'Rabu',
-    tanggal_expiry: '20 Januari 2024'
+    tanggal_expiry: '20 Januari 2024',
+    tanggal_lama: '10 Januari 2024',
+    jam_lama: '10:00',
+    hari_lama: 'Rabu'
 };
 
 const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
