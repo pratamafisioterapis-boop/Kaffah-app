@@ -245,13 +245,14 @@ const { data: timeOffData } = await supabase
   .gte('end_date', today);
 
 // Reason disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm),
-// kategori valid: Sakit, Libur, Training, Izin Pribadi, Lainnya. Ambil kategorinya
-// saja alih-alih memaksa semua non-"sakit" menjadi label "cuti".
+// kategori valid: Cuti, Sakit, Libur, Training, Izin Pribadi, Lainnya. Ambil
+// kategorinya saja alih-alih memaksa semua non-"sakit" menjadi label "cuti".
 const leaveMap = {};
 (timeOffData || []).forEach(t => {
   const category = (t.reason || '').split(' - ')[0].trim().toLowerCase();
   if (category.includes('sakit')) leaveMap[t.therapist_id] = 'sakit';
   else if (category.includes('training')) leaveMap[t.therapist_id] = 'training';
+  else if (category.includes('cuti')) leaveMap[t.therapist_id] = 'cuti';
   else if (category.includes('izin')) leaveMap[t.therapist_id] = 'izin';
   else if (category.includes('libur')) leaveMap[t.therapist_id] = 'libur';
   else leaveMap[t.therapist_id] = 'lainnya';

@@ -225,11 +225,12 @@ const formattedDate = date
       (timeOffRows || []).forEach(row => {
         // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
         // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
-        // karena kategori yang valid adalah Sakit/Libur/Training/Izin Pribadi/Lainnya
+        // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
         // dan catatan bebas bisa memuat kata apa saja, termasuk "cuti" secara kebetulan.
         const category = (row.reason || '').split(' - ')[0].trim().toLowerCase();
         const label = category.includes('sakit') ? 'Sakit'
           : category.includes('training') ? 'Training'
+          : category.includes('cuti') ? 'Cuti'
           : category.includes('izin') ? 'Izin Pribadi'
           : category.includes('libur') ? 'Libur'
           : 'Lainnya';
