@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Loader2, CalendarX, CheckCircle } from 'lucide-react';
 
-const REASONS = ['Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
 
 const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
   const { toast } = useToast();
