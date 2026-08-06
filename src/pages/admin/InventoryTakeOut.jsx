@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { getInventoryStockOuts, getInventoryItems } from '@/lib/api';
 import InventoryTakeOutForm from '@/components/admin/inventory/InventoryTakeOutForm';
 import InventoryTakeOutHistory from '@/components/admin/inventory/InventoryTakeOutHistory';
+import InventoryTakeOutEditModal from '@/components/admin/inventory/InventoryTakeOutEditModal';
 import InventoryStockOverview from '@/components/admin/inventory/InventoryStockOverview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,6 +18,7 @@ const InventoryTakeOutPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [editingRow, setEditingRow] = useState(null);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -82,7 +84,9 @@ const InventoryTakeOutPage = () => {
               <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm onSuccess={refreshAll} /></div></div>
               <div className="xl:col-span-2">
                 <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Pengambilan</h3>
-                {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : <InventoryTakeOutHistory history={history} />}
+                {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : (
+                  <InventoryTakeOutHistory history={history} onEdit={setEditingRow} onRefresh={refreshAll} />
+                )}
               </div>
             </div>
           </TabsContent>
@@ -98,6 +102,13 @@ const InventoryTakeOutPage = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        <InventoryTakeOutEditModal
+          isOpen={!!editingRow}
+          row={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSuccess={refreshAll}
+        />
       </div>
     </DashboardLayout>
   );

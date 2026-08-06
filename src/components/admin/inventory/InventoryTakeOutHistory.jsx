@@ -1,12 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format, isValid } from 'date-fns';
-import { Boxes } from 'lucide-react';
+import { Boxes, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { deleteInventoryStockOut } from '@/lib/api';
 
-const InventoryTakeOutHistory = ({ history = [] }) => {
+const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
+  const { toast } = useToast();
+  const [deletingId, setDeletingId] = useState(null);
+
   const formatDate = (d) => {
     if (!d) return '-';
     const date = new Date(d);
     return isValid(date) ? format(date, 'dd/MM/yyyy') : '-';
+  };
+
+  const handleDelete = async (row) => {
+    const itemName = row.inventory_items?.item_name || 'barang ini';
+    if (!window.confirm(`Hapus riwayat pengambilan "${itemName}"? Stok akan dikembalikan dan pengeluaran terkait akan dihapus.`)) return;
+    setDeletingId(row.id);
+    try {
+      const { error } = await deleteInventoryStockOut(row.id);
+      if (error) throw error;
+      toast({ title: 'Riwayat pengambilan dihapus' });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal menghapus', description: err.message });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -42,6 +64,14 @@ const InventoryTakeOutHistory = ({ history = [] }) => {
                     <p className="text-slate-500 text-xs">{row.notes}</p>
                   </div>
                 )}
+                <div className="flex items-center justify-end gap-1 pt-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -56,6 +86,7 @@ const InventoryTakeOutHistory = ({ history = [] }) => {
                   <th className="px-6 py-3.5 font-semibold text-right">Jumlah</th>
                   <th className="px-6 py-3.5 font-semibold text-right">Nilai (Rp)</th>
                   <th className="px-6 py-3.5 font-semibold">Catatan</th>
+                  <th className="px-6 py-3.5 font-semibold text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -66,6 +97,16 @@ const InventoryTakeOutHistory = ({ history = [] }) => {
                     <td className="px-6 py-4 text-right font-mono text-slate-700">{Number(row.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {row.unit}</td>
                     <td className="px-6 py-4 text-right font-mono text-rose-600 font-bold">Rp {Number(row.total_cost).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4 text-slate-500">{row.notes || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-105" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all hover:scale-105" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

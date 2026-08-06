@@ -2891,6 +2891,27 @@ export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {})
     return { data, success: true, error: null };
   }, 'getInventoryStockOuts');
 };
+
+export const updateInventoryStockOut = async (id, { quantity, taken_date, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('update_inventory_stock_out', {
+      p_id: id,
+      p_quantity: Number(quantity),
+      p_taken_date: taken_date || new Date().toISOString().slice(0, 10),
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateInventoryStockOut');
+};
+
+export const deleteInventoryStockOut = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.rpc('delete_inventory_stock_out', { p_id: id });
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteInventoryStockOut');
+};
 export const deleteAdminIncome = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
