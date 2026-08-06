@@ -181,6 +181,8 @@ const TherapistCard = ({
               ? '🔒 SOAP TERKUNCI'
               : isWeeklyOff
               ? (leaveReason || 'LIBUR MINGGUAN')
+              : isLeave && leaveReason
+              ? leaveReason.toUpperCase()
               : leaveStatus.toUpperCase().replace(/_/g, ' ')}
           </span>
         )}
