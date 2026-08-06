@@ -209,14 +209,18 @@ const OwnerBookingCalendar = () => {
         .gte('end_date', dateStr);
 
       (timeOffRows || []).forEach(row => {
-        // Only treat it as real leave ("cuti") when the reason says so —
-        // any other day-off reason (e.g. "Libur", "Libur Mingguan") is a
-        // recurring weekly off, not leave.
-        const reasonLower = (row.reason || '').toLowerCase();
-        statusMap[row.therapist_id] = reasonLower.includes('cuti')
-          ? 'cuti'
-          : 'libur_mingguan';
-        reasonMap[row.therapist_id] = row.reason || '';
+        // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
+        // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
+        // karena kategori yang valid adalah Sakit/Libur/Training/Izin Pribadi/Lainnya
+        // dan catatan bebas bisa memuat kata apa saja, termasuk "cuti" secara kebetulan.
+        const category = (row.reason || '').split(' - ')[0].trim().toLowerCase();
+        const label = category.includes('sakit') ? 'Sakit'
+          : category.includes('training') ? 'Training'
+          : category.includes('izin') ? 'Izin Pribadi'
+          : category.includes('libur') ? 'Libur'
+          : 'Lainnya';
+        statusMap[row.therapist_id] = 'cuti';
+        reasonMap[row.therapist_id] = label;
       });
 
       // === LOGGING END ===
