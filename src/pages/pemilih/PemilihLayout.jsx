@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { PEMILIH_SHARED_CSS } from './pemilihSharedStyles';
 
 const NAV = [
@@ -129,6 +129,7 @@ const CSS = `
 const PemilihLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   // PWA: ganti warna status bar HP jadi merah selama di modul ini,
@@ -143,7 +144,7 @@ const PemilihLayout = ({ children }) => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/login');
   };
 

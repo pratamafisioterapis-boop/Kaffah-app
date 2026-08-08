@@ -74,7 +74,7 @@ const emptyForm = {
 };
 
 const RelawanUploadKTP = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const cameraInputRef = useRef(null);
@@ -280,7 +280,7 @@ const RelawanUploadKTP = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/login');
   };
 
