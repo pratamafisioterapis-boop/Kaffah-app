@@ -211,6 +211,10 @@ const RelawanUploadKTP = () => {
       toast({ title: 'Nama wajib diisi', variant: 'destructive' });
       return;
     }
+    if (!form.no_hp || !form.no_hp.trim()) {
+      toast({ title: 'No. HP belum diisi', description: 'Nomor HP wajib diisi sebelum menyimpan data pemilih.', variant: 'destructive' });
+      return;
+    }
     if (!dapilKecamatanId) {
       toast({ title: 'Data kecamatan dapil belum siap, coba muat ulang halaman', variant: 'destructive' });
       return;
