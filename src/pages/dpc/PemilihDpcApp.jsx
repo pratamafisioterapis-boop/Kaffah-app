@@ -39,7 +39,7 @@ const CSS = `
 `;
 
 const PemilihDpcApp = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -91,7 +91,7 @@ const PemilihDpcApp = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/login');
   };
 
