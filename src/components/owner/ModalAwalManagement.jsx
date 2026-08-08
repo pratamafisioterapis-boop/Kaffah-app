@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import {
   Wallet, Plus, Pencil, Trash2, Loader2, AlertCircle, PiggyBank,
-  Building2, Landmark, TrendingUp, Calendar as CalendarIcon, FileText
+  Building2, Landmark, TrendingUp, Calendar as CalendarIcon, FileText, Boxes, Tag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   getOwnerInitialCapital,
   createOwnerInitialCapital,
@@ -48,9 +49,12 @@ const sourceStyle = (source) => {
 const emptyForm = {
   date: format(new Date(), 'yyyy-MM-dd'),
   amount: '',
+  quantity: '1',
   source: 'Modal Sendiri',
   bank_account_id: '',
   description: '',
+  is_fixed_asset: false,
+  estimated_resale_value: '',
 };
 
 const ModalAwalManagement = () => {
@@ -118,9 +122,12 @@ const ModalAwalManagement = () => {
     setForm({
       date: item.date || format(new Date(), 'yyyy-MM-dd'),
       amount: String(item.amount ?? ''),
+      quantity: String(item.quantity ?? '1'),
       source: item.source || 'Modal Sendiri',
       bank_account_id: item.bank_account_id || '',
       description: item.description || '',
+      is_fixed_asset: !!item.is_fixed_asset,
+      estimated_resale_value: item.estimated_resale_value != null ? String(item.estimated_resale_value) : '',
     });
     setEditingId(item.id);
     setFormErrors({});
@@ -131,6 +138,7 @@ const ModalAwalManagement = () => {
     const errors = {};
     if (!form.date) errors.date = 'Tanggal wajib diisi';
     if (!form.amount || parseFloat(form.amount) <= 0) errors.amount = 'Jumlah harus lebih dari 0';
+    if (!form.quantity || parseFloat(form.quantity) <= 0) errors.quantity = 'Kuantitas harus lebih dari 0';
     if (!form.source) errors.source = 'Sumber modal wajib dipilih';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -143,9 +151,14 @@ const ModalAwalManagement = () => {
     const payload = {
       date: form.date,
       amount: parseFloat(form.amount) || 0,
+      quantity: parseFloat(form.quantity) || 1,
       source: form.source,
       bank_account_id: form.bank_account_id || null,
       description: form.description?.trim() || null,
+      is_fixed_asset: form.is_fixed_asset,
+      estimated_resale_value: form.is_fixed_asset && form.estimated_resale_value
+        ? parseFloat(form.estimated_resale_value) || null
+        : null,
     };
 
     const res = formMode === 'add'
@@ -304,7 +317,12 @@ const ModalAwalManagement = () => {
                       style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <span className="text-sm font-bold text-slate-800 tabular-nums">{formatCurrency(item.amount)}</span>
+                        <span className="text-sm font-bold text-slate-800 tabular-nums">
+                          {formatCurrency(item.amount)}
+                          {Number(item.quantity) > 1 && (
+                            <span className="ml-1 text-[11px] font-semibold text-slate-400">× {item.quantity}</span>
+                          )}
+                        </span>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => openEditForm(item)}
@@ -329,6 +347,11 @@ const ModalAwalManagement = () => {
                         <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
                           {item.source}
                         </span>
+                        {item.is_fixed_asset && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
+                            Aset Tetap
+                          </span>
+                        )}
                         {item.bank_account && (
                           <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                             {item.bank_account.bank_name}
@@ -350,7 +373,7 @@ const ModalAwalManagement = () => {
                   <table className="w-full text-left" style={{ fontSize: '12px' }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        {['Tanggal', 'Sumber', 'Akun Bank', 'Keterangan', 'Jumlah'].map((h) => (
+                        {['Tanggal', 'Sumber', 'Klasifikasi', 'Kuantitas', 'Akun Bank', 'Keterangan', 'Jumlah'].map((h) => (
                           <th
                             key={h}
                             className={`px-5 py-3 whitespace-nowrap ${h === 'Jumlah' ? 'text-right' : ''}`}
@@ -381,6 +404,21 @@ const ModalAwalManagement = () => {
                               >
                                 {item.source}
                               </span>
+                            </td>
+                            <td className="px-5 py-3.5 whitespace-nowrap">
+                              {item.is_fixed_asset ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
+                                  Aset Tetap
+                                  {item.estimated_resale_value ? ` · ${formatCurrency(item.estimated_resale_value)}` : ''}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded-md text-slate-400" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                  Consumable
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium tabular-nums">
+                              {item.quantity ?? 1}
                             </td>
                             <td className="px-5 py-3.5 whitespace-nowrap text-slate-500">
                               {item.bank_account ? `${item.bank_account.bank_name} - ${item.bank_account.account_number}` : '-'}
@@ -445,16 +483,31 @@ const ModalAwalManagement = () => {
                 {formErrors.date && <p className="text-[11px] text-rose-500">{formErrors.date}</p>}
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">Jumlah (Rp)</label>
+                <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                  <Boxes className="w-3.5 h-3.5" /> Kuantitas
+                </label>
                 <Input
                   type="number"
                   min="0"
-                  placeholder="Contoh: 50000000"
-                  value={form.amount}
-                  onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                  step="1"
+                  placeholder="Contoh: 1"
+                  value={form.quantity}
+                  onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
                 />
-                {formErrors.amount && <p className="text-[11px] text-rose-500">{formErrors.amount}</p>}
+                {formErrors.quantity && <p className="text-[11px] text-rose-500">{formErrors.quantity}</p>}
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-600">Jumlah (Rp)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="Contoh: 50000000"
+                value={form.amount}
+                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+              {formErrors.amount && <p className="text-[11px] text-rose-500">{formErrors.amount}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -506,6 +559,36 @@ const ModalAwalManagement = () => {
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 className="min-h-[80px]"
               />
+            </div>
+
+            <div className="rounded-xl p-3.5" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <Tag className="w-3.5 h-3.5 mt-0.5 text-slate-500 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Aset Tetap (Ada Nilai Jual Kembali)</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Aktifkan jika barang ini masih bisa dijual di kemudian hari, bukan habis pakai/consumable.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={form.is_fixed_asset}
+                  onCheckedChange={(val) => setForm((f) => ({ ...f, is_fixed_asset: val, estimated_resale_value: val ? f.estimated_resale_value : '' }))}
+                />
+              </div>
+              {form.is_fixed_asset && (
+                <div className="flex flex-col gap-1.5 mt-3">
+                  <label className="text-xs font-semibold text-slate-600">Estimasi Nilai Jual Kembali (Rp, opsional)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Contoh: 5000000"
+                    value={form.estimated_resale_value}
+                    onChange={(e) => setForm((f) => ({ ...f, estimated_resale_value: e.target.value }))}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

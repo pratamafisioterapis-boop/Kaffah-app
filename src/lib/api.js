@@ -2319,6 +2319,9 @@ export const createOwnerInitialCapital = async (payload) => {
         source: payload.source,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        quantity: payload.quantity ?? 1,
+        is_fixed_asset: payload.is_fixed_asset || false,
+        estimated_resale_value: payload.is_fixed_asset ? (payload.estimated_resale_value ?? null) : null,
         created_by: userId || null,
         created_at: new Date().toISOString()
       })
@@ -2352,6 +2355,9 @@ export const updateOwnerInitialCapital = async (id, payload) => {
         source: payload.source,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        quantity: payload.quantity ?? 1,
+        is_fixed_asset: payload.is_fixed_asset || false,
+        estimated_resale_value: payload.is_fixed_asset ? (payload.estimated_resale_value ?? null) : null,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
