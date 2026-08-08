@@ -96,6 +96,14 @@ const ModalAwalManagement = () => {
     fetchBankAccounts();
   }, [fetchItems, fetchBankAccounts]);
 
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      const dateDiff = new Date(b.date) - new Date(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }, [items]);
+
   const totalModal = useMemo(
     () => items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0),
     [items]
@@ -308,7 +316,7 @@ const ModalAwalManagement = () => {
               <>
               {/* ── Mobile / PWA Card List ── */}
               <div className="sm:hidden overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0' }}>
-                {items.map((item, idx) => {
+                {sortedItems.map((item, idx) => {
                   const style = sourceStyle(item.source);
                   return (
                     <div
@@ -386,7 +394,7 @@ const ModalAwalManagement = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item, rowIdx) => {
+                      {sortedItems.map((item, rowIdx) => {
                         const style = sourceStyle(item.source);
                         return (
                           <motion.tr
@@ -394,7 +402,7 @@ const ModalAwalManagement = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             className="group transition-colors hover:bg-slate-50/70"
-                            style={{ borderBottom: rowIdx === items.length - 1 ? 'none' : '1px solid #f1f5f9' }}
+                            style={{ borderBottom: rowIdx === sortedItems.length - 1 ? 'none' : '1px solid #f1f5f9' }}
                           >
                             <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">{formatDate(item.date)}</td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
