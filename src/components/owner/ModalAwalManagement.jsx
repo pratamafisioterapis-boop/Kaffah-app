@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import {
   Wallet, Plus, Pencil, Trash2, Loader2, AlertCircle, PiggyBank,
-  Building2, Landmark, TrendingUp, Calendar as CalendarIcon, FileText, Boxes, Tag
+  Building2, Landmark, TrendingUp, Calendar as CalendarIcon, FileText, Boxes, Tag, Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -23,6 +23,7 @@ import {
   deleteOwnerInitialCapital,
   getBankAccounts,
 } from '@/lib/api';
+import { generateModalAwalPDF } from '@/lib/modalAwalPdfGenerator';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -58,7 +59,7 @@ const emptyForm = {
 };
 
 const ModalAwalManagement = () => {
-  const { userDetails } = useAuth();
+  const { userDetails, clinicName } = useAuth();
   const { toast } = useToast();
 
   const [items, setItems] = useState([]);
@@ -190,6 +191,18 @@ const ModalAwalManagement = () => {
     setIsFormOpen(false);
   };
 
+  const handleExportPDF = () => {
+    if (!sortedItems.length) {
+      toast({ variant: 'destructive', title: 'Belum ada data untuk diekspor' });
+      return;
+    }
+    try {
+      generateModalAwalPDF(sortedItems, { clinicName });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal membuat PDF', description: err?.message });
+    }
+  };
+
   const openDelete = (item) => {
     setDeletingItem(item);
     setIsDeleteOpen(true);
@@ -242,6 +255,13 @@ const ModalAwalManagement = () => {
                 <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Total Modal Awal</span>
                 <span className="text-lg md:text-xl font-bold tabular-nums">{formatCurrency(totalModal)}</span>
               </div>
+              <Button
+                onClick={handleExportPDF}
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-semibold shrink-0"
+              >
+                <Download className="w-4 h-4 mr-1.5" /> Export PDF
+              </Button>
               <Button
                 onClick={openAddForm}
                 className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold shadow-lg shadow-emerald-900/30 shrink-0"
