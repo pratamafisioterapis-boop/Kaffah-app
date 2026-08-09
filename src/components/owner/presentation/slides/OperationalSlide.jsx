@@ -1,10 +1,11 @@
 import React from 'react';
 import {
-  AreaChart, Area, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { Activity, Users, Package, CheckCircle2, UserCog, XCircle, Gift } from 'lucide-react';
 import SlideShell from '@/components/owner/presentation/SlideShell';
 import StatTile from '@/components/owner/presentation/StatTile';
+import { chartTooltipStyle, chartAxisTick } from '@/components/owner/presentation/chartTheme';
 
 const OperationalSlide = ({ data, dateRange }) => {
   const op = data?.operational || {};
@@ -61,10 +62,10 @@ const OperationalSlide = ({ data, dateRange }) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} width={28} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={chartAxisTick} />
+                  <YAxis axisLine={false} tickLine={false} tick={chartAxisTick} allowDecimals={false} width={28} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, border: 'none', background: '#1e293b', color: '#fff' }}
+                    contentStyle={chartTooltipStyle}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate || ''}
                     formatter={(value) => [value, 'Sesi']}
                   />
@@ -80,26 +81,33 @@ const OperationalSlide = ({ data, dateRange }) => {
               <p className="text-emerald-300 text-sm font-bold">{op.avgUtilization ?? 0}% avg</p>
             </div>
             <div className="flex-1 min-h-0">
+              {/* Satu sumbu saja (jumlah slot) — utilisasi % ditampilkan sebagai
+                  angka ringkasan di header, bukan sumbu kedua, supaya chart
+                  tetap mudah dibaca sekali lihat saat presentasi. */}
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={op.capacityTrend || []} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                <BarChart data={op.capacityTrend || []} margin={{ top: 10, right: 16, left: -10, bottom: 0 }} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} width={28} />
-                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#34d399' }} tickFormatter={(v) => `${v}%`} width={32} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={chartAxisTick} />
+                  <YAxis axisLine={false} tickLine={false} tick={chartAxisTick} allowDecimals={false} width={28} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, border: 'none', background: '#1e293b', color: '#fff' }}
+                    cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                    contentStyle={chartTooltipStyle}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate || ''}
                     formatter={(value, name) => {
                       if (name === 'capacity') return [value, 'Kapasitas'];
                       if (name === 'demand') return [value, 'Terisi'];
-                      if (name === 'utilization') return [`${value}%`, 'Utilisasi'];
                       return [value, name];
                     }}
                   />
-                  <Bar yAxisId="left" dataKey="capacity" name="capacity" fill="#475569" radius={[4, 4, 0, 0]} barSize={10} animationDuration={800} />
-                  <Bar yAxisId="left" dataKey="demand" name="demand" fill="#818cf8" radius={[4, 4, 0, 0]} barSize={10} animationDuration={800} />
-                  <Line yAxisId="right" type="monotone" dataKey="utilization" name="utilization" stroke="#34d399" strokeWidth={2.5} dot={false} animationDuration={800} />
-                </ComposedChart>
+                  <Legend
+                    formatter={(value) => (value === 'capacity' ? 'Kapasitas' : 'Terisi')}
+                    wrapperStyle={{ fontSize: 11, color: '#94a3b8' }}
+                    iconType="circle"
+                    iconSize={8}
+                  />
+                  <Bar dataKey="capacity" name="capacity" fill="#475569" radius={[4, 4, 0, 0]} maxBarSize={16} animationDuration={800} />
+                  <Bar dataKey="demand" name="demand" fill="#818cf8" radius={[4, 4, 0, 0]} maxBarSize={16} animationDuration={800} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
