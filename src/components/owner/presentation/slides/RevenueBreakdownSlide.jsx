@@ -16,19 +16,21 @@ const EmptyState = () => (
   <div className="h-full flex items-center justify-center text-slate-500 text-sm">Belum ada data pada periode ini.</div>
 );
 
-// Slide detail sumber pendapatan & pengeluaran — belum ada widget serupa di
-// dashboard biasa yang menggabungkan ketiganya dalam satu tempat: pemasukan
-// per metode pembayaran, pengeluaran per kategori, dan revenue per terapis.
+// Slide detail sumber pendapatan, pengeluaran & layanan — belum ada widget
+// serupa di dashboard biasa yang menggabungkan semuanya dalam satu tempat:
+// pemasukan per metode pembayaran, pengeluaran per kategori, revenue per
+// terapis, dan distribusi diagnosa pasien.
 const RevenueBreakdownSlide = ({ data, dateRange }) => {
   const fin = data?.finance || {};
   const therapistPerf = data?.therapistPerformance || {};
   const paymentMethodBreakdown = fin.paymentMethodBreakdown || [];
   const expenseBreakdown = fin.expenseBreakdown || [];
   const revenueByTherapist = therapistPerf.revenueByTherapist || [];
+  const diagnosisBreakdown = fin.diagnosisBreakdown || [];
 
   return (
-    <SlideShell eyebrow="Revenue Detail" title="Sumber Pendapatan & Pengeluaran" dateRange={dateRange}>
-      <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
+    <SlideShell eyebrow="Revenue Detail" title="Pendapatan, Pengeluaran & Diagnosa Pasien" dateRange={dateRange}>
+      <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
         <ChartCard title="Pemasukan per Metode Pembayaran">
           {paymentMethodBreakdown.length === 0 ? <EmptyState /> : (
             <div className="h-full flex flex-col">
@@ -88,6 +90,23 @@ const RevenueBreakdownSlide = ({ data, dateRange }) => {
                   formatter={(value) => [formatShortCurrency(value), 'Revenue']}
                 />
                 <Bar dataKey="revenue" fill="#34d399" radius={[0, 6, 6, 0]} animationDuration={800} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Distribusi Diagnosa Pasien (Top 8)">
+          {diagnosisBreakdown.length === 0 ? <EmptyState /> : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={diagnosisBreakdown} layout="vertical" margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.08)" />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
+                <YAxis type="category" dataKey="diagnosis" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#cbd5e1' }} width={110} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: 'none', background: '#1e293b', color: '#fff' }}
+                  formatter={(value) => [value, 'Kasus']}
+                />
+                <Bar dataKey="count" fill="#a78bfa" radius={[0, 6, 6, 0]} animationDuration={800} />
               </BarChart>
             </ResponsiveContainer>
           )}

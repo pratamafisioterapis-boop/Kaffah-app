@@ -51,7 +51,7 @@ export const usePresentationData = (dateRange) => {
         sessionsRes, patientsRes, packagesRes, activeTherapistsRes,
         ownerIncRes, adminIncRes, patientIncRes, ownerExpRes, adminExpRes,
         patientMixRes, cancellationRes, packageRenewalRes, receivablesRes, staffQualityRes, growthRes,
-        dailyRecapsRes, appointmentsRes, paymentMethodOptionsRes,
+        dailyRecapsRes, appointmentsRes, clinicOptionsRes,
       ] = await Promise.all([
         fetchTotalSessions(startDate, endDate),
         fetchTotalPatients(startDate, endDate),
@@ -74,16 +74,15 @@ export const usePresentationData = (dateRange) => {
         // therapist_name/payment_method/package_tracking dipakai untuk
         // breakdown revenue per terapis & metode pembayaran (pola sama
         // dengan RevenueOverview.jsx) tanpa perlu query terpisah.
-        // amount_package dipakai untuk membedakan sesi gratis (dari kuota
-        // paket yang sudah dibayar di muka, amount efektifnya 0) vs berbayar.
+        // diagnosis dipakai untuk distribusi diagnosa pasien.
         supabase.from('daily_recaps')
-          .select('recap_date, amount, amount_package, status, therapist_name, payment_method, package_tracking_id, package_tracking(nominal, total_sessions)')
+          .select('recap_date, amount, status, therapist_name, payment_method, package_tracking_id, diagnosis, package_tracking(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', startDate).lte('recap_date', endDate),
         supabase.from('appointments').select('appointment_date, status').eq('clinic_id', clinicId)
           .gte('appointment_date', `${startDate}T00:00:00`).lte('appointment_date', `${endDate}T23:59:59`),
-        supabase.from('operational_options').select('id, label')
-          .eq('category', 'payment_method').eq('clinic_id', clinicId),
+        supabase.from('operational_options').select('id, label, category')
+          .in('category', ['payment_method', 'diagnosa']).eq('clinic_id', clinicId),
       ]);
 
       const dayInterval = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
@@ -159,12 +158,14 @@ export const usePresentationData = (dateRange) => {
         : 0;
 
       // ── Sesi gratis vs berbayar ──
-      // "Gratis" = sesi yang efektifnya Rp 0 (biasanya sesi lanjutan dari
-      // kuota paket yang sudah dibayar di muka), bukan transaksi baru.
-      // Formula amount efektif sama dengan getPatientIncomeFromPackages di api.js.
-      const getEffectiveAmount = (r) => (Number(r.amount_package) > 0 ? Number(r.amount_package) : Number(r.amount) || 0);
-      const paidSessions = dailyRecaps.filter((r) => getEffectiveAmount(r) > 0).length;
-      const freeSessions = dailyRecaps.length - paidSessions;
+      // "Gratis" = sesi NON-PAKET (package_tracking_id kosong, satu sesi
+      // berdiri sendiri, bukan bagian dari paket multi-sesi) dengan nominal
+      // (amount) = 0 — mis. sesi konsultasi/percobaan cuma-cuma. Sesi dalam
+      // paket yang amount-nya 0 (karena sudah lunas di muka) TIDAK dihitung
+      // gratis di sini — itu sesi berbayar yang memakai kuota paket.
+      const isFreeSession = (r) => !r.package_tracking_id && (Number(r.amount) || 0) === 0;
+      const freeSessions = dailyRecaps.filter(isFreeSession).length;
+      const paidSessions = dailyRecaps.length - freeSessions;
       const freeSessionsRate = dailyRecaps.length > 0 ? Math.round((freeSessions / dailyRecaps.length) * 100) : 0;
 
       // ── Tingkat retensi pasien unik (klinik) ──
@@ -219,9 +220,11 @@ export const usePresentationData = (dateRange) => {
         .sort((a, b) => b.sessions - a.sessions)
         .slice(0, 8);
 
+      const clinicOptions = clinicOptionsRes?.data || [];
+
       // ── Pemasukan per metode pembayaran ──
       const paymentMethodLabelMap = {};
-      (paymentMethodOptionsRes?.data || []).forEach((pm) => { paymentMethodLabelMap[pm.id] = pm.label; });
+      clinicOptions.filter((o) => o.category === 'payment_method').forEach((pm) => { paymentMethodLabelMap[pm.id] = pm.label; });
       const paymentMethodMap = {};
       dailyRecaps.forEach((r) => {
         const amount = Number(r.amount) || 0;
@@ -242,6 +245,33 @@ export const usePresentationData = (dateRange) => {
       const expenseBreakdown = Object.entries(expenseCategoryMap)
         .map(([category, amount]) => ({ category, amount: Math.round(amount) }))
         .sort((a, b) => b.amount - a.amount)
+        .slice(0, 8);
+
+      // ── Distribusi diagnosa pasien ──
+      // `daily_recaps.diagnosis` disimpan sebagai JSON array of id
+      // operational_options (kategori 'diagnosa'); satu sesi bisa punya lebih
+      // dari satu diagnosa, jadi dihitung per-kemunculan diagnosa (bukan per
+      // sesi) — pola parsing sama dengan enrichRecapsWithOptions di api.js.
+      const diagnosaLabelMap = {};
+      clinicOptions.filter((o) => o.category === 'diagnosa').forEach((d) => { diagnosaLabelMap[d.id] = d.label; });
+      const diagnosisCountMap = {};
+      dailyRecaps.forEach((r) => {
+        let diagArray = [];
+        try {
+          diagArray = typeof r.diagnosis === 'string' ? JSON.parse(r.diagnosis) : r.diagnosis;
+        } catch {
+          diagArray = [];
+        }
+        if (!Array.isArray(diagArray)) diagArray = diagArray ? [diagArray] : [];
+        diagArray.flat().forEach((d) => {
+          if (!d) return;
+          const label = diagnosaLabelMap[d] || d;
+          diagnosisCountMap[label] = (diagnosisCountMap[label] || 0) + 1;
+        });
+      });
+      const diagnosisBreakdown = Object.entries(diagnosisCountMap)
+        .map(([diagnosis, count]) => ({ diagnosis, count }))
+        .sort((a, b) => b.count - a.count)
         .slice(0, 8);
 
       setData({
@@ -271,6 +301,7 @@ export const usePresentationData = (dateRange) => {
           breakEven,
           paymentMethodBreakdown,
           expenseBreakdown,
+          diagnosisBreakdown,
         },
         appointment: {
           statusBreakdown,
