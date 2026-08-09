@@ -135,14 +135,13 @@ export const generateModalAwalPDF = (items = [], { clinicName = '' } = {}) => {
     item.source,
     item.is_fixed_asset ? 'Aset Tetap' : 'Consumable',
     String(item.quantity ?? 1),
-    item.bank_account ? item.bank_account.bank_name : '-',
     item.description || '-',
     formatCurrency(item.amount),
   ]);
 
   autoTable(doc, {
     startY: y,
-    head: [['Tanggal', 'Sumber', 'Klasifikasi', 'Qty', 'Bank', 'Keterangan', 'Jumlah']],
+    head: [['Tanggal', 'Sumber', 'Klasifikasi', 'Qty', 'Keterangan', 'Jumlah']],
     body: rows,
     theme: 'grid',
     headStyles: { fillColor: [6, 95, 70], textColor: 255, fontSize: 8, fontStyle: 'bold', halign: 'left' },
@@ -151,7 +150,7 @@ export const generateModalAwalPDF = (items = [], { clinicName = '' } = {}) => {
     columnStyles: {
       0: { cellWidth: 20 },
       3: { cellWidth: 11, halign: 'center' },
-      6: { cellWidth: 28, halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] },
+      5: { cellWidth: 28, halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] },
     },
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 2 && data.cell.raw === 'Aset Tetap') {
