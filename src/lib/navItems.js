@@ -6,6 +6,7 @@
 
 export const OWNER_NAV_ITEMS = [
   { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
+  { label: 'Presentasi Direksi', path: '/owner/presentation', icon: 'MonitorPlay' },
   { label: 'Appointments', path: '/owner/appointments', icon: 'Calendar' },
   { label: 'Daily Recaps', path: '/owner/daily-recap', icon: 'FileText' },
   { label: 'Package Recaps', path: '/owner/package-recaps', icon: 'Package' },
