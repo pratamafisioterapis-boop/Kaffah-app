@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -7141,4 +7141,279 @@ export const getBepFinancials = async () => {
       error: null
     };
   }, 'getBepFinancials', { retry: true });
+};
+
+// ============================================
+// BOARD PRESENTATION / SLIDESHOW METRICS
+// Metrik agregat untuk fitur "Presentasi Direksi" (Owner Presentation
+// Slideshow). Semua fungsi di bawah menerima { startDate, endDate } mengikuti
+// konvensi `dateRange` yang sudah dipakai RevenueOverview/operational charts,
+// supaya konsisten dengan angka yang tampil di dashboard biasa.
+// ============================================
+
+const resolveCurrentClinicId = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return null;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  return userRow?.clinic_id || null;
+};
+
+// New vs returning patient untuk sebuah rentang tanggal (generalisasi dari
+// fetchTodayNewPatients/fetchTodayReturningPatients yang hanya untuk hari ini).
+export const fetchPatientMixForRange = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    const { count: newCount, error: newError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .is('patient_id', null);
+    if (newError) return { error: newError };
+
+    const { count: returningCount, error: returningError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .not('patient_id', 'is', null);
+    if (returningError) return { error: returningError };
+
+    const total = (newCount || 0) + (returningCount || 0);
+    return {
+      data: {
+        newPatients: newCount || 0,
+        returningPatients: returningCount || 0,
+        returningRate: total > 0 ? Math.round(((returningCount || 0) / total) * 100) : 0,
+      },
+      error: null,
+    };
+  }, 'fetchPatientMixForRange', { retry: true });
+};
+
+// Persentase pembatalan appointment dalam rentang tanggal (bukan cuma count
+// hari ini seperti fetchCancelledAppointments).
+export const fetchCancellationRate = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    const { count: totalAppointments, error: totalError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`);
+    if (totalError) return { error: totalError };
+
+    const { count: cancelled, error: cancelledError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .eq('status', 'cancelled');
+    if (cancelledError) return { error: cancelledError };
+
+    return {
+      data: {
+        totalAppointments: totalAppointments || 0,
+        cancelled: cancelled || 0,
+        rate: totalAppointments > 0 ? Math.round(((cancelled || 0) / totalAppointments) * 100) : 0,
+      },
+      error: null,
+    };
+  }, 'fetchCancellationRate', { retry: true });
+};
+
+// Tingkat perpanjangan paket: dari paket yang sudah habis/expired dalam
+// rentang tanggal, berapa persen pasiennya membeli paket baru lagi setelahnya.
+export const getPackageRenewalRate = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    // package_tracking tidak punya kolom clinic_id (lihat pola query yang sama
+    // di RevenueOverview.jsx) — cakupan klinik ditentukan lewat daftar
+    // patient_id milik klinik ini.
+    const { data: clinicPatients, error: patientsError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('clinic_id', clinicId);
+    if (patientsError) return { error: patientsError };
+    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
+    if (clinicPatientIds.length === 0) {
+      return { data: { totalExpired: 0, renewed: 0, rate: 0 }, error: null };
+    }
+
+    const { data: expiredPackages, error: expiredError } = await supabase
+      .from('package_tracking')
+      .select('id, patient_id, updated_at, status')
+      .in('patient_id', clinicPatientIds)
+      .in('status', ['expired', 'selesai', 'habis', 'completed', 'done'])
+      .gte('updated_at', `${startDate}T00:00:00`)
+      .lte('updated_at', `${endDate}T23:59:59`);
+    if (expiredError) return { error: expiredError };
+
+    const expiredList = (expiredPackages || []).filter(p => p.patient_id);
+    if (expiredList.length === 0) {
+      return { data: { totalExpired: 0, renewed: 0, rate: 0 }, error: null };
+    }
+
+    const patientIds = [...new Set(expiredList.map(p => p.patient_id))];
+    const { data: allPackagesForPatients, error: allError } = await supabase
+      .from('package_tracking')
+      .select('id, patient_id, created_at')
+      .in('patient_id', patientIds);
+    if (allError) return { error: allError };
+
+    let renewedCount = 0;
+    expiredList.forEach(expired => {
+      const hasNewerPackage = (allPackagesForPatients || []).some(
+        p => p.patient_id === expired.patient_id &&
+          p.id !== expired.id &&
+          new Date(p.created_at) > new Date(expired.updated_at)
+      );
+      if (hasNewerPackage) renewedCount += 1;
+    });
+
+    return {
+      data: {
+        totalExpired: expiredList.length,
+        renewed: renewedCount,
+        rate: Math.round((renewedCount / expiredList.length) * 100),
+      },
+      error: null,
+    };
+  }, 'getPackageRenewalRate', { retry: true });
+};
+
+// Total piutang (receivables) outstanding — getOwnerReceivables() sudah ada
+// tapi cuma mengembalikan daftar baris, di sini dijumlahkan jadi satu angka.
+export const getTotalOutstandingReceivables = async () => {
+  return safeQuery(async () => {
+    const { data: receivables, error } = await getOwnerReceivables();
+    if (error) return { error };
+
+    // Kolom nominal piutang yang belum lunas adalah `outstanding_amount`
+    // (lihat FinanceInput.jsx) — piutang berstatus 'Paid' sudah lunas, tidak dihitung.
+    const rows = (receivables || []).filter(r => r.status !== 'Paid');
+    const total = rows.reduce((s, r) => s + (Number(r.outstanding_amount) || 0), 0);
+    return {
+      data: {
+        total,
+        count: rows.length,
+      },
+      error: null,
+    };
+  }, 'getTotalOutstandingReceivables', { retry: true });
+};
+
+// Kedisiplinan kehadiran & kelengkapan SOAP di level klinik (agregat dari
+// getTherapistAttendanceRate/getTherapistSoapCompleteness per terapis, yang
+// selama ini hanya dipakai untuk remunerasi per-terapis).
+export const getClinicStaffQualitySummary = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const { data: therapists, error: therapistsError } = await getActivePhysiotherapists();
+    if (therapistsError) return { error: therapistsError };
+
+    const therapistList = therapists || [];
+    if (therapistList.length === 0) {
+      return {
+        data: { attendanceRate: 100, soapCompletenessRate: 100, therapistCount: 0 },
+        error: null,
+      };
+    }
+
+    const results = await Promise.all(
+      therapistList.map(async (t) => {
+        const [attendanceRes, soapRes] = await Promise.all([
+          getTherapistAttendanceRate(t.id, startDate, endDate),
+          getTherapistSoapCompleteness(t.id, startDate, endDate),
+        ]);
+        return { attendance: attendanceRes?.data, soap: soapRes?.data };
+      })
+    );
+
+    let totalScheduled = 0, totalAttended = 0, totalRecaps = 0, totalFilled = 0;
+    results.forEach(({ attendance, soap }) => {
+      if (attendance) {
+        totalScheduled += attendance.totalScheduled || 0;
+        totalAttended += attendance.totalAttended || 0;
+      }
+      if (soap) {
+        totalRecaps += soap.totalRecaps || 0;
+        totalFilled += soap.totalFilled || 0;
+      }
+    });
+
+    return {
+      data: {
+        attendanceRate: totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 100,
+        soapCompletenessRate: totalRecaps > 0 ? Math.round((totalFilled / totalRecaps) * 100) : 100,
+        therapistCount: therapistList.length,
+      },
+      error: null,
+    };
+  }, 'getClinicStaffQualitySummary', { retry: true });
+};
+
+// Pertumbuhan sesi/pasien/revenue: periode terpilih dibandingkan dengan
+// periode sebelumnya yang panjangnya sama (mis. 1-15 Agu vs 16-31 Jul).
+export const getPeriodGrowth = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    const rangeDays = Math.max(differenceInCalendarDays(end, start) + 1, 1);
+    const prevEnd = addDays(start, -1);
+    const prevStart = addDays(prevEnd, -(rangeDays - 1));
+    const prevStartStr = format(prevStart, 'yyyy-MM-dd');
+    const prevEndStr = format(prevEnd, 'yyyy-MM-dd');
+
+    const sumRevenue = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+
+    const [
+      sessionsNow, sessionsPrev,
+      patientsNow, patientsPrev,
+      ownerIncNow, adminIncNow, patientIncNow,
+      ownerIncPrev, adminIncPrev, patientIncPrev,
+    ] = await Promise.all([
+      fetchTotalSessions(startDate, endDate),
+      fetchTotalSessions(prevStartStr, prevEndStr),
+      fetchTotalPatients(startDate, endDate),
+      fetchTotalPatients(prevStartStr, prevEndStr),
+      getOwnerIncome({ startDate, endDate }),
+      getAdminIncome({ startDate, endDate }),
+      getPatientIncomeFromPackages({ startDate, endDate }),
+      getOwnerIncome({ startDate: prevStartStr, endDate: prevEndStr }),
+      getAdminIncome({ startDate: prevStartStr, endDate: prevEndStr }),
+      getPatientIncomeFromPackages({ startDate: prevStartStr, endDate: prevEndStr }),
+    ]);
+
+    const sessionsNowVal = sessionsNow?.data || 0;
+    const sessionsPrevVal = sessionsPrev?.data || 0;
+    const patientsNowVal = patientsNow?.data || 0;
+    const patientsPrevVal = patientsPrev?.data || 0;
+    const revenueNowVal = sumRevenue(ownerIncNow?.data) + sumRevenue(adminIncNow?.data) + sumRevenue(patientIncNow?.data);
+    const revenuePrevVal = sumRevenue(ownerIncPrev?.data) + sumRevenue(adminIncPrev?.data) + sumRevenue(patientIncPrev?.data);
+
+    const pctChange = (now, prev) => {
+      if (prev === 0) return now > 0 ? 100 : 0;
+      return Math.round(((now - prev) / prev) * 100);
+    };
+
+    return {
+      data: {
+        previousPeriod: { startDate: prevStartStr, endDate: prevEndStr },
+        sessions: { now: sessionsNowVal, previous: sessionsPrevVal, growth: pctChange(sessionsNowVal, sessionsPrevVal) },
+        patients: { now: patientsNowVal, previous: patientsPrevVal, growth: pctChange(patientsNowVal, patientsPrevVal) },
+        revenue: { now: revenueNowVal, previous: revenuePrevVal, growth: pctChange(revenueNowVal, revenuePrevVal) },
+      },
+      error: null,
+    };
+  }, 'getPeriodGrowth', { retry: true });
 };

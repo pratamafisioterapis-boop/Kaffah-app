@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Pages
 import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
+import OwnerPresentationPage from '@/pages/owner/OwnerPresentationPage';
 import DatabasePatients from '@/pages/owner/DatabasePatients'; // Updated Import
 import PhysiotherapistManagementPage from '@/pages/PhysiotherapistManagementPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
@@ -528,7 +529,10 @@ const OwnerDashboard = () => {
         
         {/* Main Dashboard (Tabbed) */}
         <Route path="/dashboard" element={<OwnerDashboardHome />} />
-        
+
+        {/* Board Presentation Slideshow */}
+        <Route path="/presentation" element={<OwnerPresentationPage />} />
+
         {/* Pages */}
         <Route path="/appointments" element={<OwnerAppointmentsPage />} />
         <Route path="/database-patients" element={<DatabasePatients />} />
