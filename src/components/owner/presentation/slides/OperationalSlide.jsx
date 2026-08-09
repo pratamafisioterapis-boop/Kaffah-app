@@ -12,7 +12,13 @@ const OperationalSlide = ({ data, dateRange }) => {
     <SlideShell eyebrow="Operational" title="Performa Operasional Klinik" dateRange={dateRange}>
       <div className="h-full flex flex-col gap-4 md:gap-6">
         <div className="grid grid-cols-3 gap-2.5 md:gap-4">
-          <StatTile icon={Activity} label="Total Sesi" value={op.totalSessions ?? 0} accent="sky" />
+          <StatTile
+            icon={Activity}
+            label="Total Sesi"
+            value={op.totalSessions ?? 0}
+            sublabel={`Rata-rata ${op.avgSessionsPerDay ?? 0} sesi/hari`}
+            accent="sky"
+          />
           <StatTile icon={Users} label="Total Pasien" value={op.totalPatients ?? 0} accent="violet" />
           <StatTile icon={Package} label="Total Paket" value={op.totalPackages ?? 0} accent="amber" />
           <StatTile icon={CheckCircle2} label="Sesi Selesai (Periode)" value={op.completedSessionsRange ?? 0} accent="emerald" />

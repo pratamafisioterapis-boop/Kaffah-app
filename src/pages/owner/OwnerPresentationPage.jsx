@@ -10,17 +10,19 @@ import PresentationFullscreen from '@/components/owner/presentation/Presentation
 import CoverSlide from '@/components/owner/presentation/slides/CoverSlide';
 import OperationalSlide from '@/components/owner/presentation/slides/OperationalSlide';
 import FinanceSlide from '@/components/owner/presentation/slides/FinanceSlide';
+import RevenueBreakdownSlide from '@/components/owner/presentation/slides/RevenueBreakdownSlide';
 import AppointmentSlide from '@/components/owner/presentation/slides/AppointmentSlide';
 import GrowthRetentionSlide from '@/components/owner/presentation/slides/GrowthRetentionSlide';
 import StaffFinanceHealthSlide from '@/components/owner/presentation/slides/StaffFinanceHealthSlide';
 
 const SLIDE_PREVIEWS = [
   { title: 'Cover', desc: 'Ringkasan headline: total sesi, pendapatan, dan pertumbuhan.' },
-  { title: 'Operational', desc: 'Sesi, pasien, paket, terapis aktif, dan tren sesi harian.' },
+  { title: 'Operational', desc: 'Sesi, pasien, paket, terapis aktif, rata-rata sesi/hari, dan tingkat pembatalan.' },
   { title: 'Finance', desc: 'Pendapatan, pengeluaran, laba bersih, margin, dan Break Even Point.' },
-  { title: 'Appointment', desc: 'Kepadatan appointment per hari dan status appointment.' },
+  { title: 'Revenue Detail', desc: 'Pemasukan per metode pembayaran, pengeluaran per kategori, dan revenue per terapis.' },
+  { title: 'Appointment', desc: 'Kepadatan per hari & jam, status appointment, dan tingkat no-show.' },
   { title: 'Growth & Retention', desc: 'Pertumbuhan vs periode sebelumnya, pasien baru/lama, dan perpanjangan paket.' },
-  { title: 'Staff & Financial Health', desc: 'Kedisiplinan kehadiran, kelengkapan SOAP, dan piutang outstanding.' },
+  { title: 'Staff & Financial Health', desc: 'Kedisiplinan kehadiran, kelengkapan SOAP, piutang outstanding, dan ranking terapis.' },
 ];
 
 const OwnerPresentationPage = () => {
@@ -41,6 +43,7 @@ const OwnerPresentationPage = () => {
       <CoverSlide key="cover" clinicName={clinicName} data={data} dateRange={dateRange} />,
       <OperationalSlide key="operational" data={data} dateRange={dateRange} />,
       <FinanceSlide key="finance" data={data} dateRange={dateRange} />,
+      <RevenueBreakdownSlide key="revenue-breakdown" data={data} dateRange={dateRange} />,
       <AppointmentSlide key="appointment" data={data} dateRange={dateRange} />,
       <GrowthRetentionSlide key="growth" data={data} dateRange={dateRange} />,
       <StaffFinanceHealthSlide key="staff" data={data} dateRange={dateRange} />,

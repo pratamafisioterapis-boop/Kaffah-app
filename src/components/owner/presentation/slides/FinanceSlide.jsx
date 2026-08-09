@@ -13,7 +13,13 @@ const FinanceSlide = ({ data, dateRange }) => {
     <SlideShell eyebrow="Finance" title="Kinerja Keuangan" dateRange={dateRange}>
       <div className="h-full flex flex-col gap-5 md:gap-7">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <StatTile icon={Wallet} label="Total Pendapatan" value={formatShortCurrency(fin.totalRevenue)} accent="emerald" />
+          <StatTile
+            icon={Wallet}
+            label="Total Pendapatan"
+            value={formatShortCurrency(fin.totalRevenue)}
+            sublabel={`Rata-rata ${formatShortCurrency(fin.avgRevenuePerSession)}/sesi`}
+            accent="emerald"
+          />
           <StatTile icon={TrendingDown} label="Total Pengeluaran" value={formatShortCurrency(fin.totalExpenses)} accent="rose" />
           <StatTile
             icon={fin.netProfit >= 0 ? TrendingUp : TrendingDown}
