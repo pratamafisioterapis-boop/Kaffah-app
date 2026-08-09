@@ -17,9 +17,9 @@ import StaffFinanceHealthSlide from '@/components/owner/presentation/slides/Staf
 
 const SLIDE_PREVIEWS = [
   { title: 'Cover', desc: 'Ringkasan headline: total sesi, pendapatan, dan pertumbuhan.' },
-  { title: 'Operational', desc: 'Sesi, pasien, paket, terapis aktif, rata-rata sesi/hari, dan tingkat pembatalan.' },
-  { title: 'Finance', desc: 'Pendapatan, pengeluaran, laba bersih, margin, dan Break Even Point.' },
-  { title: 'Revenue Detail', desc: 'Pemasukan per metode pembayaran, pengeluaran per kategori, dan revenue per terapis.' },
+  { title: 'Operational', desc: 'Sesi, pasien, paket, terapis aktif, kapasitas vs permintaan, dan sesi gratis vs berbayar.' },
+  { title: 'Finance', desc: 'Pendapatan, pengeluaran, laba bersih, margin, dan Break Even Point (mengikuti periode terpilih).' },
+  { title: 'Revenue Detail', desc: 'Pemasukan per metode pembayaran, pengeluaran per kategori, revenue per terapis, dan distribusi diagnosa pasien.' },
   { title: 'Appointment', desc: 'Kepadatan per hari & jam, status appointment, dan tingkat no-show.' },
   { title: 'Growth & Retention', desc: 'Pertumbuhan vs periode sebelumnya, pasien baru/lama, dan perpanjangan paket.' },
   { title: 'Staff & Financial Health', desc: 'Kedisiplinan kehadiran, kelengkapan SOAP, piutang outstanding, dan ranking terapis.' },

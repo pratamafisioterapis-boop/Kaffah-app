@@ -26,10 +26,23 @@ const GrowthCard = ({ label, growthData }) => {
 // Slide khusus metrik yang belum punya widget di dashboard biasa: growth
 // rate periode-ke-periode, komposisi pasien baru/lama, dan tingkat
 // perpanjangan paket.
+//
+// Catatan penting soal dua angka "retensi" yang beda sumber & definisi:
+// - "Sesi dari Pasien Baru/Lama" (mix) dihitung PER SESI/APPOINTMENT: dari
+//   seluruh appointment pada periode ini, berapa yang appointment-nya belum
+//   tertaut ke rekam medis pasien (baru) vs sudah (lama). Karena dihitung
+//   per sesi, satu pasien yang datang 5x akan muncul 5x di sisi "lama".
+// - "Tingkat Retensi Pasien (Unik)" dihitung PER PASIEN, memakai sumber yang
+//   sama dengan kartu "Retensi Pasien" per-terapis di dashboard
+//   (getTherapistPatientMetrics): dari pasien unik yang datang pada periode
+//   ini, berapa % yang datang lebih dari sekali. Ini angka yang bisa
+//   ditelusuri langsung ke dashboard; angka mix di atas TIDAK bisa
+//   dibanding-bandingkan dengannya karena basis hitungnya beda.
 const GrowthRetentionSlide = ({ data, dateRange }) => {
   const growth = data?.growth;
   const mix = data?.patientMix;
   const renewal = data?.packageRenewal;
+  const retention = data?.patientRetention;
 
   return (
     <SlideShell eyebrow="Growth & Retention" title="Pertumbuhan & Loyalitas Pasien" dateRange={dateRange}>
@@ -40,10 +53,28 @@ const GrowthRetentionSlide = ({ data, dateRange }) => {
           <GrowthCard label="Pertumbuhan Pendapatan" growthData={growth?.revenue} />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-1">
-          <StatTile icon={UserPlus} label="Pasien Baru" value={mix?.newPatients ?? 0} accent="sky" />
-          <StatTile icon={Users} label="Pasien Kembali" value={mix?.returningPatients ?? 0} accent="violet" />
-          <StatTile icon={RefreshCcw} label="Tingkat Pasien Kembali" value={`${mix?.returningRate ?? 0}%`} accent="emerald" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <StatTile
+            icon={UserPlus}
+            label="Sesi dari Pasien Baru"
+            value={mix?.newPatients ?? 0}
+            sublabel="Dihitung per sesi/appointment"
+            accent="sky"
+          />
+          <StatTile
+            icon={Users}
+            label="Sesi dari Pasien Lama"
+            value={mix?.returningPatients ?? 0}
+            sublabel="Dihitung per sesi/appointment"
+            accent="violet"
+          />
+          <StatTile
+            icon={RefreshCcw}
+            label="Tingkat Retensi Pasien (Unik)"
+            value={`${retention?.rate ?? 0}%`}
+            sublabel={retention ? `${retention.returningPatients} dari ${retention.uniquePatients} pasien unik — basis sama dgn dashboard` : ''}
+            accent="emerald"
+          />
           <StatTile
             icon={PackageCheck}
             label="Tingkat Perpanjangan Paket"
