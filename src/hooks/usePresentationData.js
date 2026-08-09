@@ -121,7 +121,9 @@ export const usePresentationData = (dateRange) => {
           totalPatients: patientsRes?.data || 0,
           totalPackages: packagesRes?.data || 0,
           completedSessions: completedRes?.data || 0,
-          activeTherapists: activeTherapistsRes?.data || 0,
+          // fetchActiveTherapists (alias getActivePhysiotherapists) mengembalikan
+          // array baris terapis, bukan hitungan — ambil panjangnya.
+          activeTherapists: (activeTherapistsRes?.data || []).length,
           emptySlotsToday: emptySlotsRes?.data || 0,
           sessionTrend,
         },
