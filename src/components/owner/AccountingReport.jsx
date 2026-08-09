@@ -13,10 +13,10 @@ import {
   getAdminIncome, 
   getPatientIncomeFromPackages 
 } from '@/lib/api';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { generateAccountingReportPDF } from '@/lib/accountingReportPdfGenerator';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
     const isIncome = type === 'income';
@@ -151,6 +151,7 @@ const AccountingReport = ({
   onDateRangeChange
 }) => {
   const { toast } = useToast();
+  const { clinicName } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('income');
   
@@ -376,102 +377,20 @@ combinedExpenses.sort((a, b) => {
   );
 };
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(18);
-    doc.text("Laporan Akuntansi Lengkap", 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Periode: ${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`, 14, 30);
-    
-    let finalY = 35;
-
-    // Helper for sections
-    const addSection = (title, tableData, columns, subtotal, theme = 'green') => {
-        doc.setFontSize(12);
-        doc.setTextColor(theme === 'green' ? 0 : 200, theme === 'green' ? 100 : 0, 0);
-        doc.text(title, 14, finalY + 10);
-        doc.setTextColor(0, 0, 0);
-
-        autoTable(doc, {
-            startY: finalY + 15,
-            head: [columns.map(c => c.header)],
-            body: tableData.map(row => columns.map(c => {
-                 if (c.id === 'amount') return new Intl.NumberFormat('id-ID').format(row.amount);
-                 if (c.id === 'date') return formatDate(row[c.accessor]);
-                 if (c.id === 'bank') return row.bank_accounts?.bank_name || '-';
-                 return row[c.accessor];
-            })),
-            theme: 'grid',
-            headStyles: { fillColor: theme === 'green' ? [46, 139, 87] : [178, 34, 34] },
-            styles: { fontSize: 8 },
-        });
-
-        finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(10);
-        doc.text(`Subtotal: Rp ${new Intl.NumberFormat('id-ID').format(subtotal)}`, 140, finalY - 2, { align: 'right' });
-    };
-
-    // Income Sections
-    addSection("Pemasukan Owner", data.ownerIncome, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Bank", accessor: "bank_accounts", id: "bank" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalOwnerInc, 'green');
-
-    addSection("Pemasukan Admin", data.adminIncome, [
-        { header: "Tanggal", accessor: "transaction_date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Bank", accessor: "bank_accounts", id: "bank" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalAdminInc, 'green');
-
-    addSection("Pendapatan Pasien (Paket/Visit)", data.patientIncome, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Pasien", accessor: "patient_name" },
-        { header: "Paket", accessor: "package_name" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalPatientInc, 'green');
-
-    // Expense Sections
-    doc.addPage();
-    finalY = 20;
-
-    addSection("Pengeluaran Owner", data.ownerExpenses, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Bank", accessor: "bank_accounts", id: "bank" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalOwnerExp, 'red');
-
-    addSection("Pengeluaran Admin", data.adminExpenses, [
-        { header: "Tanggal", accessor: "transaction_date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Bank", accessor: "bank_accounts", id: "bank" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalAdminExp, 'red');
-
-    // Summary
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, finalY + 5, 196, finalY + 5);
-    
-    doc.setFontSize(12);
-    doc.text("Ringkasan Akhir", 14, finalY + 15);
-    
-    doc.setFontSize(10);
-    doc.text(`Total Pemasukan: Rp ${new Intl.NumberFormat('id-ID').format(totalIncome)}`, 14, finalY + 25);
-    doc.text(`Total Pengeluaran: Rp ${new Intl.NumberFormat('id-ID').format(totalExpenses)}`, 14, finalY + 32);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(netProfit >= 0 ? 46 : 220, netProfit >= 0 ? 139 : 20, netProfit >= 0 ? 87 : 60);
-    doc.text(`Net Profit: Rp ${new Intl.NumberFormat('id-ID').format(netProfit)}`, 14, finalY + 45);
-
-    doc.save(`laporan_akuntansi_${dateRange.startDate}_${dateRange.endDate}.pdf`);
+    generateAccountingReportPDF(data, {
+      dateRange,
+      clinicName,
+      totals: {
+        totalIncome,
+        totalExpenses,
+        netProfit,
+        subTotalOwnerInc,
+        subTotalAdminInc,
+        subTotalPatientInc,
+        subTotalOwnerExp,
+        subTotalAdminExp,
+      },
+    });
   };
 
   if (loading) {
