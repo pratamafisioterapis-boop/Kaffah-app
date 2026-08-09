@@ -4535,9 +4535,10 @@ export const getMyPayrollRecords = async () => {
 
 // Setiap item slip gaji dicatat sebagai satu baris owner_expenditures terpisah
 // (bukan digabung jadi satu total) supaya breakdown per komponen tetap terlihat
-// di pembukuan owner. `date` dipakai sama persis dengan `created_at` slip gaji
-// (bukan `new Date()` baru) supaya tanggal pembukuan selalu konsisten dengan
-// tanggal payroll tersimpan, walau proses posting ini berjalan belakangan.
+// di pembukuan owner. `date` dipakai dari `payroll_period_end` (akhir periode
+// payroll), bukan `created_at`/tanggal posting, supaya pengeluaran tercatat di
+// bulan periode gajinya walau slip baru dibuat/dibayar belakangan (mis. gaji
+// Juli yang baru diproses di Agustus tetap tercatat 31 Juli).
 //
 // subcategoryNames dicocokkan (case-insensitive) ke accounting_subcategories
 // milik klinik yang sama, supaya Sub Kategori & Kategori Utama-nya konsisten
@@ -4563,7 +4564,7 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
   if (!clinicId) return;
 
   const therapistName = therapist?.name || 'Terapis';
-  const postDate = (record.created_at || new Date().toISOString()).slice(0, 10);
+  const postDate = (record.payroll_period_end || record.created_at || new Date().toISOString()).slice(0, 10);
 
   const items = PAYROLL_EXPENSE_ITEMS
     .map(({ field, label, subcategoryNames }) => ({ amount: parseFloat(record[field]) || 0, label, subcategoryNames }))
