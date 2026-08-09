@@ -6,9 +6,7 @@ import {
   fetchTotalSessions,
   fetchTotalPatients,
   fetchTotalPackages,
-  fetchCompletedSessions,
   fetchActiveTherapists,
-  fetchEmptySlots,
   getOwnerIncome,
   getAdminIncome,
   getPatientIncomeFromPackages,
@@ -50,7 +48,7 @@ export const usePresentationData = (dateRange) => {
       const clinicId = await resolveClinicId();
 
       const [
-        sessionsRes, patientsRes, packagesRes, completedRes, activeTherapistsRes, emptySlotsRes,
+        sessionsRes, patientsRes, packagesRes, activeTherapistsRes,
         ownerIncRes, adminIncRes, patientIncRes, ownerExpRes, adminExpRes, bepRes,
         patientMixRes, cancellationRes, packageRenewalRes, receivablesRes, staffQualityRes, growthRes,
         dailyRecapsRes, appointmentsRes,
@@ -58,9 +56,7 @@ export const usePresentationData = (dateRange) => {
         fetchTotalSessions(startDate, endDate),
         fetchTotalPatients(startDate, endDate),
         fetchTotalPackages(startDate, endDate),
-        fetchCompletedSessions(),
         fetchActiveTherapists(),
-        fetchEmptySlots(),
         getOwnerIncome({ startDate, endDate }),
         getAdminIncome({ startDate, endDate }),
         getPatientIncomeFromPackages({ startDate, endDate }),
@@ -73,7 +69,10 @@ export const usePresentationData = (dateRange) => {
         getTotalOutstandingReceivables(),
         getClinicStaffQualitySummary({ startDate, endDate }),
         getPeriodGrowth({ startDate, endDate }),
-        supabase.from('daily_recaps').select('recap_date, amount').eq('clinic_id', clinicId)
+        // `status` disertakan supaya sesi selesai bisa dihitung untuk seluruh
+        // rentang tanggal yang dipilih, bukan cuma "hari ini" seperti di
+        // dashboard biasa — tidak relevan untuk slideshow berbasis periode.
+        supabase.from('daily_recaps').select('recap_date, amount, status').eq('clinic_id', clinicId)
           .gte('recap_date', startDate).lte('recap_date', endDate),
         supabase.from('appointments').select('appointment_date, status').eq('clinic_id', clinicId)
           .gte('appointment_date', `${startDate}T00:00:00`).lte('appointment_date', `${endDate}T23:59:59`),
@@ -110,6 +109,8 @@ export const usePresentationData = (dateRange) => {
       const byWeekday = WEEKDAY_LABELS.map((label, idx) => ({ day: label, count: weekdayCounts[idx] }));
       const busiestDay = byWeekday.reduce((max, d) => (d.count > max.count ? d : max), byWeekday[0]);
 
+      const completedSessionsRange = dailyRecaps.filter((r) => r.status === 'completed').length;
+
       const totalRevenue = sumAmount(ownerIncRes?.data) + sumAmount(adminIncRes?.data) + sumAmount(patientIncRes?.data);
       const totalExpenses = sumAmount(ownerExpRes?.data) + sumAmount(adminExpRes?.data);
       const netProfit = totalRevenue - totalExpenses;
@@ -120,11 +121,10 @@ export const usePresentationData = (dateRange) => {
           totalSessions: sessionsRes?.data || 0,
           totalPatients: patientsRes?.data || 0,
           totalPackages: packagesRes?.data || 0,
-          completedSessions: completedRes?.data || 0,
+          completedSessionsRange,
           // fetchActiveTherapists (alias getActivePhysiotherapists) mengembalikan
           // array baris terapis, bukan hitungan — ambil panjangnya.
           activeTherapists: (activeTherapistsRes?.data || []).length,
-          emptySlotsToday: emptySlotsRes?.data || 0,
           sessionTrend,
         },
         finance: {
