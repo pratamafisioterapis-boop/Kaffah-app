@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { CalendarCheck2, Flame } from 'lucide-react';
+import { CalendarCheck2, Flame, Clock, UserX } from 'lucide-react';
 import SlideShell from '@/components/owner/presentation/SlideShell';
 import StatTile from '@/components/owner/presentation/StatTile';
 
@@ -10,6 +10,9 @@ const STATUS_LABELS = {
   ongoing: 'Berlangsung',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
+  no_show: 'Tidak Hadir',
+  pending: 'Menunggu',
+  scheduled: 'Terjadwal',
 };
 const STATUS_COLORS = {
   confirmed: '#38bdf8',
@@ -17,6 +20,9 @@ const STATUS_COLORS = {
   ongoing: '#8b5cf6',
   completed: '#10b981',
   cancelled: '#ef4444',
+  no_show: '#a855f7',
+  pending: '#94a3b8',
+  scheduled: '#0ea5e9',
 };
 
 const AppointmentSlide = ({ data, dateRange }) => {
@@ -26,7 +32,7 @@ const AppointmentSlide = ({ data, dateRange }) => {
   return (
     <SlideShell eyebrow="Appointment" title="Pola & Kepadatan Appointment" dateRange={dateRange}>
       <div className="h-full flex flex-col gap-5 md:gap-7">
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <StatTile icon={CalendarCheck2} label="Total Appointment" value={appt.totalAppointments ?? 0} accent="sky" />
           <StatTile
             icon={Flame}
@@ -34,6 +40,20 @@ const AppointmentSlide = ({ data, dateRange }) => {
             value={appt.busiestDay?.day || '-'}
             sublabel={appt.busiestDay ? `${appt.busiestDay.count} appointment` : ''}
             accent="rose"
+          />
+          <StatTile
+            icon={Clock}
+            label="Jam Paling Ramai"
+            value={appt.peakHour?.label || '-'}
+            sublabel={appt.peakHour ? `${appt.peakHour.count} appointment` : ''}
+            accent="amber"
+          />
+          <StatTile
+            icon={UserX}
+            label="Tingkat No-Show"
+            value={`${appt.noShowRate ?? 0}%`}
+            sublabel={`${appt.noShowCount ?? 0} pasien tidak hadir`}
+            accent="violet"
           />
         </div>
 

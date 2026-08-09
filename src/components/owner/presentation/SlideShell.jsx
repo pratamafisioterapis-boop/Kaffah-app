@@ -23,7 +23,10 @@ const SlideShell = ({ eyebrow, title, dateRange, children }) => {
           </div>
         )}
       </div>
-      <div className="flex-1 min-h-0">{children}</div>
+      {/* overflow-y-auto = jaring pengaman: kalau konten slide lebih tinggi dari
+          layar (banyak stat tile di layar sempit/landscape), tetap bisa
+          di-scroll di dalam slide alih-alih terpotong tanpa cara melihat sisanya. */}
+      <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </div>
   );
 };

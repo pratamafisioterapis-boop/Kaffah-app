@@ -96,7 +96,7 @@ const PresentationFullscreen = ({ slides, onClose }) => {
         <Carousel setApi={setApi} className="h-full w-full" opts={{ loop: false }}>
           <CarouselContent className="h-screen -ml-0">
             {slides.map((slide, idx) => (
-              <CarouselItem key={idx} className="h-screen pl-0 flex items-center justify-center">
+              <CarouselItem key={idx} className="h-screen pl-0">
                 {slide}
               </CarouselItem>
             ))}

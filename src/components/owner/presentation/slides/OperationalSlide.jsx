@@ -1,26 +1,39 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity, Users, Package, CheckCircle2, UserCog, CalendarX } from 'lucide-react';
+import { Activity, Users, Package, CheckCircle2, UserCog, XCircle } from 'lucide-react';
 import SlideShell from '@/components/owner/presentation/SlideShell';
 import StatTile from '@/components/owner/presentation/StatTile';
 
 const OperationalSlide = ({ data, dateRange }) => {
   const op = data?.operational || {};
+  const cancellation = data?.cancellation;
 
   return (
     <SlideShell eyebrow="Operational" title="Performa Operasional Klinik" dateRange={dateRange}>
-      <div className="h-full flex flex-col gap-5 md:gap-7">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          <StatTile icon={Activity} label="Total Sesi" value={op.totalSessions ?? 0} accent="sky" />
+      <div className="h-full flex flex-col gap-4 md:gap-6">
+        <div className="grid grid-cols-3 gap-2.5 md:gap-4">
+          <StatTile
+            icon={Activity}
+            label="Total Sesi"
+            value={op.totalSessions ?? 0}
+            sublabel={`Rata-rata ${op.avgSessionsPerDay ?? 0} sesi/hari`}
+            accent="sky"
+          />
           <StatTile icon={Users} label="Total Pasien" value={op.totalPatients ?? 0} accent="violet" />
           <StatTile icon={Package} label="Total Paket" value={op.totalPackages ?? 0} accent="amber" />
-          <StatTile icon={CheckCircle2} label="Sesi Selesai Hari Ini" value={op.completedSessions ?? 0} accent="emerald" />
+          <StatTile icon={CheckCircle2} label="Sesi Selesai (Periode)" value={op.completedSessionsRange ?? 0} accent="emerald" />
           <StatTile icon={UserCog} label="Terapis Aktif" value={op.activeTherapists ?? 0} accent="sky" />
-          <StatTile icon={CalendarX} label="Slot Kosong Hari Ini" value={op.emptySlotsToday ?? 0} accent="rose" />
+          <StatTile
+            icon={XCircle}
+            label="Tingkat Pembatalan"
+            value={`${cancellation?.rate ?? 0}%`}
+            sublabel={cancellation ? `${cancellation.cancelled} dari ${cancellation.totalAppointments} appointment` : ''}
+            accent="rose"
+          />
         </div>
 
-        <div className="flex-1 min-h-0 rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6">
-          <p className="text-white font-bold text-sm md:text-base mb-4">Tren Jumlah Sesi</p>
+        <div className="flex-1 min-h-[220px] rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6">
+          <p className="text-white font-bold text-sm md:text-base mb-3 md:mb-4">Tren Jumlah Sesi</p>
           <div className="h-[calc(100%-2rem)] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={op.sessionTrend || []} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
