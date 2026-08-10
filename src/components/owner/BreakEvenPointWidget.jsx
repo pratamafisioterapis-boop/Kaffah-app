@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Loader2, Users, Wallet, Info, Receipt, Bus, Coins } from 'lucide-react';
+import { Target, Loader2, Users, Wallet, Info, Receipt, Bus, Coins, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { autoPostFixedCosts, getBepFinancials } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import BepItemDetailModal from '@/components/owner/BepItemDetailModal';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -40,6 +41,11 @@ const BreakEvenPointWidget = () => {
     incentiveFromPayroll: 0, incentiveLive: 0,
     payrollTherapistCount: 0,
   });
+  const [expenseItems, setExpenseItems] = useState([]);
+  const [transportBreakdown, setTransportBreakdown] = useState([]);
+  const [incentiveBreakdown, setIncentiveBreakdown] = useState([]);
+  // Baris mana yang lagi dibuka detailnya: 'fixedCost' | 'expense' | 'transport' | 'incentive' | null
+  const [activeDetail, setActiveDetail] = useState(null);
 
   const fetchFixedCostItems = useCallback(async () => {
     if (!clinicId) return;
@@ -73,6 +79,9 @@ const BreakEvenPointWidget = () => {
         incentiveLive: data.incentiveLive || 0,
         payrollTherapistCount: data.payrollTherapistCount || 0,
       });
+      setExpenseItems(data.expenseItems || []);
+      setTransportBreakdown(data.transportBreakdown || []);
+      setIncentiveBreakdown(data.incentiveBreakdown || []);
     }
     setLoading(false);
   }, [clinicId, fetchFixedCostItems]);
@@ -97,6 +106,54 @@ const BreakEvenPointWidget = () => {
   }, [salarySource]);
   const transportSource = describeSource(salarySource.transportFromPayroll, salarySource.transportLive);
   const incentiveSource = describeSource(salarySource.incentiveFromPayroll, salarySource.incentiveLive);
+
+  // Setiap sumber data (fixed cost, pengeluaran, transport, insentif) punya
+  // bentuk baris yang beda-beda; diseragamkan di sini jadi { key, label,
+  // sublabel, date, amount } supaya BepItemDetailModal cukup satu komponen.
+  const detailConfigs = useMemo(() => ({
+    fixedCost: {
+      title: 'Rincian Fixed Cost',
+      icon: <Wallet />, iconClassName: 'text-amber-400',
+      totalAmount: totalFixedCost,
+      emptyText: 'Belum ada fixed cost.',
+      rows: [...items]
+        .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
+        .map(i => ({ key: i.id, label: i.item_name, amount: Number(i.amount) || 0 })),
+    },
+    expense: {
+      title: 'Rincian Pengeluaran',
+      icon: <Receipt />, iconClassName: 'text-rose-400',
+      periodLabel: expensePeriodLabel,
+      totalAmount: ownerExpense + adminExpense,
+      emptyText: 'Belum ada pengeluaran di periode ini.',
+      rows: expenseItems.map(e => ({
+        key: e.id, label: e.description, date: e.date,
+        sublabel: [e.category, e.source === 'admin' ? 'Kasir/Admin' : 'Owner'].filter(Boolean).join(' · '),
+        amount: e.amount,
+      })),
+    },
+    transport: {
+      title: 'Rincian Transport Terapis',
+      icon: <Bus />, iconClassName: 'text-cyan-400',
+      periodLabel: expensePeriodLabel,
+      totalAmount: transportTotal,
+      emptyText: 'Belum ada transport terapis di periode ini.',
+      rows: transportBreakdown.map((t, idx) => ({
+        key: `${t.therapistId}-${t.source}-${idx}`, label: t.name, sublabel: t.detail, amount: t.amount,
+      })),
+    },
+    incentive: {
+      title: 'Rincian Insentif Terapis',
+      icon: <Coins />, iconClassName: 'text-emerald-400',
+      periodLabel: expensePeriodLabel,
+      totalAmount: incentiveTotal,
+      emptyText: 'Belum ada insentif terapis di periode ini.',
+      rows: incentiveBreakdown.map((t, idx) => ({
+        key: `${t.therapistId}-${t.source}-${idx}`, label: t.name, sublabel: t.detail, amount: t.amount,
+      })),
+    },
+  }), [items, totalFixedCost, expenseItems, ownerExpense, adminExpense, expensePeriodLabel, transportBreakdown, transportTotal, incentiveBreakdown, incentiveTotal]);
+  const activeModal = activeDetail ? detailConfigs[activeDetail] : null;
 
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-800/50" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%)' }}>
@@ -165,36 +222,40 @@ const BreakEvenPointWidget = () => {
             </div>
 
             <div className={cn("grid gap-3 pt-1", isPWA ? "grid-cols-1" : "grid-cols-2")}>
-              <div className="flex items-start gap-2 text-xs text-slate-400">
+              <button type="button" onClick={() => setActiveDetail('fixedCost')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-white/5 active:bg-white/10 transition-colors">
                 <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p>Fixed Cost:</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(totalFixedCost)}</p>
                 </div>
-              </div>
-              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+              </button>
+              <button type="button" onClick={() => setActiveDetail('expense')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-white/5 active:bg-white/10 transition-colors">
                 <Receipt className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p>Pengeluaran ({expensePeriodLabel}):</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
                 </div>
-              </div>
-              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+              </button>
+              <button type="button" onClick={() => setActiveDetail('transport')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-white/5 active:bg-white/10 transition-colors">
                 <Bus className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p>Transport Terapis:</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
                   {transportSource && <p className="text-[10px] text-slate-500">{transportSource}</p>}
                 </div>
-              </div>
-              <div className="flex items-start gap-2 text-xs text-slate-400">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+              </button>
+              <button type="button" onClick={() => setActiveDetail('incentive')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-white/5 active:bg-white/10 transition-colors">
                 <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p>Insentif Terapis:</p>
                   <p className="text-slate-200 font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
                   {incentiveSource && <p className="text-[10px] text-slate-500">{incentiveSource}</p>}
                 </div>
-              </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+              </button>
             </div>
             <p className="text-[10px] text-slate-500 italic">
               *Pengeluaran dihitung dari {expensePeriodLabel}, di luar pos yang sudah masuk Fixed Cost &amp; slip gaji supaya tidak dobel. Gaji pokok karyawan tetap sudah termasuk di Fixed Cost. Transport &amp; insentif terapis diakrual harian dari awal periode gaji masing-masing s/d {format(today, 'd MMM yyyy', { locale: idLocale })}; begitu payroll periode itu dibuat, angkanya mengikuti slip gaji dan akrual harian berhenti sampai akhir bulan.
@@ -202,6 +263,20 @@ const BreakEvenPointWidget = () => {
           </>
         )}
       </div>
+
+      {activeModal && (
+        <BepItemDetailModal
+          isOpen={!!activeDetail}
+          onClose={() => setActiveDetail(null)}
+          title={activeModal.title}
+          icon={activeModal.icon}
+          iconClassName={activeModal.iconClassName}
+          periodLabel={activeModal.periodLabel}
+          totalAmount={activeModal.totalAmount}
+          rows={activeModal.rows}
+          emptyText={activeModal.emptyText}
+        />
+      )}
     </div>
   );
 };

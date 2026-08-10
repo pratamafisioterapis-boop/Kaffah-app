@@ -6995,14 +6995,18 @@ export const getBepFinancials = async () => {
       getServiceRates(),
       // Semua terapis klinik ini (termasuk yang sudah non-aktif) — dipakai untuk
       // membatasi query payroll ke klinik yang benar; terapis yang resign di
-      // tengah bulan tetap punya biaya payroll yang harus masuk BEP.
-      supabase.from('physiotherapists').select('id').eq('clinic_id', clinicId)
+      // tengah bulan tetap punya biaya payroll yang harus masuk BEP. Nama
+      // dibawa sekalian supaya breakdown transport/insentif per terapis bisa
+      // ditampilkan tanpa query tambahan.
+      supabase.from('physiotherapists').select('id, name').eq('clinic_id', clinicId)
     ]);
 
     // Payroll beberapa periode terakhir: dipakai untuk tahu terapis mana yang
     // transport & insentifnya sudah dibayar (jadi akrual hariannya berhenti)
     // dan mana yang periodenya masih menggantung.
     const clinicTherapistIds = (clinicTherapistsRes?.data || []).map(t => t.id);
+    const therapistNameMap = {};
+    (clinicTherapistsRes?.data || []).forEach(t => { therapistNameMap[t.id] = t.name; });
     const payrollRes = clinicTherapistIds.length
       ? await supabase
         .from('payroll_records')
@@ -7016,6 +7020,19 @@ export const getBepFinancials = async () => {
     const ownerExpense = sumAmount(excludeAlreadyCountedRows(ownerExpRes.data));
     const adminExpense = sumAmount(adminExpRes.data);
     const revenueThisMonth = sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data);
+
+    // Rincian baris pengeluaran (owner + admin) supaya widget BEP bisa
+    // menampilkan detail per transaksi saat "Pengeluaran" diklik.
+    const expenseItems = [
+      ...excludeAlreadyCountedRows(ownerExpRes.data).map(r => ({
+        id: r.id, description: r.description || r.category || 'Pengeluaran',
+        category: r.category, date: r.date, amount: Number(r.amount) || 0, source: 'owner'
+      })),
+      ...(adminExpRes.data || []).map(r => ({
+        id: r.id, description: r.description || r.category || 'Pengeluaran',
+        category: r.category, date: r.transaction_date, amount: Number(r.amount) || 0, source: 'admin'
+      }))
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const therapists = therapistsRes.data || [];
     const ratesMap = {};
@@ -7038,9 +7055,19 @@ export const getBepFinancials = async () => {
 
     let transportFromPayroll = 0;
     let incentiveFromPayroll = 0;
+    // Rincian per terapis supaya widget BEP bisa menampilkan detail saat
+    // "Transport Terapis" / "Insentif Terapis" diklik.
+    const transportBreakdown = [];
+    const incentiveBreakdown = [];
     payrollThisMonth.forEach(r => {
-      transportFromPayroll += Number(r.transport_per_day) || 0;
-      incentiveFromPayroll += (Number(r.incentive_amount) || 0) + (Number(r.custom_commission) || 0);
+      const transportAmt = Number(r.transport_per_day) || 0;
+      const incentiveAmt = (Number(r.incentive_amount) || 0) + (Number(r.custom_commission) || 0);
+      transportFromPayroll += transportAmt;
+      incentiveFromPayroll += incentiveAmt;
+      const name = therapistNameMap[r.physiotherapist_id] || 'Terapis';
+      const detail = `Payroll ${format(parseISO(r.payroll_period_start), 'd MMM', { locale: idLocale })} – ${format(parseISO(r.payroll_period_end), 'd MMM yyyy', { locale: idLocale })}`;
+      if (transportAmt > 0) transportBreakdown.push({ therapistId: r.physiotherapist_id, name, amount: transportAmt, source: 'payroll', detail });
+      if (incentiveAmt > 0) incentiveBreakdown.push({ therapistId: r.physiotherapist_id, name, amount: incentiveAmt, source: 'payroll', detail });
     });
 
     // ── Fase 1: akrual harian untuk terapis yang periodenya belum dibayar ──
@@ -7080,13 +7107,22 @@ export const getBepFinancials = async () => {
       ]);
 
       const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], accrualStart, effectiveEnd);
-      transportLive += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+      const therapistTransport = (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+      transportLive += therapistTransport;
 
       const recaps = recapsRes.data || [];
-      incentiveLive += salaryScheme === 'full_salary'
+      const therapistIncentive = salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
         : calculateCustomSalary(recaps, ratesMap);
+      incentiveLive += therapistIncentive;
+
+      const detail = `Akrual harian ${format(accrualStart, 'd MMM', { locale: idLocale })} – ${format(effectiveEnd, 'd MMM yyyy', { locale: idLocale })}`;
+      if (therapistTransport > 0) transportBreakdown.push({ therapistId: t.id, name: t.name, amount: therapistTransport, source: 'akrual', detail });
+      if (therapistIncentive > 0) incentiveBreakdown.push({ therapistId: t.id, name: t.name, amount: therapistIncentive, source: 'akrual', detail });
     }));
+
+    transportBreakdown.sort((a, b) => b.amount - a.amount);
+    incentiveBreakdown.sort((a, b) => b.amount - a.amount);
 
     const transportTotal = transportFromPayroll + transportLive;
     const incentiveTotal = incentiveFromPayroll + incentiveLive;
@@ -7163,6 +7199,11 @@ export const getBepFinancials = async () => {
         revenueThisMonth,
         isBreakEven: revenueThisMonth >= totalCost,
         breakEvenDate,
+        // Rincian per item supaya widget BEP bisa menampilkan detail saat
+        // salah satu baris (Pengeluaran/Transport/Insentif) diklik.
+        expenseItems,
+        transportBreakdown,
+        incentiveBreakdown,
       },
       error: null
     };
