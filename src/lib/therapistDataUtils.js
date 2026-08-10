@@ -237,3 +237,64 @@ export const getTherapistPatientMetrics = async (therapistId, startDate = null, 
     };
   }
 };
+
+// Sama seperti getTherapistPatientMetrics tapi untuk banyak terapis sekaligus
+// dalam satu query (dikelompokkan di JS) — dipakai OwnerDashboard supaya
+// tidak query daily_recaps satu-satu per terapis (N+1).
+const RECAP_PAGE_SIZE = 1000;
+export const getTherapistsPatientMetrics = async (therapistIds, startDate = null, endDate = null) => {
+  if (!therapistIds || therapistIds.length === 0) {
+    return { data: {}, error: null };
+  }
+
+  try {
+    // Supabase/PostgREST membatasi unbounded select ke ~1000 baris; klinik
+    // dengan banyak terapis & rentang tanggal panjang bisa gampang melewati
+    // itu, jadi dipaginasi eksplisit alih-alih ambil sekali saja.
+    let allRows = [];
+    let from = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const to = from + RECAP_PAGE_SIZE - 1;
+      let query = supabase
+        .from('daily_recaps')
+        .select('therapist_id, patient_id')
+        .in('therapist_id', therapistIds)
+        .not('patient_id', 'is', null)
+        .range(from, to);
+
+      if (startDate) query = query.gte('recap_date', startDate);
+      if (endDate) query = query.lte('recap_date', endDate);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      allRows = allRows.concat(data || []);
+      if (!data || data.length < RECAP_PAGE_SIZE) break;
+      from += RECAP_PAGE_SIZE;
+    }
+
+    // therapist_id -> patient_id -> jumlah kunjungan
+    const visitCountByTherapist = new Map();
+    allRows.forEach(r => {
+      if (!r.patient_id || !r.therapist_id) return;
+      if (!visitCountByTherapist.has(r.therapist_id)) visitCountByTherapist.set(r.therapist_id, new Map());
+      const patientMap = visitCountByTherapist.get(r.therapist_id);
+      patientMap.set(r.patient_id, (patientMap.get(r.patient_id) || 0) + 1);
+    });
+
+    const data = {};
+    visitCountByTherapist.forEach((patientMap, therapistId) => {
+      data[therapistId] = {
+        uniquePatients: patientMap.size,
+        returningPatients: Array.from(patientMap.values()).filter(count => count > 1).length,
+      };
+    });
+
+    return { data, error: null };
+
+  } catch (error) {
+    console.error('Error calculating therapists patient metrics:', error);
+    return { data: {}, error };
+  }
+};

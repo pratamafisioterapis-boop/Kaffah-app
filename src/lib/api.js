@@ -2152,17 +2152,28 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
 
   }, 'getPatientIncomeFromPackages', { retry: true });
 };
-export const getOwnerReceivables = async () => {
+export const getOwnerReceivables = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('owner_receivables')
       .select('*')
       .eq('clinic_id', userRow?.clinic_id)
       .order('date', { ascending: true });
+
+    // Piutang yang belum lunas tetap harus ikut kebawa berapapun tanggal
+    // dibuatnya (masih utang aktif, dipakai getTotalOutstandingReceivables).
+    // Kalau dikasih rentang tanggal, piutang yang SUDAH lunas dibatasi ke
+    // periode itu saja supaya query nggak menarik seluruh riwayat piutang
+    // klinik sejak awal berdiri setiap kali dashboard dibuka.
+    if (startDate && endDate) {
+      query = query.or(`status.neq.Paid,and(date.gte.${startDate},date.lte.${endDate})`);
+    }
+
+    const { data, error } = await query;
     if (error) return { error };
     return { data, success: true, error: null };
   }, 'getOwnerReceivables', { retry: true });
@@ -6159,22 +6170,30 @@ export const fetchEmptySlots = async () => {
 // ============================
 // TODAY SESSIONS PER THERAPIST
 // ============================
-export const fetchTodaySessionsPerTherapist = async (therapistId) => {
+// Jumlah sesi hari ini utk SEMUA terapis klinik dalam satu query (dikelompokkan
+// di JS), dipakai OwnerDashboard supaya tidak query per-terapis satu-satu.
+export const fetchTodaySessionsByTherapist = async () => {
   return safeQuery(async () => {
     const today = getTodayWITA();
 
-    const { count, error } = await supabase
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase
       .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('therapist_id', therapistId)
+      .select('therapist_id')
+      .eq('clinic_id', userRow?.clinic_id)
       .gte('appointment_date', `${today}T00:00:00`)
       .lte('appointment_date', `${today}T23:59:59`)
       .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed']);
 
     if (error) return { error };
 
-    return { data: count || 0 };
-  }, 'fetchTodaySessionsPerTherapist');
+    const counts = {};
+    (data || []).forEach(r => { counts[r.therapist_id] = (counts[r.therapist_id] || 0) + 1; });
+    return { data: counts };
+  }, 'fetchTodaySessionsByTherapist');
 };
 // ============================================
 // SERVICE RATES

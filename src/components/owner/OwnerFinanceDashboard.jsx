@@ -308,7 +308,7 @@ const OwnerFinanceDashboard = () => {
     const [expRes, incRes, recRes, bankRes] = await Promise.all([
       getOwnerExpenditures(dateRange), 
       getOwnerIncome(dateRange), 
-      getOwnerReceivables(), 
+      getOwnerReceivables(dateRange),
       getBankAccounts()
     ]);
 
@@ -372,11 +372,17 @@ const OwnerFinanceDashboard = () => {
     }
   };
   
-  // Re-fetch when dateRange changes
+  // Owner/Admin Accounting data cuma dipakai di tab "owner" & "admin" (tab
+  // lain seperti Accounting Report punya fetch sendiri) — fetch on-demand
+  // saat tab-nya aktif supaya nggak nembak 2x query yang sama di background
+  // tiap kali dashboard dibuka atau dateRange berubah.
   useEffect(() => {
-    fetchOwnerData();
-    fetchAdminData();
-  }, [dateRange]);
+    if (activeTab === 'owner') fetchOwnerData();
+  }, [dateRange, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'admin') fetchAdminData();
+  }, [dateRange, activeTab]);
 
   // Handlers
   const handleDelete = async (deleteFn, id, type, refreshFn) => {
