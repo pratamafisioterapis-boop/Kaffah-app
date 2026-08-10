@@ -37,6 +37,7 @@ import SlotUtilizationChart from '@/components/owner/operational/SlotUtilization
 import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDemandChart';
 import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
+import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 // API
@@ -485,6 +486,10 @@ setTherapists(enrichedTherapists);
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
                  <BulletChartTargetVsRealization dateRange={dateRange} />
                  <ServiceDistributionChart dateRange={dateRange} />
+               </div>
+               {/* Row 4: Sumber Pasien */}
+               <div className="grid grid-cols-1 gap-4 md:gap-5">
+                 <PatientSourceChart dateRange={dateRange} />
                </div>
              </section>
           </TabsContent>
