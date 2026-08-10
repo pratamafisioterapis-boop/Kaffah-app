@@ -81,7 +81,7 @@ const InventoryTakeOutPage = () => {
 
           <TabsContent value="ambil" className="mt-0 outline-none">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm onSuccess={refreshAll} /></div></div>
+              <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm items={items} onSuccess={refreshAll} /></div></div>
               <div className="xl:col-span-2">
                 <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Pengambilan</h3>
                 {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : (

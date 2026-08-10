@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
-import { getInventoryItems, takeInventoryStock } from '@/lib/api';
+import { takeInventoryStock } from '@/lib/api';
 import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
 
-const InventoryTakeOutForm = ({ onSuccess }) => {
+const InventoryTakeOutForm = ({ items = [], onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState([]);
   const [form, setForm] = useState({ item_id: '', quantity: '', taken_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
-
-  useEffect(() => { (async () => { const { data } = await getInventoryItems(); setItems(data || []); })(); }, []);
 
   const selectedItem = items.find(i => i.id === form.item_id);
   const estimatedCost = selectedItem && form.quantity ? Number(form.quantity) * Number(selectedItem.price_per_unit) : 0;
