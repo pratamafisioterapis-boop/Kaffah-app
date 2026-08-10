@@ -53,10 +53,10 @@ import {
   fetchTodayNewPatients,
   fetchTodayReturningPatients,
   fetchAllTherapists,
-  fetchTodaySessionsPerTherapist,
+  fetchTodaySessionsByTherapist,
   getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
-import { getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
+import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -268,22 +268,9 @@ const enrichedTherapists = activeTherapistsOnly.map(t => ({
 
 setTherapists(enrichedTherapists);
 
-      // 2. Fetch session counts for each therapist
-      const sessionCounts = {};
-      if (therapistList && therapistList.length > 0) {
-        // Parallel fetch for better performance
-        const results = await Promise.all(
-          therapistList.map(async (t) => {
-            const countRes = await fetchTodaySessionsPerTherapist(t.id);
-            return { id: t.id, count: safeExtractNumber(countRes) };
-          })
-        );
-        
-        results.forEach(r => {
-          sessionCounts[r.id] = r.count;
-        });
-      }
-      setTherapistSessions(sessionCounts);
+      // 2. Fetch today's session count for all therapists in one query
+      const { data: sessionCounts } = await fetchTodaySessionsByTherapist();
+      setTherapistSessions(sessionCounts || {});
 
     } catch (error) {
       console.error("Failed to fetch therapist status:", error);
@@ -329,17 +316,10 @@ setTherapists(enrichedTherapists);
     }
     setIsLoadingPatientMetrics(true);
     try {
-      const results = await Promise.all(
-        therapists.map(async (t) => {
-          const { uniquePatients, returningPatients } = await getTherapistPatientMetrics(t.id, dateRange.startDate, dateRange.endDate);
-          return { id: t.id, uniquePatients, returningPatients };
-        })
-      );
-      const metrics = {};
-      results.forEach(r => {
-        metrics[r.id] = { uniquePatients: r.uniquePatients, returningPatients: r.returningPatients };
-      });
-      setPatientMetrics(metrics);
+      const therapistIds = therapists.map(t => t.id);
+      const { data: metrics, error } = await getTherapistsPatientMetrics(therapistIds, dateRange.startDate, dateRange.endDate);
+      if (error) throw error;
+      setPatientMetrics(metrics || {});
     } catch (error) {
       console.error("Failed to fetch therapist patient metrics:", error);
     } finally {
