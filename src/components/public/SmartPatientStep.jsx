@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, UserPlus, Phone, Cake, Users } from 'lucide-react';
+import { differenceInYears } from 'date-fns';
+import { ArrowLeft, ArrowRight, UserPlus, Phone, Cake, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +12,8 @@ const GENDERS = [
   { id: 'female', label: 'Perempuan' },
 ];
 
-const SmartPatientStep = ({ initialData, onBack, onNext }) => {
-  const [formData, setFormData] = useState(initialData || { full_name: '', phone: '', age: '', gender: '' });
+const SmartPatientStep = ({ initialData, onBack, onNext, submitting }) => {
+  const [formData, setFormData] = useState(initialData || { full_name: '', phone: '', birth_date: '', gender: '' });
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -24,10 +25,11 @@ const SmartPatientStep = ({ initialData, onBack, onNext }) => {
     e.preventDefault();
     if (!formData.full_name.trim()) return setError('Nama lengkap wajib diisi.');
     if (!formData.phone.trim()) return setError('Nomor WhatsApp wajib diisi.');
-    if (!formData.age || parseInt(formData.age, 10) <= 0) return setError('Usia wajib diisi dengan angka yang valid.');
+    if (!formData.birth_date) return setError('Tanggal lahir wajib diisi.');
     if (!formData.gender) return setError('Jenis kelamin wajib dipilih.');
     setError('');
-    onNext(formData);
+    const age = differenceInYears(new Date(), new Date(formData.birth_date));
+    onNext({ ...formData, age: String(age) });
   };
 
   return (
@@ -83,15 +85,13 @@ const SmartPatientStep = ({ initialData, onBack, onNext }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <Cake className="w-3.5 h-3.5 text-[#1e3a8a]" /> Usia
+                <Cake className="w-3.5 h-3.5 text-[#1e3a8a]" /> Tanggal Lahir
               </Label>
               <Input
-                type="number"
-                min={0}
-                name="age"
-                value={formData.age}
+                type="date"
+                name="birth_date"
+                value={formData.birth_date}
                 onChange={handleChange}
-                placeholder="Tahun"
                 className="h-11 sm:h-12 rounded-xl border-slate-200 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
               />
             </div>
@@ -125,9 +125,10 @@ const SmartPatientStep = ({ initialData, onBack, onNext }) => {
 
           <Button
             type="submit"
+            disabled={submitting}
             className="w-full h-12 sm:h-13 text-base sm:text-lg font-bold rounded-full bg-[#1e3a8a] hover:bg-[#172554] shadow-lg shadow-blue-900/20 hover:shadow-xl transition-all hover:-translate-y-0.5"
           >
-            Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Lanjutkan <ArrowRight className="w-4 h-4 ml-2" /></>}
           </Button>
         </form>
       </div>

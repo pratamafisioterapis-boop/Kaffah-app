@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { getActivePhysiotherapists, createAppointment, getClinicLogo } from '@/lib/api';
+import { getActivePhysiotherapists, createAppointment, getClinicLogo, matchPatientForNewRegistration, getPatientTherapistHistory } from '@/lib/api';
 import { complaintLabel } from '@/lib/complaintTags';
 import SmartPatientTypeStep from '@/components/public/SmartPatientTypeStep';
 import SmartPatientStep from '@/components/public/SmartPatientStep';
+import SmartPatientMatchConfirmStep from '@/components/public/SmartPatientMatchConfirmStep';
 import SmartReturningPatientStep from '@/components/public/SmartReturningPatientStep';
 import SmartComplaintStep from '@/components/public/SmartComplaintStep';
 import SmartTimePreferenceStep from '@/components/public/SmartTimePreferenceStep';
@@ -27,9 +28,10 @@ const STEP_ORDER = [
   { key: 'confirm', label: 'Konfirmasi', icon: ClipboardCheck },
 ];
 
-// 'patientSearch' (returning patients) fills the same slot as 'patient' (new
-// patients) in the progress bar — they're two paths to the same milestone.
-const STEP_PROGRESS_ALIAS = { patientSearch: 'patient' };
+// 'patientSearch' (returning patients) and 'patientMatchConfirm' (possible
+// duplicate found while registering as a new patient) fill the same slot as
+// 'patient' in the progress bar — they're all paths to the same milestone.
+const STEP_PROGRESS_ALIAS = { patientSearch: 'patient', patientMatchConfirm: 'patient' };
 
 const SmartBookingPage = () => {
   const { toast } = useToast();
@@ -47,6 +49,8 @@ const SmartBookingPage = () => {
   const [existingPatientId, setExistingPatientId] = useState(null);
   const [preferredTherapistIds, setPreferredTherapistIds] = useState([]);
   const [patientData, setPatientData] = useState(null);
+  const [matchCandidate, setMatchCandidate] = useState(null);
+  const [matchingPatient, setMatchingPatient] = useState(false);
   const [complaintSlugs, setComplaintSlugs] = useState([]);
   const [complaintNote, setComplaintNote] = useState('');
   const [timePreference, setTimePreference] = useState(null);
@@ -85,6 +89,42 @@ const SmartBookingPage = () => {
   const handleHomecareWhatsApp = () => {
     const message = `Halo Admin Kaffah Physiotherapy,\n\nSaya ingin melakukan reservasi layanan fisioterapi homecare.\n\nMohon informasi terkait jadwal yang tersedia dan prosedur booking.\n\nTerima kasih.`;
     window.open(`https://wa.me/6281233339435?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleNewPatientSubmit = async (data) => {
+    setPatientData(data);
+    setMatchingPatient(true);
+    try {
+      const { data: candidates } = await matchPatientForNewRegistration(data.full_name, data.phone, data.birth_date);
+      if (candidates && candidates.length > 0) {
+        setMatchCandidate(candidates[0]);
+        goTo('patientMatchConfirm');
+        return;
+      }
+    } catch (e) {
+      // Matching is a best-effort convenience — if it fails, fall through to a normal new-patient booking.
+    } finally {
+      setMatchingPatient(false);
+    }
+    setExistingPatientId(null);
+    goTo('complaint');
+  };
+
+  const handleMatchConfirm = async (candidate) => {
+    setExistingPatientId(candidate.id);
+    const { data: historyRes } = await getPatientTherapistHistory(candidate.id);
+    const topTherapistIds = (historyRes || [])
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 2)
+      .map(t => t.id);
+    setPreferredTherapistIds(topTherapistIds);
+    goTo('complaint');
+  };
+
+  const handleMatchReject = async () => {
+    setExistingPatientId(null);
+    setMatchCandidate(null);
+    goTo('complaint');
   };
 
   const handleSelectSlot = (therapist, date, slot) => {
@@ -309,7 +349,18 @@ const SmartBookingPage = () => {
                   key="patient"
                   initialData={patientData}
                   onBack={() => goTo('patientType')}
-                  onNext={(data) => { setPatientData(data); goTo('complaint'); }}
+                  onNext={handleNewPatientSubmit}
+                  submitting={matchingPatient}
+                />
+              )}
+
+              {step === 'patientMatchConfirm' && matchCandidate && (
+                <SmartPatientMatchConfirmStep
+                  key="patientMatchConfirm"
+                  candidate={matchCandidate}
+                  onBack={() => goTo('patient')}
+                  onConfirm={handleMatchConfirm}
+                  onReject={handleMatchReject}
                 />
               )}
 

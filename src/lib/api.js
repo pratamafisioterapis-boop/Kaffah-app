@@ -901,6 +901,29 @@ export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) =
   }, 'searchPatientByBirthDateAndLastName', { retry: false });
 };
 
+// Public-safe (no login required) — used by Smart Booking's "Pasien Baru" flow
+// to suggest a possible existing-patient match (nama + no HP + tanggal lahir)
+// so the patient can confirm instead of unknowingly creating a duplicate
+// medical record. Caller must still let the patient confirm/reject the match.
+export const matchPatientForNewRegistration = async (fullName, phone, birthDate) => {
+  return safeQuery(async () => {
+    if (!fullName || !phone || !birthDate) {
+      return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase.rpc('match_patient_for_new_registration', {
+      p_full_name: fullName,
+      p_phone: phone,
+      p_birth_date: birthDate,
+      p_clinic_id: PUBLIC_CLINIC_ID
+    });
+
+    if (error) return { error };
+
+    return { data: data || [], error: null };
+  }, 'matchPatientForNewRegistration', { retry: false });
+};
+
 // Public-safe (no login required) — used by Smart Booking's "Pasien Lama" flow
 // to recommend therapists who have treated this patient before.
 export const getPatientTherapistHistory = async (patientId) => {
