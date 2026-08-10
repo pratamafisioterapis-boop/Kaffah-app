@@ -30,23 +30,23 @@ const PatientSourceChart = ({ dateRange }) => {
         const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
         let query = supabase
-          .from('patients')
-          .select('additional_info_option_id, patient_info_options(label)')
+          .from('daily_recaps')
+          .select('patient_id, patients!daily_recap_patient_id_fkey(additional_info_option_id, patient_info_options(label))')
           .eq('clinic_id', userRow?.clinic_id);
 
-        if (dateRange?.startDate) query = query.gte('created_at', dateRange.startDate);
-        if (dateRange?.endDate) query = query.lte('created_at', `${dateRange.endDate}T23:59:59`);
+        if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
+        if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);
 
-        const { data: patients, error } = await query;
+        const { data: recaps, error } = await query;
 
         if (error) throw error;
 
-        const totalCount = (patients || []).length;
+        const totalCount = (recaps || []).length;
         setTotal(totalCount);
 
         const countMap = {};
-        (patients || []).forEach(p => {
-          const label = p.patient_info_options?.label || 'Tidak Diketahui';
+        (recaps || []).forEach(r => {
+          const label = r.patients?.patient_info_options?.label || 'Tidak Diketahui';
           countMap[label] = (countMap[label] || 0) + 1;
         });
 
@@ -77,12 +77,12 @@ const PatientSourceChart = ({ dateRange }) => {
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-800">Sumber Pasien</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Dari mana pasien baru tahu klinik, sesuai periode</p>
+            <p className="text-xs text-slate-400 mt-0.5">Dari mana pasien tahu klinik, per sesi pada periode ini</p>
           </div>
           {!loading && (
             <div className="text-right">
               <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Pasien Baru</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Sesi</p>
             </div>
           )}
         </div>
@@ -97,7 +97,7 @@ const PatientSourceChart = ({ dateRange }) => {
           </div>
         ) : data.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-            Belum ada data pasien baru pada periode ini.
+            Belum ada data sesi pada periode ini.
           </div>
         ) : (
           <div className="space-y-3">
