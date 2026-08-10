@@ -7022,14 +7022,17 @@ export const getBepFinancials = async () => {
     (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
 
     // ── Fase 2: transport & insentif yang sudah terkunci di payroll ──
-    // Payroll yang dibuat dalam bulan kalender berjalan menggantikan akrual
-    // harian terapis yang bersangkutan sampai akhir bulan. Angkanya diambil
-    // dari payroll_records (bukan dari baris owner_expenditures hasil posting)
+    // Payroll yang PERIODENYA menyentuh bulan kalender berjalan menggantikan
+    // akrual harian terapis yang bersangkutan sampai akhir bulan. Dicek dari
+    // payroll_period_start/end, BUKAN created_at — slip yang telat dibuat
+    // (mis. periode Juli baru diinput awal Agustus) tetap milik periode Juli
+    // dan tidak boleh nyasar jadi biaya Agustus. Angkanya diambil dari
+    // payroll_records (bukan dari baris owner_expenditures hasil posting)
     // supaya tetap benar walau slip gaji belum sempat terpost ke accounting.
     const payrollRecords = payrollRes?.data || [];
     const payrollThisMonth = payrollRecords.filter(r => {
-      const createdAt = r.created_at ? new Date(r.created_at) : null;
-      return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+      return r.payroll_period_start && r.payroll_period_end
+        && r.payroll_period_start <= monthEndStr && r.payroll_period_end >= monthStartStr;
     });
     const paidTherapistIds = new Set(payrollThisMonth.map(r => r.physiotherapist_id));
 
