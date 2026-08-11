@@ -14,7 +14,7 @@ import { getServiceOptions, getDiagnosisOptions, createOperationalOption } from 
 // DiagnosisServiceManager), so creating a brand-new diagnosis prompts for its
 // Layanan in a small dialog instead of exposing a separate always-visible
 // Layanan field on the main form.
-const DiagnosisServiceField = ({ diagnosaId, onChange }) => {
+const DiagnosisServiceField = ({ diagnosaId, onChange, multiple = false }) => {
   const { toast } = useToast();
   const [services, setServices] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
@@ -54,8 +54,15 @@ const DiagnosisServiceField = ({ diagnosaId, onChange }) => {
       return;
     }
     const newOption = { id: data.id, value: data.id, label: data.label, parent_id: data.parent_id };
-    setDiagnoses((prev) => [...prev, newOption]);
-    onChange({ diagnosaId: newOption.value, diagnosaLabel: newOption.label });
+    const allDiagnoses = [...diagnoses, newOption];
+    setDiagnoses(allDiagnoses);
+    if (multiple) {
+      const ids = [...(Array.isArray(diagnosaId) ? diagnosaId : []), newOption.value];
+      const labels = ids.map((id) => allDiagnoses.find((d) => d.value === id)?.label).filter(Boolean);
+      onChange({ diagnosaId: ids, diagnosaLabel: labels.join(', ') });
+    } else {
+      onChange({ diagnosaId: newOption.value, diagnosaLabel: newOption.label });
+    }
     toast({ title: 'Diagnosa ditambahkan', description: `"${newOption.label}" berhasil ditambahkan.` });
     closeDialog();
   };
@@ -63,13 +70,22 @@ const DiagnosisServiceField = ({ diagnosaId, onChange }) => {
   return (
     <>
       <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diagnosa</Label>
+        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          Diagnosa{multiple ? ' (bisa lebih dari satu)' : ''}
+        </Label>
         <SearchableSelect
           options={diagnoses}
           value={diagnosaId}
+          multiple={multiple}
           onChange={(val) => {
-            const opt = diagnoses.find((d) => d.value === val);
-            onChange({ diagnosaId: val, diagnosaLabel: opt?.label || '' });
+            if (multiple) {
+              const ids = Array.isArray(val) ? val : [];
+              const labels = ids.map((id) => diagnoses.find((d) => d.value === id)?.label).filter(Boolean);
+              onChange({ diagnosaId: ids, diagnosaLabel: labels.join(', ') });
+            } else {
+              const opt = diagnoses.find((d) => d.value === val);
+              onChange({ diagnosaId: val, diagnosaLabel: opt?.label || '' });
+            }
           }}
           allowCreate
           onCreateOption={handleRequestCreate}
