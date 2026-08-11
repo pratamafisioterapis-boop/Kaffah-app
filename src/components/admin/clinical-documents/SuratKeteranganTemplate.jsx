@@ -118,7 +118,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
           <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />
           <p style={{ fontSize: '13px', fontWeight: 700, margin: '6px 0 0' }}>{data?.therapist_name || '-'}</p>
           {data?.therapist_license && (
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{data.therapist_license}</p>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0' }}>SIPF: {data.therapist_license}</p>
           )}
         </div>
       </div>
