@@ -15,6 +15,8 @@ const COLOR_PALETTE = [
   { color: '#0ea5e9', bg: 'bg-sky-50',     text: 'text-sky-600'     },
 ];
 const UNKNOWN_STYLE = { color: '#94a3b8', bg: 'bg-slate-100', text: 'text-slate-500' };
+const OLD_PATIENT_LABEL = 'Pasien Lama';
+const OLD_PATIENT_STYLE = { color: '#334155', bg: 'bg-slate-100', text: 'text-slate-700' };
 
 const PatientSourceChart = ({ dateRange }) => {
   const [data, setData] = useState([]);
@@ -44,19 +46,45 @@ const PatientSourceChart = ({ dateRange }) => {
         const totalCount = (recaps || []).length;
         setTotal(totalCount);
 
+        // Pasien Lama = pernah punya sesi sebelum awal periode filter (dihitung dari riwayat kunjungan,
+        // bukan dari opsi "Info Tambahan" yang dipilih manual saat pendaftaran).
+        let oldPatientIds = new Set();
+        const patientIds = [...new Set((recaps || []).map(r => r.patient_id).filter(Boolean))];
+        if (patientIds.length > 0 && dateRange?.startDate) {
+          const { data: priorRecaps, error: priorError } = await supabase
+            .from('daily_recaps')
+            .select('patient_id')
+            .eq('clinic_id', userRow?.clinic_id)
+            .in('patient_id', patientIds)
+            .lt('recap_date', dateRange.startDate);
+
+          if (priorError) throw priorError;
+          oldPatientIds = new Set((priorRecaps || []).map(r => r.patient_id));
+        }
+
         const countMap = {};
         (recaps || []).forEach(r => {
-          const label = r.patients?.patient_info_options?.label || 'Tidak Diketahui';
+          const label = oldPatientIds.has(r.patient_id)
+            ? OLD_PATIENT_LABEL
+            : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
         });
 
+        let paletteIndex = 0;
         const result = Object.entries(countMap)
-          .map(([label, count], i) => ({
-            key: label,
-            count,
-            pct: totalCount > 0 ? Math.round((count / totalCount) * 100) : 0,
-            ...(label === 'Tidak Diketahui' ? UNKNOWN_STYLE : COLOR_PALETTE[i % COLOR_PALETTE.length])
-          }))
+          .map(([label, count]) => {
+            let style;
+            if (label === 'Tidak Diketahui') style = UNKNOWN_STYLE;
+            else if (label === OLD_PATIENT_LABEL) style = OLD_PATIENT_STYLE;
+            else style = COLOR_PALETTE[paletteIndex++ % COLOR_PALETTE.length];
+
+            return {
+              key: label,
+              count,
+              pct: totalCount > 0 ? Math.round((count / totalCount) * 100) : 0,
+              ...style
+            };
+          })
           .sort((a, b) => b.count - a.count);
 
         setData(result);
