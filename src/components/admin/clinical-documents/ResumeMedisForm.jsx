@@ -111,6 +111,7 @@ const ResumeMedisForm = ({ onSaved }) => {
       gender: normalizeGender(selectedPatient?.gender),
       therapist_name: therapist?.name || '-',
       therapist_signature_url: therapist?.signature_url || null,
+      therapist_license: therapist?.license_number || null,
       document_date: form.document_date,
       anamnesa: form.anamnesa,
       pemeriksaan_fisik: form.pemeriksaan_fisik,
