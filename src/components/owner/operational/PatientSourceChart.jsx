@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight, UserX } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 const COLOR_PALETTE = [
   { color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
@@ -22,6 +26,8 @@ const PatientSourceChart = ({ dateRange }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [unknownPatients, setUnknownPatients] = useState([]);
+  const [showUnknownModal, setShowUnknownModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,7 +39,7 @@ const PatientSourceChart = ({ dateRange }) => {
 
         let query = supabase
           .from('daily_recaps')
-          .select('patient_id, patients!daily_recap_patient_id_fkey(additional_info_option_id, patient_info_options(label))')
+          .select('patient_id, recap_date, patients!daily_recap_patient_id_fkey(id, full_name, medical_record_number, phone, additional_info_option_id, patient_info_options(label))')
           .eq('clinic_id', userRow?.clinic_id);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
@@ -63,12 +69,37 @@ const PatientSourceChart = ({ dateRange }) => {
         }
 
         const countMap = {};
+        const unknownMap = {};
         (recaps || []).forEach(r => {
-          const label = oldPatientIds.has(r.patient_id)
+          const isOld = oldPatientIds.has(r.patient_id);
+          const label = isOld
             ? OLD_PATIENT_LABEL
             : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
+
+          if (!isOld && !r.patients?.patient_info_options?.label && r.patient_id) {
+            const existing = unknownMap[r.patient_id];
+            if (existing) {
+              existing.sessionCount += 1;
+              if (r.recap_date && (!existing.lastRecapDate || r.recap_date > existing.lastRecapDate)) {
+                existing.lastRecapDate = r.recap_date;
+              }
+            } else {
+              unknownMap[r.patient_id] = {
+                id: r.patient_id,
+                full_name: r.patients?.full_name || 'Tanpa Nama',
+                medical_record_number: r.patients?.medical_record_number || '-',
+                phone: r.patients?.phone || '-',
+                sessionCount: 1,
+                lastRecapDate: r.recap_date || null,
+              };
+            }
+          }
         });
+
+        setUnknownPatients(
+          Object.values(unknownMap).sort((a, b) => a.full_name.localeCompare(b.full_name))
+        );
 
         let paletteIndex = 0;
         const result = Object.entries(countMap)
@@ -129,31 +160,83 @@ const PatientSourceChart = ({ dateRange }) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {data.map((s) => (
-              <div key={s.key} className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                    <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+            {data.map((s) => {
+              const isUnknown = s.key === 'Tidak Diketahui';
+              const isClickable = isUnknown && unknownPatients.length > 0;
+              return (
+                <div
+                  key={s.key}
+                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors' : ''}`}
+                  onClick={isClickable ? () => setShowUnknownModal(true) : undefined}
+                  role={isClickable ? 'button' : undefined}
+                  tabIndex={isClickable ? 0 : undefined}
+                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowUnknownModal(true); } : undefined}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+                      {isClickable && (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                        {s.count.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                      {s.count.toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${s.pct}%`, backgroundColor: s.color }}
+                    />
                   </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${s.pct}%`, backgroundColor: s.color }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
+
+      <Dialog open={showUnknownModal} onOpenChange={setShowUnknownModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
+          <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <UserX className="w-4.5 h-4.5 text-slate-400" />
+              Pasien Belum Terisi Sumbernya
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {unknownPatients.length} pasien pada periode ini belum diisi "Info Tambahan" (sumber pasien) pada data pasiennya.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="divide-y divide-slate-100">
+              {unknownPatients.map((p) => (
+                <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{p.full_name}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      RM {p.medical_record_number} • {p.phone}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                      {p.sessionCount} sesi
+                    </span>
+                    {p.lastRecapDate && (
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {format(new Date(p.lastRecapDate), 'd MMM yyyy', { locale: idLocale })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
