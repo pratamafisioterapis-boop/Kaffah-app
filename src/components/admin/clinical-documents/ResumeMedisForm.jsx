@@ -32,7 +32,7 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   anamnesa: '',
   pemeriksaan_fisik: '',
-  diagnosa_id: '',
+  diagnosa_id: [],
   diagnosa: '',
   program_terapi: [],
   program_terapi_lainnya: '',
@@ -80,7 +80,9 @@ const ResumeMedisForm = ({ onSaved }) => {
         ...f,
         anamnesa: lastDoc.data.anamnesa || '',
         pemeriksaan_fisik: lastDoc.data.pemeriksaan_fisik || '',
-        diagnosa_id: lastDoc.data.diagnosa_id || '',
+        diagnosa_id: Array.isArray(lastDoc.data.diagnosa_id)
+          ? lastDoc.data.diagnosa_id
+          : (lastDoc.data.diagnosa_id ? [lastDoc.data.diagnosa_id] : []),
         diagnosa: lastDoc.data.diagnosa || '',
         program_terapi: lastDoc.data.program_terapi || [],
         program_terapi_lainnya: lastDoc.data.program_terapi_lainnya || '',
@@ -231,6 +233,7 @@ const ResumeMedisForm = ({ onSaved }) => {
 
           <DiagnosisServiceField
             diagnosaId={form.diagnosa_id}
+            multiple
             onChange={({ diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
           />
 
