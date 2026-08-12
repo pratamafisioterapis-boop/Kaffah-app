@@ -259,10 +259,19 @@ const CATEGORIES = [
       'sapaan',
       'nickname',
       'nama',
-      'nama_pasien_baru'
+      'nama_pasien_baru',
+      'waktu'
     ]
   },
 ];
+
+const getWaktuGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 11) return 'Selamat Pagi';
+  if (hour >= 11 && hour < 15) return 'Selamat Siang';
+  if (hour >= 15 && hour < 18) return 'Selamat Sore';
+  return 'Selamat Malam';
+};
 
 const SAMPLE_DATA = {
     sapaan: '',
@@ -290,7 +299,8 @@ const SAMPLE_DATA = {
     tanggal_lama: '10 Januari 2024',
     jam_lama: '10:00',
     hari_lama: 'Rabu',
-    nama_pasien_baru: 'Rina Wulandari'
+    nama_pasien_baru: 'Rina Wulandari',
+    waktu: getWaktuGreeting()
 };
 
 const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
@@ -456,6 +466,12 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                                  <div className="space-y-1">
                                     <div className="font-medium text-slate-700">[nama_pasien_baru]</div>
                                     <div className="text-slate-500">Nama pasien baru yang direferensikan</div>
+                                 </div>
+                             )}
+                             {availablePlaceholders.includes('waktu') && (
+                                 <div className="space-y-1 col-span-2">
+                                    <div className="font-medium text-slate-700">[waktu]</div>
+                                    <div className="text-slate-500">Otomatis "Selamat Pagi/Siang/Sore/Malam" sesuai jam saat pesan dibuat</div>
                                  </div>
                              )}
                         </div>
