@@ -13,12 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from '@/lib/customSupabaseClient';
 import PackageSessionDisplay from '@/components/admin/PackageSessionDisplay';
 import { getAdditionalInfoOptions, generateNickname } from '@/lib/api';
 import { validateBirthDate, validateGender, validateUUIDFormatted, getSafePatientData } from '@/lib/utils';
 import { normalizePatient } from '@/lib/patientHelpers';
-import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCircle, RotateCcw, ChevronsUpDown, Gift, X } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -49,7 +51,8 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
     birth_date: '',
     address: '',
     nik: '',
-    additional_info_option_id: null
+    additional_info_option_id: null,
+    referred_by_patient_id: null
   });
 
   const [errors, setErrors] = useState({});
@@ -59,7 +62,54 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
   const [packageDefinitions, setPackageDefinitions] = useState([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [additionalInfoOptions, setAdditionalInfoOptions] = useState([]);
-  
+
+  // Referral picker state ("Direferensikan oleh Pasien")
+  const [selectedReferrer, setSelectedReferrer] = useState(null);
+  const [referrerPopoverOpen, setReferrerPopoverOpen] = useState(false);
+  const [referrerQuery, setReferrerQuery] = useState('');
+  const [referrerResults, setReferrerResults] = useState([]);
+  const [referrerSearching, setReferrerSearching] = useState(false);
+
+  useEffect(() => {
+    if (!referrerPopoverOpen) return;
+    const q = referrerQuery.trim().replace(/[,()]/g, '');
+    if (q.length < 2) {
+      setReferrerResults([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      setReferrerSearching(true);
+      try {
+        let query = supabase
+          .from('patients')
+          .select('id, full_name, nickname, phone, medical_record_number')
+          .or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,medical_record_number.ilike.%${q}%`)
+          .eq('status', 'aktif')
+          .limit(8);
+        if (initialData?.id) query = query.neq('id', initialData.id);
+        const { data, error } = await query;
+        if (!error) setReferrerResults(data || []);
+      } catch (err) {
+        console.error('Referrer search failed:', err);
+      } finally {
+        setReferrerSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [referrerQuery, referrerPopoverOpen, initialData]);
+
+  const handleSelectReferrer = (patient) => {
+    setSelectedReferrer(patient);
+    setFormData(prev => ({ ...prev, referred_by_patient_id: patient.id }));
+    setReferrerPopoverOpen(false);
+    setReferrerQuery('');
+  };
+
+  const handleClearReferrer = () => {
+    setSelectedReferrer(null);
+    setFormData(prev => ({ ...prev, referred_by_patient_id: null }));
+  };
+
   useEffect(() => {
       const fetchOptions = async () => {
           try {
@@ -93,9 +143,21 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: safeDate(normalizedData.birth_date),
         address: normalizedData.address === '-' ? '' : normalizedData.address || '',
         nik: normalizedData.nik || '',
-        additional_info_option_id: normalizedData.additional_info_option_id || normalizedData.additional_info?.id || null
+        additional_info_option_id: normalizedData.additional_info_option_id || normalizedData.additional_info?.id || null,
+        referred_by_patient_id: normalizedData.referred_by_patient_id || null
       });
-      
+
+      if (normalizedData.referred_by_patient_id) {
+          supabase
+            .from('patients')
+            .select('id, full_name, nickname, phone, medical_record_number')
+            .eq('id', normalizedData.referred_by_patient_id)
+            .maybeSingle()
+            .then(({ data }) => setSelectedReferrer(data || null));
+      } else {
+          setSelectedReferrer(null);
+      }
+
       if (initialData.id) {
           fetchPatientPackages(initialData.id);
       }
@@ -110,11 +172,15 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: '',
         address: '',
         nik: '',
-        additional_info_option_id: null
+        additional_info_option_id: null,
+        referred_by_patient_id: null
       });
       setPackages([]);
       setDailyRecaps([]);
       setErrors({});
+      setSelectedReferrer(null);
+      setReferrerQuery('');
+      setReferrerResults([]);
     }
   }, [open, initialData]);
 
@@ -491,6 +557,82 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                         </Select>
                         {errors.additional_info_option_id && <p className="text-xs text-red-500 mt-1">{errors.additional_info_option_id}</p>}
                       </div>
+                  </div>
+
+                  {/* Referral (Direferensikan oleh Pasien) */}
+                  <div className="space-y-1">
+                    <Label className="flex items-center gap-1">
+                      <Gift className="w-3.5 h-3.5 text-amber-500" />
+                      Direferensikan oleh Pasien (Opsional)
+                    </Label>
+                    <Popover open={referrerPopoverOpen} onOpenChange={setReferrerPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between bg-white font-normal"
+                        >
+                          {selectedReferrer ? (
+                            <span className="truncate">
+                              {selectedReferrer.full_name}
+                              {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">Cari nama / no. HP pasien lama...</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Ketik nama atau no. HP..."
+                            value={referrerQuery}
+                            onValueChange={setReferrerQuery}
+                          />
+                          <CommandList>
+                            {referrerSearching && (
+                              <div className="py-4 flex justify-center">
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                              </div>
+                            )}
+                            {!referrerSearching && referrerQuery.trim().length < 2 && (
+                              <div className="py-4 px-3 text-xs text-slate-400 text-center">
+                                Ketik minimal 2 huruf untuk mencari
+                              </div>
+                            )}
+                            {!referrerSearching && referrerQuery.trim().length >= 2 && referrerResults.length === 0 && (
+                              <CommandEmpty>Pasien tidak ditemukan.</CommandEmpty>
+                            )}
+                            <CommandGroup>
+                              {referrerResults.map(p => (
+                                <CommandItem key={p.id} value={p.id} onSelect={() => handleSelectReferrer(p)}>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm">{p.full_name}</span>
+                                    <span className="text-xs text-slate-400">
+                                      {p.phone || '-'}{p.medical_record_number ? ` · ${p.medical_record_number}` : ''}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {selectedReferrer && (
+                      <button
+                        type="button"
+                        onClick={handleClearReferrer}
+                        className="text-[11px] text-red-500 hover:underline mt-1 flex items-center gap-0.5"
+                      >
+                        <X className="w-3 h-3" /> Hapus pilihan referral
+                      </button>
+                    )}
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Jika pasien ini direferensikan oleh pasien lama, cari & pilih nama pasien tersebut agar reward WhatsApp otomatis terkirim ke pasien lama saat terapi pertama pasien ini selesai.
+                    </p>
                   </div>
 
                   {/* Address */}

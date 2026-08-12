@@ -252,6 +252,16 @@ const CATEGORIES = [
       'tanggal_lahir'
     ]
   },
+  {
+    id: 'referral_reward',
+    label: 'Reward Referral',
+    placeholders: [
+      'sapaan',
+      'nickname',
+      'nama',
+      'nama_pasien_baru'
+    ]
+  },
 ];
 
 const SAMPLE_DATA = {
@@ -279,7 +289,8 @@ const SAMPLE_DATA = {
     tanggal_expiry: '20 Januari 2024',
     tanggal_lama: '10 Januari 2024',
     jam_lama: '10:00',
-    hari_lama: 'Rabu'
+    hari_lama: 'Rabu',
+    nama_pasien_baru: 'Rina Wulandari'
 };
 
 const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
@@ -441,6 +452,12 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                                     <div className="text-slate-500">Tanggal lahir pasien</div>
                                  </div>
                              )}
+                             {availablePlaceholders.includes('nama_pasien_baru') && (
+                                 <div className="space-y-1">
+                                    <div className="font-medium text-slate-700">[nama_pasien_baru]</div>
+                                    <div className="text-slate-500">Nama pasien baru yang direferensikan</div>
+                                 </div>
+                             )}
                         </div>
 
                         <div className="pt-2 border-t border-slate-200">
@@ -462,7 +479,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                 </div>
                 
                 {/* Schedule Configuration */}
-{categoryId !== 'package_expiry' && (
+{!['package_expiry', 'referral_reward'].includes(categoryId) && (
   <WhatsAppScheduleConfig category={categoryId} />
 )}
             </div>
