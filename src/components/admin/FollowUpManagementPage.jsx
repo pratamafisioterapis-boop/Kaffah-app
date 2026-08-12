@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getFollowUpQueue,
   markFollowUpAsSent,
+  markFollowUpAsCompleted,
   deleteFollowUp,
   interpolateTemplate
 } from '@/lib/api';
+import { supabase } from '@/lib/customSupabaseClient';
 import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -67,7 +69,36 @@ const FollowUpManagementPage = () => {
   // Handlers
   // ===============================
 
+  // "Follow Up Rutin" tidak lagi dikirim otomatis oleh cron — admin memilih
+  // sendiri pesan mana yang dikirim, lalu mengirimnya langsung via Watzap.
+  const handleSendFollowUpRutin = async (item) => {
+    const { data, error } = await supabase.rpc('send_follow_up_whatsapp', {
+      p_queue_id: item.id
+    });
+
+    if (error || !data?.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Mengirim',
+        description: error?.message || data?.message || 'Terjadi kesalahan saat mengirim pesan'
+      });
+      return;
+    }
+
+    toast({
+      title: 'Terkirim',
+      description: 'Pesan berhasil dikirim via WhatsApp'
+    });
+
+    await fetchQueue();
+  };
+
   const handleSendWA = async (item) => {
+
+    if (item.follow_up_type === 'follow_up') {
+      await handleSendFollowUpRutin(item);
+      return;
+    }
 
     if (!item.phone_number) return;
 
@@ -86,6 +117,26 @@ const FollowUpManagementPage = () => {
     toast({
       title: 'Pesan Dibuka',
       description: 'Status diubah menjadi terkirim'
+    });
+
+    await fetchQueue();
+  };
+
+  const handleComplete = async (id) => {
+    const { error } = await markFollowUpAsCompleted(id);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal',
+        description: 'Gagal menandai item sebagai selesai'
+      });
+      return;
+    }
+
+    toast({
+      title: 'Ditandai Selesai',
+      description: 'Pesan tidak akan dikirim'
     });
 
     await fetchQueue();
@@ -231,6 +282,7 @@ const isPWA =
                   key={item.id}
                   item={item}
                   onSend={() => handleSendWA(item)}
+                  onComplete={handleComplete}
                   onDelete={handleDelete}
                 />
               ))}
