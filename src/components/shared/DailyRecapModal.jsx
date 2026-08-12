@@ -1177,7 +1177,15 @@ setFormData({
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
-                                        <SearchableSelect options={discountTypeOptions} value={formData.discount_label} onChange={v => handleChange('discount_label', v)} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={true}/>
+                                        <SearchableSelect options={discountTypeOptions} value={formData.discount_label} onChange={v => {
+                                            const selected = discountTypeOptions.find(d => d.value === v);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                discount_label: selected?.label || v,
+                                                discount_type: selected?.discount_value_type || prev.discount_type,
+                                                discount_value: selected?.discount_value != null ? String(selected.discount_value) : prev.discount_value
+                                            }));
+                                        }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={true}/>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">

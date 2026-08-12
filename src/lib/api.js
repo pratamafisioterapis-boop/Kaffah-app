@@ -1059,7 +1059,7 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
 
       let query = supabase
         .from('operational_options')
-        .select('id, label, category, parent_id')
+        .select('id, label, category, parent_id, discount_value_type, discount_value')
         .eq('category', category)
         .eq('clinic_id', userRow?.clinic_id)
         .eq('is_active', true);
@@ -1077,7 +1077,9 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
           id: i.id,
           value: i.id,
           label: i.label,
-          parent_id: i.parent_id || null
+          parent_id: i.parent_id || null,
+          discount_value_type: i.discount_value_type,
+          discount_value: i.discount_value
         })),
         error: null
       };

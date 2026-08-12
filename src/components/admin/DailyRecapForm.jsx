@@ -859,7 +859,9 @@ className="flex gap-4 mb-3"
   const selected = discountOptions.find(d => d.value === val);
   setFormData(prev => ({
     ...prev,
-    discount_label: selected?.label || ''
+    discount_label: selected?.label || '',
+    discount_type: selected?.discount_value_type || prev.discount_type,
+    discount_value: selected?.discount_value != null ? String(selected.discount_value) : prev.discount_value
   }));
 }}
   placeholder="Pilih jenis diskon (opsional)"
