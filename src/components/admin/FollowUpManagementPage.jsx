@@ -193,6 +193,19 @@ const displayItems =
         return Number(sessionsB) - Number(sessionsA);
 
       })
+    : activeTab === 'follow_up'
+    ? [...filteredItems].sort((a, b) => {
+        // Pasien baru & pasien lama (>30 hari tidak terapi) wajib
+        // diprioritaskan di atas; pasien rutin (kunjungan rutin bulanan)
+        // sifatnya opsional jadi ditaruh di bawah.
+        const categoryPriority = { new: 0, lapsed: 0, routine: 1 };
+        const priorityA = categoryPriority[a.patient_category] ?? 1;
+        const priorityB = categoryPriority[b.patient_category] ?? 1;
+
+        if (priorityA !== priorityB) return priorityA - priorityB;
+
+        return byStatus(a, b);
+      })
     : [...filteredItems].sort(byStatus);
 const getCount = (types) => {
   return queueItems.filter(
