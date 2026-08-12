@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight, HelpCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 const SERVICE_CONFIG = [
   { key: 'Musculoskeletal Treatment',         short: 'Musculo',   color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
@@ -16,6 +20,8 @@ const ServiceDistributionChart = ({ dateRange }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [unclassifiedRecaps, setUnclassifiedRecaps] = useState([]);
+  const [showUnclassifiedModal, setShowUnclassifiedModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +33,15 @@ const ServiceDistributionChart = ({ dateRange }) => {
 
         let query = supabase
           .from('daily_recaps')
-          .select('service_type')
+          .select(`
+            id,
+            service_type,
+            recap_date,
+            guest_name,
+            therapist_name,
+            patients!patient_id(id, full_name, medical_record_number),
+            actual_patients:patients!actual_patient_id(id, full_name, medical_record_number)
+          `)
           .eq('clinic_id', userRow?.clinic_id);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
@@ -40,12 +54,28 @@ const ServiceDistributionChart = ({ dateRange }) => {
         const totalCount = (recaps || []).length;
         setTotal(totalCount);
 
+        const knownKeys = new Set(SERVICE_CONFIG.map(s => s.key));
         const countMap = {};
+        const unclassifiedList = [];
         (recaps || []).forEach(r => {
-          if (r.service_type) {
+          if (r.service_type && knownKeys.has(r.service_type)) {
             countMap[r.service_type] = (countMap[r.service_type] || 0) + 1;
+          } else {
+            const patient = r.actual_patients || r.patients;
+            unclassifiedList.push({
+              id: r.id,
+              patientName: patient?.full_name || r.guest_name || 'Tanpa Nama',
+              medicalRecordNumber: patient?.medical_record_number || null,
+              therapistName: r.therapist_name || '-',
+              recapDate: r.recap_date || null,
+              serviceTypeRaw: r.service_type || null,
+            });
           }
         });
+
+        setUnclassifiedRecaps(
+          unclassifiedList.sort((a, b) => (b.recapDate || '').localeCompare(a.recapDate || ''))
+        );
 
         const result = SERVICE_CONFIG.map(s => ({
           ...s,
@@ -53,19 +83,15 @@ const ServiceDistributionChart = ({ dateRange }) => {
           pct: totalCount > 0 ? Math.round(((countMap[s.key] || 0) / totalCount) * 100) : 0
         })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
 
-        // Hitung yang tidak punya service_type
-        const classified = result.reduce((sum, s) => sum + s.count, 0);
-        const unclassified = totalCount - classified;
-
-        if (unclassified > 0) {
+        if (unclassifiedList.length > 0) {
           result.push({
             key: 'Tidak Terklasifikasi',
             short: 'Lainnya',
             color: '#94a3b8',
             bg: 'bg-slate-100',
             text: 'text-slate-500',
-            count: unclassified,
-            pct: totalCount > 0 ? Math.round((unclassified / totalCount) * 100) : 0
+            count: unclassifiedList.length,
+            pct: totalCount > 0 ? Math.round((unclassifiedList.length / totalCount) * 100) : 0
           });
         }
 
@@ -111,31 +137,81 @@ const ServiceDistributionChart = ({ dateRange }) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {data.map((s, i) => (
-              <div key={s.key} className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                    <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+            {data.map((s) => {
+              const isUnclassified = s.key === 'Tidak Terklasifikasi';
+              const isClickable = isUnclassified && unclassifiedRecaps.length > 0;
+              return (
+                <div
+                  key={s.key}
+                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors' : ''}`}
+                  onClick={isClickable ? () => setShowUnclassifiedModal(true) : undefined}
+                  role={isClickable ? 'button' : undefined}
+                  tabIndex={isClickable ? 0 : undefined}
+                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowUnclassifiedModal(true); } : undefined}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+                      {isClickable && (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                        {s.count.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                      {s.count.toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${s.pct}%`, backgroundColor: s.color }}
+                    />
                   </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${s.pct}%`, backgroundColor: s.color }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
+
+      <Dialog open={showUnclassifiedModal} onOpenChange={setShowUnclassifiedModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
+          <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <HelpCircle className="w-4.5 h-4.5 text-slate-400" />
+              Sesi Belum Terklasifikasi
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {unclassifiedRecaps.length} sesi pada periode ini belum diisi tipe layanannya dengan benar.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="divide-y divide-slate-100">
+              {unclassifiedRecaps.map((r) => (
+                <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {r.therapistName}
+                      {r.serviceTypeRaw ? ` • Tipe: "${r.serviceTypeRaw}"` : ' • Tipe layanan kosong'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {r.recapDate && (
+                      <p className="text-[10px] text-slate-400">
+                        {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
