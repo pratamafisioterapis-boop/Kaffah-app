@@ -3,7 +3,6 @@ import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -178,38 +177,36 @@ const ServiceDistributionChart = ({ dateRange }) => {
       </CardContent>
 
       <Dialog open={showUnclassifiedModal} onOpenChange={setShowUnclassifiedModal}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
-          <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[85vh] overflow-y-auto p-0 sm:rounded-xl">
+          <DialogHeader className="sticky top-0 z-10 px-5 py-4 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <HelpCircle className="w-4.5 h-4.5 text-slate-400" />
+              <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
               Sesi Belum Terklasifikasi
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
               {unclassifiedRecaps.length} sesi pada periode ini belum diisi tipe layanannya dengan benar.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="divide-y divide-slate-100">
-              {unclassifiedRecaps.map((r) => (
-                <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                      {r.therapistName}
-                      {r.serviceTypeRaw ? ` • Tipe: "${r.serviceTypeRaw}"` : ' • Tipe layanan kosong'}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {r.recapDate && (
-                      <p className="text-[10px] text-slate-400">
-                        {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
-                      </p>
-                    )}
-                  </div>
+          <div className="divide-y divide-slate-100">
+            {unclassifiedRecaps.map((r) => (
+              <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                    {r.therapistName}
+                    {r.serviceTypeRaw ? ` • Tipe: "${r.serviceTypeRaw}"` : ' • Tipe layanan kosong'}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
+                <div className="text-right shrink-0">
+                  {r.recapDate && (
+                    <p className="text-[10px] text-slate-400">
+                      {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
