@@ -158,6 +158,8 @@ const patientName =
     }
   };
 
+  const isPending = item.status === 'pending';
+
   const handleSendWhatsApp = () => {
     onSend && onSend(item);
   };
@@ -471,9 +473,9 @@ const packageRisk = getPackageRisk();
 
   <Button
     size="sm"
-    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
+    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={handleSendWhatsApp}
-    disabled={isProcessing}
+    disabled={isProcessing || !isPending}
   >
     {isProcessing
       ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -484,9 +486,9 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="outline"
-    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
+    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={() => handleAction(onComplete)}
-    disabled={isProcessing}
+    disabled={isProcessing || !isPending}
   >
     <CheckCircle className="w-3 h-3" />
     Selesai
