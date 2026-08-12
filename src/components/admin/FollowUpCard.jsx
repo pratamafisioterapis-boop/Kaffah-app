@@ -158,7 +158,12 @@ const patientName =
     }
   };
 
+  // Hanya "Follow Up Rutin" yang sekarang dikirim manual — kategori lain
+  // (booking, reminder, paket, ultah) masih auto-terkirim lewat cron, jadi
+  // tombolnya tidak boleh ikut terkunci walau status-nya sudah bukan pending.
+  const locksOnSend = item.follow_up_type === 'follow_up';
   const isPending = item.status === 'pending';
+  const isLocked = locksOnSend && !isPending;
 
   const handleSendWhatsApp = () => {
     onSend && onSend(item);
@@ -475,7 +480,7 @@ const packageRisk = getPackageRisk();
     size="sm"
     className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={handleSendWhatsApp}
-    disabled={isProcessing || !isPending}
+    disabled={isProcessing || isLocked}
   >
     {isProcessing
       ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -488,7 +493,7 @@ const packageRisk = getPackageRisk();
     variant="outline"
     className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={() => handleAction(onComplete)}
-    disabled={isProcessing || !isPending}
+    disabled={isProcessing || isLocked}
   >
     <CheckCircle className="w-3 h-3" />
     Selesai

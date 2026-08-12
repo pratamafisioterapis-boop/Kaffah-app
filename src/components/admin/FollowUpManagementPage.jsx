@@ -282,7 +282,7 @@ const isPWA =
                   key={item.id}
                   item={item}
                   onSend={() => handleSendWA(item)}
-                  onComplete={handleComplete}
+                  onComplete={item.follow_up_type === 'follow_up' ? handleComplete : undefined}
                   onDelete={handleDelete}
                 />
               ))}
