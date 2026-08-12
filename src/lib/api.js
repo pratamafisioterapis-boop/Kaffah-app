@@ -5468,7 +5468,9 @@ export const getTherapistSoapLockStatus = async (therapistId) => {
 export const updateTherapistSoapLockOverride = async (therapistId, {
   soap_lock_exempt,
   soap_lock_custom_enabled,
-  soap_lock_threshold_count
+  soap_lock_threshold_count,
+  soap_lock_age_rule_enabled,
+  soap_lock_max_age_days
 }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase
@@ -5476,7 +5478,9 @@ export const updateTherapistSoapLockOverride = async (therapistId, {
       .update({
         soap_lock_exempt,
         soap_lock_custom_enabled,
-        soap_lock_threshold_count
+        soap_lock_threshold_count,
+        soap_lock_age_rule_enabled,
+        soap_lock_max_age_days
       })
       .eq('id', therapistId)
       .select()
