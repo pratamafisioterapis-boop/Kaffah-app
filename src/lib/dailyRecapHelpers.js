@@ -22,10 +22,10 @@ export const fetchOperationalOptions = async (category) => {
   try {
     let query = supabase
       .from('operational_options')
-      .select('id, label, value, session_count, validity_days')
+      .select('id, label, value, session_count, validity_days, discount_value_type, discount_value')
       .eq('is_active', true)
       .order('label');
-      
+
     if (Array.isArray(category)) {
         query = query.in('category', category);
     } else {
@@ -34,17 +34,19 @@ export const fetchOperationalOptions = async (category) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    
+
     // De-duplicate labels just in case
     const unique = new Map();
     data.forEach(item => {
         if (!unique.has(item.label)) {
-            unique.set(item.label, { 
-                value: item.label, 
-                label: item.label, 
+            unique.set(item.label, {
+                value: item.label,
+                label: item.label,
                 id: item.id,
                 session_count: item.session_count,
-                validity_days: item.validity_days
+                validity_days: item.validity_days,
+                discount_value_type: item.discount_value_type,
+                discount_value: item.discount_value
             });
         }
     });
