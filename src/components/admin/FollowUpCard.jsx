@@ -13,7 +13,8 @@ import {
   Loader2,
   CalendarCheck,
   Copy,
-  Check
+  Check,
+  Gift
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
@@ -133,6 +134,16 @@ const patientName =
         header: 'from-pink-50 to-white',
         avatar: 'bg-pink-100 text-pink-700',
         badge: 'bg-pink-100 text-pink-700 border-pink-200'
+      };
+
+    // 🎁 REWARD REFERRAL
+    case 'referral_reward':
+      return {
+        label: 'Reward Referral',
+        icon: <Gift className="w-3 h-3" />,
+        header: 'from-amber-50 to-white',
+        avatar: 'bg-amber-100 text-amber-700',
+        badge: 'bg-amber-100 text-amber-700 border-amber-200'
       };
 
     default:
