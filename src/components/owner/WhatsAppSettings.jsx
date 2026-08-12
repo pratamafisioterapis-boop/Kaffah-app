@@ -260,7 +260,8 @@ const CATEGORIES = [
       'nickname',
       'nama',
       'nama_pasien_baru',
-      'waktu'
+      'waktu',
+      'masa_berlaku'
     ]
   },
 ];
