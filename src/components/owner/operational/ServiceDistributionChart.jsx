@@ -176,36 +176,50 @@ const ServiceDistributionChart = ({ dateRange }) => {
         )}
       </CardContent>
 
+      {/*
+        DialogContent is deliberately turned into a full-viewport, transparent,
+        flex-centering shell here (left-0/top-0/translate-0/w-full/h-full/p-4,
+        matching the `fixed inset-0` pattern already used by the sidebar/FAB
+        overlays in DashboardLayout.jsx) instead of the shared component's
+        default `left-[50%] top-[50%] translate-x-[-50%] w-[..vw..]` centering.
+        On this app's mobile preview, width values derived from `vw` render
+        wider than the actual visible viewport (text got clipped and required
+        a horizontal swipe to reach), while `inset`/percentage-based sizing
+        renders correctly — so the visible card below is sized with plain
+        `w-full max-w-lg` inside this shell instead of any vw arithmetic.
+      */}
       <Dialog open={showUnclassifiedModal} onOpenChange={setShowUnclassifiedModal}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[85vh] overflow-y-auto p-0 sm:rounded-xl">
-          <DialogHeader className="sticky top-0 z-10 px-5 py-4 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-              Sesi Belum Terklasifikasi
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              {unclassifiedRecaps.length} sesi pada periode ini belum diisi tipe layanannya dengan benar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="divide-y divide-slate-100">
-            {unclassifiedRecaps.map((r) => (
-              <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                    {r.therapistName}
-                    {r.serviceTypeRaw ? ` • Tipe: "${r.serviceTypeRaw}"` : ' • Tipe layanan kosong'}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  {r.recapDate && (
-                    <p className="text-[10px] text-slate-400">
-                      {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+        <DialogContent className="left-0 top-0 h-full w-full max-w-none translate-x-0 translate-y-0 flex items-center justify-center gap-0 border-0 bg-transparent p-4 shadow-none rounded-none">
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-xl bg-white shadow-lg">
+            <DialogHeader className="sticky top-0 z-10 px-5 py-4 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
+              <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
+                Sesi Belum Terklasifikasi
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                {unclassifiedRecaps.length} sesi pada periode ini belum diisi tipe layanannya dengan benar.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="divide-y divide-slate-100">
+              {unclassifiedRecaps.map((r) => (
+                <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {r.therapistName}
+                      {r.serviceTypeRaw ? ` • Tipe: "${r.serviceTypeRaw}"` : ' • Tipe layanan kosong'}
                     </p>
-                  )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    {r.recapDate && (
+                      <p className="text-[10px] text-slate-400">
+                        {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
