@@ -54,7 +54,7 @@ const DiscountTypeManager = () => {
   const { toast } = useToast();
   // State Initialization as requested
   const [discountTypes, setDiscountTypes] = useState([]);
-  const [discountTypeForm, setDiscountTypeForm] = useState({ label: '' });
+  const [discountTypeForm, setDiscountTypeForm] = useState({ label: '', discount_value_type: 'nominal', discount_value: '' });
   const [editingDiscountType, setEditingDiscountType] = useState(null);
   const [showDiscountTypeModal, setShowDiscountTypeModal] = useState(false);
   
@@ -77,7 +77,7 @@ const DiscountTypeManager = () => {
 
       const { data, error } = await supabase
         .from('operational_options')
-        .select('id, category, label, is_active, created_at')
+        .select('id, category, label, is_active, created_at, discount_value_type, discount_value')
         .eq('category', 'discount_type')
         .eq('clinic_id', userRow?.clinic_id)
         .order('created_at', { ascending: true });
@@ -101,13 +101,25 @@ const DiscountTypeManager = () => {
       return;
     }
 
+    const valueNumber = parseFloat(discountTypeForm.discount_value);
+    if (!discountTypeForm.discount_value || isNaN(valueNumber) || valueNumber <= 0) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Nilai diskon harus diisi dan lebih besar dari 0." });
+      return;
+    }
+    if (discountTypeForm.discount_value_type === 'percentage' && valueNumber > 100) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Persentase diskon tidak boleh lebih dari 100." });
+      return;
+    }
+
     setIsProcessing(true);
     console.log(`💾 Saving discount type: "${labelTrimmed}"...`);
 
     const payload = {
       category: 'discount_type',
       label: labelTrimmed,
-      is_active: true
+      is_active: true,
+      discount_value_type: discountTypeForm.discount_value_type,
+      discount_value: valueNumber
     };
 
     try {
@@ -150,7 +162,7 @@ const DiscountTypeManager = () => {
         setDiscountTypes(prev => [...prev, data]);
       }
       setShowDiscountTypeModal(false);
-      setDiscountTypeForm({ label: '' });
+      setDiscountTypeForm({ label: '', discount_value_type: 'nominal', discount_value: '' });
       setEditingDiscountType(null);
     } catch (error) {
       console.error("❌ Save failed:", error);
@@ -189,13 +201,17 @@ const DiscountTypeManager = () => {
 
   const openAdd = () => {
     setEditingDiscountType(null);
-    setDiscountTypeForm({ label: '' });
+    setDiscountTypeForm({ label: '', discount_value_type: 'nominal', discount_value: '' });
     setShowDiscountTypeModal(true);
   };
 
   const openEdit = (item) => {
     setEditingDiscountType(item);
-    setDiscountTypeForm({ label: item.label });
+    setDiscountTypeForm({
+      label: item.label,
+      discount_value_type: item.discount_value_type || 'nominal',
+      discount_value: item.discount_value ?? ''
+    });
     setShowDiscountTypeModal(true);
   };
 
@@ -209,7 +225,7 @@ const DiscountTypeManager = () => {
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Jenis Diskon</h2>
-          <p className="text-sm text-slate-500">Kelola label diskon (Misal: Promo Merdeka, Diskon Teman).</p>
+          <p className="text-sm text-slate-500">Kelola label diskon beserta nominal atau persentase potongannya (Misal: Promo Merdeka, Diskon Teman).</p>
         </div>
         <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -236,6 +252,13 @@ const DiscountTypeManager = () => {
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
+                  {opt.discount_value != null && (
+                    <span className="text-xs text-blue-600 ml-2">
+                      {opt.discount_value_type === 'percentage'
+                        ? `${opt.discount_value}%`
+                        : `Rp${new Intl.NumberFormat('id-ID').format(opt.discount_value)}`}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(opt)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
@@ -258,11 +281,51 @@ const DiscountTypeManager = () => {
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">Nama Label Diskon</label>
-              <Input 
-                value={discountTypeForm.label} 
-                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, label: e.target.value })} 
+              <Input
+                value={discountTypeForm.label}
+                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, label: e.target.value })}
                 placeholder="Contoh: Promo Agustusan"
-                autoFocus 
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Tipe Diskon</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'nominal' })}
+                  className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
+                    discountTypeForm.discount_value_type === 'nominal'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  Nominal (Rp)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'percentage' })}
+                  className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
+                    discountTypeForm.discount_value_type === 'percentage'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  Persentase (%)
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Nilai Diskon {discountTypeForm.discount_value_type === 'percentage' ? '(%)' : '(Rp)'}
+              </label>
+              <Input
+                type="number"
+                min="0"
+                max={discountTypeForm.discount_value_type === 'percentage' ? 100 : undefined}
+                value={discountTypeForm.discount_value}
+                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, discount_value: e.target.value })}
+                placeholder={discountTypeForm.discount_value_type === 'percentage' ? 'Contoh: 10' : 'Contoh: 50000'}
               />
             </div>
           </div>
