@@ -18,7 +18,8 @@ import {
   Package,
   Clock,
   Cake,
-  Stethoscope
+  Stethoscope,
+  Gift
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -32,7 +33,8 @@ const TAB_CONFIG = [
   { value: 'package_expiry', label: 'Paket', shortLabel: 'Paket', icon: Package, types: ['package_expiry'] },
   { value: 'therapy_reminder', label: 'Pengingat Terapi', shortLabel: 'Reminder', icon: Clock, types: ['therapy_reminder', 'therapy_reminder_homecare'] },
   { value: 'birthday_greeting', label: 'Ultah', shortLabel: 'Ultah', icon: Cake, types: ['birthday_greeting'] },
-  { value: 'reminder_therapist_h10', label: 'Jadwal Terapis Besok', shortLabel: 'Jadwal Besok', icon: Stethoscope, types: ['reminder_therapist_h10'] }
+  { value: 'reminder_therapist_h10', label: 'Jadwal Terapis Besok', shortLabel: 'Jadwal Besok', icon: Stethoscope, types: ['reminder_therapist_h10'] },
+  { value: 'referral_reward', label: 'Reward Referral', shortLabel: 'Reward', icon: Gift, types: ['referral_reward'] }
 ];
 
 const FollowUpManagementPage = () => {
@@ -282,7 +284,7 @@ const isPWA =
                   key={item.id}
                   item={item}
                   onSend={() => handleSendWA(item)}
-                  onComplete={item.follow_up_type === 'follow_up' ? handleComplete : undefined}
+                  onComplete={['follow_up', 'referral_reward'].includes(item.follow_up_type) ? handleComplete : undefined}
                   onDelete={handleDelete}
                 />
               ))}
