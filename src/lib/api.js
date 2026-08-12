@@ -401,6 +401,58 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       }
     }
 
+    // KLASIFIKASI PRIORITAS FOLLOW UP RUTIN — pasien baru (belum pernah
+    // terapi sebelumnya) atau pasien lama yang sudah >30 hari tidak terapi
+    // wajib diprioritaskan; pasien rutin (kunjungan rutin bulanan) opsional.
+    const followUpSourceIds = queueData
+      .filter(item =>
+        item.follow_up_type === 'follow_up' &&
+        item.source_table === 'daily_recaps' &&
+        item.source_id
+      )
+      .map(item => item.source_id);
+
+    let patientCategoryBySourceId = {};
+
+    if (followUpSourceIds.length > 0) {
+      const { data: sourceRecaps } = await supabase
+        .from('daily_recaps')
+        .select('id, patient_id, recap_date')
+        .in('id', followUpSourceIds);
+
+      const patientIds = [...new Set((sourceRecaps || []).map(r => r.patient_id).filter(Boolean))];
+      let historyByPatient = {};
+
+      if (patientIds.length > 0) {
+        const { data: history } = await supabase
+          .from('daily_recaps')
+          .select('patient_id, recap_date')
+          .in('patient_id', patientIds)
+          .order('recap_date', { ascending: true });
+
+        historyByPatient = (history || []).reduce((acc, row) => {
+          if (!row.patient_id || !row.recap_date) return acc;
+          if (!acc[row.patient_id]) acc[row.patient_id] = [];
+          acc[row.patient_id].push(row.recap_date);
+          return acc;
+        }, {});
+      }
+
+      patientCategoryBySourceId = (sourceRecaps || []).reduce((acc, recap) => {
+        const priorDates = (historyByPatient[recap.patient_id] || []).filter(d => d < recap.recap_date);
+
+        if (priorDates.length === 0) {
+          acc[recap.id] = 'new';
+        } else {
+          const lastPriorDate = priorDates[priorDates.length - 1];
+          const gapDays = differenceInCalendarDays(new Date(recap.recap_date), new Date(lastPriorDate));
+          acc[recap.id] = gapDays > 30 ? 'lapsed' : 'routine';
+        }
+
+        return acc;
+      }, {});
+    }
+
     // ENRICH DATA
     const enrichedData = (queueData || []).map(item => {
       let appointmentData = null;
@@ -416,7 +468,11 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       return {
         ...item,
         patient: item.patient || item.patients || null,
-        appointment_data: appointmentData
+        appointment_data: appointmentData,
+        patient_category:
+          item.follow_up_type === 'follow_up'
+            ? patientCategoryBySourceId[item.source_id] || null
+            : null
       };
     });
 

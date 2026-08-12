@@ -159,6 +159,25 @@ const patientName =
 
   const typeConfig = getTypeConfig(item.follow_up_type);
 
+  // ==============================
+  // Prioritas Follow Up Rutin
+  // ==============================
+  const getPatientCategoryConfig = (category) => {
+    switch (category) {
+      case 'new':
+        return { label: 'Pasien Baru', badge: 'bg-blue-100 text-blue-700 border-blue-200' };
+      case 'lapsed':
+        return { label: '>30 Hari Tidak Terapi', badge: 'bg-red-100 text-red-700 border-red-200' };
+      case 'routine':
+        return { label: 'Pasien Rutin • Opsional', badge: 'bg-slate-100 text-slate-600 border-slate-200' };
+      default:
+        return null;
+    }
+  };
+
+  const patientCategoryConfig =
+    item.follow_up_type === 'follow_up' ? getPatientCategoryConfig(item.patient_category) : null;
+
   const handleAction = async (fn) => {
     if (!fn) return;
     setIsProcessing(true);
@@ -333,6 +352,15 @@ const packageRisk = getPackageRisk();
         : 'Pending'}
     </div>
   </Badge>
+
+  {patientCategoryConfig && (
+    <Badge
+      variant="outline"
+      className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-semibold ${patientCategoryConfig.badge}`}
+    >
+      {patientCategoryConfig.label}
+    </Badge>
+  )}
 
 </div>
 
