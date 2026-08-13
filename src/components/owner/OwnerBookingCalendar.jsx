@@ -386,13 +386,13 @@ const OwnerBookingCalendar = () => {
           </button>
         </div>
 
-        <div className="flex items-center gap-1 w-full min-w-0 overflow-hidden">
+        <div className="flex items-center gap-0.5 sm:gap-1 w-full min-w-0 overflow-hidden">
             <Button
                 variant="outline"
                 size="icon"
                 onClick={() => fetchDayData(date)}
                 disabled={isRefreshing}
-                className={cn("h-9 w-9 shrink-0", isRefreshing && "animate-spin")}
+                className={cn("h-8 w-8 sm:h-9 sm:w-9 shrink-0", isRefreshing && "animate-spin")}
             >
                 <RefreshCw className="h-4 w-4" />
             </Button>
@@ -401,7 +401,7 @@ const OwnerBookingCalendar = () => {
             <Button
   variant="ghost"
   size="icon"
-  className="h-7 w-7 shrink-0"
+  className="h-6 w-6 sm:h-7 sm:w-7 shrink-0"
   onClick={() => setDate(addDays(date, -1))}
 >
                 <ChevronLeft className="w-4 h-4" />
@@ -414,10 +414,7 @@ const OwnerBookingCalendar = () => {
   className="flex-1 min-w-0 max-w-full justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0 px-0"
 >
   <CalendarIcon className="mr-0.5 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
-  <span className="text-[11px] sm:text-xs leading-tight whitespace-nowrap sm:hidden">
-    {format(date, "d MMM yyyy", { locale: idLocale })}
-  </span>
-  <span className="text-[11px] sm:text-xs leading-tight whitespace-nowrap hidden sm:inline">
+  <span className="text-[10px] sm:text-xs leading-tight whitespace-nowrap tracking-tight sm:tracking-normal">
     {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>
@@ -432,7 +429,7 @@ const OwnerBookingCalendar = () => {
                 </PopoverContent>
             </Popover>
 
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setDate(addDays(date, 1))}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" onClick={() => setDate(addDays(date, 1))}>
                 <ChevronRight className="w-4 h-4" />
             </Button>
             </div>
