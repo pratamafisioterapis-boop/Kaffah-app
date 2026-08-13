@@ -13,9 +13,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
 import { format } from 'date-fns';
-import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn } from '@/lib/utils';
+import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
+
+const formatLocalDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   const { user } = useAuth();
@@ -73,8 +80,13 @@ useEffect(() => {
     
     try {
       console.log("Fetching recaps for therapist:", therapist.id);
-      
-      const { data: visits, error: visitsError } = await getTherapistVisits(therapist.id);
+
+      const { startDate, endDate } = getTherapistPeriodRange(therapist);
+      const { data: visits, error: visitsError } = await getTherapistVisits(
+        therapist.id,
+        formatLocalDate(startDate),
+        formatLocalDate(endDate)
+      );
       
       if (visitsError) throw visitsError;
       
@@ -310,7 +322,7 @@ const paginatedList = sortedList.slice(
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.</p></div>
+        <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50"><Upload className="w-4 h-4 mr-2" /> Import</Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
