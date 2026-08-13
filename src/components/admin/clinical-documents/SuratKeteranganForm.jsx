@@ -23,7 +23,7 @@ const emptyForm = {
   document_date: new Date().toISOString().slice(0, 10),
   address: '',
   phone: '',
-  diagnosa_id: '',
+  diagnosa_id: [],
   diagnosa: '',
   keterangan_tambahan: '',
   tempat: 'Balikpapan',
@@ -204,6 +204,7 @@ const SuratKeteranganForm = ({ onSaved }) => {
 
           <DiagnosisServiceField
             diagnosaId={form.diagnosa_id}
+            multiple
             onChange={({ diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
           />
 
