@@ -48,7 +48,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
           .from('daily_recaps')
           .select('discount_label, discount_type, discount_value, amount')
           .eq('clinic_id', userRow?.clinic_id)
-          .not('discount_label', 'is', null);
+          .not('discount_type', 'is', null);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
         if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);
@@ -62,11 +62,15 @@ const PromoDiscountWidget = ({ dateRange }) => {
         (recaps || []).forEach(r => {
           const money = estimateDiscountRupiah(r.discount_type, r.discount_value, r.amount);
           grandTotal += money;
-          if (!groupMap[r.discount_label]) {
-            groupMap[r.discount_label] = { count: 0, amount: 0 };
+          // Sesi bisa punya diskon (tipe + nilai) tanpa admin memilih kategori
+          // "Jenis Diskon"-nya — kelompokkan sebagai "Tanpa Kategori" alih-alih
+          // baris kosong tak terbaca.
+          const label = r.discount_label && r.discount_label.trim() ? r.discount_label.trim() : 'Tanpa Kategori';
+          if (!groupMap[label]) {
+            groupMap[label] = { count: 0, amount: 0 };
           }
-          groupMap[r.discount_label].count += 1;
-          groupMap[r.discount_label].amount += money;
+          groupMap[label].count += 1;
+          groupMap[label].amount += money;
         });
 
         setTotalAmount(grandTotal);

@@ -31,7 +31,7 @@ const PromoUsageWidget = ({ dateRange }) => {
 
         let query = supabase
           .from('daily_recaps')
-          .select('discount_label, patient_id, amount, package_tracking_id')
+          .select('discount_label, discount_type, patient_id, amount, package_tracking_id')
           .eq('clinic_id', userRow?.clinic_id);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
@@ -48,8 +48,12 @@ const PromoUsageWidget = ({ dateRange }) => {
         const freePatients = new Set();
 
         (recaps || []).forEach(r => {
-          if (r.discount_label) {
-            countMap[r.discount_label] = (countMap[r.discount_label] || 0) + 1;
+          if (r.discount_type) {
+            // Sesi bisa punya diskon tanpa admin memilih kategori "Jenis
+            // Diskon"-nya — kelompokkan sebagai "Tanpa Kategori" alih-alih
+            // diam-diam tidak dihitung.
+            const label = r.discount_label && r.discount_label.trim() ? r.discount_label.trim() : 'Tanpa Kategori';
+            countMap[label] = (countMap[label] || 0) + 1;
           }
           if (Number(r.amount) === 0 && !r.package_tracking_id) {
             freeSessions += 1;
