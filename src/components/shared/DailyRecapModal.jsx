@@ -1179,9 +1179,15 @@ setFormData({
                                         <Label className="text-xs">Jenis Diskon</Label>
                                         <SearchableSelect options={discountTypeOptions} value={formData.discount_label} onChange={v => {
                                             const selected = discountTypeOptions.find(d => d.value === v);
+                                            // `v` is either an existing option's id (uuid) or, when created via
+                                            // "Buat ..." (allowCreate), the freshly typed label text. If it looks
+                                            // like a uuid but isn't found in the current options (e.g. a stale
+                                            // list during search), don't store the raw id as the label — keep
+                                            // whatever label was already selected instead of corrupting it.
+                                            const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || '');
                                             setFormData(prev => ({
                                                 ...prev,
-                                                discount_label: selected?.label || v,
+                                                discount_label: selected?.label || (looksLikeUuid ? prev.discount_label : v),
                                                 discount_type: selected?.discount_value_type || prev.discount_type,
                                                 discount_value: selected?.discount_value != null ? String(selected.discount_value) : prev.discount_value
                                             }));
