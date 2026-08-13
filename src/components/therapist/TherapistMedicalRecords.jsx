@@ -32,7 +32,7 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 20;
   // Sort State
-  const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'asc' });
 
   // Modal State
   const [selectedPatient, setSelectedPatient] = useState(null);
