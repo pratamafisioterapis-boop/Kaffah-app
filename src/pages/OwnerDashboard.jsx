@@ -38,6 +38,8 @@ import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDema
 import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
+import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
+import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 // API
@@ -487,15 +489,17 @@ setTherapists(enrichedTherapists);
                  <BulletChartTargetVsRealization dateRange={dateRange} />
                  <ServiceDistributionChart dateRange={dateRange} />
                </div>
-               {/* Row 4: Sumber Pasien */}
-               <div className="grid grid-cols-1 gap-4 md:gap-5">
+               {/* Row 4: Sumber Pasien + Promo */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
                  <PatientSourceChart dateRange={dateRange} />
+                 <PromoUsageWidget dateRange={dateRange} />
                </div>
              </section>
           </TabsContent>
-          
+
           <TabsContent value="finance" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
             <RevenueOverview dateRange={dateRange} />
+            <PromoDiscountWidget dateRange={dateRange} />
           </TabsContent>
         </Tabs>
       </div>
