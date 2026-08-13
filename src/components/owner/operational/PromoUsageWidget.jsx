@@ -107,10 +107,10 @@ const PromoUsageWidget = ({ dateRange }) => {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Gift className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="text-xs font-semibold text-emerald-800 truncate">Pasien Free (sesi Rp 0 di luar paket)</span>
+            <div className="flex items-start justify-between gap-3 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <Gift className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span className="text-xs font-semibold text-emerald-800">Pasien Free (sesi Rp 0 di luar paket)</span>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-black text-emerald-700 leading-none">{freeCount.toLocaleString('id-ID')} sesi</p>
