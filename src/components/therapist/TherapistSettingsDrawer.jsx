@@ -14,7 +14,7 @@ import {
 import {
   User, Bell, CalendarOff, KeyRound,
   Camera, Loader2, Plus, Trash2, ChevronRight,
-  Check, X, Eye, EyeOff
+  Check, X, Eye, EyeOff, PenTool
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -50,10 +50,13 @@ const TabProfil = ({ therapist, onUpdated }) => {
     bio: therapist?.bio || '',
     specialization: therapist?.specialization || '',
     avatar_url: therapist?.avatar_url || '',
+    signature_url: therapist?.signature_url || '',
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef();
+  const signatureFileRef = useRef();
 
   const [splashAvatarUrl, setSplashAvatarUrl] = useState('');
   const [uploadingSplash, setUploadingSplash] = useState(false);
@@ -126,6 +129,35 @@ const TabProfil = ({ therapist, onUpdated }) => {
     }
   };
 
+  const handleUploadSignature = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 2MB.' });
+      return;
+    }
+    setUploadingSignature(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filename = `signatures/${therapist.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('therapist-photos')
+        .upload(filename, file, { upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: urlData } = supabase.storage
+        .from('therapist-photos')
+        .getPublicUrl(filename);
+
+      setForm(f => ({ ...f, signature_url: urlData.publicUrl }));
+      toast({ title: 'Tanda tangan berhasil diupload' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message });
+    } finally {
+      setUploadingSignature(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -137,6 +169,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
           bio: form.bio,
           specialization: form.specialization,
           avatar_url: form.avatar_url,
+          signature_url: form.signature_url,
           updated_at: new Date().toISOString(),
         })
         .eq('id', therapist.id);
@@ -204,6 +237,32 @@ const TabProfil = ({ therapist, onUpdated }) => {
         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
         Simpan Profil
       </Button>
+
+      {/* Tanda Tangan Digital */}
+      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="relative shrink-0 w-20 h-14 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+          {form.signature_url ? (
+            <img src={form.signature_url} alt="Tanda Tangan" className="w-full h-full object-contain" />
+          ) : (
+            <PenTool className="w-6 h-6 text-slate-300" />
+          )}
+          <button
+            onClick={() => signatureFileRef.current?.click()}
+            disabled={uploadingSignature}
+            className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 shadow-lg hover:bg-blue-700 transition"
+          >
+            {uploadingSignature ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Tanda Tangan Digital</p>
+          <p className="text-xs text-slate-400 mt-0.5">Dipakai otomatis di invoice &amp; dokumen klinis (resume medis, surat keterangan, dll).</p>
+          <p className="text-xs text-blue-500 mt-1.5 cursor-pointer" onClick={() => signatureFileRef.current?.click()}>
+            {form.signature_url ? 'Ganti tanda tangan' : 'Upload tanda tangan'}
+          </p>
+        </div>
+        <input ref={signatureFileRef} type="file" accept="image/*" className="hidden" onChange={handleUploadSignature} />
+      </div>
 
       {/* Foto Splash Screen (terpisah dari foto di therapist card) */}
       <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
