@@ -595,7 +595,7 @@ const OwnerBookingCalendar = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            {item.patient?.full_name || '-'}
+                            {item.patient?.full_name || item.guest_name || '-'}
                           </p>
                           <p className="text-sm text-slate-500">
                             {item.therapist?.name || '-'}
