@@ -64,18 +64,20 @@ export const getTherapistPatientsFromRecaps = async (therapistId) => {
 };
 
 /**
- * Fetches all daily recaps (visits) for a therapist.
+ * Fetches daily recaps (visits) for a therapist, optionally scoped to a date range.
  * Updated to use therapist_id filter and removed rm_number.
- * 
+ *
  * @param {string} therapistId - The UUID of the therapist
+ * @param {string|null} startDate - yyyy-MM-dd, inclusive lower bound on recap_date
+ * @param {string|null} endDate - yyyy-MM-dd, inclusive upper bound on recap_date
  * @returns {Promise<{data: Array, error: any}>} - Returns array of recap objects with patient data
  */
-export const getTherapistVisits = async (therapistId) => {
+export const getTherapistVisits = async (therapistId, startDate = null, endDate = null) => {
   if (!therapistId) return { data: [], error: null };
 
   try {
     // UPDATED: Filter by therapist_id, removed ilike name search
-    const { data: recaps, error } = await supabase
+    let query = supabase
       .from('daily_recaps')
       .select(`
         *,
@@ -86,8 +88,12 @@ export const getTherapistVisits = async (therapistId) => {
           gender
         )
       `)
-      .eq('therapist_id', therapistId)
-      .order('recap_date', { ascending: false });
+      .eq('therapist_id', therapistId);
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+
+    const { data: recaps, error } = await query.order('recap_date', { ascending: false });
 
     if (error) {
       console.error("Error fetching therapist visits:", error);
