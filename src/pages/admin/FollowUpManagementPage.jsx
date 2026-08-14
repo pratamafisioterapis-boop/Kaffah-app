@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-    getFollowUpQueue, 
-    markFollowUpAsSent, 
-    markFollowUpAsCompleted, 
+import {
+    getFollowUpQueue,
+    markFollowUpAsSent,
+    markFollowUpAsCompleted,
     deleteFollowUp,
-    generateFollowUps
+    generateFollowUps,
+    interpolateTemplate
 } from '@/lib/api';
 import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -89,8 +90,8 @@ const FollowUpManagementPage = () => {
         if (phone.startsWith('0')) phone = '62' + phone.substring(1);
         else if (!phone.startsWith('62')) phone = '62' + phone;
 
-        // Message is already interpolated by FollowUpCard
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(item.message_content || '')}`;
+        const finalMessage = interpolateTemplate(item.message_content, item);
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(finalMessage || '')}`;
         window.open(url, '_blank');
 
         markFollowUpAsSent(item.id);

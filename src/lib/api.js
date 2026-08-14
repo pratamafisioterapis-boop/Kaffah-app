@@ -185,6 +185,18 @@ export const endDailyRecapSession = async (recapId) => {
   }, 'endDailyRecapSession', { retry: true });
 };
 
+// "Selamat Pagi/Siang/Sore/Malam" based on the current time, so a message
+// generated in the morning but only reviewed/sent later in the day (follow-up
+// items are sent manually, not right when they're queued) still greets with
+// the right time of day instead of a stale "pagi".
+const getWaktuGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 11) return 'Selamat Pagi';
+  if (hour >= 11 && hour < 15) return 'Selamat Siang';
+  if (hour >= 15 && hour < 18) return 'Selamat Sore';
+  return 'Selamat Malam';
+};
+
 export const interpolateTemplate = (template, item) => {
   if (!template) return '';
 
@@ -193,6 +205,12 @@ export const interpolateTemplate = (template, item) => {
   const patient = item.patient || item.patients || {};
 
   let message = template;
+
+  const waktu = getWaktuGreeting();
+  message = message.replace(/\[waktu\]/gi, waktu);
+  // Older/already-generated messages have the greeting baked in as literal
+  // text rather than a [waktu] placeholder — normalize those too.
+  message = message.replace(/Selamat\s+(Pagi|Siang|Sore|Malam)\b/gi, waktu);
 
   const nama = isGuest
   ? `Ka ${item.guest_name || ''}`.trim()

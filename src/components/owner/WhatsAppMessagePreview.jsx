@@ -14,6 +14,12 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient }) => {
   // If patient data provided, recalculate specific values to show realistic preview
   const previewPlaceholders = { ...placeholders };
   
+  const hour = new Date().getHours();
+  previewPlaceholders.waktu =
+    hour >= 4 && hour < 11 ? 'Selamat Pagi' :
+    hour >= 11 && hour < 15 ? 'Selamat Siang' :
+    hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+
   if (patient) {
     previewPlaceholders.sapaan = getSalutation(patient);
 

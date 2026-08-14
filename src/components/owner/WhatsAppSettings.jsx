@@ -191,7 +191,8 @@ const CATEGORIES = [
       'nickname',   // ✅ tambahkan
       'nama',
       'tanggal_appointment_terakhir',
-      'jam'
+      'jam',
+      'waktu'
     ]
   },
   {
