@@ -131,6 +131,21 @@ const formattedDate = date
     };
   }, [date, therapists]);
 
+  // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
+  // write ke appointments/therapist_time_off), jadi realtime subscription di atas
+  // tidak menangkapnya. Poll berkala supaya kartu terapis (badge terkunci & slot
+  // kosong) tetap akurat walau tab dibiarkan terbuka melewati ambang batas umur.
+  useEffect(() => {
+    if (therapists.length === 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchDayData(date);
+      loadSoapStatus();
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [date, therapists]);
+
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
