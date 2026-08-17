@@ -123,6 +123,21 @@ const OwnerBookingCalendar = () => {
     };
   }, [date]);
 
+  // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
+  // write ke appointments/therapist_time_off), jadi realtime subscription di atas
+  // tidak menangkapnya. Poll berkala supaya kartu terapis (badge terkunci & slot
+  // kosong) tetap akurat walau tab dibiarkan terbuka melewati ambang batas umur.
+  useEffect(() => {
+    if (therapists.length === 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchDayData(date);
+      loadSoapStatus();
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [date, therapists]);
+
   const loadInitialData = async () => {
     setLoading(true);
     const response = await getActivePhysiotherapists();
@@ -170,16 +185,20 @@ const OwnerBookingCalendar = () => {
          newSchedulesMap[t.id] = [];
       });
 
+      // Satu terapis bisa punya slot dengan status campuran di hari yang sama
+      // (mis. sebagian 'terisi' karena sudah dibooking, sisanya 'terkunci' karena
+      // SOAP menunggak). Rangking eksplisit ini memastikan status yang paling
+      // relevan (terkunci lebih penting daripada terisi) yang menang, bukan
+      // sekadar status slot mana yang lebih dulu diproses.
+      const STATUS_RANK = { aktif: 3, terkunci: 2, terisi: 1 };
+
       if (data && data.length > 0) {
           // Pass 1: Determine Status from RPC
           data.forEach(s => {
-            if (s.therapist_id) {
-               // Prioritize active or terisi statuses over 'tidak_ada_jadwal'
-               if (s.status === 'aktif') {
-                  statusMap[s.therapist_id] = 'aktif';
-               } else if (s.status === 'terisi' && statusMap[s.therapist_id] !== 'aktif') {
-                  statusMap[s.therapist_id] = 'terisi';
-               } else if (statusMap[s.therapist_id] === 'tidak_ada_jadwal') {
+            if (s.therapist_id && s.status) {
+               const currentRank = STATUS_RANK[statusMap[s.therapist_id]] ?? -1;
+               const newRank = STATUS_RANK[s.status] ?? 0;
+               if (newRank >= currentRank) {
                   statusMap[s.therapist_id] = s.status;
                }
             }
