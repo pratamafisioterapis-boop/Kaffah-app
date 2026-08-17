@@ -198,14 +198,23 @@ const formattedDate = date
         newSchedulesMap[t.id] = [];
       });
 
+      // Satu terapis bisa punya slot dengan status campuran di hari yang sama
+      // (mis. sebagian 'terisi' karena sudah dibooking, sisanya 'terkunci' karena
+      // SOAP menunggak). Rangking eksplisit ini memastikan status yang paling
+      // relevan buat admin (terkunci lebih penting daripada terisi) yang menang,
+      // bukan sekadar status slot terakhir yang diproses.
+      const STATUS_RANK = { aktif: 3, terkunci: 2, terisi: 1 };
+
       if (Array.isArray(slots)) {
         slots.forEach(s => {
           if (!s.therapist_id) return;
 
-          if (s.status === 'aktif') {
-            statusMap[s.therapist_id] = 'aktif';
-          } else if (statusMap[s.therapist_id] !== 'aktif' && s.status) {
-            statusMap[s.therapist_id] = s.status;
+          if (s.status) {
+            const currentRank = STATUS_RANK[statusMap[s.therapist_id]] ?? -1;
+            const newRank = STATUS_RANK[s.status] ?? 0;
+            if (newRank >= currentRank) {
+              statusMap[s.therapist_id] = s.status;
+            }
           }
 
           const slotObj = {
