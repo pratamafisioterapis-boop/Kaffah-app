@@ -52,16 +52,42 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
       windowWidth: 794,
     });
 
-    const imgData = canvas.toDataURL('image/png');
     const pdfWidth = 210;
     const pdfHeight = 297;
+    const pdfImgH = (canvas.height * pdfWidth) / canvas.width;
 
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfImgH = (imgProps.height * pdfWidth) / imgProps.width;
-    const finalHeight = Math.min(pdfImgH, pdfHeight);
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+    if (pdfImgH <= pdfHeight) {
+      // Fits on a single page — draw at its natural (unscaled) height so
+      // nothing near the bottom (e.g. the signature block) gets squashed.
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfImgH);
+    } else {
+      // Content is taller than one A4 page: slice the canvas into
+      // page-sized chunks instead of squeezing everything into 297mm,
+      // which previously distorted/overlapped text near the page bottom.
+      const pageSlicePx = Math.floor((pdfHeight * canvas.width) / pdfWidth);
+      let renderedPx = 0;
+      let isFirstPage = true;
+
+      while (renderedPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageSlicePx, canvas.height - renderedPx);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+        pageCanvas
+          .getContext('2d')
+          .drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+        const sliceHeightMm = (sliceHeightPx * pdfWidth) / canvas.width;
+        if (!isFirstPage) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, sliceHeightMm);
+
+        renderedPx += sliceHeightPx;
+        isFirstPage = false;
+      }
+    }
+
     return pdf;
   };
 
