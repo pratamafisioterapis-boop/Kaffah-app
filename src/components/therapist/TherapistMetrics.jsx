@@ -228,7 +228,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
 
         {/* Card: SOAP Belum Diisi */}
         <div
-          onClick={() => navigate('/therapist/records')}
+          onClick={() => navigate('/therapist/records?status=unfilled')}
           className={cn(
             "rounded-2xl border shadow-sm p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow",
             metrics.unfilledSoapCount > 0

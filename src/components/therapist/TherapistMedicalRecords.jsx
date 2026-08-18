@@ -276,7 +276,11 @@ setPatients(patientList);
       if (!item) return false; 
       const searchLower = searchTerm.toLowerCase(); 
       const matchesSearch = (item.full_name || '').toLowerCase().includes(searchLower) || (item.medical_record_number || '').toLowerCase().includes(searchLower); 
-      const matchesStatus = statusFilter === 'all' ? true : item.status === statusFilter; 
+      const matchesStatus = statusFilter === 'all'
+        ? true
+        : statusFilter === 'unfilled'
+          ? (item.status === 'empty' || item.status === 'incomplete')
+          : item.status === statusFilter;
       return matchesSearch && matchesStatus; 
   });
   
@@ -331,7 +335,7 @@ const paginatedList = sortedList.slice(
       </div>
 
       <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col md:flex-row gap-4 items-end">
-         <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
+         <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
          <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Nama pasien atau No. RM..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
