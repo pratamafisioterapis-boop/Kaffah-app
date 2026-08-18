@@ -34,7 +34,7 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const statusFilter = searchParams.get('status') || 'empty';
+  const statusFilter = searchParams.get('status') || 'unfilled';
   const [searchTerm, setSearchTerm] = useState('');
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 20;
