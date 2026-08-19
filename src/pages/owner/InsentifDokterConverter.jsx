@@ -544,7 +544,7 @@ const InsentifDokterConverter = () => {
                   {processing ? 'Memproses PDF...' : 'Klik atau drag & drop PDF di sini'}
                 </h3>
                 <p className="text-slate-500 text-sm mt-1">
-                  Bisa upload banyak file sekaligus, boleh campur kedua format (PWTT/PWT & BPJS Individu)
+                  Bisa upload banyak file sekaligus &mdash; format terdeteksi otomatis: Praktek Swasta (Pasien Jaminan / Pasien Tunai) & BPJS Individu
                 </p>
                 <input
                   ref={fileInputRef}
@@ -574,9 +574,16 @@ const InsentifDokterConverter = () => {
                       <div className="flex items-start gap-3">
                         <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="font-medium text-slate-800">{res.fileName}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-slate-800">{res.fileName}</p>
+                            {res.isSwasta && (
+                              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0">
+                                Praktek Swasta
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Format: {res.format === 'A' ? 'PWTT/PWT (Pasien Jaminan)' : 'BPJS Individu'}
+                            Format: {res.formatLabel || (res.format === 'A' ? 'PWTT/PWT (Pasien Jaminan)' : 'BPJS Individu')}
                             {' '}&middot; {res.rows.length} baris data
                           </p>
                           <div className="flex items-center gap-1.5 mt-2 text-sm">
