@@ -127,6 +127,27 @@ function detectFormat(firstPageWords) {
   return null;
 }
 
+// PDF "Praktek Swasta" (format A/C) mencantumkan kata "PRAKTEK SWASTA" di
+// judul header, sementara PDF BPJS Individu (format B) tidak pernah punya
+// kata itu. Dipakai untuk memberi label yang jelas di UI/Excel supaya
+// pengguna bisa langsung membedakan mana laporan Praktek Swasta.
+function detectIsSwasta(firstPageWords) {
+  const text = firstPageWords.map((w) => w.text).join(' ').toUpperCase();
+  return text.includes('SWASTA');
+}
+
+const FORMAT_LABELS = {
+  A: { swasta: 'Praktek Swasta - Pasien Jaminan (PWTT/PWT)', default: 'PWTT/PWT (Pasien Jaminan)' },
+  C: { swasta: 'Praktek Swasta - Pasien Tunai (PWTT/PWT)', default: 'PWTT/PWT (Pasien Tunai)' },
+  B: { swasta: 'BPJS Individu', default: 'BPJS Individu' },
+};
+
+function formatLabelFor(format, isSwasta) {
+  const labels = FORMAT_LABELS[format];
+  if (!labels) return format;
+  return isSwasta ? labels.swasta : labels.default;
+}
+
 // â”€â”€ FORMAT A: PWTT/PWT Pasien Jaminan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // PENTING: posisi kolom TIDAK di-hardcode, karena beda file PDF (beda ukuran
 // halaman / template) punya koordinat piksel yang beda, dan jumlah sub-kolom
@@ -818,6 +839,9 @@ export async function parseInsentifDokterPdf(file) {
     );
   }
 
+  const isSwasta = detectIsSwasta(pages[0]);
+  const formatLabel = formatLabelFor(format, isSwasta);
+
   const parsed = format === 'A' ? parseFormatA(pages) : format === 'C' ? parseFormatC(pages) : parseFormatB(pages);
 
   // Format A/C: baris "TOTAL" dari tabel KONSUL/VISITE/TINDAKAN/TOTAL terbukti
@@ -854,6 +878,8 @@ export async function parseInsentifDokterPdf(file) {
 
   return {
     format,
+    formatLabel,
+    isSwasta,
     fileName: file.name,
     rows: parsed.rows,
     summary: parsed.summary,
@@ -877,7 +903,7 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
     let aoa = [];
     if (res.format === 'A') {
       const hasSubCols = res.rows.some((r) => r.pertamina || r.pertamedika);
-      aoa.push(['PERINCIAN INSENTIF DOKTER PRAKTEK SWASTA PASIEN JAMINAN ( PWTT/PWT )']);
+      aoa.push([`PERINCIAN INSENTIF DOKTER ${res.isSwasta ? 'PRAKTEK SWASTA ' : ''}PASIEN JAMINAN ( PWTT/PWT )`]);
       if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
       aoa.push([`File asal: ${res.fileName}`]);
       aoa.push([]);
@@ -914,7 +940,7 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
       aoa.push([]);
       aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', ...new Array(headerA.length - 2).fill(''), toNumber(res.summary.jumlahBersih)]);
     } else if (res.format === 'C') {
-      aoa.push(['PERINCIAN INSENTIF JASA DOKTER PASIEN TUNAI ( PWTT/PWT )']);
+      aoa.push([`PERINCIAN INSENTIF ${res.isSwasta ? 'DOKTER PRAKTEK SWASTA' : 'JASA DOKTER'} PASIEN TUNAI ( PWTT/PWT )`]);
       if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
       aoa.push([`File asal: ${res.fileName}`]);
       aoa.push([]);
