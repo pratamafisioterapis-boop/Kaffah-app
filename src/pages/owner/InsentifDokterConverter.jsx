@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport } from '@/utils/insentifDokterParser';
+import { parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport, dmyToMonthValue } from '@/utils/insentifDokterParser';
 import {
   saveInsentifDokterHistory, listInsentifDokterHistory,
   getInsentifDokterHistoryDetail, deleteInsentifDokterHistory,
@@ -382,6 +382,16 @@ const InsentifDokterConverter = () => {
     setSelectedHistoryId(null);
     setProcessing(false);
 
+    // Otomatis set pemilih Periode dari tanggal "Periode : ... S.D ..." yang
+    // tercetak di PDF, supaya pengguna tidak perlu pilih bulan manual —
+    // dipakai tanggal AWAL dari file paling awal (kalau upload banyak file
+    // sekaligus, urutan tanggal dijaga sesuai urutan file yang dipilih).
+    const firstWithPeriode = newResults.find((r) => r.periodeAwal);
+    if (firstWithPeriode) {
+      const monthValue = dmyToMonthValue(firstWithPeriode.periodeAwal);
+      if (monthValue) setPeriodeMonth(monthValue);
+    }
+
     newResults.forEach((res) => {
       if (!res.verification.isVerified && !res.verification.isMinorRounding) {
         toast({
@@ -586,6 +596,12 @@ const InsentifDokterConverter = () => {
                             Format: {res.formatLabel || (res.format === 'A' ? 'PWTT/PWT (Pasien Jaminan)' : 'BPJS Individu')}
                             {' '}&middot; {res.rows.length} baris data
                           </p>
+                          {res.periodeAwal && res.periodeAkhir && (
+                            <p className="text-xs text-indigo-600 font-medium mt-0.5 flex items-center gap-1">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              Periode terdeteksi: {res.periodeAwal} &ndash; {res.periodeAkhir}
+                            </p>
+                          )}
                           <div className="flex items-center gap-1.5 mt-2 text-sm">
                             {res.verification.isVerified ? (
                               <>
