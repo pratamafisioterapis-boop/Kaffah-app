@@ -127,6 +127,18 @@ function detectFormat(firstPageWords) {
   return null;
 }
 
+// Setiap PDF mencetak baris "Periode : DD/MM/YYYY S.D DD/MM/YYYY" di header,
+// menandai rentang tanggal transaksi yang tercakup di laporan itu. Dibaca
+// langsung dari teks halaman pertama (bukan dari baris hasil clusterLines,
+// karena pdf.js kadang memecah "Periode : 01/06/2026 S.D 15/06/2026" jadi
+// beberapa token yang urutannya tetap terjaga saat digabung jadi 1 string).
+function extractPeriodeRange(firstPageWords) {
+  const text = firstPageWords.map((w) => w.text).join(' ');
+  const m = text.match(/(\d{2}\/\d{2}\/\d{4})\s*S\.?\s*D\.?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (!m) return null;
+  return { awal: m[1], akhir: m[2] };
+}
+
 // PDF "Praktek Swasta" (format A/C) mencantumkan kata "PRAKTEK SWASTA" di
 // judul header, sementara PDF BPJS Individu (format B) tidak pernah punya
 // kata itu. Dipakai untuk memberi label yang jelas di UI/Excel supaya
@@ -718,6 +730,13 @@ export function toNumber(str) {
   return isNaN(n) ? 0 : n;
 }
 
+// â”€â”€ "DD/MM/YYYY" â†’ "YYYY-MM" (dipakai untuk auto-isi pemilih bulan Periode) â”€
+export function dmyToMonthValue(dmy) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy || '');
+  if (!m) return null;
+  return `${m[3]}-${m[2]}`;
+}
+
 // Bangun laporan rekap terpisah per jenis asuransi dari hasil parsing.
 // BPJS: nilainya ada di kolom TOTAL, direkap per Desc Transaksi.
 // Jaminan (PWTT/PWT): nilainya ada di sub-kolom TIPE PASIEN (Pertamina/
@@ -841,6 +860,7 @@ export async function parseInsentifDokterPdf(file) {
 
   const isSwasta = detectIsSwasta(pages[0]);
   const formatLabel = formatLabelFor(format, isSwasta);
+  const periode = extractPeriodeRange(pages[0]);
 
   const parsed = format === 'A' ? parseFormatA(pages) : format === 'C' ? parseFormatC(pages) : parseFormatB(pages);
 
@@ -880,6 +900,8 @@ export async function parseInsentifDokterPdf(file) {
     format,
     formatLabel,
     isSwasta,
+    periodeAwal: periode?.awal || null,
+    periodeAkhir: periode?.akhir || null,
     fileName: file.name,
     rows: parsed.rows,
     summary: parsed.summary,
