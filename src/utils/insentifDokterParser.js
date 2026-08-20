@@ -749,14 +749,62 @@ const JAMINAN_SUBTYPE_LABELS = {
   pribadi: 'Pribadi',
 };
 
+function buildJaminanBreakdown(jaminanRows) {
+  const jaminan = {};
+  Object.keys(JAMINAN_SUBTYPE_LABELS).forEach((key) => {
+    const byDesc = {};
+    jaminanRows.forEach((r) => {
+      const val = toNumber(r[key]);
+      if (!val) return;
+      const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+      if (!byDesc[deskKey]) byDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+      byDesc[deskKey].count += 1;
+      byDesc[deskKey].total += val;
+    });
+    const byDeskripsi = Object.values(byDesc).sort((a, b) => b.total - a.total);
+    jaminan[key] = {
+      label: JAMINAN_SUBTYPE_LABELS[key],
+      count: byDeskripsi.reduce((s, r) => s + r.count, 0),
+      total: byDeskripsi.reduce((s, r) => s + r.total, 0),
+      byDeskripsi,
+    };
+  });
+  return jaminan;
+}
+
+function buildTunaiBreakdown(tunaiRows) {
+  const tunaiByDesc = {};
+  tunaiRows.forEach((r) => {
+    const val = toNumber(r.tunai);
+    if (!val) return;
+    const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+    if (!tunaiByDesc[deskKey]) tunaiByDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+    tunaiByDesc[deskKey].count += 1;
+    tunaiByDesc[deskKey].total += val;
+  });
+  const tunaiByDeskripsi = Object.values(tunaiByDesc).sort((a, b) => b.total - a.total);
+  return {
+    count: tunaiRows.length,
+    total: tunaiByDeskripsi.reduce((s, r) => s + r.total, 0),
+    byDeskripsi: tunaiByDeskripsi,
+  };
+}
+
+// Laporan Praktek Swasta (Jaminan/Pribadi & Tunai — dari PDF yang berjudul
+// "PRAKTEK SWASTA") ditampilkan TERPISAH dari laporan Bukan Praktek Swasta
+// (BPJS Individu, dan andaikan ada PDF Jaminan/Tunai non-swasta di masa
+// depan) — supaya owner tidak perlu menjumlahkan manual mana pendapatan
+// dari praktek swasta dokter vs mana yang dari jalur lain.
 export function buildInsentifDokterReport(results) {
   const bpjsRows = [];
-  const jaminanRows = [];
-  const tunaiRows = [];
+  const swastaJaminanRows = [];
+  const swastaTunaiRows = [];
+  const nonSwastaJaminanRows = [];
+  const nonSwastaTunaiRows = [];
   (results || []).forEach((res) => {
     if (res.format === 'B') bpjsRows.push(...res.rows);
-    else if (res.format === 'A') jaminanRows.push(...res.rows);
-    else if (res.format === 'C') tunaiRows.push(...res.rows);
+    else if (res.format === 'A') (res.isSwasta ? swastaJaminanRows : nonSwastaJaminanRows).push(...res.rows);
+    else if (res.format === 'C') (res.isSwasta ? swastaTunaiRows : nonSwastaTunaiRows).push(...res.rows);
   });
 
   // BPJS: baris "KONSUL DOKTER" menandai bahwa pasien tsb kontrol/periksa ke
@@ -806,43 +854,39 @@ export function buildInsentifDokterReport(results) {
     byDeskripsi: bpjsByDeskripsi,
   };
 
-  const jaminan = {};
-  Object.keys(JAMINAN_SUBTYPE_LABELS).forEach((key) => {
-    const byDesc = {};
-    jaminanRows.forEach((r) => {
-      const val = toNumber(r[key]);
-      if (!val) return;
-      const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
-      if (!byDesc[deskKey]) byDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
-      byDesc[deskKey].count += 1;
-      byDesc[deskKey].total += val;
-    });
-    const byDeskripsi = Object.values(byDesc).sort((a, b) => b.total - a.total);
-    jaminan[key] = {
-      label: JAMINAN_SUBTYPE_LABELS[key],
-      count: byDeskripsi.reduce((s, r) => s + r.count, 0),
-      total: byDeskripsi.reduce((s, r) => s + r.total, 0),
-      byDeskripsi,
-    };
-  });
-
-  const tunaiByDesc = {};
-  tunaiRows.forEach((r) => {
-    const val = toNumber(r.tunai);
-    if (!val) return;
-    const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
-    if (!tunaiByDesc[deskKey]) tunaiByDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
-    tunaiByDesc[deskKey].count += 1;
-    tunaiByDesc[deskKey].total += val;
-  });
-  const tunaiByDeskripsi = Object.values(tunaiByDesc).sort((a, b) => b.total - a.total);
-  const tunai = {
-    count: tunaiRows.length,
-    total: tunaiByDeskripsi.reduce((s, r) => s + r.total, 0),
-    byDeskripsi: tunaiByDeskripsi,
+  return {
+    bpjs,
+    swasta: {
+      jaminan: buildJaminanBreakdown(swastaJaminanRows),
+      tunai: buildTunaiBreakdown(swastaTunaiRows),
+    },
+    nonSwasta: {
+      jaminan: buildJaminanBreakdown(nonSwastaJaminanRows),
+      tunai: buildTunaiBreakdown(nonSwastaTunaiRows),
+    },
   };
+}
 
-  return { bpjs, jaminan, tunai };
+// Riwayat lama (tersimpan sebelum pemisahan Swasta/Bukan Swasta) punya shape
+// datar { bpjs, jaminan, tunai } — semua data Jaminan/Tunai di riwayat lama
+// itu memang selalu berasal dari PDF Praktek Swasta, jadi aman dipetakan ke
+// `swasta` supaya laporan lama tetap tampil benar tanpa perlu migrasi data.
+export function normalizeInsentifDokterReport(report) {
+  if (!report) return null;
+  if (report.swasta && report.nonSwasta) return report;
+  const emptyJaminan = buildJaminanBreakdown([]);
+  const emptyTunai = buildTunaiBreakdown([]);
+  return {
+    bpjs: report.bpjs || buildTunaiBreakdown([]),
+    swasta: {
+      jaminan: report.jaminan || emptyJaminan,
+      tunai: report.tunai || emptyTunai,
+    },
+    nonSwasta: {
+      jaminan: emptyJaminan,
+      tunai: emptyTunai,
+    },
+  };
 }
 
 // â”€â”€ Fungsi utama: parse 1 file PDF â†’ { format, rows, summary, verification, meta } â”€
