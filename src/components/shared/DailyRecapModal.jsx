@@ -900,11 +900,19 @@ setFormData({
         checkPatientPackage(selectedId, true);
     };
 
-    const handleExtendPackage = async (newEndDate, notes) => {
+    const handleExtendPackage = async (newEndDate) => {
         if (!selectedPackage) return;
         setExtendLoading(true);
         try {
-            const { error } = await extendPackage(selectedPackage.id, newEndDate, notes);
+            // extendPackage(id, days) mengharapkan JUMLAH HARI, bukan tanggal ISO -
+            // konversi dulu selisih hari dari hari ini ke tanggal target yang dipilih.
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selected = new Date(newEndDate);
+            selected.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((selected - today) / (1000 * 60 * 60 * 24));
+
+            const { error } = await extendPackage(selectedPackage.id, diffDays);
             if (error) throw error;
             
             toast({ title: "Berhasil", description: "Paket berhasil diperpanjang" });
