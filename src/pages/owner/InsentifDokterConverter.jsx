@@ -10,7 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport, dmyToMonthValue } from '@/utils/insentifDokterParser';
+import {
+  parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport,
+  normalizeInsentifDokterReport, dmyToMonthValue,
+} from '@/utils/insentifDokterParser';
 import {
   saveInsentifDokterHistory, listInsentifDokterHistory,
   getInsentifDokterHistoryDetail, deleteInsentifDokterHistory,
@@ -192,15 +195,75 @@ const AsuransiPanel = ({ subtypes }) => {
   );
 };
 
+// ── Sekumpulan tab BPJS/Asuransi/Tunai untuk SATU grup (Swasta atau Bukan
+// Swasta) ── dipakai dua kali oleh InsentifLaporan supaya kedua grup itu
+// tetap punya tampilan konsisten tanpa duplikasi markup.
+const CategoryGroup = ({ bpjs, jaminanSubtypes, tunai }) => {
+  const hasBpjs = (bpjs?.count || 0) > 0;
+  const hasTunai = (tunai?.count || 0) > 0;
+  const asuransiCount = jaminanSubtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
+  const defaultTab = hasBpjs ? 'bpjs' : jaminanSubtypes.length > 0 ? 'asuransi' : 'tunai';
+
+  return (
+    <Tabs defaultValue={defaultTab} className="w-full">
+      <TabsList className="flex-wrap h-auto gap-1 bg-slate-100/80 p-1.5">
+        {hasBpjs && (
+          <TabsTrigger value="bpjs" className="gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" /> BPJS
+            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{bpjs.count}</Badge>
+          </TabsTrigger>
+        )}
+        {jaminanSubtypes.length > 0 && (
+          <TabsTrigger value="asuransi" className="gap-1.5">
+            <HeartPulse className="w-3.5 h-3.5" /> Asuransi
+            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{asuransiCount}</Badge>
+          </TabsTrigger>
+        )}
+        {hasTunai && (
+          <TabsTrigger value="tunai" className="gap-1.5">
+            <Banknote className="w-3.5 h-3.5" /> Tunai
+            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{tunai.count}</Badge>
+          </TabsTrigger>
+        )}
+      </TabsList>
+      {hasBpjs && (
+        <TabsContent value="bpjs" className="mt-4">
+          <CategoryPanel categoryKey="bpjs" data={bpjs} isBpjs />
+        </TabsContent>
+      )}
+      {jaminanSubtypes.length > 0 && (
+        <TabsContent value="asuransi" className="mt-4">
+          <AsuransiPanel subtypes={jaminanSubtypes} />
+        </TabsContent>
+      )}
+      {hasTunai && (
+        <TabsContent value="tunai" className="mt-4">
+          <CategoryPanel categoryKey="tunai" data={tunai} />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+};
+
 const InsentifLaporan = ({ report, meta }) => {
-  const jaminanSubtypes = useMemo(
-    () => (report ? Object.entries(report.jaminan).filter(([, v]) => v.count > 0) : []),
-    [report]
+  const normalized = useMemo(() => normalizeInsentifDokterReport(report), [report]);
+
+  const swastaJaminanSubtypes = useMemo(
+    () => (normalized ? Object.entries(normalized.swasta.jaminan).filter(([, v]) => v.count > 0) : []),
+    [normalized]
+  );
+  const nonSwastaJaminanSubtypes = useMemo(
+    () => (normalized ? Object.entries(normalized.nonSwasta.jaminan).filter(([, v]) => v.count > 0) : []),
+    [normalized]
   );
 
-  const hasTunai = (report?.tunai?.count || 0) > 0;
+  const hasBpjs = (normalized?.bpjs?.count || 0) > 0;
+  const hasSwastaTunai = (normalized?.swasta?.tunai?.count || 0) > 0;
+  const hasNonSwastaTunai = (normalized?.nonSwasta?.tunai?.count || 0) > 0;
+  const hasSwasta = swastaJaminanSubtypes.length > 0 || hasSwastaTunai;
+  const hasNonSwasta = hasBpjs || nonSwastaJaminanSubtypes.length > 0 || hasNonSwastaTunai;
 
-  if (!report || (!report.bpjs.count && jaminanSubtypes.length === 0 && !hasTunai)) {
+  if (!normalized || (!hasSwasta && !hasNonSwasta)) {
     return (
       <div className="py-14 text-center text-slate-500">
         <Sparkles className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -209,8 +272,10 @@ const InsentifLaporan = ({ report, meta }) => {
     );
   }
 
-  const asuransiCount = jaminanSubtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
-  const defaultTab = report.bpjs.count ? 'bpjs' : jaminanSubtypes.length > 0 ? 'asuransi' : 'tunai';
+  const swastaCount = swastaJaminanSubtypes.reduce((s, [, v]) => s + (v.count || 0), 0) + (normalized.swasta.tunai.count || 0);
+  const nonSwastaCount = (normalized.bpjs.count || 0)
+    + nonSwastaJaminanSubtypes.reduce((s, [, v]) => s + (v.count || 0), 0)
+    + (normalized.nonSwasta.tunai.count || 0);
 
   return (
     <div className="space-y-4">
@@ -231,43 +296,36 @@ const InsentifLaporan = ({ report, meta }) => {
           )}
         </div>
       )}
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex-wrap h-auto gap-1 bg-slate-100/80 p-1.5">
-          {report.bpjs.count > 0 && (
-            <TabsTrigger value="bpjs" className="gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> BPJS
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{report.bpjs.count}</Badge>
+      {hasSwasta && hasNonSwasta ? (
+        <Tabs defaultValue="swasta" className="w-full">
+          <TabsList className="flex-wrap h-auto gap-1.5 bg-transparent p-0 mb-1">
+            <TabsTrigger
+              value="swasta"
+              className="gap-1.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 px-3 py-2"
+            >
+              <FileCheck2 className="w-4 h-4" /> Praktek Swasta
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-white/70">{swastaCount}</Badge>
             </TabsTrigger>
-          )}
-          {jaminanSubtypes.length > 0 && (
-            <TabsTrigger value="asuransi" className="gap-1.5">
-              <HeartPulse className="w-3.5 h-3.5" /> Asuransi
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{asuransiCount}</Badge>
+            <TabsTrigger
+              value="nonswasta"
+              className="gap-1.5 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 data-[state=active]:bg-sky-100 data-[state=active]:text-sky-800 px-3 py-2"
+            >
+              <ShieldCheck className="w-4 h-4" /> Bukan Praktek Swasta
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-white/70">{nonSwastaCount}</Badge>
             </TabsTrigger>
-          )}
-          {hasTunai && (
-            <TabsTrigger value="tunai" className="gap-1.5">
-              <Banknote className="w-3.5 h-3.5" /> Tunai
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">{report.tunai.count}</Badge>
-            </TabsTrigger>
-          )}
-        </TabsList>
-        {report.bpjs.count > 0 && (
-          <TabsContent value="bpjs" className="mt-4">
-            <CategoryPanel categoryKey="bpjs" data={report.bpjs} isBpjs />
+          </TabsList>
+          <TabsContent value="swasta" className="mt-3">
+            <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} />
           </TabsContent>
-        )}
-        {jaminanSubtypes.length > 0 && (
-          <TabsContent value="asuransi" className="mt-4">
-            <AsuransiPanel subtypes={jaminanSubtypes} />
+          <TabsContent value="nonswasta" className="mt-3">
+            <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} />
           </TabsContent>
-        )}
-        {hasTunai && (
-          <TabsContent value="tunai" className="mt-4">
-            <CategoryPanel categoryKey="tunai" data={report.tunai} />
-          </TabsContent>
-        )}
-      </Tabs>
+        </Tabs>
+      ) : hasSwasta ? (
+        <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} />
+      ) : (
+        <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} />
+      )}
     </div>
   );
 };
