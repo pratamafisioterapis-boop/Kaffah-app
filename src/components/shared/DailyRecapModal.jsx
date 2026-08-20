@@ -819,7 +819,6 @@ setFormData({
     
     useEffect(() => {
         if (!selectedPackage) return;
-        if (mode !== 'add') return; // jangan autofill amount/payment_method saat edit recap yang sudah ada
 
         const pkg = selectedPackage;
 
@@ -835,6 +834,18 @@ setFormData({
                 ...prev,
                 { value: packageTypeId, label: packageLabel }
             ]);
+        }
+
+        // Saat edit recap yang sudah ada, jangan autofill amount/payment_method
+        // (nilai historis recap tidak boleh ditimpa) — tapi Jenis Paket tetap
+        // harus ikut ter-set dari paket aktif pasien, kalau belum terisi.
+        if (mode !== 'add') {
+            setFormData(prev => (
+                prev.package_type_id
+                    ? prev
+                    : { ...prev, package_type_id: packageTypeId, package_type: packageLabel }
+            ));
+            return;
         }
 
         const isPending = pkg.status === 'pending';
