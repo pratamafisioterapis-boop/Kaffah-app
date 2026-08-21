@@ -11,6 +11,7 @@ import {
     calculateCustomSalary
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
+import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -7800,11 +7801,10 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
       .from('physiotherapists')
       .select('id, name')
       .eq('clinic_id', clinicId);
-    const nameToTherapistId = new Map((therapists || []).map((t) => [t.name?.trim().toLowerCase(), t.id]));
 
     const payload = rows.map((r) => ({
       clinic_id: clinicId,
-      physiotherapist_id: nameToTherapistId.get(r.employee_name?.trim().toLowerCase()) || null,
+      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [])?.id || null,
       employee_external_id: r.employee_external_id || null,
       employee_name: r.employee_name,
       department: r.department || null,
@@ -7857,32 +7857,34 @@ export const getAttendanceRecords = async ({ startDate, endDate, department, emp
 };
 
 /**
- * Returns each therapist's weekly practice-hour schedule (the same schedule
- * that drives the booking calendar) as a lookup keyed by lower-cased name:
- * { [name]: { [dayOfWeek 0-6]: 'HH:MM:SS' } }. Used to determine the
- * expected check-in time per attendance day instead of a flat default.
+ * Returns every active physiotherapist with their weekly practice-hour
+ * schedule (the same schedule that drives the booking calendar), as
+ * { id, name, schedule: { [dayOfWeek 0-6]: 'HH:MM:SS' } }[]. Attendance
+ * employee names (short/nicknames from the machine export) are matched to
+ * these full formal names with matchEmployeeNameToTherapist — see
+ * src/utils/therapistNameMatch.js for why an exact match doesn't work.
  */
 export const getAttendanceScheduleLookup = async () => {
   return safeQuery(async () => {
     const { clinicId } = await getMyClinicIdForAttendance();
-    if (!clinicId) return { data: {}, success: true, error: null };
+    if (!clinicId) return { data: [], success: true, error: null };
 
     const { data, error } = await supabase
       .from('physiotherapists')
-      .select('name, therapist_schedules(day_of_week, start_time, is_active)')
+      .select('id, name, therapist_schedules(day_of_week, start_time, is_active)')
       .eq('clinic_id', clinicId);
     if (error) return { error };
 
-    const lookup = {};
-    (data || []).forEach((t) => {
-      if (!t.name) return;
-      const byDay = {};
-      (t.therapist_schedules || []).forEach((s) => {
-        if (s.is_active && s.start_time) byDay[s.day_of_week] = s.start_time;
+    const therapists = (data || [])
+      .filter((t) => t.name)
+      .map((t) => {
+        const schedule = {};
+        (t.therapist_schedules || []).forEach((s) => {
+          if (s.is_active && s.start_time) schedule[s.day_of_week] = s.start_time;
+        });
+        return { id: t.id, name: t.name, schedule };
       });
-      if (Object.keys(byDay).length > 0) lookup[t.name.trim().toLowerCase()] = byDay;
-    });
 
-    return { data: lookup, success: true, error: null };
+    return { data: therapists, success: true, error: null };
   }, 'getAttendanceScheduleLookup');
 };
