@@ -34,6 +34,28 @@ const fmtDateLong = (value) => {
   }
 };
 
+// Mengunduh logo klinik (URL publik dari Supabase Storage) dan mengubahnya
+// jadi data URL supaya bisa ditempel ke PDF lewat doc.addImage — addImage
+// tidak bisa memuat langsung dari URL lintas-origin.
+const loadImageAsDataUrl = (url) => new Promise((resolve) => {
+  if (!url) { resolve(null); return; }
+  fetch(url)
+    .then((res) => (res.ok ? res.blob() : Promise.reject(new Error('fetch failed'))))
+    .then((blob) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    })
+    .catch(() => resolve(null));
+});
+
+const imageFormatFromDataUrl = (dataUrl) => {
+  const match = /^data:image\/(png|jpe?g|webp)/i.exec(dataUrl || '');
+  if (!match) return 'PNG';
+  return match[1].toUpperCase().startsWith('JPE') ? 'JPEG' : match[1].toUpperCase();
+};
+
 /**
  * Builds the "SURAT PERINGATAN" (SP) PDF an owner downloads for a therapist
  * who committed a workplace violation — one page: letterhead, violation
@@ -43,13 +65,14 @@ const fmtDateLong = (value) => {
  *   letter_date, letter_city, violation_date, violation_description, consequence_note)
  * @param {object} clinic - clinics row (name, address, phone, email, owner_full_name, owner_position)
  * @param {object} therapist - physiotherapists row (name, specialization)
- * @returns {jsPDF}
+ * @returns {Promise<jsPDF>}
  */
-export const generateWarningLetterPDF = (letter = {}, clinic = {}, therapist = {}) => {
+export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapist = {}) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   let y = MARGIN_TOP;
   const clinicName = clinic.name || 'Klinik Fisioterapi';
   const levelLabel = WARNING_LEVEL_LABEL[letter.level] || WARNING_LEVEL_LABEL.SP1;
+  const logoDataUrl = await loadImageAsDataUrl(clinic.logo_url);
 
   const ensureSpace = (needed) => {
     if (y + needed > PAGE_H - MARGIN_BOTTOM) {
@@ -92,32 +115,54 @@ export const generateWarningLetterPDF = (letter = {}, clinic = {}, therapist = {
     }
   };
 
-  // ---------- LETTERHEAD ----------
+  // ---------- LETTERHEAD (KOP SURAT) ----------
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, PAGE_W, 3, 'F');
+  doc.rect(0, 0, PAGE_W, 4, 'F');
 
-  y = 22;
+  const logoSize = 20;
+  const headerTop = 12;
+  const hasLogo = !!logoDataUrl;
+  // Logo di kiri, identitas klinik rata tengah pada sisa lebar — tetap simetris
+  // baik saat logo ada maupun belum diunggah.
+  const textBlockX = hasLogo ? MARGIN_X + logoSize + 8 : MARGIN_X;
+  const textBlockW = hasLogo ? CONTENT_W - logoSize - 8 : CONTENT_W;
+  const textCenterX = textBlockX + textBlockW / 2;
+
+  if (hasLogo) {
+    try {
+      doc.addImage(logoDataUrl, imageFormatFromDataUrl(logoDataUrl), MARGIN_X, headerTop, logoSize, logoSize);
+    } catch (_e) { /* logo korup/tak terbaca — lanjut tanpa logo */ }
+  }
+
+  y = headerTop + 2;
   doc.setFont('times', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(15.5);
+  doc.setTextColor(...NAVY);
+  doc.text(clinicName.toUpperCase(), textCenterX, y, { align: 'center' });
+  y += 5.2;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
   doc.setTextColor(...GOLD);
-  doc.text(clinicName.toUpperCase(), PAGE_W / 2, y, { align: 'center' });
-  y += 5.5;
+  doc.text('KLINIK FISIOTERAPI', textCenterX, y, { align: 'center' });
+  y += 4.2;
 
   const contactLine = [clinic.address, clinic.phone, clinic.email].filter(Boolean).join('  •  ');
   if (contactLine) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.3);
+    doc.setFontSize(8.1);
     doc.setTextColor(...MUTED);
-    const lines = doc.splitTextToSize(contactLine, CONTENT_W);
-    lines.forEach((line) => { doc.text(line, PAGE_W / 2, y, { align: 'center' }); y += 4; });
+    const lines = doc.splitTextToSize(contactLine, textBlockW);
+    lines.forEach((line) => { doc.text(line, textCenterX, y, { align: 'center' }); y += 3.8; });
   }
-  y += 2;
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.6);
+
+  y = Math.max(y, headerTop + logoSize) + 3;
+  doc.setDrawColor(...NAVY);
+  doc.setLineWidth(0.7);
   doc.line(MARGIN_X, y, PAGE_W - MARGIN_X, y);
-  y += 3;
-  doc.setDrawColor(...GOLD_SOFT);
-  doc.setLineWidth(0.3);
+  y += 1.4;
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.35);
   doc.line(MARGIN_X, y, PAGE_W - MARGIN_X, y);
   y += 12;
 

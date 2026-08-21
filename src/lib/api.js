@@ -4919,6 +4919,22 @@ export const getWarningLettersForTherapist = async (physiotherapistId) => {
   }, 'getWarningLettersForTherapist', { retry: true });
 };
 
+// Dipakai untuk menghitung nomor surat berikutnya secara sekaligus di seluruh
+// klinik (bukan per-terapis) supaya tidak ada nomor surat yang bentrok antar
+// terapis berbeda.
+export const getWarningLettersForClinic = async (clinicId) => {
+  return safeQuery(async () => {
+    if (!clinicId) return { data: [] };
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('id, level, letter_number, letter_date')
+      .eq('clinic_id', clinicId);
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getWarningLettersForClinic', { retry: true });
+};
+
 export const getMyWarningLetters = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
