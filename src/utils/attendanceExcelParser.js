@@ -129,26 +129,51 @@ export const parseAttendanceExcel = (data, { type = 'binary' } = {}) => {
 
 /**
  * Flattens parsed employee blocks into flat day records with lateness
- * computed against per-department shift settings.
+ * computed against the employee's actual booking-calendar schedule for that
+ * day of week when available (therapist_schedules), falling back to a
+ * per-department expected check-in time, then a global default.
+ *
+ * `scheduleLookup` is keyed by lower-cased employee name -> { [dayOfWeek 0-6]: 'HH:MM' },
+ * where dayOfWeek follows JS Date#getDay() (0 = Sunday).
  */
-export const buildAttendanceRecords = (parsed, shiftSettingsByDept = {}, defaultShift = { expected_check_in: '08:00', grace_minutes: 15 }) => {
+export const buildAttendanceRecords = (
+  parsed,
+  { shiftSettingsByDept = {}, scheduleLookup = {}, defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
+) => {
   const records = [];
   for (const emp of parsed.employees) {
+    const empSchedule = scheduleLookup[emp.name?.trim().toLowerCase()];
     for (const d of emp.days) {
       const date = attendanceDateForDay(parsed.periodStart, d.day);
       if (!date) continue;
 
       let status;
       let lateMinutes = 0;
+      let expectedCheckIn = null;
+      let expectedSource = null;
 
       if (!d.checkOut) {
         // Only one punch recorded for the day — could be a missed check-in
         // or a missed check-out, so lateness can't be determined reliably.
         status = 'incomplete';
       } else {
-        const shift = (emp.department && shiftSettingsByDept[emp.department]) || defaultShift;
-        const [eh, em] = (shift.expected_check_in || defaultShift.expected_check_in).split(':').map(Number);
-        const graceMinutes = shift.grace_minutes ?? defaultShift.grace_minutes ?? 0;
+        const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+        const scheduledStart = empSchedule?.[dayOfWeek];
+        const deptShift = emp.department && shiftSettingsByDept[emp.department];
+
+        if (scheduledStart) {
+          expectedCheckIn = scheduledStart.slice(0, 5);
+          expectedSource = 'schedule';
+        } else if (deptShift?.expected_check_in) {
+          expectedCheckIn = deptShift.expected_check_in.slice(0, 5);
+          expectedSource = 'department';
+        } else {
+          expectedCheckIn = defaultShift.expected_check_in;
+          expectedSource = 'default';
+        }
+        const graceMinutes = deptShift?.grace_minutes ?? defaultShift.grace_minutes ?? 0;
+
+        const [eh, em] = expectedCheckIn.split(':').map(Number);
         const expectedMinutes = eh * 60 + em;
         const [ch, cm] = d.checkIn.split(':').map(Number);
         const actualMinutes = ch * 60 + cm;
@@ -168,6 +193,8 @@ export const buildAttendanceRecords = (parsed, shiftSettingsByDept = {}, default
         raw_punches: d.rawPunches,
         status,
         late_minutes: lateMinutes,
+        expected_check_in: expectedCheckIn,
+        expected_source: expectedSource,
       });
     }
   }

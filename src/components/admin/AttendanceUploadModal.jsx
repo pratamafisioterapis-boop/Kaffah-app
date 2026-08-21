@@ -15,7 +15,7 @@ const STATUS_LABEL = {
   incomplete: { label: 'Absen Tidak Lengkap', className: 'bg-amber-500' },
 };
 
-const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept }) => {
+const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept, scheduleLookup }) => {
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
@@ -58,7 +58,10 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
           });
           return;
         }
-        const built = buildAttendanceRecords(result, shiftSettingsByDept || {});
+        const built = buildAttendanceRecords(result, {
+          shiftSettingsByDept: shiftSettingsByDept || {},
+          scheduleLookup: scheduleLookup || {},
+        });
         setParsed(result);
         setRecords(built);
         setFileName(selectedFile.name);
@@ -115,6 +118,8 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                 <AlertDescription className="text-blue-700 text-sm mt-1">
                   Gunakan file "Employee Attendance Record" asli dari mesin fingerprint/absensi (berisi User ID, Name, Department,
                   dan jam masuk-pulang per tanggal). Data akan dicocokkan otomatis dengan nama fisioterapis yang terdaftar bila cocok.
+                  Jam masuk yang diharapkan mengikuti jadwal praktik fisioterapis pada hari itu di kalender booking; bila fisioterapis
+                  tidak punya jadwal pada hari tersebut atau karyawan bukan fisioterapis, sistem memakai jam default per departemen.
                   Upload ulang periode yang sama akan menimpa data sebelumnya, bukan menduplikasi.
                 </AlertDescription>
               </Alert>
@@ -178,6 +183,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                         <TableHead>Departemen</TableHead>
                         <TableHead>Masuk</TableHead>
                         <TableHead>Pulang</TableHead>
+                        <TableHead>Jadwal Masuk</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -189,6 +195,14 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                           <TableCell>{r.department || '-'}</TableCell>
                           <TableCell>{r.check_in || '-'}</TableCell>
                           <TableCell>{r.check_out || '-'}</TableCell>
+                          <TableCell className="text-xs">
+                            {r.expected_check_in ? (
+                              <span className={r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
+                                {r.expected_check_in}
+                                {r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
+                              </span>
+                            ) : '-'}
+                          </TableCell>
                           <TableCell>
                             <Badge className={STATUS_LABEL[r.status]?.className}>
                               {STATUS_LABEL[r.status]?.label}

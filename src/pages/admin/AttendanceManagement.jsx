@@ -16,6 +16,7 @@ import {
   getAttendanceShiftSettings,
   upsertAttendanceShiftSetting,
   deleteAttendanceShiftSetting,
+  getAttendanceScheduleLookup,
 } from '@/lib/api';
 
 const STATUS_LABEL = {
@@ -31,6 +32,7 @@ const AttendanceManagement = () => {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [shiftSettings, setShiftSettings] = useState([]);
+  const [scheduleLookup, setScheduleLookup] = useState({});
 
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -66,7 +68,13 @@ const AttendanceManagement = () => {
     setShiftSettings(data || []);
   }, []);
 
+  const loadScheduleLookup = useCallback(async () => {
+    const { data } = await getAttendanceScheduleLookup();
+    setScheduleLookup(data || {});
+  }, []);
+
   useEffect(() => { loadShiftSettings(); }, [loadShiftSettings]);
+  useEffect(() => { loadScheduleLookup(); }, [loadScheduleLookup]);
   useEffect(() => { loadRecords(); }, [loadRecords]);
 
   const departments = useMemo(() => {
@@ -254,6 +262,7 @@ const AttendanceManagement = () => {
         onClose={() => setUploadOpen(false)}
         onSuccess={loadRecords}
         shiftSettingsByDept={shiftSettingsByDept}
+        scheduleLookup={scheduleLookup}
       />
     </div>
   );
@@ -303,7 +312,9 @@ const ShiftSettingsPanel = ({ shiftSettings, departments, onChanged }) => {
       <CardContent className="space-y-4">
         <p className="text-xs text-slate-500 flex items-start gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
-          Jam masuk yang diharapkan dipakai untuk menandai keterlambatan saat upload absensi. Departemen tanpa pengaturan memakai default 08:00 (toleransi 15 menit).
+          Untuk fisioterapis, jam masuk yang diharapkan otomatis mengikuti jadwal praktik pada hari itu di kalender booking (atur di menu Physiotherapist Management).
+          Pengaturan di bawah ini hanya dipakai sebagai cadangan — untuk karyawan non-fisioterapis, atau saat fisioterapis tidak punya jadwal pada hari tersebut.
+          Departemen tanpa pengaturan memakai default 08:00 (toleransi 15 menit).
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div>
