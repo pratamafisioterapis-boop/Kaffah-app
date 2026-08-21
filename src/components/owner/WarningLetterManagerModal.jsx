@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  getWarningLettersForTherapist, upsertWarningLetter, deleteWarningLetter, getCurrentClinic,
+  getWarningLettersForTherapist, getWarningLettersForClinic, upsertWarningLetter, deleteWarningLetter, getCurrentClinic,
   markWarningLetterIssued, uploadSignedWarningLetterFile, markWarningLetterAcknowledged, getWarningLetterSignedFileUrl,
 } from '@/lib/api';
 import { generateWarningLetterPDF, warningLetterFileName, WARNING_LEVEL_LABEL } from '@/lib/warningLetterGenerator';
@@ -32,17 +32,23 @@ const LEVEL_BADGE_CLASS = {
   SP3: 'bg-red-50 text-red-700 border border-red-200',
 };
 
-const nextLetterNumber = (records, level) => {
-  const countThisLevel = records.filter((r) => r.level === level).length + 1;
+// Nomor surat dihitung dari seluruh surat se-klinik (bukan per-terapis) dan
+// direset tiap tahun, supaya nomor selalu unik & otomatis lanjut/naik setiap
+// kali surat baru dibuat, walau untuk terapis yang berbeda.
+const nextLetterNumber = (clinicLetters, level) => {
   const now = new Date();
+  const year = now.getFullYear();
+  const countThisLevel = clinicLetters.filter((r) => (
+    r.level === level && r.letter_date && new Date(r.letter_date).getFullYear() === year
+  )).length + 1;
   const roman = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][now.getMonth() + 1];
-  return `${String(countThisLevel).padStart(3, '0')}/${level}/KAFFAH/${roman}/${now.getFullYear()}`;
+  return `${String(countThisLevel).padStart(3, '0')}/${level}/KAFFAH/${roman}/${year}`;
 };
 
-const emptyForm = (records) => ({
+const emptyForm = (clinicLetters) => ({
   id: null,
   level: 'SP1',
-  letter_number: nextLetterNumber(records, 'SP1'),
+  letter_number: nextLetterNumber(clinicLetters, 'SP1'),
   letter_date: format(new Date(), 'yyyy-MM-dd'),
   letter_city: 'Balikpapan',
   violation_date: format(new Date(), 'yyyy-MM-dd'),
@@ -53,6 +59,7 @@ const emptyForm = (records) => ({
 const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
   const { toast } = useToast();
   const [records, setRecords] = useState([]);
+  const [clinicLetters, setClinicLetters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clinic, setClinic] = useState(null);
@@ -77,14 +84,16 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal Memuat', description: error.message });
     }
+    const { data: clinicLettersData } = await getWarningLettersForClinic(clinicData?.id);
     setClinic(clinicData || null);
     setRecords(recordsData || []);
-    setForm(emptyForm(recordsData || []));
+    setClinicLetters(clinicLettersData || []);
+    setForm(emptyForm(clinicLettersData || []));
     setLoading(false);
   };
 
   const handleNewLetter = () => {
-    setForm(emptyForm(records));
+    setForm(emptyForm(clinicLetters));
   };
 
   const handleEditRecord = (record) => {
@@ -104,7 +113,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
     setForm((prev) => ({
       ...prev,
       level,
-      letter_number: prev.id ? prev.letter_number : nextLetterNumber(records, level),
+      letter_number: prev.id ? prev.letter_number : nextLetterNumber(clinicLetters, level),
     }));
   };
 
@@ -130,9 +139,9 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
     return true;
   };
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     if (!validate()) return;
-    const doc = generateWarningLetterPDF(buildRecordForPdf(form), clinic || {}, therapist || {});
+    const doc = await generateWarningLetterPDF(buildRecordForPdf(form), clinic || {}, therapist || {});
     setPreviewUrl(URL.createObjectURL(doc.output('blob')));
   };
 
@@ -170,8 +179,12 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
       const exists = prev.some((r) => r.id === record.id);
       return exists ? prev.map((r) => (r.id === record.id ? record : r)) : [record, ...prev];
     });
+    setClinicLetters((prev) => {
+      const exists = prev.some((r) => r.id === record.id);
+      return exists ? prev.map((r) => (r.id === record.id ? record : r)) : [record, ...prev];
+    });
 
-    const doc = generateWarningLetterPDF(record, clinic || {}, therapist || {});
+    const doc = await generateWarningLetterPDF(record, clinic || {}, therapist || {});
     doc.save(warningLetterFileName(record, therapist));
   };
 
@@ -180,8 +193,10 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
     const { success, error } = await deleteWarningLetter(id);
     if (success) {
       const remaining = records.filter((r) => r.id !== id);
+      const remainingClinicLetters = clinicLetters.filter((r) => r.id !== id);
       setRecords(remaining);
-      if (form?.id === id) setForm(emptyForm(remaining));
+      setClinicLetters(remainingClinicLetters);
+      if (form?.id === id) setForm(emptyForm(remainingClinicLetters));
       toast({ title: 'Terhapus', description: 'Surat Peringatan telah dihapus.' });
     } else {
       toast({ variant: 'destructive', title: 'Gagal', description: error?.message });
@@ -219,7 +234,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
       setPreviewUrl(url);
       return;
     }
-    const doc = generateWarningLetterPDF(record, clinic || {}, therapist || {});
+    const doc = await generateWarningLetterPDF(record, clinic || {}, therapist || {});
     setViewingId(null);
     setPreviewUrl(URL.createObjectURL(doc.output('blob')));
   };
@@ -238,7 +253,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
       link.remove();
       return;
     }
-    const doc = generateWarningLetterPDF(record, clinic || {}, therapist || {});
+    const doc = await generateWarningLetterPDF(record, clinic || {}, therapist || {});
     setViewingId(null);
     doc.save(warningLetterFileName(record, therapist));
   };

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, AlertTriangle, Eye, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getMyWarningLetters, getWarningLetterSignedFileUrl } from '@/lib/api';
+import { getMyWarningLetters, getWarningLetterSignedFileUrl, getCurrentClinic } from '@/lib/api';
 import { generateWarningLetterPDF, warningLetterFileName } from '@/lib/warningLetterGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
@@ -16,6 +16,7 @@ const LEVEL_BADGE_CLASS = {
 
 const TherapistWarningLetterList = ({ therapist }) => {
   const [records, setRecords] = useState([]);
+  const [clinic, setClinic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -26,8 +27,12 @@ const TherapistWarningLetterList = ({ therapist }) => {
 
   const fetchRecords = async () => {
     setLoading(true);
-    const { data } = await getMyWarningLetters();
+    const [{ data }, { data: clinicData }] = await Promise.all([
+      getMyWarningLetters(),
+      getCurrentClinic(),
+    ]);
     setRecords(data || []);
+    setClinic(clinicData || null);
     setLoading(false);
   };
 
@@ -36,7 +41,7 @@ const TherapistWarningLetterList = ({ therapist }) => {
       const { data: url } = await getWarningLetterSignedFileUrl(record.signed_file_path);
       return url;
     }
-    const doc = generateWarningLetterPDF(record, {}, therapist || {});
+    const doc = await generateWarningLetterPDF(record, clinic || {}, therapist || {});
     return URL.createObjectURL(doc.output('blob'));
   };
 
