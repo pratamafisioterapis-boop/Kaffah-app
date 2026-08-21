@@ -40,7 +40,8 @@ const iconMap = {
   Award,
   UploadCloud,
   UserCog,
-  MonitorPlay
+  MonitorPlay,
+  Clock
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -241,7 +242,7 @@ const isPWA =
      });
 
      if (role === 'admin') {
-        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang'];
+        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang', 'Absensi Karyawan'];
         const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
