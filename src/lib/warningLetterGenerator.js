@@ -88,7 +88,7 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
     const lines = doc.splitTextToSize(text, CONTENT_W);
     lines.forEach((line) => {
       ensureSpace(lineH);
-      const x = align === 'left' ? MARGIN_X : PAGE_W / 2;
+      const x = align === 'left' ? MARGIN_X : (align === 'right' ? PAGE_W - MARGIN_X : PAGE_W / 2);
       doc.text(line, x, y, { align });
       y += lineH;
     });
@@ -119,14 +119,13 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 4, 'F');
 
-  const logoSize = 20;
-  const headerTop = 12;
+  const logoSize = 26;
+  const headerTop = 10;
   const hasLogo = !!logoDataUrl;
-  // Logo di kiri, identitas klinik rata tengah pada sisa lebar — tetap simetris
-  // baik saat logo ada maupun belum diunggah.
-  const textBlockX = hasLogo ? MARGIN_X + logoSize + 8 : MARGIN_X;
-  const textBlockW = hasLogo ? CONTENT_W - logoSize - 8 : CONTENT_W;
-  const textCenterX = textBlockX + textBlockW / 2;
+  // Logo di kiri, identitas klinik rata kiri di sebelahnya — pola kop surat
+  // resmi standar (bukan simetris/rata tengah).
+  const textBlockX = hasLogo ? MARGIN_X + logoSize + 6 : MARGIN_X;
+  const textBlockW = hasLogo ? CONTENT_W - logoSize - 6 : CONTENT_W;
 
   if (hasLogo) {
     try {
@@ -134,26 +133,20 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
     } catch (_e) { /* logo korup/tak terbaca — lanjut tanpa logo */ }
   }
 
-  y = headerTop + 2;
+  y = headerTop + 5;
   doc.setFont('times', 'bold');
-  doc.setFontSize(15.5);
+  doc.setFontSize(16.5);
   doc.setTextColor(...NAVY);
-  doc.text(clinicName.toUpperCase(), textCenterX, y, { align: 'center' });
-  y += 5.2;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...GOLD);
-  doc.text('KLINIK FISIOTERAPI', textCenterX, y, { align: 'center' });
-  y += 4.2;
+  doc.text(clinicName.toUpperCase(), textBlockX, y);
+  y += 5.6;
 
   const contactLine = [clinic.address, clinic.phone, clinic.email].filter(Boolean).join('  •  ');
   if (contactLine) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.1);
+    doc.setFontSize(8.3);
     doc.setTextColor(...MUTED);
     const lines = doc.splitTextToSize(contactLine, textBlockW);
-    lines.forEach((line) => { doc.text(line, textCenterX, y, { align: 'center' }); y += 3.8; });
+    lines.forEach((line) => { doc.text(line, textBlockX, y); y += 3.9; });
   }
 
   y = Math.max(y, headerTop + logoSize) + 3;
