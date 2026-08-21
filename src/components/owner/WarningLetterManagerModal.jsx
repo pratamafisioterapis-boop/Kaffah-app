@@ -269,6 +269,12 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
           </DialogDescription>
         </DialogHeader>
 
+        {!clinic?.owner_full_name && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+            Nama & jabatan pimpinan klinik belum diisi, sehingga kolom tanda tangan "Pihak Yang Menerbitkan" pada PDF akan kosong. Isi dulu di menu <span className="font-semibold">Pengaturan &gt; Akun &amp; Klinik</span>.
+          </p>
+        )}
+
         <div className="rounded-xl border border-slate-200 p-4 space-y-4 bg-slate-50/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
