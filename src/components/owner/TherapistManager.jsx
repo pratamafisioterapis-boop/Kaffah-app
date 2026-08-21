@@ -4,10 +4,11 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
-  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
 import MouManagerModal from '@/components/owner/MouManagerModal';
+import WarningLetterManagerModal from '@/components/owner/WarningLetterManagerModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,6 +71,8 @@ const TherapistManager = () => {
   // MOU State
   const [mouDialogOpen, setMouDialogOpen] = useState(false);
   const [selectedTherapistForMou, setSelectedTherapistForMou] = useState(null);
+  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [selectedTherapistForWarning, setSelectedTherapistForWarning] = useState(null);
 
   useEffect(() => {
     fetchTherapists();
@@ -517,6 +520,9 @@ const headerColorMap = {
                    </Button>
                    <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForMou(therapist); setMouDialogOpen(true); }} title="MOU Kemitraan">
                      <ScrollText className="w-3.5 h-3.5" />
+                   </Button>
+                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-red-500/60 text-white border-0" onClick={() => { setSelectedTherapistForWarning(therapist); setWarningDialogOpen(true); }} title="Surat Peringatan (SP)">
+                     <AlertTriangle className="w-3.5 h-3.5" />
                    </Button>
                    <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
                      <Edit2 className="w-3.5 h-3.5" />
@@ -1068,6 +1074,12 @@ const headerColorMap = {
         open={mouDialogOpen}
         onClose={() => setMouDialogOpen(false)}
         therapist={selectedTherapistForMou}
+      />
+
+      <WarningLetterManagerModal
+        open={warningDialogOpen}
+        onClose={() => setWarningDialogOpen(false)}
+        therapist={selectedTherapistForWarning}
       />
     </div>
   );
