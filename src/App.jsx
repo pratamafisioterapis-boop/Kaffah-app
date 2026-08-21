@@ -13,37 +13,38 @@ import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
+import { lazyRetry } from '@/lib/lazyRetry';
 
 // Lazy Pages
-const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
-const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
-const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
-const SmartBookingPage = React.lazy(() => import('@/pages/SmartBookingPage'));
-const InvoiceViewPage = React.lazy(() => import('@/pages/InvoiceViewPage'));
-const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
-const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
-const TeamPage = React.lazy(() => import('@/pages/TeamPage'));
-const LocationPage = React.lazy(() => import('@/pages/LocationPage'));
-const FaqPage = React.lazy(() => import('@/pages/FaqPage'));
-const ServicesIndexPage = React.lazy(() => import('@/pages/layanan/ServicesIndexPage'));
-const ServiceDetailPage = React.lazy(() => import('@/pages/layanan/ServiceDetailPage'));
-const BlogIndexPage = React.lazy(() => import('@/pages/artikel/BlogIndexPage'));
-const BlogArticlePage = React.lazy(() => import('@/pages/artikel/BlogArticlePage'));
-const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
-const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
-const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
-const InventoryTakeOutPage = React.lazy(() => import('@/pages/admin/InventoryTakeOut'));
-const FollowUpManagementPage = React.lazy(() => import('@/pages/admin/FollowUpManagementPage'));
+const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
+const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
+const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
+const SmartBookingPage = React.lazy(lazyRetry(() => import('@/pages/SmartBookingPage'), 'SmartBookingPage'));
+const InvoiceViewPage = React.lazy(lazyRetry(() => import('@/pages/InvoiceViewPage'), 'InvoiceViewPage'));
+const PricingPage = React.lazy(lazyRetry(() => import('@/pages/PricingPage'), 'PricingPage'));
+const AboutPage = React.lazy(lazyRetry(() => import('@/pages/AboutPage'), 'AboutPage'));
+const TeamPage = React.lazy(lazyRetry(() => import('@/pages/TeamPage'), 'TeamPage'));
+const LocationPage = React.lazy(lazyRetry(() => import('@/pages/LocationPage'), 'LocationPage'));
+const FaqPage = React.lazy(lazyRetry(() => import('@/pages/FaqPage'), 'FaqPage'));
+const ServicesIndexPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServicesIndexPage'), 'ServicesIndexPage'));
+const ServiceDetailPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServiceDetailPage'), 'ServiceDetailPage'));
+const BlogIndexPage = React.lazy(lazyRetry(() => import('@/pages/artikel/BlogIndexPage'), 'BlogIndexPage'));
+const BlogArticlePage = React.lazy(lazyRetry(() => import('@/pages/artikel/BlogArticlePage'), 'BlogArticlePage'));
+const PackageRecapsOwner = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'PackageRecapsOwner'));
+const PackageRecapsAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/PackageRecaps'), 'PackageRecapsAdmin'));
+const InventoryStockPage = React.lazy(lazyRetry(() => import('@/pages/owner/InventoryStock'), 'InventoryStockPage'));
+const InventoryTakeOutPage = React.lazy(lazyRetry(() => import('@/pages/admin/InventoryTakeOut'), 'InventoryTakeOutPage'));
+const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
 
 // Dashboard Imports
-const OwnerDashboard = React.lazy(() => import('@/pages/OwnerDashboard'));
-const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard'));
-const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
-const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
-const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
-const PemilihApp = React.lazy(() => import('@/pages/pemilih/PemilihApp'));
-const RelawanUploadKTP = React.lazy(() => import('@/pages/relawan/RelawanUploadKTP'));
-const PemilihDpcApp = React.lazy(() => import('@/pages/dpc/PemilihDpcApp'));
+const OwnerDashboard = React.lazy(lazyRetry(() => import('@/pages/OwnerDashboard'), 'OwnerDashboard'));
+const SuperAdminDashboard = React.lazy(lazyRetry(() => import('@/pages/SuperAdminDashboard'), 'SuperAdminDashboard'));
+const AdminDashboard = React.lazy(lazyRetry(() => import('@/pages/AdminDashboard'), 'AdminDashboard'));
+const TherapistDashboard = React.lazy(lazyRetry(() => import('@/pages/TherapistDashboard'), 'TherapistDashboard'));
+const RotasiApp = React.lazy(lazyRetry(() => import('@/pages/rotasi/RotasiApp'), 'RotasiApp'));
+const PemilihApp = React.lazy(lazyRetry(() => import('@/pages/pemilih/PemilihApp'), 'PemilihApp'));
+const RelawanUploadKTP = React.lazy(lazyRetry(() => import('@/pages/relawan/RelawanUploadKTP'), 'RelawanUploadKTP'));
+const PemilihDpcApp = React.lazy(lazyRetry(() => import('@/pages/dpc/PemilihDpcApp'), 'PemilihDpcApp'));
 
 
 // Loading Component
@@ -151,9 +152,13 @@ function App() {
   });
 
   useEffect(() => {
-    // App mounted successfully — clear the stale-chunk reload guard so a
-    // future deploy can trigger one more auto-reload if needed.
+    // App mounted successfully — clear the stale-chunk reload guards so a
+    // future deploy can trigger one more auto-reload if needed, instead of
+    // being permanently blocked by a guard tripped earlier this tab session.
     sessionStorage.removeItem('stale-chunk-reloaded');
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith('lazy-retry-reloaded-'))
+      .forEach((key) => sessionStorage.removeItem(key));
   }, []);
 
   if (!supabase) {
