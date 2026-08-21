@@ -4,11 +4,14 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
-  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle, FolderClock
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
 import MouManagerModal from '@/components/owner/MouManagerModal';
 import WarningLetterManagerModal from '@/components/owner/WarningLetterManagerModal';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -507,7 +510,7 @@ const headerColorMap = {
                   ? headerColorMap[therapist.theme_color] || "from-blue-500 to-cyan-500"
                   : "from-slate-400 to-slate-500"
               )}>
-                <div className={cn("absolute top-3 right-3 flex", isPWA ? "gap-1" : "gap-1.5")}>
+                <div className="absolute top-3 right-3 flex items-center gap-2">
                    <div className="bg-white/90 backdrop-blur rounded-full p-0.5 flex items-center shadow-sm">
                       <Switch
                          checked={therapist.is_active}
@@ -515,21 +518,32 @@ const headerColorMap = {
                          className="data-[state=checked]:bg-green-500 scale-90"
                       />
                    </div>
-                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForPayroll(therapist); setPayrollDialogOpen(true); }} title="Payroll / Slip Gaji">
-                     <Receipt className="w-3.5 h-3.5" />
-                   </Button>
-                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => { setSelectedTherapistForMou(therapist); setMouDialogOpen(true); }} title="MOU Kemitraan">
-                     <ScrollText className="w-3.5 h-3.5" />
-                   </Button>
-                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-red-500/60 text-white border-0" onClick={() => { setSelectedTherapistForWarning(therapist); setWarningDialogOpen(true); }} title="Surat Peringatan (SP)">
-                     <AlertTriangle className="w-3.5 h-3.5" />
-                   </Button>
-                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)}>
-                     <Edit2 className="w-3.5 h-3.5" />
-                   </Button>
-                   <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-red-500/80 text-white border-0" onClick={() => handleDelete(therapist.id)}>
-                     <Trash2 className="w-3.5 h-3.5" />
-                   </Button>
+                   <div className="flex items-center gap-1.5">
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" title="Dokumen Terapis">
+                           <FolderClock className="w-3.5 h-3.5" />
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => { setSelectedTherapistForPayroll(therapist); setPayrollDialogOpen(true); }}>
+                           <Receipt className="w-3.5 h-3.5 mr-2 text-slate-500" /> Payroll / Slip Gaji
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => { setSelectedTherapistForMou(therapist); setMouDialogOpen(true); }}>
+                           <ScrollText className="w-3.5 h-3.5 mr-2 text-slate-500" /> MOU Kemitraan
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => { setSelectedTherapistForWarning(therapist); setWarningDialogOpen(true); }}>
+                           <AlertTriangle className="w-3.5 h-3.5 mr-2 text-red-500" /> Surat Peringatan (SP)
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                     <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" onClick={() => handleOpenDialog(therapist)} title="Edit Profil">
+                       <Edit2 className="w-3.5 h-3.5" />
+                     </Button>
+                     <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-red-500/80 text-white border-0" onClick={() => handleDelete(therapist.id)} title="Hapus">
+                       <Trash2 className="w-3.5 h-3.5" />
+                     </Button>
+                   </div>
                 </div>
               </div>
 
