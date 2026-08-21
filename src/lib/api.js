@@ -7855,3 +7855,34 @@ export const getAttendanceRecords = async ({ startDate, endDate, department, emp
     return { data: data || [], success: true, error: null };
   }, 'getAttendanceRecords');
 };
+
+/**
+ * Returns each therapist's weekly practice-hour schedule (the same schedule
+ * that drives the booking calendar) as a lookup keyed by lower-cased name:
+ * { [name]: { [dayOfWeek 0-6]: 'HH:MM:SS' } }. Used to determine the
+ * expected check-in time per attendance day instead of a flat default.
+ */
+export const getAttendanceScheduleLookup = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: {}, success: true, error: null };
+
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .select('name, therapist_schedules(day_of_week, start_time, is_active)')
+      .eq('clinic_id', clinicId);
+    if (error) return { error };
+
+    const lookup = {};
+    (data || []).forEach((t) => {
+      if (!t.name) return;
+      const byDay = {};
+      (t.therapist_schedules || []).forEach((s) => {
+        if (s.is_active && s.start_time) byDay[s.day_of_week] = s.start_time;
+      });
+      if (Object.keys(byDay).length > 0) lookup[t.name.trim().toLowerCase()] = byDay;
+    });
+
+    return { data: lookup, success: true, error: null };
+  }, 'getAttendanceScheduleLookup');
+};
