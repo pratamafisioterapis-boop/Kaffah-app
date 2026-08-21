@@ -4903,6 +4903,162 @@ export const getMouSignedFileUrl = async (path) => {
   }, 'getMouSignedFileUrl');
 };
 
+// ============================================
+// SURAT PERINGATAN (SP) - Pelanggaran Terapis
+// ============================================
+export const getWarningLettersForTherapist = async (physiotherapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('*')
+      .eq('physiotherapist_id', physiotherapistId)
+      .order('letter_date', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getWarningLettersForTherapist', { retry: true });
+};
+
+export const getMyWarningLetters = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [] };
+
+    const { data: therapistRow } = await supabase
+      .from('physiotherapists')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!therapistRow?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('*')
+      .eq('physiotherapist_id', therapistRow.id)
+      .order('letter_date', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getMyWarningLetters', { retry: true });
+};
+
+export const upsertWarningLetter = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const record = {
+      clinic_id: payload.clinic_id,
+      physiotherapist_id: payload.physiotherapist_id,
+      letter_number: payload.letter_number,
+      level: payload.level,
+      letter_date: payload.letter_date,
+      letter_city: payload.letter_city,
+      violation_date: payload.violation_date,
+      violation_description: payload.violation_description,
+      consequence_note: payload.consequence_note || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let result;
+    if (payload.id) {
+      result = await supabase
+        .from('therapist_warning_letters')
+        .update(record)
+        .eq('id', payload.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('therapist_warning_letters')
+        .insert({ ...record, created_by: userId || null })
+        .select()
+        .single();
+    }
+
+    if (result.error) return { error: result.error };
+    return { data: result.data, success: true, error: null };
+  }, 'upsertWarningLetter');
+};
+
+export const markWarningLetterIssued = async (id) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .update({ status: 'issued', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'draft')
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'markWarningLetterIssued');
+};
+
+export const deleteWarningLetter = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('therapist_warning_letters').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteWarningLetter');
+};
+
+// Bucket privat (dokumen kepegawaian) — dibaca lewat signed URL, mengikuti
+// pola mou-documents.
+export const uploadSignedWarningLetterFile = async (file, physiotherapistId, letterId) => {
+  return safeQuery(async () => {
+    if (!file) return { error: { message: 'File tidak ditemukan' } };
+    const ext = file.name.split('.').pop();
+    const path = `${physiotherapistId}/${letterId}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('warning-letters')
+      .upload(path, file, { upsert: true, contentType: file.type || 'application/pdf' });
+
+    if (uploadError) return { error: uploadError };
+    return { data: { path, name: file.name }, success: true, error: null };
+  }, 'uploadSignedWarningLetterFile');
+};
+
+export const markWarningLetterAcknowledged = async (letterId, { path, name }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .update({
+        status: 'acknowledged',
+        signed_file_path: path,
+        signed_file_name: name,
+        signed_file_uploaded_at: new Date().toISOString(),
+        signed_file_uploaded_by: userId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', letterId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'markWarningLetterAcknowledged');
+};
+
+export const getWarningLetterSignedFileUrl = async (path) => {
+  return safeQuery(async () => {
+    if (!path) return { error: { message: 'Path file tidak ditemukan' } };
+    const { data, error } = await supabase.storage
+      .from('warning-letters')
+      .createSignedUrl(path, 60 * 10);
+
+    if (error) return { error };
+    return { data: data?.signedUrl, success: true, error: null };
+  }, 'getWarningLetterSignedFileUrl');
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,

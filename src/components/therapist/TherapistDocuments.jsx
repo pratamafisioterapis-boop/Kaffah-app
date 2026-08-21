@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadCloud, Image as ImageIcon, Receipt, ScrollText } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Receipt, ScrollText, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TherapistDriveUpload from '@/components/therapist/TherapistDriveUpload';
 import TherapistSharedMedia from '@/components/therapist/TherapistSharedMedia';
@@ -7,9 +7,10 @@ import TherapistPayrollList from '@/components/therapist/TherapistPayrollList';
 import PayrollAuthGate from '@/components/therapist/PayrollAuthGate';
 import TherapistMouList from '@/components/therapist/TherapistMouList';
 import MouAuthGate from '@/components/therapist/MouAuthGate';
+import TherapistWarningLetterList from '@/components/therapist/TherapistWarningLetterList';
 
 const ACTIVE_TAB_KEY = 'kaffah_therapist_documents_tab';
-const VALID_TABS = ['upload_konten', 'sharing_media', 'payroll', 'mou'];
+const VALID_TABS = ['upload_konten', 'sharing_media', 'payroll', 'mou', 'sp'];
 
 // Tab aktif disimpan di sessionStorage supaya saat terapis pindah ke aplikasi
 // email untuk mengecek kode OTP lalu kembali, tampilan tetap di tab
@@ -44,6 +45,9 @@ const TherapistDocuments = ({ therapist }) => {
           <TabsTrigger value="mou" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <ScrollText className="w-3.5 h-3.5" /> MOU Kemitraan
           </TabsTrigger>
+          <TabsTrigger value="sp" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+            <AlertTriangle className="w-3.5 h-3.5" /> Surat Peringatan
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -62,6 +66,9 @@ const TherapistDocuments = ({ therapist }) => {
             <MouAuthGate therapist={therapist}>
               <TherapistMouList />
             </MouAuthGate>
+          </TabsContent>
+          <TabsContent value="sp">
+            <TherapistWarningLetterList therapist={therapist} />
           </TabsContent>
         </div>
       </Tabs>
