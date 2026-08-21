@@ -35,6 +35,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' },
   { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
   { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
+  { label: 'Absensi Karyawan', path: '/admin/attendance', icon: 'Clock' },
   { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
   { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },
 ];

@@ -7737,3 +7737,121 @@ export const getPeriodGrowth = async ({ startDate, endDate }) => {
     };
   }, 'getPeriodGrowth', { retry: true });
 };
+
+// ===================== Employee Attendance (Absensi Karyawan) =====================
+
+const getMyClinicIdForAttendance = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return { clinicId: null, userId: null };
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  return { clinicId: userRow?.clinic_id || null, userId };
+};
+
+export const getAttendanceShiftSettings = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('employee_attendance_shift_settings')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('department', { ascending: true });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceShiftSettings');
+};
+
+export const upsertAttendanceShiftSetting = async ({ department, expected_check_in, grace_minutes }) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+    const { data, error } = await supabase
+      .from('employee_attendance_shift_settings')
+      .upsert({ clinic_id: clinicId, department, expected_check_in, grace_minutes }, { onConflict: 'clinic_id,department' })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertAttendanceShiftSetting');
+};
+
+export const deleteAttendanceShiftSetting = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('employee_attendance_shift_settings').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteAttendanceShiftSetting');
+};
+
+/**
+ * Bulk-imports parsed attendance day-records (see attendanceExcelParser.js).
+ * Rows are matched to an existing physiotherapist by exact (case-insensitive)
+ * name when possible, and upserted keyed by (clinic, employee name, date) so
+ * re-uploading the same period safely overwrites previous punches.
+ */
+export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
+  return safeQuery(async () => {
+    if (!rows || rows.length === 0) return { data: [], success: true, error: null };
+    const { clinicId, userId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+
+    const { data: therapists } = await supabase
+      .from('physiotherapists')
+      .select('id, name')
+      .eq('clinic_id', clinicId);
+    const nameToTherapistId = new Map((therapists || []).map((t) => [t.name?.trim().toLowerCase(), t.id]));
+
+    const payload = rows.map((r) => ({
+      clinic_id: clinicId,
+      physiotherapist_id: nameToTherapistId.get(r.employee_name?.trim().toLowerCase()) || null,
+      employee_external_id: r.employee_external_id || null,
+      employee_name: r.employee_name,
+      department: r.department || null,
+      attendance_date: r.attendance_date,
+      check_in: r.check_in || null,
+      check_out: r.check_out || null,
+      raw_punches: r.raw_punches || [],
+      status: r.status,
+      late_minutes: r.late_minutes || 0,
+      source_file_name: sourceFileName || null,
+      uploaded_by: userId || null,
+    }));
+
+    const CHUNK_SIZE = 500;
+    let imported = 0;
+    for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
+      const chunk = payload.slice(i, i + CHUNK_SIZE);
+      const { error } = await supabase
+        .from('employee_attendance_records')
+        .upsert(chunk, { onConflict: 'clinic_id,employee_name,attendance_date' });
+      if (error) return { error };
+      imported += chunk.length;
+    }
+
+    return { data: { imported }, success: true, error: null };
+  }, 'bulkUpsertAttendanceRecords');
+};
+
+export const getAttendanceRecords = async ({ startDate, endDate, department, employeeName, status } = {}) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+
+    let query = supabase
+      .from('employee_attendance_records')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('attendance_date', { ascending: false });
+
+    if (startDate) query = query.gte('attendance_date', startDate);
+    if (endDate) query = query.lte('attendance_date', endDate);
+    if (department) query = query.eq('department', department);
+    if (employeeName) query = query.eq('employee_name', employeeName);
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceRecords');
+};
