@@ -7878,9 +7878,16 @@ export const getAttendanceScheduleLookup = async () => {
     const therapists = (data || [])
       .filter((t) => t.name)
       .map((t) => {
+        // Each work day is stored as several ~90min bookable-slot rows
+        // sharing the same day_of_week (e.g. Monday: 09:00, 10:30, 12:00,
+        // 13:30, 15:00), not one row per day — the expected check-in is the
+        // EARLIEST slot's start_time for that day, not just any of them.
         const schedule = {};
         (t.therapist_schedules || []).forEach((s) => {
-          if (s.is_active && s.start_time) schedule[s.day_of_week] = s.start_time;
+          if (!s.is_active || !s.start_time) return;
+          if (!schedule[s.day_of_week] || s.start_time < schedule[s.day_of_week]) {
+            schedule[s.day_of_week] = s.start_time;
+          }
         });
         return { id: t.id, name: t.name, schedule };
       });
