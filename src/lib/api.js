@@ -7829,6 +7829,50 @@ export const deleteAttendanceShiftSetting = async (id) => {
 };
 
 /**
+ * Manual employee-name -> physiotherapist mappings, for attendance-machine
+ * nicknames the automatic word/prefix matcher can't safely resolve on its
+ * own (e.g. "dilla" for "Nurfadilah" — spelling doesn't share a common word
+ * or prefix). Checked before matchEmployeeNameToTherapist on every import.
+ */
+export const getAttendanceEmployeeAliases = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .select('id, employee_name, physiotherapist_id, physiotherapists(name)')
+      .eq('clinic_id', clinicId);
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceEmployeeAliases');
+};
+
+export const upsertAttendanceEmployeeAlias = async ({ employee_name, physiotherapist_id }) => {
+  return safeQuery(async () => {
+    const { clinicId, userId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .upsert(
+        { clinic_id: clinicId, employee_name, physiotherapist_id, created_by: userId || null },
+        { onConflict: 'clinic_id,employee_name' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertAttendanceEmployeeAlias');
+};
+
+export const deleteAttendanceEmployeeAlias = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('attendance_employee_aliases').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteAttendanceEmployeeAlias');
+};
+
+/**
  * Bulk-imports parsed attendance day-records (see attendanceExcelParser.js).
  * Rows are matched to an existing physiotherapist by exact (case-insensitive)
  * name when possible, and upserted keyed by (clinic, employee name, date) so
@@ -7844,10 +7888,15 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
       .from('physiotherapists')
       .select('id, name')
       .eq('clinic_id', clinicId);
+    const { data: aliases } = await supabase
+      .from('attendance_employee_aliases')
+      .select('employee_name, physiotherapist_id')
+      .eq('clinic_id', clinicId);
+    const aliasMap = new Map((aliases || []).map((a) => [a.employee_name.trim().toLowerCase(), a.physiotherapist_id]));
 
     const payload = rows.map((r) => ({
       clinic_id: clinicId,
-      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [])?.id || null,
+      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [], aliasMap)?.id || null,
       employee_external_id: r.employee_external_id || null,
       employee_name: r.employee_name,
       department: r.department || null,

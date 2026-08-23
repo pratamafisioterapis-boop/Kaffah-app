@@ -141,11 +141,11 @@ export const parseAttendanceExcel = (data, { type = 'binary' } = {}) => {
  */
 export const buildAttendanceRecords = (
   parsed,
-  { shiftSettingsByDept = {}, therapists = [], defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
+  { shiftSettingsByDept = {}, therapists = [], aliasMap = null, defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
 ) => {
   const records = [];
   for (const emp of parsed.employees) {
-    const matchedTherapist = matchEmployeeNameToTherapist(emp.name, therapists);
+    const matchedTherapist = matchEmployeeNameToTherapist(emp.name, therapists, aliasMap);
     const empSchedule = matchedTherapist?.schedule;
     for (const d of emp.days) {
       const date = attendanceDateForDay(parsed.periodStart, d.day);

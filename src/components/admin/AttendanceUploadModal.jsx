@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, FileSpreadsheet, Info, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, Info, CheckCircle, AlertTriangle, Loader2, Link2 } from 'lucide-react';
 import { parseAttendanceExcel, buildAttendanceRecords } from '@/utils/attendanceExcelParser';
-import { bulkUpsertAttendanceRecords } from '@/lib/api';
+import { bulkUpsertAttendanceRecords, upsertAttendanceEmployeeAlias } from '@/lib/api';
 
 const STATUS_LABEL = {
   on_time: { label: 'Tepat Waktu', className: 'bg-green-600' },
@@ -15,22 +16,25 @@ const STATUS_LABEL = {
   incomplete: { label: 'Absen Tidak Lengkap', className: 'bg-amber-500' },
 };
 
-const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept, therapists }) => {
+const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept, therapists, aliases, onAliasesChanged }) => {
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState('upload'); // upload, preview, importing, done
   const [fileName, setFileName] = useState('');
   const [parsed, setParsed] = useState(null);
-  const [records, setRecords] = useState([]);
   const [importing, setImporting] = useState(false);
   const [resultSummary, setResultSummary] = useState(null);
+  const [localAliases, setLocalAliases] = useState([]);
+  const [linkingPick, setLinkingPick] = useState({});
+  const [linkingBusy, setLinkingBusy] = useState(null);
+
+  useEffect(() => { setLocalAliases(aliases || []); }, [aliases]);
 
   const resetState = () => {
     setStep('upload');
     setFileName('');
     setParsed(null);
-    setRecords([]);
     setImporting(false);
     setResultSummary(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -40,6 +44,28 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
     resetState();
     onClose();
   };
+
+  const aliasMap = useMemo(
+    () => new Map((localAliases || []).map((a) => [a.employee_name.trim().toLowerCase(), a.physiotherapist_id])),
+    [localAliases]
+  );
+
+  const records = useMemo(() => {
+    if (!parsed) return [];
+    return buildAttendanceRecords(parsed, {
+      shiftSettingsByDept: shiftSettingsByDept || {},
+      therapists: therapists || [],
+      aliasMap,
+    });
+  }, [parsed, shiftSettingsByDept, therapists, aliasMap]);
+
+  const unmatchedEmployeeNames = useMemo(() => {
+    const seen = new Map();
+    records.forEach((r) => {
+      if (!r.matched_therapist_name && !seen.has(r.employee_name)) seen.set(r.employee_name, r.department);
+    });
+    return Array.from(seen.entries()).map(([employee_name, department]) => ({ employee_name, department }));
+  }, [records]);
 
   const processFile = (e) => {
     const selectedFile = e.target.files[0];
@@ -58,12 +84,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
           });
           return;
         }
-        const built = buildAttendanceRecords(result, {
-          shiftSettingsByDept: shiftSettingsByDept || {},
-          therapists: therapists || [],
-        });
         setParsed(result);
-        setRecords(built);
         setFileName(selectedFile.name);
         setStep('preview');
       } catch (error) {
@@ -76,6 +97,23 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
   const lateCount = records.filter((r) => r.status === 'late').length;
   const incompleteCount = records.filter((r) => r.status === 'incomplete').length;
   const onTimeCount = records.filter((r) => r.status === 'on_time').length;
+
+  const handleLinkTherapist = async (employeeName) => {
+    const physiotherapistId = linkingPick[employeeName];
+    if (!physiotherapistId) return;
+    setLinkingBusy(employeeName);
+    const { data, error } = await upsertAttendanceEmployeeAlias({ employee_name: employeeName, physiotherapist_id: physiotherapistId });
+    setLinkingBusy(null);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal Menghubungkan', description: error.message });
+      return;
+    }
+
+    setLocalAliases((prev) => [...prev.filter((a) => a.employee_name.trim().toLowerCase() !== employeeName.trim().toLowerCase()), data]);
+    onAliasesChanged?.();
+    toast({ title: 'Berhasil Dihubungkan', description: `"${employeeName}" akan dipakai jadwalnya mulai sekarang.` });
+  };
 
   const handleImport = async () => {
     if (records.length === 0) return;
@@ -154,6 +192,44 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                   <AlertTitle className="text-amber-800">Perhatian</AlertTitle>
                   <AlertDescription className="text-amber-700 text-xs mt-1 space-y-0.5">
                     {parsed.warnings.map((w, i) => <div key={i}>{w}</div>)}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {unmatchedEmployeeNames.length > 0 && (
+                <Alert className="bg-slate-50 border-slate-200">
+                  <Link2 className="h-4 w-4 text-slate-500" />
+                  <AlertTitle className="text-slate-800">Karyawan Belum Terhubung ke Fisioterapis</AlertTitle>
+                  <AlertDescription className="text-slate-600 text-xs mt-1">
+                    <p className="mb-2">
+                      Nama berikut tidak otomatis cocok dengan data fisioterapis (mis. panggilan yang beda jauh dari nama lengkap).
+                      Hubungkan manual sekali agar jadwal booking-nya terpakai — otomatis dipakai untuk upload berikutnya juga.
+                    </p>
+                    <div className="space-y-2">
+                      {unmatchedEmployeeNames.map(({ employee_name, department }) => (
+                        <div key={employee_name} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-2">
+                          <span className="font-medium text-slate-700 w-28 truncate">{employee_name}</span>
+                          <span className="text-slate-400 w-24 truncate">{department || '-'}</span>
+                          <Select
+                            value={linkingPick[employee_name] || ''}
+                            onValueChange={(v) => setLinkingPick((prev) => ({ ...prev, [employee_name]: v }))}
+                          >
+                            <SelectTrigger className="h-8 flex-1"><SelectValue placeholder="Pilih fisioterapis..." /></SelectTrigger>
+                            <SelectContent>
+                              {(therapists || []).map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!linkingPick[employee_name] || linkingBusy === employee_name}
+                            onClick={() => handleLinkTherapist(employee_name)}
+                          >
+                            {linkingBusy === employee_name ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Hubungkan'}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}

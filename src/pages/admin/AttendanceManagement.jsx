@@ -17,6 +17,7 @@ import {
   upsertAttendanceShiftSetting,
   deleteAttendanceShiftSetting,
   getAttendanceScheduleLookup,
+  getAttendanceEmployeeAliases,
 } from '@/lib/api';
 
 const STATUS_LABEL = {
@@ -33,6 +34,7 @@ const AttendanceManagement = () => {
   const [records, setRecords] = useState([]);
   const [shiftSettings, setShiftSettings] = useState([]);
   const [therapists, setTherapists] = useState([]);
+  const [aliases, setAliases] = useState([]);
 
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -73,8 +75,14 @@ const AttendanceManagement = () => {
     setTherapists(data || []);
   }, []);
 
+  const loadAliases = useCallback(async () => {
+    const { data } = await getAttendanceEmployeeAliases();
+    setAliases(data || []);
+  }, []);
+
   useEffect(() => { loadShiftSettings(); }, [loadShiftSettings]);
   useEffect(() => { loadTherapists(); }, [loadTherapists]);
+  useEffect(() => { loadAliases(); }, [loadAliases]);
   useEffect(() => { loadRecords(); }, [loadRecords]);
 
   const departments = useMemo(() => {
@@ -263,6 +271,8 @@ const AttendanceManagement = () => {
         onSuccess={loadRecords}
         shiftSettingsByDept={shiftSettingsByDept}
         therapists={therapists}
+        aliases={aliases}
+        onAliasesChanged={loadAliases}
       />
     </div>
   );
