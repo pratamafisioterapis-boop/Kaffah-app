@@ -4,6 +4,7 @@
 // "HH:MM\nHH:MM" punches per day column).
 import { read, utils } from 'xlsx';
 import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
+import { resolveAttendanceStatus } from '@/utils/attendanceStatusResolver';
 
 const TIME_RE = /^(\d{1,2}):(\d{2})$/;
 
@@ -146,50 +147,20 @@ export const buildAttendanceRecords = (
   const records = [];
   for (const emp of parsed.employees) {
     const matchedTherapist = matchEmployeeNameToTherapist(emp.name, therapists, aliasMap);
-    const empSchedule = matchedTherapist?.schedule;
     for (const d of emp.days) {
       const date = attendanceDateForDay(parsed.periodStart, d.day);
       if (!date) continue;
 
-      let status;
-      let lateMinutes = 0;
-      let expectedCheckIn = null;
-      let expectedSource = null;
-
-      if (!d.checkOut) {
-        // Only one punch recorded for the day — could be a missed check-in
-        // or a missed check-out, so lateness can't be determined reliably.
-        status = 'incomplete';
-      } else {
-        const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
-        const overrideStart = matchedTherapist?.overrides?.[date];
-        const scheduledStart = empSchedule?.[dayOfWeek];
-        const deptShift = emp.department && shiftSettingsByDept[emp.department];
-
-        if (overrideStart) {
-          expectedCheckIn = overrideStart.slice(0, 5);
-          expectedSource = 'override';
-        } else if (scheduledStart) {
-          expectedCheckIn = scheduledStart.slice(0, 5);
-          expectedSource = 'schedule';
-        } else if (deptShift?.expected_check_in) {
-          expectedCheckIn = deptShift.expected_check_in.slice(0, 5);
-          expectedSource = 'department';
-        } else {
-          expectedCheckIn = defaultShift.expected_check_in;
-          expectedSource = 'default';
-        }
-        const graceMinutes = deptShift?.grace_minutes ?? defaultShift.grace_minutes ?? 0;
-
-        const [eh, em] = expectedCheckIn.split(':').map(Number);
-        const expectedMinutes = eh * 60 + em;
-        const [ch, cm] = d.checkIn.split(':').map(Number);
-        const actualMinutes = ch * 60 + cm;
-
-        const isLate = actualMinutes > expectedMinutes + graceMinutes;
-        lateMinutes = isLate ? actualMinutes - expectedMinutes : 0;
-        status = isLate ? 'late' : 'on_time';
-      }
+      const resolved = resolveAttendanceStatus({
+        checkIn: d.checkIn,
+        checkOut: d.checkOut,
+        date,
+        department: emp.department,
+        therapistSchedule: matchedTherapist?.schedule,
+        therapistOverrides: matchedTherapist?.overrides,
+        shiftSettingsByDept,
+        defaultShift,
+      });
 
       records.push({
         employee_external_id: emp.externalId,
@@ -199,10 +170,10 @@ export const buildAttendanceRecords = (
         check_in: d.checkIn,
         check_out: d.checkOut,
         raw_punches: d.rawPunches,
-        status,
-        late_minutes: lateMinutes,
-        expected_check_in: expectedCheckIn,
-        expected_source: expectedSource,
+        status: resolved.status,
+        late_minutes: resolved.late_minutes,
+        expected_check_in: resolved.expected_check_in,
+        expected_source: resolved.expected_source,
         matched_therapist_name: matchedTherapist?.name || null,
       });
     }

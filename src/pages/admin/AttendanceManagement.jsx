@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2 } from 'lucide-react';
+import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceUploadModal from '@/components/admin/AttendanceUploadModal';
 import {
@@ -18,6 +18,7 @@ import {
   deleteAttendanceShiftSetting,
   getAttendanceScheduleLookup,
   getAttendanceEmployeeAliases,
+  recalculateAllAttendanceRecords,
 } from '@/lib/api';
 
 const STATUS_LABEL = {
@@ -35,6 +36,7 @@ const AttendanceManagement = () => {
   const [shiftSettings, setShiftSettings] = useState([]);
   const [therapists, setTherapists] = useState([]);
   const [aliases, setAliases] = useState([]);
+  const [recalculating, setRecalculating] = useState(false);
 
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -64,6 +66,18 @@ const AttendanceManagement = () => {
     }
     setLoading(false);
   }, [startDate, endDate, departmentFilter, employeeFilter, statusFilter, toast]);
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    const { data, error } = await recalculateAllAttendanceRecords({ startDate, endDate });
+    setRecalculating(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menghitung ulang', description: error.message });
+      return;
+    }
+    toast({ title: 'Selesai', description: `${data?.updated || 0} data absensi dihitung ulang sesuai jadwal terbaru.` });
+    loadRecords();
+  };
 
   const loadShiftSettings = useCallback(async () => {
     const { data } = await getAttendanceShiftSettings();
@@ -122,6 +136,10 @@ const AttendanceManagement = () => {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setSettingsOpen((v) => !v)} className="gap-2">
             <Settings className="w-4 h-4" /> Jam Kerja
+          </Button>
+          <Button variant="outline" onClick={handleRecalculate} disabled={recalculating} className="gap-2" title="Hitung ulang status/keterlambatan data yang sudah tersimpan sesuai jadwal terbaru">
+            {recalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Hitung Ulang
           </Button>
           <Button onClick={() => setUploadOpen(true)} className="gap-2">
             <Upload className="w-4 h-4" /> Upload Absensi
@@ -239,6 +257,7 @@ const AttendanceManagement = () => {
                     <TableHead>Departemen</TableHead>
                     <TableHead>Masuk</TableHead>
                     <TableHead>Pulang</TableHead>
+                    <TableHead>Jadwal Masuk</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -250,6 +269,7 @@ const AttendanceManagement = () => {
                       <TableCell>{r.department || '-'}</TableCell>
                       <TableCell>{r.check_in?.slice(0, 5) || '-'}</TableCell>
                       <TableCell>{r.check_out?.slice(0, 5) || '-'}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{r.expected_check_in?.slice(0, 5) || '-'}</TableCell>
                       <TableCell>
                         <Badge className={STATUS_LABEL[r.status]?.className}>
                           {STATUS_LABEL[r.status]?.label}
