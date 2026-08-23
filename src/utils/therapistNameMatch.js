@@ -19,14 +19,23 @@ const normalizeNameWords = (fullName) =>
 
 /**
  * Finds the single physiotherapist whose name plausibly matches the given
- * attendance employee name. Every word of `employeeName` must exactly equal,
- * or be a >=3-char prefix of, some word in the candidate's cleaned name.
- * Returns null (rather than guessing) when there's no match or more than
- * one equally plausible match.
+ * attendance employee name. Checks `aliasMap` first (an admin-confirmed
+ * employee-name -> physiotherapist_id mapping for nicknames the automatic
+ * matcher can't safely resolve, e.g. "dilla" -> Nurfadilah's id — see
+ * getAttendanceEmployeeAliases). Otherwise every word of `employeeName` must
+ * exactly equal, or be a >=3-char prefix of, some word in the candidate's
+ * cleaned name. Returns null (rather than guessing) when there's no match or
+ * more than one equally plausible match.
  */
-export const matchEmployeeNameToTherapist = (employeeName, therapists) => {
+export const matchEmployeeNameToTherapist = (employeeName, therapists, aliasMap) => {
   const empWords = (employeeName || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
   if (empWords.length === 0 || !therapists?.length) return null;
+
+  const aliasedId = aliasMap?.get(employeeName.trim().toLowerCase());
+  if (aliasedId) {
+    const aliased = therapists.find((t) => t.id === aliasedId);
+    if (aliased) return aliased;
+  }
 
   const exact = therapists.find((t) => (t.name || '').trim().toLowerCase() === employeeName.trim().toLowerCase());
   if (exact) return exact;

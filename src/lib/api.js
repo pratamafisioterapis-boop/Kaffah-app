@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
+import { resolveAttendanceStatus } from '@/utils/attendanceStatusResolver';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -5936,14 +5937,31 @@ export const upsertTherapistScheduleOverride = async ({ therapist_id, override_d
       .select()
       .single();
     if (error) return { error };
+
+    // Bring any already-saved attendance row for this exact therapist+date
+    // in sync with the new override, instead of leaving it on the stale
+    // status/expected time it was imported with.
+    await recalculateAttendanceForTherapistDate(therapist_id, override_date);
+
     return { data, success: true, error: null };
   }, 'upsertTherapistScheduleOverride');
 };
 
 export const deleteTherapistScheduleOverride = async (id) => {
   return safeQuery(async () => {
+    const { data: existing } = await supabase
+      .from('therapist_schedule_overrides')
+      .select('therapist_id, override_date')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabase.from('therapist_schedule_overrides').delete().eq('id', id);
     if (error) return { error };
+
+    // Removing the override means that date reverts to the weekly
+    // schedule — recompute so any saved attendance row reflects that too.
+    if (existing) await recalculateAttendanceForTherapistDate(existing.therapist_id, existing.override_date);
+
     return { data: true, success: true, error: null };
   }, 'deleteTherapistScheduleOverride');
 };
@@ -7829,6 +7847,65 @@ export const deleteAttendanceShiftSetting = async (id) => {
 };
 
 /**
+ * Manual employee-name -> physiotherapist mappings, for attendance-machine
+ * nicknames the automatic word/prefix matcher can't safely resolve on its
+ * own (e.g. "dilla" for "Nurfadilah" — spelling doesn't share a common word
+ * or prefix). Checked before matchEmployeeNameToTherapist on every import.
+ */
+export const getAttendanceEmployeeAliases = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .select('id, employee_name, physiotherapist_id, physiotherapists(name)')
+      .eq('clinic_id', clinicId);
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceEmployeeAliases');
+};
+
+export const upsertAttendanceEmployeeAlias = async ({ employee_name, physiotherapist_id }) => {
+  return safeQuery(async () => {
+    const { clinicId, userId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .upsert(
+        { clinic_id: clinicId, employee_name, physiotherapist_id, created_by: userId || null },
+        { onConflict: 'clinic_id,employee_name' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+
+    // Retroactively link + recompute any attendance rows already saved for
+    // this employee name under the old (missing) match, so confirming an
+    // alias fixes past uploads too, not just future ones.
+    const { data: existingRows } = await supabase
+      .from('employee_attendance_records')
+      .select('id')
+      .eq('clinic_id', clinicId)
+      .eq('employee_name', employee_name);
+    const rowIds = (existingRows || []).map((r) => r.id);
+    if (rowIds.length > 0) {
+      await supabase.from('employee_attendance_records').update({ physiotherapist_id }).in('id', rowIds);
+      await recalculateAttendanceRecordsByIds(rowIds);
+    }
+
+    return { data, success: true, error: null };
+  }, 'upsertAttendanceEmployeeAlias');
+};
+
+export const deleteAttendanceEmployeeAlias = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('attendance_employee_aliases').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteAttendanceEmployeeAlias');
+};
+
+/**
  * Bulk-imports parsed attendance day-records (see attendanceExcelParser.js).
  * Rows are matched to an existing physiotherapist by exact (case-insensitive)
  * name when possible, and upserted keyed by (clinic, employee name, date) so
@@ -7844,10 +7921,15 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
       .from('physiotherapists')
       .select('id, name')
       .eq('clinic_id', clinicId);
+    const { data: aliases } = await supabase
+      .from('attendance_employee_aliases')
+      .select('employee_name, physiotherapist_id')
+      .eq('clinic_id', clinicId);
+    const aliasMap = new Map((aliases || []).map((a) => [a.employee_name.trim().toLowerCase(), a.physiotherapist_id]));
 
     const payload = rows.map((r) => ({
       clinic_id: clinicId,
-      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [])?.id || null,
+      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [], aliasMap)?.id || null,
       employee_external_id: r.employee_external_id || null,
       employee_name: r.employee_name,
       department: r.department || null,
@@ -7857,6 +7939,8 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
       raw_punches: r.raw_punches || [],
       status: r.status,
       late_minutes: r.late_minutes || 0,
+      expected_check_in: r.expected_check_in || null,
+      expected_source: r.expected_source || null,
       source_file_name: sourceFileName || null,
       uploaded_by: userId || null,
     }));
@@ -7874,6 +7958,110 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
 
     return { data: { imported }, success: true, error: null };
   }, 'bulkUpsertAttendanceRecords');
+};
+
+/**
+ * Re-evaluates status/late_minutes/expected_check_in for already-saved
+ * attendance rows using each row's CURRENT physiotherapist schedule,
+ * date-specific override, and department shift setting — so a schedule
+ * change made after the fact is reflected without re-uploading the file.
+ */
+export const recalculateAttendanceRecordsByIds = async (ids) => {
+  return safeQuery(async () => {
+    if (!ids || ids.length === 0) return { data: { updated: 0 }, success: true, error: null };
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+
+    const { data: records, error: recordsError } = await supabase
+      .from('employee_attendance_records')
+      .select('id, physiotherapist_id, department, attendance_date, check_in, check_out')
+      .in('id', ids);
+    if (recordsError) return { error: recordsError };
+    if (!records || records.length === 0) return { data: { updated: 0 }, success: true, error: null };
+
+    const { data: therapistRows } = await supabase
+      .from('physiotherapists')
+      .select('id, therapist_schedules(day_of_week, start_time, is_active), therapist_schedule_overrides(override_date, start_time)')
+      .eq('clinic_id', clinicId);
+
+    const therapistById = {};
+    (therapistRows || []).forEach((t) => {
+      const schedule = {};
+      (t.therapist_schedules || []).forEach((s) => {
+        if (!s.is_active || !s.start_time) return;
+        if (!schedule[s.day_of_week] || s.start_time < schedule[s.day_of_week]) schedule[s.day_of_week] = s.start_time;
+      });
+      const overrides = {};
+      (t.therapist_schedule_overrides || []).forEach((o) => {
+        if (o.override_date && o.start_time) overrides[o.override_date] = o.start_time;
+      });
+      therapistById[t.id] = { schedule, overrides };
+    });
+
+    const { data: shiftSettings } = await supabase
+      .from('employee_attendance_shift_settings')
+      .select('department, expected_check_in, grace_minutes')
+      .eq('clinic_id', clinicId);
+    const shiftSettingsByDept = {};
+    (shiftSettings || []).forEach((s) => {
+      shiftSettingsByDept[s.department] = { expected_check_in: s.expected_check_in, grace_minutes: s.grace_minutes };
+    });
+
+    let updated = 0;
+    for (const r of records) {
+      const t = r.physiotherapist_id ? therapistById[r.physiotherapist_id] : null;
+      const resolved = resolveAttendanceStatus({
+        checkIn: r.check_in?.slice(0, 5),
+        checkOut: r.check_out ? r.check_out.slice(0, 5) : null,
+        date: r.attendance_date,
+        department: r.department,
+        therapistSchedule: t?.schedule,
+        therapistOverrides: t?.overrides,
+        shiftSettingsByDept,
+      });
+
+      const { error: updateError } = await supabase
+        .from('employee_attendance_records')
+        .update({
+          status: resolved.status,
+          late_minutes: resolved.late_minutes,
+          expected_check_in: resolved.expected_check_in,
+          expected_source: resolved.expected_source,
+        })
+        .eq('id', r.id);
+      if (!updateError) updated += 1;
+    }
+
+    return { data: { updated }, success: true, error: null };
+  }, 'recalculateAttendanceRecordsByIds');
+};
+
+/** Recalculates every already-saved attendance row for one therapist on one date (see recalculateAttendanceRecordsByIds). */
+export const recalculateAttendanceForTherapistDate = async (physiotherapistId, date) => {
+  return safeQuery(async () => {
+    if (!physiotherapistId || !date) return { data: { updated: 0 }, success: true, error: null };
+    const { data: rows, error } = await supabase
+      .from('employee_attendance_records')
+      .select('id')
+      .eq('physiotherapist_id', physiotherapistId)
+      .eq('attendance_date', date);
+    if (error) return { error };
+    return recalculateAttendanceRecordsByIds((rows || []).map((r) => r.id));
+  }, 'recalculateAttendanceForTherapistDate');
+};
+
+/** Recalculates every already-saved attendance row for a clinic within an optional date range — useful after a bulk schedule/alias fix. */
+export const recalculateAllAttendanceRecords = async ({ startDate, endDate } = {}) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: { updated: 0 }, success: true, error: null };
+    let query = supabase.from('employee_attendance_records').select('id').eq('clinic_id', clinicId);
+    if (startDate) query = query.gte('attendance_date', startDate);
+    if (endDate) query = query.lte('attendance_date', endDate);
+    const { data: rows, error } = await query;
+    if (error) return { error };
+    return recalculateAttendanceRecordsByIds((rows || []).map((r) => r.id));
+  }, 'recalculateAllAttendanceRecords');
 };
 
 export const getAttendanceRecords = async ({ startDate, endDate, department, employeeName, status } = {}) => {
