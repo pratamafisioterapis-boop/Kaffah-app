@@ -15,7 +15,7 @@ const STATUS_LABEL = {
   incomplete: { label: 'Absen Tidak Lengkap', className: 'bg-amber-500' },
 };
 
-const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept, scheduleLookup }) => {
+const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept, therapists }) => {
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
@@ -60,7 +60,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
         }
         const built = buildAttendanceRecords(result, {
           shiftSettingsByDept: shiftSettingsByDept || {},
-          scheduleLookup: scheduleLookup || {},
+          therapists: therapists || [],
         });
         setParsed(result);
         setRecords(built);
@@ -191,15 +191,20 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                       {records.map((r, idx) => (
                         <TableRow key={idx}>
                           <TableCell>{r.attendance_date}</TableCell>
-                          <TableCell className="font-medium">{r.employee_name}</TableCell>
+                          <TableCell className="font-medium">
+                            {r.employee_name}
+                            {r.matched_therapist_name && (
+                              <div className="text-[11px] text-slate-400 font-normal">↳ {r.matched_therapist_name}</div>
+                            )}
+                          </TableCell>
                           <TableCell>{r.department || '-'}</TableCell>
                           <TableCell>{r.check_in || '-'}</TableCell>
                           <TableCell>{r.check_out || '-'}</TableCell>
                           <TableCell className="text-xs">
                             {r.expected_check_in ? (
-                              <span className={r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
+                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
                                 {r.expected_check_in}
-                                {r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
+                                {r.expected_source === 'override' ? ' (jadwal pengganti)' : r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
                               </span>
                             ) : '-'}
                           </TableCell>

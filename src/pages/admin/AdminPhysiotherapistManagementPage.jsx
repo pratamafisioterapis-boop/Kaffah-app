@@ -2,7 +2,8 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TherapistScheduleManager from '@/components/owner/TherapistScheduleManager';
 import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager';
-import { Users, CalendarClock, CalendarOff } from 'lucide-react';
+import TherapistScheduleOverrideManager from '@/components/owner/TherapistScheduleOverrideManager';
+import { Users, CalendarClock, CalendarOff, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const AdminPhysiotherapistManagementPage = () => {
@@ -32,7 +33,7 @@ const AdminPhysiotherapistManagementPage = () => {
       {/* Tabs */}
       <Tabs defaultValue="schedule" className="w-full space-y-6">
         
-        <TabsList className="grid w-full md:w-[467px] grid-cols-2 bg-slate-100 p-1 rounded-lg">
+        <TabsList className="grid w-full md:w-[700px] grid-cols-3 bg-slate-100 p-1 rounded-lg">
 
           <TabsTrigger
             value="schedule"
@@ -40,6 +41,14 @@ const AdminPhysiotherapistManagementPage = () => {
           >
             <CalendarClock className="w-4 h-4" />
             Jadwal
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="overrides"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+          >
+            <CalendarRange className="w-4 h-4" />
+            Jadwal Pengganti
           </TabsTrigger>
 
           <TabsTrigger
@@ -59,6 +68,16 @@ const AdminPhysiotherapistManagementPage = () => {
         >
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
             <TherapistScheduleManager />
+          </div>
+        </TabsContent>
+
+        {/* JADWAL PENGGANTI */}
+        <TabsContent
+          value="overrides"
+          className="outline-none animate-in fade-in-50 duration-500"
+        >
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <TherapistScheduleOverrideManager />
           </div>
         </TabsContent>
 

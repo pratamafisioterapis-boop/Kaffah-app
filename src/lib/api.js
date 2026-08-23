@@ -11,6 +11,7 @@ import {
     calculateCustomSalary
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
+import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -5904,6 +5905,49 @@ export const deleteTherapistTimeOff = async (id) => {
   }, 'deleteTherapistTimeOff');
 };
 
+// ============================================
+// THERAPIST SCHEDULE OVERRIDES (one-off date-specific shift changes,
+// separate from the recurring weekly template in therapist_schedules)
+// ============================================
+
+export const getTherapistScheduleOverrides = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .order('override_date', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getTherapistScheduleOverrides');
+};
+
+export const upsertTherapistScheduleOverride = async ({ therapist_id, override_date, start_time, end_time, note }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .upsert(
+        { therapist_id, override_date, start_time, end_time: end_time || null, note: note || null, created_by: userId || null },
+        { onConflict: 'therapist_id,override_date' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertTherapistScheduleOverride');
+};
+
+export const deleteTherapistScheduleOverride = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('therapist_schedule_overrides').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteTherapistScheduleOverride');
+};
+
 export const createTherapistSchedule = async (payload) => {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -7800,11 +7844,10 @@ export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
       .from('physiotherapists')
       .select('id, name')
       .eq('clinic_id', clinicId);
-    const nameToTherapistId = new Map((therapists || []).map((t) => [t.name?.trim().toLowerCase(), t.id]));
 
     const payload = rows.map((r) => ({
       clinic_id: clinicId,
-      physiotherapist_id: nameToTherapistId.get(r.employee_name?.trim().toLowerCase()) || null,
+      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [])?.id || null,
       employee_external_id: r.employee_external_id || null,
       employee_name: r.employee_name,
       department: r.department || null,
@@ -7857,32 +7900,49 @@ export const getAttendanceRecords = async ({ startDate, endDate, department, emp
 };
 
 /**
- * Returns each therapist's weekly practice-hour schedule (the same schedule
- * that drives the booking calendar) as a lookup keyed by lower-cased name:
- * { [name]: { [dayOfWeek 0-6]: 'HH:MM:SS' } }. Used to determine the
- * expected check-in time per attendance day instead of a flat default.
+ * Returns every active physiotherapist with their weekly practice-hour
+ * schedule (the same schedule that drives the booking calendar), as
+ * { id, name, schedule: { [dayOfWeek 0-6]: 'HH:MM:SS' } }[]. Attendance
+ * employee names (short/nicknames from the machine export) are matched to
+ * these full formal names with matchEmployeeNameToTherapist — see
+ * src/utils/therapistNameMatch.js for why an exact match doesn't work.
  */
 export const getAttendanceScheduleLookup = async () => {
   return safeQuery(async () => {
     const { clinicId } = await getMyClinicIdForAttendance();
-    if (!clinicId) return { data: {}, success: true, error: null };
+    if (!clinicId) return { data: [], success: true, error: null };
 
     const { data, error } = await supabase
       .from('physiotherapists')
-      .select('name, therapist_schedules(day_of_week, start_time, is_active)')
+      .select('id, name, therapist_schedules(day_of_week, start_time, is_active), therapist_schedule_overrides(override_date, start_time)')
       .eq('clinic_id', clinicId);
     if (error) return { error };
 
-    const lookup = {};
-    (data || []).forEach((t) => {
-      if (!t.name) return;
-      const byDay = {};
-      (t.therapist_schedules || []).forEach((s) => {
-        if (s.is_active && s.start_time) byDay[s.day_of_week] = s.start_time;
-      });
-      if (Object.keys(byDay).length > 0) lookup[t.name.trim().toLowerCase()] = byDay;
-    });
+    const therapists = (data || [])
+      .filter((t) => t.name)
+      .map((t) => {
+        // Each work day is stored as several ~90min bookable-slot rows
+        // sharing the same day_of_week (e.g. Monday: 09:00, 10:30, 12:00,
+        // 13:30, 15:00), not one row per day — the expected check-in is the
+        // EARLIEST slot's start_time for that day, not just any of them.
+        const schedule = {};
+        (t.therapist_schedules || []).forEach((s) => {
+          if (!s.is_active || !s.start_time) return;
+          if (!schedule[s.day_of_week] || s.start_time < schedule[s.day_of_week]) {
+            schedule[s.day_of_week] = s.start_time;
+          }
+        });
 
-    return { data: lookup, success: true, error: null };
+        // One-off date-specific overrides take priority over the weekly
+        // template — see therapist_schedule_overrides.
+        const overrides = {};
+        (t.therapist_schedule_overrides || []).forEach((o) => {
+          if (o.override_date && o.start_time) overrides[o.override_date] = o.start_time;
+        });
+
+        return { id: t.id, name: t.name, schedule, overrides };
+      });
+
+    return { data: therapists, success: true, error: null };
   }, 'getAttendanceScheduleLookup');
 };

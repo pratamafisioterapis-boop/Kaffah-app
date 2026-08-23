@@ -3,6 +3,7 @@
 // header block, followed by a day-number row 1..31, followed by a row of
 // "HH:MM\nHH:MM" punches per day column).
 import { read, utils } from 'xlsx';
+import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
 
 const TIME_RE = /^(\d{1,2}):(\d{2})$/;
 
@@ -133,16 +134,19 @@ export const parseAttendanceExcel = (data, { type = 'binary' } = {}) => {
  * day of week when available (therapist_schedules), falling back to a
  * per-department expected check-in time, then a global default.
  *
- * `scheduleLookup` is keyed by lower-cased employee name -> { [dayOfWeek 0-6]: 'HH:MM' },
- * where dayOfWeek follows JS Date#getDay() (0 = Sunday).
+ * `therapists` is the list from getAttendanceScheduleLookup():
+ * { id, name, schedule: { [dayOfWeek 0-6]: 'HH:MM' } }[]. Attendance-machine
+ * names are short/nicknames, so they're matched to the therapist's full
+ * formal name with matchEmployeeNameToTherapist rather than an exact match.
  */
 export const buildAttendanceRecords = (
   parsed,
-  { shiftSettingsByDept = {}, scheduleLookup = {}, defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
+  { shiftSettingsByDept = {}, therapists = [], defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
 ) => {
   const records = [];
   for (const emp of parsed.employees) {
-    const empSchedule = scheduleLookup[emp.name?.trim().toLowerCase()];
+    const matchedTherapist = matchEmployeeNameToTherapist(emp.name, therapists);
+    const empSchedule = matchedTherapist?.schedule;
     for (const d of emp.days) {
       const date = attendanceDateForDay(parsed.periodStart, d.day);
       if (!date) continue;
@@ -158,10 +162,14 @@ export const buildAttendanceRecords = (
         status = 'incomplete';
       } else {
         const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+        const overrideStart = matchedTherapist?.overrides?.[date];
         const scheduledStart = empSchedule?.[dayOfWeek];
         const deptShift = emp.department && shiftSettingsByDept[emp.department];
 
-        if (scheduledStart) {
+        if (overrideStart) {
+          expectedCheckIn = overrideStart.slice(0, 5);
+          expectedSource = 'override';
+        } else if (scheduledStart) {
           expectedCheckIn = scheduledStart.slice(0, 5);
           expectedSource = 'schedule';
         } else if (deptShift?.expected_check_in) {
@@ -195,6 +203,7 @@ export const buildAttendanceRecords = (
         late_minutes: lateMinutes,
         expected_check_in: expectedCheckIn,
         expected_source: expectedSource,
+        matched_therapist_name: matchedTherapist?.name || null,
       });
     }
   }

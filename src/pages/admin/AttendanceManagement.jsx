@@ -32,7 +32,7 @@ const AttendanceManagement = () => {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [shiftSettings, setShiftSettings] = useState([]);
-  const [scheduleLookup, setScheduleLookup] = useState({});
+  const [therapists, setTherapists] = useState([]);
 
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -68,13 +68,13 @@ const AttendanceManagement = () => {
     setShiftSettings(data || []);
   }, []);
 
-  const loadScheduleLookup = useCallback(async () => {
+  const loadTherapists = useCallback(async () => {
     const { data } = await getAttendanceScheduleLookup();
-    setScheduleLookup(data || {});
+    setTherapists(data || []);
   }, []);
 
   useEffect(() => { loadShiftSettings(); }, [loadShiftSettings]);
-  useEffect(() => { loadScheduleLookup(); }, [loadScheduleLookup]);
+  useEffect(() => { loadTherapists(); }, [loadTherapists]);
   useEffect(() => { loadRecords(); }, [loadRecords]);
 
   const departments = useMemo(() => {
@@ -262,7 +262,7 @@ const AttendanceManagement = () => {
         onClose={() => setUploadOpen(false)}
         onSuccess={loadRecords}
         shiftSettingsByDept={shiftSettingsByDept}
-        scheduleLookup={scheduleLookup}
+        therapists={therapists}
       />
     </div>
   );
