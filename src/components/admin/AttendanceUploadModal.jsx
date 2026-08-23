@@ -202,9 +202,9 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                           <TableCell>{r.check_out || '-'}</TableCell>
                           <TableCell className="text-xs">
                             {r.expected_check_in ? (
-                              <span className={r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
+                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
                                 {r.expected_check_in}
-                                {r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
+                                {r.expected_source === 'override' ? ' (jadwal pengganti)' : r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
                               </span>
                             ) : '-'}
                           </TableCell>

@@ -5905,6 +5905,49 @@ export const deleteTherapistTimeOff = async (id) => {
   }, 'deleteTherapistTimeOff');
 };
 
+// ============================================
+// THERAPIST SCHEDULE OVERRIDES (one-off date-specific shift changes,
+// separate from the recurring weekly template in therapist_schedules)
+// ============================================
+
+export const getTherapistScheduleOverrides = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .order('override_date', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getTherapistScheduleOverrides');
+};
+
+export const upsertTherapistScheduleOverride = async ({ therapist_id, override_date, start_time, end_time, note }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .upsert(
+        { therapist_id, override_date, start_time, end_time: end_time || null, note: note || null, created_by: userId || null },
+        { onConflict: 'therapist_id,override_date' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertTherapistScheduleOverride');
+};
+
+export const deleteTherapistScheduleOverride = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('therapist_schedule_overrides').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteTherapistScheduleOverride');
+};
+
 export const createTherapistSchedule = async (payload) => {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -7871,7 +7914,7 @@ export const getAttendanceScheduleLookup = async () => {
 
     const { data, error } = await supabase
       .from('physiotherapists')
-      .select('id, name, therapist_schedules(day_of_week, start_time, is_active)')
+      .select('id, name, therapist_schedules(day_of_week, start_time, is_active), therapist_schedule_overrides(override_date, start_time)')
       .eq('clinic_id', clinicId);
     if (error) return { error };
 
@@ -7889,7 +7932,15 @@ export const getAttendanceScheduleLookup = async () => {
             schedule[s.day_of_week] = s.start_time;
           }
         });
-        return { id: t.id, name: t.name, schedule };
+
+        // One-off date-specific overrides take priority over the weekly
+        // template — see therapist_schedule_overrides.
+        const overrides = {};
+        (t.therapist_schedule_overrides || []).forEach((o) => {
+          if (o.override_date && o.start_time) overrides[o.override_date] = o.start_time;
+        });
+
+        return { id: t.id, name: t.name, schedule, overrides };
       });
 
     return { data: therapists, success: true, error: null };

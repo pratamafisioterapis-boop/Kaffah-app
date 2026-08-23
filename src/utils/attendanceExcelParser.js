@@ -162,10 +162,14 @@ export const buildAttendanceRecords = (
         status = 'incomplete';
       } else {
         const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+        const overrideStart = matchedTherapist?.overrides?.[date];
         const scheduledStart = empSchedule?.[dayOfWeek];
         const deptShift = emp.department && shiftSettingsByDept[emp.department];
 
-        if (scheduledStart) {
+        if (overrideStart) {
+          expectedCheckIn = overrideStart.slice(0, 5);
+          expectedSource = 'override';
+        } else if (scheduledStart) {
           expectedCheckIn = scheduledStart.slice(0, 5);
           expectedSource = 'schedule';
         } else if (deptShift?.expected_check_in) {
