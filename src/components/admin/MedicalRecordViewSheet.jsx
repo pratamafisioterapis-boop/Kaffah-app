@@ -6,6 +6,7 @@ import {
   X, User, Activity, Search, BarChart, FileSearch,
   Target, UserCog, Pencil, FileText
 } from 'lucide-react';
+import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 
 const Field = ({ label, value, full = false }) => (
   <div className={full ? 'col-span-2' : ''}>
@@ -63,6 +64,13 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
 
   const patientName = record.patient?.full_name || '-';
   const rmNumber = record.patient?.medical_record_number || '-';
+  const onsetDuration = formatOnsetDuration(record.complaint_onset_date);
+  const onsetPhase = classifyOnsetPhase(record.complaint_onset_date);
+  const phaseColorMap = {
+    amber: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
+    blue: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+    rose: { bg: '#fff1f2', text: '#be123c', border: '#fecdd3' },
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -103,6 +111,28 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
           <Section title="Identitas & Keluhan" icon={User} color="#4f46e5">
             <Field label="Tanggal Pemeriksaan" value={fmt(record.record_date)} />
             <Field label="Diagnosis Medis" value={resolveDiagnosis(record.medical_diagnosis)} />
+            {record.complaint_onset_date && (
+              <div className="col-span-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Onset Keluhan</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-slate-700">
+                    Sejak {fmt(record.complaint_onset_date)} — sudah <strong>{onsetDuration}</strong>
+                  </span>
+                  {onsetPhase && (
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                      style={{
+                        background: phaseColorMap[onsetPhase.color].bg,
+                        color: phaseColorMap[onsetPhase.color].text,
+                        borderColor: phaseColorMap[onsetPhase.color].border,
+                      }}
+                    >
+                      {onsetPhase.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <Field label="History Taking & Main Problem" value={record.history_main_problem} full />
           </Section>
 

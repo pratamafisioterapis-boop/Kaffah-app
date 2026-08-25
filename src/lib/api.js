@@ -3436,6 +3436,7 @@ export const getMedicalRecordsWithPatients = async () => {
         patient_id,
         medical_diagnosis,
         history_main_problem,
+        complaint_onset_date,
         vital_nadi,
         vital_blood_pressure,
         vital_height,
@@ -3486,6 +3487,27 @@ export const getMedicalRecordsWithPatients = async () => {
   }, 'getMedicalRecordsWithPatients', { retry: true });
 };
 
+
+// 🔹 SMART ONSET REMINDER — ambil tanggal mulai keluhan (onset) terbaru milik
+// seorang pasien, supaya terapis diingatkan sudah berapa lama keluhan itu
+// dialami saat membuat/mengisi SOAP.
+export const getPatientOnsetInfo = async (patientId) => {
+  return safeQuery(async () => {
+    if (!patientId) return { data: null, error: null };
+
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .select('id, record_date, complaint_onset_date, history_main_problem, medical_diagnosis')
+      .eq('patient_id', patientId)
+      .not('complaint_onset_date', 'is', null)
+      .order('record_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+    return { data: data || null, success: true, error: null };
+  }, 'getPatientOnsetInfo', { retry: true });
+};
 
 // 🔹 CREATE BULK MEDICAL RECORDS
 export const createBulkMedicalRecordsDetailed = async (payloads) => {

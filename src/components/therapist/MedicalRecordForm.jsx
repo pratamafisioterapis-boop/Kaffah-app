@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, History, CalendarDays } from 'lucide-react';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus } from '@/lib/api';
+import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo } from '@/lib/api';
+import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import ClinicalAdviceAssistant from '@/components/therapist/ClinicalAdviceAssistant';
@@ -30,6 +31,7 @@ const MedicalRecordForm = ({ therapist }) => {
   const [initialLoading, setInitialLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [onsetInfo, setOnsetInfo] = useState(null);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -61,6 +63,16 @@ const MedicalRecordForm = ({ therapist }) => {
         }
     }
   }, [paramPatientId]);
+
+  useEffect(() => {
+    if (formData.patient_id && isValidUUID(formData.patient_id)) {
+      getPatientOnsetInfo(formData.patient_id).then(({ data }) => {
+        setOnsetInfo(data || null);
+      });
+    } else {
+      setOnsetInfo(null);
+    }
+  }, [formData.patient_id]);
 
   const loadExistingRecord = async (id) => {
   setInitialLoading(true);
@@ -332,6 +344,24 @@ if (isCreate) {
               {paramPatientId !== 'select' && !patients.find(p => p.id === paramPatientId) && (
                 <p className="text-xs text-amber-600 mt-1">Memuat data pasien terpilih...</p>
               )}
+              {onsetInfo?.complaint_onset_date && (() => {
+                const duration = formatOnsetDuration(onsetInfo.complaint_onset_date);
+                const phase = classifyOnsetPhase(onsetInfo.complaint_onset_date);
+                const phaseStyles = {
+                  amber: 'bg-amber-50 border-amber-200 text-amber-800',
+                  blue: 'bg-blue-50 border-blue-200 text-blue-800',
+                  rose: 'bg-rose-50 border-rose-200 text-rose-800',
+                };
+                return (
+                  <div className={`mt-3 flex items-start gap-2 rounded-xl border px-3 py-2.5 ${phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                    <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p className="text-xs leading-relaxed">
+                      <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
+                      {phase && <> (<strong>{phase.label}</strong>)</>}, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: id })}.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* SOAP Fields */}
