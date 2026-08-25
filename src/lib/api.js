@@ -3881,8 +3881,23 @@ export const getMedicalRecords = async ({
 
     if (error) return { error };
 
+    const therapistIds = [...new Set((data || []).map(row => row.created_by).filter(Boolean))];
+    let namesByUserId = {};
+    if (therapistIds.length > 0) {
+      const { data: therapists } = await supabase
+        .from('physiotherapists')
+        .select('user_id, name')
+        .in('user_id', therapistIds);
+      namesByUserId = Object.fromEntries((therapists || []).map(t => [t.user_id, t.name]));
+    }
+
+    const enriched = (data || []).map(row => ({
+      ...row,
+      therapist_name: namesByUserId[row.created_by] || null,
+    }));
+
     return {
-      data: data || [],
+      data: enriched,
       total: count || 0,
       success: true,
       error: null
