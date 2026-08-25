@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Save, Trash2, Loader2, CheckCircle2, FileText } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BookOpen, Save, Trash2, Loader2, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { getJournalDocuments, createJournalDocument, deleteJournalDocument, updateJournalDocumentScope } from '@/lib/api';
+import { detectJournalLanguage } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -26,6 +27,8 @@ const JournalKnowledgeBaseManager = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [updatingScopeId, setUpdatingScopeId] = useState(null);
+  const [languageAutoDetected, setLanguageAutoDetected] = useState(false);
+  const languageManuallySet = useRef(false);
   const { toast } = useToast();
 
   const loadDocuments = useCallback(async () => {
@@ -36,6 +39,23 @@ const JournalKnowledgeBaseManager = () => {
   }, []);
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  // Auto-deteksi Bahasa Sumber dari isi yang ditempel owner, supaya tidak
+  // perlu dipilih manual — tapi kalau owner sudah pernah ganti dropdownnya
+  // sendiri untuk draft yang sedang diisi, jangan ditimpa lagi.
+  useEffect(() => {
+    if (languageManuallySet.current) return;
+    const handle = setTimeout(() => {
+      const detected = detectJournalLanguage(form.content);
+      if (detected) {
+        setForm(prev => (prev.source_language === detected ? prev : { ...prev, source_language: detected }));
+        setLanguageAutoDetected(true);
+      } else {
+        setLanguageAutoDetected(false);
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [form.content]);
 
   const handleSave = async () => {
     if (!form.title.trim()) {
@@ -61,6 +81,8 @@ const JournalKnowledgeBaseManager = () => {
     if (success) {
       toast({ title: 'Tersimpan', description: `"${data?.title}" langsung siap dipakai fitur Saran Klinis AI.` });
       setForm(emptyForm);
+      languageManuallySet.current = false;
+      setLanguageAutoDetected(false);
       loadDocuments();
     } else {
       toast({ variant: 'destructive', title: 'Gagal Menyimpan', description: error?.message || 'Terjadi kesalahan saat menyimpan.' });
@@ -112,14 +134,29 @@ const JournalKnowledgeBaseManager = () => {
               <Input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Judul jurnal/ebook" disabled={saving} />
             </div>
             <div className="space-y-2">
-              <Label>Bahasa Sumber</Label>
-              <Select value={form.source_language} onValueChange={(v) => setForm(prev => ({ ...prev, source_language: v }))}>
+              <Label className="flex items-center gap-1.5">
+                Bahasa Sumber
+                {languageAutoDetected && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-normal text-blue-600">
+                    <Sparkles className="w-3 h-3" /> Terdeteksi otomatis
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={form.source_language}
+                onValueChange={(v) => {
+                  languageManuallySet.current = true;
+                  setLanguageAutoDetected(false);
+                  setForm(prev => ({ ...prev, source_language: v }));
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="id">Bahasa Indonesia</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-slate-400">Otomatis terdeteksi dari isi jurnal yang ditempel — bisa diubah manual kalau salah.</p>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Peruntukan</Label>
