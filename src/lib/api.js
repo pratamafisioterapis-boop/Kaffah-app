@@ -5117,8 +5117,15 @@ const uploadFileWithProgress = (path, file, accessToken, onProgress) => {
       if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error(`Upload gagal (${xhr.status}): ${xhr.responseText || xhr.statusText}`));
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+        return;
+      }
+      if (xhr.status === 413 || xhr.responseText?.includes('EntityTooLarge')) {
+        reject(new Error('File terlalu besar untuk batas upload project Supabase saat ini. Naikkan "Upload file size limit" di Dashboard > Project Settings > Storage, lalu coba lagi.'));
+        return;
+      }
+      reject(new Error(`Upload gagal (${xhr.status}): ${xhr.responseText || xhr.statusText}`));
     };
     xhr.onerror = () => reject(new Error('Failed to fetch'));
     xhr.send(file);
