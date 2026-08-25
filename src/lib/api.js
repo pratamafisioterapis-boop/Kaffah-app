@@ -1,4 +1,4 @@
-import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClient';
+import { supabase } from '@/lib/customSupabaseClient';
 import {
     validatePackageTypeId,
     validateBirthDate,
@@ -5100,56 +5100,46 @@ export const getJournalDocuments = async () => {
   }, 'getJournalDocuments', { retry: true });
 };
 
-// supabase-js v2's storage client uploads via fetch, which has no upload
-// progress event in browsers — so a raw XHR call to the same Storage REST
-// endpoint is used here instead, purely to get real byte-level progress
-// for the upload bar. Falls back to the normal client if this ever needs
-// swapping out (same bucket/path/RLS rules apply either way).
-const uploadFileWithProgress = (path, file, accessToken, onProgress) => {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${supabaseUrl}/storage/v1/object/journal-documents/${path}`);
-    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-    xhr.setRequestHeader('apikey', supabaseAnonKey);
-    xhr.setRequestHeader('x-upsert', 'false');
-    xhr.setRequestHeader('Content-Type', 'application/pdf');
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-        return;
-      }
-      if (xhr.status === 413 || xhr.responseText?.includes('EntityTooLarge')) {
-        reject(new Error('File terlalu besar untuk batas upload project Supabase saat ini. Naikkan "Upload file size limit" di Dashboard > Project Settings > Storage, lalu coba lagi.'));
-        return;
-      }
-      reject(new Error(`Upload gagal (${xhr.status}): ${xhr.responseText || xhr.statusText}`));
-    };
-    xhr.onerror = () => reject(new Error('Failed to fetch'));
-    xhr.send(file);
-  });
+// Dipecah per paragraf (baris kosong) supaya potongan tetap koheren, lalu
+// paragraf yang kepanjangan dipotong lagi dengan overlap kecil. Tidak ada
+// PDF/embedding API lagi di sini — full-text search Postgres yang mencari
+// potongan mana yang relevan (lihat match_journal_chunks_fts), jadi
+// chunking ini hanya perlu cukup granular untuk sitasi yang berguna.
+const CHUNK_TARGET_CHARS = 1500;
+const CHUNK_OVERLAP_CHARS = 150;
+
+const chunkJournalText = (rawText) => {
+  const paragraphs = rawText.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const chunks = [];
+  for (const paragraph of paragraphs) {
+    if (paragraph.length <= CHUNK_TARGET_CHARS) {
+      chunks.push(paragraph);
+      continue;
+    }
+    let start = 0;
+    while (start < paragraph.length) {
+      const end = Math.min(start + CHUNK_TARGET_CHARS, paragraph.length);
+      chunks.push(paragraph.slice(start, end));
+      if (end >= paragraph.length) break;
+      start = end - CHUNK_OVERLAP_CHARS;
+    }
+  }
+  return chunks;
 };
 
-export const uploadJournalDocument = async (file, metadata, onUploadProgress) => {
+export const createJournalDocument = async (content, metadata) => {
   return safeQuery(async () => {
-    if (!file) return { error: { message: 'File tidak ditemukan' } };
+    const trimmedContent = (content || '').trim();
+    if (!trimmedContent) return { error: { message: 'Isi jurnal tidak boleh kosong' } };
 
     const { data: clinicData } = await getCurrentClinic();
     if (!clinicData?.id) return { error: { message: 'Klinik tidak ditemukan' } };
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const accessToken = sessionData?.session?.access_token;
-    if (!accessToken) return { error: { message: 'Sesi tidak ditemukan, silakan login ulang.' } };
 
-    const path = `${clinicData.id}/${crypto.randomUUID()}.pdf`;
-    try {
-      await uploadFileWithProgress(path, file, accessToken, onUploadProgress);
-    } catch (uploadError) {
-      return { error: uploadError };
-    }
+    const chunks = chunkJournalText(trimmedContent);
+    if (chunks.length === 0) return { error: { message: 'Tidak ada teks yang bisa diproses dari isi yang ditempel.' } };
 
     const { data: docRow, error: insertError } = await supabase
       .from('journal_documents')
@@ -5160,8 +5150,8 @@ export const uploadJournalDocument = async (file, metadata, onUploadProgress) =>
         publication_year: metadata.publication_year || null,
         source_language: metadata.source_language || 'en',
         topic_tags: metadata.topic_tags || [],
-        file_path: path,
-        file_name: file.name,
+        status: 'ready',
+        progress_percent: 100,
         uploaded_by: userId || null,
       })
       .select()
@@ -5169,27 +5159,31 @@ export const uploadJournalDocument = async (file, metadata, onUploadProgress) =>
 
     if (insertError) return { error: insertError };
 
-    // Sengaja TIDAK di-await: dokumen tebal (ratusan halaman) bisa butuh
-    // waktu lebih dari semenit untuk diekstrak+di-embed, jauh lebih lama
-    // dari batas waktu request biasa. Prosesnya jalan di edge function
-    // secara independen; UI sudah polling status dokumen ('processing' ->
-    // 'ready'/'failed') di JournalKnowledgeBaseManager, jadi tidak perlu
-    // menahan pengguna menunggu di sini.
-    supabase.functions.invoke('ingest-journal-document', {
-      body: { document_id: docRow.id },
-    }).catch((err) => {
-      console.error('ingest-journal-document invoke failed:', err);
-    });
+    const chunkRows = chunks.map((chunkContent, idx) => ({
+      document_id: docRow.id,
+      clinic_id: clinicData.id,
+      chunk_index: idx,
+      content: chunkContent,
+    }));
+
+    const INSERT_BATCH = 100;
+    for (let i = 0; i < chunkRows.length; i += INSERT_BATCH) {
+      const { error: chunkError } = await supabase.from('journal_chunks').insert(chunkRows.slice(i, i + INSERT_BATCH));
+      if (chunkError) {
+        // Bersihkan dokumen yang sudah terlanjur dibuat supaya tidak ada
+        // entri "ready" tanpa potongan (match_journal_chunks_fts tidak
+        // akan pernah menemukannya, tapi lebih baik tidak setengah jadi).
+        await supabase.from('journal_documents').delete().eq('id', docRow.id);
+        return { error: chunkError };
+      }
+    }
 
     return { data: docRow, success: true, error: null };
-  }, 'uploadJournalDocument', { timeout: 180000 });
+  }, 'createJournalDocument');
 };
 
-export const deleteJournalDocument = async (id, filePath) => {
+export const deleteJournalDocument = async (id) => {
   return safeQuery(async () => {
-    if (filePath) {
-      await supabase.storage.from('journal-documents').remove([filePath]);
-    }
     const { error } = await supabase.from('journal_documents').delete().eq('id', id);
     if (error) return { error };
     return { success: true, error: null };
