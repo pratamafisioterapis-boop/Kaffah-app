@@ -5215,6 +5215,21 @@ export const deleteJournalDocument = async (id) => {
   }, 'deleteJournalDocument');
 };
 
+// Ubah peruntukan dokumen yang sudah tersimpan (mis. owner salah pilih
+// scope saat upload) tanpa perlu menghapus dan menempel ulang isinya.
+export const updateJournalDocumentScope = async (id, document_scope) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('journal_documents')
+      .update({ document_scope })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateJournalDocumentScope');
+};
+
 export const getSoapClinicalAdvice = async ({ diagnosis, subjective, objective, assessment, plan, is_progress_stalled }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase.functions.invoke('soap-clinical-advice', {

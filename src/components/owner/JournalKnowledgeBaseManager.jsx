@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { getJournalDocuments, createJournalDocument, deleteJournalDocument } from '@/lib/api';
+import { getJournalDocuments, createJournalDocument, deleteJournalDocument, updateJournalDocumentScope } from '@/lib/api';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -25,6 +25,7 @@ const JournalKnowledgeBaseManager = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [updatingScopeId, setUpdatingScopeId] = useState(null);
   const { toast } = useToast();
 
   const loadDocuments = useCallback(async () => {
@@ -63,6 +64,19 @@ const JournalKnowledgeBaseManager = () => {
       loadDocuments();
     } else {
       toast({ variant: 'destructive', title: 'Gagal Menyimpan', description: error?.message || 'Terjadi kesalahan saat menyimpan.' });
+    }
+  };
+
+  const handleScopeChange = async (doc, newScope) => {
+    if (newScope === doc.document_scope) return;
+    setUpdatingScopeId(doc.id);
+    const { success, error } = await updateJournalDocumentScope(doc.id, newScope);
+    setUpdatingScopeId(null);
+    if (success) {
+      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, document_scope: newScope } : d));
+      toast({ title: 'Peruntukan Diperbarui', description: `"${doc.title}" sekarang: ${SCOPE_LABELS[newScope]?.label}.` });
+    } else {
+      toast({ variant: 'destructive', title: 'Gagal Memperbarui', description: error?.message });
     }
   };
 
@@ -169,9 +183,23 @@ const JournalKnowledgeBaseManager = () => {
                       <p className="text-xs text-slate-500">
                         {doc.author ? `${doc.author} · ` : ''}{doc.publication_year || ''} · {doc.source_language === 'id' ? 'Indonesia' : 'English'}
                       </p>
-                      <Badge variant="outline" className={`text-[10px] font-normal mt-1.5 ${SCOPE_LABELS[doc.document_scope]?.className || SCOPE_LABELS.both.className}`}>
-                        {SCOPE_LABELS[doc.document_scope]?.label || SCOPE_LABELS.both.label}
-                      </Badge>
+                      <Select
+                        value={doc.document_scope}
+                        onValueChange={(v) => handleScopeChange(doc, v)}
+                        disabled={updatingScopeId === doc.id}
+                      >
+                        <SelectTrigger
+                          className={`h-6 w-fit gap-1 mt-1.5 border text-[10px] font-normal px-2 ${SCOPE_LABELS[doc.document_scope]?.className || SCOPE_LABELS.both.className}`}
+                        >
+                          {updatingScopeId === doc.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="assessment">Assessment</SelectItem>
+                          <SelectItem value="tindakan">Tindakan</SelectItem>
+                          <SelectItem value="both">Assessment & Tindakan</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {doc.topic_tags?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {doc.topic_tags.map((tag) => (
