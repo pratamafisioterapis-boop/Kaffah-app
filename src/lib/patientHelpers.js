@@ -150,35 +150,30 @@ export const normalizePatient = (patient) => {
 };
 
 /**
- * Generates the next Medical Record Number (RM)
+ * Generates the next Medical Record Number (RM) via the atomic DB-side RPC
+ * (generate_next_medical_record_number), scoped to the current user's
+ * clinic. The RPC locks per clinic so concurrent callers can never be
+ * handed the same number.
  * Format: RM + 5 digits (e.g. RM00001)
  */
 export const generateNextRM = async () => {
     try {
-        const { data, error } = await supabase
-            .from('patients')
-            .select('medical_record_number')
-            .order('created_at', { ascending: false }) // Order by creation to get latest
-            .limit(50); // Fetch a batch to find strictly numeric max
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-        if (error) throw error;
-
-        let maxNum = 0;
-        
-        if (data && data.length > 0) {
-            data.forEach(row => {
-                const rm = row.medical_record_number;
-                if (rm && rm.startsWith('RM')) {
-                    const numPart = parseInt(rm.replace('RM', ''), 10);
-                    if (!isNaN(numPart) && numPart > maxNum) {
-                        maxNum = numPart;
-                    }
-                }
-            });
+        if (!userRow?.clinic_id) {
+            console.error("RM Generation: missing clinic_id for current user");
+            return 'RM-----';
         }
 
-        const nextNum = maxNum + 1;
-        return `RM${String(nextNum).padStart(5, '0')}`;
+        const { data, error } = await supabase.rpc('generate_next_medical_record_number', {
+            p_clinic_id: userRow.clinic_id
+        });
+
+        if (error || !data) throw error || new Error('Empty RM response');
+
+        return data;
     } catch (error) {
         console.error("Error generating RM:", error);
         return 'RM-----'; // Fallback
