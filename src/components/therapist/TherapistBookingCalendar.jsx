@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, CalendarOff
+import {
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, CalendarOff, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -23,6 +23,7 @@ import TherapistCard from '@/components/admin/booking/TherapistCard';
 import SlotBookingForm from '@/components/admin/booking/SlotBookingForm';
 import ManualBookingForm from '@/components/admin/booking/ManualBookingForm';
 import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailModal';
+import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
 
 const TherapistBookingCalendar = ({ therapist }) => {
   const [date, setDate] = useState(new Date());
@@ -37,7 +38,8 @@ const TherapistBookingCalendar = ({ therapist }) => {
   const [leaveStatus, setLeaveStatus] = useState(null);
 
   // Modal State
-  const [activeModal, setActiveModal] = useState(null); 
+  const [activeModal, setActiveModal] = useState(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
 const [patientHistory, setPatientHistory] = useState([]);
 const [historyLoading, setHistoryLoading] = useState(false);
   useEffect(() => {
@@ -166,6 +168,9 @@ const [historyLoading, setHistoryLoading] = useState(false);
             <p className="text-slate-500 text-sm">Kelola jadwal dan booking pasien</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
+              <ClipboardList className="h-4 w-4" />
+            </Button>
             <Button variant="outline" size="icon" onClick={() => fetchDayData(date)} disabled={isRefreshing} className={cn("mr-2", isRefreshing && "animate-spin")}>
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -207,6 +212,9 @@ const [historyLoading, setHistoryLoading] = useState(false);
           </Popover>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setDate(addDays(date, 1))}>
             <ChevronRight className="w-4 h-4 text-slate-600" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
+            <ClipboardList className="w-4 h-4 text-slate-400" />
           </Button>
           <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", isRefreshing && "animate-spin")} onClick={() => fetchDayData(date)} disabled={isRefreshing}>
             <RefreshCw className="w-4 h-4 text-slate-400" />
@@ -338,6 +346,15 @@ const [historyLoading, setHistoryLoading] = useState(false);
 )}
         </DialogContent>
       </Dialog>
+
+      <ScheduleTemplateModal
+        open={templateModalOpen}
+        onOpenChange={setTemplateModalOpen}
+        date={date}
+        therapists={[therapist]}
+        schedulesMap={{ [therapist.id]: scheduleSlots }}
+        therapistLeaveStatus={{ [therapist.id]: leaveStatus ? 'cuti' : 'aktif' }}
+      />
     </div>
   );
 };
