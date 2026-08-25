@@ -20,6 +20,14 @@ const STATUS_META = {
 
 const emptyForm = { title: '', author: '', publication_year: '', source_language: 'en', topic_tags: '' };
 
+// Selaras dengan file_size_limit bucket 'journal-documents' di Supabase
+// (250MB) — dicek di client dulu supaya file kebesaran gagal cepat dengan
+// pesan jelas, bukan menunggu upload jalan lalu baru dapat error 413 dari
+// server. Catatan: batas global project (Dashboard > Settings > Storage)
+// tetap harus >= nilai ini juga, atau upload tetap akan ditolak server.
+const MAX_FILE_SIZE_BYTES = 250 * 1024 * 1024;
+const formatMB = (bytes) => (bytes / (1024 * 1024)).toFixed(1);
+
 const JournalKnowledgeBaseManager = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,6 +61,14 @@ const JournalKnowledgeBaseManager = () => {
     if (!selected) return;
     if (selected.type !== 'application/pdf') {
       toast({ variant: 'destructive', title: 'Format Tidak Didukung', description: 'Hanya file PDF yang diperbolehkan.' });
+      return;
+    }
+    if (selected.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        variant: 'destructive',
+        title: 'File Terlalu Besar',
+        description: `Ukuran file ${formatMB(selected.size)}MB melebihi batas maksimal ${formatMB(MAX_FILE_SIZE_BYTES)}MB. Kompres PDF-nya dulu atau pecah jadi beberapa bagian.`,
+      });
       return;
     }
     setFile(selected);
