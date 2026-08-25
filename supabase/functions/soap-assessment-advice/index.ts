@@ -1,19 +1,18 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Edge Function: soap-clinical-advice
-// Dipanggil terapis dari form SOAP untuk minta saran klinis berbasis
-// jurnal yang sudah ditempel owner (RAG via PostgreSQL full-text search,
-// bukan pengetahuan bebas model) — supaya sitasi yang muncul selalu bisa
-// ditelusuri ke dokumen asli di klinik. Kalau tidak ada potongan jurnal
-// yang cukup relevan, fungsi ini SENGAJA tidak menjawab (menghindari
-// halusinasi klinis).
+// Edge Function: soap-assessment-advice
+// Kebalikan dari soap-clinical-advice: dipanggil terapis SEBELUM field
+// Assessment diisi (cukup modal Subjective + Objective) untuk bantu
+// merumuskan kemungkinan diagnosa fisioterapi, pemeriksaan spesifik yang
+// perlu dilakukan, dan hal yang perlu dievaluasi lebih lanjut — berbasis
+// jurnal yang owner tandai document_scope 'assessment' atau 'both' (RAG
+// via PostgreSQL full-text search, sama seperti soap-clinical-advice).
+// Kalau tidak ada potongan jurnal yang cukup relevan, fungsi ini SENGAJA
+// tidak menjawab (menghindari halusinasi klinis).
 //
 // Secrets yang wajib diset di Supabase:
 //   ANTHROPIC_API_KEY (sudah dipakai fungsi lain di project ini)
-// Catatan: tidak lagi butuh Voyage/embedding API — pencarian referensi
-// pakai full-text search bawaan PostgreSQL (gratis, lihat migration
-// journal_knowledge_base_fulltext_search.sql).
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,18 +50,16 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { diagnosis, subjective, objective, assessment, plan, is_progress_stalled } = body || {};
+    const { diagnosis, subjective, objective } = body || {};
 
     const clinicalContext = [
-      diagnosis ? `Diagnosis: ${diagnosis}` : null,
+      diagnosis ? `Diagnosis rujukan/awal: ${diagnosis}` : null,
       subjective ? `Subjective: ${subjective}` : null,
       objective ? `Objective: ${objective}` : null,
-      assessment ? `Assessment: ${assessment}` : null,
-      plan ? `Plan saat ini: ${plan}` : null,
     ].filter(Boolean).join("\n");
 
-    if (!clinicalContext.trim()) {
-      return json({ error: "Isi minimal Assessment sebelum meminta saran klinis." }, 400);
+    if (!subjective?.trim() && !objective?.trim()) {
+      return json({ error: "Isi minimal Subjective atau Objective sebelum meminta saran assessment." }, 400);
     }
 
     const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -91,13 +88,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Akun tidak terhubung ke klinik manapun" }, 403);
     }
 
-    // Cari potongan jurnal paling relevan lewat full-text search Postgres
-    // (gratis, tanpa API embedding), dibatasi ke klinik pemanggil.
+    // Cari potongan jurnal paling relevan yang ditandai untuk assessment
+    // (atau 'both'), dibatasi ke klinik pemanggil.
     const { data: matches, error: matchError } = await admin.rpc("match_journal_chunks_fts", {
       query_text: clinicalContext,
       p_clinic_id: callerRow.clinic_id,
       match_count: MATCH_COUNT,
-      p_scope: "tindakan",
+      p_scope: "assessment",
     });
 
     if (matchError) {
@@ -109,17 +106,15 @@ Deno.serve(async (req: Request) => {
       return json({
         advice: null,
         no_reference_found: true,
-        message: "Belum ada referensi jurnal yang cukup relevan di basis data klinik untuk kondisi ini. Minta owner mengunggah jurnal/guideline terkait, atau lanjutkan sesuai clinical judgement Anda.",
+        message: "Belum ada referensi jurnal/ebook assessment yang cukup relevan di basis data klinik untuk kondisi ini. Minta owner mengunggah jurnal/guideline assessment terkait (tandai peruntukan 'Assessment' saat menambahkan), atau lanjutkan sesuai clinical judgement Anda.",
       });
     }
 
-    // 3) Susun konteks jurnal untuk prompt, beri nomor referensi eksplisit
-    //    supaya model harus mengaitkan tiap poin saran ke sumbernya.
     const referenceBlock = matches.map((m: any, idx: number) =>
       `[Ref ${idx + 1}] "${m.title}"${m.author ? ` — ${m.author}` : ''}${m.publication_year ? ` (${m.publication_year})` : ''}${m.page_number ? `, hal. ${m.page_number}` : ''}\n${m.content}`
     ).join("\n\n");
 
-    const systemPrompt = `Kamu adalah asisten clinical decision support untuk fisioterapis di Indonesia. Kamu HANYA boleh memberi saran berdasarkan potongan referensi jurnal/guideline yang diberikan di bawah — JANGAN gunakan pengetahuan umum di luar itu, dan JANGAN mengarang sitasi atau studi yang tidak ada di daftar referensi.
+    const systemPrompt = `Kamu adalah asisten clinical decision support untuk fisioterapis di Indonesia, khusus membantu tahap ASSESSMENT (sebelum diagnosis fisioterapi difinalisasi). Kamu HANYA boleh memberi saran berdasarkan potongan referensi jurnal/guideline yang diberikan di bawah — JANGAN gunakan pengetahuan umum di luar itu, dan JANGAN mengarang sitasi atau studi yang tidak ada di daftar referensi. Kamu TIDAK menetapkan diagnosis final — kamu hanya membantu terapis mempersempit kemungkinan dan menentukan pemeriksaan lanjutan; keputusan akhir tetap di tangan terapis.
 
 Jika referensi yang diberikan tidak cukup untuk menjawab bagian tertentu, katakan itu secara eksplisit di bagian tersebut daripada mengarang.
 
@@ -127,13 +122,13 @@ Jawab SELALU dalam Bahasa Indonesia, walaupun referensi sumbernya berbahasa Ingg
 
 Jawab HANYA dengan JSON valid (tanpa markdown), dengan struktur:
 {
-  "intervensi_disarankan": "string, saran tindakan/intervensi fisioterapi berdasarkan referensi, sertakan tanda [Ref N] di kalimat yang bersangkutan",
-  "latihan_disarankan": "string, saran program latihan berdasarkan referensi, sertakan tanda [Ref N]",
-  "evaluasi_jika_stagnan": "string, langkah evaluasi/re-assessment yang disarankan jika perubahan pasien tidak signifikan, sertakan tanda [Ref N]",
+  "kemungkinan_diagnosa": "string, daftar kemungkinan diagnosis banding fisioterapi berdasarkan referensi dan data S/O yang diberikan, sertakan tanda [Ref N] di kalimat yang bersangkutan",
+  "pemeriksaan_spesifik_disarankan": "string, tes/pemeriksaan khusus (special test, pengukuran, skala) yang disarankan untuk memperkuat/menyingkirkan kemungkinan diagnosis di atas, sertakan tanda [Ref N]",
+  "yang_perlu_dievaluasi": "string, red flags atau hal lain yang perlu dievaluasi/diwaspadai sebelum menentukan assessment final, sertakan tanda [Ref N]",
   "catatan": "string atau null, catatan tambahan/batasan referensi yang tersedia"
 }`;
 
-    const userPrompt = `KONTEKS PASIEN SAAT INI:\n${clinicalContext}\n${is_progress_stalled ? "\nCatatan: terapis melaporkan progres pasien TIDAK signifikan pada sesi-sesi terakhir.\n" : ""}\nREFERENSI JURNAL/GUIDELINE YANG TERSEDIA DI BASIS DATA KLINIK:\n${referenceBlock}\n\nBerikan saran sesuai format JSON yang ditentukan, hanya berdasarkan referensi di atas.`;
+    const userPrompt = `DATA PASIEN SAAT INI (sebelum Assessment ditentukan):\n${clinicalContext}\n\nREFERENSI JURNAL/GUIDELINE ASSESSMENT YANG TERSEDIA DI BASIS DATA KLINIK:\n${referenceBlock}\n\nBerikan saran sesuai format JSON yang ditentukan, hanya berdasarkan referensi di atas.`;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 60000);
@@ -183,7 +178,7 @@ Jawab HANYA dengan JSON valid (tanpa markdown), dengan struktur:
       })),
     });
   } catch (err) {
-    console.error("soap-clinical-advice error:", err);
+    console.error("soap-assessment-advice error:", err);
     return json({ error: String((err as Error)?.message || err) }, 500);
   }
 });
