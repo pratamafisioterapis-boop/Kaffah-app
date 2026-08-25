@@ -5134,17 +5134,20 @@ export const uploadJournalDocument = async (file, metadata) => {
 
     if (insertError) return { error: insertError };
 
-    const { data: fnData, error: fnError } = await supabase.functions.invoke('ingest-journal-document', {
+    // Sengaja TIDAK di-await: dokumen tebal (ratusan halaman) bisa butuh
+    // waktu lebih dari semenit untuk diekstrak+di-embed, jauh lebih lama
+    // dari batas waktu request biasa. Prosesnya jalan di edge function
+    // secara independen; UI sudah polling status dokumen ('processing' ->
+    // 'ready'/'failed') di JournalKnowledgeBaseManager, jadi tidak perlu
+    // menahan pengguna menunggu di sini.
+    supabase.functions.invoke('ingest-journal-document', {
       body: { document_id: docRow.id },
+    }).catch((err) => {
+      console.error('ingest-journal-document invoke failed:', err);
     });
-    if (fnError || fnData?.error) {
-      // Dokumen tetap tersimpan dengan status 'failed' (diset di dalam edge
-      // function) — owner bisa lihat pesan errornya di daftar dokumen.
-      return { data: docRow, success: true, error: null, warning: fnError?.message || fnData?.error };
-    }
 
     return { data: docRow, success: true, error: null };
-  }, 'uploadJournalDocument');
+  }, 'uploadJournalDocument', { timeout: 180000 });
 };
 
 export const deleteJournalDocument = async (id, filePath) => {
