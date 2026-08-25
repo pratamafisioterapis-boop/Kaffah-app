@@ -6,13 +6,14 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Calendar, ChevronDown, ChevronUp, Stethoscope, Users,
-  History, FileText, User,
+  History, FileText, User, Clock,
 } from 'lucide-react';
-import { getPatientClinicalHistory, getMedicalRecords } from '@/lib/api';
+import { getPatientClinicalHistory, getMedicalRecords, getPatientOnsetInfo } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { colorForLabel } from './TherapistTodayPatientHistory';
+import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 
 const SOAP_FIELDS = [
   { key: 'subjective', short: 'S', label: 'Subjective', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
@@ -35,13 +36,16 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [onsetInfo, setOnsetInfo] = useState(null);
 
   useEffect(() => {
     if (isOpen && patient?.id) {
       fetchHistory();
+      getPatientOnsetInfo(patient.id).then(({ data }) => setOnsetInfo(data || null));
     } else {
       setVisits([]);
       setExpandedId(null);
+      setOnsetInfo(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, patient?.id]);
@@ -133,6 +137,25 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">Kunjungan Pertama</p>
             </div>
           </div>
+
+          {onsetInfo?.complaint_onset_date && (() => {
+            const duration = formatOnsetDuration(onsetInfo.complaint_onset_date);
+            const phase = classifyOnsetPhase(onsetInfo.complaint_onset_date);
+            const phaseStyles = {
+              amber: 'bg-amber-50 border-amber-200 text-amber-800',
+              blue: 'bg-blue-50 border-blue-200 text-blue-800',
+              rose: 'bg-rose-50 border-rose-200 text-rose-800',
+            };
+            return (
+              <div className={cn('mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5', phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700')}>
+                <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                <p className="text-xs leading-relaxed">
+                  <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
+                  {phase && <> (<strong>{phase.label}</strong>)</>}, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: idLocale })}.
+                </p>
+              </div>
+            );
+          })()}
 
           {uniqueTherapists.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
