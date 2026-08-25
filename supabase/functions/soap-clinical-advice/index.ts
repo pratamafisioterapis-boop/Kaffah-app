@@ -3,13 +3,17 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Edge Function: soap-clinical-advice
 // Dipanggil terapis dari form SOAP untuk minta saran klinis berbasis
-// jurnal/ebook yang sudah diunggah owner (RAG, bukan pengetahuan bebas
-// model) — supaya sitasi yang muncul selalu bisa ditelusuri ke dokumen
-// asli di klinik. Kalau tidak ada potongan jurnal yang cukup relevan,
-// fungsi ini SENGAJA tidak menjawab (menghindari halusinasi klinis).
+// jurnal yang sudah ditempel owner (RAG via PostgreSQL full-text search,
+// bukan pengetahuan bebas model) — supaya sitasi yang muncul selalu bisa
+// ditelusuri ke dokumen asli di klinik. Kalau tidak ada potongan jurnal
+// yang cukup relevan, fungsi ini SENGAJA tidak menjawab (menghindari
+// halusinasi klinis).
 //
 // Secrets yang wajib diset di Supabase:
-//   VOYAGE_API_KEY, ANTHROPIC_API_KEY (sudah dipakai fungsi lain di project ini)
+//   ANTHROPIC_API_KEY (sudah dipakai fungsi lain di project ini)
+// Catatan: tidak lagi butuh Voyage/embedding API — pencarian referensi
+// pakai full-text search bawaan PostgreSQL (gratis, lihat migration
+// journal_knowledge_base_fulltext_search.sql).
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,29 +27,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const EMBEDDING_MODEL = "voyage-multilingual-2";
 const MATCH_COUNT = 6;
-const MIN_SIMILARITY = 0.5;
-
-async function embedQuery(text: string, apiKey: string): Promise<number[]> {
-  const response = await fetch("https://api.voyageai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      input: [text],
-      model: EMBEDDING_MODEL,
-      input_type: "query",
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(`Voyage API error: ${data?.detail || data?.error?.message || response.statusText}`);
-  }
-  return data.data[0].embedding as number[];
-}
 
 const parseModelJson = (text: string) => {
   const clean = text.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -83,9 +65,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Isi minimal Assessment sebelum meminta saran klinis." }, 400);
     }
 
-    const voyageApiKey = Deno.env.get("VOYAGE_API_KEY");
     const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!voyageApiKey) return json({ error: "VOYAGE_API_KEY belum diset di secrets Supabase" }, 500);
     if (!anthropicApiKey) return json({ error: "ANTHROPIC_API_KEY belum diset di secrets Supabase" }, 500);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -111,15 +91,12 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Akun tidak terhubung ke klinik manapun" }, 403);
     }
 
-    // 1) Embed konteks klinis sebagai query pencarian.
-    const queryEmbedding = await embedQuery(clinicalContext, voyageApiKey);
-
-    // 2) Cari potongan jurnal paling relevan, dibatasi ke klinik pemanggil.
-    const { data: matches, error: matchError } = await admin.rpc("match_journal_chunks", {
-      query_embedding: queryEmbedding,
+    // Cari potongan jurnal paling relevan lewat full-text search Postgres
+    // (gratis, tanpa API embedding), dibatasi ke klinik pemanggil.
+    const { data: matches, error: matchError } = await admin.rpc("match_journal_chunks_fts", {
+      query_text: clinicalContext,
       p_clinic_id: callerRow.clinic_id,
       match_count: MATCH_COUNT,
-      min_similarity: MIN_SIMILARITY,
     });
 
     if (matchError) {
