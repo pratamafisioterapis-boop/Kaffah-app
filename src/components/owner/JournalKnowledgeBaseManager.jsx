@@ -12,7 +12,13 @@ import { getJournalDocuments, createJournalDocument, deleteJournalDocument } fro
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-const emptyForm = { title: '', author: '', publication_year: '', source_language: 'en', topic_tags: '', content: '' };
+const emptyForm = { title: '', author: '', publication_year: '', source_language: 'en', topic_tags: '', content: '', document_scope: 'both' };
+
+const SCOPE_LABELS = {
+  assessment: { label: 'Assessment', className: 'bg-violet-100 text-violet-700 border-violet-200' },
+  tindakan: { label: 'Tindakan', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  both: { label: 'Assessment & Tindakan', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+};
 
 const JournalKnowledgeBaseManager = () => {
   const [documents, setDocuments] = useState([]);
@@ -47,6 +53,7 @@ const JournalKnowledgeBaseManager = () => {
       publication_year: form.publication_year ? Number(form.publication_year) : null,
       source_language: form.source_language,
       topic_tags: form.topic_tags.split(',').map(t => t.trim()).filter(Boolean),
+      document_scope: form.document_scope,
     });
     setSaving(false);
 
@@ -79,8 +86,9 @@ const JournalKnowledgeBaseManager = () => {
             Tambah Jurnal / Ebook Fisioterapi
           </CardTitle>
           <p className="text-sm text-slate-500">
-            Copy-paste isi jurnal/ebook di bawah — jadi sumber referensi fitur "Saran Klinis AI" di form SOAP terapis. Boleh berbahasa
-            Indonesia atau Inggris, saran ke terapis akan tetap ditampilkan dalam Bahasa Indonesia. Tidak perlu upload file.
+            Copy-paste isi jurnal/ebook di bawah — jadi sumber referensi fitur "Saran Klinis AI" (tindakan) dan/atau "Saran Assessment AI"
+            (diagnosa & pemeriksaan) di form SOAP terapis, tergantung peruntukan yang dipilih. Boleh berbahasa Indonesia atau Inggris, saran
+            ke terapis akan tetap ditampilkan dalam Bahasa Indonesia. Tidak perlu upload file.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -98,6 +106,18 @@ const JournalKnowledgeBaseManager = () => {
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Peruntukan</Label>
+              <Select value={form.document_scope} onValueChange={(v) => setForm(prev => ({ ...prev, document_scope: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="assessment">Assessment (bantu diagnosa & pemeriksaan)</SelectItem>
+                  <SelectItem value="tindakan">Tindakan (saran intervensi & latihan)</SelectItem>
+                  <SelectItem value="both">Keduanya</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-400">Menentukan fitur AI mana yang boleh memakai dokumen ini sebagai referensi.</p>
             </div>
             <div className="space-y-2">
               <Label>Penulis</Label>
@@ -149,6 +169,9 @@ const JournalKnowledgeBaseManager = () => {
                       <p className="text-xs text-slate-500">
                         {doc.author ? `${doc.author} · ` : ''}{doc.publication_year || ''} · {doc.source_language === 'id' ? 'Indonesia' : 'English'}
                       </p>
+                      <Badge variant="outline" className={`text-[10px] font-normal mt-1.5 ${SCOPE_LABELS[doc.document_scope]?.className || SCOPE_LABELS.both.className}`}>
+                        {SCOPE_LABELS[doc.document_scope]?.label || SCOPE_LABELS.both.label}
+                      </Badge>
                       {doc.topic_tags?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {doc.topic_tags.map((tag) => (

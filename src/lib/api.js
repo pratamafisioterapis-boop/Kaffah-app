@@ -5100,12 +5100,14 @@ export const getWarningLetterSignedFileUrl = async (path) => {
 };
 
 // ============================================
-// JOURNAL KNOWLEDGE BASE - Saran Klinis AI (RAG)
+// JOURNAL KNOWLEDGE BASE - Saran Assessment & Klinis AI (RAG)
 // ============================================
-// Owner mengunggah jurnal/ebook fisioterapi (PDF) sebagai basis referensi.
-// File diproses jadi embedding lewat edge function `ingest-journal-document`,
-// lalu dicari secara semantik oleh `soap-clinical-advice` saat terapis minta
-// saran di form SOAP. Lihat supabase/functions/ untuk detail server-side.
+// Owner menempel isi jurnal/ebook fisioterapi sebagai basis referensi,
+// ditandai peruntukannya (document_scope: 'assessment' | 'tindakan' |
+// 'both'). Dicari lewat full-text search Postgres oleh
+// `soap-assessment-advice` (bantu diagnosa/pemeriksaan, sebelum Assessment
+// diisi) dan `soap-clinical-advice` (saran tindakan/latihan, setelah
+// Assessment diisi). Lihat supabase/functions/ untuk detail server-side.
 export const getJournalDocuments = async () => {
   return safeQuery(async () => {
     const { data: clinicData } = await getCurrentClinic();
@@ -5172,6 +5174,7 @@ export const createJournalDocument = async (content, metadata) => {
         publication_year: metadata.publication_year || null,
         source_language: metadata.source_language || 'en',
         topic_tags: metadata.topic_tags || [],
+        document_scope: metadata.document_scope || 'both',
         status: 'ready',
         progress_percent: 100,
         uploaded_by: userId || null,
@@ -5221,6 +5224,22 @@ export const getSoapClinicalAdvice = async ({ diagnosis, subjective, objective, 
     if (data?.error) return { error: { message: data.error } };
     return { data, success: true, error: null };
   }, 'getSoapClinicalAdvice', { timeout: 60000 });
+};
+
+// Kebalikan dari getSoapClinicalAdvice: dipanggil SEBELUM Assessment diisi
+// (cukup modal Subjective + Objective) untuk bantu terapis merumuskan
+// kemungkinan diagnosa, pemeriksaan spesifik, dan hal yang perlu
+// dievaluasi — pakai basis jurnal yang ditandai document_scope
+// 'assessment' atau 'both'. Lihat supabase/functions/soap-assessment-advice.
+export const getSoapAssessmentAdvice = async ({ diagnosis, subjective, objective }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('soap-assessment-advice', {
+      body: { diagnosis, subjective, objective },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'getSoapAssessmentAdvice', { timeout: 60000 });
 };
 
 export const getFollowUpQueueFiltered = async ({
