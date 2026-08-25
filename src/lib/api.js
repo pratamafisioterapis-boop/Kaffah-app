@@ -5077,6 +5077,98 @@ export const getWarningLetterSignedFileUrl = async (path) => {
   }, 'getWarningLetterSignedFileUrl');
 };
 
+// ============================================
+// JOURNAL KNOWLEDGE BASE - Saran Klinis AI (RAG)
+// ============================================
+// Owner mengunggah jurnal/ebook fisioterapi (PDF) sebagai basis referensi.
+// File diproses jadi embedding lewat edge function `ingest-journal-document`,
+// lalu dicari secara semantik oleh `soap-clinical-advice` saat terapis minta
+// saran di form SOAP. Lihat supabase/functions/ untuk detail server-side.
+export const getJournalDocuments = async () => {
+  return safeQuery(async () => {
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('journal_documents')
+      .select('*')
+      .eq('clinic_id', clinicData.id)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getJournalDocuments', { retry: true });
+};
+
+export const uploadJournalDocument = async (file, metadata) => {
+  return safeQuery(async () => {
+    if (!file) return { error: { message: 'File tidak ditemukan' } };
+
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { error: { message: 'Klinik tidak ditemukan' } };
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const path = `${clinicData.id}/${crypto.randomUUID()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('journal-documents')
+      .upload(path, file, { upsert: false, contentType: 'application/pdf' });
+    if (uploadError) return { error: uploadError };
+
+    const { data: docRow, error: insertError } = await supabase
+      .from('journal_documents')
+      .insert({
+        clinic_id: clinicData.id,
+        title: metadata.title,
+        author: metadata.author || null,
+        publication_year: metadata.publication_year || null,
+        source_language: metadata.source_language || 'en',
+        topic_tags: metadata.topic_tags || [],
+        file_path: path,
+        file_name: file.name,
+        uploaded_by: userId || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) return { error: insertError };
+
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('ingest-journal-document', {
+      body: { document_id: docRow.id },
+    });
+    if (fnError || fnData?.error) {
+      // Dokumen tetap tersimpan dengan status 'failed' (diset di dalam edge
+      // function) — owner bisa lihat pesan errornya di daftar dokumen.
+      return { data: docRow, success: true, error: null, warning: fnError?.message || fnData?.error };
+    }
+
+    return { data: docRow, success: true, error: null };
+  }, 'uploadJournalDocument');
+};
+
+export const deleteJournalDocument = async (id, filePath) => {
+  return safeQuery(async () => {
+    if (filePath) {
+      await supabase.storage.from('journal-documents').remove([filePath]);
+    }
+    const { error } = await supabase.from('journal_documents').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteJournalDocument');
+};
+
+export const getSoapClinicalAdvice = async ({ diagnosis, subjective, objective, assessment, plan, is_progress_stalled }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('soap-clinical-advice', {
+      body: { diagnosis, subjective, objective, assessment, plan, is_progress_stalled },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'getSoapClinicalAdvice', { timeout: 60000 });
+};
+
 export const getFollowUpQueueFiltered = async ({
   status = null,
   follow_up_type = null,

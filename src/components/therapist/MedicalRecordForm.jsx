@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Save, History, CalendarDays } from 'lucide-react';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus } from '@/lib/api';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
+import ClinicalAdviceAssistant from '@/components/therapist/ClinicalAdviceAssistant';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
@@ -358,6 +359,9 @@ if (isCreate) {
                 </div>
               ))}
             </div>
+
+            <ClinicalAdviceAssistant formData={formData} />
+
             {/* Submit */}
             <div className={`flex justify-end gap-3 bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
               <Button type="button" variant="outline" className="rounded-xl" onClick={() => {

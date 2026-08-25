@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay
+  UploadCloud, UserCog, MonitorPlay, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -41,7 +41,8 @@ const iconMap = {
   UploadCloud,
   UserCog,
   MonitorPlay,
-  Clock
+  Clock,
+  BookOpen
 };
 
 // Safe date formatter to prevent runtime crashes

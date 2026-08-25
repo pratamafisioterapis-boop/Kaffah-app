@@ -20,6 +20,7 @@ import OwnerFollowUpManagementPage from '@/components/admin/FollowUpManagementPa
 
 // Components
 import SettingsPage from '@/components/owner/SettingsPage';
+import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
 import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
 import RevenueOverview from '@/components/owner/RevenueOverview';
@@ -536,6 +537,7 @@ const OwnerDashboard = () => {
         <Route path="/modal-awal" element={<ModalAwalManagement />} />
         <Route path="/daily-recap" element={<OwnerDailyRecap />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
         <Route path="/admin-management" element={<AdminManagementPage />} />
         
 
