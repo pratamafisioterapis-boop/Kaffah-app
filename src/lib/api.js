@@ -7350,6 +7350,38 @@ export const getTherapistSoapCompleteness = async (therapistId, startDate, endDa
   }, 'getTherapistSoapCompleteness', { retry: true });
 };
 
+// Daftar daily_recap_id yang sudah punya SOAP (medical_records) terisi,
+// untuk satu terapis pada satu periode. Dipakai UI yang perlu menampilkan
+// status SOAP per kunjungan (bukan cuma persentase agregat).
+export const getTherapistFilledRecapIds = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: recaps, error: recapError } = await supabase
+      .from('daily_recaps')
+      .select('id')
+      .eq('therapist_id', therapistId)
+      .gte('recap_date', startDate)
+      .lte('recap_date', endDate);
+
+    if (recapError) return { error: recapError };
+
+    const recapIds = (recaps || []).map(r => r.id);
+    if (recapIds.length === 0) {
+      return { data: [], success: true, error: null };
+    }
+
+    const { data: medicalRecords, error: mrError } = await supabase
+      .from('medical_records')
+      .select('daily_recap_id')
+      .in('daily_recap_id', recapIds);
+
+    if (mrError) return { error: mrError };
+
+    const filledIds = [...new Set((medicalRecords || []).map(r => r.daily_recap_id).filter(Boolean))];
+
+    return { data: filledIds, success: true, error: null };
+  }, 'getTherapistFilledRecapIds', { retry: true });
+};
+
 // Laporan remunerasi lengkap untuk satu terapis pada satu periode: gabungan
 // kriteria (dari owner), realisasi manual, dan metrik otomatis dari DB.
 export const getRemunerationReport = async (therapistId, startDate, endDate) => {
