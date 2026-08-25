@@ -27,19 +27,21 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) =
     navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
   };
 
-  const timeline = visits.map(visit => {
-    const visitDate = visit.recap_date;
-    const matchedRecord = records.find(r => {
-      return r.daily_recap_id === visit.id;
-    });
-    return {
-      id: visit.id,
-      date: visitDate,
-      formattedDate: format(new Date(visitDate), 'dd MMMM yyyy', { locale: id }),
-      record: matchedRecord,
-      status: matchedRecord ? 'filled' : 'unfilled'
-    };
-  });
+  const timeline = visits
+    .map(visit => {
+      const visitDate = visit.recap_date;
+      const matchedRecord = records.find(r => {
+        return r.daily_recap_id === visit.id;
+      });
+      return {
+        id: visit.id,
+        date: visitDate,
+        formattedDate: format(new Date(visitDate), 'dd MMMM yyyy', { locale: id }),
+        record: matchedRecord,
+        status: matchedRecord ? 'filled' : 'unfilled'
+      };
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const unfilledCount = timeline.filter(t => t.status === 'unfilled').length;
   const filledCount = timeline.filter(t => t.status === 'filled').length;
