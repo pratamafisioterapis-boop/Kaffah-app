@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClient';
 import {
     validatePackageTypeId,
     validateBirthDate,
@@ -5100,7 +5100,32 @@ export const getJournalDocuments = async () => {
   }, 'getJournalDocuments', { retry: true });
 };
 
-export const uploadJournalDocument = async (file, metadata) => {
+// supabase-js v2's storage client uploads via fetch, which has no upload
+// progress event in browsers — so a raw XHR call to the same Storage REST
+// endpoint is used here instead, purely to get real byte-level progress
+// for the upload bar. Falls back to the normal client if this ever needs
+// swapping out (same bucket/path/RLS rules apply either way).
+const uploadFileWithProgress = (path, file, accessToken, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${supabaseUrl}/storage/v1/object/journal-documents/${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.setRequestHeader('apikey', supabaseAnonKey);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.setRequestHeader('Content-Type', 'application/pdf');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload gagal (${xhr.status}): ${xhr.responseText || xhr.statusText}`));
+    };
+    xhr.onerror = () => reject(new Error('Failed to fetch'));
+    xhr.send(file);
+  });
+};
+
+export const uploadJournalDocument = async (file, metadata, onUploadProgress) => {
   return safeQuery(async () => {
     if (!file) return { error: { message: 'File tidak ditemukan' } };
 
@@ -5109,12 +5134,15 @@ export const uploadJournalDocument = async (file, metadata) => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) return { error: { message: 'Sesi tidak ditemukan, silakan login ulang.' } };
 
     const path = `${clinicData.id}/${crypto.randomUUID()}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from('journal-documents')
-      .upload(path, file, { upsert: false, contentType: 'application/pdf' });
-    if (uploadError) return { error: uploadError };
+    try {
+      await uploadFileWithProgress(path, file, accessToken, onUploadProgress);
+    } catch (uploadError) {
+      return { error: uploadError };
+    }
 
     const { data: docRow, error: insertError } = await supabase
       .from('journal_documents')
@@ -5134,17 +5162,20 @@ export const uploadJournalDocument = async (file, metadata) => {
 
     if (insertError) return { error: insertError };
 
-    const { data: fnData, error: fnError } = await supabase.functions.invoke('ingest-journal-document', {
+    // Sengaja TIDAK di-await: dokumen tebal (ratusan halaman) bisa butuh
+    // waktu lebih dari semenit untuk diekstrak+di-embed, jauh lebih lama
+    // dari batas waktu request biasa. Prosesnya jalan di edge function
+    // secara independen; UI sudah polling status dokumen ('processing' ->
+    // 'ready'/'failed') di JournalKnowledgeBaseManager, jadi tidak perlu
+    // menahan pengguna menunggu di sini.
+    supabase.functions.invoke('ingest-journal-document', {
       body: { document_id: docRow.id },
+    }).catch((err) => {
+      console.error('ingest-journal-document invoke failed:', err);
     });
-    if (fnError || fnData?.error) {
-      // Dokumen tetap tersimpan dengan status 'failed' (diset di dalam edge
-      // function) — owner bisa lihat pesan errornya di daftar dokumen.
-      return { data: docRow, success: true, error: null, warning: fnError?.message || fnData?.error };
-    }
 
     return { data: docRow, success: true, error: null };
-  }, 'uploadJournalDocument');
+  }, 'uploadJournalDocument', { timeout: 180000 });
 };
 
 export const deleteJournalDocument = async (id, filePath) => {

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { getJournalDocuments, uploadJournalDocument, deleteJournalDocument } from '@/lib/api';
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ const JournalKnowledgeBaseManager = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [file, setFile] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const { toast } = useToast();
@@ -36,11 +38,13 @@ const JournalKnowledgeBaseManager = () => {
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
 
-  // Dokumen yang masih 'processing' dipoll ringan supaya statusnya update
-  // otomatis begitu ingestion di edge function selesai, tanpa perlu refresh manual.
+  // Dokumen yang masih 'processing' dipoll (termasuk progress_percent-nya,
+  // yang diupdate edge function per batch embedding) supaya persentase di
+  // UI ikut bergerak tanpa perlu refresh manual. Interval dipercepat
+  // selagi ada yang diproses supaya animasinya terasa hidup.
   useEffect(() => {
     if (!documents.some(d => d.status === 'processing')) return;
-    const interval = setInterval(loadDocuments, 5000);
+    const interval = setInterval(loadDocuments, 2000);
     return () => clearInterval(interval);
   }, [documents, loadDocuments]);
 
@@ -68,19 +72,24 @@ const JournalKnowledgeBaseManager = () => {
     }
 
     setUploading(true);
-    const { success, error, data } = await uploadJournalDocument(file, {
-      title: form.title.trim(),
-      author: form.author.trim() || null,
-      publication_year: form.publication_year ? Number(form.publication_year) : null,
-      source_language: form.source_language,
-      topic_tags: form.topic_tags.split(',').map(t => t.trim()).filter(Boolean),
-    });
+    setUploadPercent(0);
+    const { success, error, data } = await uploadJournalDocument(
+      file,
+      {
+        title: form.title.trim(),
+        author: form.author.trim() || null,
+        publication_year: form.publication_year ? Number(form.publication_year) : null,
+        source_language: form.source_language,
+        topic_tags: form.topic_tags.split(',').map(t => t.trim()).filter(Boolean),
+      },
+      setUploadPercent
+    );
     setUploading(false);
 
     if (success) {
       toast({
         title: 'Upload Berhasil',
-        description: `"${data?.title}" sedang diproses. Ini bisa memakan waktu beberapa menit tergantung ketebalan dokumen.`,
+        description: `"${data?.title}" sedang diproses (lihat persentasenya di daftar dokumen di bawah).`,
       });
       setFile(null);
       setForm(emptyForm);
@@ -148,8 +157,13 @@ const JournalKnowledgeBaseManager = () => {
             </div>
           </div>
           <Button onClick={handleUpload} disabled={uploading} className="bg-blue-600 hover:bg-blue-700">
-            {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengunggah...</> : <><Upload className="w-4 h-4 mr-2" /> Upload & Proses</>}
+            {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengunggah... {uploadPercent}%</> : <><Upload className="w-4 h-4 mr-2" /> Upload & Proses</>}
           </Button>
+          {uploading && (
+            <div className="max-w-sm">
+              <Progress value={uploadPercent} className="h-2" />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -184,6 +198,12 @@ const JournalKnowledgeBaseManager = () => {
                             ))}
                           </div>
                         )}
+                        {doc.status === 'processing' && (
+                          <div className="mt-2 max-w-xs">
+                            <Progress value={doc.progress_percent || 0} className="h-1.5" />
+                            <p className="text-[11px] text-amber-600 mt-1">Memproses... {doc.progress_percent || 0}%</p>
+                          </div>
+                        )}
                         {doc.status === 'failed' && doc.error_message && (
                           <p className="text-xs text-red-600 mt-1">{doc.error_message}</p>
                         )}
@@ -194,7 +214,8 @@ const JournalKnowledgeBaseManager = () => {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={`gap-1 ${meta.className}`}>
-                        <StatusIcon className="w-3 h-3" /> {meta.label}
+                        <StatusIcon className="w-3 h-3" />
+                        {doc.status === 'processing' ? `Memproses ${doc.progress_percent || 0}%` : meta.label}
                       </Badge>
                       <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => handleDelete(doc)}>
                         <Trash2 className="w-4 h-4" />

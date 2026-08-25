@@ -54,7 +54,15 @@ function chunkPageText(pageNumber: number, text: string): PageChunk[] {
   return chunks;
 }
 
-async function embedTexts(texts: string[], apiKey: string): Promise<number[][]> {
+// Embedding adalah bagian terlama dari proses (bisa puluhan detik untuk
+// dokumen tebal), jadi progress dilaporkan per batch lewat onBatchDone
+// supaya owner bisa lihat persentase berjalan, bukan cuma "Memproses"
+// diam tanpa indikasi seberapa jauh.
+async function embedTexts(
+  texts: string[],
+  apiKey: string,
+  onBatchDone: (completed: number, total: number) => Promise<void>
+): Promise<number[][]> {
   const results: number[][] = [];
   for (let i = 0; i < texts.length; i += EMBEDDING_BATCH_SIZE) {
     const batch = texts.slice(i, i + EMBEDDING_BATCH_SIZE);
@@ -76,6 +84,7 @@ async function embedTexts(texts: string[], apiKey: string): Promise<number[][]> 
     }
     const embeddings = (data.data || []).map((d: any) => d.embedding as number[]);
     results.push(...embeddings);
+    await onBatchDone(results.length, texts.length);
   }
   return results;
 }
@@ -163,7 +172,18 @@ Deno.serve(async (req: Request) => {
         truncated = true;
       }
 
-      const embeddings = await embedTexts(allChunks.map((c) => c.content), voyageApiKey);
+      // Ekstraksi teks dianggap 5%, embedding (bagian terlama) 5-90%,
+      // sisanya (insert ke DB + finalisasi) 90-100%.
+      await admin.from("journal_documents").update({ progress_percent: 5 }).eq("id", doc.id);
+
+      const embeddings = await embedTexts(
+        allChunks.map((c) => c.content),
+        voyageApiKey,
+        async (completed, total) => {
+          const pct = 5 + Math.round((completed / total) * 85);
+          await admin.from("journal_documents").update({ progress_percent: pct }).eq("id", doc.id);
+        }
+      );
 
       const rows = allChunks.map((chunk, idx) => ({
         document_id: doc.id,
@@ -179,12 +199,15 @@ Deno.serve(async (req: Request) => {
       for (let i = 0; i < rows.length; i += INSERT_BATCH) {
         const { error: insertError } = await admin.from("journal_chunks").insert(rows.slice(i, i + INSERT_BATCH));
         if (insertError) throw new Error(insertError.message);
+        const pct = 90 + Math.round(((i + INSERT_BATCH) / rows.length) * 10);
+        await admin.from("journal_documents").update({ progress_percent: Math.min(pct, 99) }).eq("id", doc.id);
       }
 
       await admin
         .from("journal_documents")
         .update({
           status: "ready",
+          progress_percent: 100,
           page_count: totalPages,
           error_message: truncated
             ? `Dokumen dipotong ke ${MAX_CHUNKS_PER_DOCUMENT} potongan pertama karena terlalu tebal untuk diproses sekaligus.`
