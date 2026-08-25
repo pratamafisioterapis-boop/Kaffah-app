@@ -3978,7 +3978,9 @@ export const getTherapistRecaps = async (
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    const enrichedData = await enrichRecapsWithOptions(data);
+
+    return { data: enrichedData, success: true, error: null };
 
   }, 'getTherapistRecaps', { retry: true });
 };

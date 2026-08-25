@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, X, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { getTherapistRecaps, getTherapistFilledRecapIds } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -109,7 +109,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
           <p className="text-xs font-medium text-slate-400">Belum ada data periode ini</p>
         </div>
       ) : (
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-5 pt-4 pb-3 space-y-3">
           {sortedTypes.map(([type, count], i) => {
               const pct = total > 0 ? Math.round((count / total) * 100) : 0;
               const color = colors[i % colors.length];
@@ -137,9 +137,14 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color.light} ${color.text} min-w-[2rem] text-center`}>
                     {count}
                   </span>
+                  {/* Click affordance */}
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
                 </button>
               );
             })}
+          <p className="text-[11px] text-slate-400 pt-1">
+            Ketuk tipe pasien untuk lihat detail kunjungan
+          </p>
         </div>
       )}
 
@@ -167,6 +172,9 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
             ) : (
               selectedRecaps.map((item) => {
                 const isFilled = filledRecapIds.has(item.id);
+                const diagnosisText = Array.isArray(item.diagnosis)
+                  ? item.diagnosis.filter(Boolean).join(', ')
+                  : item.diagnosis;
                 return (
                   <div
                     key={item.id}
@@ -203,7 +211,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                       <div>
                         <span className="text-slate-400">Diagnosa: </span>
                         <span className="text-slate-600 font-medium">
-                          {item.diagnosis || '-'}
+                          {diagnosisText || '-'}
                         </span>
                       </div>
                       <div>
