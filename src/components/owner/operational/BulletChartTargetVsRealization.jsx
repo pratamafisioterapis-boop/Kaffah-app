@@ -218,7 +218,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
 
   if (error) {
     return (
-      <Card className="rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
          <CardHeader className="flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-bold text-slate-800">Target vs Realisasi</CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
@@ -233,7 +233,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
   }
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-slate-800">Target vs Realisasi</h3>

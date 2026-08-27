@@ -25,6 +25,7 @@ import AdminAccountingDashboard from '@/components/admin/AdminAccountingDashboar
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
+import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 // Consolidated Pages
 import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
 import AppointmentsPage from '@/pages/AppointmentsPage';
@@ -818,11 +819,9 @@ setTrendPatients(trendArray);
                 
              </div>
 
-             <div className="min-h-[200px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
-               <h3 className="text-lg font-semibold text-slate-700">Detailed Operational Reports</h3>
-               <p className="text-slate-500 mt-2 max-w-sm text-center">
-                 More specific operational breakdown charts can be added here.
-               </p>
+             <div className="space-y-3">
+               <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Sumber Pasien</h3>
+               <PatientSourceChart dateRange={dateRange} />
              </div>
           </TabsContent>
           
