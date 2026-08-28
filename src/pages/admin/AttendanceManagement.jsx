@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw, ChevronLeft } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays, subDays } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import AttendanceUploadModal from '@/components/admin/AttendanceUploadModal';
 import { getTherapistPeriodRange } from '@/lib/utils';
 import {
@@ -52,6 +53,19 @@ const findMostCommonPeriod = (therapistRows) => {
   return { period_start_day, period_end_day };
 };
 
+// Departments named "admin" (any case) are office/admin staff; everything
+// else (fisio pagi, fisio sore, middle, etc.) is a therapist-facing shift.
+const isAdminDepartment = (department) => (department || '').trim().toLowerCase() === 'admin';
+
+const formatTanggalDenganHari = (dateStr) => {
+  if (!dateStr) return '-';
+  try {
+    return format(parseISO(dateStr), 'EEEE, dd MMM yyyy', { locale: idLocale });
+  } catch {
+    return dateStr;
+  }
+};
+
 const STATUS_LABEL = {
   on_time: { label: 'Tepat Waktu', className: 'bg-green-600' },
   late: { label: 'Terlambat', className: 'bg-red-600' },
@@ -74,6 +88,7 @@ const AttendanceManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dailyRoleFilter, setDailyRoleFilter] = useState('all');
   const userEditedDateRangeRef = useRef(false);
 
   const handleStartDateChange = (value) => { userEditedDateRangeRef.current = true; setStartDate(value); };
@@ -178,6 +193,12 @@ const AttendanceManagement = () => {
     }
     return Object.values(byEmployee).sort((a, b) => b.late - a.late);
   }, [records]);
+
+  const dailyRecords = useMemo(() => {
+    if (dailyRoleFilter === 'all') return records;
+    if (dailyRoleFilter === 'admin') return records.filter((r) => isAdminDepartment(r.department));
+    return records.filter((r) => !isAdminDepartment(r.department));
+  }, [records, dailyRoleFilter]);
 
   return (
     <div className="space-y-6">
@@ -308,11 +329,23 @@ const AttendanceManagement = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Detail Harian</CardTitle></CardHeader>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-base">Detail Harian</CardTitle>
+          <div className="w-full sm:w-48">
+            <Select value={dailyRoleFilter} onValueChange={setDailyRoleFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Terapis + Admin</SelectItem>
+                <SelectItem value="terapis">Terapis</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
-          ) : records.length === 0 ? (
+          ) : dailyRecords.length === 0 ? (
             <p className="text-center text-slate-400 py-10 text-sm">Tidak ada data untuk filter yang dipilih.</p>
           ) : (
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
@@ -329,9 +362,9 @@ const AttendanceManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((r) => (
+                  {dailyRecords.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.attendance_date}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatTanggalDenganHari(r.attendance_date)}</TableCell>
                       <TableCell className="font-medium">{r.employee_name}</TableCell>
                       <TableCell>{r.department || '-'}</TableCell>
                       <TableCell>{r.check_in?.slice(0, 5) || '-'}</TableCell>
