@@ -155,6 +155,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     ['2', 'Uang Transport', formatCurrency(record.transport_per_day)],
     ['3', 'Jasa Insentif', formatCurrency(record.incentive_amount)],
     ['4', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
+    ['5', 'Tips (Non-Cash)', formatCurrency(record.tips)],
   ];
 
   autoTable(doc, {

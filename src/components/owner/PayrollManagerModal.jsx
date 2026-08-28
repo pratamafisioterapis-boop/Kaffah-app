@@ -28,6 +28,7 @@ const emptyForm = (therapist) => ({
   transport_per_day: therapist?.transport_per_day || 0,
   incentive_amount: 0,
   custom_commission: 0,
+  tips: 0,
 });
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
@@ -206,7 +207,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       (parseFloat(form.base_salary) || 0) +
       (parseFloat(form.transport_per_day) || 0) +
       (parseFloat(form.incentive_amount) || 0) +
-      (parseFloat(form.custom_commission) || 0)
+      (parseFloat(form.custom_commission) || 0) +
+      (parseFloat(form.tips) || 0)
     );
   }, [form]);
 
@@ -261,6 +263,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       transport_per_day: record.transport_per_day,
       incentive_amount: record.incentive_amount,
       custom_commission: record.custom_commission,
+      tips: record.tips,
       total_salary: record.total_salary,
       status: 'paid',
     });
@@ -352,6 +355,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
               </label>
               <Input type="number" value={form.custom_commission} onChange={(e) => setForm({ ...form, custom_commission: e.target.value })} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-medium text-slate-600">
+                Tips (Non-Cash yang Masuk Rekening Kaffah)
+              </label>
+              <Input type="number" value={form.tips} onChange={(e) => setForm({ ...form, tips: e.target.value })} />
+              <p className="text-[11px] text-slate-400">
+                Tips dari pasien secara non-tunai (transfer/QRIS) yang masuk ke rekening klinik, diteruskan ke terapis lewat slip gaji ini.
+              </p>
             </div>
           </div>
           <p className="text-[11px] text-slate-400 -mt-1">
