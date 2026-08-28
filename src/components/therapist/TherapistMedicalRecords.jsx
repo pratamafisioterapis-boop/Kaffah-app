@@ -4,7 +4,7 @@ import { getTherapistVisits } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
-import { format } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
@@ -41,6 +41,10 @@ const itemsPerPage = 20;
   // Sort State
   const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'asc' });
 
+  // Period Navigation State (0 = periode berjalan, 1 = satu periode lalu, dst.)
+  const [periodOffset, setPeriodOffset] = useState(0);
+  const [periodRange, setPeriodRange] = useState(null);
+
   // Modal State
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,7 +58,7 @@ const itemsPerPage = 20;
 
 useEffect(() => {
   setCurrentPage(1);
-}, [searchTerm, statusFilter]);
+}, [searchTerm, statusFilter, periodOffset]);
   useEffect(() => {
     if (therapist?.id) { fetchData(); }
     else {
@@ -65,7 +69,7 @@ useEffect(() => {
     const handleUpdate = () => { if (therapist?.id) fetchData(true); };
     window.addEventListener('medical-record-updated', handleUpdate);
     return () => window.removeEventListener('medical-record-updated', handleUpdate);
-  }, [therapist?.id]); 
+  }, [therapist?.id, periodOffset]);
 
   
 
@@ -81,7 +85,9 @@ useEffect(() => {
     try {
       console.log("Fetching recaps for therapist:", therapist.id);
 
-      const { startDate, endDate } = getTherapistPeriodRange(therapist);
+      const referenceDate = subMonths(new Date(), periodOffset);
+      const { startDate, endDate } = getTherapistPeriodRange(therapist, referenceDate);
+      setPeriodRange({ startDate, endDate });
       const { data: visits, error: visitsError } = await getTherapistVisits(
         therapist.id,
         formatLocalDate(startDate),
@@ -331,6 +337,38 @@ const paginatedList = sortedList.slice(
             <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50"><Upload className="w-4 h-4 mr-2" /> Import</Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
             {!isOwnerView && (<Button onClick={() => navigate('/therapist/records/new/select')} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
+        <span>
+          Menampilkan kunjungan {periodRange ? `${format(periodRange.startDate, 'dd MMM yyyy')} - ${format(periodRange.endDate, 'dd MMM yyyy')}` : '...'}.
+        </span>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400 ml-auto" />}
+        <div className={cn("flex items-center gap-1 shrink-0", !loading && "ml-auto")}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setPeriodOffset(p => p + 1)}
+            disabled={loading}
+            title="Periode sebelumnya"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+          <span className="min-w-[110px] text-center font-semibold text-slate-600">
+            {periodOffset === 0 ? 'Periode Berjalan' : `${periodOffset} Periode Lalu`}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setPeriodOffset(p => Math.max(0, p - 1))}
+            disabled={loading || periodOffset === 0}
+            title="Periode berikutnya"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </div>
 
