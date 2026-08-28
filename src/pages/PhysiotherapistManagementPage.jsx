@@ -7,7 +7,8 @@ import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager'
 import BadgeManager from '@/components/owner/BadgeManager';
 import TherapistSoapLockManager from '@/components/owner/TherapistSoapLockManager';
 import RemunerationManager from '@/components/owner/RemunerationManager';
-import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award } from 'lucide-react';
+import TherapistMonthlyReportManager from '@/components/owner/TherapistMonthlyReportManager';
+import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -94,6 +95,10 @@ const PhysiotherapistManagementPage = () => {
           <TabsTrigger value="remuneration" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
             <Award className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Remunerasi</span>
           </TabsTrigger>
+
+          <TabsTrigger value="monthly-report" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
+            <FileBarChart2 className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Laporan Bulanan</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* ================= DATA TERAPIS ================= */}
@@ -138,6 +143,11 @@ const PhysiotherapistManagementPage = () => {
         {/* ================= REMUNERASI ================= */}
         <TabsContent value="remuneration">
           <RemunerationManager />
+        </TabsContent>
+
+        {/* ================= LAPORAN BULANAN ================= */}
+        <TabsContent value="monthly-report">
+          <TherapistMonthlyReportManager />
         </TabsContent>
 
       </Tabs>
