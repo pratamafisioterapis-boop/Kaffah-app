@@ -486,7 +486,7 @@ setTherapists(enrichedTherapists);
                  <SessionTimelinessChart dateRange={dateRange} />
                </div>
                {/* Row 3: Target vs Realisasi + Distribusi Layanan SEBELAHAN */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-stretch">
                  <BulletChartTargetVsRealization dateRange={dateRange} />
                  <ServiceDistributionChart dateRange={dateRange} />
                </div>

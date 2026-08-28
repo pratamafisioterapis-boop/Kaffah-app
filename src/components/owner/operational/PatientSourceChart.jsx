@@ -26,8 +26,8 @@ const PatientSourceChart = ({ dateRange }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
-  const [unknownPatients, setUnknownPatients] = useState([]);
-  const [showUnknownModal, setShowUnknownModal] = useState(false);
+  const [patientsByLabel, setPatientsByLabel] = useState({});
+  const [selectedLabel, setSelectedLabel] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,7 +69,7 @@ const PatientSourceChart = ({ dateRange }) => {
         }
 
         const countMap = {};
-        const unknownMap = {};
+        const labelPatientMaps = {};
         (recaps || []).forEach(r => {
           const isOld = oldPatientIds.has(r.patient_id);
           const label = isOld
@@ -77,15 +77,17 @@ const PatientSourceChart = ({ dateRange }) => {
             : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
 
-          if (!isOld && !r.patients?.patient_info_options?.label && r.patient_id) {
-            const existing = unknownMap[r.patient_id];
+          if (r.patient_id) {
+            if (!labelPatientMaps[label]) labelPatientMaps[label] = {};
+            const map = labelPatientMaps[label];
+            const existing = map[r.patient_id];
             if (existing) {
               existing.sessionCount += 1;
               if (r.recap_date && (!existing.lastRecapDate || r.recap_date > existing.lastRecapDate)) {
                 existing.lastRecapDate = r.recap_date;
               }
             } else {
-              unknownMap[r.patient_id] = {
+              map[r.patient_id] = {
                 id: r.patient_id,
                 full_name: r.patients?.full_name || 'Tanpa Nama',
                 medical_record_number: r.patients?.medical_record_number || '-',
@@ -97,9 +99,11 @@ const PatientSourceChart = ({ dateRange }) => {
           }
         });
 
-        setUnknownPatients(
-          Object.values(unknownMap).sort((a, b) => a.full_name.localeCompare(b.full_name))
-        );
+        const patientsByLabelResult = {};
+        Object.entries(labelPatientMaps).forEach(([label, map]) => {
+          patientsByLabelResult[label] = Object.values(map).sort((a, b) => a.full_name.localeCompare(b.full_name));
+        });
+        setPatientsByLabel(patientsByLabelResult);
 
         let paletteIndex = 0;
         const result = Object.entries(countMap)
@@ -161,16 +165,15 @@ const PatientSourceChart = ({ dateRange }) => {
         ) : (
           <div className="space-y-3">
             {data.map((s) => {
-              const isUnknown = s.key === 'Tidak Diketahui';
-              const isClickable = isUnknown && unknownPatients.length > 0;
+              const isClickable = (patientsByLabel[s.key]?.length || 0) > 0;
               return (
                 <div
                   key={s.key}
                   className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors' : ''}`}
-                  onClick={isClickable ? () => setShowUnknownModal(true) : undefined}
+                  onClick={isClickable ? () => setSelectedLabel(s.key) : undefined}
                   role={isClickable ? 'button' : undefined}
                   tabIndex={isClickable ? 0 : undefined}
-                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowUnknownModal(true); } : undefined}
+                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedLabel(s.key); } : undefined}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -200,25 +203,25 @@ const PatientSourceChart = ({ dateRange }) => {
         )}
       </CardContent>
 
-      <Dialog open={showUnknownModal} onOpenChange={setShowUnknownModal}>
+      <Dialog open={!!selectedLabel} onOpenChange={(open) => !open && setSelectedLabel(null)}>
         <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
           <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <UserX className="w-4.5 h-4.5 text-slate-400" />
-              Pasien Belum Terisi Sumbernya
+              {selectedLabel}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              {unknownPatients.length} pasien pada periode ini belum diisi "Info Tambahan" (sumber pasien) pada data pasiennya.
+              {(patientsByLabel[selectedLabel]?.length || 0)} pasien dengan sumber "{selectedLabel}" pada periode ini.
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 min-h-0">
             <div className="divide-y divide-slate-100">
-              {unknownPatients.map((p) => (
+              {(patientsByLabel[selectedLabel] || []).map((p) => (
                 <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">{p.full_name}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      RM {p.medical_record_number} • {p.phone}
+                      RM {p.medical_record_number} • No HP {p.phone}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
