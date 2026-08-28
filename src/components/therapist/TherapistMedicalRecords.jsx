@@ -4,7 +4,7 @@ import { getTherapistVisits } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
-import { format } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
@@ -41,6 +41,14 @@ const itemsPerPage = 20;
   // Sort State
   const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'asc' });
 
+  // Period Navigation State (0 = periode berjalan, 1 = satu periode lalu, dst.)
+  const [periodOffset, setPeriodOffset] = useState(0);
+  const [periodRange, setPeriodRange] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(''); // yyyy-MM-dd, kosong = pakai periodOffset
+
+  // Mode pencarian: jika ada kata kunci nama, cari pasien di SEMUA periode (bukan hanya periode aktif)
+  const isSearchMode = searchTerm.trim().length >= 2;
+
   // Modal State
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,7 +62,7 @@ const itemsPerPage = 20;
 
 useEffect(() => {
   setCurrentPage(1);
-}, [searchTerm, statusFilter]);
+}, [searchTerm, statusFilter, periodOffset, selectedDate]);
   useEffect(() => {
     if (therapist?.id) { fetchData(); }
     else {
@@ -65,7 +73,7 @@ useEffect(() => {
     const handleUpdate = () => { if (therapist?.id) fetchData(true); };
     window.addEventListener('medical-record-updated', handleUpdate);
     return () => window.removeEventListener('medical-record-updated', handleUpdate);
-  }, [therapist?.id]); 
+  }, [therapist?.id, periodOffset, selectedDate, isSearchMode]);
 
   
 
@@ -81,11 +89,22 @@ useEffect(() => {
     try {
       console.log("Fetching recaps for therapist:", therapist.id);
 
-      const { startDate, endDate } = getTherapistPeriodRange(therapist);
+      let startDate = null;
+      let endDate = null;
+
+      if (isSearchMode) {
+        // Mode pencarian nama: ambil kunjungan di semua periode, filter nama dilakukan di client-side.
+        setPeriodRange(null);
+      } else {
+        const referenceDate = selectedDate ? new Date(`${selectedDate}T00:00:00`) : subMonths(new Date(), periodOffset);
+        ({ startDate, endDate } = getTherapistPeriodRange(therapist, referenceDate));
+        setPeriodRange({ startDate, endDate });
+      }
+
       const { data: visits, error: visitsError } = await getTherapistVisits(
         therapist.id,
-        formatLocalDate(startDate),
-        formatLocalDate(endDate)
+        startDate ? formatLocalDate(startDate) : null,
+        endDate ? formatLocalDate(endDate) : null
       );
       
       if (visitsError) throw visitsError;
@@ -334,9 +353,62 @@ const paginatedList = sortedList.slice(
         </div>
       </div>
 
+      <div className="flex flex-col md:flex-row md:items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
+        <span>
+          {isSearchMode
+            ? 'Mode pencarian: menampilkan hasil dari semua periode.'
+            : `Menampilkan kunjungan ${periodRange ? `${format(periodRange.startDate, 'dd MMM yyyy')} - ${format(periodRange.endDate, 'dd MMM yyyy')}` : '...'}.`}
+        </span>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400 md:ml-auto" />}
+        <div className={cn("flex items-center gap-1 shrink-0 flex-wrap", !loading && "md:ml-auto")}>
+          <Input
+            type="date"
+            className="h-7 w-[140px] text-xs"
+            value={selectedDate}
+            onChange={(e) => { setSelectedDate(e.target.value); setPeriodOffset(0); }}
+            disabled={loading || isSearchMode}
+            title="Lihat periode yang berisi tanggal ini"
+          />
+          {selectedDate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setSelectedDate('')}
+              disabled={loading}
+            >
+              Reset Tanggal
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => { setSelectedDate(''); setPeriodOffset(p => p + 1); }}
+            disabled={loading || isSearchMode}
+            title="Periode sebelumnya"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+          <span className="min-w-[110px] text-center font-semibold text-slate-600">
+            {selectedDate ? 'Periode Kustom' : periodOffset === 0 ? 'Periode Berjalan' : `${periodOffset} Periode Lalu`}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => { setSelectedDate(''); setPeriodOffset(p => Math.max(0, p - 1)); }}
+            disabled={loading || isSearchMode || (periodOffset === 0 && !selectedDate)}
+            title="Periode berikutnya"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
       <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col md:flex-row gap-4 items-end">
          <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
-         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Nama pasien atau No. RM..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
+         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
       {/* ── Tampilan Mobile (narrow) ── */}
