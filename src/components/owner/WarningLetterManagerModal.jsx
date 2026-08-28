@@ -103,8 +103,8 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
 
   const handleEditRecord = (record) => {
     const violations = Array.isArray(record.violations) && record.violations.length > 0
-      ? record.violations.map((v) => newViolationRow(v.date, v.description))
-      : [newViolationRow(record.violation_date, record.violation_description)];
+      ? record.violations.map((v) => newViolationRow(v.date || '', v.description))
+      : [newViolationRow(record.violation_date || '', record.violation_description)];
     setForm({
       id: record.id,
       level: record.level,
@@ -156,12 +156,8 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
       toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Nomor surat wajib diisi.' });
       return false;
     }
-    if (form.violations.some((v) => !v.date)) {
-      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Tanggal kejadian pelanggaran wajib diisi untuk setiap baris.' });
-      return false;
-    }
     if (form.violations.some((v) => !v.description?.trim())) {
-      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Uraian pelanggaran wajib diisi untuk setiap tanggal.' });
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Uraian pelanggaran wajib diisi untuk setiap baris (tanggal boleh dikosongkan).' });
       return false;
     }
     return true;
@@ -371,14 +367,14 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                 </Button>
               </div>
               <p className="text-[11px] text-slate-400">
-                Tambahkan lebih dari satu tanggal bila pelanggaran terjadi berulang, baik dengan jenis pelanggaran yang sama maupun berbeda.
+                Tambahkan lebih dari satu tanggal bila pelanggaran terjadi berulang, baik dengan jenis pelanggaran yang sama maupun berbeda. Tanggal boleh dikosongkan kalau hanya ingin menjelaskan pelanggarannya saja.
               </p>
               <div className="space-y-3">
                 {form.violations.map((v, idx) => (
                   <div key={v.key} className="rounded-lg border border-slate-200 p-3 space-y-2 bg-white">
                     <div className="flex items-center justify-between gap-2">
                       <div className="space-y-1.5 w-44 shrink-0">
-                        <label className="text-[11px] font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''}</label>
+                        <label className="text-[11px] font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''} (opsional)</label>
                         <Input type="date" value={v.date} onChange={(e) => updateViolationRow(v.key, { date: e.target.value })} />
                       </div>
                       {form.violations.length > 1 && (
