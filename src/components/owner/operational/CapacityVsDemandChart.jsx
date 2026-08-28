@@ -116,8 +116,11 @@ setData(processedData);
   }, []);
 
  const todayData = data.find(d => d.fullDate === format(new Date(), 'dd MMM yyyy', { locale: id }));
-  const avgUtilization = data.length > 0
-    ? Math.round(data.reduce((s, d) => s + d.utilization, 0) / data.length)
+  // Hari tanpa jadwal aktif (kapasitas 0) tidak dihitung ke avg utilisasi
+  // supaya rata-rata tidak turun akibat hari libur/tanpa slot, bukan sepi pasien.
+  const activeDays = data.filter(d => d.capacity > 0);
+  const avgUtilization = activeDays.length > 0
+    ? Math.round(activeDays.reduce((s, d) => s + d.utilization, 0) / activeDays.length)
     : 0;
 
   return (
