@@ -54,6 +54,142 @@ const ensureSpace = (doc, y, needed) => {
 };
 
 /**
+ * Kotak peringatan dengan ikon seru vektor (bukan karakter unicode ⚠) supaya
+ * pengukuran lebar teks oleh font standar jsPDF akurat & tidak meluber dari kotak.
+ */
+const drawWarningBox = (doc, x, y, width, text, opts = {}) => {
+  const { fontSize = 8, color = RED, bg = [254, 242, 242] } = opts;
+  const iconSize = 6;
+  const paddingX = 4;
+  const paddingY = 4;
+  const textX = x + paddingX + iconSize + 3;
+  const textWidth = width - paddingX * 2 - iconSize - 3;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(fontSize);
+  const lines = doc.splitTextToSize(text, textWidth);
+  const lineHeight = fontSize * 0.525;
+  const textBlockH = lines.length * lineHeight;
+  const boxH = Math.max(iconSize + paddingY * 2, textBlockH + paddingY * 2);
+
+  doc.setFillColor(...bg);
+  doc.setDrawColor(...color);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, width, boxH, 1.5, 1.5, 'FD');
+
+  const iconCx = x + paddingX + iconSize / 2;
+  const iconCy = y + boxH / 2;
+  doc.setFillColor(...color);
+  doc.circle(iconCx, iconCy, iconSize / 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(iconSize * 1.6);
+  doc.setTextColor(255, 255, 255);
+  doc.text('!', iconCx, iconCy + iconSize * 0.32, { align: 'center' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(fontSize);
+  doc.setTextColor(...color);
+  doc.text(lines, textX, y + (boxH - textBlockH) / 2 + lineHeight * 0.75);
+
+  return y + boxH;
+};
+
+/**
+ * Daftar bar horizontal (label - bar - nilai). Dipakai untuk breakdown tipe
+ * pasien & distribusi kecepatan pengisian SOAP supaya lebih mudah dibaca
+ * secara visual dibanding tabel angka polos.
+ */
+const drawHBarList = (doc, x, y, width, items, opts = {}) => {
+  const { barHeight = 4.2, gap = 3.6, labelWidth = 46, valueColW = 18, fontSize = 7.5, maxValue, valueFormatter = (v) => String(v) } = opts;
+  const max = maxValue ?? Math.max(...items.map((i) => i.value), 1);
+  const barAreaW = width - labelWidth - valueColW;
+  let cy = y;
+
+  items.forEach((item) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...INK);
+    const labelLines = doc.splitTextToSize(item.label, labelWidth - 2);
+    doc.text(labelLines[0], x, cy + barHeight - 0.7);
+
+    doc.setFillColor(...BRONZE_SOFT);
+    doc.rect(x + labelWidth, cy, barAreaW, barHeight, 'F');
+    const w = max > 0 && item.value > 0 ? Math.max((item.value / max) * barAreaW, 1.2) : 0;
+    if (w > 0) {
+      doc.setFillColor(...(item.color || BRONZE));
+      doc.rect(x + labelWidth, cy, w, barHeight, 'F');
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...INK);
+    doc.text(valueFormatter(item.value), x + labelWidth + barAreaW + 2, cy + barHeight - 0.7);
+
+    cy += barHeight + gap;
+  });
+
+  return cy - gap;
+};
+
+/**
+ * Bar chart vertikal (mis. kunjungan per hari) dengan bar tertinggi disorot warna aksen.
+ */
+const drawVBarChart = (doc, x, y, width, chartHeight, items, opts = {}) => {
+  const { fontSize = 7.5, barColor = BRONZE, highlightColor = BRONZE, trackColor = BRONZE_SOFT } = opts;
+  const max = Math.max(...items.map((i) => i.value), 1);
+  const gap = 2.5;
+  const barW = (width - gap * (items.length - 1)) / items.length;
+  const valueH = 5;
+  const labelH = 6;
+  const maxBarH = chartHeight - valueH - labelH;
+
+  items.forEach((item, i) => {
+    const bx = x + i * (barW + gap);
+    const barH = max > 0 ? (item.value / max) * maxBarH : 0;
+    const by = y + valueH + (maxBarH - barH);
+
+    doc.setFillColor(...trackColor);
+    doc.rect(bx, y + valueH, barW, maxBarH, 'F');
+
+    const isMax = item.value === max && item.value > 0;
+    if (barH > 0) {
+      doc.setFillColor(...(isMax ? highlightColor : barColor));
+      doc.rect(bx, by, barW, barH, 'F');
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...(isMax ? highlightColor : MUTED));
+    doc.text(String(item.value), bx + barW / 2, y + valueH - 1.2, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...INK);
+    doc.text(item.label, bx + barW / 2, y + valueH + maxBarH + 5, { align: 'center' });
+  });
+
+  return y + chartHeight;
+};
+
+/**
+ * Progress bar pil (rounded) untuk menampilkan persentase pencapaian secara visual.
+ */
+const drawProgressBar = (doc, x, y, width, height, pct, opts = {}) => {
+  const { trackColor = BRONZE_SOFT, fillColor } = opts;
+  const clamped = Math.max(0, Math.min(100, pct));
+  const color = fillColor || (clamped >= 100 ? GREEN : clamped >= 70 ? BRONZE : RED);
+  const r = height / 2;
+  doc.setFillColor(...trackColor);
+  doc.roundedRect(x, y, width, height, r, r, 'F');
+  const fillW = (clamped / 100) * width;
+  if (fillW > 0.5) {
+    doc.setFillColor(...color);
+    doc.roundedRect(x, y, Math.max(fillW, height), height, r, r, 'F');
+  }
+  return color;
+};
+
+/**
  * Generates the "Laporan Evaluasi & Kinerja Bulanan Terapis" PDF.
  * @param {object} data - hasil getTherapistMonthlyReportData()
  * @param {string} notes - catatan kualitatif dari owner (No. 8)
@@ -145,22 +281,26 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
   y += 16 + 6;
 
   if (summary.typeBreakdown.length > 0) {
-    autoTable(doc, {
-      startY: y,
-      margin: { left: MARGIN_X, right: MARGIN_X },
-      head: [['Tipe Pasien', 'Jumlah Kunjungan', '%']],
-      body: summary.typeBreakdown.map(([label, count]) => [
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    doc.text('Tipe Pasien', MARGIN_X, y);
+    y += 4;
+    y = ensureSpace(doc, y, summary.typeBreakdown.length * 7.8 + 4);
+    y = drawHBarList(
+      doc, MARGIN_X, y, pageWidth - MARGIN_X * 2,
+      summary.typeBreakdown.map(([label, count]) => ({
         label,
-        String(count),
-        `${summary.totalVisits > 0 ? Math.round((count / summary.totalVisits) * 100) : 0}%`,
-      ]),
-      theme: 'plain',
-      styles: { font: 'helvetica', fontSize: 8.5 },
-      headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
-      bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
-      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
-    });
-    y = doc.lastAutoTable.finalY + 6;
+        value: count,
+        color: BRONZE,
+      })),
+      {
+        valueFormatter: (v) => `${v} (${summary.totalVisits > 0 ? Math.round((v / summary.totalVisits) * 100) : 0}%)`,
+        labelWidth: 40,
+        valueColW: 26,
+      }
+    );
+    y += 8;
   }
 
   y = ensureSpace(doc, y, 30);
@@ -243,17 +383,11 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     doc.text('Pola Hari Kunjungan', MARGIN_X, y);
     y += 4;
 
-    autoTable(doc, {
-      startY: y,
-      margin: { left: MARGIN_X, right: MARGIN_X },
-      head: [schedulePattern.byDay.map((d) => d.day)],
-      body: [schedulePattern.byDay.map((d) => String(d.count))],
-      theme: 'plain',
-      styles: { font: 'helvetica', fontSize: 8, halign: 'center' },
-      headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE, halign: 'center' },
-      bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
-    });
-    y = doc.lastAutoTable.finalY + 4;
+    y = drawVBarChart(
+      doc, MARGIN_X, y, pageWidth - MARGIN_X * 2, 32,
+      schedulePattern.byDay.map((d) => ({ label: d.day, value: d.count }))
+    );
+    y += 4;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -304,17 +438,21 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     });
     y = doc.lastAutoTable.finalY + 6;
 
+    y = ensureSpace(doc, y, 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text('Pencapaian Target', MARGIN_X, y);
+    y += 3;
+    drawProgressBar(doc, MARGIN_X, y, pageWidth - MARGIN_X * 2, 5, target.achievement_percentage, {
+      fillColor: achieved ? GREEN : RED,
+    });
+    y += 10;
+
     if (!achieved) {
       y = ensureSpace(doc, y, 14);
-      doc.setFillColor(254, 242, 242);
-      doc.setDrawColor(...RED);
-      doc.setLineWidth(0.3);
-      doc.rect(MARGIN_X, y, pageWidth - MARGIN_X * 2, 10, 'FD');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...RED);
-      doc.text('⚠ Target kunjungan periode ini belum tercapai.', MARGIN_X + 4, y + 6.5);
-      y += 16;
+      y = drawWarningBox(doc, MARGIN_X, y, pageWidth - MARGIN_X * 2, 'Target kunjungan periode ini belum tercapai.', { fontSize: 8.5 });
+      y += 6;
     } else {
       y += 4;
     }
@@ -330,31 +468,35 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
   y = ensureSpace(doc, y, 45);
   y = sectionTitle(doc, y, '3. Kepatuhan Dokumentasi SOAP');
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MARGIN_X, right: MARGIN_X },
-    head: [['SOAP Terisi', 'SOAP Belum Terisi']],
-    body: [[String(soap.filledCount), String(soap.unfilledCount)]],
-    theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 9 },
-    headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
-    bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE, fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'center' }, 1: { halign: 'center' } },
-  });
-  y = doc.lastAutoTable.finalY + 6;
+  const soapStatBoxW = (pageWidth - MARGIN_X * 2 - 8) / 2;
+  doc.setFillColor(...CREAM);
+  doc.setDrawColor(...BRONZE_SOFT);
+  doc.rect(MARGIN_X, y, soapStatBoxW, 15, 'FD');
+  doc.rect(MARGIN_X + soapStatBoxW + 8, y, soapStatBoxW, 15, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...GREEN);
+  doc.text(String(soap.filledCount), MARGIN_X + 6, y + 9.5);
+  doc.setTextColor(soap.unfilledCount > 0 ? RED[0] : INK[0], soap.unfilledCount > 0 ? RED[1] : INK[1], soap.unfilledCount > 0 ? RED[2] : INK[2]);
+  doc.text(String(soap.unfilledCount), MARGIN_X + soapStatBoxW + 14, y + 9.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...MUTED);
+  doc.text('SOAP Terisi', MARGIN_X + 6, y + 13.5);
+  doc.text('SOAP Belum Terisi', MARGIN_X + soapStatBoxW + 14, y + 13.5);
+  y += 15 + 7;
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MARGIN_X, right: MARGIN_X },
-    head: [['Kecepatan Pengisian SOAP', 'Jumlah Sesi']],
-    body: soap.delayBuckets.map((b) => [b.label, String(b.count)]),
-    theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 8.5 },
-    headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
-    bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
-    columnStyles: { 1: { halign: 'right' } },
-  });
-  y = doc.lastAutoTable.finalY + 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(...INK);
+  doc.text('Distribusi Kecepatan Pengisian SOAP', MARGIN_X, y);
+  y += 4;
+  const bucketColors = { '< 24 Jam': GREEN, '24 – 48 Jam': [180, 140, 40], '48 – 72 Jam': [200, 110, 40], '> 72 Jam': RED };
+  y = drawHBarList(
+    doc, MARGIN_X, y, pageWidth - MARGIN_X * 2,
+    soap.delayBuckets.map((b) => ({ label: b.label, value: b.count, color: bucketColors[b.label] || BRONZE })),
+  );
+  y += 5;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -417,19 +559,10 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     // Catatan otomatis kalau target pengisian < 24 jam belum tercapai
     const soapTargetMet = soap.within24Pct !== null && soap.within24Pct >= 100;
     if (!soapTargetMet) {
-      y = ensureSpace(doc, y, 18);
-      const warnText = `⚠ Kecepatan pengisian SOAP belum mencapai target < 24 jam (baru ${currentPctLabel} sesi yang terisi dalam < 24 jam). Terapis diharapkan meningkatkan kecepatan pengerjaan dokumentasi SOAP agar seluruh sesi terisi dalam waktu kurang dari 24 jam.`;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      const warnLines = doc.splitTextToSize(warnText, pageWidth - MARGIN_X * 2 - 8);
-      const warnBoxH = Math.max(10, warnLines.length * 4.2 + 5);
-      doc.setFillColor(254, 242, 242);
-      doc.setDrawColor(...RED);
-      doc.setLineWidth(0.3);
-      doc.rect(MARGIN_X, y, pageWidth - MARGIN_X * 2, warnBoxH, 'FD');
-      doc.setTextColor(...RED);
-      doc.text(warnLines, MARGIN_X + 4, y + 5.5);
-      y += warnBoxH + 6;
+      y = ensureSpace(doc, y, 20);
+      const warnText = `Kecepatan pengisian SOAP belum mencapai target < 24 jam (baru ${currentPctLabel} sesi yang terisi dalam < 24 jam). Terapis diharapkan meningkatkan kecepatan pengerjaan dokumentasi SOAP agar seluruh sesi terisi dalam waktu kurang dari 24 jam.`;
+      y = drawWarningBox(doc, MARGIN_X, y, pageWidth - MARGIN_X * 2, warnText);
+      y += 6;
     }
   }
   y += 3;
