@@ -25,6 +25,7 @@ const formatPeriodLabel = (start, end) => {
 };
 
 const formatDate = (value, fallback = '-') => {
+  if (!value) return fallback;
   try {
     return format(new Date(value), 'd MMM yyyy', { locale: idLocale });
   } catch (_e) {

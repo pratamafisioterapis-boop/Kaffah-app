@@ -5010,16 +5010,17 @@ export const upsertWarningLetter = async (payload) => {
     const userId = sessionData?.session?.user?.id;
 
     // Satu SP bisa memuat lebih dari satu tanggal pelanggaran (jenis
-    // pelanggaran boleh beda-beda tiap tanggal). violation_date/
-    // violation_description tetap disimpan sebagai ringkasan (tanggal
-    // paling awal & gabungan uraian) supaya kode lama (laporan bulanan, dsb)
-    // yang membaca kedua kolom itu tetap jalan tanpa perubahan.
-    const violations = (payload.violations || []).filter((v) => v?.date);
-    const sortedDates = violations.map((v) => v.date).sort();
-    const violationDate = sortedDates[0] || payload.violation_date;
+    // pelanggaran boleh beda-beda tiap tanggal), dan tanggalnya sendiri
+    // opsional (kadang owner cuma mau jelaskan pelanggarannya tanpa tanggal
+    // pasti). violation_date/violation_description tetap disimpan sebagai
+    // ringkasan (tanggal paling awal yang ada & gabungan uraian) supaya kode
+    // lama (laporan bulanan, dsb) yang membaca kedua kolom itu tetap jalan.
+    const violations = (payload.violations || []).filter((v) => v?.date || v?.description?.trim());
+    const sortedDates = violations.map((v) => v.date).filter(Boolean).sort();
+    const violationDate = sortedDates[0] || payload.violation_date || null;
     const violationDescription = violations.length > 0
       ? violations
-        .map((v) => `${v.date ? new Date(v.date).toLocaleDateString('id-ID') : '-'} - ${v.description || '-'}`)
+        .map((v) => `${v.date ? new Date(v.date).toLocaleDateString('id-ID') : 'Tanpa tanggal'} - ${v.description || '-'}`)
         .join('\n')
       : payload.violation_description;
 

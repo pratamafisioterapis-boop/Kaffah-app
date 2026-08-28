@@ -206,8 +206,10 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
 
   violations.forEach((v, idx) => {
     if (idx > 0) { ensureSpace(2); y += 2; }
-    identityRow('Tanggal Kejadian', fmtDateLong(v.date));
-    y += 2;
+    if (v.date) {
+      identityRow('Tanggal Kejadian', fmtDateLong(v.date));
+      y += 2;
+    }
     paragraph(v.description || '-', { gapAfter: 4 });
   });
 
