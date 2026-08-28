@@ -77,25 +77,28 @@ const PatientSourceChart = ({ dateRange }) => {
             : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
 
-          if (r.patient_id) {
-            if (!labelPatientMaps[label]) labelPatientMaps[label] = {};
-            const map = labelPatientMaps[label];
-            const existing = map[r.patient_id];
-            if (existing) {
-              existing.sessionCount += 1;
-              if (r.recap_date && (!existing.lastRecapDate || r.recap_date > existing.lastRecapDate)) {
-                existing.lastRecapDate = r.recap_date;
-              }
-            } else {
-              map[r.patient_id] = {
-                id: r.patient_id,
-                full_name: r.patients?.full_name || 'Tanpa Nama',
-                medical_record_number: r.patients?.medical_record_number || '-',
-                phone: r.patients?.phone || '-',
-                sessionCount: 1,
-                lastRecapDate: r.recap_date || null,
-              };
+          // Beberapa recap lama tidak punya patient_id tertaut (data legacy). Sesi ini tetap
+          // dikelompokkan (di bawah key sintetis) supaya kartu "Tidak Diketahui" tetap bisa
+          // diklik dan pengguna tahu ada sesi tanpa data pasien, bukan cuma diam saja.
+          if (!labelPatientMaps[label]) labelPatientMaps[label] = {};
+          const map = labelPatientMaps[label];
+          const key = r.patient_id || '__no_patient__';
+          const existing = map[key];
+          if (existing) {
+            existing.sessionCount += 1;
+            if (r.recap_date && (!existing.lastRecapDate || r.recap_date > existing.lastRecapDate)) {
+              existing.lastRecapDate = r.recap_date;
             }
+          } else {
+            map[key] = {
+              id: key,
+              full_name: r.patient_id ? (r.patients?.full_name || 'Tanpa Nama') : 'Sesi tanpa data pasien',
+              medical_record_number: r.patient_id ? (r.patients?.medical_record_number || '-') : '-',
+              phone: r.patient_id ? (r.patients?.phone || '-') : '-',
+              sessionCount: 1,
+              lastRecapDate: r.recap_date || null,
+              isOrphan: !r.patient_id,
+            };
           }
         });
 
@@ -211,7 +214,9 @@ const PatientSourceChart = ({ dateRange }) => {
               {selectedLabel}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              {(patientsByLabel[selectedLabel]?.length || 0)} pasien dengan sumber "{selectedLabel}" pada periode ini.
+              {selectedLabel === 'Tidak Diketahui'
+                ? `${(patientsByLabel[selectedLabel]?.length || 0)} pasien/sesi yang belum diisi sumber pasiennya pada periode ini.`
+                : `${(patientsByLabel[selectedLabel]?.length || 0)} pasien dengan sumber "${selectedLabel}" pada periode ini.`}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 min-h-0">
@@ -219,9 +224,16 @@ const PatientSourceChart = ({ dateRange }) => {
               {(patientsByLabel[selectedLabel] || []).map((p) => (
                 <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{p.full_name}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
+                      {p.full_name}
+                      {p.isOrphan && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
+                          Data lama
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      RM {p.medical_record_number} • No HP {p.phone}
+                      {p.isOrphan ? 'Sesi tanpa data pasien tertaut' : `RM ${p.medical_record_number} • No HP ${p.phone}`}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
