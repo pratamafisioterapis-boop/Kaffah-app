@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Loader2, Trash2, Eye, Download, AlertTriangle, UploadCloud, FileCheck2, Pencil, Plus, Send,
+  Loader2, Trash2, Eye, Download, AlertTriangle, UploadCloud, FileCheck2, Pencil, Plus, Send, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,14 +45,19 @@ const nextLetterNumber = (clinicLetters, level) => {
   return `${String(countThisLevel).padStart(3, '0')}/${level}/KAFFAH/${roman}/${year}`;
 };
 
+let violationRowSeq = 0;
+const newViolationRow = (date = format(new Date(), 'yyyy-MM-dd'), description = '') => {
+  violationRowSeq += 1;
+  return { key: `v${violationRowSeq}`, date, description };
+};
+
 const emptyForm = (clinicLetters) => ({
   id: null,
   level: 'SP1',
   letter_number: nextLetterNumber(clinicLetters, 'SP1'),
   letter_date: format(new Date(), 'yyyy-MM-dd'),
   letter_city: 'Balikpapan',
-  violation_date: format(new Date(), 'yyyy-MM-dd'),
-  violation_description: '',
+  violations: [newViolationRow()],
   consequence_note: '',
 });
 
@@ -97,16 +102,36 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handleEditRecord = (record) => {
+    const violations = Array.isArray(record.violations) && record.violations.length > 0
+      ? record.violations.map((v) => newViolationRow(v.date, v.description))
+      : [newViolationRow(record.violation_date, record.violation_description)];
     setForm({
       id: record.id,
       level: record.level,
       letter_number: record.letter_number,
       letter_date: record.letter_date,
       letter_city: record.letter_city,
-      violation_date: record.violation_date,
-      violation_description: record.violation_description,
+      violations,
       consequence_note: record.consequence_note || '',
     });
+  };
+
+  const addViolationRow = () => {
+    setForm((prev) => ({ ...prev, violations: [...prev.violations, newViolationRow()] }));
+  };
+
+  const removeViolationRow = (key) => {
+    setForm((prev) => ({
+      ...prev,
+      violations: prev.violations.length > 1 ? prev.violations.filter((v) => v.key !== key) : prev.violations,
+    }));
+  };
+
+  const updateViolationRow = (key, patch) => {
+    setForm((prev) => ({
+      ...prev,
+      violations: prev.violations.map((v) => (v.key === key ? { ...v, ...patch } : v)),
+    }));
   };
 
   const handleLevelChange = (level) => {
@@ -122,8 +147,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
     level: f.level,
     letter_date: f.letter_date,
     letter_city: f.letter_city,
-    violation_date: f.violation_date,
-    violation_description: f.violation_description,
+    violations: f.violations.map((v) => ({ date: v.date, description: v.description })),
     consequence_note: f.consequence_note,
   });
 
@@ -132,8 +156,12 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
       toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Nomor surat wajib diisi.' });
       return false;
     }
-    if (!form.violation_description?.trim()) {
-      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Uraian pelanggaran wajib diisi.' });
+    if (form.violations.some((v) => !v.date)) {
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Tanggal kejadian pelanggaran wajib diisi untuk setiap baris.' });
+      return false;
+    }
+    if (form.violations.some((v) => !v.description?.trim())) {
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Uraian pelanggaran wajib diisi untuk setiap tanggal.' });
       return false;
     }
     return true;
@@ -332,21 +360,49 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600">Kota Penerbitan</label>
               <Input value={form.letter_city} onChange={(e) => updateForm({ letter_city: e.target.value })} placeholder="Balikpapan" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Tanggal Kejadian Pelanggaran</label>
-              <Input type="date" value={form.violation_date} onChange={(e) => updateForm({ violation_date: e.target.value })} />
-            </div>
           </div>
 
           <div className="space-y-3 pt-2 border-t border-slate-200">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Uraian Pelanggaran</label>
-              <Textarea
-                rows={4}
-                value={form.violation_description}
-                onChange={(e) => updateForm({ violation_description: e.target.value })}
-                placeholder="Jelaskan kronologi & bentuk pelanggaran yang dilakukan terapis secara rinci."
-              />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-slate-600">Tanggal &amp; Jenis Pelanggaran</label>
+                <Button type="button" variant="outline" size="sm" onClick={addViolationRow} className="h-7 text-xs text-red-700 border-red-200 hover:bg-red-50">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Tanggal
+                </Button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Tambahkan lebih dari satu tanggal bila pelanggaran terjadi berulang, baik dengan jenis pelanggaran yang sama maupun berbeda.
+              </p>
+              <div className="space-y-3">
+                {form.violations.map((v, idx) => (
+                  <div key={v.key} className="rounded-lg border border-slate-200 p-3 space-y-2 bg-white">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="space-y-1.5 w-44 shrink-0">
+                        <label className="text-[11px] font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''}</label>
+                        <Input type="date" value={v.date} onChange={(e) => updateViolationRow(v.key, { date: e.target.value })} />
+                      </div>
+                      {form.violations.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-red-600 mt-4"
+                          onClick={() => removeViolationRow(v.key)}
+                          title="Hapus tanggal ini"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      rows={3}
+                      value={v.description}
+                      onChange={(e) => updateViolationRow(v.key, { description: e.target.value })}
+                      placeholder="Jelaskan jenis & kronologi pelanggaran yang dilakukan terapis pada tanggal ini secara rinci."
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Konsekuensi / Tindak Lanjut (opsional)</label>

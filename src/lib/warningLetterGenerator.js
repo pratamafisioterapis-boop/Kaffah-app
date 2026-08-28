@@ -62,7 +62,8 @@ const imageFormatFromDataUrl = (dataUrl) => {
  * details, consequence note, and a two-party signature block.
  *
  * @param {object} letter - therapist_warning_letters row (letter_number, level,
- *   letter_date, letter_city, violation_date, violation_description, consequence_note)
+ *   letter_date, letter_city, violations: [{date, description}], consequence_note;
+ *   violation_date/violation_description are read as a fallback for older records)
  * @param {object} clinic - clinics row (name, address, phone, email, owner_full_name, owner_position)
  * @param {object} therapist - physiotherapists row (name, specialization)
  * @returns {Promise<jsPDF>}
@@ -199,9 +200,16 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
   doc.line(MARGIN_X, y, MARGIN_X + 40, y);
   y += 6;
 
-  identityRow('Tanggal Kejadian', fmtDateLong(letter.violation_date));
-  y += 2;
-  paragraph(letter.violation_description || '-', { gapAfter: 4 });
+  const violations = Array.isArray(letter.violations) && letter.violations.length > 0
+    ? letter.violations
+    : [{ date: letter.violation_date, description: letter.violation_description }];
+
+  violations.forEach((v, idx) => {
+    if (idx > 0) { ensureSpace(2); y += 2; }
+    identityRow('Tanggal Kejadian', fmtDateLong(v.date));
+    y += 2;
+    paragraph(v.description || '-', { gapAfter: 4 });
+  });
 
   if (letter.consequence_note) {
     doc.setFont('helvetica', 'bold');
