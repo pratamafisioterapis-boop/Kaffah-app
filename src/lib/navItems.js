@@ -21,6 +21,7 @@ export const OWNER_NAV_ITEMS = [
   { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
   { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
   { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
+  { label: 'Absensi Karyawan', path: '/owner/attendance', icon: 'Clock' },
   { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
 ];
 
