@@ -142,7 +142,13 @@ export const parseAttendanceExcel = (data, { type = 'binary' } = {}) => {
  */
 export const buildAttendanceRecords = (
   parsed,
-  { shiftSettingsByDept = {}, therapists = [], aliasMap = null, defaultShift = { expected_check_in: '08:00', grace_minutes: 15 } } = {}
+  {
+    shiftSettingsByDept = {},
+    therapists = [],
+    aliasMap = null,
+    defaultShift = { expected_check_in: '08:00', grace_minutes: 15 },
+    homecareLookup = null, // see buildHomecareLookup() in attendanceHomecareLookup.js
+  } = {}
 ) => {
   const records = [];
   for (const emp of parsed.employees) {
@@ -160,6 +166,7 @@ export const buildAttendanceRecords = (
         therapistOverrides: matchedTherapist?.overrides,
         shiftSettingsByDept,
         defaultShift,
+        homecare: matchedTherapist ? homecareLookup?.[matchedTherapist.id]?.[date] : null,
       });
 
       records.push({

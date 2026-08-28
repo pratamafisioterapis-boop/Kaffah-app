@@ -8,6 +8,38 @@
 //
 // Priority: date-specific override > weekly schedule for that day of week >
 // per-department shift setting > global default.
+
+const HOMECARE_CHECKIN_GRACE_MINUTES = 30;
+
+const toMinutes = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+// A homecare visit that morning makes it physically impossible to clock in
+// at the clinic at the normal time. For every homecare block that has
+// already started by the currently-expected check-in time, push the
+// expectation back to 30 minutes after that visit ends — chained so two
+// back-to-back homecare visits both get accounted for.
+const applyHomecareCheckInAdjustment = (expectedMinutes, homecareBlocks) => {
+  if (!homecareBlocks || homecareBlocks.length === 0) return expectedMinutes;
+  let effective = expectedMinutes;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const block of homecareBlocks) {
+      const start = toMinutes(block.start);
+      const end = toMinutes(block.end);
+      const releaseAt = end + HOMECARE_CHECKIN_GRACE_MINUTES;
+      if (start <= effective && releaseAt > effective) {
+        effective = releaseAt;
+        changed = true;
+      }
+    }
+  }
+  return effective;
+};
+
 export const resolveAttendanceStatus = ({
   checkIn,
   checkOut,
@@ -17,8 +49,13 @@ export const resolveAttendanceStatus = ({
   therapistOverrides, // { [date]: 'HH:MM' | 'HH:MM:SS' } | null
   shiftSettingsByDept = {},
   defaultShift = { expected_check_in: '08:00', grace_minutes: 15 },
+  // Homecare visits for this therapist on this date, used to relax both
+  // check-in lateness (a morning visit delays when they can reach the
+  // clinic) and the missing-checkout flag (a visit that is the last
+  // session of the day means they may never come back to the clinic).
+  homecare = null, // { blocks: [{ start: 'HH:MM', end: 'HH:MM' }], lastSessionIsHomecare: boolean } | null
 }) => {
-  if (!checkOut) {
+  if (!checkOut && !homecare?.lastSessionIsHomecare) {
     // Only one punch recorded for the day — could be a missed check-in
     // or a missed check-out, so lateness can't be determined reliably.
     return { status: 'incomplete', late_minutes: 0, expected_check_in: null, expected_source: null };
@@ -47,7 +84,20 @@ export const resolveAttendanceStatus = ({
   const graceMinutes = deptShift?.grace_minutes ?? defaultShift.grace_minutes ?? 0;
 
   const [eh, em] = expectedCheckIn.split(':').map(Number);
-  const expectedMinutes = eh * 60 + em;
+  let expectedMinutes = eh * 60 + em;
+  const homecareAdjustedMinutes = applyHomecareCheckInAdjustment(expectedMinutes, homecare?.blocks);
+  if (homecareAdjustedMinutes > expectedMinutes) {
+    expectedMinutes = homecareAdjustedMinutes;
+    expectedCheckIn = `${String(Math.floor(expectedMinutes / 60)).padStart(2, '0')}:${String(expectedMinutes % 60).padStart(2, '0')}`;
+    expectedSource = 'homecare';
+  }
+
+  if (!checkIn) {
+    // No check-in either, but the day's last session was homecare — treat
+    // it as a day worked away from the clinic rather than incomplete.
+    return { status: 'on_time', late_minutes: 0, expected_check_in: expectedCheckIn, expected_source: expectedSource };
+  }
+
   const [ch, cm] = checkIn.split(':').map(Number);
   const actualMinutes = ch * 60 + cm;
 

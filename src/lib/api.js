@@ -13,6 +13,7 @@ import {
 import { validatePatientId } from '@/lib/validationHelpers';
 import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
 import { resolveAttendanceStatus } from '@/utils/attendanceStatusResolver';
+import { buildHomecareLookup } from '@/utils/attendanceHomecareLookup';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -8236,6 +8237,13 @@ export const recalculateAttendanceRecordsByIds = async (ids) => {
       shiftSettingsByDept[s.department] = { expected_check_in: s.expected_check_in, grace_minutes: s.grace_minutes };
     });
 
+    const recordDates = records.map((r) => r.attendance_date).sort();
+    const { data: appointments } = await getAppointments({
+      startDate: `${recordDates[0]}T00:00:00`,
+      endDate: `${recordDates[recordDates.length - 1]}T23:59:59`,
+    });
+    const homecareLookup = buildHomecareLookup(appointments || []);
+
     let updated = 0;
     for (const r of records) {
       const t = r.physiotherapist_id ? therapistById[r.physiotherapist_id] : null;
@@ -8247,6 +8255,7 @@ export const recalculateAttendanceRecordsByIds = async (ids) => {
         therapistSchedule: t?.schedule,
         therapistOverrides: t?.overrides,
         shiftSettingsByDept,
+        homecare: r.physiotherapist_id ? homecareLookup?.[r.physiotherapist_id]?.[r.attendance_date] : null,
       });
 
       const { error: updateError } = await supabase
