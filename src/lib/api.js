@@ -5009,6 +5009,20 @@ export const upsertWarningLetter = async (payload) => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
 
+    // Satu SP bisa memuat lebih dari satu tanggal pelanggaran (jenis
+    // pelanggaran boleh beda-beda tiap tanggal). violation_date/
+    // violation_description tetap disimpan sebagai ringkasan (tanggal
+    // paling awal & gabungan uraian) supaya kode lama (laporan bulanan, dsb)
+    // yang membaca kedua kolom itu tetap jalan tanpa perubahan.
+    const violations = (payload.violations || []).filter((v) => v?.date);
+    const sortedDates = violations.map((v) => v.date).sort();
+    const violationDate = sortedDates[0] || payload.violation_date;
+    const violationDescription = violations.length > 0
+      ? violations
+        .map((v) => `${v.date ? new Date(v.date).toLocaleDateString('id-ID') : '-'} - ${v.description || '-'}`)
+        .join('\n')
+      : payload.violation_description;
+
     const record = {
       clinic_id: payload.clinic_id,
       physiotherapist_id: payload.physiotherapist_id,
@@ -5016,8 +5030,9 @@ export const upsertWarningLetter = async (payload) => {
       level: payload.level,
       letter_date: payload.letter_date,
       letter_city: payload.letter_city,
-      violation_date: payload.violation_date,
-      violation_description: payload.violation_description,
+      violation_date: violationDate,
+      violation_description: violationDescription,
+      violations,
       consequence_note: payload.consequence_note || null,
       updated_at: new Date().toISOString(),
     };

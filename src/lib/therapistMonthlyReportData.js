@@ -239,9 +239,12 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
   // bukan tanggal surat diterbitkan, supaya SP untuk pelanggaran periode lalu
   // yang baru diterbitkan setelah periode tutup tetap masuk periode yang benar).
   const { data: warningLettersAll } = await getWarningLettersForTherapist(therapistId);
-  const warningLetters = (warningLettersAll || []).filter(
-    (w) => w.violation_date >= periodStart && w.violation_date <= periodEnd
-  );
+  const warningLetters = (warningLettersAll || []).filter((w) => {
+    const dates = Array.isArray(w.violations) && w.violations.length > 0
+      ? w.violations.map((v) => v.date)
+      : [w.violation_date];
+    return dates.some((d) => d >= periodStart && d <= periodEnd);
+  });
 
   return {
     therapist,
