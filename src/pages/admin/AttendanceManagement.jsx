@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw, ChevronLeft } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays, subDays } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import AttendanceUploadModal from '@/components/admin/AttendanceUploadModal';
 import { getTherapistPeriodRange } from '@/lib/utils';
 import {
@@ -69,6 +70,19 @@ const findMostCommonPeriod = (therapistRows) => {
   return { period_start_day, period_end_day };
 };
 
+// Departments named "admin" (any case) are office/admin staff; everything
+// else (fisio pagi, fisio sore, middle, etc.) is a therapist-facing shift.
+const isAdminDepartment = (department) => (department || '').trim().toLowerCase() === 'admin';
+
+const formatTanggalDenganHari = (dateStr) => {
+  if (!dateStr) return '-';
+  try {
+    return format(parseISO(dateStr), 'EEEE, dd MMM yyyy', { locale: idLocale });
+  } catch {
+    return dateStr;
+  }
+};
+
 const STATUS_LABEL = {
   on_time: { label: 'Tepat Waktu', className: 'bg-green-600' },
   late: { label: 'Terlambat', className: 'bg-red-600' },
@@ -91,6 +105,8 @@ const AttendanceManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dailyRoleFilter, setDailyRoleFilter] = useState('all');
+  const [dailyStatusFilter, setDailyStatusFilter] = useState('all');
   // A stored range means the period was already resolved on a previous
   // visit, so skip the auto most-common-therapist-period detection below.
   const userEditedDateRangeRef = useRef(!!getStoredDateRange());
@@ -205,6 +221,14 @@ const AttendanceManagement = () => {
     }
     return Object.values(byEmployee).sort((a, b) => b.late - a.late);
   }, [records]);
+
+  const dailyRecords = useMemo(() => {
+    let rows = records;
+    if (dailyRoleFilter === 'admin') rows = rows.filter((r) => isAdminDepartment(r.department));
+    else if (dailyRoleFilter === 'terapis') rows = rows.filter((r) => !isAdminDepartment(r.department));
+    if (dailyStatusFilter !== 'all') rows = rows.filter((r) => r.status === dailyStatusFilter);
+    return rows;
+  }, [records, dailyRoleFilter, dailyStatusFilter]);
 
   return (
     <div className="space-y-6">
@@ -335,11 +359,36 @@ const AttendanceManagement = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Detail Harian</CardTitle></CardHeader>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-base">Detail Harian</CardTitle>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-48">
+              <Select value={dailyRoleFilter} onValueChange={setDailyRoleFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Terapis + Admin</SelectItem>
+                  <SelectItem value="terapis">Terapis</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={dailyStatusFilter} onValueChange={setDailyStatusFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="on_time">Tepat Waktu</SelectItem>
+                  <SelectItem value="late">Terlambat</SelectItem>
+                  <SelectItem value="incomplete">Tidak Lengkap</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
-          ) : records.length === 0 ? (
+          ) : dailyRecords.length === 0 ? (
             <p className="text-center text-slate-400 py-10 text-sm">Tidak ada data untuk filter yang dipilih.</p>
           ) : (
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
@@ -356,9 +405,9 @@ const AttendanceManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((r) => (
+                  {dailyRecords.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.attendance_date}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatTanggalDenganHari(r.attendance_date)}</TableCell>
                       <TableCell className="font-medium">{r.employee_name}</TableCell>
                       <TableCell>{r.department || '-'}</TableCell>
                       <TableCell>{r.check_in?.slice(0, 5) || '-'}</TableCell>
