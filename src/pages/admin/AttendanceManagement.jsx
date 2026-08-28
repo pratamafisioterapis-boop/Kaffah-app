@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw, ChevronLeft } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays, subDays } from 'date-fns';
 import AttendanceUploadModal from '@/components/admin/AttendanceUploadModal';
 import { getTherapistPeriodRange } from '@/lib/utils';
 import {
@@ -78,6 +78,13 @@ const AttendanceManagement = () => {
 
   const handleStartDateChange = (value) => { userEditedDateRangeRef.current = true; setStartDate(value); };
   const handleEndDateChange = (value) => { userEditedDateRangeRef.current = true; setEndDate(value); };
+
+  const handlePreviousPeriod = () => {
+    userEditedDateRangeRef.current = true;
+    const periodLengthDays = differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1;
+    setEndDate(format(subDays(parseISO(startDate), 1), 'yyyy-MM-dd'));
+    setStartDate(format(subDays(parseISO(startDate), periodLengthDays), 'yyyy-MM-dd'));
+  };
 
   const shiftSettingsByDept = useMemo(() => {
     const map = {};
@@ -204,7 +211,19 @@ const AttendanceManagement = () => {
       )}
 
       <Card>
-        <CardContent className="pt-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <CardContent className="pt-6 grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="flex items-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPeriod}
+              className="gap-1 w-full"
+              title="Geser ke periode sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" /> Periode Sebelumnya
+            </Button>
+          </div>
           <div>
             <Label className="text-xs">Dari Tanggal</Label>
             <Input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} />
