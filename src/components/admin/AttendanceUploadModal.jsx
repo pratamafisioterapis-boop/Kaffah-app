@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, FileSpreadsheet, Info, CheckCircle, AlertTriangle, Loader2, Link2 } from 'lucide-react';
 import { parseAttendanceExcel, buildAttendanceRecords } from '@/utils/attendanceExcelParser';
-import { bulkUpsertAttendanceRecords, upsertAttendanceEmployeeAlias } from '@/lib/api';
+import { buildHomecareLookup } from '@/utils/attendanceHomecareLookup';
+import { bulkUpsertAttendanceRecords, upsertAttendanceEmployeeAlias, getAppointments } from '@/lib/api';
 
 const STATUS_LABEL = {
   on_time: { label: 'Tepat Waktu', className: 'bg-green-600' },
@@ -28,8 +29,25 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
   const [localAliases, setLocalAliases] = useState([]);
   const [linkingPick, setLinkingPick] = useState({});
   const [linkingBusy, setLinkingBusy] = useState(null);
+  const [homecareLookup, setHomecareLookup] = useState(null);
 
   useEffect(() => { setLocalAliases(aliases || []); }, [aliases]);
+
+  useEffect(() => {
+    if (!parsed?.periodStart || !parsed?.periodEnd) {
+      setHomecareLookup(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await getAppointments({
+        startDate: `${parsed.periodStart}T00:00:00`,
+        endDate: `${parsed.periodEnd}T23:59:59`,
+      });
+      if (!cancelled) setHomecareLookup(buildHomecareLookup(data || []));
+    })();
+    return () => { cancelled = true; };
+  }, [parsed]);
 
   const resetState = () => {
     setStep('upload');
@@ -37,6 +55,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
     setParsed(null);
     setImporting(false);
     setResultSummary(null);
+    setHomecareLookup(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -56,8 +75,9 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
       shiftSettingsByDept: shiftSettingsByDept || {},
       therapists: therapists || [],
       aliasMap,
+      homecareLookup,
     });
-  }, [parsed, shiftSettingsByDept, therapists, aliasMap]);
+  }, [parsed, shiftSettingsByDept, therapists, aliasMap, homecareLookup]);
 
   const unmatchedEmployeeNames = useMemo(() => {
     const seen = new Map();
@@ -278,9 +298,9 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                           <TableCell>{r.check_out || '-'}</TableCell>
                           <TableCell className="text-xs">
                             {r.expected_check_in ? (
-                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
+                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' || r.expected_source === 'homecare' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
                                 {r.expected_check_in}
-                                {r.expected_source === 'override' ? ' (jadwal pengganti)' : r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
+                                {r.expected_source === 'override' ? ' (jadwal pengganti)' : r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'homecare' ? ' (setelah homecare)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
                               </span>
                             ) : '-'}
                           </TableCell>
