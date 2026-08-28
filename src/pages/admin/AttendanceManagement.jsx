@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Upload, Settings, Clock, AlertTriangle, CheckCircle2, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceUploadModal from '@/components/admin/AttendanceUploadModal';
+import { getTherapistPeriodRange } from '@/lib/utils';
 import {
   getAttendanceRecords,
   getAttendanceShiftSettings,
@@ -19,7 +20,37 @@ import {
   getAttendanceScheduleLookup,
   getAttendanceEmployeeAliases,
   recalculateAllAttendanceRecords,
+  getPhysiotherapists,
 } from '@/lib/api';
+
+// Falls back to the calendar month while therapist period settings are
+// still loading; replaced by the clinic's most common therapist period
+// (e.g. tgl 28 - 27) once loadDefaultPeriod resolves below.
+const defaultCalendarMonth = () => ({
+  startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+});
+
+// Most clinics book every therapist on the same non-calendar cycle (e.g.
+// 28th to 27th), so default the filter to whichever period_start_day/
+// period_end_day combination the most therapists share, rather than the
+// plain calendar month.
+const findMostCommonPeriod = (therapistRows) => {
+  if (!therapistRows || therapistRows.length === 0) return null;
+  const counts = new Map();
+  therapistRows.forEach((t) => {
+    const key = `${t.period_start_day ?? 28}-${t.period_end_day ?? 27}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+  let bestKey = null;
+  let bestCount = 0;
+  counts.forEach((count, key) => {
+    if (count > bestCount) { bestCount = count; bestKey = key; }
+  });
+  if (!bestKey) return null;
+  const [period_start_day, period_end_day] = bestKey.split('-').map(Number);
+  return { period_start_day, period_end_day };
+};
 
 const STATUS_LABEL = {
   on_time: { label: 'Tepat Waktu', className: 'bg-green-600' },
@@ -38,11 +69,15 @@ const AttendanceManagement = () => {
   const [aliases, setAliases] = useState([]);
   const [recalculating, setRecalculating] = useState(false);
 
-  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(defaultCalendarMonth().startDate);
+  const [endDate, setEndDate] = useState(defaultCalendarMonth().endDate);
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const userEditedDateRangeRef = useRef(false);
+
+  const handleStartDateChange = (value) => { userEditedDateRangeRef.current = true; setStartDate(value); };
+  const handleEndDateChange = (value) => { userEditedDateRangeRef.current = true; setEndDate(value); };
 
   const shiftSettingsByDept = useMemo(() => {
     const map = {};
@@ -98,6 +133,19 @@ const AttendanceManagement = () => {
   useEffect(() => { loadTherapists(); }, [loadTherapists]);
   useEffect(() => { loadAliases(); }, [loadAliases]);
   useEffect(() => { loadRecords(); }, [loadRecords]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await getPhysiotherapists();
+      if (userEditedDateRangeRef.current) return; // user already changed the filter, don't override it
+      const activeTherapists = (data || []).filter((t) => t.is_active !== false);
+      const mostCommon = findMostCommonPeriod(activeTherapists);
+      if (!mostCommon) return;
+      const range = getTherapistPeriodRange(mostCommon);
+      setStartDate(format(range.startDate, 'yyyy-MM-dd'));
+      setEndDate(format(range.endDate, 'yyyy-MM-dd'));
+    })();
+  }, []);
 
   const departments = useMemo(() => {
     const set = new Set(records.map((r) => r.department).filter(Boolean));
@@ -159,11 +207,11 @@ const AttendanceManagement = () => {
         <CardContent className="pt-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">Dari Tanggal</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <Input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} />
           </div>
           <div>
             <Label className="text-xs">Sampai Tanggal</Label>
-            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <Input type="date" value={endDate} onChange={(e) => handleEndDateChange(e.target.value)} />
           </div>
           <div>
             <Label className="text-xs">Departemen</Label>
