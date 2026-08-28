@@ -61,7 +61,7 @@ const ensureSpace = (doc, y, needed) => {
 export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.width;
-  const { therapist = {}, clinic = {}, period, summary, target, soap, kpi, attendance, warningLetters = [] } = data;
+  const { therapist = {}, clinic = {}, period, summary, target, soap, kpi, warningLetters = [] } = data;
 
   doc.setDrawColor(...BRONZE_SOFT);
   doc.setLineWidth(0.4);
@@ -194,7 +194,86 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
   );
   y += 5.5;
   doc.text(`Paket Baru Terjual (pasien yang mulai paket lewat terapis ini): ${summary.newPackagesCount}`, MARGIN_X, y);
-  y += 10;
+  y += 8;
+
+  // ── Perbandingan kunjungan & pasien dengan bulan sebelumnya ──
+  const visitCmp = summary.comparison;
+  if (visitCmp) {
+    y = ensureSpace(doc, y, 26);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    doc.text('Perbandingan Kunjungan dengan Bulan Sebelumnya', MARGIN_X, y);
+    y += 4;
+
+    const visitDelta = summary.totalVisits - visitCmp.previousTotalVisits;
+    const patientDelta = summary.totalUniquePatients - visitCmp.previousTotalUniquePatients;
+    const deltaText = (v) => (v > 0 ? `Naik ${v}` : v < 0 ? `Turun ${Math.abs(v)}` : 'Tetap');
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGIN_X, right: MARGIN_X },
+      head: [['Periode', 'Total Kunjungan', 'Pasien Ditangani']],
+      body: [
+        ['Bulan Ini', String(summary.totalVisits), String(summary.totalUniquePatients)],
+        [`Bulan Sebelumnya (${formatPeriodLabel(visitCmp.previousPeriod.startDate, visitCmp.previousPeriod.endDate)})`, String(visitCmp.previousTotalVisits), String(visitCmp.previousTotalUniquePatients)],
+      ],
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 8 },
+      headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
+      bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
+      columnStyles: { 1: { halign: 'center' }, 2: { halign: 'center' } },
+    });
+    y = doc.lastAutoTable.finalY + 4;
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(`Kunjungan: ${deltaText(visitDelta)} · Pasien Ditangani: ${deltaText(patientDelta)}`, MARGIN_X, y);
+    y += 10;
+  }
+
+  // ── Pola hari kunjungan (padat vs sepi) ──
+  const schedulePattern = summary.schedulePattern;
+  if (schedulePattern && schedulePattern.byDay.some((d) => d.count > 0)) {
+    y = ensureSpace(doc, y, 40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    doc.text('Pola Hari Kunjungan', MARGIN_X, y);
+    y += 4;
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGIN_X, right: MARGIN_X },
+      head: [schedulePattern.byDay.map((d) => d.day)],
+      body: [schedulePattern.byDay.map((d) => String(d.count))],
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 8, halign: 'center' },
+      headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE, halign: 'center' },
+      bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
+    });
+    y = doc.lastAutoTable.finalY + 4;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...INK);
+    if (schedulePattern.busiestDay) {
+      doc.text(
+        `Hari paling padat: ${schedulePattern.busiestDay.day} (${schedulePattern.busiestDay.count} kunjungan).`,
+        MARGIN_X, y
+      );
+      y += 5;
+    }
+    if (schedulePattern.quietestDay) {
+      doc.text(
+        `Hari paling sepi: ${schedulePattern.quietestDay.day} (${schedulePattern.quietestDay.count} kunjungan).`,
+        MARGIN_X, y
+      );
+      y += 5;
+    }
+    y += 4;
+  }
 
   // ── Section 2: Pencapaian Target ──
   y = ensureSpace(doc, y, 40);
@@ -355,31 +434,10 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
   }
   y += 3;
 
-  // ── Section 4: Kehadiran ──
-  y = ensureSpace(doc, y, 30);
-  y = sectionTitle(doc, y, '4. Kehadiran');
-
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MARGIN_X, right: MARGIN_X },
-    head: [['Hari Tercatat Hadir', 'Jumlah Keterlambatan', 'Rata-rata Telat']],
-    body: [[
-      String(attendance.totalRecords),
-      String(attendance.lateCount),
-      attendance.lateCount > 0 ? `${attendance.avgLateMinutes} menit` : '-',
-    ]],
-    theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 9 },
-    headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
-    bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE, fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'center' }, 1: { halign: 'center' }, 2: { halign: 'center' } },
-  });
-  y = doc.lastAutoTable.finalY + 10;
-
-  // ── Section 5: Evaluasi KPI (hanya kalau target tercapai) ──
+  // ── Section 4: Evaluasi KPI (hanya kalau target tercapai) ──
   if (kpi && kpi.length > 0) {
     y = ensureSpace(doc, y, 40);
-    y = sectionTitle(doc, y, '5. Evaluasi KPI / Remunerasi');
+    y = sectionTitle(doc, y, '4. Evaluasi KPI / Remunerasi');
     autoTable(doc, {
       startY: y,
       margin: { left: MARGIN_X, right: MARGIN_X },
@@ -399,10 +457,10 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     y = doc.lastAutoTable.finalY + 10;
   }
 
-  // ── Section 6: Catatan Kedisiplinan (hanya kalau ada SP di periode ini) ──
+  // ── Section 5: Catatan Kedisiplinan (hanya kalau ada SP di periode ini) ──
   if (warningLetters.length > 0) {
     y = ensureSpace(doc, y, 40);
-    y = sectionTitle(doc, y, '6. Catatan Kedisiplinan');
+    y = sectionTitle(doc, y, '5. Catatan Kedisiplinan');
     autoTable(doc, {
       startY: y,
       margin: { left: MARGIN_X, right: MARGIN_X },
@@ -422,9 +480,9 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     y = doc.lastAutoTable.finalY + 10;
   }
 
-  // ── Section 7: Catatan & Rekomendasi Pengembangan ──
+  // ── Section 6: Catatan & Rekomendasi Pengembangan ──
   y = ensureSpace(doc, y, 40);
-  y = sectionTitle(doc, y, '7. Catatan & Rekomendasi Pengembangan');
+  y = sectionTitle(doc, y, '6. Catatan & Rekomendasi Pengembangan');
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...INK);

@@ -64,7 +64,7 @@ const TherapistMonthlyReportManager = () => {
           Laporan Evaluasi Bulanan Terapis
         </CardTitle>
         <CardDescription>
-          Buat PDF laporan kinerja &amp; evaluasi bulanan per terapis: kunjungan, diagnosa, target, kepatuhan SOAP, kehadiran, KPI, dan catatan pengembangan.
+          Buat PDF laporan kinerja &amp; evaluasi bulanan per terapis: kunjungan, diagnosa, target, kepatuhan SOAP, KPI, dan catatan pengembangan.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

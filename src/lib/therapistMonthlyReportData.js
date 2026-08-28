@@ -4,7 +4,6 @@ import {
   getWarningLettersForTherapist,
   getRemunerationCriteria,
   getRemunerationRealizations,
-  getAttendanceRecords,
 } from '@/lib/api';
 
 const SOAP_DELAY_BUCKETS = [
@@ -16,15 +15,24 @@ const SOAP_DELAY_BUCKETS = [
 
 const bucketForHours = (hours) => SOAP_DELAY_BUCKETS.find((b) => hours <= b.max) || SOAP_DELAY_BUCKETS[SOAP_DELAY_BUCKETS.length - 1];
 
+// Nama hari (Senin di indeks 0) dipetakan dari Date#getUTCDay() (Minggu = 0).
+const DAY_NAMES = ['Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu', 'Minggu'];
+const dayOfWeekFromISO = (dateStr) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const sundayIndexed = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return (sundayIndexed + 6) % 7; // geser supaya Senin = 0
+};
+
 /**
  * Periode sebelumnya = satu bulan sebelum periode yang diberikan, mengikuti
  * konvensi yang sama (mis. periode 28 Jul—27 Agt -> sebelumnya 28 Jun—27 Jul).
+ * Dihitung murni dari komponen tanggal (UTC) supaya tidak bergeser oleh
+ * timezone lokal saat di-round-trip lewat toISOString().
  */
 const getPreviousPeriod = (periodStart) => {
-  const start = new Date(periodStart);
-  const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
-  const prevEnd = new Date(start);
-  prevEnd.setDate(prevEnd.getDate() - 1);
+  const [year, month, day] = periodStart.split('-').map(Number);
+  const prevStart = new Date(Date.UTC(year, month - 2, day));
+  const prevEnd = new Date(Date.UTC(year, month - 1, day - 1));
   const toISO = (d) => d.toISOString().slice(0, 10);
   return { startDate: toISO(prevStart), endDate: toISO(prevEnd) };
 };
@@ -32,6 +40,7 @@ const getPreviousPeriod = (periodStart) => {
 /**
  * Anggap tanggal 28 bulan (n-1) s/d 27 bulan n sebagai satu periode laporan,
  * mengikuti konvensi yang sudah dipakai di target terapis & MonthlyReportWidget.
+ * Dihitung dengan komponen UTC supaya konsisten dengan getPreviousPeriod().
  */
 export const getDefaultReportPeriod = (referenceDate = new Date()) => {
   const day = referenceDate.getDate();
@@ -40,11 +49,11 @@ export const getDefaultReportPeriod = (referenceDate = new Date()) => {
 
   let start, end;
   if (day >= 28) {
-    start = new Date(year, month, 28);
-    end = new Date(year, month + 1, 27);
+    start = new Date(Date.UTC(year, month, 28));
+    end = new Date(Date.UTC(year, month + 1, 27));
   } else {
-    start = new Date(year, month - 1, 28);
-    end = new Date(year, month, 27);
+    start = new Date(Date.UTC(year, month - 1, 28));
+    end = new Date(Date.UTC(year, month, 27));
   }
   const toISO = (d) => d.toISOString().slice(0, 10);
   return { startDate: toISO(start), endDate: toISO(end) };
@@ -141,6 +150,22 @@ const computeSoapStats = async (therapistId, periodStart, periodEnd) => {
     within24Pct,
     delaySampleCount,
   };
+};
+
+/**
+ * Menghitung total kunjungan & pasien unik untuk satu terapis pada satu periode.
+ * Dipakai untuk pembanding periode sebelumnya di Ringkasan Aktivitas.
+ */
+const computeVisitsSummary = async (therapistId, periodStart, periodEnd) => {
+  const { data: rows } = await supabase
+    .from('daily_recaps')
+    .select('patient_id, actual_patient_id')
+    .eq('therapist_id', therapistId)
+    .gte('recap_date', periodStart)
+    .lte('recap_date', periodEnd);
+  const recs = rows || [];
+  const uniqueIds = new Set(recs.map((r) => r.actual_patient_id || r.patient_id).filter(Boolean));
+  return { totalVisits: recs.length, uniquePatients: uniqueIds.size };
 };
 
 /**
@@ -253,6 +278,25 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
   const previousPeriod = getPreviousPeriod(periodStart);
   const soapStatsPrev = await computeSoapStats(therapistId, previousPeriod.startDate, previousPeriod.endDate);
 
+  // 6b. Total kunjungan & pasien unik periode sebelumnya (pembanding)
+  const visitsSummaryPrev = await computeVisitsSummary(therapistId, previousPeriod.startDate, previousPeriod.endDate);
+
+  // 6c. Pola hari kunjungan: hari mana yang paling padat & paling sepi
+  const dayCountMap = {};
+  recaps.forEach((r) => {
+    if (!r.recap_date) return;
+    const dow = dayOfWeekFromISO(r.recap_date);
+    dayCountMap[dow] = (dayCountMap[dow] || 0) + 1;
+  });
+  const dayBreakdown = DAY_NAMES.map((name, idx) => ({ day: name, count: dayCountMap[idx] || 0 }));
+  const daysWithVisits = dayBreakdown.filter((d) => d.count > 0);
+  const busiestDay = daysWithVisits.length > 0
+    ? daysWithVisits.reduce((a, b) => (b.count > a.count ? b : a))
+    : null;
+  const quietestDay = daysWithVisits.length > 0
+    ? daysWithVisits.reduce((a, b) => (b.count < a.count ? b : a))
+    : null;
+
   // 7. Target & pencapaian
   const { data: targetProgress } = await getTherapistTargetProgress(therapistId, periodStart, periodEnd);
   const targetAchieved = (targetProgress?.achievement_percentage || 0) >= 100;
@@ -273,14 +317,6 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
       realizationValue: realizationByCriteria.get(c.id)?.realization_value ?? null,
     }));
   }
-
-  // 9. Kehadiran
-  const { data: attendanceAll } = await getAttendanceRecords({ startDate: periodStart, endDate: periodEnd });
-  const attendance = (attendanceAll || []).filter((a) => a.physiotherapist_id === therapistId);
-  const lateRecords = attendance.filter((a) => (a.late_minutes || 0) > 0);
-  const avgLateMinutes = lateRecords.length > 0
-    ? Math.round(lateRecords.reduce((sum, a) => sum + (a.late_minutes || 0), 0) / lateRecords.length)
-    : 0;
 
   // 10. Surat Peringatan aktif di periode ini (berdasarkan tanggal pelanggaran,
   // bukan tanggal surat diterbitkan, supaya SP untuk pelanggaran periode lalu
@@ -305,6 +341,16 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
       recurringCount,
       recurringPct,
       newPackagesCount,
+      comparison: {
+        previousPeriod,
+        previousTotalVisits: visitsSummaryPrev.totalVisits,
+        previousTotalUniquePatients: visitsSummaryPrev.uniquePatients,
+      },
+      schedulePattern: {
+        byDay: dayBreakdown,
+        busiestDay,
+        quietestDay,
+      },
     },
     target: targetProgress || null,
     soap: {
@@ -323,11 +369,6 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
       },
     },
     kpi,
-    attendance: {
-      totalRecords: attendance.length,
-      lateCount: lateRecords.length,
-      avgLateMinutes,
-    },
     warningLetters,
   };
 };
