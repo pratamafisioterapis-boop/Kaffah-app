@@ -31,6 +31,23 @@ const defaultCalendarMonth = () => ({
   endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
 });
 
+// Remembers the last date range the admin looked at across visits to this
+// page (e.g. after clicking "Periode Sebelumnya" then navigating to another
+// menu and back), instead of always resetting to the current period.
+const DATE_RANGE_STORAGE_KEY = 'attendanceManagement.dateRange';
+
+const getStoredDateRange = () => {
+  try {
+    const raw = localStorage.getItem(DATE_RANGE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.startDate && parsed?.endDate) return parsed;
+  } catch {
+    // ignore malformed/unavailable storage, fall back to defaults
+  }
+  return null;
+};
+
 // Most clinics book every therapist on the same non-calendar cycle (e.g.
 // 28th to 27th), so default the filter to whichever period_start_day/
 // period_end_day combination the most therapists share, rather than the
@@ -69,12 +86,22 @@ const AttendanceManagement = () => {
   const [aliases, setAliases] = useState([]);
   const [recalculating, setRecalculating] = useState(false);
 
-  const [startDate, setStartDate] = useState(defaultCalendarMonth().startDate);
-  const [endDate, setEndDate] = useState(defaultCalendarMonth().endDate);
+  const [startDate, setStartDate] = useState(() => getStoredDateRange()?.startDate || defaultCalendarMonth().startDate);
+  const [endDate, setEndDate] = useState(() => getStoredDateRange()?.endDate || defaultCalendarMonth().endDate);
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const userEditedDateRangeRef = useRef(false);
+  // A stored range means the period was already resolved on a previous
+  // visit, so skip the auto most-common-therapist-period detection below.
+  const userEditedDateRangeRef = useRef(!!getStoredDateRange());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DATE_RANGE_STORAGE_KEY, JSON.stringify({ startDate, endDate }));
+    } catch {
+      // ignore storage write failures (e.g. private browsing quota)
+    }
+  }, [startDate, endDate]);
 
   const handleStartDateChange = (value) => { userEditedDateRangeRef.current = true; setStartDate(value); };
   const handleEndDateChange = (value) => { userEditedDateRangeRef.current = true; setEndDate(value); };
