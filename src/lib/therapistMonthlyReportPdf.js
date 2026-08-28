@@ -316,7 +316,7 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     autoTable(doc, {
       startY: y,
       margin: { left: MARGIN_X, right: MARGIN_X },
-      head: [['Periode', '% Sesi ≤ 24 Jam', 'Rata-rata Waktu Pengisian']],
+      head: [['Periode', '% Sesi < 24 Jam', 'Rata-rata Waktu Pengisian']],
       body: [
         ['Bulan Ini', currentPctLabel, currentAvgLabel2],
         [`Bulan Sebelumnya (${formatPeriodLabel(cmp.previousPeriod.startDate, cmp.previousPeriod.endDate)})`, prevPctLabel, prevAvgLabel],
@@ -332,14 +332,14 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...MUTED);
-    doc.text(`Perubahan % sesi ≤ 24 jam dibanding bulan sebelumnya: ${deltaLabel}`, MARGIN_X, y);
+    doc.text(`Perubahan % sesi < 24 jam dibanding bulan sebelumnya: ${deltaLabel}`, MARGIN_X, y);
     y += 7;
 
     // Catatan otomatis kalau target pengisian < 24 jam belum tercapai
     const soapTargetMet = soap.within24Pct !== null && soap.within24Pct >= 100;
     if (!soapTargetMet) {
       y = ensureSpace(doc, y, 18);
-      const warnText = `⚠ Kecepatan pengisian SOAP belum mencapai target < 24 jam (baru ${currentPctLabel} sesi yang terisi dalam ≤ 24 jam). Terapis diharapkan meningkatkan kecepatan pengerjaan dokumentasi SOAP agar seluruh sesi terisi dalam waktu kurang dari 24 jam.`;
+      const warnText = `⚠ Kecepatan pengisian SOAP belum mencapai target < 24 jam (baru ${currentPctLabel} sesi yang terisi dalam < 24 jam). Terapis diharapkan meningkatkan kecepatan pengerjaan dokumentasi SOAP agar seluruh sesi terisi dalam waktu kurang dari 24 jam.`;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       const warnLines = doc.splitTextToSize(warnText, pageWidth - MARGIN_X * 2 - 8);

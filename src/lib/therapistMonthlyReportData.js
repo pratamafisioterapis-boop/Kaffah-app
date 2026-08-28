@@ -8,7 +8,7 @@ import {
 } from '@/lib/api';
 
 const SOAP_DELAY_BUCKETS = [
-  { key: '<=24', label: '≤ 24 Jam', max: 24 },
+  { key: '<=24', label: '< 24 Jam', max: 24 },
   { key: '24-48', label: '24 – 48 Jam', max: 48 },
   { key: '48-72', label: '48 – 72 Jam', max: 72 },
   { key: '>72', label: '> 72 Jam', max: Infinity },
