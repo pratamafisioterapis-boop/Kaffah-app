@@ -42,6 +42,7 @@ import PatientSourceChart from '@/components/owner/operational/PatientSourceChar
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
+import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 
 // API
 import { 
@@ -539,6 +540,7 @@ const OwnerDashboard = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
         <Route path="/admin-management" element={<AdminManagementPage />} />
+        <Route path="/attendance" element={<AttendanceManagement />} />
         
 
         {/* Fallback for old routes */}
