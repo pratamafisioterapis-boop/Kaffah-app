@@ -89,6 +89,7 @@ const AttendanceManagement = () => {
   const [employeeFilter, setEmployeeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dailyRoleFilter, setDailyRoleFilter] = useState('all');
+  const [dailyStatusFilter, setDailyStatusFilter] = useState('all');
   const userEditedDateRangeRef = useRef(false);
 
   const handleStartDateChange = (value) => { userEditedDateRangeRef.current = true; setStartDate(value); };
@@ -195,10 +196,12 @@ const AttendanceManagement = () => {
   }, [records]);
 
   const dailyRecords = useMemo(() => {
-    if (dailyRoleFilter === 'all') return records;
-    if (dailyRoleFilter === 'admin') return records.filter((r) => isAdminDepartment(r.department));
-    return records.filter((r) => !isAdminDepartment(r.department));
-  }, [records, dailyRoleFilter]);
+    let rows = records;
+    if (dailyRoleFilter === 'admin') rows = rows.filter((r) => isAdminDepartment(r.department));
+    else if (dailyRoleFilter === 'terapis') rows = rows.filter((r) => !isAdminDepartment(r.department));
+    if (dailyStatusFilter !== 'all') rows = rows.filter((r) => r.status === dailyStatusFilter);
+    return rows;
+  }, [records, dailyRoleFilter, dailyStatusFilter]);
 
   return (
     <div className="space-y-6">
@@ -331,15 +334,28 @@ const AttendanceManagement = () => {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Detail Harian</CardTitle>
-          <div className="w-full sm:w-48">
-            <Select value={dailyRoleFilter} onValueChange={setDailyRoleFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Terapis + Admin</SelectItem>
-                <SelectItem value="terapis">Terapis</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-48">
+              <Select value={dailyRoleFilter} onValueChange={setDailyRoleFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Terapis + Admin</SelectItem>
+                  <SelectItem value="terapis">Terapis</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={dailyStatusFilter} onValueChange={setDailyStatusFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="on_time">Tepat Waktu</SelectItem>
+                  <SelectItem value="late">Terlambat</SelectItem>
+                  <SelectItem value="incomplete">Tidak Lengkap</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
