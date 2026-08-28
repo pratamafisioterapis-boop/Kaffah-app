@@ -39,7 +39,7 @@ const PatientSourceChart = ({ dateRange }) => {
 
         let query = supabase
           .from('daily_recaps')
-          .select('patient_id, recap_date, patients!daily_recap_patient_id_fkey(id, full_name, medical_record_number, phone, additional_info_option_id, patient_info_options(label))')
+          .select('id, appointment_id, patient_id, recap_date, full_name, guest_name, guest_phone, patients!daily_recap_patient_id_fkey(id, full_name, medical_record_number, phone, additional_info_option_id, patient_info_options(label))')
           .eq('clinic_id', userRow?.clinic_id);
 
         if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
@@ -77,12 +77,14 @@ const PatientSourceChart = ({ dateRange }) => {
             : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
 
-          // Beberapa recap lama tidak punya patient_id tertaut (data legacy). Sesi ini tetap
-          // dikelompokkan (di bawah key sintetis) supaya kartu "Tidak Diketahui" tetap bisa
-          // diklik dan pengguna tahu ada sesi tanpa data pasien, bukan cuma diam saja.
+          // Sesi tamu (booking tanpa data pasien terdaftar) tidak punya patient_id, tapi nama
+          // & telepon tamunya tersimpan langsung di recap (guest_name/full_name/guest_phone).
+          // Kelompokkan pakai appointment_id (atau id recap) supaya tetap tampil per-tamu,
+          // bukan digabung jadi satu baris tanpa nama.
+          const guestName = r.guest_name || r.full_name;
           if (!labelPatientMaps[label]) labelPatientMaps[label] = {};
           const map = labelPatientMaps[label];
-          const key = r.patient_id || '__no_patient__';
+          const key = r.patient_id || `guest_${r.appointment_id || r.id}`;
           const existing = map[key];
           if (existing) {
             existing.sessionCount += 1;
@@ -92,12 +94,12 @@ const PatientSourceChart = ({ dateRange }) => {
           } else {
             map[key] = {
               id: key,
-              full_name: r.patient_id ? (r.patients?.full_name || 'Tanpa Nama') : 'Sesi tanpa data pasien',
+              full_name: r.patient_id ? (r.patients?.full_name || 'Tanpa Nama') : (guestName || 'Sesi tanpa data pasien'),
               medical_record_number: r.patient_id ? (r.patients?.medical_record_number || '-') : '-',
-              phone: r.patient_id ? (r.patients?.phone || '-') : '-',
+              phone: r.patient_id ? (r.patients?.phone || '-') : (r.guest_phone || '-'),
               sessionCount: 1,
               lastRecapDate: r.recap_date || null,
-              isOrphan: !r.patient_id,
+              isGuest: !r.patient_id,
             };
           }
         });
@@ -226,14 +228,16 @@ const PatientSourceChart = ({ dateRange }) => {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
                       {p.full_name}
-                      {p.isOrphan && (
+                      {p.isGuest && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
-                          Data lama
+                          Tamu
                         </span>
                       )}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      {p.isOrphan ? 'Sesi tanpa data pasien tertaut' : `RM ${p.medical_record_number} • No HP ${p.phone}`}
+                      {p.isGuest
+                        ? (p.phone !== '-' ? `No HP ${p.phone}` : 'Booking tamu, belum jadi pasien terdaftar')
+                        : `RM ${p.medical_record_number} • No HP ${p.phone}`}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
