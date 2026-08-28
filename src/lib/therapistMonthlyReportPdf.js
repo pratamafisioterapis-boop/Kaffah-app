@@ -290,7 +290,70 @@ export const generateTherapistMonthlyReportPDF = (data, notes = '') => {
     );
     y += 4.5;
   }
-  y += 6;
+  y += 3;
+
+  // ── Perbandingan kecepatan pengisian SOAP dengan bulan sebelumnya ──
+  const cmp = soap.comparison;
+  if (cmp) {
+    y = ensureSpace(doc, y, 30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    doc.text('Perbandingan Kecepatan Pengisian SOAP dengan Bulan Sebelumnya', MARGIN_X, y);
+    y += 4;
+
+    const currentPctLabel = soap.within24Pct !== null ? `${soap.within24Pct}%` : '-';
+    const prevPctLabel = cmp.hasPreviousData && cmp.previousWithin24Pct !== null ? `${cmp.previousWithin24Pct}%` : 'Tidak ada data';
+    const currentAvgLabel2 = soap.avgDelayHours !== null ? `${soap.avgDelayHours} jam` : '-';
+    const prevAvgLabel = cmp.hasPreviousData && cmp.previousAvgDelayHours !== null ? `${cmp.previousAvgDelayHours} jam` : '-';
+
+    let deltaLabel = '-';
+    if (soap.within24Pct !== null && cmp.hasPreviousData && cmp.previousWithin24Pct !== null) {
+      const delta = Math.round((soap.within24Pct - cmp.previousWithin24Pct) * 10) / 10;
+      deltaLabel = delta > 0 ? `Membaik +${delta}%` : delta < 0 ? `Menurun ${delta}%` : 'Tetap';
+    }
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGIN_X, right: MARGIN_X },
+      head: [['Periode', '% Sesi ≤ 24 Jam', 'Rata-rata Waktu Pengisian']],
+      body: [
+        ['Bulan Ini', currentPctLabel, currentAvgLabel2],
+        [`Bulan Sebelumnya (${formatPeriodLabel(cmp.previousPeriod.startDate, cmp.previousPeriod.endDate)})`, prevPctLabel, prevAvgLabel],
+      ],
+      theme: 'plain',
+      styles: { font: 'helvetica', fontSize: 8 },
+      headStyles: { textColor: BRONZE, fontStyle: 'bold', lineWidth: { bottom: 0.4 }, lineColor: BRONZE },
+      bodyStyles: { textColor: INK, lineWidth: { bottom: 0.2 }, lineColor: ROW_LINE },
+      columnStyles: { 1: { halign: 'center' }, 2: { halign: 'center' } },
+    });
+    y = doc.lastAutoTable.finalY + 4;
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(`Perubahan % sesi ≤ 24 jam dibanding bulan sebelumnya: ${deltaLabel}`, MARGIN_X, y);
+    y += 7;
+
+    // Catatan otomatis kalau target pengisian < 24 jam belum tercapai
+    const soapTargetMet = soap.within24Pct !== null && soap.within24Pct >= 100;
+    if (!soapTargetMet) {
+      y = ensureSpace(doc, y, 18);
+      const warnText = `⚠ Kecepatan pengisian SOAP belum mencapai target < 24 jam (baru ${currentPctLabel} sesi yang terisi dalam ≤ 24 jam). Terapis diharapkan meningkatkan kecepatan pengerjaan dokumentasi SOAP agar seluruh sesi terisi dalam waktu kurang dari 24 jam.`;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      const warnLines = doc.splitTextToSize(warnText, pageWidth - MARGIN_X * 2 - 8);
+      const warnBoxH = Math.max(10, warnLines.length * 4.2 + 5);
+      doc.setFillColor(254, 242, 242);
+      doc.setDrawColor(...RED);
+      doc.setLineWidth(0.3);
+      doc.rect(MARGIN_X, y, pageWidth - MARGIN_X * 2, warnBoxH, 'FD');
+      doc.setTextColor(...RED);
+      doc.text(warnLines, MARGIN_X + 4, y + 5.5);
+      y += warnBoxH + 6;
+    }
+  }
+  y += 3;
 
   // ── Section 4: Kehadiran ──
   y = ensureSpace(doc, y, 30);

@@ -17,6 +17,19 @@ const SOAP_DELAY_BUCKETS = [
 const bucketForHours = (hours) => SOAP_DELAY_BUCKETS.find((b) => hours <= b.max) || SOAP_DELAY_BUCKETS[SOAP_DELAY_BUCKETS.length - 1];
 
 /**
+ * Periode sebelumnya = satu bulan sebelum periode yang diberikan, mengikuti
+ * konvensi yang sama (mis. periode 28 Jul—27 Agt -> sebelumnya 28 Jun—27 Jul).
+ */
+const getPreviousPeriod = (periodStart) => {
+  const start = new Date(periodStart);
+  const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
+  const prevEnd = new Date(start);
+  prevEnd.setDate(prevEnd.getDate() - 1);
+  const toISO = (d) => d.toISOString().slice(0, 10);
+  return { startDate: toISO(prevStart), endDate: toISO(prevEnd) };
+};
+
+/**
  * Anggap tanggal 28 bulan (n-1) s/d 27 bulan n sebagai satu periode laporan,
  * mengikuti konvensi yang sudah dipakai di target terapis & MonthlyReportWidget.
  */
@@ -46,6 +59,88 @@ const chunkedIn = async (table, column, ids, select) => {
     if (data) results.push(...data);
   }
   return results;
+};
+
+/**
+ * Menghitung kepatuhan & kecepatan pengisian SOAP untuk satu terapis pada satu periode.
+ * Dipakai baik untuk periode berjalan maupun periode sebelumnya (pembanding).
+ */
+const computeSoapStats = async (therapistId, periodStart, periodEnd) => {
+  const { data: recapsRaw } = await supabase
+    .from('daily_recaps')
+    .select('id, start_time, end_time, appointment_id')
+    .eq('therapist_id', therapistId)
+    .gte('recap_date', periodStart)
+    .lte('recap_date', periodEnd);
+
+  const recaps = recapsRaw || [];
+  const recapIds = recaps.map((r) => r.id);
+
+  let filledCount = 0;
+  let unfilledCount = 0;
+  const delayBucketCounts = SOAP_DELAY_BUCKETS.reduce((acc, b) => ({ ...acc, [b.key]: 0 }), {});
+  let delaySumHours = 0;
+  let delaySampleCount = 0;
+  let noTimeDataCount = 0;
+
+  if (recapIds.length > 0) {
+    const medRecords = await chunkedIn('medical_records', 'daily_recap_id', recapIds, 'daily_recap_id, created_at');
+    const medByRecap = new Map();
+    medRecords.forEach((m) => {
+      if (m.daily_recap_id && !medByRecap.has(m.daily_recap_id)) medByRecap.set(m.daily_recap_id, m.created_at);
+    });
+    filledCount = recapIds.filter((id) => medByRecap.has(id)).length;
+    unfilledCount = recapIds.length - filledCount;
+
+    const apptIds = [...new Set(recaps.map((r) => r.appointment_id).filter(Boolean))];
+    const appointments = apptIds.length > 0
+      ? await chunkedIn('appointments', 'id', apptIds, 'id, appointment_date, duration_minutes')
+      : [];
+    const apptById = new Map(appointments.map((a) => [a.id, a]));
+
+    recaps.forEach((r) => {
+      const filledAt = medByRecap.get(r.id);
+      if (!filledAt) return;
+
+      let anchor = null;
+      if (r.end_time) anchor = new Date(r.end_time);
+      else if (r.start_time) anchor = new Date(r.start_time);
+      else if (r.appointment_id && apptById.has(r.appointment_id)) {
+        const appt = apptById.get(r.appointment_id);
+        if (appt?.appointment_date) {
+          anchor = new Date(appt.appointment_date);
+          anchor.setMinutes(anchor.getMinutes() + (appt.duration_minutes || 0));
+        }
+      }
+
+      if (!anchor) {
+        noTimeDataCount += 1;
+        return;
+      }
+
+      const hours = Math.max(0, (new Date(filledAt).getTime() - anchor.getTime()) / 3_600_000);
+      const bucket = bucketForHours(hours);
+      delayBucketCounts[bucket.key] += 1;
+      delaySumHours += hours;
+      delaySampleCount += 1;
+    });
+  }
+
+  const avgDelayHours = delaySampleCount > 0 ? Math.round((delaySumHours / delaySampleCount) * 10) / 10 : null;
+  const within24Count = delayBucketCounts['<=24'];
+  const within24Pct = delaySampleCount > 0 ? Math.round((within24Count / delaySampleCount) * 1000) / 10 : null;
+
+  return {
+    totalSessions: recapIds.length,
+    filledCount,
+    unfilledCount,
+    delayBuckets: SOAP_DELAY_BUCKETS.map((b) => ({ label: b.label, count: delayBucketCounts[b.key] })),
+    avgDelayHours,
+    noTimeDataCount,
+    within24Count,
+    within24Pct,
+    delaySampleCount,
+  };
 };
 
 /**
@@ -153,58 +248,10 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
     ).length;
   }
 
-  // 6. Kepatuhan SOAP + kecepatan pengisian
-  let filledCount = 0;
-  let unfilledCount = 0;
-  const delayBucketCounts = SOAP_DELAY_BUCKETS.reduce((acc, b) => ({ ...acc, [b.key]: 0 }), {});
-  let delaySumHours = 0;
-  let delaySampleCount = 0;
-  let noTimeDataCount = 0;
-
-  if (recapIds.length > 0) {
-    const medRecords = await chunkedIn('medical_records', 'daily_recap_id', recapIds, 'daily_recap_id, created_at');
-    const medByRecap = new Map();
-    medRecords.forEach((m) => {
-      if (m.daily_recap_id && !medByRecap.has(m.daily_recap_id)) medByRecap.set(m.daily_recap_id, m.created_at);
-    });
-    filledCount = recapIds.filter((id) => medByRecap.has(id)).length;
-    unfilledCount = recapIds.length - filledCount;
-
-    // Jadwal booking sebagai fallback anchor kalau start_time/end_time kosong.
-    const apptIds = [...new Set(recaps.map((r) => r.appointment_id).filter(Boolean))];
-    const appointments = apptIds.length > 0
-      ? await chunkedIn('appointments', 'id', apptIds, 'id, appointment_date, duration_minutes')
-      : [];
-    const apptById = new Map(appointments.map((a) => [a.id, a]));
-
-    recaps.forEach((r) => {
-      const filledAt = medByRecap.get(r.id);
-      if (!filledAt) return;
-
-      let anchor = null;
-      if (r.end_time) anchor = new Date(r.end_time);
-      else if (r.start_time) anchor = new Date(r.start_time);
-      else if (r.appointment_id && apptById.has(r.appointment_id)) {
-        const appt = apptById.get(r.appointment_id);
-        if (appt?.appointment_date) {
-          anchor = new Date(appt.appointment_date);
-          anchor.setMinutes(anchor.getMinutes() + (appt.duration_minutes || 0));
-        }
-      }
-
-      if (!anchor) {
-        noTimeDataCount += 1;
-        return;
-      }
-
-      const hours = Math.max(0, (new Date(filledAt).getTime() - anchor.getTime()) / 3_600_000);
-      const bucket = bucketForHours(hours);
-      delayBucketCounts[bucket.key] += 1;
-      delaySumHours += hours;
-      delaySampleCount += 1;
-    });
-  }
-  const avgDelayHours = delaySampleCount > 0 ? Math.round((delaySumHours / delaySampleCount) * 10) / 10 : null;
+  // 6. Kepatuhan SOAP + kecepatan pengisian (periode ini vs periode sebelumnya)
+  const soapStats = await computeSoapStats(therapistId, periodStart, periodEnd);
+  const previousPeriod = getPreviousPeriod(periodStart);
+  const soapStatsPrev = await computeSoapStats(therapistId, previousPeriod.startDate, previousPeriod.endDate);
 
   // 7. Target & pencapaian
   const { data: targetProgress } = await getTherapistTargetProgress(therapistId, periodStart, periodEnd);
@@ -261,11 +308,19 @@ export const getTherapistMonthlyReportData = async ({ therapistId, periodStart, 
     },
     target: targetProgress || null,
     soap: {
-      filledCount,
-      unfilledCount,
-      delayBuckets: SOAP_DELAY_BUCKETS.map((b) => ({ label: b.label, count: delayBucketCounts[b.key] })),
-      avgDelayHours,
-      noTimeDataCount,
+      filledCount: soapStats.filledCount,
+      unfilledCount: soapStats.unfilledCount,
+      delayBuckets: soapStats.delayBuckets,
+      avgDelayHours: soapStats.avgDelayHours,
+      noTimeDataCount: soapStats.noTimeDataCount,
+      within24Pct: soapStats.within24Pct,
+      comparison: {
+        previousPeriod,
+        hasPreviousData: soapStatsPrev.delaySampleCount > 0,
+        previousWithin24Pct: soapStatsPrev.within24Pct,
+        previousAvgDelayHours: soapStatsPrev.avgDelayHours,
+        previousTotalSessions: soapStatsPrev.totalSessions,
+      },
     },
     kpi,
     attendance: {
