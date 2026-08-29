@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck } from 'lucide-react';
+import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -53,6 +53,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [markingPaidId, setMarkingPaidId] = useState(null);
   const [commissionBreakdown, setCommissionBreakdown] = useState(null);
   const [soapStatus, setSoapStatus] = useState(null);
+  const [incentiveBreakdown, setIncentiveBreakdown] = useState([]);
+  const [showIncentiveDetail, setShowIncentiveDetail] = useState(false);
 
   useEffect(() => {
     if (open && therapist?.id) {
@@ -60,6 +62,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       setAttendanceDays(0);
       setCommissionBreakdown(null);
       setSoapStatus(null);
+      setIncentiveBreakdown([]);
+      setShowIncentiveDetail(false);
       fetchRecords();
       fetchClinic();
     }
@@ -138,18 +142,42 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
 
       let transportAllowance = 0;
       let incentiveAmount = 0;
+      let incentiveItems = [];
+
+      const getPatientName = (r) => r.actual_patients?.full_name || r.patients?.full_name || r.guest_name || 'Tanpa Nama';
 
       if (!isProbation) {
         transportAllowance = (parseFloat(therapist.transport_per_day) || 0) * days;
 
         if (salaryType === 'full_salary') {
           incentiveAmount = calculateFullSalary(therapistRecaps);
+          incentiveItems = therapistRecaps.map((r) => ({
+            id: r.id,
+            date: r.recap_date,
+            name: getPatientName(r),
+            type: r.service_type || r.patient_type || '-',
+            amount: (r.package_tracking_id && r.amount_package) ? r.amount_package : (r.amount || 0),
+          }));
         } else {
           const rateMap = {};
           (ratesRes.data || []).forEach((r) => { rateMap[r.service_name] = r.rate; });
           incentiveAmount = calculateCustomSalary(therapistRecaps, rateMap);
+          incentiveItems = therapistRecaps.map((r) => {
+            const type = r.patient_type || r.service_type || '';
+            const matchedKey = Object.keys(rateMap).find((key) => key.toLowerCase().includes(type.toLowerCase()));
+            return {
+              id: r.id,
+              date: r.recap_date,
+              name: getPatientName(r),
+              type: type || '-',
+              amount: parseFloat(rateMap[matchedKey]) || 0,
+            };
+          });
         }
+
+        incentiveItems.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
       }
+      setIncentiveBreakdown(incentiveItems);
 
       // Komisi remunerasi: 2% (atau tarif klinik) dari profit (omzet - take
       // home pay sebelum komisi), discale oleh skor performa remunerasi.
@@ -185,6 +213,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       }));
     } catch (error) {
       setSoapStatus(null);
+      setIncentiveBreakdown([]);
       toast({ variant: 'destructive', title: 'Gagal Menghitung Otomatis', description: error.message });
     } finally {
       setCalculatingAuto(false);
@@ -343,9 +372,22 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <Input type="number" value={form.transport_per_day} onChange={(e) => setForm({ ...form, transport_per_day: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
-                Jasa Insentif
-                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+              <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5 justify-between">
+                <span className="flex items-center gap-1.5">
+                  Jasa Insentif
+                  {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                </span>
+                {incentiveBreakdown.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowIncentiveDetail((v) => !v)}
+                    className="flex items-center gap-1 text-[10px] font-normal text-emerald-600 hover:text-emerald-700"
+                  >
+                    <ListChecks className="w-3 h-3" />
+                    Rincian ({incentiveBreakdown.length})
+                    {showIncentiveDetail ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
+                )}
               </label>
               <Input type="number" value={form.incentive_amount} onChange={(e) => setForm({ ...form, incentive_amount: e.target.value })} />
             </div>
@@ -366,6 +408,32 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               </p>
             </div>
           </div>
+          {showIncentiveDetail && incentiveBreakdown.length > 0 && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+              <div className="px-3 py-2 text-[11px] font-medium text-emerald-800 border-b border-emerald-200 bg-emerald-50">
+                Rincian Jasa Insentif per Kunjungan
+              </div>
+              <div className="max-h-56 overflow-y-auto divide-y divide-emerald-100">
+                {incentiveBreakdown.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-1.5 text-[11px]">
+                    <div className="min-w-0">
+                      <div className="font-medium text-slate-700 truncate">{item.name}</div>
+                      <div className="text-slate-400">
+                        {item.date ? format(new Date(item.date), 'dd MMM yyyy', { locale: idLocale }) : '-'}
+                        {item.type ? ` • ${item.type}` : ''}
+                      </div>
+                    </div>
+                    <span className="font-medium text-emerald-700 shrink-0">{formatCurrency(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 border-t border-emerald-200 bg-emerald-50 text-[11px] font-semibold text-emerald-800">
+                <span>Total ({incentiveBreakdown.length} kunjungan)</span>
+                <span>{formatCurrency(incentiveBreakdown.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0))}</span>
+              </div>
+            </div>
+          )}
+
           <p className="text-[11px] text-slate-400 -mt-1">
             Uang Transport &amp; Jasa Insentif otomatis dihitung dari periode di atas (mengikuti hari kerja &amp; skema gaji terapis, sama seperti Simulasi Hitung Gaji). Nilainya tetap bisa diubah manual bila perlu.
           </p>
