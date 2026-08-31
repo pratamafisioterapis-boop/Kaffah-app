@@ -51,33 +51,26 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
         return;
       }
 
-      // 2. Determine Date Bounds for Bulk Recap Fetch
-      let minDate = new Date(); // Start with today
-      let maxDate = new Date(0); // Start with epoch
-
       const processedTargets = validTargets.map(t => {
          let start, end;
-         
+
          // Priority 1: Explicit Date Range in Target
          if (t.start_date && t.end_date) {
             start = new Date(t.start_date);
             end = new Date(t.end_date);
-         } 
+         }
          // Priority 2: Month Field
          else if (t.month) {
             const m = new Date(t.month);
             start = new Date(m.getFullYear(), m.getMonth(), 1);
             end = new Date(m.getFullYear(), m.getMonth() + 1, 0); // Last day of month
-         } 
+         }
          // Fallback: Periode berjalan (28 bulan lalu/ini s/d 27 bulan ini/depan)
          else {
             const period = getCurrentPeriod();
             start = period.start;
             end = period.end;
          }
-
-         if (isValid(start) && start < minDate) minDate = start;
-         if (isValid(end) && end > maxDate) maxDate = end;
 
          return {
             ...t,
@@ -87,28 +80,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
          };
       });
 
-      // 3. Fetch Recaps for the entire covering period
-      const fetchStart = format(minDate, 'yyyy-MM-dd');
-      const fetchEnd = format(maxDate, 'yyyy-MM-dd');
-
-      console.log(`Fetching recaps for range: ${fetchStart} to ${fetchEnd}`);
-
-      // Fetch langsung dari supabase agar bisa select field spesifik
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
-
-      const { data: recaps, error: recapError } = await supabase
-        .from('daily_recaps')
-        .select('therapist_id, recap_date, patient_type')
-        .eq('clinic_id', currentUserRow?.clinic_id)
-        .gte('recap_date', fetchStart)
-        .lte('recap_date', fetchEnd);
-
-      if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
-      console.log(`Fetched ${recaps?.length || 0} recaps.`);
-
-      // 4. Calculate Realization Per Target
+      // 2. Calculate Realization Per Target
       // Logic: For each unique therapist, pick the BEST target record.
       // Priority: Has values > 0, then Latest Date.
       const activeTargetsByTherapist = {};
@@ -117,10 +89,10 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       processedTargets.sort((a, b) => {
           const valA = Number(a.target_sessions || 0) + Number(a.target_visits || 0);
           const valB = Number(b.target_sessions || 0) + Number(b.target_visits || 0);
-          
+
           if (valA > 0 && valB === 0) return -1;
           if (valB > 0 && valA === 0) return 1;
-          
+
           return b.parsedEnd - a.parsedEnd;
       });
 
@@ -137,6 +109,56 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       const filteredTargets = Object.values(activeTargetsByTherapist).filter(target => {
         return target.parsedStart <= currentEnd && target.parsedEnd >= currentStart;
       });
+
+      if (filteredTargets.length === 0) {
+        console.warn("No targets overlapping the current period.");
+        setData([]);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Determine Date Bounds for Recap Fetch — only the periods actually
+      // being displayed (overlapping the current period), not every historical
+      // target, so the range stays small and we don't silently truncate at
+      // PostgREST's default 1000-row response cap.
+      let minDate = filteredTargets[0].parsedStart;
+      let maxDate = filteredTargets[0].parsedEnd;
+      filteredTargets.forEach(t => {
+         if (isValid(t.parsedStart) && t.parsedStart < minDate) minDate = t.parsedStart;
+         if (isValid(t.parsedEnd) && t.parsedEnd > maxDate) maxDate = t.parsedEnd;
+      });
+
+      const fetchStart = format(minDate, 'yyyy-MM-dd');
+      const fetchEnd = format(maxDate, 'yyyy-MM-dd');
+
+      console.log(`Fetching recaps for range: ${fetchStart} to ${fetchEnd}`);
+
+      // Fetch langsung dari supabase agar bisa select field spesifik
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+
+      // Paginate explicitly so we never silently drop rows if a clinic/period
+      // ends up with more than one page (PostgREST default cap is 1000 rows).
+      let recaps = [];
+      const PAGE_SIZE = 1000;
+      for (let page = 0; ; page++) {
+        const { data: pageData, error: recapError } = await supabase
+          .from('daily_recaps')
+          .select('therapist_id, recap_date, patient_type')
+          .eq('clinic_id', currentUserRow?.clinic_id)
+          .gte('recap_date', fetchStart)
+          .lte('recap_date', fetchEnd)
+          .order('recap_date', { ascending: true })
+          .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+        if (recapError) throw new Error("Gagal memuat data realisasi: " + recapError.message);
+
+        recaps = recaps.concat(pageData || []);
+        if (!pageData || pageData.length < PAGE_SIZE) break;
+      }
+
+      console.log(`Fetched ${recaps.length} recaps.`);
 
       const chartData = filteredTargets.map(target => {
          const targetStart = startOfDay(target.parsedStart);
