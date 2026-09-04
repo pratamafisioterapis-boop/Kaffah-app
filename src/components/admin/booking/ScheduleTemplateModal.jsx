@@ -25,13 +25,25 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
   const { clinicName } = useAuth();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const [selectedTherapistId, setSelectedTherapistId] = useState('all');
+  // 'all' = semua terapis (perilaku lama). Array of id = terapis-terapis yang dipilih (bisa lebih dari 1).
+  const [selectedTherapistIds, setSelectedTherapistIds] = useState('all');
   const [templateMode, setTemplateMode] = useState('named'); // 'named' | 'global'
   const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'male' | 'female'
 
   const handleGenderFilterChange = (value) => {
     setGenderFilter(value);
-    setSelectedTherapistId('all');
+    setSelectedTherapistIds('all');
+  };
+
+  const toggleTherapistSelection = (id) => {
+    setSelectedTherapistIds(prev => {
+      if (prev === 'all') return [id];
+      if (prev.includes(id)) {
+        const next = prev.filter(existingId => existingId !== id);
+        return next.length === 0 ? 'all' : next;
+      }
+      return [...prev, id];
+    });
   };
 
   const getTherapistBadgeColor = (therapist) => {
@@ -65,9 +77,9 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
   }, [genderFilteredTherapists, schedulesMap, therapistLeaveStatus]);
 
   const selectedTherapists = useMemo(() => {
-    if (selectedTherapistId === 'all') return genderFilteredTherapists;
-    return genderFilteredTherapists.filter(t => t.id === selectedTherapistId);
-  }, [selectedTherapistId, genderFilteredTherapists]);
+    if (selectedTherapistIds === 'all') return genderFilteredTherapists;
+    return genderFilteredTherapists.filter(t => selectedTherapistIds.includes(t.id));
+  }, [selectedTherapistIds, genderFilteredTherapists]);
 
   const message = useMemo(() => {
     if (!open) return '';
@@ -190,13 +202,16 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             </p>
           )}
 
-          {/* Filter Terapis */}
+          {/* Filter Terapis: pilih Semua, atau centang satu/lebih terapis tertentu */}
+          <p className="text-[10px] sm:text-[11px] text-slate-400 px-0.5 -mb-1">
+            Pilih "Semua Terapis" atau centang terapis tertentu (bisa lebih dari satu).
+          </p>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             <button
               type="button"
-              onClick={() => setSelectedTherapistId('all')}
+              onClick={() => setSelectedTherapistIds('all')}
               className={`col-span-2 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
-                selectedTherapistId === 'all'
+                selectedTherapistIds === 'all'
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
@@ -205,18 +220,24 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             </button>
             {sortedTherapists.map(t => {
               const color = getTherapistBadgeColor(t);
-              const isActive = selectedTherapistId === t.id;
+              const isActive = selectedTherapistIds !== 'all' && selectedTherapistIds.includes(t.id);
               return (
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setSelectedTherapistId(t.id)}
+                  onClick={() => toggleTherapistSelection(t.id)}
+                  aria-pressed={isActive}
                   className={`flex items-center gap-1.5 min-w-0 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
                     isActive
                       ? 'bg-slate-900 text-white border-slate-900'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
+                  <span className={`w-3.5 h-3.5 rounded-[4px] border shrink-0 flex items-center justify-center ${
+                    isActive ? 'bg-white border-white' : 'border-slate-300'
+                  }`}>
+                    {isActive && <Check className="w-2.5 h-2.5 text-slate-900" strokeWidth={3} />}
+                  </span>
                   <span className={`w-2 h-2 rounded-full shrink-0 ${badgeDotClass[color]}`} />
                   <span className="truncate">{t.name}</span>
                 </button>
