@@ -220,7 +220,9 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             </button>
             {sortedTherapists.map(t => {
               const color = getTherapistBadgeColor(t);
-              const isActive = selectedTherapistIds !== 'all' && selectedTherapistIds.includes(t.id);
+              const isActive = selectedTherapistIds === 'all'
+                ? color === 'green'
+                : selectedTherapistIds.includes(t.id);
               return (
                 <button
                   key={t.id}
