@@ -27,6 +27,8 @@ const PemilihDpcAkun = () => {
   const [resetTarget, setResetTarget] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetSaving, setResetSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -81,14 +83,18 @@ const PemilihDpcAkun = () => {
     else fetchAll();
   };
 
-  const handleDelete = async (row) => {
-    if (!window.confirm(`Hapus akun DPC "${row.nama}"? Login akun ini akan dinonaktifkan permanen. Data dapil yang sudah diinput tidak ikut terhapus.`)) return;
-    const { error } = await supabase.rpc('pemilih_delete_dpc_account', { p_dpc_id: row.id });
-    if (error) toast({ title: 'Gagal menghapus akun', description: error.message, variant: 'destructive' });
-    else {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteSaving(true);
+    const { error } = await supabase.rpc('pemilih_delete_dpc_account', { p_dpc_id: deleteTarget.id });
+    if (error) {
+      toast({ title: 'Gagal menghapus akun', description: error.message, variant: 'destructive' });
+    } else {
       toast({ title: 'Akun DPC dihapus' });
+      setDeleteTarget(null);
       fetchAll();
     }
+    setDeleteSaving(false);
   };
 
   const handleResetPassword = async () => {
@@ -217,7 +223,7 @@ const PemilihDpcAkun = () => {
                       <button title="Reset Password" onClick={() => { setResetTarget(r); setResetPassword(''); }} style={{ color: '#2563eb', marginRight: 10 }}>
                         <KeyRound size={15} />
                       </button>
-                      <button title="Hapus" onClick={() => handleDelete(r)} style={{ color: '#dc2626' }}>
+                      <button title="Hapus" onClick={() => setDeleteTarget(r)} style={{ color: '#dc2626' }}>
                         <Trash2 size={15} />
                       </button>
                     </td>
@@ -248,6 +254,29 @@ const PemilihDpcAkun = () => {
               <button className="p-btn-ghost" onClick={() => setResetTarget(null)}>Batal</button>
               <button className="p-btn-primary" onClick={handleResetPassword} disabled={resetSaving}>
                 {resetSaving ? <Loader2 className="animate-spin" size={16} /> : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="p-modal-overlay" onClick={() => (!deleteSaving && setDeleteTarget(null))}>
+          <div className="p-modal" style={{ width: 400, maxWidth: '92vw', padding: 22 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 15 }}>Hapus Akun DPC</h3>
+            <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: 13 }}>
+              Hapus akun DPC <b>{deleteTarget.nama}</b> (@{deleteTarget.username})? Login akun ini akan dinonaktifkan permanen.
+              Data dapil yang sudah diinput tidak ikut terhapus.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="p-btn-ghost" onClick={() => setDeleteTarget(null)} disabled={deleteSaving}>Batal</button>
+              <button
+                className="p-btn-primary"
+                style={{ background: '#dc2626' }}
+                onClick={handleDelete}
+                disabled={deleteSaving}
+              >
+                {deleteSaving ? <Loader2 className="animate-spin" size={16} /> : 'Hapus'}
               </button>
             </div>
           </div>
