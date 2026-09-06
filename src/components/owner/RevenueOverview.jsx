@@ -270,6 +270,26 @@ const RevenueOverview = ({ dateRange }) => {
       .sort((a, b) => b.revenue - a.revenue);
   }, [data.nonPkgRecaps, data.pkgRecaps]);
 
+  // ── Pemasukan Paket vs Non-Paket (sesuai date range) ──
+  const packageVsNonPackage = useMemo(() => {
+    const nonPaket = (data.nonPkgRecaps || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    const paket = (data.pkgRecaps || []).reduce((s, r) => {
+      const pt = r.package_tracking;
+      if (!pt || !Number(pt.total_sessions)) return s;
+      return s + (Number(pt.nominal) / Number(pt.total_sessions));
+    }, 0);
+    const total = nonPaket + paket;
+    return {
+      nonPaket: Math.round(nonPaket),
+      paket: Math.round(paket),
+      total: Math.round(total),
+      nonPaketPct: total > 0 ? Math.round((nonPaket / total) * 100) : 0,
+      paketPct: total > 0 ? Math.round((paket / total) * 100) : 0,
+      nonPaketCount: (data.nonPkgRecaps || []).length,
+      paketCount: (data.pkgRecaps || []).length,
+    };
+  }, [data.nonPkgRecaps, data.pkgRecaps]);
+
   // ── Pemasukan per Metode Pembayaran ──
   const paymentMethodBreakdown = useMemo(() => {
     // Murni ambil dari kolom amount apa adanya (tidak dibagi rata sesi paket).
@@ -564,6 +584,59 @@ const RevenueOverview = ({ dateRange }) => {
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* ── Pemasukan Paket vs Non-Paket ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+        <div className="flex items-start justify-between mb-5 gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Pemasukan Paket vs Non-Paket</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(packageVsNonPackage.total)}</p>
+            <p className="text-xs text-slate-400 font-medium mt-1">Total Pemasukan</p>
+          </div>
+        </div>
+
+        {packageVsNonPackage.total === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
+        ) : (
+          <>
+            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex mb-5">
+              <div className="h-full bg-violet-500 transition-all duration-700" style={{ width: `${packageVsNonPackage.paketPct}%` }} />
+              <div className="h-full bg-sky-500 transition-all duration-700" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <div className="rounded-2xl border border-violet-100 border-l-4 border-l-violet-500 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+                    <Package className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
+                    {packageVsNonPackage.paketPct}%
+                  </span>
+                </div>
+                <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
+                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} sesi</p>
+              </div>
+              <div className="rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
+                    <Wallet className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">
+                    {packageVsNonPackage.nonPaketPct}%
+                  </span>
+                </div>
+                <p className="text-lg font-black leading-none text-sky-600">{formatFull(packageVsNonPackage.nonPaket)}</p>
+                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} sesi</p>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
