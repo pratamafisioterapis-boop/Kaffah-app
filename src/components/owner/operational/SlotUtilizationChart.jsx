@@ -156,17 +156,30 @@ const SlotUtilizationChart = () => {
               <svg width="180" height="180" viewBox="0 0 180 180">
                 {/* Track */}
                 <circle cx="90" cy="90" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="16" />
-                {/* Progress */}
-                <circle
-                  cx="90" cy="90" r={radius}
-                  fill="none"
-                  stroke={utilizationColor}
-                  strokeWidth="16"
-                  strokeLinecap={isFull ? 'butt' : 'round'}
-                  strokeDasharray={`${strokeDash} ${circumference}`}
-                  strokeDashoffset={circumference / 4}
-                  style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.8s ease' }}
-                />
+                {/* Progress — saat 100% gambar lingkaran solid tanpa dasharray sama
+                    sekali, supaya tidak bergantung pada perhitungan panjang lingkaran
+                    (circumference) milik browser yang bisa sedikit meleset di sebagian
+                    WebView/mobile dan menyisakan celah walau nilainya sudah penuh. */}
+                {isFull ? (
+                  <circle
+                    cx="90" cy="90" r={radius}
+                    fill="none"
+                    stroke={utilizationColor}
+                    strokeWidth="16"
+                    style={{ transition: 'stroke 0.8s ease' }}
+                  />
+                ) : (
+                  <circle
+                    cx="90" cy="90" r={radius}
+                    fill="none"
+                    stroke={utilizationColor}
+                    strokeWidth="16"
+                    strokeLinecap="round"
+                    strokeDasharray={`${strokeDash} ${circumference}`}
+                    strokeDashoffset={circumference / 4}
+                    style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.8s ease' }}
+                  />
+                )}
               </svg>
               {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
