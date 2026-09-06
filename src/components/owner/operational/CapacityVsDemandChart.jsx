@@ -13,7 +13,7 @@ import {
   Legend
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
-import { startOfWeek, endOfWeek, format, eachDayOfInterval, getDay, isWithinInterval, parseISO } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, eachDayOfInterval, getISOWeek } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -22,75 +22,87 @@ const CapacityVsDemandChart = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [view, setView] = useState('weekly'); // 'weekly' | 'monthly'
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
       const today = new Date();
-      // Calculate start (Monday) and end (Sunday) of the current week
-      const startDate = startOfWeek(today, { weekStartsOn: 1 }); // 1 = Monday
-      const endDate = endOfWeek(today, { weekStartsOn: 1 });
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
+      // Weekly: Monday-Sunday of the current week. Monthly: 1st-last day of the current month.
+      const startDate = view === 'monthly' ? startOfMonth(today) : startOfWeek(today, { weekStartsOn: 1 });
+      const endDate = view === 'monthly' ? endOfMonth(today) : endOfWeek(today, { weekStartsOn: 1 });
 
-      // 1. Fetch Appointments for Demand
-      // User requested: Filter for status IN ('confirmed', 'ongoing', 'completed')
-      // We also include 'scheduled' as it usually represents valid future demand in most systems, 
-      // but will prioritize the user's specific list if they are strict. 
-      // Given "Demand Calculation" usually implies booked slots, and 'scheduled' is the standard initial state,
-      // excluding it would show 0 demand for future days. We will include it for completeness unless strictly forbidden.
-      // Based on strict prompt: "Filter for status IN ('confirmed', 'ongoing', 'completed')"
-      // However, usually 'scheduled' is vital. I will stick to the prompt's list to be safe, 
-      // but append 'scheduled' if it seems like a mistake. 
-      // Let's stick to the prompt's explicit list: confirmed, ongoing, completed.
-      // Wait, if I don't include 'scheduled', future demand might be zero. 
-      // I will add 'scheduled' to ensure the chart is useful, as "confirmed" might be a manual step.
-      
-
-      // Process Data by Day
       const days = eachDayOfInterval({ start: startDate, end: endDate });
-      
-      const processedData = [];
 
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
       const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
       const currentClinicId = currentUserRow?.clinic_id;
 
-for (const day of days) {
-  const dateStr = format(day, 'yyyy-MM-dd');
+      // Fetch all days in parallel (monthly view can span ~30 days)
+      const slotResults = await Promise.all(
+        days.map((day) =>
+          supabase.rpc('get_available_slots_with_status_by_date', {
+            p_date: format(day, 'yyyy-MM-dd'),
+            p_clinic_id: currentClinicId,
+          })
+        )
+      );
 
-  const { data: slotData, error } = await supabase.rpc(
-    'get_available_slots_with_status_by_date',
-    { p_date: dateStr, p_clinic_id: currentClinicId }
-  );
+      const dailyData = days.map((day, idx) => {
+        const { data: slotData, error: rpcError } = slotResults[idx] || {};
+        if (rpcError) console.error(rpcError);
 
-  if (error) {
-  console.error(error);
-  continue;
-}
+        // 🔥 kapasitas = slot yang benar-benar tersedia (exclude yang cuti)
+        const capacity = (slotData || []).filter(s => s.status !== 'cuti').length;
+        // 🔥 permintaan = slot terisi
+        const demand = (slotData || []).filter(s => s.status === 'terisi').length;
 
-  // 🔥 kapasitas = slot yang benar-benar tersedia (exclude yang cuti)
-const capacity = (slotData || []).filter(s => s.status !== 'cuti').length;
+        return {
+          day: format(day, 'EEEE', { locale: id }),
+          shortDay: format(day, 'EEE', { locale: id }),
+          fullDate: format(day, 'dd MMM yyyy', { locale: id }),
+          isoWeek: getISOWeek(day),
+          capacity,
+          demand,
+          utilization: capacity > 0 ? Math.round((demand / capacity) * 100) : 0,
+        };
+      });
 
-// 🔥 permintaan = slot terisi
-const demand = (slotData || []).filter(
-  s => s.status === 'terisi'
-).length;
+      if (view === 'weekly') {
+        setData(dailyData);
+      } else {
+        // Group days into weeks so the monthly view compares week-over-week within the month
+        const weekOrder = [];
+        const weekMap = {};
+        dailyData.forEach((d) => {
+          if (!weekMap[d.isoWeek]) {
+            weekMap[d.isoWeek] = { days: [] };
+            weekOrder.push(d.isoWeek);
+          }
+          weekMap[d.isoWeek].days.push(d);
+        });
 
-  processedData.push({
-  day: format(day, 'EEEE', { locale: id }),
-  shortDay: format(day, 'EEE', { locale: id }),
-  fullDate: format(day, 'dd MMM yyyy', { locale: id }),
-  capacity,
-  demand,
-  utilization: capacity > 0
-    ? Math.round((demand / capacity) * 100)
-    : 0
-});
-}
-setData(processedData);
+        const monthlyData = weekOrder.map((isoWeek, idx) => {
+          const weekDays = weekMap[isoWeek].days;
+          const capacity = weekDays.reduce((s, d) => s + d.capacity, 0);
+          const demand = weekDays.reduce((s, d) => s + d.demand, 0);
+          const activeDays = weekDays.filter((d) => d.capacity > 0);
+          const utilization = activeDays.length > 0
+            ? Math.round(activeDays.reduce((s, d) => s + d.utilization, 0) / activeDays.length)
+            : 0;
+          return {
+            day: `Minggu ${idx + 1}`,
+            shortDay: `Mgg ${idx + 1}`,
+            fullDate: `${weekDays[0].fullDate} - ${weekDays[weekDays.length - 1].fullDate}`,
+            capacity,
+            demand,
+            utilization,
+          };
+        });
+        setData(monthlyData);
+      }
     } catch (err) {
       console.error("Error fetching capacity vs demand:", err);
       setError("Gagal memuat data.");
@@ -101,10 +113,10 @@ setData(processedData);
 
   useEffect(() => {
     fetchData();
-    
+
     // Subscribe to changes
     const channel = supabase
-      .channel('capacity-demand-updates')
+      .channel(`capacity-demand-updates-${view}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_schedules' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, () => fetchData())
@@ -113,7 +125,7 @@ setData(processedData);
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [view]);
 
  const todayData = data.find(d => d.fullDate === format(new Date(), 'dd MMM yyyy', { locale: id }));
   // Hari tanpa jadwal aktif (kapasitas 0) tidak dihitung ke avg utilisasi
@@ -130,7 +142,9 @@ setData(processedData);
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Overview minggu ini</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {view === 'monthly' ? 'Overview per minggu, bulan ini' : 'Overview minggu ini'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -146,6 +160,26 @@ setData(processedData);
                 </button>
             }
           </div>
+        </div>
+
+        {/* Weekly / Monthly toggle */}
+        <div className="flex items-center gap-1 mt-3 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
+          <button
+            onClick={() => setView('weekly')}
+            className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+              view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Mingguan
+          </button>
+          <button
+            onClick={() => setView('monthly')}
+            className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+              view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Bulanan
+          </button>
         </div>
 
         {/* Legend */}
