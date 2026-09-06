@@ -13,9 +13,21 @@ import {
   Legend
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, eachDayOfInterval, getISOWeek } from 'date-fns';
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addWeeks,
+  addMonths,
+  isSameWeek,
+  isSameMonth,
+  format,
+  eachDayOfInterval,
+  getISOWeek,
+} from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const CapacityVsDemandChart = () => {
@@ -23,15 +35,28 @@ const CapacityVsDemandChart = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [view, setView] = useState('weekly'); // 'weekly' | 'monthly'
+  const [anchorDate, setAnchorDate] = useState(new Date()); // periode (minggu/bulan) yang sedang dilihat
+
+  const isCurrentPeriod = view === 'monthly'
+    ? isSameMonth(anchorDate, new Date())
+    : isSameWeek(anchorDate, new Date(), { weekStartsOn: 1 });
+
+  const goToPrevious = () => {
+    setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, -1) : addWeeks(prev, -1)));
+  };
+  const goToNext = () => {
+    if (isCurrentPeriod) return; // jangan izinkan lihat periode masa depan
+    setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, 1) : addWeeks(prev, 1)));
+  };
+  const goToToday = () => setAnchorDate(new Date());
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const today = new Date();
-      // Weekly: Monday-Sunday of the current week. Monthly: 1st-last day of the current month.
-      const startDate = view === 'monthly' ? startOfMonth(today) : startOfWeek(today, { weekStartsOn: 1 });
-      const endDate = view === 'monthly' ? endOfMonth(today) : endOfWeek(today, { weekStartsOn: 1 });
+      // Weekly: Monday-Sunday of the selected week. Monthly: 1st-last day of the selected month.
+      const startDate = view === 'monthly' ? startOfMonth(anchorDate) : startOfWeek(anchorDate, { weekStartsOn: 1 });
+      const endDate = view === 'monthly' ? endOfMonth(anchorDate) : endOfWeek(anchorDate, { weekStartsOn: 1 });
 
       const days = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -116,7 +141,7 @@ const CapacityVsDemandChart = () => {
 
     // Subscribe to changes
     const channel = supabase
-      .channel(`capacity-demand-updates-${view}`)
+      .channel(`capacity-demand-updates-${view}-${format(anchorDate, 'yyyy-MM-dd')}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_schedules' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, () => fetchData())
@@ -125,7 +150,7 @@ const CapacityVsDemandChart = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [view]);
+  }, [view, anchorDate]);
 
  const todayData = data.find(d => d.fullDate === format(new Date(), 'dd MMM yyyy', { locale: id }));
   // Hari tanpa jadwal aktif (kapasitas 0) tidak dihitung ke avg utilisasi
@@ -143,7 +168,9 @@ const CapacityVsDemandChart = () => {
           <div>
             <h3 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              {view === 'monthly' ? 'Overview per minggu, bulan ini' : 'Overview minggu ini'}
+              {view === 'monthly'
+                ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
+                : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -162,24 +189,52 @@ const CapacityVsDemandChart = () => {
           </div>
         </div>
 
-        {/* Weekly / Monthly toggle */}
-        <div className="flex items-center gap-1 mt-3 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
-          <button
-            onClick={() => setView('weekly')}
-            className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
-              view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Mingguan
-          </button>
-          <button
-            onClick={() => setView('monthly')}
-            className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
-              view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Bulanan
-          </button>
+        {/* Weekly / Monthly toggle + period navigation */}
+        <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
+            <button
+              onClick={() => { setView('weekly'); setAnchorDate(new Date()); }}
+              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Mingguan
+            </button>
+            <button
+              onClick={() => { setView('monthly'); setAnchorDate(new Date()); }}
+              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Bulanan
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={goToPrevious}
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors"
+              aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'}
+            >
+              <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
+            </button>
+            {!isCurrentPeriod && (
+              <button
+                onClick={goToToday}
+                className="text-[11px] font-semibold text-indigo-600 px-2 hover:underline"
+              >
+                {view === 'monthly' ? 'Bulan ini' : 'Minggu ini'}
+              </button>
+            )}
+            <button
+              onClick={goToNext}
+              disabled={isCurrentPeriod}
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
+              aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
+            >
+              <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+            </button>
+          </div>
         </div>
 
         {/* Legend */}
