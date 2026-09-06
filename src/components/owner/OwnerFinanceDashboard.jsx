@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, Edit2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package, CheckCircle2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable } from '@/lib/api';
+import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable, autoPostFixedCosts } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import SearchableSelect from '@/components/ui/searchable-select';
@@ -305,6 +305,7 @@ const OwnerFinanceDashboard = () => {
   setOwnerLoading(true);
 
   try {
+    await autoPostFixedCosts();
     const [expRes, incRes, recRes, bankRes] = await Promise.all([
       getOwnerExpenditures(dateRange), 
       getOwnerIncome(dateRange), 
