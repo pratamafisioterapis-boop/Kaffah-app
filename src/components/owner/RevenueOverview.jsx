@@ -271,13 +271,14 @@ const RevenueOverview = ({ dateRange }) => {
   }, [data.nonPkgRecaps, data.pkgRecaps]);
 
   // ── Pemasukan Paket vs Non-Paket (sesuai date range) ──
+  // Pemasukan paket dihitung dari pembayaran yang benar-benar masuk (amount
+  // di daily_recaps), bukan diamortisasi per sesi — biasanya cuma tercatat
+  // di sesi pertama saat paket dibeli, sesi berikutnya amount-nya 0.
   const packageVsNonPackage = useMemo(() => {
-    const nonPaket = (data.nonPkgRecaps || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
-    const paket = (data.pkgRecaps || []).reduce((s, r) => {
-      const pt = r.package_tracking;
-      if (!pt || !Number(pt.total_sessions)) return s;
-      return s + (Number(pt.nominal) / Number(pt.total_sessions));
-    }, 0);
+    const nonPaketRecaps = (data.nonPkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
+    const paketRecaps = (data.pkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
+    const nonPaket = nonPaketRecaps.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    const paket = paketRecaps.reduce((s, r) => s + (Number(r.amount) || 0), 0);
     const total = nonPaket + paket;
     return {
       nonPaket: Math.round(nonPaket),
@@ -285,8 +286,8 @@ const RevenueOverview = ({ dateRange }) => {
       total: Math.round(total),
       nonPaketPct: total > 0 ? Math.round((nonPaket / total) * 100) : 0,
       paketPct: total > 0 ? Math.round((paket / total) * 100) : 0,
-      nonPaketCount: (data.nonPkgRecaps || []).length,
-      paketCount: (data.pkgRecaps || []).length,
+      nonPaketCount: nonPaketRecaps.length,
+      paketCount: paketRecaps.length,
     };
   }, [data.nonPkgRecaps, data.pkgRecaps]);
 
@@ -621,7 +622,7 @@ const RevenueOverview = ({ dateRange }) => {
                   </span>
                 </div>
                 <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
-                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} sesi</p>
+                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
               </div>
               <div className="rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-3">
@@ -633,7 +634,7 @@ const RevenueOverview = ({ dateRange }) => {
                   </span>
                 </div>
                 <p className="text-lg font-black leading-none text-sky-600">{formatFull(packageVsNonPackage.nonPaket)}</p>
-                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} sesi</p>
+                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} transaksi</p>
               </div>
             </div>
           </>
