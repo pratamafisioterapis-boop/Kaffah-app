@@ -1866,8 +1866,13 @@ export const deleteAccountingSubcategory = async (id) => {
 // once their `post_day` has passed each month. There's no cron/edge-function
 // in this project to do that on a schedule, so this runs opportunistically
 // whenever the owner opens a page that needs the total (Fixed Cost manager,
-// BEP widget) — idempotent via `last_posted_month` so it only posts once per
-// item per calendar month no matter how many times it runs.
+// BEP widget, Owner Accounting) — idempotent via `last_posted_month` so it
+// only posts once per item per calendar month no matter how many times it
+// runs. It also catches up any months that were missed entirely — e.g. an
+// item whose post_day fell on a day nobody opened one of those pages, so it
+// never got a chance to run for that month — by walking forward from
+// `last_posted_month` (or the item's creation month, if it never posted)
+// up through the current month, posting each month that's due.
 // Items with `auto_post = false` (salary/"gaji" items by default) are
 // skipped here on purpose: they post to accounting once their payroll
 // record is marked paid instead, so they aren't double-counted.
@@ -1883,44 +1888,72 @@ export const autoPostFixedCosts = async () => {
     const { data: items, error: fetchError } = await supabase
       .from('clinic_fixed_costs')
       .select(`
-        id, item_name, amount, post_day, last_posted_month, auto_post,
+        id, item_name, amount, post_day, last_posted_month, auto_post, created_at,
         subcategory:subcategory_id ( id, subcategory_name, parent_category:accounting_categories ( category_name ) )
       `)
       .eq('clinic_id', clinicId);
     if (fetchError) return { error: fetchError };
 
     const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const currentYear = now.getFullYear();
+    const currentMonthIdx = now.getMonth(); // 0-indexed
     const today = now.getDate();
-
-    const due = (items || []).filter(i => {
-      if (i.auto_post === false) return false;
-      if (i.last_posted_month === currentMonth) return false;
-      const effectiveDay = Math.min(i.post_day || 1, daysInMonth);
-      return effectiveDay <= today;
-    });
+    const monthKey = (y, mIdx) => `${y}-${String(mIdx + 1).padStart(2, '0')}`;
+    const MAX_MONTHS_BACK = 24; // safety cap so a bad row can't loop forever
 
     const posted = [];
-    for (const item of due) {
-      const effectiveDay = Math.min(item.post_day || 1, daysInMonth);
-      const postDate = `${currentMonth}-${String(effectiveDay).padStart(2, '0')}`;
-      // eslint-disable-next-line no-await-in-loop
-      const { error: insertError } = await supabase.from('owner_expenditures').insert({
-        clinic_id: clinicId,
-        date: postDate,
-        amount: item.amount,
-        category: item.subcategory?.parent_category?.category_name || 'FIXED COST',
-        sub_category: item.subcategory?.id || null,
-        description: item.item_name,
-        is_auto_fixed_cost: true,
-        created_by: userId,
-        created_at: new Date().toISOString()
-      });
-      if (insertError) continue;
-      // eslint-disable-next-line no-await-in-loop
-      await supabase.from('clinic_fixed_costs').update({ last_posted_month: currentMonth }).eq('id', item.id);
-      posted.push(item.item_name);
+    for (const item of (items || [])) {
+      if (item.auto_post === false) continue;
+
+      let y, mIdx;
+      if (item.last_posted_month) {
+        const [ly, lm] = item.last_posted_month.split('-').map(Number);
+        mIdx = lm; // next month after last_posted_month, 0-indexed
+        y = ly;
+        if (mIdx > 11) { mIdx = 0; y += 1; }
+      } else if (item.created_at) {
+        const created = new Date(item.created_at);
+        y = created.getFullYear();
+        mIdx = created.getMonth();
+      } else {
+        y = currentYear;
+        mIdx = currentMonthIdx;
+      }
+
+      let guard = 0;
+      while (
+        guard < MAX_MONTHS_BACK &&
+        (y < currentYear || (y === currentYear && mIdx <= currentMonthIdx))
+      ) {
+        guard += 1;
+        const isCurrentMonth = y === currentYear && mIdx === currentMonthIdx;
+        const daysInThisMonth = new Date(y, mIdx + 1, 0).getDate();
+        const effectiveDay = Math.min(item.post_day || 1, daysInThisMonth);
+        const due = isCurrentMonth ? effectiveDay <= today : true;
+        if (!due) break;
+
+        const thisMonthKey = monthKey(y, mIdx);
+        const postDate = `${thisMonthKey}-${String(effectiveDay).padStart(2, '0')}`;
+        // eslint-disable-next-line no-await-in-loop
+        const { error: insertError } = await supabase.from('owner_expenditures').insert({
+          clinic_id: clinicId,
+          date: postDate,
+          amount: item.amount,
+          category: item.subcategory?.parent_category?.category_name || 'FIXED COST',
+          sub_category: item.subcategory?.id || null,
+          description: item.item_name,
+          is_auto_fixed_cost: true,
+          created_by: userId,
+          created_at: new Date().toISOString()
+        });
+        if (insertError) break;
+        // eslint-disable-next-line no-await-in-loop
+        await supabase.from('clinic_fixed_costs').update({ last_posted_month: thisMonthKey }).eq('id', item.id);
+        posted.push(item.item_name);
+
+        mIdx += 1;
+        if (mIdx > 11) { mIdx = 0; y += 1; }
+      }
     }
 
     return { data: posted, error: null };
