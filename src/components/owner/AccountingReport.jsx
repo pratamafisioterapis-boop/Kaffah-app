@@ -6,13 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
-import {
-  getOwnerExpenditures,
-  getOwnerIncome,
-  getAdminExpenses,
-  getAdminIncome,
-  getPatientIncomeFromPackages,
-  getBankAccountFees
+import { 
+  getOwnerExpenditures, 
+  getOwnerIncome, 
+  getAdminExpenses, 
+  getAdminIncome, 
+  getPatientIncomeFromPackages 
 } from '@/lib/api';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/components/ui/use-toast';
@@ -164,10 +163,6 @@ const AccountingReport = ({
     ownerExpenses: [],
     adminExpenses: []
   });
-  const [bankFees, setBankFees] = useState([]);
-
-  // Fitur potongan bank otomatis di export Excel khusus berlaku untuk Klinik Kaffah.
-  const isKaffahClinic = (clinicName || '').toLowerCase().includes('kaffah');
 
   const fetchData = async () => {
     setLoading(true);
@@ -177,15 +172,13 @@ const AccountingReport = ({
           adminIncRes,
           patientIncRes,
           ownerExpRes,
-          adminExpRes,
-          bankFeesRes
+          adminExpRes
       ] = await Promise.all([
           getOwnerIncome(dateRange),
           getAdminIncome(dateRange),
           getPatientIncomeFromPackages(dateRange),
           getOwnerExpenditures(dateRange),
-          getAdminExpenses(dateRange),
-          getBankAccountFees()
+          getAdminExpenses(dateRange)
       ]);
 
       if (ownerIncRes.error) throw ownerIncRes.error;
@@ -198,7 +191,6 @@ const AccountingReport = ({
         ownerExpenses: ownerExpRes.data || [],
         adminExpenses: adminExpRes.data || []
       });
-      setBankFees(bankFeesRes.data || []);
 
     } catch (error) {
       console.error("Report fetch error:", error);
@@ -234,23 +226,6 @@ const AccountingReport = ({
 
   return format(date, 'dd/MM/yyyy');
 };
-// Hitung potongan bank per metode pembayaran (mis. QRIS) untuk satu transaksi.
-// Aturan potongan diambil dari menu Setup > Akun Bank > Potongan Bank.
-const computeBankDeduction = (grossAmount, bankAccountId, paymentMethod) => {
-  const gross = Number(grossAmount) || 0;
-  if (!bankAccountId || !paymentMethod) return { potongan: 0, bersih: gross };
-  const rule = (bankFees || []).find(f =>
-    f.is_active !== false &&
-    f.bank_account_id === bankAccountId &&
-    (f.payment_method || '').toLowerCase() === String(paymentMethod).toLowerCase()
-  );
-  if (!rule) return { potongan: 0, bersih: gross };
-  const potongan = rule.fee_type === 'percentage'
-    ? Math.round(gross * Number(rule.fee_value) / 100)
-    : Math.min(Number(rule.fee_value) || 0, gross);
-  return { potongan, bersih: gross - potongan };
-};
-
 const handleExportExcel = () => {
   // =========================
   // GABUNG PEMASUKAN
@@ -264,9 +239,6 @@ const handleExportExcel = () => {
       nama: '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
-      metode: item.payment_method || '-',
-      bank_account_id: item.bank_account_id || null,
-      payment_method: item.payment_method || null,
       jumlah: Number(item.amount) || 0
     })),
 
@@ -278,9 +250,6 @@ const handleExportExcel = () => {
       nama: '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
-      metode: item.payment_method || '-',
-      bank_account_id: item.bank_account_id || null,
-      payment_method: item.payment_method || null,
       jumlah: Number(item.amount) || 0
     })),
 
@@ -292,24 +261,9 @@ const handleExportExcel = () => {
       nama: item.patient_name || '-',
       paket: item.package_name || '-',
       bank: '-',
-      metode: item.payment_method || '-',
-      bank_account_id: item.bank_account_id || null,
-      payment_method: item.payment_method || null,
       jumlah: Number(item.amount) || 0
     }))
   ];
-
-  // Untuk Klinik Kaffah: hitung potongan bank per item metode pembayaran,
-  // lalu gabungkan kolom "belum dipotong" dan "sudah dipotong" langsung
-  // dalam satu tabel. Ini HANYA memengaruhi file Excel yang diexport,
-  // tidak mengubah angka yang tampil di layar menu Accounting.
-  if (isKaffahClinic) {
-    combinedIncome.forEach(item => {
-      const { potongan, bersih } = computeBankDeduction(item.jumlah, item.bank_account_id, item.payment_method);
-      item.potongan_bank = potongan;
-      item.jumlah_bersih = bersih;
-    });
-  }
   combinedIncome.sort((a, b) => {
   const [dayA, monthA, yearA] = a.tanggal.split('/');
   const [dayB, monthB, yearB] = b.tanggal.split('/');
@@ -359,45 +313,19 @@ combinedExpenses.sort((a, b) => {
   // =========================
   // SHEET PEMASUKAN
   // =========================
-  const fmtRp = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(n)}`;
-
   const incomeSheet = XLSX.utils.json_to_sheet(
-    combinedIncome.map(({ bank_account_id, payment_method, ...item }) => (
-      isKaffahClinic
-        ? {
-            tanggal: item.tanggal,
-            sumber: item.sumber,
-            kategori: item.kategori,
-            deskripsi: item.deskripsi,
-            nama: item.nama,
-            paket: item.paket,
-            bank: item.bank,
-            metode: item.metode,
-            'jumlah (belum dipotong)': fmtRp(item.jumlah),
-            'potongan bank': fmtRp(item.potongan_bank || 0),
-            'jumlah (sudah dipotong)': fmtRp(item.jumlah_bersih ?? item.jumlah)
-          }
-        : { ...item, jumlah: fmtRp(item.jumlah) }
-    ))
-  );
-
-  const totalIncomeNet = isKaffahClinic
-    ? combinedIncome.reduce((acc, item) => acc + (item.jumlah_bersih ?? item.jumlah), 0)
-    : totalIncome;
+  combinedIncome.map(item => ({
+    ...item,
+    jumlah: `Rp ${new Intl.NumberFormat('id-ID').format(item.jumlah)}`
+  }))
+);
 
   XLSX.utils.sheet_add_aoa(
     incomeSheet,
-    isKaffahClinic
-      ? [
-          [],
-          ['TOTAL PEMASUKAN (BELUM DIPOTONG)', totalIncome],
-          ['TOTAL POTONGAN BANK', totalIncome - totalIncomeNet],
-          ['TOTAL PEMASUKAN (SUDAH DIPOTONG)', totalIncomeNet]
-        ]
-      : [
-          [],
-          ['TOTAL PEMASUKAN', totalIncome]
-        ],
+    [
+      [],
+      ['TOTAL PEMASUKAN', totalIncome]
+    ],
     { origin: -1 }
   );
 
@@ -430,15 +358,7 @@ combinedExpenses.sort((a, b) => {
     [],
     ['Total Pemasukan', totalIncome],
     ['Total Pengeluaran', totalExpenses],
-    ['Net Profit', netProfit],
-    ...(isKaffahClinic
-      ? [
-          [],
-          ['Total Potongan Bank (QRIS, dll)', totalIncome - totalIncomeNet],
-          ['Total Pemasukan (Setelah Potongan Bank)', totalIncomeNet],
-          ['Net Profit (Setelah Potongan Bank)', totalIncomeNet - totalExpenses]
-        ]
-      : [])
+    ['Net Profit', netProfit]
   ]);
 
   // =========================
