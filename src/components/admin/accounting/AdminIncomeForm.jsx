@@ -126,8 +126,8 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.amount || !form.source || !form.sub_category || !form.transaction_date || !form.bank_account_id) {
-      toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields including Bank Account." });
+    if (!form.amount || !form.source || !form.sub_category || !form.transaction_date || !form.bank_account_id || !form.payment_method) {
+      toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields including Bank Account and Metode Pembayaran." });
       return;
     }
 
@@ -233,7 +233,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="payment_method">Metode Pembayaran <span className="text-slate-400 font-normal">(opsional)</span></Label>
+        <Label htmlFor="payment_method">Metode Pembayaran</Label>
         <SearchableSelect
           options={paymentMethods}
           value={form.payment_method}
