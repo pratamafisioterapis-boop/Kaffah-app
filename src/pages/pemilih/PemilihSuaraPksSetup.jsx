@@ -18,7 +18,7 @@ import {
 // ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
   dapilList, selectedDapil, onSelectDapil, kelurahanList, allKelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
-  partyList, party, onSelectParty, onAddPartyDraft, onDeleteParty, deletingParty,
+  partyList, party, onSelectParty, onAddPartyDraft,
 }) => {
   // Tahun pemilu dipakai bersama oleh Daftar Caleg maupun Kelurahan/Jumlah
   // TPS — jumlah TPS per kelurahan bisa berbeda tiap periode, jadi kedua
@@ -96,8 +96,6 @@ const PemilihSuaraPksSetup = ({
             party={party}
             onSelectParty={onSelectParty}
             onAddPartyDraft={onAddPartyDraft}
-            onDeleteParty={onDeleteParty}
-            deletingParty={deletingParty}
           />
           <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} year={year} toast={toast} onChanged={onChanged} />
         </>
@@ -565,7 +563,7 @@ const DEFAULT_PARTY = 'Partai Keadilan Sejahtera';
 
 const CalegSection = ({
   selectedDapil, kelurahanCount, calegMasterRows, voteCandidateRows, year, toast, onChanged,
-  partyList, party, onSelectParty, onAddPartyDraft, onDeleteParty, deletingParty,
+  partyList, party, onSelectParty, onAddPartyDraft,
 }) => {
   // Komponen ini tetap bisa dipakai tanpa dukungan multi-partai (kalau
   // caller tidak mengirim prop party) — jatuh ke satu partai default (PKS)
@@ -728,32 +726,21 @@ const CalegSection = ({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {effectivePartyList.map((p) => {
               const active = p === activeParty;
-              const busy = deletingParty === p;
               return (
-                <div
+                <button
                   key={p}
+                  type="button"
+                  onClick={() => onSelectParty(p)}
                   className="p-badge"
                   style={{
-                    padding: '8px 8px 8px 14px', borderRadius: 999, cursor: 'pointer',
+                    padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
                     background: active ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#fff',
                     color: active ? '#fff' : '#4b5563', border: '1.5px solid ' + (active ? '#ea580c' : 'var(--p-border)'),
-                    fontWeight: 700, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 8,
+                    fontWeight: 700, fontSize: 12.5,
                   }}
-                  onClick={() => onSelectParty(p)}
                 >
                   {p}
-                  {typeof onDeleteParty === 'function' && (
-                    <button
-                      type="button"
-                      title={`Hapus partai ${p}`}
-                      disabled={busy}
-                      onClick={(e) => { e.stopPropagation(); onDeleteParty(p); }}
-                      style={{ display: 'inline-flex', opacity: 0.85, color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: busy ? 'default' : 'pointer' }}
-                    >
-                      {busy ? <Loader2 className="animate-spin" size={12} /> : <Trash2 size={12} />}
-                    </button>
-                  )}
-                </div>
+                </button>
               );
             })}
           </div>
