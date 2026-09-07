@@ -12,6 +12,16 @@ const InvoiceTemplate = forwardRef(({ data }, ref) => {
 const therapistName = data?.therapist_name ?? '-';
   const payment = (data?.payment_method || '').toLowerCase();
 
+  // Split payment (mis. QRIS + Cash untuk 1 tagihan): tampilkan nominal per
+  // metode di sebelah kotak yang dicentang. Recap tanpa split tetap pakai
+  // satu payment_method seperti sebelumnya (tanpa nominal tambahan).
+  const paymentSplits = Array.isArray(data?.payment_splits) ? data.payment_splits : [];
+  const splitAmountByMethod = {};
+  paymentSplits.forEach(s => {
+    const key = (s.payment_method || '').toLowerCase();
+    if (key) splitAmountByMethod[key] = (splitAmountByMethod[key] || 0) + (Number(s.amount) || 0);
+  });
+
   // ── Fallback stempel teks (nama + No. STR/SIP) ───────────────────────────
   // Nama & nomor lisensi terapis panjangnya bervariasi, sedangkan kolom
   // stempel di kwitansi sempit (selebar tanda tangan/logo di sebelahnya).
@@ -30,7 +40,7 @@ const therapistName = data?.therapist_name ?? '-';
     [24, '8px'], [32, '7px'], [Infinity, '6.5px'],
   ]);
 
-const checked = (val) => payment === val ? '☑' : '☐';
+const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod : payment === val) ? '☑' : '☐';
   return (
     <div
       ref={ref}
@@ -251,14 +261,14 @@ const checked = (val) => payment === val ? '☑' : '☐';
         {/* PAYMENT */}
         <div style={{ marginTop: '80px' }}>
           <p style={sectionTitle}>Payment Method</p>
-         
 
-<p style={text}>{checked('cash')} Cash</p>
-<p style={text}>{checked('qris')} Qris</p>
-<p style={text}>{checked('debit')} Debit card</p>
-<p style={text}>{checked('credit')} Credit card</p>
-<p style={text}>{checked('insurance')} Insurance</p>
-<p style={text}>{checked('transfer')} Transfer</p>
+
+<p style={text}>{checked('cash')} Cash{splitAmountByMethod['cash'] ? ` — ${formatCurrency(splitAmountByMethod['cash'])}` : ''}</p>
+<p style={text}>{checked('qris')} Qris{splitAmountByMethod['qris'] ? ` — ${formatCurrency(splitAmountByMethod['qris'])}` : ''}</p>
+<p style={text}>{checked('debit')} Debit card{splitAmountByMethod['debit'] ? ` — ${formatCurrency(splitAmountByMethod['debit'])}` : ''}</p>
+<p style={text}>{checked('credit')} Credit card{splitAmountByMethod['credit'] ? ` — ${formatCurrency(splitAmountByMethod['credit'])}` : ''}</p>
+<p style={text}>{checked('insurance')} Insurance{splitAmountByMethod['insurance'] ? ` — ${formatCurrency(splitAmountByMethod['insurance'])}` : ''}</p>
+<p style={text}>{checked('transfer')} Transfer{splitAmountByMethod['transfer'] ? ` — ${formatCurrency(splitAmountByMethod['transfer'])}` : ''}</p>
         </div>
         
         {/* SIGNATURE */}
