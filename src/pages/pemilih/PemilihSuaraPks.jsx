@@ -16,7 +16,7 @@ import {
   Loader2, FileUp, Search, X, Trophy, Vote, MapPin, Users, BarChart3,
   PieChart as PieChartIcon, Save, CheckCircle2, LayoutGrid, UploadCloud, RefreshCw, ListFilter, Table2,
   Pencil, Plus, Presentation, ChevronLeft, ChevronRight, Play, Pause,
-  GitCompare, TrendingUp, TrendingDown, Minus, Settings2,
+  GitCompare, TrendingUp, TrendingDown, Minus, Settings2, Trash2,
 } from 'lucide-react';
 import PemilihSuaraPksSetup from './PemilihSuaraPksSetup';
 import PemilihTpsInputByParty from './PemilihTpsInputByParty';
@@ -364,6 +364,35 @@ const PemilihSuaraPks = () => {
     setSelectedParty(name);
   };
 
+  const [deletingParty, setDeletingParty] = useState(null);
+  // Hapus satu partai dari dapil aktif — roster caleg & seluruh data suara
+  // (total maupun rincian per TPS) partai itu di semua kelurahan/tahun dapil
+  // ini ikut terhapus permanen. PKS (modul dashboard/grafik di atas) dan
+  // partai lain tidak ikut terpengaruh.
+  const handleDeleteParty = async (partyName) => {
+    if (!window.confirm(`Hapus partai "${partyName}" dari dapil ini? Daftar caleg dan semua data suara partai ini (semua tahun & kelurahan) akan dihapus permanen. Partai lain tidak terpengaruh.`)) return;
+    setPendingPartyDrafts((prev) => prev.filter((p) => p !== partyName));
+    const kelurahanIds = scopedKelurahanList.map((k) => k.id);
+    setDeletingParty(partyName);
+    const [{ error: e1 }, { error: e2 }, { error: e3 }] = await Promise.all([
+      supabase.from('pemilih_caleg_master').delete().eq('kecamatan_id', selectedDapil).eq('party_name', partyName),
+      kelurahanIds.length > 0
+        ? supabase.from('pemilih_suara_caleg').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
+        : Promise.resolve({ error: null }),
+      kelurahanIds.length > 0
+        ? supabase.from('pemilih_suara_caleg_tps').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
+        : Promise.resolve({ error: null }),
+    ]);
+    setDeletingParty(null);
+    const error = e1 || e2 || e3;
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menghapus partai', description: error.message });
+      return;
+    }
+    toast({ title: `Partai "${partyName}" dihapus` });
+    await fetchAll();
+  };
+
   const availableYears = useMemo(() => {
     const years = new Set(dapilRows.map((r) => r.election_year));
     return Array.from(years).sort((a, b) => b - a);
@@ -693,6 +722,8 @@ const PemilihSuaraPks = () => {
           party={selectedParty}
           onSelectParty={setSelectedParty}
           onAddPartyDraft={handleAddPartyDraft}
+          onDeleteParty={handleDeleteParty}
+          deletingParty={deletingParty}
         />
       ) : tab === 'partai-lain' ? (
         <PksPartaiLain
@@ -705,6 +736,8 @@ const PemilihSuaraPks = () => {
           party={selectedParty}
           onSelectParty={setSelectedParty}
           onAddPartyDraft={handleAddPartyDraft}
+          onDeleteParty={handleDeleteParty}
+          deletingParty={deletingParty}
           toast={toast}
         />
       ) : null}
@@ -1448,7 +1481,7 @@ const DeltaBadge = ({ oldVal, newVal }) => {
 // partai). Dashboard/grafik/rekap di atas sengaja tetap PKS-only.
 const PksPartaiLain = ({
   selectedDapil, kelurahanList, calegMasterRows, knownYears, defaultYear,
-  partyList, party, onSelectParty, onAddPartyDraft, toast,
+  partyList, party, onSelectParty, onAddPartyDraft, onDeleteParty, deletingParty, toast,
 }) => {
   const [newPartyName, setNewPartyName] = useState('');
 
@@ -1478,21 +1511,32 @@ const PksPartaiLain = ({
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0 12px' }}>
           {partyList.map((p) => {
             const active = p === party;
+            const busy = deletingParty === p;
             return (
-              <button
+              <div
                 key={p}
-                type="button"
-                onClick={() => onSelectParty(p)}
                 className="p-badge"
                 style={{
-                  padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
+                  padding: '8px 8px 8px 14px', borderRadius: 999, cursor: 'pointer',
                   background: active ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#fff',
                   color: active ? '#fff' : '#4b5563', border: '1.5px solid ' + (active ? '#ea580c' : 'var(--p-border)'),
-                  fontWeight: 700, fontSize: 12.5,
+                  fontWeight: 700, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 8,
                 }}
+                onClick={() => onSelectParty(p)}
               >
                 {p}
-              </button>
+                {typeof onDeleteParty === 'function' && (
+                  <button
+                    type="button"
+                    title={`Hapus partai ${p}`}
+                    disabled={busy}
+                    onClick={(e) => { e.stopPropagation(); onDeleteParty(p); }}
+                    style={{ display: 'inline-flex', opacity: 0.85, color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: busy ? 'default' : 'pointer' }}
+                  >
+                    {busy ? <Loader2 className="animate-spin" size={12} /> : <Trash2 size={12} />}
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
