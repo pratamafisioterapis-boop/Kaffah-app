@@ -241,8 +241,15 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                 value={formatCurrency(recap.amount)} 
                                 valueClassName="font-bold text-lg text-slate-900" 
                             />
-                            <DetailItem label="Metode Pembayaran" value={recap.payment_method} />
-                            
+                            <DetailItem
+                                label="Metode Pembayaran"
+                                value={
+                                    Array.isArray(recap.payment_splits) && recap.payment_splits.length > 1
+                                        ? recap.payment_splits.map(s => `${s.payment_method} (${formatCurrency(s.amount)})`).join(' + ')
+                                        : recap.payment_method
+                                }
+                            />
+
                             {recap.discount_value > 0 && (
                                 <div className="flex flex-col space-y-1">
                                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diskon</span>
