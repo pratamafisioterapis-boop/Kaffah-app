@@ -58,14 +58,15 @@ const getTodayWITA = () => {
 // ============================================
 const cleanDailyRecapPayload = (data) => {
   if (!data) return data;
-  
+
   const cleaned = { ...data };
   const fieldsToRemove = [
     'patient_name',
-    'service_type_id', 
+    'service_type_id',
     'therapist_name',
     'is_auto_filled',
-    'package_type_id'
+    'package_type_id',
+    'payment_splits'
   ];
 
   fieldsToRemove.forEach(field => {
@@ -1204,10 +1205,40 @@ if (baseDate < today) {
   }, 'extendPackage');
 };
 
+// Simpan rincian split pembayaran (mis. QRIS 200rb + Cash 50rb) untuk satu
+// recap. Mengganti seluruh baris lama recap tsb dengan `splits` yang baru.
+// `splits` diabaikan jika kosong/tidak berupa array (mis. recap dgn 1 metode
+// pembayaran biasa, tidak perlu baris di tabel anak ini).
+const saveDailyRecapPaymentSplits = async (recapId, splits) => {
+  const { error: deleteError } = await supabase
+    .from('daily_recap_payment_splits')
+    .delete()
+    .eq('recap_id', recapId);
+
+  if (deleteError) throw deleteError;
+
+  const rows = (Array.isArray(splits) ? splits : [])
+    .filter(s => s && s.payment_method && parseFloat(s.amount) > 0)
+    .map(s => ({
+      recap_id: recapId,
+      payment_method: s.payment_method,
+      amount: parseFloat(s.amount)
+    }));
+
+  if (rows.length === 0) return;
+
+  const { error: insertError } = await supabase
+    .from('daily_recap_payment_splits')
+    .insert(rows);
+
+  if (insertError) throw insertError;
+};
+
 export const createDailyRecap = async (payload) => {
   return safeQuery(async () => {
+    const paymentSplits = payload.payment_splits;
     const cleanedPayload = cleanDailyRecapPayload(payload);
-    
+
     if (cleanedPayload.package_type && typeof cleanedPayload.package_type !== 'string') {
       cleanedPayload.package_type = String(cleanedPayload.package_type);
     }
@@ -1223,6 +1254,10 @@ export const createDailyRecap = async (payload) => {
         return { error: { message: "Gagal membuat recap: ID tidak dikembalikan oleh server." } };
     }
 
+    if (Array.isArray(paymentSplits) && paymentSplits.length > 0) {
+      await saveDailyRecapPaymentSplits(data.recap_id, paymentSplits);
+    }
+
     return { data, error: null };
 
   }, 'createDailyRecap');
@@ -1231,6 +1266,7 @@ export const createDailyRecap = async (payload) => {
 export const updateDailyRecap = async (id, payload) => {
   return safeQuery(async () => {
 
+    const paymentSplits = payload.payment_splits;
     const cleanedPayload = cleanDailyRecapPayload(payload);
 
 cleanedPayload.amount_original = payload.amount_original;
@@ -1259,6 +1295,10 @@ cleanedPayload.amount_original = payload.amount_original;
       .single();
 
     if (error) return { error };
+
+    if (Array.isArray(paymentSplits)) {
+      await saveDailyRecapPaymentSplits(id, paymentSplits);
+    }
 
     return { data, error: null };
 
@@ -1299,6 +1339,7 @@ export const getDailyRecaps = async ({
   discount_value,
   discount_label,
   created_at,
+  payment_splits:daily_recap_payment_splits(id, payment_method, amount),
   start_time,
   end_time,
   status,

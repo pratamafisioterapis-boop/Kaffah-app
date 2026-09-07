@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Save } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import DatePicker from '@/components/DatePicker';
 import { useToast } from '@/components/ui/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PackageInfoCard from './PackageInfoCard';
 import ExtendPackageModal from './ExtendPackageModal';
@@ -169,6 +170,11 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // salah ketik nominal di sesi yang seharusnya gratis.
     const [isPackageSessionLocked, setIsPackageSessionLocked] = useState(false);
 
+    // Split payment: satu recap dibayar dengan lebih dari 1 metode
+    // (mis. QRIS 200rb + Cash 50rb untuk tagihan 250rb).
+    const [useSplitPayment, setUseSplitPayment] = useState(false);
+    const [paymentSplits, setPaymentSplits] = useState([{ payment_method: '', amount: '' }]);
+
     // DEBUG: Log initial data
     useEffect(() => {
         if (isOpen) {
@@ -236,7 +242,16 @@ setFormData({
     discount_value: initialData.discount_value || 0,
     discount_label: initialData.is_auto_filled?.discount_label || ''
 });
-                
+
+                const existingSplits = Array.isArray(initialData.payment_splits) ? initialData.payment_splits : [];
+                if (existingSplits.length > 1) {
+                    setUseSplitPayment(true);
+                    setPaymentSplits(existingSplits.map(s => ({ payment_method: s.payment_method, amount: String(s.amount) })));
+                } else {
+                    setUseSplitPayment(false);
+                    setPaymentSplits([{ payment_method: '', amount: '' }]);
+                }
+
                 // If editing, try to load current package status
                 if (initialData.patient_id) {
                     checkPatientPackage(initialData.patient_id, false); // Don't autofill on edit
@@ -260,6 +275,8 @@ setFormData({
                     discount_value: 0,
                     discount_label: ''
                 });
+                setUseSplitPayment(false);
+                setPaymentSplits([{ payment_method: '', amount: '' }]);
             }
             setErrors({});
         } catch (err) {
@@ -942,6 +959,21 @@ setFormData({
 
     const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
+    const handleSplitRowChange = (index, field, value) => {
+        setPaymentSplits(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
+    };
+
+    const addSplitRow = () => {
+        setPaymentSplits(prev => [...prev, { payment_method: '', amount: '' }]);
+    };
+
+    const removeSplitRow = (index) => {
+        setPaymentSplits(prev => prev.length <= 1 ? prev : prev.filter((_, i) => i !== index));
+    };
+
+    const splitTotal = paymentSplits.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+    const splitRemaining = (parseFloat(formData.amount) || 0) - splitTotal;
+
     const handleSubmit = async () => {
         const newErrors = {};
 
@@ -957,7 +989,16 @@ setFormData({
         if (!formData.package_type_id) {
             newErrors.package_type = "Jenis paket wajib diisi";
         }
-        
+
+        if (useSplitPayment) {
+            const incompleteRow = paymentSplits.some(row => !row.payment_method || !(parseFloat(row.amount) > 0));
+            if (incompleteRow) {
+                newErrors.payment_splits = "Lengkapi metode & nominal setiap baris split pembayaran";
+            } else if (Math.abs(splitRemaining) > 1) {
+                newErrors.payment_splits = `Total split pembayaran (Rp ${splitTotal.toLocaleString('id-ID')}) belum sama dengan nominal (Rp ${(parseFloat(formData.amount) || 0).toLocaleString('id-ID')})`;
+            }
+        }
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             toast({ variant: "destructive", title: "Validasi Gagal", description: "Mohon lengkapi field yang wajib diisi." });
@@ -977,10 +1018,27 @@ setFormData({
                 : formData.patient_type;
 
             // Resolve payment_method: jika UUID → cari label-nya, jika sudah label → pakai langsung
-            const isPaymentUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.payment_method || '');
-            const resolvedPaymentMethod = isPaymentUUID
-                ? (paymentMethodOptions.find(o => o.value === formData.payment_method)?.label || formData.payment_method)
-                : formData.payment_method;
+            const resolvePaymentMethodLabel = (value) => {
+                const isUuidValue = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || '');
+                return isUuidValue
+                    ? (paymentMethodOptions.find(o => o.value === value)?.label || value)
+                    : value;
+            };
+
+            let resolvedPaymentMethod = resolvePaymentMethodLabel(formData.payment_method);
+            let resolvedPaymentSplits = [];
+
+            if (useSplitPayment) {
+                resolvedPaymentSplits = paymentSplits.map(row => ({
+                    payment_method: resolvePaymentMethodLabel(row.payment_method),
+                    amount: parseFloat(row.amount) || 0
+                }));
+                // Ringkasan payment_method di daily_recaps dipakai oleh trigger fee
+                // bank, rekonsiliasi, dsb yang mengasumsikan 1 metode - pakai metode
+                // dgn nominal terbesar sebagai representasinya.
+                const largestSplit = [...resolvedPaymentSplits].sort((a, b) => b.amount - a.amount)[0];
+                resolvedPaymentMethod = largestSplit?.payment_method || resolvedPaymentMethod;
+            }
 
             const payload = {
                 ...formData,
@@ -988,6 +1046,7 @@ setFormData({
                 therapist_name: therapistName,
                 patient_type: resolvedPatientType,
                 payment_method: resolvedPaymentMethod,
+                payment_splits: resolvedPaymentSplits,
                 diagnosis: Array.isArray(formData.diagnosis) && formData.diagnosis.length > 0
   ? formData.diagnosis.map(d => {
       if (typeof d === 'string') return d; // kalau sudah UUID
@@ -1184,13 +1243,66 @@ setFormData({
                                     </div>
                                     <div className="space-y-1">
                                         <Label>Metode Pembayaran</Label>
-                                        <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked} />
+                                        <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked || useSplitPayment} />
                                     </div>
                                 </div>
                                 {isPackageSessionLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
                                         Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
                                     </p>
+                                )}
+                                {!isPackageSessionLocked && (
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="use-split-payment"
+                                            checked={useSplitPayment}
+                                            onCheckedChange={(checked) => setUseSplitPayment(!!checked)}
+                                        />
+                                        <Label htmlFor="use-split-payment" className="text-xs font-normal cursor-pointer">
+                                            Bayar dengan lebih dari 1 metode (split pembayaran)
+                                        </Label>
+                                    </div>
+                                )}
+                                {useSplitPayment && (
+                                    <div className="space-y-2 bg-slate-50 p-3 rounded-lg border">
+                                        {paymentSplits.map((row, index) => (
+                                            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                                                <SearchableSelect
+                                                    options={paymentMethodOptions}
+                                                    value={row.payment_method}
+                                                    onChange={v => handleSplitRowChange(index, 'payment_method', v)}
+                                                    onSearch={setPaymentMethodSearch}
+                                                    placeholder="Metode..."
+                                                    isLoading={loadingPaymentMethods}
+                                                />
+                                                <Input
+                                                    type="number"
+                                                    value={row.amount}
+                                                    onChange={e => handleSplitRowChange(index, 'amount', e.target.value)}
+                                                    placeholder="Nominal"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeSplitRow(index)}
+                                                    disabled={paymentSplits.length <= 1}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={addSplitRow}>
+                                            <Plus className="h-4 w-4 mr-1" /> Tambah Metode
+                                        </Button>
+                                        <p className={`text-xs ${Math.abs(splitRemaining) > 1 ? 'text-red-500' : 'text-green-600'}`}>
+                                            Total split: Rp {splitTotal.toLocaleString('id-ID')} {' '}
+                                            {Math.abs(splitRemaining) > 1
+                                                ? `(sisa Rp ${splitRemaining.toLocaleString('id-ID')} dari nominal)`
+                                                : '(sudah sesuai nominal)'}
+                                        </p>
+                                        {errors.payment_splits && <p className="text-xs text-red-500">{errors.payment_splits}</p>}
+                                    </div>
                                 )}
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>

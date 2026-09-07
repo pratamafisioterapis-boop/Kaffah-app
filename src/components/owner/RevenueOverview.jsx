@@ -105,13 +105,13 @@ const RevenueOverview = ({ dateRange }) => {
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
         supabase.from('daily_recaps')
-          .select('therapist_name, amount, patient_type, payment_method')
+          .select('therapist_name, amount, patient_type, payment_method, payment_splits:daily_recap_payment_splits(payment_method, amount)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, package_tracking!inner(nominal, total_sessions)')
+          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, payment_splits:daily_recap_payment_splits(payment_method, amount), package_tracking!inner(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
@@ -299,6 +299,17 @@ const RevenueOverview = ({ dateRange }) => {
 
     const map = {};
     allRecaps.forEach(r => {
+      // Recap dengan split pembayaran (mis. QRIS + Cash) dipecah per metode
+      // supaya breakdown tetap akurat, bukan ditumpuk semua ke satu metode.
+      if (Array.isArray(r.payment_splits) && r.payment_splits.length > 0) {
+        r.payment_splits.forEach(s => {
+          const amount = Number(s.amount) || 0;
+          if (amount <= 0) return;
+          const label = paymentMethodMap[s.payment_method] || s.payment_method || 'Tidak Diketahui';
+          map[label] = (map[label] || 0) + amount;
+        });
+        return;
+      }
       const amount = Number(r.amount) || 0;
       if (amount <= 0) return;
       const raw = r.payment_method;
