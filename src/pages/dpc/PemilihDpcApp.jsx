@@ -54,11 +54,12 @@ const PemilihDpcApp = () => {
   const [calegMasterRows, setCalegMasterRows] = useState([]);
   const [voteYears, setVoteYears] = useState([]);
   const [voteCandidateRows, setVoteCandidateRows] = useState([]);
+  const [partaiRows, setPartaiRows] = useState([]);
   const [selectedParty, setSelectedParty] = useState(DEFAULT_PARTY);
-  // Partai yang baru diketik lewat "+ Tambah Partai" tapi belum punya caleg
-  // tersimpan sama sekali — supaya pilnya tetap tampil (dan tetap terpilih)
-  // sampai partai itu benar-benar dipakai (lalu otomatis muncul dari
-  // calegMasterRows/voteCandidateRows setelah refetch).
+  // Partai yang baru diketik lewat "+ Tambah Partai" — ditampilkan (dan
+  // langsung terpilih) SEBELUM insert ke pemilih_partai selesai, supaya
+  // pilnya muncul instan; dibersihkan lagi setelah fetchAll berikutnya
+  // karena partainya sudah ikut ke partaiRows.
   const [pendingPartyDrafts, setPendingPartyDrafts] = useState([]);
   const [deletingParty, setDeletingParty] = useState(null);
 
@@ -83,17 +84,19 @@ const PemilihDpcApp = () => {
     // pemilih_caleg_master sama sekali). Tidak perlu filter kecamatan_id di
     // sini — RLS pemilih_suara_caleg_dpc_all sudah otomatis membatasi ke
     // kelurahan milik dapil akun ini.
-    const [{ data: kec }, { data: kel }, { data: caleg }, { data: suara }] = await Promise.all([
+    const [{ data: kec }, { data: kel }, { data: caleg }, { data: suara }, { data: partai }] = await Promise.all([
       supabase.from('pemilih_kecamatan').select('id, nama').eq('id', dpc.kecamatan_id),
       supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').eq('kecamatan_id', dpc.kecamatan_id).order('nama'),
       supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, party_name, candidate_number, candidate_name').eq('kecamatan_id', dpc.kecamatan_id).order('candidate_number'),
       fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year, party_name, candidate_number, candidate_name')),
+      supabase.from('pemilih_partai').select('id, nama').eq('kecamatan_id', dpc.kecamatan_id).order('created_at'),
     ]);
     setDapilList(kec || []);
     setKelurahanList(kel || []);
     setCalegMasterRows(caleg || []);
     setVoteYears(Array.from(new Set((suara || []).map((r) => r.election_year))).sort((a, b) => b - a));
     setVoteCandidateRows(suara || []);
+    setPartaiRows(partai || []);
     setLoading(false);
   }, [user.id]);
 
@@ -115,38 +118,53 @@ const PemilihDpcApp = () => {
       ? Math.max(...calegMasterRows.map((c) => c.election_year))
       : PKS_ELECTION_YEARS[0];
 
-  // Daftar partai yang sudah pernah dipakai di dapil ini (dari roster caleg
-  // maupun data suara lama), ditambah PKS sebagai partai default supaya
-  // selalu ada minimal satu pilihan, dan draft partai baru yang belum
-  // tersimpan. DPC bisa punya lebih dari satu partai untuk dapil & jumlah
-  // TPS yang sama — hanya daftar calegnya yang berbeda per partai.
+  // Daftar partai untuk dapil ini: pemilih_partai (sumber utama, persisten
+  // sejak "Tambah Partai" diklik — tidak perlu menunggu caleg pertamanya
+  // diisi), dilengkapi partai yang muncul di roster caleg/data suara lama
+  // (dapil lama yang datanya diinput sebelum tabel pemilih_partai ada), PKS
+  // sebagai partai default supaya selalu ada minimal satu pilihan, dan
+  // draft yang baru saja ditambahkan tapi insert-nya belum selesai. DPC bisa
+  // punya lebih dari satu partai untuk dapil & jumlah TPS yang sama — hanya
+  // daftar calegnya yang berbeda per partai.
   const partyList = React.useMemo(() => {
     const set = new Set([DEFAULT_PARTY]);
+    partaiRows.forEach((p) => { if (p.nama) set.add(p.nama); });
     calegMasterRows.forEach((c) => { if (c.party_name) set.add(c.party_name); });
     voteCandidateRows.forEach((r) => { if (r.party_name) set.add(r.party_name); });
     pendingPartyDrafts.forEach((p) => set.add(p));
     return Array.from(set);
-  }, [calegMasterRows, voteCandidateRows, pendingPartyDrafts]);
+  }, [partaiRows, calegMasterRows, voteCandidateRows, pendingPartyDrafts]);
 
   useEffect(() => {
     if (!partyList.includes(selectedParty)) setSelectedParty(partyList[0] || DEFAULT_PARTY);
   }, [partyList, selectedParty]);
 
-  const handleAddPartyDraft = (name) => {
+  // "Tambah Partai" langsung disimpan ke pemilih_partai supaya persisten —
+  // sebelumnya cuma masuk state lokal, jadi hilang lagi setelah refresh
+  // kalau belum sempat ada caleg yang disimpan untuk partai itu.
+  const handleAddPartyDraft = async (name) => {
     setPendingPartyDrafts((prev) => (prev.includes(name) ? prev : [...prev, name]));
     setSelectedParty(name);
+    const { error } = await supabase.from('pemilih_partai').insert({ kecamatan_id: selectedDapil, nama: name });
+    if (error) {
+      setPendingPartyDrafts((prev) => prev.filter((p) => p !== name));
+      toast({ variant: 'destructive', title: 'Gagal menambah partai', description: error.message });
+      return;
+    }
+    await fetchAll();
+    setPendingPartyDrafts((prev) => prev.filter((p) => p !== name));
   };
 
-  // Hapus satu partai dari dapil ini — roster caleg & seluruh data suara
-  // (total maupun rincian per TPS) partai itu di semua kelurahan/tahun
-  // dapil ini ikut terhapus permanen. Partai lain (termasuk PKS) tidak
-  // ikut terpengaruh.
+  // Hapus satu partai dari dapil ini — baris pemilih_partai, roster caleg &
+  // seluruh data suara (total maupun rincian per TPS) partai itu di semua
+  // kelurahan/tahun dapil ini ikut terhapus permanen. Partai lain (termasuk
+  // PKS) tidak ikut terpengaruh.
   const handleDeleteParty = async (partyName) => {
     if (!window.confirm(`Hapus partai "${partyName}" dari dapil ini? Daftar caleg dan semua data suara partai ini (semua tahun & kelurahan) akan dihapus permanen. Partai lain tidak terpengaruh.`)) return;
     setPendingPartyDrafts((prev) => prev.filter((p) => p !== partyName));
     const kelurahanIds = kelurahanList.map((k) => k.id);
     setDeletingParty(partyName);
-    const [{ error: e1 }, { error: e2 }, { error: e3 }] = await Promise.all([
+    const [{ error: e1 }, { error: e2 }, { error: e3 }, { error: e4 }] = await Promise.all([
       supabase.from('pemilih_caleg_master').delete().eq('kecamatan_id', selectedDapil).eq('party_name', partyName),
       kelurahanIds.length > 0
         ? supabase.from('pemilih_suara_caleg').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
@@ -154,9 +172,10 @@ const PemilihDpcApp = () => {
       kelurahanIds.length > 0
         ? supabase.from('pemilih_suara_caleg_tps').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
         : Promise.resolve({ error: null }),
+      supabase.from('pemilih_partai').delete().eq('kecamatan_id', selectedDapil).eq('nama', partyName),
     ]);
     setDeletingParty(null);
-    const error = e1 || e2 || e3;
+    const error = e1 || e2 || e3 || e4;
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menghapus partai', description: error.message });
       return;
