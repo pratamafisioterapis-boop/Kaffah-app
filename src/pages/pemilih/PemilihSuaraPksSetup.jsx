@@ -18,6 +18,7 @@ import {
 // ditentukan admin saat akun dibuat, jadi hanya ditampilkan sebagai label.
 const PemilihSuaraPksSetup = ({
   dapilList, selectedDapil, onSelectDapil, kelurahanList, allKelurahanList, calegMasterRows, knownYears, voteCandidateRows, defaultYear, toast, onChanged, manageDapil = true,
+  partyList, party, onSelectParty, onAddPartyDraft,
 }) => {
   // Tahun pemilu dipakai bersama oleh Daftar Caleg maupun Kelurahan/Jumlah
   // TPS — jumlah TPS per kelurahan bisa berbeda tiap periode, jadi kedua
@@ -91,6 +92,10 @@ const PemilihSuaraPksSetup = ({
             year={year}
             toast={toast}
             onChanged={onChanged}
+            partyList={partyList}
+            party={party}
+            onSelectParty={onSelectParty}
+            onAddPartyDraft={onAddPartyDraft}
           />
           <KelurahanTpsSection selectedDapil={selectedDapil} kelurahanList={kelurahanList} year={year} toast={toast} onChanged={onChanged} />
         </>
@@ -554,10 +559,24 @@ const KelurahanTpsSection = ({ selectedDapil, kelurahanList, year, toast, onChan
   );
 };
 
-const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCandidateRows, year, toast, onChanged }) => {
+const DEFAULT_PARTY = 'Partai Keadilan Sejahtera';
+
+const CalegSection = ({
+  selectedDapil, kelurahanCount, calegMasterRows, voteCandidateRows, year, toast, onChanged,
+  partyList, party, onSelectParty, onAddPartyDraft,
+}) => {
+  // Komponen ini tetap bisa dipakai tanpa dukungan multi-partai (kalau
+  // caller tidak mengirim prop party) — jatuh ke satu partai default (PKS)
+  // seperti perilaku sebelumnya.
+  const activeParty = party || DEFAULT_PARTY;
+  const effectivePartyList = partyList && partyList.length > 0 ? partyList : [DEFAULT_PARTY];
+  const multiPartyEnabled = typeof onSelectParty === 'function';
+
   const rowsForYear = useMemo(
-    () => calegMasterRows.filter((c) => c.election_year === year).sort((a, b) => a.candidate_number - b.candidate_number),
-    [calegMasterRows, year]
+    () => calegMasterRows
+      .filter((c) => c.election_year === year && (c.party_name || DEFAULT_PARTY) === activeParty)
+      .sort((a, b) => a.candidate_number - b.candidate_number),
+    [calegMasterRows, year, activeParty]
   );
 
   // Caleg yang sudah punya data suara asli (mis. dari upload PDF/input manual
@@ -567,12 +586,12 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
   const discoveredForYear = useMemo(() => {
     const map = new Map();
     (voteCandidateRows || [])
-      .filter((r) => r.election_year === year && r.candidate_number !== 0 && r.candidate_name)
+      .filter((r) => r.election_year === year && r.candidate_number !== 0 && r.candidate_name && (r.party_name || DEFAULT_PARTY) === activeParty)
       .forEach((r) => {
         if (!map.has(r.candidate_number)) map.set(r.candidate_number, { candidate_number: r.candidate_number, candidate_name: r.candidate_name });
       });
     return Array.from(map.values()).sort((a, b) => a.candidate_number - b.candidate_number);
-  }, [voteCandidateRows, year]);
+  }, [voteCandidateRows, year, activeParty]);
 
   const [seeding, setSeeding] = useState(false);
   useEffect(() => {
@@ -592,10 +611,11 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
             discoveredForYear.map((d) => ({
               kecamatan_id: selectedDapil,
               election_year: year,
+              party_name: activeParty,
               candidate_number: d.candidate_number,
               candidate_name: d.candidate_name,
             })),
-            { onConflict: 'kecamatan_id,election_year,candidate_number' }
+            { onConflict: 'kecamatan_id,election_year,party_name,candidate_number' }
           );
         if (cancelled) return;
         if (error) {
@@ -617,7 +637,7 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
     // `seeding` sengaja tidak dimasukkan ke deps — lihat penjelasan di efek
     // seed serupa pada KelurahanTpsSection di atas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowsForYear.length, discoveredForYear, selectedDapil, year, toast, onChanged]);
+  }, [rowsForYear.length, discoveredForYear, selectedDapil, year, activeParty, toast, onChanged]);
 
   const [newNumber, setNewNumber] = useState('');
   const [newName, setNewName] = useState('');
@@ -625,6 +645,7 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
   const [editId, setEditId] = useState(null);
   const [editNumber, setEditNumber] = useState('');
   const [editName, setEditName] = useState('');
+  const [newPartyName, setNewPartyName] = useState('');
 
   const addCaleg = async () => {
     const num = parseInt(newNumber, 10);
@@ -640,9 +661,10 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
     const { error } = await supabase.from('pemilih_caleg_master').upsert({
       kecamatan_id: selectedDapil,
       election_year: year,
+      party_name: activeParty,
       candidate_number: num,
       candidate_name: newName.trim(),
-    }, { onConflict: 'kecamatan_id,election_year,candidate_number' });
+    }, { onConflict: 'kecamatan_id,election_year,party_name,candidate_number' });
     setSaving(false);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menambah caleg', description: error.message });
@@ -652,6 +674,17 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
     setNewName('');
     await onChanged();
     toast({ title: 'Caleg ditambahkan' });
+  };
+
+  const addPartyDraft = () => {
+    const name = newPartyName.trim();
+    if (!name) return;
+    if (effectivePartyList.some((p) => p.toLowerCase() === name.toLowerCase())) {
+      toast({ variant: 'destructive', title: 'Partai itu sudah ada' });
+      return;
+    }
+    onAddPartyDraft?.(name);
+    setNewPartyName('');
   };
 
   const startEdit = (c) => { setEditId(c.id); setEditNumber(String(c.candidate_number)); setEditName(c.candidate_name); };
@@ -678,7 +711,54 @@ const CalegSection = ({ selectedDapil, kelurahanCount, calegMasterRows, voteCand
 
   return (
     <div className="p-card" style={{ padding: 20 }}>
-      <SectionHeader icon={Users} title={`Daftar Caleg — Tahun ${year}`} subtitle="Nomor urut & nama caleg untuk dapil ini — bisa diisi sebelum ada data suara sama sekali" />
+      <SectionHeader
+        icon={Users}
+        title={multiPartyEnabled ? `Daftar Caleg — ${activeParty} — Tahun ${year}` : `Daftar Caleg — Tahun ${year}`}
+        subtitle="Nomor urut & nama caleg untuk dapil ini — bisa diisi sebelum ada data suara sama sekali"
+      />
+
+      {multiPartyEnabled && (
+        <div style={{ marginBottom: 18 }}>
+          <label className="p-label">Partai</label>
+          <p style={{ margin: '2px 0 10px', fontSize: 11.5, color: '#9ca3af' }}>
+            Bisa lebih dari satu partai untuk dapil &amp; TPS yang sama — hanya nama calegnya yang berbeda.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {effectivePartyList.map((p) => {
+              const active = p === activeParty;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => onSelectParty(p)}
+                  className="p-badge"
+                  style={{
+                    padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
+                    background: active ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#fff',
+                    color: active ? '#fff' : '#4b5563', border: '1.5px solid ' + (active ? '#ea580c' : 'var(--p-border)'),
+                    fontWeight: 700, fontSize: 12.5,
+                  }}
+                >
+                  {p}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              className="p-input"
+              style={{ flex: 1, minWidth: 200 }}
+              placeholder="Nama partai baru... (mis. Partai Golkar)"
+              value={newPartyName}
+              onChange={(e) => setNewPartyName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addPartyDraft()}
+            />
+            <button className="p-btn-ghost" onClick={addPartyDraft} disabled={!newPartyName.trim()}>
+              <Plus size={14} /> Tambah Partai
+            </button>
+          </div>
+        </div>
+      )}
 
       {kelurahanCount === 0 && (
         <p style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginBottom: 16 }}>

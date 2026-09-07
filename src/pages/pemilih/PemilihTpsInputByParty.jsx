@@ -3,9 +3,10 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { bumpTpsCountIfNeeded } from '@/lib/pemilihTpsCount';
 import { PKS_ELECTION_YEARS } from '@/data/electionYears';
-import PemilihSelect from '../pemilih/PemilihSelect';
+import PemilihSelect from './PemilihSelect';
 import { Loader2, Plus, Pencil, Trash2, Save, X, Table2 } from 'lucide-react';
 
+const DEFAULT_PARTY = 'Partai Keadilan Sejahtera';
 const TPS_TABLE_BORDER = '#9aa1ab';
 const PASTEL_COLUMN_COLORS = [
   '#FFE3E3', '#FFE8CC', '#FFF9DB', '#E9FAC8', '#D3F9D8', '#C5F6FA',
@@ -13,10 +14,10 @@ const PASTEL_COLUMN_COLORS = [
 ];
 
 // Menghitung ulang total suara per caleg (pemilih_suara_caleg) dari seluruh
-// baris per-TPS (pemilih_suara_caleg_tps) untuk satu kelurahan+tahun —
+// baris per-TPS (pemilih_suara_caleg_tps) untuk satu kelurahan+tahun+partai —
 // dipanggil setiap kali nilai per TPS ditambah/diedit/dihapus di sini,
 // supaya total kelurahan tidak pernah basi dibanding rincian per TPS-nya.
-const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
+const syncKelurahanTotals = async (kelurahanId, year, partyName, candidateMasterList) => {
   // Sebuah kelurahan bisa punya puluhan TPS x banyak caleg — tanpa paginasi
   // eksplisit ini gampang lewat batas 1000 baris PostgREST.
   const { data: allTpsRows, error: fetchError } = await fetchAllRows(() =>
@@ -25,6 +26,7 @@ const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
       .select('candidate_number, votes')
       .eq('kelurahan_id', kelurahanId)
       .eq('election_year', year)
+      .eq('party_name', partyName)
   );
   if (fetchError) return fetchError;
 
@@ -38,7 +40,7 @@ const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
   const nameByNumber = new Map(candidateMasterList.map((c) => [c.number, c.number === 0 ? null : c.name]));
   const payload = Array.from(totals.entries()).map(([number, total]) => ({
     kelurahan_id: kelurahanId,
-    party_name: 'Partai Keadilan Sejahtera',
+    party_name: partyName,
     candidate_number: number,
     candidate_name: nameByNumber.get(number) ?? null,
     total_suara: total,
@@ -47,14 +49,15 @@ const syncKelurahanTotals = async (kelurahanId, year, candidateMasterList) => {
     updated_at: new Date().toISOString(),
   }));
   if (payload.length === 0) return null;
-  const { error } = await supabase.from('pemilih_suara_caleg').upsert(payload, { onConflict: 'kelurahan_id,candidate_number,election_year' });
+  const { error } = await supabase.from('pemilih_suara_caleg').upsert(payload, { onConflict: 'kelurahan_id,party_name,candidate_number,election_year' });
   return error;
 };
 
-// Input Suara per TPS untuk akun DPC — sama fungsinya dengan tab "Detail per
-// TPS" di modul admin (tambah/koreksi angka per TPS), ditambah kemampuan
-// menghapus satu TPS sekaligus, TANPA grafik apapun.
-const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, knownYears, defaultYear, toast }) => {
+// Input Suara per TPS per-partai — dipakai akun DPC (satu partai aktif pada
+// satu waktu, dipilih di tab Setup Dapil) maupun modul admin, sama fungsinya
+// dengan tab "Detail per TPS" (tambah/koreksi angka per TPS), ditambah
+// kemampuan menghapus satu TPS sekaligus, TANPA grafik apapun.
+const PemilihTpsInputByParty = ({ selectedDapil, kelurahanList, calegMasterRows, knownYears, defaultYear, party, toast }) => {
   const [year, setYear] = useState(defaultYear);
   useEffect(() => { setYear(defaultYear); }, [defaultYear]);
 
@@ -84,7 +87,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
   const [deletingTps, setDeletingTps] = useState(null);
 
   const reloadTpsRows = React.useCallback(async () => {
-    if (!kelurahanId || !year) { setTpsRows([]); return; }
+    if (!kelurahanId || !year || !party) { setTpsRows([]); return; }
     setLoading(true);
     const { data, error } = await fetchAllRows(() =>
       supabase
@@ -92,6 +95,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
         .select('tps_number, candidate_number, candidate_name, votes')
         .eq('kelurahan_id', kelurahanId)
         .eq('election_year', year)
+        .eq('party_name', party)
         .order('tps_number')
     );
     if (error) {
@@ -102,20 +106,21 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
     }
     setTpsRows(data || []);
     setLoading(false);
-  }, [kelurahanId, year, toast]);
+  }, [kelurahanId, year, party, toast]);
 
   useEffect(() => { reloadTpsRows(); }, [reloadTpsRows]);
 
   // Nomor 0 (Suara Partai tanpa calon) selalu tersedia sebagai kolom input.
-  // Roster caleg (calegMasterRows) diseed dulu, lalu dilengkapi dari
-  // tpsRows yang baru dimuat — kelurahan/tahun yang datanya sudah ada dari
-  // sebelum fitur roster ini dibuat (mis. Pileg 2019/2024) tetap harus
-  // menampilkan semua kolom calegnya walau roster masih kosong, supaya
-  // datanya tetap bisa dilihat/diedit/dihapus di sini.
+  // Roster caleg (calegMasterRows, sudah difilter per partai aktif oleh
+  // caller) diseed dulu, lalu dilengkapi dari tpsRows yang baru dimuat —
+  // kelurahan/tahun yang datanya sudah ada dari sebelum fitur roster ini
+  // dibuat (mis. Pileg 2019/2024) tetap harus menampilkan semua kolom
+  // calegnya walau roster masih kosong, supaya datanya tetap bisa
+  // dilihat/diedit/dihapus di sini.
   const candidateMasterList = useMemo(() => {
     const map = new Map([[0, { number: 0, name: 'Suara Partai' }]]);
     calegMasterRows
-      .filter((c) => c.election_year === year)
+      .filter((c) => c.election_year === year && (c.party_name || DEFAULT_PARTY) === (party || DEFAULT_PARTY))
       .forEach((c) => map.set(c.candidate_number, { number: c.candidate_number, name: c.candidate_name }));
     tpsRows.forEach((r) => {
       if (!map.has(r.candidate_number)) {
@@ -123,7 +128,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
       }
     });
     return Array.from(map.values()).sort((a, b) => a.number - b.number);
-  }, [calegMasterRows, year, tpsRows]);
+  }, [calegMasterRows, year, party, tpsRows]);
 
   const table = useMemo(() => {
     const byTps = new Map();
@@ -179,6 +184,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
     const payload = candidateMasterList.map((c) => ({
       kelurahan_id: kelurahanId,
       tps_number: tpsNumber,
+      party_name: party,
       candidate_number: c.number,
       candidate_name: c.number === 0 ? null : c.name,
       votes: Number(editingTps.values[c.number]) || 0,
@@ -186,13 +192,13 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
     }));
     const { error } = await supabase
       .from('pemilih_suara_caleg_tps')
-      .upsert(payload, { onConflict: 'kelurahan_id,tps_number,candidate_number,election_year' });
+      .upsert(payload, { onConflict: 'kelurahan_id,party_name,tps_number,candidate_number,election_year' });
     if (error) {
       setSavingTps(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan TPS', description: error.message });
       return;
     }
-    const syncError = await syncKelurahanTotals(kelurahanId, year, candidateMasterList);
+    const syncError = await syncKelurahanTotals(kelurahanId, year, party, candidateMasterList);
     bumpTpsCountIfNeeded(kelurahanId, year, tpsNumber);
     setSavingTps(false);
     if (syncError) {
@@ -212,13 +218,14 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
       .delete()
       .eq('kelurahan_id', kelurahanId)
       .eq('election_year', year)
+      .eq('party_name', party)
       .eq('tps_number', deletingTps);
     if (error) {
       setSavingTps(false);
       toast({ variant: 'destructive', title: 'Gagal menghapus TPS', description: error.message });
       return;
     }
-    const syncError = await syncKelurahanTotals(kelurahanId, year, candidateMasterList);
+    const syncError = await syncKelurahanTotals(kelurahanId, year, party, candidateMasterList);
     setSavingTps(false);
     if (syncError) {
       toast({ variant: 'destructive', title: 'TPS terhapus, tapi gagal memperbarui total', description: syncError.message });
@@ -268,7 +275,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
         <div className="p-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Rincian per TPS — {selectedKelurahanName}</h3>
+              <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#1a1d29' }}>Rincian per TPS — {selectedKelurahanName}{party ? ` — ${party}` : ''}</h3>
               <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#9ca3af' }}>{table.length} TPS tercatat untuk tahun {year}</p>
             </div>
             <button className="p-btn-ghost" onClick={openAddTps} style={{ flexShrink: 0 }}>
@@ -351,7 +358,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
               <button onClick={() => setEditingTps(null)} style={{ color: '#9ca3af' }}><X size={19} /></button>
             </div>
             <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 12.5 }}>
-              {selectedKelurahanName} — Tahun {year}. Kosongkan/isi 0 kalau tidak ada suara.
+              {selectedKelurahanName}{party ? ` — ${party}` : ''} — Tahun {year}. Kosongkan/isi 0 kalau tidak ada suara.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {addingTps && (
@@ -391,7 +398,7 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
           <div className="p-modal" style={{ padding: 22, width: 380, maxWidth: '90vw' }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 6px', fontWeight: 700, fontSize: 15 }}>Hapus TPS {String(deletingTps).padStart(2, '0')}?</h3>
             <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
-              Semua nilai suara caleg untuk TPS ini di {selectedKelurahanName} — Tahun {year} akan dihapus permanen.
+              Semua nilai suara caleg untuk TPS ini di {selectedKelurahanName}{party ? ` — ${party}` : ''} — Tahun {year} akan dihapus permanen.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="p-btn-ghost" onClick={() => setDeletingTps(null)}>Batal</button>
@@ -406,4 +413,4 @@ const PemilihDpcTpsInput = ({ selectedDapil, kelurahanList, calegMasterRows, kno
   );
 };
 
-export default PemilihDpcTpsInput;
+export default PemilihTpsInputByParty;

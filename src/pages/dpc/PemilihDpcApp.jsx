@@ -7,8 +7,10 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, LogOut, ListChecks, Table2 } from 'lucide-react';
 import PemilihSuaraPksSetup from '../pemilih/PemilihSuaraPksSetup';
-import PemilihDpcTpsInput from './PemilihDpcTpsInput';
+import PemilihTpsInputByParty from '../pemilih/PemilihTpsInputByParty';
 import { PEMILIH_SHARED_CSS } from '../pemilih/pemilihSharedStyles';
+
+const DEFAULT_PARTY = 'Partai Keadilan Sejahtera';
 
 const CSS = `
   ${PEMILIH_SHARED_CSS}
@@ -52,6 +54,12 @@ const PemilihDpcApp = () => {
   const [calegMasterRows, setCalegMasterRows] = useState([]);
   const [voteYears, setVoteYears] = useState([]);
   const [voteCandidateRows, setVoteCandidateRows] = useState([]);
+  const [selectedParty, setSelectedParty] = useState(DEFAULT_PARTY);
+  // Partai yang baru diketik lewat "+ Tambah Partai" tapi belum punya caleg
+  // tersimpan sama sekali — supaya pilnya tetap tampil (dan tetap terpilih)
+  // sampai partai itu benar-benar dipakai (lalu otomatis muncul dari
+  // calegMasterRows/voteCandidateRows setelah refetch).
+  const [pendingPartyDrafts, setPendingPartyDrafts] = useState([]);
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -77,8 +85,8 @@ const PemilihDpcApp = () => {
     const [{ data: kec }, { data: kel }, { data: caleg }, { data: suara }] = await Promise.all([
       supabase.from('pemilih_kecamatan').select('id, nama').eq('id', dpc.kecamatan_id),
       supabase.from('pemilih_kelurahan').select('id, nama, kecamatan_id').eq('kecamatan_id', dpc.kecamatan_id).order('nama'),
-      supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, candidate_number, candidate_name').eq('kecamatan_id', dpc.kecamatan_id).order('candidate_number'),
-      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year, candidate_number, candidate_name')),
+      supabase.from('pemilih_caleg_master').select('id, kecamatan_id, election_year, party_name, candidate_number, candidate_name').eq('kecamatan_id', dpc.kecamatan_id).order('candidate_number'),
+      fetchAllRows(() => supabase.from('pemilih_suara_caleg').select('election_year, party_name, candidate_number, candidate_name')),
     ]);
     setDapilList(kec || []);
     setKelurahanList(kel || []);
@@ -106,6 +114,28 @@ const PemilihDpcApp = () => {
       ? Math.max(...calegMasterRows.map((c) => c.election_year))
       : PKS_ELECTION_YEARS[0];
 
+  // Daftar partai yang sudah pernah dipakai di dapil ini (dari roster caleg
+  // maupun data suara lama), ditambah PKS sebagai partai default supaya
+  // selalu ada minimal satu pilihan, dan draft partai baru yang belum
+  // tersimpan. DPC bisa punya lebih dari satu partai untuk dapil & jumlah
+  // TPS yang sama — hanya daftar calegnya yang berbeda per partai.
+  const partyList = React.useMemo(() => {
+    const set = new Set([DEFAULT_PARTY]);
+    calegMasterRows.forEach((c) => { if (c.party_name) set.add(c.party_name); });
+    voteCandidateRows.forEach((r) => { if (r.party_name) set.add(r.party_name); });
+    pendingPartyDrafts.forEach((p) => set.add(p));
+    return Array.from(set);
+  }, [calegMasterRows, voteCandidateRows, pendingPartyDrafts]);
+
+  useEffect(() => {
+    if (!partyList.includes(selectedParty)) setSelectedParty(partyList[0] || DEFAULT_PARTY);
+  }, [partyList, selectedParty]);
+
+  const handleAddPartyDraft = (name) => {
+    setPendingPartyDrafts((prev) => (prev.includes(name) ? prev : [...prev, name]));
+    setSelectedParty(name);
+  };
+
   return (
     <div className="d-wrapper">
       <style>{CSS}</style>
@@ -113,7 +143,7 @@ const PemilihDpcApp = () => {
         <div className="d-brand">
           <div className="d-brand-icon">🗳️</div>
           <div style={{ minWidth: 0 }}>
-            <div className="d-brand-text">Akun DPC — Suara PKS</div>
+            <div className="d-brand-text">Akun DPC — Suara Pileg</div>
             <div className="d-brand-sub">{dpcNama || '...'}{dapilList[0]?.nama ? ` · ${dapilList[0].nama}` : ''}</div>
           </div>
         </div>
@@ -133,6 +163,34 @@ const PemilihDpcApp = () => {
           </div>
         ) : (
           <>
+            {partyList.length > 1 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                  Partai Aktif
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {partyList.map((p) => {
+                    const active = p === selectedParty;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setSelectedParty(p)}
+                        style={{
+                          padding: '7px 14px', borderRadius: 999, cursor: 'pointer',
+                          background: active ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#fff',
+                          color: active ? '#fff' : '#4b5563', border: '1.5px solid ' + (active ? '#ea580c' : 'var(--d-border)'),
+                          fontWeight: 700, fontSize: 12.5,
+                        }}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap', borderBottom: '1.5px solid var(--d-border)', paddingBottom: 12 }}>
               {[
                 { key: 'setup', label: 'Setup Dapil', icon: ListChecks },
@@ -171,14 +229,19 @@ const PemilihDpcApp = () => {
                 defaultYear={defaultYear}
                 toast={toast}
                 onChanged={fetchAll}
+                partyList={partyList}
+                party={selectedParty}
+                onSelectParty={setSelectedParty}
+                onAddPartyDraft={handleAddPartyDraft}
               />
             ) : (
-              <PemilihDpcTpsInput
+              <PemilihTpsInputByParty
                 selectedDapil={selectedDapil}
                 kelurahanList={kelurahanList}
                 calegMasterRows={calegMasterRows}
                 knownYears={voteYears}
                 defaultYear={defaultYear}
+                party={selectedParty}
                 toast={toast}
               />
             )}
