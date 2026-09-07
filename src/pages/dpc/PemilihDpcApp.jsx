@@ -61,7 +61,6 @@ const PemilihDpcApp = () => {
   // pilnya muncul instan; dibersihkan lagi setelah fetchAll berikutnya
   // karena partainya sudah ikut ke partaiRows.
   const [pendingPartyDrafts, setPendingPartyDrafts] = useState([]);
-  const [deletingParty, setDeletingParty] = useState(null);
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -153,35 +152,6 @@ const PemilihDpcApp = () => {
     }
     await fetchAll();
     setPendingPartyDrafts((prev) => prev.filter((p) => p !== name));
-  };
-
-  // Hapus satu partai dari dapil ini — baris pemilih_partai, roster caleg &
-  // seluruh data suara (total maupun rincian per TPS) partai itu di semua
-  // kelurahan/tahun dapil ini ikut terhapus permanen. Partai lain (termasuk
-  // PKS) tidak ikut terpengaruh.
-  const handleDeleteParty = async (partyName) => {
-    if (!window.confirm(`Hapus partai "${partyName}" dari dapil ini? Daftar caleg dan semua data suara partai ini (semua tahun & kelurahan) akan dihapus permanen. Partai lain tidak terpengaruh.`)) return;
-    setPendingPartyDrafts((prev) => prev.filter((p) => p !== partyName));
-    const kelurahanIds = kelurahanList.map((k) => k.id);
-    setDeletingParty(partyName);
-    const [{ error: e1 }, { error: e2 }, { error: e3 }, { error: e4 }] = await Promise.all([
-      supabase.from('pemilih_caleg_master').delete().eq('kecamatan_id', selectedDapil).eq('party_name', partyName),
-      kelurahanIds.length > 0
-        ? supabase.from('pemilih_suara_caleg').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
-        : Promise.resolve({ error: null }),
-      kelurahanIds.length > 0
-        ? supabase.from('pemilih_suara_caleg_tps').delete().eq('party_name', partyName).in('kelurahan_id', kelurahanIds)
-        : Promise.resolve({ error: null }),
-      supabase.from('pemilih_partai').delete().eq('kecamatan_id', selectedDapil).eq('nama', partyName),
-    ]);
-    setDeletingParty(null);
-    const error = e1 || e2 || e3 || e4;
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal menghapus partai', description: error.message });
-      return;
-    }
-    toast({ title: `Partai "${partyName}" dihapus` });
-    await fetchAll();
   };
 
   return (
@@ -281,8 +251,6 @@ const PemilihDpcApp = () => {
                 party={selectedParty}
                 onSelectParty={setSelectedParty}
                 onAddPartyDraft={handleAddPartyDraft}
-                onDeleteParty={handleDeleteParty}
-                deletingParty={deletingParty}
               />
             ) : (
               <PemilihTpsInputByParty
