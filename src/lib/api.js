@@ -2168,6 +2168,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         amount_package,
         package_type,
         patient_type,
+        payment_method,
         guest_name,
 
         patient:patients!patient_id (
@@ -2230,6 +2231,11 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         optionsMap[item.package_type] ||
         item.package_type ||
         'Visit',
+
+      payment_method:
+        optionsMap[item.payment_method] ||
+        item.payment_method ||
+        '-',
 
       amount:
         item.amount_package &&
