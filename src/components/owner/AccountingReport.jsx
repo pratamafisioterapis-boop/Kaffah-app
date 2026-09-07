@@ -239,6 +239,7 @@ const handleExportExcel = () => {
       nama: '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -250,6 +251,7 @@ const handleExportExcel = () => {
       nama: '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -261,6 +263,7 @@ const handleExportExcel = () => {
       nama: item.patient_name || '-',
       paket: item.package_name || '-',
       bank: '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     }))
   ];
@@ -284,6 +287,7 @@ const handleExportExcel = () => {
       kategori: item.category || '-',
       deskripsi: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
@@ -293,6 +297,7 @@ const handleExportExcel = () => {
       kategori: item.category || '-',
       deskripsi: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     }))
   ];
