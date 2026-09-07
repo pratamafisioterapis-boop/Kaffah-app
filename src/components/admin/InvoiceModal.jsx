@@ -123,7 +123,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
     const { data: recap, error } = await supabase
       .from('daily_recaps')
-      .select('*')
+      .select('*, payment_splits:daily_recap_payment_splits(payment_method, amount)')
       .eq('id', data.id)
       .single();
 
