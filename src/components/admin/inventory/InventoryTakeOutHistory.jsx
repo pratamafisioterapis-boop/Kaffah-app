@@ -23,11 +23,23 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
       const { error } = await deleteInventoryStockOut(row.id);
       if (error) throw error;
       toast({ title: 'Riwayat pengambilan dihapus' });
-      if (onRefresh) onRefresh();
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Gagal menghapus', description: err.message });
+      // Beberapa browser mobile (mis. saat koneksi terputus sesaat setelah
+      // permintaan dikirim) memunculkan "Failed to fetch" walau penghapusan
+      // di server sudah berhasil. Refresh selalu dijalankan di finally agar
+      // daftar tetap menunjukkan kondisi data yang sebenarnya, dan pesannya
+      // dibuat tidak terlalu menakut-nakuti untuk kasus ini.
+      const isLikelyNetworkGlitch = err?.isNetworkError || /failed to fetch/i.test(err?.message || '');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menghapus',
+        description: isLikelyNetworkGlitch
+          ? 'Koneksi terputus saat menghapus. Memuat ulang data untuk memastikan status terbaru...'
+          : err.message,
+      });
     } finally {
       setDeletingId(null);
+      if (onRefresh) onRefresh();
     }
   };
 
