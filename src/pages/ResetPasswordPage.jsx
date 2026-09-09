@@ -6,7 +6,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import kaffahTechLogo from '@/assets/kaffah-tech-icon.png';
+
+const CLINARA_LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
@@ -83,8 +84,11 @@ const ResetPasswordPage = () => {
   return (
     <>
       <Helmet>
-        <title>Reset Password - Kaffah Tech</title>
-        <meta name="description" content="Buat password baru untuk akun Kaffah Tech" />
+        <title>Reset Password - Clinara</title>
+        <meta name="description" content="Buat password baru untuk akun Clinara" />
+        <link rel="icon" type="image/png" href={CLINARA_LOGO_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_LOGO_URL} />
+        <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
@@ -113,8 +117,8 @@ const ResetPasswordPage = () => {
                   className="w-24 h-24 mb-6 relative"
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-white rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden p-2">
-                    <img src={kaffahTechLogo} alt="Kaffah Tech Logo" className="w-full h-full object-contain" />
+                  <div className="relative w-full h-full bg-gradient-to-br from-clinara-sky to-clinara-teal rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
+                    <span className="text-white text-4xl font-black">C</span>
                   </div>
                 </motion.div>
 
@@ -208,7 +212,7 @@ const ResetPasswordPage = () => {
           </div>
 
           <p className="text-center text-slate-600 text-xs mt-6">
-            &copy; {new Date().getFullYear()} Kaffah Tech. All rights reserved.
+            &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
       </div>

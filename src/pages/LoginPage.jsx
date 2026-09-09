@@ -8,7 +8,12 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
-import kaffahTechLogo from '@/assets/kaffah-tech-icon.png';
+
+// Hosted on Supabase Storage rather than bundled — kept in one place so
+// swapping the brand asset later doesn't need a redeploy. Only rendered on
+// APP_DOMAIN (clinara.id), so this never touches the Kaffah Physiotherapy
+// patient-facing brand on the public domain.
+const CLINARA_LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -306,8 +311,11 @@ case 'clinic_admin':
   return (
     <>
       <Helmet>
-        <title>Login - Kaffah Tech</title>
-        <meta name="description" content="Secure Login to Kaffah Tech Digital System" />
+        <title>Login - Clinara</title>
+        <meta name="description" content="Secure login to Clinara — Healthcare Management Platform" />
+        <link rel="icon" type="image/png" href={CLINARA_LOGO_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_LOGO_URL} />
+        <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
@@ -341,12 +349,8 @@ case 'clinic_admin':
                   className="w-24 h-24 mb-6 relative"
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-white rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden p-2">
-                     <img
-  src={kaffahTechLogo}
-  alt="Kaffah Tech Logo"
-  className="w-full h-full object-contain"
-/>
+                  <div className="relative w-full h-full bg-gradient-to-br from-clinara-sky to-clinara-teal rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
+                     <span className="text-white text-4xl font-black">C</span>
                   </div>
                 </motion.div>
 
@@ -356,8 +360,8 @@ case 'clinic_admin':
                   transition={{ delay: 0.3 }}
                   className="text-center"
                 >
-                  <h1 className="text-2xl font-bold text-white tracking-tight">Kaffah Tech</h1>
-                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Digital Solutions, Real Impact</p>
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Clinara</h1>
+                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Better Care. Smarter Management.</p>
                 </motion.div>
               </div>
 
@@ -449,7 +453,7 @@ case 'clinic_admin':
           </div>
           
           <p className="text-center text-slate-600 text-xs mt-6">
-            &copy; {new Date().getFullYear()} Kaffah Tech. All rights reserved.
+            &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
       </div>
