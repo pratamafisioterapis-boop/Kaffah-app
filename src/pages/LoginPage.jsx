@@ -451,9 +451,9 @@ case 'clinic_admin':
             <div className="bg-slate-950/30 p-4 text-center border-t border-white/5 backdrop-blur-sm">
               <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-medium tracking-wide uppercase">
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                <span>Hanya untuk internal team</span>
+                <span>Authorized Personnel Only</span>
                 <span className="mx-1">•</span>
-                <span>Thank u 😊</span>
+                <span>Secure Encrypted Access</span>
               </div>
             </div>
           </div>
