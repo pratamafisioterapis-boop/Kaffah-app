@@ -49,7 +49,9 @@ messaging.onBackgroundMessage(async (payload) => {
     payload?.data?.body ||
     "NO BODY";
 
-  const iconUrl = payload?.data?.icon_url || "/logo192.png?v=kaffahtech1";
+  const iconUrl =
+    payload?.data?.icon_url ||
+    "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png";
 
   if (payload?.data?.icon_url) {
     await warmIconCache(iconUrl);

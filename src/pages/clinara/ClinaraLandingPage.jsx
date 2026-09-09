@@ -241,6 +241,9 @@ const ClinaraLandingPage = () => {
           content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi."
         />
         <link rel="canonical" href="https://clinara.id/" />
+        <link rel="icon" type="image/png" href={LOGO_URL} />
+        <link rel="apple-touch-icon" href={LOGO_URL} />
+        <link rel="manifest" href="/manifest-clinara.json" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Clinara — Better Care. Smarter Management." />
         <meta property="og:description" content="Platform manajemen layanan kesehatan untuk klinik dan pusat terapi." />
