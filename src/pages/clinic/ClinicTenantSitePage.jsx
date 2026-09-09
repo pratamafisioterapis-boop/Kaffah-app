@@ -1,13 +1,12 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { MapPin, Phone, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CalendarCheck, MapPin, Phone, Loader2 } from 'lucide-react';
 import { useClinicTenant } from '@/hooks/useClinicTenant';
 
 // Public landing page rendered when a visitor arrives via a clinic's own
 // subdomain (kliniksehat.clinara.id) or verified custom domain
-// (kliniksehat.com) instead of the platform's own domains. Kept minimal by
-// design - clinics manage their real booking flow via their own WhatsApp
-// number for now.
+// (kliniksehat.com) instead of the platform's own domains.
 const ClinicTenantSitePage = () => {
   const { clinic, loading, notFound } = useClinicTenant();
 
@@ -55,12 +54,18 @@ const ClinicTenantSitePage = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
+          <Link
+            to="/booking"
+            className="inline-flex items-center justify-center gap-2 bg-clinara-navy hover:bg-clinara-blue text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+          >
+            <CalendarCheck className="w-4 h-4" /> Booking Online
+          </Link>
           {waHref && (
             <a
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-green-600 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               <Phone className="w-4 h-4" /> Chat WhatsApp
             </a>

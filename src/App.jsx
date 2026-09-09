@@ -16,6 +16,7 @@ import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
 import ClinicTenantSitePage from '@/pages/clinic/ClinicTenantSitePage';
+const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
@@ -197,7 +198,17 @@ function App() {
   // the full platform routing below - that routing assumes it's serving
   // either the SaaS app or the single reference clinic's marketing site.
   if (isTenantHost()) {
-    return <ClinicTenantSitePage />;
+    return (
+      <Router>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/booking" element={<ClinicBookingPage />} />
+            <Route path="*" element={<ClinicTenantSitePage />} />
+          </Routes>
+        </Suspense>
+        <Toaster />
+      </Router>
+    );
   }
 
   if (!supabase) {

@@ -594,14 +594,19 @@ export const getBirthdayPatients = async () => getFollowUpQueue('pending', 'birt
 // APPOINTMENTS & SLOTS
 // ============================================
 
-export const getAvailableSlots = async (date, therapistId) => {
+export const getAvailableSlots = async (date, therapistId, clinicIdOverride = null) => {
   return safeQuery(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    let clinicId = PUBLIC_CLINIC_ID;
-    if (userId) {
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
-      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    // clinicIdOverride lets unauthenticated callers (e.g. a tenant clinic's
+    // own booking page) target a specific clinic instead of falling back to
+    // Kaffah's PUBLIC_CLINIC_ID.
+    let clinicId = clinicIdOverride || PUBLIC_CLINIC_ID;
+    if (!clinicIdOverride) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+      }
     }
 
     const { data, error } = await supabase.rpc('get_available_slots_with_status_by_date', { 
@@ -831,12 +836,17 @@ const PUBLIC_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a'; // fallback unt
 
 export const getActivePhysiotherapists = async (filters = {}) => {
   return safeQuery(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    let clinicId = PUBLIC_CLINIC_ID;
-    if (userId) {
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
-      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    // filters.clinicId lets unauthenticated callers (e.g. a tenant clinic's
+    // own booking page) target a specific clinic instead of falling back to
+    // Kaffah's PUBLIC_CLINIC_ID.
+    let clinicId = filters.clinicId || PUBLIC_CLINIC_ID;
+    if (!filters.clinicId) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+      }
     }
 
     let query = supabase.from('physiotherapists').select('*').eq('is_active', true).eq('clinic_id', clinicId);
