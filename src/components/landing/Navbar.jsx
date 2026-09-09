@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn, MessageCircle } from 'lucide-react';
+import { Menu, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BUSINESS } from '@/lib/businessInfo';
-import { loginHref } from '@/lib/domainRouting';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -88,11 +87,6 @@ const Navbar = () => {
               <MessageCircle className="w-4 h-4" /> Konsultasi WA
             </Button>
           </a>
-          <a href={loginHref()}>
-            <Button variant={showBackground ? "secondary" : "default"} className={`gap-2 ${!showBackground && 'bg-kaffah-navy hover:bg-kaffah-navy/90 text-white'}`}>
-              <LogIn className="w-4 h-4" /> Login
-            </Button>
-          </a>
         </div>
 
         {/* Mobile Toggle */}
@@ -136,11 +130,6 @@ const Navbar = () => {
               <a href={BUSINESS.whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
                     <MessageCircle className="w-4 h-4" /> Konsultasi WhatsApp
-                </Button>
-              </a>
-              <a href={loginHref()} onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="secondary" className="w-full gap-2">
-                  <LogIn className="w-4 h-4" /> Login Staff
                 </Button>
               </a>
               <Link to="/booking" onClick={() => setIsMobileMenuOpen(false)}>
