@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import SplashScreen from "@/components/SplashScreen";
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -14,10 +14,12 @@ import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
+import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain } from '@/lib/domainRouting';
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
 const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
+const ClinaraLandingPage = React.lazy(lazyRetry(() => import('@/pages/clinara/ClinaraLandingPage'), 'ClinaraLandingPage'));
 const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
 const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
 const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
@@ -48,6 +50,31 @@ const PemilihApp = React.lazy(lazyRetry(() => import('@/pages/pemilih/PemilihApp
 const RelawanUploadKTP = React.lazy(lazyRetry(() => import('@/pages/relawan/RelawanUploadKTP'), 'RelawanUploadKTP'));
 const PemilihDpcApp = React.lazy(lazyRetry(() => import('@/pages/dpc/PemilihDpcApp'), 'PemilihDpcApp'));
 
+
+// Sends visitors to the right domain: public marketing/booking pages live on
+// PUBLIC_DOMAIN, everything behind login lives on APP_DOMAIN. Both domains
+// point at this same deployment, so this is the only thing keeping them
+// apart. Runs on first load and on every client-side route change.
+const DomainGuard = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const { hostname, search, hash } = window.location;
+
+    if (isOnAppDomain(hostname) && !staysOnAppDomain(location.pathname)) {
+      window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
+    } else if (isOnPublicDomain(hostname) && isAppOnlyPath(location.pathname)) {
+      window.location.replace(`https://${APP_DOMAIN}${location.pathname}${search}${hash}`);
+    }
+  }, [location.pathname]);
+
+  return null;
+};
+
+// The Kaffah Physiotherapy landing page lives on PUBLIC_DOMAIN; the Clinara
+// product landing page lives at the same "/" route on APP_DOMAIN.
+const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage />);
 
 // Loading Component
 const LoadingFallback = () => (
@@ -192,12 +219,13 @@ function App() {
             <link rel="manifest" href="/manifest.json" />
           </Helmet>
           <Router>
+            <DomainGuard />
             {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<HomeRoute />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
