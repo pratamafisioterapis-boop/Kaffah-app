@@ -212,13 +212,29 @@ function App() {
 
   
 
-          <Helmet>
-            <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
-            <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
-            <meta name="theme-color" content="#1e3a5f" />
-            <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
-            <link rel="manifest" href="/manifest.json" />
-          </Helmet>
+          {/* Always-mounted (never unmounts on route changes, unlike per-page
+              Helmets), so it must already carry the right brand for the
+              current domain - otherwise its later re-renders (e.g. the
+              splash screen's onDone toggling App's own state) can win
+              react-helmet's tag-resolution race and flip the tab back to
+              Kaffah branding on clinara.id after a page-level Helmet had
+              already set the correct title. */}
+          {isOnAppDomain() ? (
+            <Helmet>
+              <title>Clinara — Better Care. Smarter Management.</title>
+              <meta name="description" content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi." />
+              <meta name="theme-color" content="#0f2a4a" />
+              <link rel="manifest" href="/manifest-clinara.json" />
+            </Helmet>
+          ) : (
+            <Helmet>
+              <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
+              <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
+              <meta name="theme-color" content="#1e3a5f" />
+              <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
+              <link rel="manifest" href="/manifest.json" />
+            </Helmet>
+          )}
           <Router>
             <DomainGuard />
             {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
