@@ -8,6 +8,37 @@ const corsHeaders = {
 const REFERENCE_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
 const TRIAL_DAYS = 7;
 const MAX_ATTEMPTS_PER_IP_PER_HOUR = 5;
+const CLINARA_APEX = "clinara.id";
+
+// Registering each <subdomain>.clinara.id individually (instead of a single
+// "*.clinara.id" wildcard) is what lets this work on Vercel's free/Hobby
+// plan - wildcard domains require Pro/Enterprise, but adding one exact
+// domain per clinic has no such restriction. DNS still only needs one
+// wildcard CNAME/A record at the registrar pointing *.clinara.id at Vercel;
+// Vercel then matches the specific hostnames registered here.
+const VERCEL_API_TOKEN = Deno.env.get("VERCEL_API_TOKEN");
+const VERCEL_PROJECT_ID = Deno.env.get("VERCEL_PROJECT_ID");
+const VERCEL_TEAM_ID = Deno.env.get("VERCEL_TEAM_ID") || "";
+
+async function registerVercelDomain(hostname) {
+  if (!VERCEL_API_TOKEN || !VERCEL_PROJECT_ID) return { registered: false, reason: "vercel_not_configured" };
+  try {
+    const url = new URL(`https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains`);
+    if (VERCEL_TEAM_ID) url.searchParams.set("teamId", VERCEL_TEAM_ID);
+    const resp = await fetch(url.toString(), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${VERCEL_API_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: hostname }),
+    });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      return { registered: false, reason: data?.error?.message || `vercel_http_${resp.status}` };
+    }
+    return { registered: true };
+  } catch (e) {
+    return { registered: false, reason: e instanceof Error ? e.message : "unknown_error" };
+  }
+}
 
 // Subdomains reserved for the platform itself - kept in sync with the
 // clinics_subdomain_not_reserved_check constraint and DomainSettingsManager.
@@ -150,6 +181,11 @@ Deno.serve(async (req) => {
     try {
       subdomain = await generateUniqueSubdomain(adminClient, clinic_name, clinic.id);
       await adminClient.from("clinics").update({ subdomain }).eq("id", clinic.id);
+      // Best-effort: register it with Vercel so the site is actually reachable
+      // right away. If this fails (token not configured yet, rate limit,
+      // etc.) the clinic still has its subdomain saved and can be
+      // re-registered later from Domain Settings.
+      await registerVercelDomain(`${subdomain}.${CLINARA_APEX}`);
     } catch (_e) {
       // Non-fatal: the clinic can still set a subdomain manually later.
       subdomain = null;
