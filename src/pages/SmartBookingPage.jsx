@@ -222,7 +222,7 @@ const SmartBookingPage = () => {
       <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-50 shadow-[0_1px_0_rgba(15,23,42,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group" onClick={() => window.location.href = '/'}>
-            {logoUrl ? <img src={logoUrl} alt="Logo" className="h-11 sm:h-14 w-auto object-contain transition-transform group-hover:scale-105" /> : <div className="w-10 h-10 bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6] rounded-xl flex items-center justify-center text-white font-bold shadow-md">KC</div>}
+            <img src={logoUrl || '/clinara-logo.png'} alt="Logo" className="h-11 sm:h-14 w-auto object-contain transition-transform group-hover:scale-105" />
             <div className="flex flex-col leading-tight">
               <span className="font-bold text-sm sm:text-base text-[#1e3a8a] tracking-tight">KAFFAH PHYSIOTHERAPY</span>
               <span className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-slate-400">
