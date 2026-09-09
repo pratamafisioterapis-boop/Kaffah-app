@@ -1,6 +1,6 @@
 {
   "short_name": "Clinara",
-  "name": "Clinara — Healthcare Management Platform",
+  "name": "Clinara",
   "start_url": "/login",
   "id": "/login",
   "scope": "/",
@@ -9,12 +9,12 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/clinara-logo.png",
+      "src": "/clinara-icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/clinara-logo.png",
+      "src": "/clinara-icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

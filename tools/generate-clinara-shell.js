@@ -25,7 +25,7 @@ if (!fs.existsSync(srcPath)) {
 // manifest icons) - same-origin, no extra DNS/CORS hop. Absolute for og:image/
 // twitter:image, which social-media scrapers fetch directly and can't resolve
 // a relative URL for.
-const CLINARA_LOGO_PATH = '/clinara-logo.png';
+const CLINARA_LOGO_PATH = '/clinara-icon-512.png';
 const CLINARA_LOGO_ABSOLUTE_URL = 'https://clinara.id/clinara-logo.png';
 
 let html = fs.readFileSync(srcPath, 'utf8');
