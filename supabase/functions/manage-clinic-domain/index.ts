@@ -14,10 +14,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //   VERCEL_PROJECT_ID  - project id (atau nama project) dari project ini di Vercel
 //   VERCEL_TEAM_ID     - opsional, hanya kalau project ada di bawah sebuah Team
 //
-// Subdomain gratis (klinik.clinara.id) TIDAK lewat sini - itu cukup kolom
-// `subdomain` di tabel clinics yang diupdate langsung dari frontend (RLS
-// sudah izinkan owner update baris klinik miliknya sendiri), karena wildcard
-// DNS *.clinara.id sudah diarahkan ke deployment yang sama.
+// Subdomain gratis (klinik.clinara.id) juga lewat sini (action "set_subdomain"),
+// supaya selain nulis kolom `subdomain` di tabel clinics, hostname-nya juga
+// langsung didaftarkan ke Vercel sebagai domain individual (bukan wildcard -
+// wildcard "*.clinara.id" butuh plan Pro/Enterprise, tapi mendaftarkan tiap
+// <subdomain>.clinara.id satu-satu tidak dibatasi plan, jadi tetap jalan di
+// Vercel Hobby/gratis). DNS registrar cukup satu wildcard CNAME/A record ke
+// Vercel; Vercel lalu mencocokkan ke hostname-hostname yang didaftarkan di sini.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,13 +56,18 @@ const vercelFetch = (path: string, init: RequestInit = {}) =>
 
 const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
+const CLINARA_APEX = "clinara.id";
+const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/;
+const RESERVED_SUBDOMAINS = new Set([
+  "www", "app", "api", "admin", "super-admin", "mail", "ftp", "clinara",
+  "kaffahphysio", "staging", "preview", "dev", "localhost", "assets", "cdn",
+]);
+
+const vercelConfigured = () => Boolean(VERCEL_API_TOKEN && VERCEL_PROJECT_ID);
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
-  }
-
-  if (!VERCEL_API_TOKEN || !VERCEL_PROJECT_ID) {
-    return json({ success: false, error: "Integrasi Vercel belum dikonfigurasi (VERCEL_API_TOKEN/VERCEL_PROJECT_ID)." }, 500);
   }
 
   try {
@@ -92,7 +100,53 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Anda tidak punya akses ke klinik ini." }, 403);
     }
 
+    if (action === "set_subdomain") {
+      const { subdomain } = body || {};
+      const clean = String(subdomain || "").trim().toLowerCase();
+
+      if (clean) {
+        if (!SUBDOMAIN_RE.test(clean)) {
+          return json({ success: false, error: "Format subdomain tidak valid. Gunakan huruf kecil, angka, dan strip saja (3-63 karakter)." }, 400);
+        }
+        if (RESERVED_SUBDOMAINS.has(clean)) {
+          return json({ success: false, error: "Subdomain ini dipakai sistem, coba nama lain." }, 400);
+        }
+      }
+
+      const { error: dbErr } = await admin.from("clinics").update({ subdomain: clean || null }).eq("id", clinic_id);
+      if (dbErr) {
+        return json({ success: false, error: dbErr.message.includes("duplicate") ? "Subdomain ini sudah dipakai klinik lain." : dbErr.message }, 400);
+      }
+
+      // Registering the subdomain with Vercel is best-effort: the DB write
+      // above is what actually controls the tenant site, so a Vercel hiccup
+      // (token not configured yet, rate limit, ...) shouldn't block saving.
+      let vercelRegistered = false;
+      let vercelWarning = null;
+      if (clean) {
+        if (!vercelConfigured()) {
+          vercelWarning = "Subdomain tersimpan, tapi integrasi Vercel belum dikonfigurasi (VERCEL_API_TOKEN/VERCEL_PROJECT_ID) sehingga domainnya belum otomatis aktif di Vercel.";
+        } else {
+          const resp = await vercelFetch(`/v10/projects/${VERCEL_PROJECT_ID}/domains`, {
+            method: "POST",
+            body: JSON.stringify({ name: `${clean}.${CLINARA_APEX}` }),
+          });
+          if (resp.ok) {
+            vercelRegistered = true;
+          } else {
+            const data = await resp.json().catch(() => ({}));
+            vercelWarning = data?.error?.message || "Subdomain tersimpan, tapi gagal didaftarkan ke Vercel.";
+          }
+        }
+      }
+
+      return json({ success: true, subdomain: clean || null, vercel_registered: vercelRegistered, warning: vercelWarning });
+    }
+
     if (action === "request") {
+      if (!vercelConfigured()) {
+        return json({ success: false, error: "Integrasi Vercel belum dikonfigurasi (VERCEL_API_TOKEN/VERCEL_PROJECT_ID)." }, 500);
+      }
       const cleanDomain = String(domain || "").trim().toLowerCase();
       if (!DOMAIN_RE.test(cleanDomain)) {
         return json({ success: false, error: "Format domain tidak valid." }, 400);
@@ -122,6 +176,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "check_status") {
+      if (!vercelConfigured()) {
+        return json({ success: false, error: "Integrasi Vercel belum dikonfigurasi (VERCEL_API_TOKEN/VERCEL_PROJECT_ID)." }, 500);
+      }
       const { data: clinic } = await admin.from("clinics").select("custom_domain").eq("id", clinic_id).single();
       const targetDomain = clinic?.custom_domain;
       if (!targetDomain) return json({ success: false, error: "Klinik ini belum punya custom domain." }, 400);
@@ -148,7 +205,7 @@ Deno.serve(async (req: Request) => {
     if (action === "remove") {
       const { data: clinic } = await admin.from("clinics").select("custom_domain").eq("id", clinic_id).single();
       const targetDomain = clinic?.custom_domain;
-      if (targetDomain) {
+      if (targetDomain && vercelConfigured()) {
         await vercelFetch(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${targetDomain}`, { method: "DELETE" });
       }
       const { error: dbErr } = await admin

@@ -69,14 +69,18 @@ const DomainSettingsManager = () => {
       return;
     }
     setSavingSubdomain(true);
-    const { error } = await supabase.from('clinics').update({ subdomain: clean || null }).eq('id', clinic.id);
+    const result = await callDomainFn({ action: 'set_subdomain', clinic_id: clinic.id, subdomain: clean });
     setSavingSubdomain(false);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message.includes('duplicate') ? 'Subdomain ini sudah dipakai klinik lain.' : error.message });
+    if (!result.success) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: result.error });
+      return;
+    }
+    if (result.warning) {
+      toast({ title: 'Subdomain disimpan', description: result.warning });
     } else {
       toast({ title: 'Subdomain disimpan', description: clean ? `Situs klinik Anda: ${clean}.${APP_DOMAIN}` : 'Subdomain dihapus.' });
-      fetchClinic();
     }
+    fetchClinic();
   };
 
   const handleRequestDomain = async () => {
