@@ -153,6 +153,13 @@ const Section = ({ id, className = '', children }) => (
   </section>
 );
 
+// Full brand lockup (mark + wordmark + tagline) — used large in the hero
+// where its own whitespace reads as intentional. The compact navbar/footer
+// mark below is a plain text wordmark instead: the source file is a square
+// stacked lockup, not a horizontal mark, so shrinking it into a 36px-tall
+// navbar slot would crop the icon away and leave only illegible padding.
+const LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
+
 const Logo = ({ dark = false }) => (
   <span className={`inline-flex items-center gap-2 text-2xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-clinara-navy'}`}>
     <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-clinara-sky to-clinara-teal flex items-center justify-center text-white text-sm font-black">
@@ -249,6 +256,7 @@ const ClinaraLandingPage = () => {
           <div className="absolute top-1/2 -left-24 w-80 h-80 bg-clinara-sky/20 rounded-full blur-3xl pointer-events-none" />
           <div className="container mx-auto max-w-4xl relative text-center">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <img src={LOGO_URL} alt="Clinara — Better Care. Smarter Management." className="w-40 md:w-48 mx-auto mb-2" />
               <span className="inline-block px-4 py-1.5 rounded-full bg-white border border-clinara-teal/30 text-clinara-navy text-xs font-bold tracking-wide uppercase mb-6 shadow-sm">
                 Healthcare Management Platform
               </span>
