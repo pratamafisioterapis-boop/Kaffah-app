@@ -264,15 +264,26 @@ const handleExportExcel = (mode = 'accrual') => {
     // Mode "Real-time (Kas Masuk)": nominal paket hanya ditulis pada sesi
     // yang benar-benar ada pembayaran (cash_amount > 0). Sesi lanjutan
     // paket yang belum ada pembayaran baru tetap ditulis 0.
-    ...data.patientIncome.map(item => ({
-      tanggal: formatDate(item.date),
-      deskripsi: '-',
-      nama: item.patient_name || '-',
-      paket: item.package_name || '-',
-      bank: '-',
-      metode_pembayaran: item.payment_method || '-',
-      jumlah: isCashBasis ? (Number(item.cash_amount) || 0) : (Number(item.amount) || 0)
-    }))
+    //
+    // Label kolom paket: sesi pertama tetap "Paket X", sesi ke-2 dst
+    // ditulis "Sesi ke-N (Paket X)". Baris tanpa paket ("Visit") tidak
+    // diubah.
+    ...data.patientIncome.map(item => {
+      const packageLabel = item.package_name || '-';
+      const paket = item.session_number && item.session_number >= 2
+        ? `Sesi ke-${item.session_number} (${packageLabel})`
+        : packageLabel;
+
+      return {
+        tanggal: formatDate(item.date),
+        deskripsi: '-',
+        nama: item.patient_name || '-',
+        paket,
+        bank: '-',
+        metode_pembayaran: item.payment_method || '-',
+        jumlah: isCashBasis ? (Number(item.cash_amount) || 0) : (Number(item.amount) || 0)
+      };
+    })
   ];
   combinedIncome.sort((a, b) => {
   const [dayA, monthA, yearA] = a.tanggal.split('/');
@@ -340,6 +351,44 @@ combinedExpenses.sort((a, b) => {
     ],
     { origin: -1 }
   );
+
+  // Rekap per metode pembayaran per tanggal — hanya untuk mode Real-time
+  // (Kas Masuk). Hanya baris dengan uang yang benar-benar masuk (jumlah > 0)
+  // yang direkap.
+  if (isCashBasis) {
+    const recapMap = new Map();
+    combinedIncome.forEach(item => {
+      const jumlah = Number(item.jumlah) || 0;
+      if (jumlah <= 0) return;
+      const key = `${item.tanggal}||${item.metode_pembayaran || '-'}`;
+      recapMap.set(key, (recapMap.get(key) || 0) + jumlah);
+    });
+
+    const recapRows = Array.from(recapMap.entries())
+      .map(([key, total]) => {
+        const [tanggal, metode] = key.split('||');
+        return { tanggal, metode, total };
+      })
+      .sort((a, b) => {
+        const [dayA, monthA, yearA] = a.tanggal.split('/');
+        const [dayB, monthB, yearB] = b.tanggal.split('/');
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return a.metode.localeCompare(b.metode);
+      });
+
+    XLSX.utils.sheet_add_aoa(
+      incomeSheet,
+      [
+        [],
+        ['REKAP PER METODE PEMBAYARAN PER TANGGAL'],
+        ['Tanggal', 'Metode Pembayaran', 'Total'],
+        ...recapRows.map(r => [r.tanggal, r.metode, r.total])
+      ],
+      { origin: -1 }
+    );
+  }
 
   // =========================
   // SHEET PENGELUARAN
