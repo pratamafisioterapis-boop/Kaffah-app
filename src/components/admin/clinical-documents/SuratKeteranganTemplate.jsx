@@ -34,7 +34,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       {/* LETTERHEAD — logo pinned left, text truly centered on the page via a mirrored spacer column */}
       <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr 96px', alignItems: 'center', gap: '16px', paddingBottom: '18px' }}>
         <div>
-          {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />}
+          <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />
         </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>

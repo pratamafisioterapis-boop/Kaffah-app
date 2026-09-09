@@ -41,11 +41,9 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {clinic?.logo_url && (
-            <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
-              <img src={clinic.logo_url} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} />
-            </div>
-          )}
+          <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
+            <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} />
+          </div>
           <div>
             <p style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px', margin: 0 }}>
               {(clinic?.name || '').toUpperCase()}

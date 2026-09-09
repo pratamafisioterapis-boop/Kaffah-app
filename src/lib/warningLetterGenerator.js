@@ -73,7 +73,7 @@ export const generateWarningLetterPDF = async (letter = {}, clinic = {}, therapi
   let y = MARGIN_TOP;
   const clinicName = clinic.name || 'Klinik Fisioterapi';
   const levelLabel = WARNING_LEVEL_LABEL[letter.level] || WARNING_LEVEL_LABEL.SP1;
-  const logoDataUrl = await loadImageAsDataUrl(clinic.logo_url);
+  const logoDataUrl = await loadImageAsDataUrl(clinic.logo_url || '/clinara-logo.png');
 
   const ensureSpace = (needed) => {
     if (y + needed > PAGE_H - MARGIN_BOTTOM) {

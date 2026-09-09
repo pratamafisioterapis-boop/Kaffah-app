@@ -70,7 +70,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
           boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
           marginBottom: '30px'
         }}>
-          <img src={data?.clinic?.logo_url || '/logo.png'} alt="logo" style={{ width: '85px' }} />
+          <img src={data?.clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '85px' }} />
         </div>
 
         <div style={{ textAlign: 'center', color: '#fff', padding: '0 18px' }}>
@@ -367,7 +367,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
   justifyContent: 'center'
 }}>
   <img 
-    src={data?.clinic?.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/assets-invoice/logo/logo.png"}
+    src={data?.clinic?.logo_url || "/clinara-logo.png"}
     style={{ 
       width: '110px',
       opacity: 0.25

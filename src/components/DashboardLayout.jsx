@@ -334,7 +334,7 @@ const isPWA =
                <div className="w-14 h-14 bg-white flex items-center justify-center overflow-hidden" style={{ borderRadius: activeTheme.radius, boxShadow: activeTheme.shadow }}>
                  {clinicInfo ? (
                    <img
-                     src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
+                     src={clinicInfo.logo_url || "/clinara-logo.png"}
                      alt={clinicInfo.name || "Clinic Logo"}
                      className="w-full h-full object-contain p-1"
                    />
