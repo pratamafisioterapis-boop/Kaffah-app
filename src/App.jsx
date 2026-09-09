@@ -21,6 +21,7 @@ const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage
 const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
 const ClinaraLandingPage = React.lazy(lazyRetry(() => import('@/pages/clinara/ClinaraLandingPage'), 'ClinaraLandingPage'));
 const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
+const RegisterClinicPage = React.lazy(lazyRetry(() => import('@/pages/RegisterClinicPage'), 'RegisterClinicPage'));
 const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
 const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
 const SmartBookingPage = React.lazy(lazyRetry(() => import('@/pages/SmartBookingPage'), 'SmartBookingPage'));
@@ -228,6 +229,7 @@ function App() {
                 <Route path="/" element={<HomeRoute />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterClinicPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/booking" element={<SmartBookingPage />} />
