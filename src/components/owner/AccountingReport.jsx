@@ -226,56 +226,6 @@ const AccountingReport = ({
 
   return format(date, 'dd/MM/yyyy');
 };
-const buildPaymentMethodPivot = (items, label) => {
-  const dates = [];
-  const methods = [];
-  const totalsByDateMethod = {};
-
-  items.forEach(item => {
-    const tanggal = item.tanggal;
-    const metode = item.metode_pembayaran || '-';
-
-    if (!dates.includes(tanggal)) dates.push(tanggal);
-    if (!methods.includes(metode)) methods.push(metode);
-
-    const key = `${tanggal}|${metode}`;
-    totalsByDateMethod[key] = (totalsByDateMethod[key] || 0) + (Number(item.jumlah) || 0);
-  });
-
-  dates.sort((a, b) => {
-    const [dayA, monthA, yearA] = a.split('/');
-    const [dayB, monthB, yearB] = b.split('/');
-    return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
-  });
-
-  const fmt = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(n)}`;
-
-  const rows = dates.map(tanggal => {
-    let rowTotal = 0;
-    const cells = methods.map(metode => {
-      const value = totalsByDateMethod[`${tanggal}|${metode}`] || 0;
-      rowTotal += value;
-      return fmt(value);
-    });
-    return [tanggal, ...cells, fmt(rowTotal)];
-  });
-
-  const grandTotals = methods.map(metode =>
-    fmt(dates.reduce((acc, tanggal) => acc + (totalsByDateMethod[`${tanggal}|${metode}`] || 0), 0))
-  );
-  const grandTotal = fmt(
-    Object.values(totalsByDateMethod).reduce((acc, v) => acc + v, 0)
-  );
-
-  return [
-    [],
-    [`REKAP METODE PEMBAYARAN PER TANGGAL - ${label}`],
-    ['Tanggal', ...methods, 'Total'],
-    ...rows,
-    ['TOTAL', ...grandTotals, grandTotal]
-  ];
-};
-
 const handleExportExcel = () => {
   // =========================
   // GABUNG PEMASUKAN
@@ -283,8 +233,6 @@ const handleExportExcel = () => {
   const combinedIncome = [
     ...data.ownerIncome.map(item => ({
       tanggal: formatDate(item.date),
-      sumber: 'Pemasukan Owner',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
@@ -295,8 +243,6 @@ const handleExportExcel = () => {
 
     ...data.adminIncome.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      sumber: 'Pemasukan Admin',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
@@ -307,8 +253,6 @@ const handleExportExcel = () => {
 
     ...data.patientIncome.map(item => ({
       tanggal: formatDate(item.date),
-      sumber: 'Pendapatan Pasien',
-      kategori: '-',
       deskripsi: '-',
       nama: item.patient_name || '-',
       paket: item.package_name || '-',
@@ -333,8 +277,6 @@ const handleExportExcel = () => {
   const combinedExpenses = [
     ...data.ownerExpenses.map(item => ({
       tanggal: formatDate(item.date),
-      sumber: 'Pengeluaran Owner',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
@@ -343,8 +285,6 @@ const handleExportExcel = () => {
 
     ...data.adminExpenses.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      sumber: 'Pengeluaran Admin',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
@@ -384,12 +324,6 @@ combinedExpenses.sort((a, b) => {
     { origin: -1 }
   );
 
-  XLSX.utils.sheet_add_aoa(
-    incomeSheet,
-    buildPaymentMethodPivot(combinedIncome, 'PEMASUKAN'),
-    { origin: -1 }
-  );
-
   // =========================
   // SHEET PENGELUARAN
   // =========================
@@ -406,12 +340,6 @@ combinedExpenses.sort((a, b) => {
       [],
       ['TOTAL PENGELUARAN', totalExpenses]
     ],
-    { origin: -1 }
-  );
-
-  XLSX.utils.sheet_add_aoa(
-    expenseSheet,
-    buildPaymentMethodPivot(combinedExpenses, 'PENGELUARAN'),
     { origin: -1 }
   );
 
