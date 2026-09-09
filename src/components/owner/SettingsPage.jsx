@@ -5,7 +5,7 @@ import {
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
   FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
-  ChevronRight
+  ChevronRight, Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -43,6 +43,7 @@ import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
 import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
+import DomainSettingsManager from '@/components/owner/DomainSettingsManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
@@ -989,6 +990,7 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Akun & Tim',
     items: [
       { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
+      { value: 'domain', icon: Globe, label: 'Domain Klinik' },
     ],
   },
   {
@@ -1138,6 +1140,9 @@ const SettingsPage = () => {
         <div className="mt-6">
           <TabsContent value="account_clinic">
             <AccountClinicManager />
+          </TabsContent>
+          <TabsContent value="domain">
+            <DomainSettingsManager />
           </TabsContent>
           <TabsContent value="bank_accounts">
             <OwnerBankAccountManager />

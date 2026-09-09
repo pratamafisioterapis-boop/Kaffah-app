@@ -40,3 +40,20 @@ export const isOnAppDomain = (hostname = window.location.hostname) =>
 
 export const isOnPublicDomain = (hostname = window.location.hostname) =>
   matchesHost(hostname, PUBLIC_DOMAIN);
+
+// Hosts that are part of the platform itself, as opposed to a clinic's own
+// subdomain (xyz.clinara.id) or custom domain (kliniksehat.com). Local/dev
+// and Vercel preview hosts are included so tenant resolution never kicks in
+// while developing.
+const isLocalOrPreviewHost = (hostname) =>
+  hostname === 'localhost' ||
+  hostname === '127.0.0.1' ||
+  hostname.endsWith('.local') ||
+  hostname.endsWith('.vercel.app');
+
+// True when `hostname` is neither the SaaS app domain nor the reference
+// clinic's own marketing domain nor a dev/preview host - i.e. it can only be
+// a tenant clinic's subdomain or custom domain and should be resolved via
+// get_clinic_by_host().
+export const isTenantHost = (hostname = window.location.hostname) =>
+  !isOnAppDomain(hostname) && !isOnPublicDomain(hostname) && !isLocalOrPreviewHost(hostname);

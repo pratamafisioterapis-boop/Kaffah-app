@@ -14,7 +14,8 @@ import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
-import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain } from '@/lib/domainRouting';
+import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
+import ClinicTenantSitePage from '@/pages/clinic/ClinicTenantSitePage';
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
@@ -190,6 +191,14 @@ function App() {
       .filter((key) => key.startsWith('lazy-retry-reloaded-'))
       .forEach((key) => sessionStorage.removeItem(key));
   }, []);
+
+  // A clinic's own subdomain (kliniksehat.clinara.id) or verified custom
+  // domain (kliniksehat.com) gets its own minimal branded site instead of
+  // the full platform routing below - that routing assumes it's serving
+  // either the SaaS app or the single reference clinic's marketing site.
+  if (isTenantHost()) {
+    return <ClinicTenantSitePage />;
+  }
 
   if (!supabase) {
     return (
