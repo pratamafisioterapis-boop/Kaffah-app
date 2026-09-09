@@ -68,12 +68,14 @@ const ForgotPasswordPage = () => {
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.5 }}
-                  className="w-24 h-24 mb-6 relative"
+                  className="relative mb-4"
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-gradient-to-br from-clinara-sky to-clinara-teal rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
-                    <span className="text-white text-4xl font-black">C</span>
-                  </div>
+                  <img
+                    src={CLINARA_LOGO_URL}
+                    alt="Clinara — Better Care. Smarter Management."
+                    className="relative w-32"
+                  />
                 </motion.div>
 
                 <motion.div

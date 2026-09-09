@@ -342,26 +342,18 @@ case 'clinic_admin':
             <div className="p-8 sm:p-10">
               {/* Logo Section */}
               <div className="flex flex-col items-center justify-center mb-10">
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.5 }}
-                  className="w-24 h-24 mb-6 relative"
+                  className="relative mb-2"
                 >
                   <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-gradient-to-br from-clinara-sky to-clinara-teal rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
-                     <span className="text-white text-4xl font-black">C</span>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-center"
-                >
-                  <h1 className="text-2xl font-bold text-white tracking-tight">Clinara</h1>
-                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Better Care. Smarter Management.</p>
+                  <img
+                    src={CLINARA_LOGO_URL}
+                    alt="Clinara — Better Care. Smarter Management."
+                    className="relative w-40"
+                  />
                 </motion.div>
               </div>
 
