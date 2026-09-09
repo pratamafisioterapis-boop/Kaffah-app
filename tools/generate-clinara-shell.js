@@ -21,29 +21,36 @@ if (!fs.existsSync(srcPath)) {
   process.exit(0);
 }
 
+// clinara-icon.png: the mark alone, cropped tight, transparent background -
+// used for the favicon so the browser tab shows just the icon, no visible
+// box (matches how Claude's own tab icon looks). clinara-icon-app.png: the
+// same mark composited onto a white rounded square - used anywhere a
+// transparent icon would render wrong (iOS turns transparent areas black on
+// home-screen icons; PWA/app icons generally want an opaque background too).
 // Root-relative for tags the browser itself resolves (favicon, apple-touch-icon,
 // manifest icons) - same-origin, no extra DNS/CORS hop. Absolute for og:image/
 // twitter:image, which social-media scrapers fetch directly and can't resolve
 // a relative URL for.
-const CLINARA_LOGO_PATH = '/clinara-logo.png';
-const CLINARA_LOGO_ABSOLUTE_URL = 'https://clinara.id/clinara-logo.png';
+const CLINARA_ICON_PATH = '/clinara-icon.png';
+const CLINARA_APP_ICON_PATH = '/clinara-icon-app.png';
+const CLINARA_APP_ICON_ABSOLUTE_URL = 'https://clinara.id/clinara-icon-app.png';
 
 let html = fs.readFileSync(srcPath, 'utf8');
 
 const replacements = [
-  [/<link rel="icon" type="image\/x-icon" href="\/favicon\.ico\?v=kaffahtech1" \/>/, `<link rel="icon" type="image/png" href="${CLINARA_LOGO_PATH}" />`],
+  [/<link rel="icon" type="image\/x-icon" href="\/favicon\.ico\?v=kaffahtech1" \/>/, `<link rel="icon" type="image/png" href="${CLINARA_ICON_PATH}" />`],
   [/<meta name="theme-color" content="#1e3a5f" \/>/, '<meta name="theme-color" content="#0f2a4a" />'],
   [/<link rel="manifest" href="\/manifest\.json" \/>/, '<link rel="manifest" href="/manifest-clinara.json" />'],
   [/<meta name="apple-mobile-web-app-title" content="Kaffah Physiotherapy" \/>/, '<meta name="apple-mobile-web-app-title" content="Clinara" />'],
-  [/<link rel="apple-touch-icon" href="\/logo192\.png\?v=kaffahtech1" \/>/, `<link rel="apple-touch-icon" href="${CLINARA_LOGO_PATH}" />`],
+  [/<link rel="apple-touch-icon" href="\/logo192\.png\?v=kaffahtech1" \/>/, `<link rel="apple-touch-icon" href="${CLINARA_APP_ICON_PATH}" />`],
   [/<title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan<\/title>/, '<title>Clinara — Better Care. Smarter Management.</title>'],
   [/<meta name="description" content="Kaffah Physiotherapy adalah klinik fisioterapi[^"]*" \/>/, '<meta name="description" content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi." />'],
   [/<meta property="og:site_name" content="Kaffah Physiotherapy" \/>/, '<meta property="og:site_name" content="Clinara" />'],
   [/<meta property="og:url" content="https:\/\/kaffahphysio\.id\/" \/>/, '<meta property="og:url" content="https://clinara.id/" />'],
   [/<meta property="og:title" content="Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan" \/>/, '<meta property="og:title" content="Clinara — Better Care. Smarter Management." />'],
   [/<meta property="og:description" content="Klinik fisioterapi di Batu Ampar[^"]*" \/>/, '<meta property="og:description" content="Platform manajemen layanan kesehatan untuk klinik dan pusat terapi." />'],
-  [/<meta property="og:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>\s*\n\s*<meta property="og:image:width" content="512" \/>\s*\n\s*<meta property="og:image:height" content="512" \/>/, `<meta property="og:image" content="${CLINARA_LOGO_ABSOLUTE_URL}" />`],
-  [/<meta name="twitter:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>/, `<meta name="twitter:image" content="${CLINARA_LOGO_ABSOLUTE_URL}" />`],
+  [/<meta property="og:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>\s*\n\s*<meta property="og:image:width" content="512" \/>\s*\n\s*<meta property="og:image:height" content="512" \/>/, `<meta property="og:image" content="${CLINARA_APP_ICON_ABSOLUTE_URL}" />`],
+  [/<meta name="twitter:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>/, `<meta name="twitter:image" content="${CLINARA_APP_ICON_ABSOLUTE_URL}" />`],
 ];
 
 let missed = [];

@@ -198,12 +198,11 @@ const Section = ({ id, className = '', children }) => (
 // horizontal mark, so shrinking it into a 36px-tall navbar slot would still
 // crop the icon away from the wordmark.
 const LOGO_URL = '/clinara-logo.png';
+const ICON_URL = '/clinara-icon.png';
 
 const Logo = ({ dark = false }) => (
   <span className={`inline-flex items-center gap-2 text-2xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-clinara-navy'}`}>
-    <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-clinara-sky to-clinara-teal flex items-center justify-center text-white text-sm font-black">
-      C
-    </span>
+    <img src={ICON_URL} alt="" className="w-8 h-8" />
     Clinara
   </span>
 );
@@ -280,8 +279,8 @@ const ClinaraLandingPage = () => {
           content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi."
         />
         <link rel="canonical" href="https://clinara.id/" />
-        <link rel="icon" type="image/png" href={LOGO_URL} />
-        <link rel="apple-touch-icon" href={LOGO_URL} />
+        <link rel="icon" type="image/png" href={ICON_URL} />
+        <link rel="apple-touch-icon" href="/clinara-icon-app.png" />
         <link rel="manifest" href="/manifest-clinara.json" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Clinara — Better Care. Smarter Management." />

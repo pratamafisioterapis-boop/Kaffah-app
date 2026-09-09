@@ -49,7 +49,7 @@ messaging.onBackgroundMessage(async (payload) => {
     payload?.data?.body ||
     "NO BODY";
 
-  const iconUrl = payload?.data?.icon_url || "/clinara-logo.png";
+  const iconUrl = payload?.data?.icon_url || "/clinara-icon-app.png";
 
   if (payload?.data?.icon_url) {
     await warmIconCache(iconUrl);
