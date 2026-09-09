@@ -79,19 +79,19 @@ const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage
 
 // Loading Component
 const LoadingFallback = () => (
-  <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 z-50">
-    <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-950 z-50">
+    <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
     <div className="relative z-10 flex flex-col items-center gap-8">
       {/* Spinner ring */}
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-2 border-white/10" />
         <div
-          className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-400"
+          className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-400"
           style={{ animation: 'spin 0.9s linear infinite' }}
         />
       </div>
-      <p className="text-indigo-300/60 text-xs font-semibold uppercase tracking-widest">Memuat...</p>
+      <p className="text-cyan-300/60 text-xs font-semibold uppercase tracking-widest">Memuat...</p>
     </div>
     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
