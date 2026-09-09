@@ -14,11 +14,12 @@ import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
-import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, isOnAppDomain, isOnPublicDomain } from '@/lib/domainRouting';
+import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain } from '@/lib/domainRouting';
 
 // Lazy Pages
 const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
 const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
+const ClinaraLandingPage = React.lazy(lazyRetry(() => import('@/pages/clinara/ClinaraLandingPage'), 'ClinaraLandingPage'));
 const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
 const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
 const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
@@ -60,17 +61,20 @@ const DomainGuard = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const { hostname, search, hash } = window.location;
-    const appPath = isAppOnlyPath(location.pathname);
 
-    if (isOnAppDomain(hostname) && !appPath) {
+    if (isOnAppDomain(hostname) && !staysOnAppDomain(location.pathname)) {
       window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
-    } else if (isOnPublicDomain(hostname) && appPath) {
+    } else if (isOnPublicDomain(hostname) && isAppOnlyPath(location.pathname)) {
       window.location.replace(`https://${APP_DOMAIN}${location.pathname}${search}${hash}`);
     }
   }, [location.pathname]);
 
   return null;
 };
+
+// The Kaffah Physiotherapy landing page lives on PUBLIC_DOMAIN; the Clinara
+// product landing page lives at the same "/" route on APP_DOMAIN.
+const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage />);
 
 // Loading Component
 const LoadingFallback = () => (
@@ -221,7 +225,7 @@ function App() {
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<HomeRoute />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />

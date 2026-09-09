@@ -26,6 +26,14 @@ const matchesHost = (hostname, domain) =>
 export const isAppOnlyPath = (pathname) =>
   APP_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
+// Paths that render fine on APP_DOMAIN without being login-gated - currently
+// just the Clinara product homepage. Kept separate from isAppOnlyPath so the
+// public domain's own "/" (the Kaffah clinic landing page) is untouched.
+const APP_DOMAIN_MARKETING_PATHS = ['/'];
+
+export const staysOnAppDomain = (pathname) =>
+  isAppOnlyPath(pathname) || APP_DOMAIN_MARKETING_PATHS.includes(pathname);
+
 export const isOnAppDomain = (hostname = window.location.hostname) =>
   matchesHost(hostname, APP_DOMAIN);
 

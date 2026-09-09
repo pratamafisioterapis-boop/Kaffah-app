@@ -56,6 +56,14 @@ module.exports = {
     				gray: '#6b7280',
     				light: '#e5e7eb'
     			},
+    			clinara: {
+    				navy: '#0f2a4a',
+    				blue: '#2b6cb0',
+    				sky: '#3b9fe0',
+    				teal: '#2dd4bf',
+    				mint: '#5eead4',
+    				bg: '#f4f9fc'
+    			},
     			chart: {
     				'1': 'hsl(var(--chart-1))',
     				'2': 'hsl(var(--chart-2))',
