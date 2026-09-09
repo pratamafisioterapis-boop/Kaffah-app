@@ -192,12 +192,12 @@ const Section = ({ id, className = '', children }) => (
   </section>
 );
 
-// Full brand lockup (mark + wordmark + tagline) — used large in the hero
-// where its own whitespace reads as intentional. The compact navbar/footer
-// mark below is a plain text wordmark instead: the source file is a square
-// stacked lockup, not a horizontal mark, so shrinking it into a 36px-tall
-// navbar slot would crop the icon away and leave only illegible padding.
-const LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
+// Full brand lockup (mark + wordmark + tagline, transparent background) —
+// used large in the hero. The compact navbar/footer mark below is a plain
+// text wordmark instead: the source file is a square stacked lockup, not a
+// horizontal mark, so shrinking it into a 36px-tall navbar slot would still
+// crop the icon away from the wordmark.
+const LOGO_URL = '/clinara-logo.png';
 
 const Logo = ({ dark = false }) => (
   <span className={`inline-flex items-center gap-2 text-2xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-clinara-navy'}`}>

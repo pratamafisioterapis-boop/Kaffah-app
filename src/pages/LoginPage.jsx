@@ -9,11 +9,11 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 
-// Hosted on Supabase Storage rather than bundled — kept in one place so
-// swapping the brand asset later doesn't need a redeploy. Only rendered on
-// APP_DOMAIN (clinara.id), so this never touches the Kaffah Physiotherapy
+// Served from /public rather than bundled, so swapping the brand asset
+// later is a file replace, not a code change. Only rendered on APP_DOMAIN
+// (clinara.id), so this never touches the Kaffah Physiotherapy
 // patient-facing brand on the public domain.
-const CLINARA_LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
+const CLINARA_LOGO_URL = '/clinara-logo.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -327,15 +327,18 @@ case 'clinic_admin':
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 w-full max-w-[420px] p-6"
         >
-          {/* Main Card */}
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden relative group">
-            
+          {/* Main Card — a hairline gradient border (padding trick) sits behind the
+              solid card so the edge catches light instead of reading as a flat
+              slab, plus a deep, color-tinted shadow for lift off the background. */}
+          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(14,165,233,0.35)]">
+          <div className="bg-slate-900/70 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
+
             {/* Top decorative line */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -348,11 +351,11 @@ case 'clinic_admin':
                   transition={{ delay: 0.2, duration: 0.5 }}
                   className="relative mb-2"
                 >
-                  <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
                   <img
                     src={CLINARA_LOGO_URL}
                     alt="Clinara — Better Care. Smarter Management."
-                    className="relative w-40"
+                    className="relative w-36 drop-shadow-[0_12px_28px_rgba(45,212,191,0.25)]"
                   />
                 </motion.div>
               </div>
@@ -443,7 +446,8 @@ case 'clinic_admin':
               </div>
             </div>
           </div>
-          
+          </div>
+
           <p className="text-center text-slate-600 text-xs mt-6">
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
