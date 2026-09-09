@@ -2282,7 +2282,13 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         item.amount_package &&
         Number(item.amount_package) > 0
           ? Number(item.amount_package)
-          : Number(item.amount || 0)
+          : Number(item.amount || 0),
+
+      // Nominal riil yang benar-benar diterima pada tanggal recap ini
+      // (0 untuk sesi lanjutan paket yang tidak ada pembayaran baru).
+      // Dipakai untuk laporan Excel mode "Real-time" (kas masuk),
+      // berbeda dari `amount` di atas yang bersifat akrual per sesi.
+      cash_amount: Number(item.amount || 0)
     }));
 
     return {

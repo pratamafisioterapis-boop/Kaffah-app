@@ -3,7 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
@@ -226,7 +234,9 @@ const AccountingReport = ({
 
   return format(date, 'dd/MM/yyyy');
 };
-const handleExportExcel = () => {
+const handleExportExcel = (mode = 'accrual') => {
+  const isCashBasis = mode === 'cash';
+
   // =========================
   // GABUNG PEMASUKAN
   // =========================
@@ -251,6 +261,9 @@ const handleExportExcel = () => {
       jumlah: Number(item.amount) || 0
     })),
 
+    // Mode "Real-time (Kas Masuk)": nominal paket hanya ditulis pada sesi
+    // yang benar-benar ada pembayaran (cash_amount > 0). Sesi lanjutan
+    // paket yang belum ada pembayaran baru tetap ditulis 0.
     ...data.patientIncome.map(item => ({
       tanggal: formatDate(item.date),
       deskripsi: '-',
@@ -258,7 +271,7 @@ const handleExportExcel = () => {
       paket: item.package_name || '-',
       bank: '-',
       metode_pembayaran: item.payment_method || '-',
-      jumlah: Number(item.amount) || 0
+      jumlah: isCashBasis ? (Number(item.cash_amount) || 0) : (Number(item.amount) || 0)
     }))
   ];
   combinedIncome.sort((a, b) => {
@@ -300,6 +313,10 @@ combinedExpenses.sort((a, b) => {
 
   return dateA - dateB;
 });
+  // Total pemasukan mengikuti mode yang dipilih (akrual vs kas riil)
+  const exportTotalIncome = combinedIncome.reduce((acc, item) => acc + (Number(item.jumlah) || 0), 0);
+  const exportNetProfit = exportTotalIncome - totalExpenses;
+
   // =========================
   // WORKBOOK
   // =========================
@@ -319,7 +336,7 @@ combinedExpenses.sort((a, b) => {
     incomeSheet,
     [
       [],
-      ['TOTAL PEMASUKAN', totalIncome]
+      ['TOTAL PEMASUKAN', exportTotalIncome]
     ],
     { origin: -1 }
   );
@@ -350,10 +367,11 @@ combinedExpenses.sort((a, b) => {
     ['LAPORAN AKUNTANSI'],
     [],
     ['Periode', `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`],
+    ['Format', isCashBasis ? 'Real-time (Kas Masuk)' : 'Standar (Akrual per Sesi)'],
     [],
-    ['Total Pemasukan', totalIncome],
+    ['Total Pemasukan', exportTotalIncome],
     ['Total Pengeluaran', totalExpenses],
-    ['Net Profit', netProfit]
+    ['Net Profit', exportNetProfit]
   ]);
 
   // =========================
@@ -366,9 +384,10 @@ combinedExpenses.sort((a, b) => {
   // =========================
   // EXPORT
   // =========================
+  const fileSuffix = isCashBasis ? 'realtime' : 'standar';
   XLSX.writeFile(
     workbook,
-    `laporan_akuntansi_${dateRange.startDate}_${dateRange.endDate}.xlsx`
+    `laporan_akuntansi_${fileSuffix}_${dateRange.startDate}_${dateRange.endDate}.xlsx`
   );
 };
   const handleExportPDF = () => {
@@ -412,10 +431,27 @@ combinedExpenses.sort((a, b) => {
             <Download className="w-3.5 h-3.5 mr-1.5" />
             PDF
           </Button>
-          <Button onClick={handleExportExcel} variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Excel
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Excel
+                <ChevronDown className="w-3 h-3 ml-1.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel className="text-xs">Pilih Format Laporan</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportExcel('accrual')} className="flex flex-col items-start gap-0.5 py-2">
+                <span className="text-xs font-semibold">Standar (Akrual per Sesi)</span>
+                <span className="text-[11px] text-slate-400">Nominal paket dibagi rata per sesi terapi</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportExcel('cash')} className="flex flex-col items-start gap-0.5 py-2">
+                <span className="text-xs font-semibold">Real-time (Kas Masuk)</span>
+                <span className="text-[11px] text-slate-400">Nominal hanya dicatat saat uang benar-benar diterima; sesi lanjutan tertulis 0</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
