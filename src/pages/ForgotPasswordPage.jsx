@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_ICON_URL = '/clinara-icon.png';
+const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -40,8 +42,8 @@ const ForgotPasswordPage = () => {
       <Helmet>
         <title>Lupa Password - Clinara</title>
         <meta name="description" content="Reset password akun Clinara" />
-        <link rel="icon" type="image/png" href={CLINARA_LOGO_URL} />
-        <link rel="apple-touch-icon" href={CLINARA_LOGO_URL} />
+        <link rel="icon" type="image/png" href={CLINARA_ICON_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_APP_ICON_URL} />
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
@@ -72,11 +74,13 @@ const ForgotPasswordPage = () => {
                   className="relative mb-4"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
-                  <img
-                    src={CLINARA_LOGO_URL}
-                    alt="Clinara — Better Care. Smarter Management."
-                    className="relative w-28 drop-shadow-[0_12px_28px_rgba(45,212,191,0.25)]"
-                  />
+                  <div className="relative bg-white/95 rounded-2xl px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                    <img
+                      src={CLINARA_LOGO_URL}
+                      alt="Clinara — Better Care. Smarter Management."
+                      className="w-24"
+                    />
+                  </div>
                 </motion.div>
 
                 <motion.div

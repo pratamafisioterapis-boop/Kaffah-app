@@ -14,6 +14,12 @@ import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 // (clinara.id), so this never touches the Kaffah Physiotherapy
 // patient-facing brand on the public domain.
 const CLINARA_LOGO_URL = '/clinara-logo.png';
+// Icon-only crops (see public/clinara-icon.png generation) - the favicon
+// needs just the mark with no visible box (browser tabs render transparency
+// fine); apple-touch-icon needs an opaque backing since iOS paints
+// transparent areas black on home-screen icons.
+const CLINARA_ICON_URL = '/clinara-icon.png';
+const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -313,8 +319,8 @@ case 'clinic_admin':
       <Helmet>
         <title>Login - Clinara</title>
         <meta name="description" content="Secure login to Clinara — Healthcare Management Platform" />
-        <link rel="icon" type="image/png" href={CLINARA_LOGO_URL} />
-        <link rel="apple-touch-icon" href={CLINARA_LOGO_URL} />
+        <link rel="icon" type="image/png" href={CLINARA_ICON_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_APP_ICON_URL} />
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
@@ -352,11 +358,16 @@ case 'clinic_admin':
                   className="relative mb-2"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
-                  <img
-                    src={CLINARA_LOGO_URL}
-                    alt="Clinara — Better Care. Smarter Management."
-                    className="relative w-36 drop-shadow-[0_12px_28px_rgba(45,212,191,0.25)]"
-                  />
+                  {/* The lockup's wordmark/tagline are dark navy - illegible
+                      straight on this dark card, so it sits on its own light
+                      panel instead of directly on the glass. */}
+                  <div className="relative bg-white/95 rounded-2xl px-6 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                    <img
+                      src={CLINARA_LOGO_URL}
+                      alt="Clinara — Better Care. Smarter Management."
+                      className="w-32"
+                    />
+                  </div>
                 </motion.div>
               </div>
 
