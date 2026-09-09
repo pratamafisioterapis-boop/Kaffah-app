@@ -2,6 +2,16 @@
   "rewrites": [
     {
       "source": "/(.*)",
+      "has": [{ "type": "host", "value": "clinara.id" }],
+      "destination": "/index-clinara.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.clinara.id" }],
+      "destination": "/index-clinara.html"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
