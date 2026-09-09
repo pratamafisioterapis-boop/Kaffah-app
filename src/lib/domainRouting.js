@@ -7,6 +7,7 @@ export const APP_DOMAIN = 'clinara.id';
 
 const APP_ONLY_PREFIXES = [
   '/login',
+  '/register',
   '/forgot-password',
   '/reset-password',
   '/owner',

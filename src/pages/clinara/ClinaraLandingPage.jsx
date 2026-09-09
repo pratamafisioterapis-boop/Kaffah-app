@@ -6,6 +6,7 @@ import {
   Wallet, BarChart3, Sparkles, Network, TrendingUp, Heart, ShieldCheck,
   ArrowRight, CheckCircle2, XCircle, Bell, LineChart, Building2,
   HeartHandshake, Activity, Baby, Link2, Menu, X as CloseIcon,
+  Database, Fingerprint, Zap, Server, Globe, Rocket, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -116,6 +117,44 @@ const SECURITY_PRINCIPLES = [
   'User permissions', 'Structured data management', 'Audit-friendly workflow',
 ];
 
+const PRICING_FEATURES = [
+  'Website klinik + subdomain', 'Domain sendiri (custom domain)', 'Booking online tanpa batas',
+  'Rekam medis elektronik', 'Keuangan & invoice', 'Semua peran & dashboard', 'Tanpa batas admin & terapis',
+];
+
+const PRICING_PLANS = [
+  { badge: 'Coba dulu', name: '1 Bulan', desc: 'Cocok untuk mencoba seluruh fitur platform.', price: 'Rp150.000', period: '/bulan', highlight: false },
+  { badge: 'Paling populer', name: '3 Bulan', desc: 'Hemat untuk operasional klinik jangka menengah.', price: 'Rp450.000', period: '/3 bulan', highlight: true },
+  { badge: 'Paling hemat', name: '1 Tahun', desc: 'Nilai terbaik untuk klinik yang berkembang.', price: 'Rp1.250.000', period: '/tahun', highlight: false },
+];
+
+const SELF_HOSTED_FEATURES = [
+  { icon: Zap, title: 'Bayar sekali', desc: 'Tanpa biaya langganan bulanan — cukup satu kali untuk selamanya.' },
+  { icon: Database, title: 'Data 100% milik Anda', desc: 'Berjalan di akun Cloudflare & Supabase klinik sendiri (tier gratis).' },
+  { icon: Rocket, title: 'Deploy otomatis', desc: 'Pemasangan kami siapkan otomatis — klinik siap pakai tanpa keahlian teknis.' },
+  { icon: Globe, title: 'Domain sendiri', desc: 'Pakai domain milik klinik, tampil sepenuhnya sebagai brand Anda.' },
+];
+
+const SECURITY_CARDS = [
+  { icon: Database, title: 'Isolasi data antar klinik', desc: 'Row Level Security memastikan data satu klinik tak pernah terlihat klinik lain.' },
+  { icon: Fingerprint, title: 'Audit akses rekam medis', desc: 'Setiap buka & ubah data medis meninggalkan jejak untuk kepatuhan privasi.' },
+  { icon: ShieldCheck, title: 'Retensi data medis', desc: 'Data pasien & rekam medis tidak dihapus permanen (soft-delete), sesuai UU PDP.' },
+  { icon: Zap, title: 'Perlindungan anti-abuse', desc: 'Rate limiting pada endpoint publik mencegah spam & penyalahgunaan.' },
+];
+
+const TIPE_KLINIK = [
+  'Fisioterapi', 'Okupasi Terapi', 'Terapi Wicara', 'Terapi Tumbuh Kembang',
+  'Terapi Perilaku', 'Terapi Aquatic', 'Psikolog',
+];
+
+const FAQS = [
+  { q: 'Apakah ada masa coba gratis?', a: 'Ya. Setiap klinik baru mendapatkan 7 hari gratis dengan seluruh fitur terbuka penuh, aktif saat itu juga tanpa perlu kartu kredit.' },
+  { q: 'Apakah data pasien klinik saya aman dan terpisah dari klinik lain?', a: 'Aman. Setiap klinik diisolasi dengan Row Level Security di level database, sehingga data satu klinik tidak pernah terlihat oleh klinik lain.' },
+  { q: 'Apa bedanya paket langganan dan self-hosted?', a: 'Fitur keduanya identik. Paket langganan dikelola penuh oleh tim Clinara, sedangkan self-hosted berjalan di infrastruktur milik klinik sendiri dengan sekali bayar.' },
+  { q: 'Bisakah saya upgrade atau downgrade paket kapan saja?', a: 'Bisa. Anda dapat berpindah paket kapan saja tanpa kehilangan data — hubungi tim kami untuk perubahan paket.' },
+  { q: 'Bagaimana jika masa langganan berakhir?', a: 'Website klinik tetap tayang, hanya booking online & dashboard yang terkunci sampai diperpanjang. Data Anda tidak dihapus.' },
+];
+
 const BRAND_VALUES = [
   { title: 'CARE FIRST', desc: 'Pasien selalu menjadi pusat dari setiap keputusan.', icon: Heart },
   { title: 'SIMPLICITY', desc: 'Teknologi harus membuat pekerjaan lebih mudah, bukan lebih rumit.', icon: Sparkles },
@@ -176,10 +215,10 @@ const Logo = ({ dark = false }) => (
 const ClinaraNavbar = () => {
   const [open, setOpen] = React.useState(false);
   const links = [
-    { name: 'Platform', href: '#platform' },
     { name: 'Fitur', href: '#fitur' },
-    { name: 'Untuk Siapa', href: '#untuk-siapa' },
-    { name: 'Ekosistem', href: '#ekosistem' },
+    { name: 'Peran', href: '#untuk-siapa' },
+    { name: 'Harga', href: '#harga' },
+    { name: 'FAQ', href: '#faq' },
   ];
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
@@ -196,9 +235,9 @@ const ClinaraNavbar = () => {
           <a href="/login" className="text-sm font-semibold text-clinara-navy hover:text-clinara-blue transition-colors px-3">
             Masuk
           </a>
-          <a href="/login">
-            <Button className="bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-5">
-              Mulai Sekarang
+          <a href="/register">
+            <Button className="bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-5 gap-1.5">
+              Daftarkan Klinik <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </a>
         </div>
@@ -214,8 +253,8 @@ const ClinaraNavbar = () => {
             </a>
           ))}
           <a href="/login" className="text-sm font-semibold text-clinara-navy">Masuk</a>
-          <a href="/login">
-            <Button className="w-full bg-clinara-navy hover:bg-clinara-blue text-white rounded-full">Mulai Sekarang</Button>
+          <a href="/register">
+            <Button className="w-full bg-clinara-navy hover:bg-clinara-blue text-white rounded-full">Daftarkan Klinik</Button>
           </a>
         </div>
       )}
@@ -260,30 +299,33 @@ const ClinaraLandingPage = () => {
           <div className="container mx-auto max-w-4xl relative text-center">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <img src={LOGO_URL} alt="Clinara — Better Care. Smarter Management." className="w-40 md:w-48 mx-auto mb-2" />
-              <span className="inline-block px-4 py-1.5 rounded-full bg-white border border-clinara-teal/30 text-clinara-navy text-xs font-bold tracking-wide uppercase mb-6 shadow-sm">
-                Healthcare Management Platform
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-clinara-teal/30 text-clinara-navy text-xs font-bold tracking-wide uppercase mb-6 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5 text-clinara-teal" /> Mulai Hari Ini
               </span>
               <h1 className="text-4xl md:text-6xl font-extrabold text-clinara-navy leading-tight tracking-tight">
-                Better Care.<br />Smarter Management.
+                Bawa klinik Anda ke era digital
               </h1>
               <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
-                Clinara membantu klinik mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu platform yang terintegrasi.
+                Daftarkan klinik Anda dan langsung coba gratis 7 hari. Website, booking online, rekam medis, dan
+                dashboard lengkap aktif saat itu juga — tanpa menunggu persetujuan.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="/login">
+                <a href="/register">
                   <Button size="lg" className="bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-8 gap-2">
-                    Mulai Sekarang <ArrowRight className="w-4 h-4" />
+                    Daftarkan Klinik <ArrowRight className="w-4 h-4" />
                   </Button>
                 </a>
-                <a href="#cara-kerja">
+                <a href="/login">
                   <Button size="lg" variant="outline" className="rounded-full px-8 border-clinara-navy/30 text-clinara-navy hover:bg-clinara-navy hover:text-white">
-                    Lihat Cara Kerja
+                    Masuk ke Akun
                   </Button>
                 </a>
               </div>
-              <p className="mt-8 text-sm font-medium text-slate-500">
-                Manage your clinic. Empower your team. Deliver better care.
-              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-500">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Gratis mendaftar</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Aktif saat itu juga</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Tanpa kontrak jangka panjang</span>
+              </div>
             </motion.div>
           </div>
         </header>
@@ -391,6 +433,106 @@ const ClinaraLandingPage = () => {
               </FadeIn>
             ))}
           </div>
+        </Section>
+
+        {/* PRICING */}
+        <Section id="harga">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-14">
+            <Label>Harga</Label>
+            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">Pilih cara yang paling pas.</h2>
+            <p className="mt-5 text-slate-600 leading-relaxed">
+              Langganan bulanan yang praktis dan langsung aktif, atau self-hosted sekali bayar dengan infrastruktur
+              &amp; data milik klinik sendiri. Semua fitur sama.
+            </p>
+          </FadeIn>
+
+          <FadeIn className="text-center mb-8">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-clinara-bg border border-slate-200 text-clinara-navy text-xs font-bold uppercase tracking-wide">
+              <CheckCircle2 className="w-3.5 h-3.5 text-clinara-teal" /> Langganan — dikelola kami
+            </span>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-6 items-stretch">
+            {PRICING_PLANS.map((plan, i) => (
+              <FadeIn
+                key={plan.name}
+                delay={i * 0.08}
+                className={`relative rounded-2xl p-8 flex flex-col ${
+                  plan.highlight
+                    ? 'bg-white border-2 border-clinara-teal shadow-xl md:-translate-y-2'
+                    : 'bg-white border border-slate-100'
+                }`}
+              >
+                {plan.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-clinara-teal text-white text-xs font-bold">
+                    Paling Populer
+                  </span>
+                )}
+                <span className="inline-block text-xs font-bold text-clinara-blue uppercase tracking-wide mb-3">{plan.badge}</span>
+                <h3 className="text-2xl font-bold text-clinara-navy">{plan.name}</h3>
+                <p className="mt-1.5 text-sm text-slate-500">{plan.desc}</p>
+                <div className="mt-5">
+                  <span className="text-3xl font-extrabold text-clinara-navy">{plan.price}</span>
+                  <span className="text-sm text-slate-500">{plan.period}</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-400">Semua fitur terbuka penuh, tanpa biaya tersembunyi.</p>
+                <ul className="mt-6 space-y-2.5 flex-1">
+                  {PRICING_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                      <CheckCircle2 className="w-4 h-4 text-clinara-teal shrink-0 mt-0.5" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <a href="/register" className="mt-6 block">
+                  <Button className={`w-full rounded-full ${plan.highlight ? 'bg-clinara-navy hover:bg-clinara-blue text-white' : 'bg-clinara-bg text-clinara-navy hover:bg-clinara-navy hover:text-white'}`}>
+                    Daftarkan Klinik
+                  </Button>
+                </a>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn className="text-center mt-8 text-sm text-slate-500">
+            Saat langganan berakhir, website klinik tetap tayang — hanya booking &amp; dashboard yang terkunci sampai diperpanjang.
+          </FadeIn>
+
+          <FadeIn className="mt-16 rounded-3xl bg-clinara-navy text-white p-8 md:p-10">
+            <div className="grid md:grid-cols-[1.2fr,1fr] gap-10 items-center">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wide">
+                    <Server className="w-3.5 h-3.5" /> Self-Hosted
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wide">
+                    <Link2 className="w-3.5 h-3.5" /> Sekali Bayar
+                  </span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold">Punya sendiri, tanpa langganan bulanan.</h3>
+                <p className="mt-4 text-slate-300 leading-relaxed">
+                  Seluruh aplikasi berjalan di infrastruktur milik klinik Anda — data 100% Anda pegang, cukup bayar
+                  satu kali. Cocok untuk yang ingin kontrol dan kepemilikan penuh. Fitur identik dengan versi
+                  langganan.
+                </p>
+                <div className="mt-6 flex items-center gap-4">
+                  <a href="mailto:hello@clinara.id?subject=Konsultasi%20Self-Hosted%20Clinara">
+                    <Button className="bg-white text-clinara-navy hover:bg-slate-100 rounded-full px-6 gap-1.5">
+                      Konsultasikan Kebutuhan <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </a>
+                  <span className="text-sm text-slate-300">Harga: <span className="font-semibold text-white">Hubungi kami</span></span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {SELF_HOSTED_FEATURES.map((f) => (
+                  <div key={f.title} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <f.icon className="w-5 h-5 text-clinara-mint mb-2" />
+                    <h4 className="text-sm font-bold">{f.title}</h4>
+                    <p className="mt-1 text-xs text-slate-300 leading-relaxed">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
         </Section>
 
         {/* AUDIENCES */}
@@ -594,27 +736,65 @@ const ClinaraLandingPage = () => {
         </Section>
 
         {/* SECURITY */}
-        <Section className="bg-clinara-navy text-white">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <FadeIn>
+        <Section>
+          <FadeIn className="text-center max-w-2xl mx-auto mb-14">
+            <Label>Keamanan &amp; Privasi</Label>
+            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">
+              Data pasien diperlakukan sebagaimana mestinya.
+            </h2>
+            <p className="mt-5 text-slate-600 leading-relaxed">
+              Data kesehatan itu sensitif. Kami membangunnya dengan isolasi ketat, jejak audit, dan retensi sesuai
+              UU PDP.
+            </p>
+          </FadeIn>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
+            {SECURITY_CARDS.map((s, i) => (
+              <FadeIn key={s.title} delay={i * 0.06} className="bg-clinara-bg rounded-2xl p-6 border border-slate-100">
+                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-4">
+                  <s.icon className="w-5 h-5 text-clinara-blue" />
+                </div>
+                <h3 className="font-bold text-clinara-navy mb-1.5">{s.title}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+              </FadeIn>
+            ))}
+          </div>
+          <FadeIn className="rounded-2xl bg-clinara-navy text-white p-8 md:p-10 grid md:grid-cols-2 gap-8 items-center">
+            <div>
               <Label>Trust &amp; Security</Label>
-              <h2 className="text-3xl md:text-4xl font-bold">Healthcare deserves trust.</h2>
-              <p className="mt-5 text-slate-300 leading-relaxed">
-                Data kesehatan merupakan informasi yang penting. Karena itu, keamanan, kontrol akses, dan
-                pengelolaan data menjadi bagian penting dari bagaimana Clinara dirancang.
+              <h3 className="text-2xl font-bold">Healthcare deserves trust.</h3>
+              <p className="mt-4 text-slate-300 leading-relaxed">
+                Keamanan, kontrol akses, dan pengelolaan data menjadi bagian penting dari bagaimana Clinara dirancang.
               </p>
-              <p className="mt-6 text-clinara-mint font-semibold leading-relaxed">
-                Technology is about innovation. Healthcare is about trust. Clinara is built with both in mind.
-              </p>
-            </FadeIn>
-            <FadeIn delay={0.1} className="grid grid-cols-2 gap-3">
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               {SECURITY_PRINCIPLES.map((s) => (
-                <div key={s} className="flex items-center gap-2 bg-white/5 rounded-xl p-4 border border-white/10">
+                <div key={s} className="flex items-center gap-2 bg-white/5 rounded-xl p-3.5 border border-white/10">
                   <ShieldCheck className="w-4 h-4 text-clinara-mint shrink-0" />
-                  <span className="text-sm text-slate-200">{s}</span>
+                  <span className="text-xs sm:text-sm text-slate-200">{s}</span>
                 </div>
               ))}
-            </FadeIn>
+            </div>
+          </FadeIn>
+        </Section>
+
+        {/* FAQ */}
+        <Section id="faq" className="bg-clinara-bg">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-14">
+            <Label>FAQ</Label>
+            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">Pertanyaan yang sering diajukan.</h2>
+          </FadeIn>
+          <div className="max-w-3xl mx-auto space-y-3">
+            {FAQS.map((item, i) => (
+              <FadeIn key={item.q} delay={i * 0.05}>
+                <details className="group bg-white rounded-2xl border border-slate-100 open:border-clinara-teal/40 open:shadow-sm">
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer list-none p-5 font-semibold text-clinara-navy">
+                    {item.q}
+                    <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="px-5 pb-5 text-sm text-slate-600 leading-relaxed">{item.a}</p>
+                </details>
+              </FadeIn>
+            ))}
           </div>
         </Section>
 
@@ -664,14 +844,14 @@ const ClinaraLandingPage = () => {
               dan berbasis data.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-              <a href="/login">
-                <Button size="lg" className="bg-white text-clinara-navy hover:bg-slate-100 rounded-full px-8">
-                  Mulai Bersama Clinara
+              <a href="/register">
+                <Button size="lg" className="bg-white text-clinara-navy hover:bg-slate-100 rounded-full px-8 gap-2">
+                  Daftarkan Klinik <ArrowRight className="w-4 h-4" />
                 </Button>
               </a>
-              <a href="#platform">
+              <a href="#harga">
                 <Button size="lg" variant="outline" className="rounded-full px-8 border-white/40 text-white hover:bg-white/10">
-                  Pelajari Lebih Lanjut
+                  Lihat Harga
                 </Button>
               </a>
             </div>
@@ -684,8 +864,8 @@ const ClinaraLandingPage = () => {
         {/* FOOTER */}
         <footer className="bg-clinara-navy text-slate-300 pt-16 pb-8 px-4">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid md:grid-cols-4 gap-10 mb-12">
-              <div className="md:col-span-2">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+              <div className="sm:col-span-2 lg:col-span-2">
                 <Logo dark />
                 <p className="mt-3 text-sm font-semibold text-clinara-mint">
                   Healthcare Management Platform — Better Care. Smarter Management.
@@ -696,18 +876,27 @@ const ClinaraLandingPage = () => {
                 </p>
               </div>
               <div>
-                <h4 className="text-white font-semibold mb-4 text-sm">Platform</h4>
+                <h4 className="text-white font-semibold mb-4 text-sm">Produk</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="#fitur" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="#untuk-siapa" className="hover:text-white transition-colors">Solutions</a></li>
-                  <li><a href="/login" className="hover:text-white transition-colors">Masuk</a></li>
+                  <li><a href="#fitur" className="hover:text-white transition-colors">Fitur</a></li>
+                  <li><a href="#harga" className="hover:text-white transition-colors">Harga</a></li>
+                  <li><a href="/register" className="hover:text-white transition-colors">Daftarkan Klinik</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="text-white font-semibold mb-4 text-sm">Solutions</h4>
+                <h4 className="text-white font-semibold mb-4 text-sm">Untuk Klinik</h4>
                 <ul className="space-y-2 text-sm">
-                  {['Clinic', 'Physiotherapy', 'Rehabilitation', 'Child Development', 'Therapy Center'].map((s) => (
-                    <li key={s}>{s}</li>
+                  <li><a href="/register" className="hover:text-white transition-colors">Daftarkan Klinik</a></li>
+                  <li><a href="/login" className="hover:text-white transition-colors">Masuk Akun</a></li>
+                  <li><a href="#untuk-siapa" className="hover:text-white transition-colors">Peran Pengguna</a></li>
+                  <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold mb-4 text-sm">Tipe Klinik</h4>
+                <ul className="space-y-2 text-sm">
+                  {TIPE_KLINIK.map((t) => (
+                    <li key={t}>{t}</li>
                   ))}
                 </ul>
               </div>
