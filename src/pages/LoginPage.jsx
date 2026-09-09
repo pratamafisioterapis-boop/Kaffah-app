@@ -324,11 +324,12 @@ case 'clinic_admin':
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 relative overflow-hidden font-sans selection:bg-indigo-500/30">
+      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
         {/* Animated Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -right-20 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
-          <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px]"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_#020617_100%)]"></div>
+          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px]"></div>
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
         </div>
 
@@ -341,11 +342,11 @@ case 'clinic_admin':
           {/* Main Card — a hairline gradient border (padding trick) sits behind the
               solid card so the edge catches light instead of reading as a flat
               slab, plus a deep, color-tinted shadow for lift off the background. */}
-          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(99,102,241,0.35)]">
+          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(14,165,233,0.35)]">
           <div className="bg-slate-900/70 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
 
             {/* Top decorative line */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
             <div className="p-8 sm:p-10">
               {/* Logo Section */}
@@ -356,7 +357,7 @@ case 'clinic_admin':
                   transition={{ delay: 0.2, duration: 0.5 }}
                   className="relative mb-2"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/30 to-blue-400/20 blur-3xl rounded-full scale-90"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
                   {/* The lockup's wordmark/tagline are dark navy - illegible
                       straight on this dark card, so it sits on its own light
                       panel instead of directly on the glass. */}
@@ -389,12 +390,12 @@ case 'clinic_admin':
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-5">
                   <div className="group relative">
-                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -403,12 +404,12 @@ case 'clinic_admin':
                   </div>
 
                   <div className="group relative">
-                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                    <input
-                      type="password"
+                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                    <input 
+                      type="password" 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
                       placeholder="Password"
                       required
                     />
@@ -417,7 +418,7 @@ case 'clinic_admin':
                   <div className="flex justify-end">
                     <Link
                       to="/forgot-password"
-                      className="text-xs text-slate-400 hover:text-indigo-400 transition-colors font-medium"
+                      className="text-xs text-slate-400 hover:text-cyan-400 transition-colors font-medium"
                     >
                       Lupa Password?
                     </Link>
@@ -428,7 +429,7 @@ case 'clinic_admin':
                   <Button 
                     type="submit" 
                     disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white py-6 rounded-xl font-semibold shadow-lg shadow-indigo-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white py-6 rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting || isRedirecting || authLoading ? (
                       <div className="flex items-center gap-2">
