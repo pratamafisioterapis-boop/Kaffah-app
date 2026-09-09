@@ -47,11 +47,10 @@ const ForgotPasswordPage = () => {
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
-      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#050b16] via-[#0a1e30] to-[#04141c] relative overflow-hidden font-sans selection:bg-cyan-500/30">
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_#020617_100%)]"></div>
-          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px]"></div>
+          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
         </div>
 
@@ -61,9 +60,9 @@ const ForgotPasswordPage = () => {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="relative z-10 w-full max-w-[420px] p-6"
         >
-          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(14,165,233,0.35)]">
-          <div className="bg-slate-900/70 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(20,184,166,0.35)]">
+          <div className="bg-[#071322]/80 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
             <div className="p-8 sm:p-10">
               <div className="flex flex-col items-center justify-center mb-10">
@@ -73,7 +72,7 @@ const ForgotPasswordPage = () => {
                   transition={{ delay: 0.2, duration: 0.5 }}
                   className="relative mb-4"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/30 to-emerald-400/20 blur-3xl rounded-full scale-90"></div>
                   <div className="relative bg-white/95 rounded-2xl px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
                     <img
                       src={CLINARA_LOGO_URL}
@@ -128,7 +127,7 @@ const ForgotPasswordPage = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-[#03090f]/70 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
                       placeholder="Email terdaftar"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -140,7 +139,7 @@ const ForgotPasswordPage = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white py-6 rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 py-6 rounded-xl font-semibold shadow-lg shadow-cyan-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <div className="flex items-center gap-2">
