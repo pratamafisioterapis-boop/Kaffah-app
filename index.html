@@ -2,37 +2,6 @@
 <html lang="en">
   <head>
   <meta charset="UTF-8" />
-  <script>
-    // Runs synchronously during HTML parsing, before the static Kaffah tags
-    // below are reached, so it wins the browser's "first <title>/<link
-    // rel=icon> in the document" precedence - no flash, and it works
-    // regardless of edge/CDN routing quirks (unlike relying solely on a
-    // host-based rewrite to serve a different static HTML file). Kept
-    // deliberately dependency-free and inline since it must run before any
-    // other script. tools/generate-clinara-shell.js still produces a
-    // Clinara-branded index-clinara.html for clinara.id at the HTTP layer
-    // (helps non-JS clients like social-share crawlers); this is the
-    // belt-and-suspenders fix for real browsers.
-    (function () {
-      var h = window.location.hostname;
-      if (h !== 'clinara.id' && h !== 'www.clinara.id') return;
-      var icon = '/clinara-icon.png';
-      var appIcon = '/clinara-icon-app.png';
-      document.write('<link rel="icon" type="image/png" href="' + icon + '">');
-      document.write('<meta name="theme-color" content="#0f2a4a">');
-      document.write('<link rel="manifest" href="/manifest-clinara.json">');
-      document.write('<meta name="apple-mobile-web-app-title" content="Clinara">');
-      document.write('<link rel="apple-touch-icon" href="' + appIcon + '">');
-      document.write('<title>Clinara — Better Care. Smarter Management.</title>');
-      document.write('<meta name="description" content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi.">');
-      document.write('<meta property="og:site_name" content="Clinara">');
-      document.write('<meta property="og:url" content="https://clinara.id/">');
-      document.write('<meta property="og:title" content="Clinara — Better Care. Smarter Management.">');
-      document.write('<meta property="og:description" content="Platform manajemen layanan kesehatan untuk klinik dan pusat terapi.">');
-      document.write('<meta property="og:image" content="https://clinara.id/clinara-icon-app.png">');
-      document.write('<meta name="twitter:image" content="https://clinara.id/clinara-icon-app.png">');
-    })();
-  </script>
   <link rel="icon" type="image/x-icon" href="/favicon.ico?v=kaffahtech1" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1e3a5f" />
@@ -76,10 +45,53 @@
     overflow-x: hidden; /* ❗ tambah ini */
   }
 
-  #root { 
-    min-height: 100vh; 
+  #root {
+    min-height: 100vh;
   }
 </style>
+    <script>
+      // Runs synchronously as the parser reaches the end of <head>, so every
+      // static tag above already exists in the DOM - this overwrites their
+      // properties directly rather than inserting competing duplicates
+      // (an earlier version tried document.write-ing Clinara tags before
+      // these, relying on "first <title>/<link rel=icon> wins": that lost
+      // to the static Kaffah <title> in real browser testing, since tab
+      // titles track the most recently parsed/mutated title element, not
+      // strictly the first). Direct mutation has no such ambiguity, and
+      // still finishes before <body> renders, so there's no visible flash.
+      // tools/generate-clinara-shell.js separately produces a
+      // Clinara-branded index-clinara.html for non-JS clients (social-share
+      // crawlers) that never run this script.
+      (function () {
+        var h = window.location.hostname;
+        if (h !== 'clinara.id' && h !== 'www.clinara.id') return;
+
+        var icon = '/clinara-icon.png';
+        var appIcon = '/clinara-icon-app.png';
+        var appIconAbsolute = 'https://clinara.id/clinara-icon-app.png';
+        var title = 'Clinara — Better Care. Smarter Management.';
+
+        document.title = title;
+
+        var set = function (selector, prop, value) {
+          var el = document.querySelector(selector);
+          if (el) el[prop] = value;
+        };
+
+        set('link[rel="icon"]', 'href', icon);
+        set('link[rel="apple-touch-icon"]', 'href', appIcon);
+        set('link[rel="manifest"]', 'href', '/manifest-clinara.json');
+        set('meta[name="theme-color"]', 'content', '#0f2a4a');
+        set('meta[name="apple-mobile-web-app-title"]', 'content', 'Clinara');
+        set('meta[name="description"]', 'content', 'Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi.');
+        set('meta[property="og:site_name"]', 'content', 'Clinara');
+        set('meta[property="og:url"]', 'content', 'https://clinara.id/');
+        set('meta[property="og:title"]', 'content', title);
+        set('meta[property="og:description"]', 'content', 'Platform manajemen layanan kesehatan untuk klinik dan pusat terapi.');
+        set('meta[property="og:image"]', 'content', appIconAbsolute);
+        set('meta[name="twitter:image"]', 'content', appIconAbsolute);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
