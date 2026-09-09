@@ -2208,6 +2208,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         amount,
         amount_package,
         package_type,
+        package_tracking_id,
         patient_type,
         payment_method,
         guest_name,
@@ -2252,6 +2253,34 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
       return acc;
     }, {});
 
+    // Nomor urut sesi di dalam paket (1 = sesi pertama pembelian, 2 = sesi
+    // ke-2, dst). Dihitung dari SELURUH recap yang terhubung ke paket
+    // tersebut (bukan hanya yang ada di rentang tanggal laporan), supaya
+    // nomornya tetap benar walau periode laporan mulai di tengah paket.
+    const trackingIds = [...new Set((data || []).map(i => i.package_tracking_id).filter(Boolean))];
+    const sessionNumberMap = {};
+
+    if (trackingIds.length > 0) {
+      const { data: allLinkedRecaps } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, package_tracking_id')
+        .in('package_tracking_id', trackingIds)
+        .order('recap_date', { ascending: true })
+        .order('id', { ascending: true });
+
+      const groupedByPackage = {};
+      (allLinkedRecaps || []).forEach(row => {
+        if (!groupedByPackage[row.package_tracking_id]) groupedByPackage[row.package_tracking_id] = [];
+        groupedByPackage[row.package_tracking_id].push(row.id);
+      });
+
+      Object.values(groupedByPackage).forEach(ids => {
+        ids.forEach((id, idx) => {
+          sessionNumberMap[id] = idx + 1;
+        });
+      });
+    }
+
     const formatted = (data || []).map(item => ({
       id: item.id,
 
@@ -2272,6 +2301,12 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         optionsMap[item.package_type] ||
         item.package_type ||
         'Visit',
+
+      // Nomor urut sesi dalam paket ini (null jika bukan bagian dari
+      // paket bertahap / package_tracking_id kosong).
+      session_number: item.package_tracking_id
+        ? (sessionNumberMap[item.id] || null)
+        : null,
 
       payment_method:
         optionsMap[item.payment_method] ||
