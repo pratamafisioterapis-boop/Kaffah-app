@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -403,6 +403,15 @@ case 'clinic_admin':
                       placeholder="Password"
                       required
                     />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs text-slate-400 hover:text-cyan-400 transition-colors font-medium"
+                    >
+                      Lupa Password?
+                    </Link>
                   </div>
                 </div>
 

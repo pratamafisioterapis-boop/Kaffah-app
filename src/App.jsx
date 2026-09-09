@@ -19,6 +19,8 @@ import { lazyRetry } from '@/lib/lazyRetry';
 const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
 const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
 const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
+const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
 const SmartBookingPage = React.lazy(lazyRetry(() => import('@/pages/SmartBookingPage'), 'SmartBookingPage'));
 const InvoiceViewPage = React.lazy(lazyRetry(() => import('@/pages/InvoiceViewPage'), 'InvoiceViewPage'));
 const PricingPage = React.lazy(lazyRetry(() => import('@/pages/PricingPage'), 'PricingPage'));
@@ -198,6 +200,8 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/booking" element={<SmartBookingPage />} />
                 <Route path="/book" element={<Navigate to="/booking" replace />} />
                 <Route path="/booking/smart" element={<Navigate to="/booking" replace />} />
