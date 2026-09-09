@@ -40,10 +40,3 @@ export const isOnAppDomain = (hostname = window.location.hostname) =>
 
 export const isOnPublicDomain = (hostname = window.location.hostname) =>
   matchesHost(hostname, PUBLIC_DOMAIN);
-
-// Relative on any host that isn't the public production domain (dev, Vercel
-// previews, or the app domain itself), so local/preview logins keep working.
-export const loginHref = () => {
-  if (typeof window === 'undefined') return '/login';
-  return isOnPublicDomain() ? `https://${APP_DOMAIN}/login` : '/login';
-};
