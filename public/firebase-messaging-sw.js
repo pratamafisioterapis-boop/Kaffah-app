@@ -49,9 +49,7 @@ messaging.onBackgroundMessage(async (payload) => {
     payload?.data?.body ||
     "NO BODY";
 
-  const iconUrl =
-    payload?.data?.icon_url ||
-    "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png";
+  const iconUrl = payload?.data?.icon_url || "/clinara-logo.png";
 
   if (payload?.data?.icon_url) {
     await warmIconCache(iconUrl);

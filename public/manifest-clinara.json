@@ -9,12 +9,12 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png",
+      "src": "/clinara-logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png",
+      "src": "/clinara-logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }

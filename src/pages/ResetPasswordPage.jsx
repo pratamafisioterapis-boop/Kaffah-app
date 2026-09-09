@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
-const CLINARA_LOGO_URL = 'https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png';
+const CLINARA_LOGO_URL = '/clinara-logo.png';
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
@@ -105,7 +105,8 @@ const ResetPasswordPage = () => {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="relative z-10 w-full max-w-[420px] p-6"
         >
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden relative group">
+          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(14,165,233,0.35)]">
+          <div className="bg-slate-900/70 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
             <div className="p-8 sm:p-10">
@@ -116,11 +117,11 @@ const ResetPasswordPage = () => {
                   transition={{ delay: 0.2, duration: 0.5 }}
                   className="relative mb-4"
                 >
-                  <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-teal-400/20 blur-3xl rounded-full scale-90"></div>
                   <img
                     src={CLINARA_LOGO_URL}
                     alt="Clinara — Better Care. Smarter Management."
-                    className="relative w-32"
+                    className="relative w-28 drop-shadow-[0_12px_28px_rgba(45,212,191,0.25)]"
                   />
                 </motion.div>
 
@@ -211,6 +212,7 @@ const ResetPasswordPage = () => {
                 </form>
               )}
             </div>
+          </div>
           </div>
 
           <p className="text-center text-slate-600 text-xs mt-6">

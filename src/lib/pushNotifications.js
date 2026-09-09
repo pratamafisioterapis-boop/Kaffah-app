@@ -107,9 +107,7 @@ export const listenForegroundNotifications = () => {
         payload?.data?.body ||
         "NO BODY";
 
-      const icon =
-        payload?.data?.icon_url ||
-        "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/images/assets/file_00000000d4908211acc2dbc9fb3a06ab.png";
+      const icon = payload?.data?.icon_url || "/clinara-logo.png";
       const data = {
         url: payload?.data?.url,
         appointment_date: payload?.data?.appointment_date,
