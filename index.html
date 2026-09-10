@@ -94,7 +94,12 @@
           if (el) el[prop] = value;
         };
 
-        set('link[rel="icon"]', 'href', icon);
+        var setAll = function (selector, prop, value) {
+          var els = document.querySelectorAll(selector);
+          for (var i = 0; i < els.length; i++) els[i][prop] = value;
+        };
+
+        setAll('link[rel="icon"]', 'href', icon);
         set('link[rel="apple-touch-icon"]', 'href', appIcon);
         set('link[rel="manifest"]', 'href', '/manifest-clinara.json');
         set('meta[name="theme-color"]', 'content', '#0f2a4a');
