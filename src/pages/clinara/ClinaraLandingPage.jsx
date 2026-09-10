@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import {
   Users, CalendarCheck, Stethoscope, ClipboardList, Package, MessageCircle,
   Wallet, BarChart3, Sparkles, Network, TrendingUp, Heart, ShieldCheck,
-  ArrowRight, CheckCircle2, XCircle, Bell, LineChart, Building2,
+  ArrowRight, CheckCircle2, Bell, LineChart, Building2,
   HeartHandshake, Activity, Baby, Link2, Menu, X as CloseIcon,
   Database, Fingerprint, Zap, Server, Globe, Rocket, ChevronDown, PlayCircle,
+  FileText, CalendarClock, Calculator, User, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -30,14 +31,23 @@ const PRODUCT_CALLOUTS = [
 
 const PRODUCT_TRUST_POINTS = ['Terintegrasi', 'Mudah digunakan', 'Aman & terpercaya', 'Siap berkembang'];
 
-const PROBLEMS = [
-  'Data pasien tersebar di berbagai tempat.',
-  'Jadwal tenaga kesehatan sulit dipantau.',
-  'Pencatatan layanan masih dilakukan secara manual.',
-  'Paket pasien sulit dipantau masa berlaku dan penggunaannya.',
-  'Follow-up pasien sering terlewat.',
-  'Laporan operasional membutuhkan banyak pekerjaan manual.',
-  'Pemilik klinik kesulitan melihat kondisi bisnis secara real-time.',
+// Section 3 — "Mengapa Clinara?" problem/solution comparison. Copy is
+// reproduced verbatim from the brand reference — do not rewrite, shorten,
+// or "fix" wording (including the bottom trust line) without being asked.
+const PROBLEM_ITEMS = [
+  { icon: FileText, title: 'Data pasien tercecer', desc: 'Rekam medis, riwayat terapi, dan dokumen tersimpan di banyak tempat.' },
+  { icon: CalendarClock, title: 'Jadwal mudah bentrok', desc: 'Pengelolaan jadwal manual sering menyebabkan double booking.' },
+  { icon: Calculator, title: 'Pencatatan pembayaran rumit', desc: 'Transaksi dan paket terapi sulit dipantau dengan akurat.' },
+  { icon: MessageCircle, title: 'Komunikasi tidak terarah', desc: 'Follow-up pasien, reminder, dan informasi sering terlewat.' },
+  { icon: BarChart3, title: 'Sulit melihat perkembangan klinik', desc: 'Laporan dan data harus dikumpulkan manual, memakan waktu.' },
+];
+
+const SOLUTION_ITEMS = [
+  { icon: User, title: 'Data pasien terstruktur', desc: 'Semua informasi pasien tersimpan aman, rapi, dan mudah diakses.' },
+  { icon: CalendarCheck, title: 'Jadwal lebih efisien', desc: 'Sistem penjadwalan otomatis dengan notifikasi real-time.' },
+  { icon: CreditCard, title: 'Pembayaran tercatat otomatis', desc: 'Semua transaksi, paket, dan riwayat pembayaran dalam satu sistem.' },
+  { icon: MessageCircle, title: 'Komunikasi terintegrasi', desc: 'Kirim reminder, follow-up, dan broadcast langsung dari sistem (termasuk WhatsApp).' },
+  { icon: BarChart3, title: 'Laporan & analytics real-time', desc: 'Pantau perkembangan klinik dengan mudah dan akurat.' },
 ];
 
 const FLOW_STEPS = ['Patient', 'Appointment', 'Clinical Service', 'Payment', 'Follow-up', 'Analytics'];
@@ -549,31 +559,163 @@ const ClinaraLandingPage = () => {
           </div>
         </section>
 
-        {/* PROBLEM */}
-        <Section className="bg-clinara-navy text-white">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <FadeIn>
-              <Label>The Challenge</Label>
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Klinik berkembang.<br />Kompleksitas ikut berkembang.
+        {/* MENGAPA CLINARA? — problem vs. solution comparison */}
+        <section id="mengapa-clinara" className="relative overflow-hidden bg-gradient-to-b from-clinara-bg to-white py-24 md:py-28 px-4">
+          {/* soft quarter-circle decorations, top corners only */}
+          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-slate-200/40 pointer-events-none" />
+          <div className="absolute -top-32 -right-24 w-96 h-96 rounded-full bg-clinara-sky/10 pointer-events-none" />
+
+          <div className="container mx-auto max-w-6xl relative">
+            <FadeIn className="text-center max-w-2xl mx-auto mb-16 md:mb-20">
+              <Label>Mengapa Clinara?</Label>
+              <h2 className="text-3xl md:text-[2.75rem] font-extrabold leading-[1.15] tracking-tight">
+                <span className="text-clinara-navy">Dari Tantangan Sehari-hari,</span>
+                <br />
+                <span className="text-clinara-blue">Menjadi Klinik yang Lebih Terorganisir</span>
               </h2>
-              <p className="mt-5 text-slate-300 leading-relaxed">
-                Semakin banyak pasien dan layanan yang dimiliki klinik, semakin banyak pula hal yang harus dikelola.
-              </p>
-              <p className="mt-6 text-clinara-mint font-semibold">
-                Ketika sistem tidak terhubung, pekerjaan menjadi lebih lambat dan keputusan menjadi lebih sulit.
+              <p className="mt-6 text-[17px] text-slate-600 leading-relaxed">
+                Kami memahami tantangan dalam mengelola klinik. Clinara hadir untuk menyederhanakan
+                proses, menghemat waktu, dan membantu Anda fokus pada hal yang paling penting — pasien Anda.
               </p>
             </FadeIn>
-            <FadeIn delay={0.1} className="space-y-3">
-              {PROBLEMS.map((p) => (
-                <div key={p} className="flex items-start gap-3 bg-white/5 rounded-xl p-4 border border-white/10">
-                  <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-200">{p}</span>
-                </div>
-              ))}
+
+            {/* comparison row — photos share the card row's own max-width box so
+                left-0/right-0 line up exactly with its edges, then sit outside
+                it by a fixed gap (mirrors the Section 2 callout fix) */}
+            <div className="relative mx-auto lg:max-w-3xl xl:max-w-5xl">
+              {/* desktop-only side photos, bleeding into the outer margin beside the cards */}
+              <div className="hidden lg:block absolute inset-y-0 right-[calc(100%+24px)] w-[170px] xl:w-[210px]">
+                <FadeIn className="relative h-full rounded-[28px] overflow-hidden">
+                  <img
+                    src="/section3/problem-photo.png"
+                    alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-6 left-5 right-3">
+                    <p
+                      className="text-clinara-navy text-lg xl:text-xl leading-[1.15] -rotate-2"
+                      style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
+                    >
+                      Kurang waktu<br />Terlalu banyak<br />hal yang harus<br />diurus...
+                    </p>
+                    <svg width="52" height="14" viewBox="0 0 52 14" fill="none" className="mt-1 text-clinara-teal">
+                      <path d="M2 8c10-8 30-8 48 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </FadeIn>
+              </div>
+              <div className="hidden lg:block absolute inset-y-0 left-[calc(100%+24px)] w-[170px] xl:w-[210px]">
+                <FadeIn className="relative h-full rounded-[28px] overflow-hidden">
+                  <img
+                    src="/section3/solution-photo.png"
+                    alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-6 right-5 left-3 text-right">
+                    <p
+                      className="text-clinara-navy text-lg xl:text-xl leading-[1.15] rotate-2"
+                      style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
+                    >
+                      Lebih fokus<br />pada pasien,<br />lebih banyak<br />dampak positif
+                    </p>
+                    <svg width="52" height="14" viewBox="0 0 52 14" fill="none" className="mt-1 ml-auto text-clinara-teal scale-x-[-1]">
+                      <path d="M2 8c10-8 30-8 48 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </FadeIn>
+              </div>
+
+              {/* problem / transformation / solution */}
+              <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-start">
+                {/* problem card */}
+                <FadeIn className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(11,39,71,0.08)] p-6 md:p-7">
+                  <span className="inline-block text-xs font-bold tracking-wide text-rose-700 bg-rose-50 border border-rose-100 rounded-full px-3.5 py-1.5 mb-5">
+                    TANTANGAN TANPA CLINARA
+                  </span>
+                  <img
+                    src="/section3/problem-photo.png"
+                    alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
+                    className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
+                  />
+                  <div className="divide-y divide-slate-100">
+                    {PROBLEM_ITEMS.map((item, i) => (
+                      <div key={item.title} className={`flex items-start gap-3.5 py-4 ${i === 0 ? 'pt-0' : ''}`}>
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                          <item.icon className="w-[18px] h-[18px] text-rose-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-clinara-navy text-[15px] leading-snug">{item.title}</h3>
+                          <p className="text-sm text-slate-500 leading-relaxed mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </FadeIn>
+
+                {/* center transformation */}
+                <FadeIn delay={0.1} className="flex lg:flex-col items-center justify-center gap-2 text-center py-2 lg:py-8 lg:w-40">
+                  <p
+                    className="text-clinara-navy text-4xl leading-[0.95]"
+                    style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
+                  >
+                    Saatnya<br />Berubah
+                  </p>
+                  <svg width="80" height="34" viewBox="0 0 80 34" fill="none" className="hidden lg:block text-clinara-teal my-1">
+                    <path d="M4 6c14 2 22 14 12 24 18-8 44-6 60 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                    <path d="M68 24l8 8-11 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                  <div className="mt-1 lg:mt-2">
+                    <p className="text-[11px] font-bold tracking-[0.15em] text-slate-400 uppercase leading-relaxed">
+                      Solusi<br className="hidden lg:block" /> Lebih Cerdas<br className="hidden lg:block" /> Untuk Klinik<br className="hidden lg:block" /> Anda
+                    </p>
+                    <span className="hidden lg:block w-6 h-[3px] rounded-full bg-clinara-teal mx-auto mt-3" />
+                  </div>
+                </FadeIn>
+
+                {/* solution card */}
+                <FadeIn delay={0.15} className="bg-white rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(11,39,71,0.08)] p-6 md:p-7">
+                  <span className="inline-block text-xs font-bold tracking-wide text-teal-700 bg-teal-50 border border-teal-100 rounded-full px-3.5 py-1.5 mb-5">
+                    SOLUSI DENGAN CLINARA
+                  </span>
+                  <img
+                    src="/section3/solution-photo.png"
+                    alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
+                    className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
+                  />
+                  <div className="divide-y divide-slate-100">
+                    {SOLUTION_ITEMS.map((item, i) => (
+                      <div key={item.title} className={`flex items-start gap-3.5 py-4 ${i === 0 ? 'pt-0' : ''}`}>
+                        <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
+                          <item.icon className="w-[18px] h-[18px] text-clinara-blue" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-clinara-navy text-[15px] leading-snug">{item.title}</h3>
+                          <p className="text-sm text-slate-500 leading-relaxed mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </FadeIn>
+              </div>
+            </div>
+
+            {/* bottom trust bar */}
+            <FadeIn delay={0.2} className="mt-10 md:mt-12 rounded-2xl bg-gradient-to-r from-clinara-bg to-[#DCEEFB] p-6 md:p-7 flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-clinara-blue" />
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <p className="font-bold text-clinara-navy text-lg leading-snug">Ratuhan klinik telah mempercayai Clinara</p>
+                <p className="text-sm text-slate-500 mt-0.5">Bergabunglah sekarang dan rasakan kemudahan mengelola klinik Anda.</p>
+              </div>
+              <a href="/register" className="w-full sm:w-auto shrink-0">
+                <Button size="lg" className="w-full sm:w-auto h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2">
+                  Mulai Gratis 7 Hari <ArrowRight className="w-4 h-4" />
+                </Button>
+              </a>
             </FadeIn>
           </div>
-        </Section>
+        </section>
 
         {/* SOLUTION */}
         <Section id="cara-kerja">
