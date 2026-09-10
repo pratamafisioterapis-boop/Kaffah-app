@@ -431,7 +431,7 @@ const ClinaraLandingPage = () => {
                     style={{ boxShadow: '0 24px 60px rgba(11, 39, 71, 0.28)' }}
                   >
                     <img
-                      src="/hero/clinara-hero-mobile.png"
+                      src="/hero/clinara-hero-mobile-v2.png"
                       alt="Tampilan aplikasi mobile Clinara"
                       className="w-full h-auto block"
                     />
