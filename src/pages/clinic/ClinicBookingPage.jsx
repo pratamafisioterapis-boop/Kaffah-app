@@ -8,7 +8,7 @@ import {
   ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CalendarCheck2, CheckCircle2, Loader2, Lock, MapPin,
   Sparkles, Stethoscope, User, Users, MessageCircle, Activity, HeartPulse, Home,
   ClipboardList, ShieldCheck, Lightbulb, Wand2, Cloud, Search, Clock, ArrowUpDown,
-  ChevronLeft, ChevronRight, Repeat, CalendarClock, Info, Check,
+  ChevronLeft, ChevronRight, Repeat, CalendarClock, Info, Check, Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -376,6 +376,17 @@ const ClinicBookingPage = () => {
     goTo('schedule');
   };
 
+  const handleCopyBookingRef = async () => {
+    if (!bookingRef) return;
+    try {
+      await navigator.clipboard.writeText(bookingRef);
+      toast({ title: 'Disalin', description: 'Nomor booking disalin ke clipboard.' });
+    } catch {
+      // Clipboard access can be blocked (permissions, non-secure context) -
+      // the number is already visible on screen, so failing silently is fine.
+    }
+  };
+
   const handleAddToCalendar = () => {
     if (!selectedDate || !selectedSlot) return;
     const dateStr = format(selectedDate, 'yyyyMMdd');
@@ -508,40 +519,41 @@ const ClinicBookingPage = () => {
         </div>
       </header>
 
-      {!success && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
-          <div className="flex items-start">
-            {STEPS.map((s, i) => (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
+        <div className="flex items-start">
+          {STEPS.map((s, i) => {
+            const progressIndex = success ? STEPS.length : stepIndex;
+            return (
               <React.Fragment key={s}>
                 <div className="flex flex-col items-center gap-1 shrink-0 w-10 sm:w-14">
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors shrink-0 ${
-                      i <= stepIndex ? 'text-white' : 'bg-slate-200 text-slate-400'
+                      i <= progressIndex ? 'text-white' : 'bg-slate-200 text-slate-400'
                     }`}
-                    style={i <= stepIndex ? { background: primary } : undefined}
+                    style={i <= progressIndex ? { background: primary } : undefined}
                   >
-                    {i < stepIndex ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
+                    {i < progressIndex ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                   </div>
                   <span
                     className="text-[9px] sm:text-[11px] font-semibold text-center leading-tight"
-                    style={{ color: i <= stepIndex ? primary : '#94a3b8' }}
+                    style={{ color: i <= progressIndex ? primary : '#94a3b8' }}
                   >
                     {STEP_LABELS[s]}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className="flex-1 h-0.5 rounded-full bg-slate-200 overflow-hidden mt-3.5 mx-0.5 sm:mx-1">
-                    <div className="h-full rounded-full transition-all" style={{ width: i < stepIndex ? '100%' : '0%', background: accent }} />
+                    <div className="h-full rounded-full transition-all" style={{ width: i < progressIndex ? '100%' : '0%', background: accent }} />
                   </div>
                 )}
               </React.Fragment>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className={success ? '' : 'lg:grid lg:grid-cols-[1fr_320px] lg:gap-8 lg:items-start'}>
+        <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-8 lg:items-start">
           <div className="pb-28 lg:pb-0">
             <AnimatePresence mode="wait">
               {success ? (
@@ -549,69 +561,172 @@ const ClinicBookingPage = () => {
                   key="success"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="max-w-lg mx-auto bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-900/5 p-8 sm:p-10 text-center"
                 >
-                  <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
-                    style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
-                  >
-                    <CheckCircle2 className="w-10 h-10 text-white" />
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 sm:p-10 text-center relative overflow-hidden mb-4">
+                    <span className="absolute left-8 top-10 w-2 h-2 rounded-full bg-amber-300" />
+                    <span className="absolute right-12 top-8 w-2.5 h-2.5 rounded-full bg-sky-300" />
+                    <span className="absolute left-14 bottom-10 w-2 h-2 rounded-full rotate-45 bg-emerald-300" />
+                    <span className="absolute right-10 bottom-14 w-2 h-2 rounded-full bg-violet-300" />
+                    <motion.div
+                      initial={{ scale: 0.7, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                      className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg bg-emerald-500"
+                    >
+                      <CheckCircle2 className="w-10 h-10 text-white" />
+                    </motion.div>
+                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Booking Berhasil!</h1>
+                    <p className="text-slate-500">Jadwal terapi Anda telah berhasil dibuat.</p>
+                    <p className="text-slate-500">Kami menantikan kedatangan Anda di <strong>{clinic.name}</strong>.</p>
                   </div>
-                  <h1 className="text-2xl font-bold text-slate-900 mb-2">Booking Berhasil!</h1>
-                  <p className="text-slate-500 mb-6">
-                    Jadwal Anda di <strong>{clinic.name}</strong> telah berhasil dibuat.
-                  </p>
 
-                  <div className="bg-slate-50 rounded-2xl border border-slate-100 divide-y divide-slate-100 text-left mb-7">
-                    <div className="p-4 flex items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">Nomor Booking</span>
-                      <span className="font-bold text-slate-800 text-sm">{bookingRef}</span>
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 mb-4">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${primary}14` }}>
+                      <CalendarCheck2 className="w-5 h-5" style={{ color: primary }} />
                     </div>
-                    {selectedService && (
-                      <div className="p-4 flex items-center justify-between gap-3">
-                        <span className="text-xs text-slate-400">Layanan</span>
-                        <span className="font-semibold text-slate-800 text-sm">{selectedService.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-400">Nomor Booking</p>
+                      <p className="font-bold text-slate-900 text-lg tracking-wide truncate">{bookingRef}</p>
+                    </div>
+                    <button
+                      onClick={handleCopyBookingRef}
+                      aria-label="Salin nomor booking"
+                      className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-slate-50 shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-4">
+                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
+                      <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                        <CalendarDays className="w-4 h-4" style={{ color: primary }} /> Detail Booking
+                      </p>
+                      <button
+                        onClick={handleAddToCalendar}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border"
+                        style={{ color: primary, borderColor: `${primary}55` }}
+                      >
+                        <CalendarPlus className="w-3.5 h-3.5" /> Lihat di Kalender
+                      </button>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {selectedService && (
+                        <div className="p-4 flex items-start gap-3">
+                          <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                          <div>
+                            <p className="text-xs text-slate-400">Layanan</p>
+                            <p className="font-semibold text-slate-800 text-sm">{selectedService.title}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-4 flex items-center gap-3">
+                        <Avatar className="w-9 h-9 shrink-0">
+                          <AvatarImage src={activeTherapist?.avatar_url} className="object-cover" />
+                          <AvatarFallback className="text-white" style={{ background: primary }}>
+                            {activeTherapist?.id === null ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-xs text-slate-400">Terapis</p>
+                          <p className="font-semibold text-slate-800 text-sm">{activeTherapist?.name}</p>
+                        </div>
                       </div>
-                    )}
-                    <div className="p-4 flex items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">Tanggal</span>
-                      <span className="font-semibold text-slate-800 text-sm text-right">{format(selectedDate, "EEEE, d MMMM yyyy", { locale: idLocale })}</span>
-                    </div>
-                    <div className="p-4 flex items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">Waktu</span>
-                      <span className="font-semibold text-slate-800 text-sm">{(selectedSlot?.slot_start || '').slice(0, 5)} WIB</span>
+                      <div className="p-4 flex items-start gap-3">
+                        <CalendarDays className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                        <div>
+                          <p className="text-xs text-slate-400">Tanggal</p>
+                          <p className="font-semibold text-slate-800 text-sm">{format(selectedDate, 'EEEE, d MMMM yyyy', { locale: idLocale })}</p>
+                        </div>
+                      </div>
+                      <div className="p-4 flex items-start gap-3">
+                        <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                        <div>
+                          <p className="text-xs text-slate-400">Waktu</p>
+                          <p className="font-semibold text-slate-800 text-sm">{slotTimeRange} ({slotDurationLabel})</p>
+                        </div>
+                      </div>
+                      {clinic.address && (
+                        <div className="p-4 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                            <div className="min-w-0">
+                              <p className="text-xs text-slate-400">Lokasi</p>
+                              <p className="font-semibold text-slate-800 text-sm">{clinic.name}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{clinic.address}</p>
+                            </div>
+                          </div>
+                          {mapsHref && (
+                            <a
+                              href={mapsHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border shrink-0"
+                              style={{ color: primary, borderColor: `${primary}55` }}
+                            >
+                              <MapPin className="w-3.5 h-3.5" /> Lihat Lokasi
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="lg:hidden grid grid-cols-2 gap-3 mb-4">
                     {waHref && (
                       <a
                         href={waHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 text-white font-semibold px-6 py-3.5 rounded-xl transition-opacity hover:opacity-90 shadow-md"
-                        style={{ background: primary }}
+                        className="flex flex-col items-center justify-center text-center gap-1 text-white font-semibold px-3 py-4 rounded-xl transition-opacity hover:opacity-90 shadow-md min-h-[48px] bg-emerald-500"
                       >
-                        <MessageCircle className="w-4 h-4" /> Chat WhatsApp
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="text-sm">Chat WhatsApp</span>
+                        <span className="text-[10px] font-normal opacity-90">Konfirmasi &amp; tanya lanjut</span>
                       </a>
                     )}
                     <button
                       onClick={handleAddToCalendar}
-                      className="w-full inline-flex items-center justify-center gap-2 font-semibold px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                      className="flex flex-col items-center justify-center text-center gap-1 font-semibold px-3 py-4 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors min-h-[48px]"
                     >
-                      <CalendarPlus className="w-4 h-4" /> Tambahkan ke Kalender
+                      <CalendarPlus className="w-5 h-5" style={{ color: primary }} />
+                      <span className="text-sm">Tambahkan ke Kalender</span>
+                      <span className="text-[10px] font-normal text-slate-400">Google / Apple / Outlook</span>
                     </button>
-                    <Link
-                      to="/"
-                      className="w-full inline-flex items-center justify-center gap-2 font-semibold px-6 py-3.5 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors"
-                    >
-                      <Home className="w-4 h-4" /> Kembali ke Beranda
-                    </Link>
                   </div>
+                  <Link
+                    to="/"
+                    className="lg:hidden w-full inline-flex items-center justify-center gap-2 font-semibold px-6 py-3.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors mb-4 min-h-[48px]"
+                  >
+                    <Home className="w-4 h-4" /> Kembali ke Beranda
+                  </Link>
 
-                  <p className="text-[11px] text-slate-400 mt-6 flex items-center justify-center gap-1">
-                    <Lock className="w-3 h-3" /> Terima kasih telah mempercayakan jadwal Anda kepada kami.
-                  </p>
+                  {bookingPolicies.length > 0 && (
+                    <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mb-4">
+                      <p className="inline-flex items-center gap-1.5 font-semibold text-slate-800 text-sm mb-2.5">
+                        <Info className="w-4 h-4" style={{ color: primary }} /> Informasi Penting
+                      </p>
+                      <ul className="space-y-1.5">
+                        {bookingPolicies.map((policy) => (
+                          <li key={policy} className="flex items-start gap-2 text-xs text-slate-600">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: primary }} /> {policy}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal terkonfirmasi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                    </div>
+                  </div>
                 </motion.div>
               ) : step === 'service' ? (
                 <motion.div key="service" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -1562,8 +1677,42 @@ const ClinicBookingPage = () => {
             </AnimatePresence>
           </div>
 
-          {!success && (
-            <aside className="hidden lg:block sticky top-24">
+          <aside className="hidden lg:block sticky top-24">
+            {success ? (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+                <p className="text-sm font-bold text-slate-900 mb-1">Langkah Selanjutnya</p>
+                {waHref && (
+                  <a
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center gap-3 text-white font-semibold px-4 py-3.5 rounded-xl transition-opacity hover:opacity-90 shadow-md bg-emerald-500"
+                  >
+                    <MessageCircle className="w-5 h-5 shrink-0" />
+                    <span className="text-left">
+                      <span className="block text-sm">Chat WhatsApp</span>
+                      <span className="block text-[11px] font-normal opacity-90">Konfirmasi &amp; tanya lebih lanjut</span>
+                    </span>
+                  </a>
+                )}
+                <button
+                  onClick={handleAddToCalendar}
+                  className="w-full flex items-center gap-3 font-semibold px-4 py-3.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <CalendarPlus className="w-5 h-5 shrink-0" style={{ color: primary }} />
+                  <span className="text-left">
+                    <span className="block text-sm">Tambahkan ke Kalender</span>
+                    <span className="block text-[11px] font-normal text-slate-400">Google / Apple / Outlook</span>
+                  </span>
+                </button>
+                <Link
+                  to="/"
+                  className="w-full flex items-center justify-center gap-2 font-semibold px-4 py-3.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Home className="w-4 h-4" /> Kembali ke Beranda
+                </Link>
+              </div>
+            ) : (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">{clinic.name}</p>
                 <p className="text-sm font-bold text-slate-900 mb-4">Ringkasan Booking</p>
@@ -1580,8 +1729,8 @@ const ClinicBookingPage = () => {
                   </div>
                 )}
               </div>
-            </aside>
-          )}
+            )}
+          </aside>
         </div>
       </main>
 
