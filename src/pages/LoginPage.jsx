@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, Fingerprint, ShieldCheck, BarChart3 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 
 // Served from /public rather than bundled, so swapping the brand asset
@@ -14,6 +14,7 @@ import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 // (clinara.id), so this never touches the Kaffah Physiotherapy
 // patient-facing brand on the public domain.
 const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_LOGIN_BG_URL = '/login-bg.jpg';
 // Icon-only crops (see public/clinara-icon.png generation) - the favicon
 // needs just the mark with no visible box (browser tabs render transparency
 // fine); apple-touch-icon needs an opaque backing since iOS paints
@@ -27,6 +28,7 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { signIn, user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -324,77 +326,107 @@ case 'clinic_admin':
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#050b16] via-[#0a1e30] to-[#04141c] relative overflow-hidden font-sans selection:bg-cyan-500/30">
-        {/* Animated Background — cyan-to-teal glow, echoing the logo's swirl */}
+      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden font-sans selection:bg-[#2F8CFF]/30">
+        {/* Background photo with a navy-to-blue wash so the white card and
+            light-colored taglines stay legible over any part of the image. */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute -top-20 -right-20 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
-          <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
+          <img
+            src={CLINARA_LOGIN_BG_URL}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a2a52]/85 via-[#0e3a6b]/70 to-[#08284f]/90"></div>
+        </div>
+
+        {/* Corner taglines echoing the brand voice, kept subtle behind the card */}
+        <div className="absolute top-6 left-6 z-10 text-white/80 text-xs sm:text-sm font-semibold leading-tight max-w-[140px]">
+          <span className="block w-6 border-t border-white/50 mb-2"></span>
+          Better Care
+          <br />
+          Smarter Management
+        </div>
+        <div className="hidden sm:block absolute top-6 right-6 z-10 text-white/70 text-sm italic font-serif text-right leading-tight">
+          For a Healthier
+          <br />
+          Tomorrow
+        </div>
+        <div className="hidden sm:block absolute top-1/3 right-6 z-10 text-white/70 text-sm font-medium text-right leading-relaxed">
+          Move
+          <br />
+          Recover
+          <br />
+          Grow
+          <br />
+          Together
+        </div>
+        <div className="hidden sm:block absolute bottom-24 right-6 z-10 text-white/70 text-sm italic font-serif text-right leading-tight">
+          Care
+          <br />
+          Manage
+          <br />
+          Grow
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[420px] p-6"
+          className="relative z-10 w-full max-w-[420px] px-6 pt-6"
         >
-          {/* Main Card — a hairline gradient border (padding trick) sits behind the
-              solid card so the edge catches light instead of reading as a flat
-              slab, plus a deep, color-tinted shadow for lift off the background. */}
-          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(20,184,166,0.35)]">
-          <div className="bg-[#071322]/80 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
+          {/* Logo */}
+          <div className="flex flex-col items-center justify-center mb-4">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="bg-white rounded-3xl px-8 py-6 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+            >
+              <img
+                src={CLINARA_LOGO_URL}
+                alt="Clinara — Better Care. Smarter Management."
+                className="w-32"
+              />
+            </motion.div>
+          </div>
 
-            {/* Top decorative line */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="p-8 sm:p-10">
-              {/* Logo Section */}
-              <div className="flex flex-col items-center justify-center mb-10">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="relative mb-2"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/30 to-emerald-400/20 blur-3xl rounded-full scale-90"></div>
-                  {/* The lockup's wordmark/tagline are dark navy - illegible
-                      straight on this dark card, so it sits on its own light
-                      panel instead of directly on the glass. */}
-                  <div className="relative bg-white/95 rounded-2xl px-6 py-5 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
-                    <img
-                      src={CLINARA_LOGO_URL}
-                      alt="Clinara — Better Care. Smarter Management."
-                      className="w-32"
-                    />
-                  </div>
-                </motion.div>
+          {/* Main Card */}
+          <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
+            <div className="px-7 pt-7 pb-6 sm:px-8">
+              <div className="text-center mb-6">
+                <h1 className="text-[#102F52] text-xl font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-sm mt-1">
+                  Masuk untuk mengakses dashboard
+                  <br />
+                  Clinara
+                </p>
               </div>
 
               {/* Error Message */}
               <AnimatePresence>
                 {authError && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0, mb: 0 }}
-                    animate={{ opacity: 1, height: "auto", mb: 24 }}
-                    exit={{ opacity: 0, height: 0, mb: 0 }}
-                    className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 overflow-hidden"
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 overflow-hidden"
                   >
-                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-200 leading-snug">{authError}</p>
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-600 leading-snug">{authError}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Form */}
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-5">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-4">
                   <div className="group relative">
-                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-[#03090f]/70 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-4 py-3.5 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -403,32 +435,40 @@ case 'clinic_admin':
                   </div>
 
                   <div className="group relative">
-                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-[#03090f]/70 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-11 py-3.5 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Password"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA3B8] hover:text-[#2F8CFF] transition-colors"
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
 
                   <div className="flex justify-end">
                     <Link
                       to="/forgot-password"
-                      className="text-xs text-slate-400 hover:text-cyan-400 transition-colors font-medium"
+                      className="text-xs text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
                     >
                       Lupa Password?
                     </Link>
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <Button
                     type="submit"
                     disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 py-6 rounded-xl font-semibold shadow-lg shadow-cyan-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-6 rounded-2xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting || isRedirecting || authLoading ? (
                       <div className="flex items-center gap-2">
@@ -444,24 +484,70 @@ case 'clinic_admin':
                   </Button>
                 </div>
               </form>
-            </div>
-            
-            {/* Footer */}
-            <div className="bg-[#03090f]/50 p-4 text-center border-t border-white/5 backdrop-blur-sm">
-              <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-medium tracking-wide uppercase">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Authorized Personnel Only</span>
-                <span className="mx-1">•</span>
-                <span>Secure Encrypted Access</span>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-5">
+                <span className="flex-1 h-px bg-[#DCE8F2]"></span>
+                <span className="text-xs text-[#8FA3B8]">atau</span>
+                <span className="flex-1 h-px bg-[#DCE8F2]"></span>
+              </div>
+
+              {/* Biometric */}
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#EAF1F8] hover:bg-[#DCE8F2] rounded-2xl text-[#102F52] text-sm font-medium transition-colors"
+              >
+                <Fingerprint className="w-5 h-5 text-[#1677D2]" />
+                <span>Masuk dengan Biometrik</span>
+              </button>
+
+              {/* Trust row */}
+              <div className="grid grid-cols-3 gap-2 mt-6 text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                    Authorized
+                    <br />
+                    Personnel Only
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                    Secure Encrypted
+                    <br />
+                    Access
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                    Trusted by
+                    <br />
+                    Healthcare Experts
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-          </div>
 
-          <p className="text-center text-slate-600 text-xs mt-6">
+          <p className="text-center text-white/70 text-xs mt-5 mb-6">
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
+
+        {/* Bottom decorative blue accent shapes */}
+        <div className="absolute bottom-0 left-0 w-full h-24 sm:h-28 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute -bottom-10 -left-16 w-[70vw] max-w-[420px] h-40 bg-[#0f2a4a] rotate-[-8deg] rounded-tr-[80px]"></div>
+          <div className="absolute -bottom-16 -left-24 w-[55vw] max-w-[340px] h-40 bg-[#1677D2] rotate-[-8deg] rounded-tr-[80px] opacity-90"></div>
+          <span className="absolute bottom-3 left-1/2 -translate-x-1/2 w-24 h-1 rounded-full bg-white/40"></span>
+        </div>
       </div>
     </>
   );
