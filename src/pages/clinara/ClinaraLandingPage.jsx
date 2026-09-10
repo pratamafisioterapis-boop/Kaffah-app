@@ -965,7 +965,7 @@ const ClinaraLandingPage = () => {
                 </Button>
               </a>
               <a href="#harga">
-                <Button size="lg" variant="outline" className="rounded-full px-8 border-white/40 text-white hover:bg-white/10">
+                <Button size="lg" variant="outline" className="rounded-full px-8 bg-transparent border-white/40 text-white hover:bg-white/10">
                   Lihat Harga
                 </Button>
               </a>
