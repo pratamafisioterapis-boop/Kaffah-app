@@ -93,17 +93,20 @@ const LandingPageManager = () => {
   const [primaryColor, setPrimaryColor] = useState('');
   const [accentColor, setAccentColor] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   const [pricelist, setPricelist] = useState([]);
   const [savingPricelist, setSavingPricelist] = useState(false);
 
   const fetchClinic = async () => {
     if (!userDetails?.clinic_id) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('clinics')
       .select('id, subdomain, custom_domain, landing_template, landing_content, landing_primary_color, landing_accent_color')
       .eq('id', userDetails.clinic_id)
       .single();
+    if (error) throw error;
     if (data) {
       setClinic(data);
       const tpl = getLandingTemplate(data.landing_template);
@@ -116,15 +119,28 @@ const LandingPageManager = () => {
 
   const fetchPricelist = async () => {
     if (!userDetails?.clinic_id) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('clinic_pricelist')
       .select('*')
       .eq('clinic_id', userDetails.clinic_id)
       .order('sort_order');
+    if (error) throw error;
     setPricelist(data || []);
   };
 
-  useEffect(() => { fetchClinic(); fetchPricelist(); }, [userDetails?.clinic_id]);
+  const loadAll = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      await Promise.all([fetchClinic(), fetchPricelist()]);
+    } catch (err) {
+      setLoadError(err.message || 'Gagal memuat data landing page');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadAll(); }, [userDetails?.clinic_id]);
 
   const handleSelectTemplate = (id) => {
     setTemplateId(id);
@@ -205,8 +221,17 @@ const LandingPageManager = () => {
     fetchPricelist();
   };
 
-  if (!clinic) {
+  if (loading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>;
+  }
+
+  if (loadError || !clinic) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <p className="text-sm text-slate-500">{loadError || 'Gagal memuat data landing page.'}</p>
+        <Button type="button" variant="outline" size="sm" onClick={loadAll}>Coba lagi</Button>
+      </div>
+    );
   }
 
   const previewHost = clinic.custom_domain || (clinic.subdomain ? `${clinic.subdomain}.${APP_DOMAIN}` : null);
