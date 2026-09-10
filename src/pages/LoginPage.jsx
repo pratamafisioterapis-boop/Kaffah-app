@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, Fingerprint, ShieldCheck, BarChart3 } from 'lucide-react';
+import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, ShieldCheck, BarChart3 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 
 // Served from /public rather than bundled, so swapping the brand asset
@@ -326,32 +326,32 @@ case 'clinic_admin':
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
-      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden font-sans selection:bg-[#2F8CFF]/30">
-        {/* Background photo with a navy-to-blue wash so the white card and
-            light-colored taglines stay legible over any part of the image. */}
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center relative overflow-hidden selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+        {/* Background photo, softly blurred, with just a light tint for text
+            contrast — the saturated blue accent lives only in the bottom
+            shapes, not washed across the whole image. */}
         <div className="absolute inset-0 z-0">
           <img
             src={CLINARA_LOGIN_BG_URL}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover scale-110 blur-[3px]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a2a52]/85 via-[#0e3a6b]/70 to-[#08284f]/90"></div>
+          <div className="absolute inset-0 bg-[#0a2a52]/25"></div>
         </div>
 
-        {/* Corner taglines echoing the brand voice, kept subtle behind the card */}
-        <div className="absolute top-6 left-6 z-10 text-white/80 text-xs sm:text-sm font-semibold leading-tight max-w-[140px]">
-          <span className="block w-6 border-t border-white/50 mb-2"></span>
+        {/* Corner taglines echoing the brand voice, hidden on narrow screens
+            to keep the layout compact and free of scrolling */}
+        <div className="hidden sm:block absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+          <span className="block w-6 border-t border-white/60 mb-2"></span>
           Better Care
           <br />
           Smarter Management
         </div>
-        <div className="hidden sm:block absolute top-6 right-6 z-10 text-white/70 text-sm italic font-serif text-right leading-tight">
-          For a Healthier
-          <br />
-          Tomorrow
+        <div className="hidden sm:block absolute top-5 right-5 z-10 text-white text-sm text-right leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
+          For a Healthier Tomorrow
         </div>
-        <div className="hidden sm:block absolute top-1/3 right-6 z-10 text-white/70 text-sm font-medium text-right leading-relaxed">
+        <div className="hidden lg:block absolute top-1/3 right-5 z-10 text-white text-sm font-medium text-right leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
           Move
           <br />
           Recover
@@ -360,45 +360,39 @@ case 'clinic_admin':
           <br />
           Together
         </div>
-        <div className="hidden sm:block absolute bottom-24 right-6 z-10 text-white/70 text-sm italic font-serif text-right leading-tight">
-          Care
-          <br />
-          Manage
-          <br />
-          Grow
+        <div className="hidden sm:block absolute bottom-16 right-5 z-10 text-white text-lg text-right leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
+          Care Manage Grow
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[420px] px-6 pt-6"
+          className="relative z-10 w-full max-w-[400px] px-5"
         >
           {/* Logo */}
-          <div className="flex flex-col items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center mb-3">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white rounded-3xl px-8 py-6 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              className="bg-white rounded-2xl px-6 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
             >
               <img
                 src={CLINARA_LOGO_URL}
                 alt="Clinara — Better Care. Smarter Management."
-                className="w-32"
+                className="w-24"
               />
             </motion.div>
           </div>
 
           {/* Main Card */}
           <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
-            <div className="px-7 pt-7 pb-6 sm:px-8">
-              <div className="text-center mb-6">
-                <h1 className="text-[#102F52] text-xl font-bold">Selamat Datang Kembali</h1>
-                <p className="text-[#5B6B7D] text-sm mt-1">
-                  Masuk untuk mengakses dashboard
-                  <br />
-                  Clinara
+            <div className="px-6 pt-5 pb-5 sm:px-7">
+              <div className="text-center mb-4">
+                <h1 className="text-[#102F52] text-lg font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-xs mt-1">
+                  Masuk untuk mengakses dashboard Clinara
                 </p>
               </div>
 
@@ -418,15 +412,15 @@ case 'clinic_admin':
               </AnimatePresence>
 
               {/* Form */}
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div className="space-y-3">
                   <div className="group relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -440,7 +434,7 @@ case 'clinic_admin':
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-11 py-3.5 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
+                      className="w-full pl-12 pr-11 py-3 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Password"
                       required
                     />
@@ -468,7 +462,7 @@ case 'clinic_admin':
                   <Button
                     type="submit"
                     disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-6 rounded-2xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-5 rounded-2xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting || isRedirecting || authLoading ? (
                       <div className="flex items-center gap-2">
@@ -485,49 +479,33 @@ case 'clinic_admin':
                 </div>
               </form>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-5">
-                <span className="flex-1 h-px bg-[#DCE8F2]"></span>
-                <span className="text-xs text-[#8FA3B8]">atau</span>
-                <span className="flex-1 h-px bg-[#DCE8F2]"></span>
-              </div>
-
-              {/* Biometric */}
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#EAF1F8] hover:bg-[#DCE8F2] rounded-2xl text-[#102F52] text-sm font-medium transition-colors"
-              >
-                <Fingerprint className="w-5 h-5 text-[#1677D2]" />
-                <span>Masuk dengan Biometrik</span>
-              </button>
-
               {/* Trust row */}
-              <div className="grid grid-cols-3 gap-2 mt-6 text-center">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+              <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
                     <ShieldCheck className="w-4 h-4 text-[#1677D2]" />
                   </span>
-                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
                     Authorized
                     <br />
                     Personnel Only
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
                     <Lock className="w-4 h-4 text-[#1677D2]" />
                   </span>
-                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
                     Secure Encrypted
                     <br />
                     Access
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="w-9 h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
                     <BarChart3 className="w-4 h-4 text-[#1677D2]" />
                   </span>
-                  <span className="text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
                     Trusted by
                     <br />
                     Healthcare Experts
@@ -537,16 +515,17 @@ case 'clinic_admin':
             </div>
           </div>
 
-          <p className="text-center text-white/70 text-xs mt-5 mb-6">
+          <p className="text-center text-white text-[11px] mt-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
 
-        {/* Bottom decorative blue accent shapes */}
-        <div className="absolute bottom-0 left-0 w-full h-24 sm:h-28 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute -bottom-10 -left-16 w-[70vw] max-w-[420px] h-40 bg-[#0f2a4a] rotate-[-8deg] rounded-tr-[80px]"></div>
-          <div className="absolute -bottom-16 -left-24 w-[55vw] max-w-[340px] h-40 bg-[#1677D2] rotate-[-8deg] rounded-tr-[80px] opacity-90"></div>
-          <span className="absolute bottom-3 left-1/2 -translate-x-1/2 w-24 h-1 rounded-full bg-white/40"></span>
+        {/* Bottom decorative blue accent shapes — the only saturated blue
+            accent on the page; everything else is the blurred photo. */}
+        <div className="absolute bottom-0 left-0 w-full h-14 sm:h-16 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute -bottom-8 -left-16 w-[70vw] max-w-[420px] h-32 bg-[#0f2a4a] rotate-[-8deg] rounded-tr-[80px]"></div>
+          <div className="absolute -bottom-12 -left-24 w-[55vw] max-w-[340px] h-32 bg-[#1677D2] rotate-[-8deg] rounded-tr-[80px] opacity-90"></div>
+          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 rounded-full bg-white/40"></span>
         </div>
       </div>
     </>
