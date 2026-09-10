@@ -4335,6 +4335,24 @@ export const sendPushNotification = async (payload) => {
   }, 'sendPushNotification');
 };
 
+export const sendEmailNotification = async (payload) => {
+  return safeQuery(async () => {
+
+    const { data, error } = await supabase.functions.invoke('send-email-notification', {
+      body: payload
+    });
+
+    if (error) return { error };
+
+    return {
+      data,
+      success: true,
+      error: null
+    };
+
+  }, 'sendEmailNotification');
+};
+
 // Kirim push notification ke semua owner sebuah klinik saat admin melakukan
 // input/edit/hapus data pengeluaran atau pemasukan. Non-blocking: kegagalan
 // notifikasi tidak boleh menggagalkan operasi accounting itu sendiri.
@@ -4365,12 +4383,20 @@ const notifyClinicOwnersAboutTransaction = async ({ clinicId, actorId, action, k
     const title = `${actionEmoji} ${kindLabel} ${actionTitle}`.trim();
     const body = `${actorName} ${actionVerb} ${kindLabel.toLowerCase()} ${formattedAmount}${category ? ` (${category})` : ''}`;
 
-    await Promise.all(owners.map(owner => sendPushNotification({
-      user_id: owner.id,
-      title,
-      body,
-      url: '/owner/accounting'
-    })));
+    await Promise.all(owners.map(owner => Promise.all([
+      sendPushNotification({
+        user_id: owner.id,
+        title,
+        body,
+        url: '/owner/accounting'
+      }),
+      sendEmailNotification({
+        user_id: owner.id,
+        title,
+        body,
+        url: '/owner/accounting'
+      })
+    ])));
   } catch (err) {
     console.warn('[notifyClinicOwnersAboutTransaction] failed:', err);
   }

@@ -9,7 +9,8 @@ import {
   updatePatient, 
   deletePatient,
   getUser,
-  sendPushNotification 
+  sendPushNotification,
+  sendEmailNotification
 } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PatientDialog from '@/components/admin/PatientDialog';
@@ -98,6 +99,12 @@ const PatientManagement = () => {
               appointment_date: null,
               appointment_id: null
             }).catch(err => console.warn("Push notification failed", err));
+
+            sendEmailNotification({
+              user_id: user?.id,
+              title: "Pasien Baru",
+              body: `${newPatient.full_name} telah ditambahkan ke sistem.`
+            }).catch(err => console.warn("Email notification failed", err));
           }
         }
       }
