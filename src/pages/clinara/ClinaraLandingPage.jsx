@@ -5,8 +5,8 @@ import {
   Users, CalendarCheck, Stethoscope, ClipboardList, Package, MessageCircle,
   Wallet, BarChart3, Sparkles, Network, TrendingUp, Heart, ShieldCheck,
   ArrowRight, CheckCircle2, Bell, LineChart, Building2,
-  HeartHandshake, Activity, Baby, Link2, Menu, X as CloseIcon,
-  Database, Fingerprint, Zap, Server, Globe, Rocket, ChevronDown, PlayCircle,
+  HeartHandshake, Activity, Baby, Menu, X as CloseIcon,
+  Fingerprint, ChevronDown, PlayCircle,
   FileText, CalendarClock, Calculator, User, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -96,13 +96,6 @@ const PRICING_PLANS = [
   { badge: 'Coba dulu', name: '1 Bulan', desc: 'Cocok untuk mencoba seluruh fitur platform.', price: 'Rp150.000', period: '/bulan', highlight: false },
   { badge: 'Paling populer', name: '3 Bulan', desc: 'Hemat untuk operasional klinik jangka menengah.', price: 'Rp450.000', period: '/3 bulan', highlight: true },
   { badge: 'Paling hemat', name: '1 Tahun', desc: 'Nilai terbaik untuk klinik yang berkembang.', price: 'Rp1.250.000', period: '/tahun', highlight: false },
-];
-
-const SELF_HOSTED_FEATURES = [
-  { icon: Zap, title: 'Bayar sekali', desc: 'Tanpa biaya langganan bulanan — cukup satu kali untuk selamanya.' },
-  { icon: Database, title: 'Data 100% milik Anda', desc: 'Berjalan di akun Cloudflare & Supabase klinik sendiri (tier gratis).' },
-  { icon: Rocket, title: 'Deploy otomatis', desc: 'Pemasangan kami siapkan otomatis — klinik siap pakai tanpa keahlian teknis.' },
-  { icon: Globe, title: 'Domain sendiri', desc: 'Pakai domain milik klinik, tampil sepenuhnya sebagai brand Anda.' },
 ];
 
 const TIPE_KLINIK = [
@@ -934,44 +927,6 @@ const ClinaraLandingPage = () => {
 
           <FadeIn className="text-center mt-8 text-sm text-slate-500">
             Saat langganan berakhir, website klinik tetap tayang — hanya booking &amp; dashboard yang terkunci sampai diperpanjang.
-          </FadeIn>
-
-          <FadeIn className="mt-16 rounded-3xl bg-clinara-navy text-white p-8 md:p-10">
-            <div className="grid md:grid-cols-[1.2fr,1fr] gap-10 items-center">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wide">
-                    <Server className="w-3.5 h-3.5" /> Self-Hosted
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wide">
-                    <Link2 className="w-3.5 h-3.5" /> Sekali Bayar
-                  </span>
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold">Punya sendiri, tanpa langganan bulanan.</h3>
-                <p className="mt-4 text-slate-300 leading-relaxed">
-                  Seluruh aplikasi berjalan di infrastruktur milik klinik Anda — data 100% Anda pegang, cukup bayar
-                  satu kali. Cocok untuk yang ingin kontrol dan kepemilikan penuh. Fitur identik dengan versi
-                  langganan.
-                </p>
-                <div className="mt-6 flex items-center gap-4">
-                  <a href="mailto:hello@clinara.id?subject=Konsultasi%20Self-Hosted%20Clinara">
-                    <Button className="bg-white text-clinara-navy hover:bg-slate-100 rounded-full px-6 gap-1.5">
-                      Konsultasikan Kebutuhan <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </a>
-                  <span className="text-sm text-slate-300">Harga: <span className="font-semibold text-white">Hubungi kami</span></span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {SELF_HOSTED_FEATURES.map((f) => (
-                  <div key={f.title} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <f.icon className="w-5 h-5 text-clinara-mint mb-2" />
-                    <h4 className="text-sm font-bold">{f.title}</h4>
-                    <p className="mt-1 text-xs text-slate-300 leading-relaxed">{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </FadeIn>
         </Section>
 
