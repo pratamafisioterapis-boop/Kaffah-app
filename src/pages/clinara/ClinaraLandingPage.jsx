@@ -393,7 +393,7 @@ const ClinaraLandingPage = () => {
                     <img
                       src="/hero/clinara-hero-mobile.png"
                       alt="Tampilan aplikasi mobile Clinara"
-                      className="w-full h-auto block rounded-[22px] border border-white/70"
+                      className="w-full h-auto block"
                     />
                   </motion.div>
                 </motion.div>
