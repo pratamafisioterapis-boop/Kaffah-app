@@ -388,44 +388,27 @@ setTherapists(enrichedTherapists);
       <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
         {/* ── Hero Banner ── */}
-        <div className="relative overflow-hidden rounded-[22px] border border-[#DCE8F2] shadow-sm">
-          {/* Desktop / tablet — full-bleed photo, text composed over its built-in light wash */}
-          <div className="hidden md:block relative h-64 lg:h-72">
-            <img
-              src="/hero/clinara-owner-hero.png"
-              alt="Kaffah Physiotherapy"
-              className="absolute inset-0 w-full h-full object-cover object-[32%_center]"
-            />
-            <div className="relative z-10 h-full flex flex-col justify-center px-10 lg:px-14 max-w-lg">
-              <p className="text-[#5B6B7D] text-sm font-medium mb-2">{todayLabel}</p>
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-[#102F52] leading-tight">
+        <div className="relative overflow-hidden rounded-[22px] border border-[#DCE8F2] shadow-sm md:h-56 lg:h-64">
+          <img
+            src="/hero/clinara-owner-hero.png"
+            alt="Kaffah Physiotherapy"
+            className="w-full h-auto block md:absolute md:inset-0 md:w-full md:h-full md:object-cover md:object-[36%_center]"
+          />
+          <div className="absolute inset-0 flex flex-col justify-center px-5 sm:px-8 md:px-10 lg:px-14">
+            <div className="max-w-[62%] sm:max-w-sm md:max-w-md">
+              <p className="text-[#5B6B7D] text-[11px] sm:text-sm font-medium mb-1">{todayLabel}</p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#102F52] leading-[0.9]"
+              >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF]">Owner!</span>
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 sm:decoration-[3px] underline-offset-4 sm:underline-offset-8">
+                  Owner!
+                </span>
               </h1>
-              <p className="text-[#5B6B7D] text-sm mt-3 leading-relaxed max-w-sm">
+              <p className="text-[#5B6B7D] text-[11px] sm:text-sm mt-1.5 sm:mt-3 leading-snug sm:leading-relaxed">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
-            </div>
-          </div>
-
-          {/* Mobile — stacked: text first, photo below */}
-          <div className="md:hidden">
-            <div className="px-6 py-7 bg-[#F5F9FC]">
-              <p className="text-[#5B6B7D] text-sm font-medium mb-2">{todayLabel}</p>
-              <h1 className="text-2xl font-extrabold tracking-tight text-[#102F52] leading-tight">
-                Selamat datang,<br />
-                <span className="text-[#2F8CFF]">Owner!</span>
-              </h1>
-              <p className="text-[#5B6B7D] text-sm mt-3 leading-relaxed">
-                Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
-              </p>
-            </div>
-            <div className="h-40">
-              <img
-                src="/hero/clinara-owner-hero.png"
-                alt="Kaffah Physiotherapy"
-                className="w-full h-full object-cover object-[55%_center]"
-              />
             </div>
           </div>
         </div>
