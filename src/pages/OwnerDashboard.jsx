@@ -395,7 +395,7 @@ setTherapists(enrichedTherapists);
             className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
           />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-            <div className="max-w-[62%] sm:max-w-[56%] md:max-w-sm">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
               <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{todayLabel}</p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
@@ -406,7 +406,7 @@ setTherapists(enrichedTherapists);
                   Owner!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[11px] sm:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed line-clamp-2">
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
             </div>
