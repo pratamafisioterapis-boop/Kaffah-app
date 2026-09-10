@@ -428,12 +428,12 @@ const ClinaraLandingPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
                     className="absolute w-[26%] sm:w-[24%] lg:w-[22%] bottom-[-6%] right-[2%] sm:right-[6%] lg:right-[-2%] rotate-[3deg]"
-                    style={{ boxShadow: '0 24px 60px rgba(11, 39, 71, 0.28)' }}
                   >
                     <img
                       src="/hero/clinara-hero-mobile-v2.png"
                       alt="Tampilan aplikasi mobile Clinara"
                       className="w-full h-auto block"
+                      style={{ filter: 'drop-shadow(0 24px 60px rgba(11, 39, 71, 0.28))' }}
                     />
                   </motion.div>
                 </motion.div>
