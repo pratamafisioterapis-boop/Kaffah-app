@@ -388,25 +388,25 @@ setTherapists(enrichedTherapists);
       <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
         {/* ── Hero Banner ── */}
-        <div className="relative overflow-hidden rounded-[22px] border border-[#DCE8F2] shadow-sm md:h-56 lg:h-64">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-40 sm:h-48 md:h-56 lg:h-64">
           <img
             src="/hero/clinara-owner-hero.png"
             alt="Kaffah Physiotherapy"
-            className="w-full h-auto block md:absolute md:inset-0 md:w-full md:h-full md:object-cover md:object-[36%_center]"
+            className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
           />
-          <div className="absolute inset-0 flex flex-col justify-center px-5 sm:px-8 md:px-10 lg:px-14">
-            <div className="max-w-[62%] sm:max-w-sm md:max-w-md">
-              <p className="text-[#5B6B7D] text-[11px] sm:text-sm font-medium mb-1">{todayLabel}</p>
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[58%] sm:max-w-[54%] md:max-w-sm">
+              <p className="text-[#5B6B7D] text-[9px] sm:text-[11px] md:text-sm font-medium mb-0.5 md:mb-1">{todayLabel}</p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#102F52] leading-[0.9]"
+                className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-[#102F52] leading-[0.85]"
               >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 sm:decoration-[3px] underline-offset-4 sm:underline-offset-8">
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-1 sm:decoration-2 md:decoration-[3px] underline-offset-2 sm:underline-offset-4 md:underline-offset-8">
                   Owner!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[11px] sm:text-sm mt-1.5 sm:mt-3 leading-snug sm:leading-relaxed">
+              <p className="text-[#5B6B7D] text-[9px] sm:text-[10px] md:text-sm mt-1 md:mt-3 leading-snug md:leading-relaxed line-clamp-2">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
             </div>
@@ -414,23 +414,23 @@ setTherapists(enrichedTherapists);
         </div>
 
         {/* ── Periode Toolbar ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-sm text-[#5B6B7D]">{useAuth().clinicName || ''}</p>
-          <div className="flex flex-col gap-1.5 bg-white border border-[#DCE8F2] rounded-xl px-3 py-2.5 w-full sm:w-auto shadow-sm">
-            <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider">Periode</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
+            <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <input
                 type="date"
                 value={dateRange.startDate}
                 onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
               />
               <span className="text-[#DCE8F2] shrink-0">–</span>
               <input
                 type="date"
                 value={dateRange.endDate}
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
               />
             </div>
           </div>
