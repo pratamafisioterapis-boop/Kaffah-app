@@ -49,16 +49,27 @@ const PhysiotherapistManagementPage = () => {
     <div className="space-y-6">
 
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-            <Users className="w-6 h-6 text-amber-300" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Physiotherapist Management</h2>
-            <p className="text-sm text-slate-400 mt-0.5">Manage therapists, schedules, and performance targets</p>
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-physio-hero.png"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+            >
+              Kelola<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                Terapis
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola terapis, jadwal, dan target performa.
+            </p>
           </div>
         </div>
       </div>
