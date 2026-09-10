@@ -6,7 +6,7 @@ import {
   Wallet, BarChart3, Sparkles, Network, TrendingUp, Heart, ShieldCheck,
   ArrowRight, CheckCircle2, XCircle, Bell, LineChart, Building2,
   HeartHandshake, Activity, Baby, Link2, Menu, X as CloseIcon,
-  Database, Fingerprint, Zap, Server, Globe, Rocket, ChevronDown,
+  Database, Fingerprint, Zap, Server, Globe, Rocket, ChevronDown, PlayCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -292,40 +292,113 @@ const ClinaraLandingPage = () => {
         <ClinaraNavbar />
 
         {/* HERO */}
-        <header className="relative pt-40 pb-24 px-4 overflow-hidden bg-clinara-bg">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-clinara-teal/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 -left-24 w-80 h-80 bg-clinara-sky/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="container mx-auto max-w-4xl relative text-center">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <img src={LOGO_URL} alt="Clinara — Better Care. Smarter Management." className="w-40 md:w-48 mx-auto mb-2" />
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-clinara-teal/30 text-clinara-navy text-xs font-bold tracking-wide uppercase mb-6 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-clinara-teal" /> Mulai Hari Ini
-              </span>
-              <h1 className="text-4xl md:text-6xl font-extrabold text-clinara-navy leading-tight tracking-tight">
-                Bawa klinik Anda ke era digital
-              </h1>
-              <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
-                Daftarkan klinik Anda dan langsung coba gratis 7 hari. Website, booking online, rekam medis, dan
-                dashboard lengkap aktif saat itu juga — tanpa menunggu persetujuan.
-              </p>
-              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="/register">
-                  <Button size="lg" className="bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-8 gap-2">
-                    Daftarkan Klinik <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </a>
-                <a href="/login">
-                  <Button size="lg" variant="outline" className="rounded-full px-8 border-clinara-navy/30 text-clinara-navy hover:bg-clinara-navy hover:text-white">
-                    Masuk ke Akun
-                  </Button>
-                </a>
+        <header className="relative overflow-hidden bg-clinara-bg min-h-[calc(100vh-4rem)] flex items-center pt-28 pb-16 md:pt-16 md:pb-0">
+          {/* LAYER 1 — background environment photo */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/hero/clinara-hero-bg.png"
+              alt=""
+              aria-hidden="true"
+              className="w-full h-full object-cover object-[center_right] opacity-40 md:opacity-100"
+            />
+            {/* left-to-right wash so headline stays readable, softest over the photo's right side */}
+            <div className="absolute inset-0 bg-gradient-to-r from-clinara-bg via-clinara-bg/95 to-clinara-bg/10 md:via-clinara-bg/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-clinara-bg via-transparent to-clinara-bg/30" />
+            <div className="absolute inset-0 bg-clinara-navy/5" />
+          </div>
+
+          <div className="container mx-auto max-w-6xl px-4 relative z-10">
+            <div className="grid lg:grid-cols-[minmax(0,560px)_1fr] gap-12 lg:gap-8 items-center">
+
+              {/* LAYER 2 — content */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                className="text-center lg:text-left"
+              >
+                <span className="inline-block text-xs sm:text-sm font-semibold tracking-[0.2em] text-clinara-teal uppercase mb-5">
+                  Healthcare Clinic Management Platform
+                </span>
+                <h1 className="text-[2.5rem] leading-[1.05] sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[0.98] font-extrabold text-clinara-navy tracking-tight">
+                  Run your clinic.
+                  <br />
+                  <span className="bg-gradient-to-r from-clinara-navy via-clinara-blue to-clinara-teal bg-clip-text text-transparent">
+                    Everything connected.
+                  </span>
+                </h1>
+                <p className="mt-6 text-lg md:text-xl leading-relaxed text-slate-600 max-w-[520px] mx-auto lg:mx-0">
+                  Clinara membantu klinik mengelola pasien, jadwal, layanan, tenaga kesehatan, pembayaran,
+                  komunikasi, dan analytics dalam satu platform yang terintegrasi.
+                </p>
+
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+                  <a href="/register" className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full sm:w-auto h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2 shadow-lg shadow-clinara-navy/20">
+                      Mulai Gratis 7 Hari <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </a>
+                  <a href="#cara-kerja" className="w-full sm:w-auto">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 rounded-full px-7 gap-2 border-clinara-navy/25 bg-white/60 backdrop-blur-sm text-clinara-navy hover:bg-white">
+                      <PlayCircle className="w-4 h-4" /> Lihat Cara Kerja
+                    </Button>
+                  </a>
+                </div>
+
+                <div className="mt-7 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal shrink-0" /> Tanpa kartu kredit</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal shrink-0" /> Setup cepat</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal shrink-0" /> Semua fitur lengkap</span>
+                </div>
+              </motion.div>
+
+              {/* LAYER 3 — product showcase */}
+              <div className="relative mt-4 lg:mt-0 h-[320px] xs:h-[380px] sm:h-[440px] md:h-[520px] lg:h-[560px]">
+                <motion.div
+                  initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+                  className="absolute inset-0 flex items-center justify-center lg:justify-end"
+                >
+                  <motion.div
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative w-[112%] xs:w-[105%] sm:w-[95%] lg:w-[108%] -rotate-2 lg:-rotate-3"
+                    style={{ boxShadow: '0 30px 80px rgba(11, 39, 71, 0.18), 0 10px 30px rgba(11, 39, 71, 0.12)' }}
+                  >
+                    <div className="rounded-[20px] overflow-hidden border border-white/60 bg-white ring-1 ring-clinara-navy/5">
+                      <img
+                        src="/hero/clinara-hero-dashboard.png"
+                        alt="Dashboard aplikasi Clinara menampilkan data pasien, jadwal, dan analitik klinik"
+                        className="w-full h-auto block object-contain"
+                      />
+                    </div>
+                    {/* subtle glass reflection */}
+                    <div className="absolute inset-0 rounded-[20px] bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none" />
+
+                    {/* floating platform label */}
+                    <span className="hidden sm:inline-flex absolute -top-4 left-6 items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-sm text-[11px] font-bold tracking-wide uppercase text-clinara-navy">
+                      <Sparkles className="w-3 h-3 text-clinara-teal" /> Clinara Platform
+                    </span>
+                  </motion.div>
+
+                  {/* mobile app floating in front */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
+                    className="absolute w-[26%] sm:w-[24%] lg:w-[22%] bottom-[-6%] right-[2%] sm:right-[6%] lg:right-[-2%] rotate-[3deg]"
+                    style={{ boxShadow: '0 24px 60px rgba(11, 39, 71, 0.28)' }}
+                  >
+                    <img
+                      src="/hero/clinara-hero-mobile.png"
+                      alt="Tampilan aplikasi mobile Clinara"
+                      className="w-full h-auto block rounded-[22px] border border-white/70"
+                    />
+                  </motion.div>
+                </motion.div>
               </div>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-500">
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Gratis mendaftar</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Aktif saat itu juga</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-clinara-teal" /> Tanpa kontrak jangka panjang</span>
-              </div>
-            </motion.div>
+            </div>
           </div>
         </header>
 
