@@ -42,15 +42,15 @@ const HeroClock = () => {
     return () => clearInterval(timer);
   }, []);
   return (
-    <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 backdrop-blur-sm px-3 py-2 rounded-xl">
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-300/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="flex items-center gap-2.5 bg-white border border-[#DCE8F2] px-3 py-2 rounded-xl shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1677D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <span className="text-sm font-bold text-white font-mono tracking-wider">
+      <span className="text-sm font-bold text-[#102F52] font-mono tracking-wider">
         {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
       </span>
-      <div className="h-3.5 w-px bg-white/20"></div>
-      <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
+      <div className="h-3.5 w-px bg-[#DCE8F2]"></div>
+      <span className="text-xs font-semibold text-[#5B6B7D] uppercase tracking-widest">
         {now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
       </span>
     </div>
@@ -420,45 +420,44 @@ setTrendPatients(trendArray);
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
 
         {/* ── Hero Header — konsisten desktop, tablet & PWA ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
-          {/* Premium texture + glow accents */}
-          <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
-          {/* Gold hairline accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#F5F9FC] to-[#EAF4FF] text-[#102F52] p-5 md:p-7 shadow-sm border border-[#DCE8F2]">
+          {/* Premium soft accents */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 bg-[#2F8CFF]/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-[#35C8C1]/10 rounded-full blur-2xl pointer-events-none" />
+          {/* Blue hairline accent */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2F8CFF]/40 to-transparent" />
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm flex items-center justify-center shadow-inner border border-amber-300/30">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-[#EAF4FF] flex items-center justify-center border border-[#DCE8F2]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-[#1677D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
               </div>
               <div>
-                <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
-                <h1 className="text-lg md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-                <p className="text-slate-400 text-xs mt-1">Pusat kendali operasional dan manajemen klinik.</p>
+                <p className="text-[#1677D2] text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
+                <h1 className="text-lg md:text-2xl font-bold tracking-tight text-[#102F52]">Admin Dashboard</h1>
+                <p className="text-[#5B6B7D] text-xs mt-1">Pusat kendali operasional dan manajemen klinik.</p>
               </div>
             </div>
 
             <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
               <HeroClock />
-              <div className="flex flex-col gap-1.5 bg-white/10 backdrop-blur-sm border border-amber-300/20 rounded-xl px-3 py-2.5 w-full sm:w-auto">
-                <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider">Periode</span>
+              <div className="flex flex-col gap-1.5 bg-white border border-[#DCE8F2] rounded-xl px-3 py-2.5 w-full sm:w-auto shadow-sm">
+                <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider">Periode</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={dateRange.startDate}
                     onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
+                    className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
                   />
-                  <span className="text-white/30 shrink-0">–</span>
+                  <span className="text-[#DCE8F2] shrink-0">–</span>
                   <input
                     type="date"
                     value={dateRange.endDate}
                     onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
+                    className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
                   />
                 </div>
               </div>

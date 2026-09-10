@@ -19,6 +19,8 @@ const applyThemeVars = (themeKey) => {
   root.style.setProperty('--app-sidebar-bg', theme.sidebarBg);
   root.style.setProperty('--app-accent', theme.accent);
   root.style.setProperty('--app-accent-hover', theme.accentHover);
+  root.style.setProperty('--app-accent-bright', theme.accentBright || theme.accent);
+  root.style.setProperty('--app-accent-soft', theme.accentSoft || '#EAF4FF');
   root.style.setProperty('--app-card-bg', theme.cardBg);
   root.style.setProperty('--app-card-border', theme.cardBorder);
   root.style.setProperty('--app-text-main', theme.textMain);
