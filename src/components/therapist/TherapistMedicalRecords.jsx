@@ -25,7 +25,7 @@ const formatLocalDate = (date) => {
 };
 
 const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
-  const { user } = useAuth();
+  const { user, clinicName } = useAuth();
   const [patients, setPatients] = useState([]);
   const [patientVisits, setPatientVisits] = useState({});
   const [patientRecords, setPatientRecords] = useState({});
@@ -344,6 +344,33 @@ const paginatedList = sortedList.slice(
 
   return (
     <div className="space-y-6">
+      {!isOwnerView && (
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+          <img
+            src="/hero/clinara-medrec-hero.png"
+            alt="Kaffah Physiotherapy"
+            className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+          />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              >
+                Evaluasi<br />
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                  Harian
+                </span>
+              </h1>
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
         <div className="flex items-center gap-2">

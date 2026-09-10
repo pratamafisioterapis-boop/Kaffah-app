@@ -303,27 +303,35 @@ export const PackageRecapsContent = () => {
 
     return (
         <div className="space-y-6">
-            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-                    <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Package Recaps</h2>
-                    <p className="text-sm text-slate-400 mt-0.5">Kelola status dan riwayat paket pasien</p>
-                  </div>
-                </div>
-                <div className="shrink-0">
-                  <Button onClick={() => setIsAddModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 shadow-lg w-full sm:w-auto">
-                    <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
-                  </Button>
+            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+              <img
+                src="/hero/clinara-package-hero.png"
+                alt="Kaffah Physiotherapy"
+                className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+              />
+              <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+                <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+                  <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+                  <h1
+                    style={{ fontFamily: "'Caveat', cursive" }}
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                  >
+                    Rekap<br />
+                    <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                      Paket
+                    </span>
+                  </h1>
+                  <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                    Kelola status dan riwayat paket pasien.
+                  </p>
                 </div>
               </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#1677D2] hover:bg-[#125fac] shadow-sm w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
+              </Button>
             </div>
 
             {/* Restructured Filter Section */}
