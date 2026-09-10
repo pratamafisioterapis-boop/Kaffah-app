@@ -177,6 +177,8 @@ const Logo = ({ dark = false }) => (
 const ClinaraNavbar = () => {
   const [open, setOpen] = React.useState(false);
   const links = [
+    { name: 'Mengapa Clinara', href: '#mengapa-clinara' },
+    { name: 'Cara Kerja', href: '#cara-kerja' },
     { name: 'Fitur', href: '#fitur' },
     { name: 'Harga', href: '#harga' },
   ];
