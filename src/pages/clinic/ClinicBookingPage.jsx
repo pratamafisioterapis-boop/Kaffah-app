@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import {
   ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CalendarCheck2, CheckCircle2, Loader2, Lock, MapPin,
   Sparkles, Stethoscope, User, Users, MessageCircle, Activity, HeartPulse, Home,
   ClipboardList, RotateCcw, ShieldCheck, Lightbulb, Wand2, Cloud, Search, Clock, ArrowUpDown,
+  ChevronLeft, ChevronRight, Repeat, CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,14 @@ const ANY_THERAPIST = { id: null, name: 'Siapa Saja yang Tersedia', specializati
 // the step stays usable for tenants with large therapist rosters.
 const THERAPIST_SEARCH_THRESHOLD = 6;
 const THERAPIST_PAGE_SIZE = 6;
+
+// Schedule step: how many days ahead the date picker lets a patient browse,
+// how many open slots on a date still counts as "Terbatas" rather than
+// "Tersedia", and how often the currently viewed date is re-checked against
+// the backend so a slot someone else just took doesn't stay shown as open.
+const SCHEDULE_LOOKAHEAD_DAYS = 180;
+const LIMITED_SLOTS_THRESHOLD = 3;
+const SLOT_REFRESH_INTERVAL_MS = 25000;
 
 // "Bantu Saya Memilih" quick-pick tags for the service step. Each tag is
 // matched against a tenant's own service titles/descriptions by keyword
@@ -100,10 +109,15 @@ const ClinicBookingPage = () => {
   const [bookingRef, setBookingRef] = useState(null);
   const [helperOpen, setHelperOpen] = useState(false);
 
-  const dateOptions = useMemo(
-    () => Array.from({ length: 10 }, (_, i) => addDays(new Date(), i)),
-    []
+  const [weekStart, setWeekStart] = useState(() => startOfDay(new Date()));
+  const [dateAvailability, setDateAvailability] = useState({});
+
+  const visibleDates = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
   );
+  const canGoPrevWeek = differenceInCalendarDays(weekStart, new Date()) > 0;
+  const canGoNextWeek = differenceInCalendarDays(weekStart, new Date()) + 7 < SCHEDULE_LOOKAHEAD_DAYS;
 
   useEffect(() => {
     if (!clinic) return;
@@ -169,6 +183,60 @@ const ClinicBookingPage = () => {
       .finally(() => setLoadingSlots(false));
   }, [selectedDate, selectedTherapist, clinic?.id]);
 
+  // Per-date "Tersedia / Terbatas / Tidak tersedia" dots on the schedule
+  // step's date picker - one real open-slot count per visible date (for the
+  // currently selected therapist, or all of them for "Siapa Saja"), never a
+  // guess. Refetched whenever the visible week or therapist changes.
+  const visibleDateKeys = visibleDates.map((d) => format(d, 'yyyy-MM-dd')).join(',');
+  useEffect(() => {
+    if (!clinic?.id || step !== 'schedule') return;
+    let active = true;
+    const today0 = startOfDay(new Date());
+    visibleDates.forEach((d) => {
+      if (d < today0) return;
+      const dStr = format(d, 'yyyy-MM-dd');
+      setDateAvailability((prev) => (prev[dStr] ? prev : { ...prev, [dStr]: { status: 'loading' } }));
+      getAvailableSlots(dStr, selectedTherapist?.id || null, clinic.id).then(({ data }) => {
+        if (!active) return;
+        const open = (data || []).filter((s) => s.status === 'aktif');
+        const status = open.length === 0 ? 'none' : open.length <= LIMITED_SLOTS_THRESHOLD ? 'limited' : 'available';
+        setDateAvailability((prev) => ({ ...prev, [dStr]: { status, count: open.length } }));
+      });
+    });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleDateKeys, selectedTherapist?.id, clinic?.id, step]);
+
+  // Keeps the open-slot list for the date currently in view fresh while the
+  // patient sits on this step, so a slot someone else just booked doesn't
+  // stay selectable - and if the patient's own selection just got taken,
+  // clears it with a clear explanation instead of letting a stale pick
+  // through to booking.
+  useEffect(() => {
+    if (step !== 'schedule' || !selectedDate || !clinic?.id) return;
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const interval = setInterval(() => {
+      getAvailableSlots(dateStr, selectedTherapist?.id || null, clinic.id).then(({ data }) => {
+        const open = (data || []).filter((s) => s.status === 'aktif');
+        setSlots(open);
+        setSelectedSlot((prevSlot) => {
+          if (!prevSlot) return prevSlot;
+          const stillOpen = open.some((s) => s.therapist_id === prevSlot.therapist_id && s.slot_start === prevSlot.slot_start);
+          if (!stillOpen) {
+            toast({
+              title: 'Jadwal baru saja berubah',
+              description: 'Slot yang Anda pilih sudah terisi. Silakan pilih waktu lain yang masih tersedia.',
+              variant: 'destructive',
+            });
+            return null;
+          }
+          return prevSlot;
+        });
+      });
+    }, SLOT_REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [step, selectedDate, selectedTherapist, clinic?.id, toast]);
+
   const goTo = (target) => {
     setStep(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -203,9 +271,8 @@ const ClinicBookingPage = () => {
     goTo('schedule');
   };
 
-  const handlePickSlot = (slot) => {
+  const handleSelectSlot = (slot) => {
     setSelectedSlot(slot);
-    goTo('details');
   };
 
   const canSubmitDetails = form.name.trim().length > 1 && form.phone.trim().length >= 8;
@@ -804,34 +871,114 @@ const ClinicBookingPage = () => {
                 </motion.div>
               ) : step === 'schedule' ? (
                 <motion.div key="schedule" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Pilih Tanggal &amp; Waktu</h1>
-                  <p className="text-slate-500 text-sm mb-6">
-                    Temukan jadwal yang paling nyaman, dengan <strong>{selectedTherapist?.name}</strong>.
-                  </p>
+                  <div className="flex items-start justify-between gap-4 mb-1">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: accent }}>
+                        Langkah {stepIndex + 1} dari {STEPS.length}
+                      </p>
+                      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Pilih Tanggal &amp; Waktu</h1>
+                      <p className="text-slate-500 text-sm">Pilih jadwal yang paling nyaman untuk Anda.</p>
+                    </div>
+                    <div className="hidden sm:flex w-12 h-12 rounded-2xl items-center justify-center shrink-0" style={{ background: `${primary}14` }}>
+                      <CalendarClock className="w-6 h-6" style={{ color: primary }} />
+                    </div>
+                  </div>
 
-                  <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
-                    {dateOptions.map((d) => {
-                      const active = selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(d, 'yyyy-MM-dd');
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 p-3.5 flex items-center gap-3 mt-5 mb-5">
+                    <Avatar className="w-11 h-11 shrink-0">
+                      <AvatarImage src={selectedTherapist?.avatar_url} className="object-cover" />
+                      <AvatarFallback className="text-white" style={{ background: primary }}>
+                        {selectedTherapist?.id === null ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-slate-400">Terapis yang dipilih</p>
+                      <p className="font-semibold text-slate-800 text-sm truncate">{selectedTherapist?.name}</p>
+                      {selectedTherapist?.specialization && (
+                        <p className="text-xs text-slate-500 truncate">{selectedTherapist.specialization}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={goBack}
+                      className="inline-flex items-center gap-1 text-xs font-semibold shrink-0"
+                      style={{ color: primary }}
+                    >
+                      <Repeat className="w-3.5 h-3.5" /> Ganti Terapis
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-slate-900">Pilih Tanggal</p>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                      <button
+                        onClick={() => canGoPrevWeek && setWeekStart((d) => addDays(d, -7))}
+                        disabled={!canGoPrevWeek}
+                        aria-label="Minggu sebelumnya"
+                        className="w-7 h-7 rounded-full flex items-center justify-center border border-slate-200 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="min-w-[110px] text-center">{format(visibleDates[0], 'MMMM yyyy', { locale: idLocale })}</span>
+                      <button
+                        onClick={() => canGoNextWeek && setWeekStart((d) => addDays(d, 7))}
+                        disabled={!canGoNextWeek}
+                        aria-label="Minggu berikutnya"
+                        className="w-7 h-7 rounded-full flex items-center justify-center border border-slate-200 disabled:opacity-30"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
+                    {visibleDates.map((d) => {
+                      const dStr = format(d, 'yyyy-MM-dd');
+                      const isPast = d < startOfDay(new Date());
+                      const active = selectedDate && format(selectedDate, 'yyyy-MM-dd') === dStr;
+                      const avail = dateAvailability[dStr];
+                      const disabled = isPast || avail?.status === 'none';
                       return (
                         <button
-                          key={d.toISOString()}
-                          onClick={() => setSelectedDate(d)}
+                          key={dStr}
+                          onClick={() => !disabled && setSelectedDate(d)}
+                          disabled={disabled}
                           className={`shrink-0 flex flex-col items-center px-4 py-2.5 rounded-xl border transition-all min-w-[56px] min-h-[48px] ${
-                            active ? 'text-white shadow-md' : 'bg-white border-slate-100 text-slate-600 hover:shadow-sm'
+                            active ? 'text-white shadow-md' : disabled ? 'bg-slate-50 border-slate-100 text-slate-300' : 'bg-white border-slate-100 text-slate-600 hover:shadow-sm'
                           }`}
                           style={active ? { background: primary, borderColor: primary } : undefined}
                         >
                           <span className="text-[10px] uppercase font-medium opacity-80">{format(d, 'EEE', { locale: idLocale })}</span>
                           <span className="text-lg font-bold leading-tight">{format(d, 'd')}</span>
-                          <span className="text-[10px] opacity-80">{format(d, 'MMM', { locale: idLocale })}</span>
+                          {!isPast && (
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full mt-1 ${avail?.status === 'loading' || !avail ? 'animate-pulse bg-slate-200' : ''}`}
+                              style={
+                                avail?.status === 'available' ? { background: active ? '#fff' : primary }
+                                  : avail?.status === 'limited' ? { background: active ? '#fff' : '#f59e0b' }
+                                  : avail?.status === 'none' ? { background: '#cbd5e1' }
+                                  : undefined
+                              }
+                            />
+                          )}
                         </button>
                       );
                     })}
                   </div>
 
+                  <div className="flex items-center gap-4 mb-6 text-[11px] text-slate-400">
+                    <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: primary }} /> Tersedia</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Terbatas</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Tidak tersedia</span>
+                  </div>
+
                   {selectedDate && (
                     <>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Jam Tersedia</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-bold text-slate-900">Pilih Waktu</p>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                          <Clock className="w-3 h-3" /> Waktu dalam WITA (UTC+8)
+                        </span>
+                      </div>
                       {loadingSlots ? (
                         <div className="flex flex-col items-center gap-3 py-10 text-sm text-slate-400">
                           <Loader2 className="w-6 h-6 animate-spin" style={{ color: primary }} />
@@ -843,19 +990,97 @@ const ClinicBookingPage = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                          {slots.map((s) => (
-                            <button
-                              key={`${s.therapist_id}-${s.slot_start}`}
-                              onClick={() => handlePickSlot(s)}
-                              className="bg-white border border-slate-100 rounded-xl py-3 text-sm font-semibold text-slate-700 transition-all hover:shadow-md hover:-translate-y-0.5 min-h-[48px]"
-                            >
-                              {(s.slot_start || '').slice(0, 5)}
-                            </button>
-                          ))}
+                          {slots.map((s) => {
+                            const isSelected = selectedSlot?.therapist_id === s.therapist_id && selectedSlot?.slot_start === s.slot_start;
+                            return (
+                              <button
+                                key={`${s.therapist_id}-${s.slot_start}`}
+                                onClick={() => handleSelectSlot(s)}
+                                className={`rounded-xl py-3 text-sm font-semibold transition-all hover:shadow-md hover:-translate-y-0.5 min-h-[48px] ${
+                                  isSelected ? 'text-white shadow-md' : 'bg-white border border-slate-100 text-slate-700'
+                                }`}
+                                style={isSelected ? { background: primary } : undefined}
+                              >
+                                {(s.slot_start || '').slice(0, 5)}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
+
+                      <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mt-5 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
+                          <CalendarClock className="w-4 h-4" style={{ color: primary }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-800 text-sm">Tidak ada waktu yang sesuai?</p>
+                          <p className="text-xs text-slate-500 mt-0.5 mb-3">Coba lihat tanggal lain, atau gunakan fitur jadwal otomatis dari Clinara.</p>
+                          <button
+                            onClick={handleFindBestSchedule}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full border bg-white min-h-[36px]"
+                            style={{ color: primary, borderColor: `${primary}55` }}
+                          >
+                            <Wand2 className="w-3.5 h-3.5" /> Carikan Jadwal Terbaik
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mt-3 flex items-start gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-emerald-800 text-sm">Jadwal real-time</p>
+                          <p className="text-xs text-emerald-700/80 mt-0.5">Slot waktu ditampilkan sesuai ketersediaan terbaru dari jadwal terapis.</p>
+                        </div>
+                      </div>
                     </>
                   )}
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-6 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal real-time
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:flex gap-3 mt-3">
+                    <button
+                      onClick={goBack}
+                      className="px-6 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 inline mr-2" /> Kembali
+                    </button>
+                    <Button
+                      onClick={() => goTo('details')}
+                      disabled={!selectedSlot}
+                      className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                      style={{ background: primary }}
+                    >
+                      Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                  <StickyMobileCta>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={goBack}
+                        className="px-5 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 shrink-0"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <Button
+                        onClick={() => goTo('details')}
+                        disabled={!selectedSlot}
+                        className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                        style={{ background: primary }}
+                      >
+                        Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </StickyMobileCta>
                 </motion.div>
               ) : step === 'details' ? (
                 <motion.div key="details" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
