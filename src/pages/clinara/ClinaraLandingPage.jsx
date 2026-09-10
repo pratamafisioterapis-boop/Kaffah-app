@@ -535,6 +535,7 @@ const ClinaraLandingPage = () => {
                     src="/section3/solution-photo.png"
                     alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: '25% center' }}
                   />
                   <div className="absolute top-6 right-5 left-3 text-right">
                     <p
@@ -578,13 +579,17 @@ const ClinaraLandingPage = () => {
                 </FadeIn>
 
                 {/* center transformation */}
-                <FadeIn delay={0.1} className="flex lg:flex-col items-center justify-center gap-2 text-center py-2 lg:py-8 lg:w-40">
+                <FadeIn delay={0.1} className="flex flex-col items-center justify-center gap-2 text-center py-6 lg:py-8 mx-auto lg:w-40">
                   <p
                     className="text-clinara-navy text-4xl leading-[0.95]"
                     style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
                   >
                     Saatnya<br />Berubah
                   </p>
+                  <svg width="34" height="80" viewBox="0 0 34 80" fill="none" className="lg:hidden text-clinara-teal my-1">
+                    <path d="M6 4c2 14 14 22 24 12-8 18-6 44-2 60" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                    <path d="M24 68l8 8-2-11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
                   <svg width="80" height="34" viewBox="0 0 80 34" fill="none" className="hidden lg:block text-clinara-teal my-1">
                     <path d="M4 6c14 2 22 14 12 24 18-8 44-6 60 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                     <path d="M68 24l8 8-11 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -593,7 +598,7 @@ const ClinaraLandingPage = () => {
                     <p className="text-[11px] font-bold tracking-[0.15em] text-slate-400 uppercase leading-relaxed">
                       Solusi<br className="hidden lg:block" /> Lebih Cerdas<br className="hidden lg:block" /> Untuk Klinik<br className="hidden lg:block" /> Anda
                     </p>
-                    <span className="hidden lg:block w-6 h-[3px] rounded-full bg-clinara-teal mx-auto mt-3" />
+                    <span className="block w-6 h-[3px] rounded-full bg-clinara-teal mx-auto mt-3" />
                   </div>
                 </FadeIn>
 
