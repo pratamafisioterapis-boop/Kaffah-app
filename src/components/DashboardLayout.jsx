@@ -17,6 +17,7 @@ import { useDesignTheme } from '@/contexts/ThemeContext';
 import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
 import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
+import DashboardTopbar from '@/components/DashboardTopbar';
 
 // Icon Mapping
 const iconMap = {
@@ -88,111 +89,9 @@ useEffect(() => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [openNotif, setOpenNotif] = useState(false);
 const isPWA =
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
-  useEffect(() => {
-    const channel = supabase
-      .channel('audit_logs_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'audit_logs'
-        },
-        async (payload) => {
-          const newData = payload.new;
-          // Guard against null payload
-          if (!newData) return;
-
-          let fullName = 'System';
-          
-          // Only fetch user if user_id exists
-          if (newData.user_id) {
-            const { data: user } = await supabase
-              .from('users')
-              .select('full_name')
-              .eq('id', newData.user_id)
-              .maybeSingle();
-              
-            if (user) fullName = user.full_name;
-          }
-
-          let patientName = '-';
-          const patientId = newData.changes?.patient_id;
-
-          if (patientId) {
-            const { data: patient } = await supabase
-              .from('patients')
-              .select('full_name')
-              .eq('id', patientId)
-              .maybeSingle();
-
-            if (patient) patientName = patient.full_name;
-          }
-
-          const enriched = {
-            ...newData,
-            users: { full_name: fullName },
-            patient_name: patientName
-          };
-
-          setNotifications((prev) => [enriched, ...prev]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select(`
-          *,
-          users:user_id (
-            id,
-            full_name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (!error && data) {
-        const patientIds = data
-          .map(item => item.changes?.patient_id)
-          .filter(Boolean);
-
-        let patientsMap = {};
-
-        if (patientIds.length > 0) {
-          const { data: patients } = await supabase
-            .from('patients')
-            .select('id, full_name')
-            .in('id', patientIds);
-
-          patientsMap = Object.fromEntries(
-            (patients || []).map(p => [p.id, p.full_name])
-          );
-        }
-
-        const enriched = data.map(item => ({
-          ...item,
-          patient_name: patientsMap[item.changes?.patient_id] || '-'
-        }));
-
-        setNotifications(enriched);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -540,6 +439,14 @@ const isPWA =
           "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
           isPWA && (role === 'therapist' || role === 'owner' || role === 'admin' || role === 'super_admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
+           <DashboardTopbar
+             role={role}
+             userName={userName}
+             clinicName={role === 'super_admin' ? 'System Control' : (clinicInfo?.name || '')}
+             navItems={finalNavItems}
+             clinicId={userDetails?.clinic_id}
+             onOpenSidebar={() => setIsSidebarOpen(true)}
+           />
            {children}
         </div>
       </main>
