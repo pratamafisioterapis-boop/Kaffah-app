@@ -7,7 +7,7 @@ import { id as idLocale } from 'date-fns/locale';
 import {
   ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CalendarCheck2, CheckCircle2, Loader2, Lock, MapPin,
   Sparkles, Stethoscope, User, Users, MessageCircle, Activity, HeartPulse, Home,
-  ClipboardList, RotateCcw, ShieldCheck, Lightbulb, Wand2, Cloud,
+  ClipboardList, RotateCcw, ShieldCheck, Lightbulb, Wand2, Cloud, Search, Clock, ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
 import { useClinicTenant } from '@/hooks/useClinicTenant';
-import { getActivePhysiotherapists, getAvailableSlots, createAppointment } from '@/lib/api';
+import { getActivePhysiotherapists, getAvailableSlots, createAppointment, getTherapistPracticeHoursGrouped } from '@/lib/api';
 import { getLandingTemplate, mergeLandingContent } from '@/config/landingTemplates';
 
 // Icon rotation used only as a fallback presentation for tenant services that
@@ -25,6 +25,12 @@ import { getLandingTemplate, mergeLandingContent } from '@/config/landingTemplat
 const SERVICE_ICONS = [Stethoscope, Activity, HeartPulse, Home, ClipboardList];
 
 const ANY_THERAPIST = { id: null, name: 'Siapa Saja yang Tersedia', specialization: 'Jadwal tercepat' };
+
+// Below this count the therapist list stays a flat scroll (matches most
+// clinics); at or above it a search box and "show more" paging kick in so
+// the step stays usable for tenants with large therapist rosters.
+const THERAPIST_SEARCH_THRESHOLD = 6;
+const THERAPIST_PAGE_SIZE = 6;
 
 // "Bantu Saya Memilih" quick-pick tags for the service step. Each tag is
 // matched against a tenant's own service titles/descriptions by keyword
@@ -79,6 +85,10 @@ const ClinicBookingPage = () => {
 
   const [selectedService, setSelectedService] = useState(null);
   const [selectedTherapist, setSelectedTherapist] = useState(null);
+  const [todaySlots, setTodaySlots] = useState([]);
+  const [therapistQuery, setTherapistQuery] = useState('');
+  const [sortAvailableFirst, setSortAvailableFirst] = useState(false);
+  const [therapistVisibleCount, setTherapistVisibleCount] = useState(THERAPIST_PAGE_SIZE);
   const [selectedDate, setSelectedDate] = useState(null);
   const [slots, setSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -119,6 +129,33 @@ const ClinicBookingPage = () => {
       .finally(() => setLoadingTherapists(false));
   }, [clinic?.id]);
 
+  // Used to show a real "Tersedia hari ini" indicator per therapist on the
+  // therapist-selection step, without an extra round-trip per card - one
+  // fetch of today's open slots for the whole clinic, then filtered client-side.
+  useEffect(() => {
+    if (!clinic?.id) return;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    getAvailableSlots(todayStr, null, clinic.id)
+      .then(({ data }) => setTodaySlots((data || []).filter((s) => s.status === 'aktif')))
+      .catch(() => setTodaySlots([]));
+  }, [clinic?.id]);
+
+  const hasSlotToday = (therapistId) => todaySlots.some((s) => s.therapist_id === therapistId);
+
+  const filteredTherapists = useMemo(() => {
+    const q = therapistQuery.trim().toLowerCase();
+    let list = !q
+      ? therapists
+      : therapists.filter((t) => `${t.name} ${t.specialization || ''}`.toLowerCase().includes(q));
+    if (sortAvailableFirst) {
+      list = [...list].sort((a, b) => Number(hasSlotToday(b.id)) - Number(hasSlotToday(a.id)));
+    }
+    return list;
+  }, [therapists, therapistQuery, sortAvailableFirst, todaySlots]);
+
+  const visibleTherapists = filteredTherapists.slice(0, therapistVisibleCount);
+  const hasMoreTherapists = filteredTherapists.length > visibleTherapists.length;
+
   useEffect(() => {
     if (!selectedDate || !clinic?.id) return;
     setLoadingSlots(true);
@@ -157,8 +194,12 @@ const ClinicBookingPage = () => {
     }
   };
 
-  const handlePickTherapist = (t) => {
+  const handleSelectTherapist = (t) => {
     setSelectedTherapist(t);
+  };
+
+  const handleFindBestSchedule = () => {
+    setSelectedTherapist(ANY_THERAPIST);
     goTo('schedule');
   };
 
@@ -569,8 +610,11 @@ const ClinicBookingPage = () => {
                 </motion.div>
               ) : step === 'therapist' ? (
                 <motion.div key="therapist" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: accent }}>
+                    Langkah {stepIndex + 1} dari {STEPS.length}
+                  </p>
                   <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Pilih Terapis</h1>
-                  <p className="text-slate-500 text-sm mb-6">Pilih terapis tertentu, atau biarkan kami mencarikan jadwal tercepat untuk Anda.</p>
+                  <p className="text-slate-500 text-sm mb-6">Anda dapat memilih fisioterapis tertentu atau membiarkan kami mencarikan jadwal tercepat.</p>
 
                   {loadingTherapists ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-sm text-slate-400">
@@ -578,44 +622,184 @@ const ClinicBookingPage = () => {
                       Memuat terapis...
                     </div>
                   ) : (
-                    <div className="grid sm:grid-cols-2 gap-3.5">
+                    <>
                       <button
-                        onClick={() => handlePickTherapist(ANY_THERAPIST)}
-                        className="text-left bg-white border-2 border-dashed rounded-2xl p-4 flex items-center gap-3 transition-all hover:shadow-md hover:-translate-y-0.5 min-h-[48px]"
-                        style={{ borderColor: `${primary}55` }}
+                        onClick={() => handleSelectTherapist(ANY_THERAPIST)}
+                        className={`w-full text-left bg-sky-50 rounded-2xl p-4 flex items-center gap-3.5 transition-all hover:shadow-md min-h-[48px] mb-5 ${
+                          selectedTherapist?.id === null ? 'ring-2' : 'border border-sky-100'
+                        }`}
+                        style={selectedTherapist?.id === null ? { '--tw-ring-color': primary } : undefined}
                       >
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ background: `${primary}1a` }}>
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shrink-0">
                           <Users className="w-5 h-5" style={{ color: primary }} />
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-800 text-sm">Siapa Saja yang Tersedia</p>
-                          <p className="text-xs text-slate-500">Jadwal tercepat</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-slate-800 text-sm">Siapa Saja yang Tersedia</p>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white" style={{ color: primary }}>Direkomendasikan</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">Biarkan kami mencarikan jadwal tercepat dengan terapis yang sesuai.</p>
                         </div>
+                        <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
                       </button>
 
-                      {therapists.length === 0 && (
-                        <div className="sm:col-span-2 text-center py-10 text-slate-500 text-sm bg-white rounded-2xl border border-slate-100">
-                          Belum ada terapis tersedia. Anda tetap dapat lanjut dengan jadwal tercepat di atas.
+                      <div className="flex items-center justify-between mb-3 gap-2">
+                        <p className="text-sm font-semibold text-slate-700">Atau pilih fisioterapis</p>
+                        {therapists.length > 1 && (
+                          <button
+                            onClick={() => setSortAvailableFirst((v) => !v)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-600 shrink-0"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5" /> {sortAvailableFirst ? 'Diurutkan: Tersedia dulu' : 'Urutkan: Tersedia dulu'}
+                          </button>
+                        )}
+                      </div>
+
+                      {therapists.length >= THERAPIST_SEARCH_THRESHOLD && (
+                        <div className="relative mb-3">
+                          <Search className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Input
+                            value={therapistQuery}
+                            onChange={(e) => { setTherapistQuery(e.target.value); setTherapistVisibleCount(THERAPIST_PAGE_SIZE); }}
+                            placeholder="Cari nama atau spesialisasi..."
+                            className="pl-10 h-11"
+                          />
                         </div>
                       )}
 
-                      {therapists.map((t) => (
+                      {therapists.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500 text-sm bg-white rounded-2xl border border-slate-100">
+                          Belum ada terapis tersedia. Anda tetap dapat lanjut dengan jadwal tercepat di atas.
+                        </div>
+                      ) : filteredTherapists.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500 text-sm bg-white rounded-2xl border border-slate-100">
+                          Tidak ada terapis yang cocok dengan pencarian Anda.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {visibleTherapists.map((t) => {
+                            const isSelected = selectedTherapist?.id === t.id;
+                            const available = hasSlotToday(t.id);
+                            const badge = Array.isArray(t.badges) ? t.badges[0] : null;
+                            return (
+                              <button
+                                key={t.id}
+                                onClick={() => handleSelectTherapist(t)}
+                                className={`w-full text-left bg-white rounded-2xl p-4 flex items-center gap-3.5 transition-all shadow-sm hover:shadow-md min-h-[48px] ${
+                                  isSelected ? 'ring-2' : 'border border-slate-100'
+                                }`}
+                                style={isSelected ? { '--tw-ring-color': primary } : undefined}
+                              >
+                                <Avatar className="w-14 h-14 shrink-0 ring-2 ring-offset-1" style={{ '--tw-ring-color': `${primary}33` }}>
+                                  <AvatarImage src={t.avatar_url} className="object-cover" />
+                                  <AvatarFallback className="text-white" style={{ background: primary }}><User className="w-5 h-5" /></AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <p className="font-semibold text-slate-800 text-sm truncate">{t.name}</p>
+                                      {badge && (
+                                        <span
+                                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                                          style={{ background: `${badge.color || primary}1a`, color: badge.color || primary }}
+                                        >
+                                          {badge.label}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium shrink-0 ${available ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full ${available ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                      {available ? 'Tersedia hari ini' : 'Belum tersedia hari ini'}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-0.5">{t.specialization || 'Fisioterapis'}</p>
+                                  <div className="flex items-start gap-1.5 mt-2 text-[11px] text-slate-400">
+                                    <Clock className="w-3 h-3 mt-0.5 shrink-0" />
+                                    <div className="leading-relaxed">
+                                      <TherapistScheduleLines therapistId={t.id} />
+                                    </div>
+                                  </div>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 self-center" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {hasMoreTherapists && (
                         <button
-                          key={t.id}
-                          onClick={() => handlePickTherapist(t)}
-                          className="text-left bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-3 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 min-h-[48px]"
+                          onClick={() => setTherapistVisibleCount((c) => c + THERAPIST_PAGE_SIZE)}
+                          className="w-full mt-3 text-sm font-semibold py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 min-h-[48px]"
                         >
-                          <Avatar className="w-12 h-12 shrink-0 ring-2 ring-offset-1" style={{ '--tw-ring-color': `${primary}33` }}>
-                            <AvatarImage src={t.avatar_url} className="object-cover" />
-                            <AvatarFallback className="text-white" style={{ background: primary }}><User className="w-5 h-5" /></AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold text-slate-800 text-sm">{t.name}</p>
-                            <p className="text-xs text-slate-500">{t.specialization || 'Fisioterapis'}</p>
-                          </div>
+                          Tampilkan Semua ({filteredTherapists.length})
                         </button>
-                      ))}
-                    </div>
+                      )}
+
+                      <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mt-5 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
+                          <Lightbulb className="w-4 h-4" style={{ color: primary }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-800 text-sm">Tidak menemukan waktu yang sesuai?</p>
+                          <p className="text-xs text-slate-500 mt-0.5 mb-3">Coba gunakan fitur jadwal otomatis, atau pilih tanggal lain pada langkah berikutnya.</p>
+                          <button
+                            onClick={handleFindBestSchedule}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full border bg-white min-h-[36px]"
+                            style={{ color: primary, borderColor: `${primary}55` }}
+                          >
+                            <Wand2 className="w-3.5 h-3.5" /> Carikan Jadwal Terbaik
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-6 mb-2">
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal real-time
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                        </div>
+                      </div>
+
+                      <div className="hidden lg:flex gap-3 mt-3">
+                        <button
+                          onClick={goBack}
+                          className="px-6 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        >
+                          <ArrowLeft className="w-4 h-4 inline mr-2" /> Kembali
+                        </button>
+                        <Button
+                          onClick={() => goTo('schedule')}
+                          disabled={!selectedTherapist}
+                          className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                          style={{ background: primary }}
+                        >
+                          Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                      <StickyMobileCta>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={goBack}
+                            className="px-5 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 shrink-0"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                          </button>
+                          <Button
+                            onClick={() => goTo('schedule')}
+                            disabled={!selectedTherapist}
+                            className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                            style={{ background: primary }}
+                          >
+                            Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </div>
+                      </StickyMobileCta>
+                    </>
                   )}
                 </motion.div>
               ) : step === 'schedule' ? (
@@ -840,6 +1024,27 @@ const ClinicBookingPage = () => {
 
 // Keeps the primary call-to-action reachable with one thumb on small
 // screens without pushing the desktop two-column layout around.
+// Fetches and renders one therapist's own working-hours groups (e.g. "Sen -
+// Sab: 09:00-17:00") - per-card, since each therapist's schedule is its own
+// lookup against real practice-hours data, never invented client-side.
+const TherapistScheduleLines = ({ therapistId }) => {
+  const [lines, setLines] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    setLines(null);
+    getTherapistPracticeHoursGrouped(therapistId).then(({ data }) => {
+      if (!active) return;
+      setLines((data || []).map((g) => `${g.day_range}: ${(g.display_start_time || '').slice(0, 5)}–${(g.display_end_time || '').slice(0, 5)}`));
+    });
+    return () => { active = false; };
+  }, [therapistId]);
+
+  if (lines === null) return <span className="text-slate-300">Memuat jadwal...</span>;
+  if (lines.length === 0) return <span className="text-slate-400 italic">Jadwal belum tersedia</span>;
+  return lines.map((l, i) => <span key={i} className="block">{l}</span>);
+};
+
 const StickyMobileCta = ({ children }) => (
   <div className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur border-t border-slate-100 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
     <div className="max-w-6xl mx-auto">{children}</div>
