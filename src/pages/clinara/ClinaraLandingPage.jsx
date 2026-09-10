@@ -15,16 +15,20 @@ import { Button } from '@/components/ui/button';
 // source of truth here rather than scattered across JSX.
 // ---------------------------------------------------------------------------
 
-const HIGHLIGHTS = [
-  { icon: Users, title: 'Patient Management', desc: 'Kelola data pasien secara terstruktur dan mudah diakses.' },
-  { icon: CalendarCheck, title: 'Appointment Management', desc: 'Atur jadwal dan kunjungan pasien dengan lebih mudah.' },
-  { icon: Stethoscope, title: 'Healthcare Professional', desc: 'Kelola tenaga kesehatan, jadwal, aktivitas, dan performa.' },
-  { icon: ClipboardList, title: 'Clinical Services', desc: 'Dokumentasikan layanan dan perjalanan pasien secara sistematis.' },
-  { icon: Package, title: 'Package Management', desc: 'Pantau paket layanan, penggunaan sesi, dan masa berlaku.' },
-  { icon: MessageCircle, title: 'Communication', desc: 'Bangun komunikasi dengan pasien melalui reminder dan follow-up otomatis.' },
-  { icon: Wallet, title: 'Finance', desc: 'Pantau transaksi dan performa pendapatan secara lebih terstruktur.' },
-  { icon: BarChart3, title: 'Analytics', desc: 'Ubah data operasional menjadi insight untuk keputusan yang lebih baik.' },
+// Section 2 — "Meet Clinara" product reveal. The pill order mirrors the
+// core modules shown live in the dashboard screenshot (patient → schedule →
+// records → payment → analytics) so the capability nav reads as a map of
+// the real product, not a generic feature list.
+const CAPABILITIES = ['Dashboard', 'Pasien', 'Appointment', 'Rekam Medis', 'Pembayaran', 'Analytics'];
+
+const PRODUCT_CALLOUTS = [
+  { icon: Users, title: 'Kelola Pasien', desc: 'Data pasien terstruktur dan mudah diakses.', side: 'left', align: 'top' },
+  { icon: CalendarCheck, title: 'Atur Jadwal', desc: 'Kelola appointment dengan lebih mudah.', side: 'left', align: 'bottom' },
+  { icon: BarChart3, title: 'Pantau Performa', desc: 'Lihat perkembangan klinik secara real-time.', side: 'right', align: 'top' },
+  { icon: MessageCircle, title: 'Otomatisasi Komunikasi', desc: 'Reminder, follow-up, dan broadcast WhatsApp.', side: 'right', align: 'bottom' },
 ];
+
+const PRODUCT_TRUST_POINTS = ['Terintegrasi', 'Mudah digunakan', 'Aman & terpercaya', 'Siap berkembang'];
 
 const PROBLEMS = [
   'Data pasien tersebar di berbagai tempat.',
@@ -168,9 +172,10 @@ const BRAND_VALUES = [
 // Small building blocks
 // ---------------------------------------------------------------------------
 
-const FadeIn = ({ children, className = '', delay = 0 }) => (
+const FadeIn = ({ children, className = '', delay = 0, style }) => (
   <motion.div
     className={className}
+    style={style}
     initial={{ opacity: 0, y: 16 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: '-60px' }}
@@ -190,6 +195,29 @@ const Section = ({ id, className = '', children }) => (
   <section id={id} className={`py-20 md:py-28 px-4 ${className}`}>
     <div className="container mx-auto max-w-6xl">{children}</div>
   </section>
+);
+
+// Floating annotation card used around the Section 2 product showcase. On
+// desktop it's absolutely positioned beside the dashboard with a thin
+// connector line pointing at it; on mobile/tablet it's rendered as a plain
+// card in a stacked/2-col grid (connector omitted — there's no dashboard
+// edge to point at once it's no longer floating alongside it).
+const FloatingCallout = ({ icon: Icon, title, desc, connector = false, connectorSide = 'right' }) => (
+  <div className="relative w-56 rounded-2xl border border-slate-100 bg-white/95 backdrop-blur-sm shadow-[0_16px_40px_rgba(11,39,71,0.10)] p-4">
+    {connector && (
+      <span
+        aria-hidden="true"
+        className={`hidden lg:block absolute top-1/2 w-10 h-px bg-gradient-to-r from-clinara-teal/60 to-clinara-teal/0 ${
+          connectorSide === 'right' ? 'left-full' : 'right-full rotate-180'
+        }`}
+      />
+    )}
+    <div className="w-9 h-9 rounded-lg bg-clinara-teal/10 flex items-center justify-center mb-3">
+      <Icon className="w-[18px] h-[18px] text-clinara-blue" />
+    </div>
+    <h4 className="font-bold text-clinara-navy text-[15px] leading-snug mb-1">{title}</h4>
+    <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
+  </div>
 );
 
 // Full brand lockup (mark + wordmark + tagline, transparent background) —
@@ -266,6 +294,8 @@ const ClinaraNavbar = () => {
 // ---------------------------------------------------------------------------
 
 const ClinaraLandingPage = () => {
+  const [activeCapability, setActiveCapability] = React.useState(CAPABILITIES[0]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -402,32 +432,122 @@ const ClinaraLandingPage = () => {
           </div>
         </header>
 
-        {/* INTRODUCTION */}
-        <Section id="platform">
-          <FadeIn className="text-center max-w-3xl mx-auto mb-16">
-            <Label>One Platform. Complete Healthcare Management.</Label>
-            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">
-              Semua yang dibutuhkan klinik, dalam satu ekosistem.
-            </h2>
-            <p className="mt-5 text-slate-600 leading-relaxed">
-              Mengelola fasilitas kesehatan bukan hanya tentang melayani pasien. Ada jadwal yang harus diatur,
-              data pasien yang harus dikelola, layanan yang harus dicatat, paket yang harus dipantau, komunikasi
-              yang harus dilakukan, dan data yang harus dipahami. Clinara menghubungkan seluruh proses tersebut
-              dalam satu platform agar operasional klinik menjadi lebih sederhana, terorganisir, dan efisien.
-            </p>
-          </FadeIn>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {HIGHLIGHTS.map((h, i) => (
-              <FadeIn key={h.title} delay={i * 0.05} className="bg-clinara-bg rounded-2xl p-6 border border-slate-100 hover:border-clinara-teal/40 hover:shadow-md transition-all">
-                <div className="w-11 h-11 rounded-xl bg-clinara-navy/5 flex items-center justify-center mb-4">
-                  <h.icon className="w-5 h-5 text-clinara-navy" />
-                </div>
-                <h3 className="font-bold text-clinara-navy mb-1.5">{h.title}</h3>
-                <p className="text-sm text-slate-600">{h.desc}</p>
-              </FadeIn>
-            ))}
+        {/* MEET CLINARA — product reveal */}
+        <section id="platform" className="relative overflow-hidden bg-clinara-bg pt-28 md:pt-32 pb-24 md:pb-28 px-4">
+          {/* soft depth glow, very low opacity — no particles/blobs */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-clinara-sky/10 blur-3xl" />
           </div>
-        </Section>
+
+          <div className="container mx-auto max-w-6xl relative">
+            <FadeIn className="text-center mb-6 md:mb-7">
+              <Label>Meet Clinara</Label>
+              <h2 className="text-4xl sm:text-5xl md:text-[3.25rem] font-extrabold text-clinara-navy leading-[1.05] tracking-tight">
+                Everything your clinic needs.
+                <br />
+                <span className="bg-gradient-to-r from-clinara-navy to-clinara-blue bg-clip-text text-transparent">
+                  One connected platform.
+                </span>
+              </h2>
+              <p className="mt-6 text-[17px] md:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+                Satu sistem untuk mengelola seluruh operasional klinik — dari pasien, jadwal, layanan, tenaga
+                kesehatan, pembayaran, komunikasi, hingga analytics. Dirancang untuk membuat klinik Anda lebih
+                efisien dan berkembang.
+              </p>
+            </FadeIn>
+
+            {/* capability selector */}
+            <FadeIn delay={0.1} className="mt-10 md:mt-12 mb-10 md:mb-14">
+              <div className="flex lg:flex-wrap lg:justify-center gap-2.5 overflow-x-auto lg:overflow-visible px-4 -mx-4 lg:px-0 lg:mx-0 snap-x snap-mandatory">
+                {CAPABILITIES.map((cap) => (
+                  <button
+                    key={cap}
+                    type="button"
+                    onClick={() => setActiveCapability(cap)}
+                    aria-pressed={activeCapability === cap}
+                    className={`shrink-0 snap-start px-5 py-2.5 rounded-full text-sm font-semibold border transition-colors ${
+                      activeCapability === cap
+                        ? 'bg-clinara-navy text-white border-clinara-navy'
+                        : 'bg-white text-clinara-navy border-slate-200 hover:border-clinara-teal/50'
+                    }`}
+                  >
+                    {cap}
+                  </button>
+                ))}
+              </div>
+            </FadeIn>
+
+            {/* product showcase — callouts share the laptop's own max-width box so
+                left-0/right-0 line up exactly with its edges, then push out by a
+                fixed gap via calc() regardless of card width */}
+            <div className="relative mx-auto sm:max-w-3xl lg:max-w-4xl">
+              <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className="relative w-[112%] -ml-[6%] sm:w-full sm:ml-0"
+              >
+                <img
+                  src="/hero/clinara-section2-laptop.png"
+                  alt="Dashboard Clinara ditampilkan di laptop — menu pasien, appointment, rekam medis, pembayaran, dan analytics klinik"
+                  className="w-full h-auto block"
+                />
+              </motion.div>
+
+              {/* desktop floating callouts — positioned with right/left (not
+                  transform) so they don't fight framer-motion's own y-transform
+                  animation on the FadeIn wrapper */}
+              <div className="hidden xl:block">
+                <FadeIn delay={0.25} className="absolute top-[8%]" style={{ right: 'calc(100% + 28px)' }}>
+                  <FloatingCallout {...PRODUCT_CALLOUTS[0]} connector connectorSide="right" />
+                </FadeIn>
+                <FadeIn delay={0.35} className="absolute bottom-[14%]" style={{ right: 'calc(100% + 28px)' }}>
+                  <FloatingCallout {...PRODUCT_CALLOUTS[1]} connector connectorSide="right" />
+                </FadeIn>
+                <FadeIn delay={0.3} className="absolute top-[6%]" style={{ left: 'calc(100% + 28px)' }}>
+                  <FloatingCallout {...PRODUCT_CALLOUTS[2]} connector connectorSide="left" />
+                </FadeIn>
+                <FadeIn delay={0.4} className="absolute bottom-[16%]" style={{ left: 'calc(100% + 28px)' }}>
+                  <FloatingCallout {...PRODUCT_CALLOUTS[3]} connector connectorSide="left" />
+                </FadeIn>
+              </div>
+            </div>
+
+            {/* lg-only callouts: not enough side margin for floating cards yet,
+                so show them as a centered 2-col grid instead of overlapping the laptop */}
+            <div className="hidden lg:grid xl:hidden sm:grid-cols-2 gap-4 mt-10 max-w-2xl mx-auto">
+              {PRODUCT_CALLOUTS.map((c, i) => (
+                <FadeIn key={c.title} delay={i * 0.06}>
+                  <FloatingCallout {...c} />
+                </FadeIn>
+              ))}
+            </div>
+
+            {/* mobile/tablet callouts */}
+            <div className="grid sm:grid-cols-2 lg:hidden gap-4 mt-10 max-w-xl sm:max-w-2xl mx-auto">
+              {PRODUCT_CALLOUTS.map((c, i) => (
+                <FadeIn key={c.title} delay={i * 0.06}>
+                  <FloatingCallout {...c} />
+                </FadeIn>
+              ))}
+            </div>
+
+            {/* bottom statement */}
+            <FadeIn delay={0.15} className="text-center mt-20 md:mt-24">
+              <p className="text-[13px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+                Not just a website.<br className="sm:hidden" /> A system behind your clinic.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                {PRODUCT_TRUST_POINTS.map((t) => (
+                  <span key={t} className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                    <CheckCircle2 className="w-4 h-4 text-clinara-teal shrink-0" /> {t}
+                  </span>
+                ))}
+              </div>
+            </FadeIn>
+          </div>
+        </section>
 
         {/* PROBLEM */}
         <Section className="bg-clinara-navy text-white">
