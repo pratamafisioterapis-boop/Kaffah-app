@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Bell, X, Menu as MenuIcon, User as UserIcon,
+  Search, Bell, X, User as UserIcon,
   Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon, ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -87,7 +87,7 @@ function mapRecapLog(row) {
   };
 }
 
-const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId, onOpenSidebar }) => {
+const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const bellRef = useRef(null);
@@ -249,16 +249,6 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId, 
   return (
     <div className="sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 sm:pt-0 bg-[#F5F9FC]/95 backdrop-blur-sm">
       <div className="flex items-center gap-2 sm:gap-3">
-        {onOpenSidebar && (
-          <button
-            onClick={onOpenSidebar}
-            className="lg:hidden flex-shrink-0 w-10 h-10 rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors"
-            aria-label="Buka menu"
-          >
-            <MenuIcon className="w-4 h-4" />
-          </button>
-        )}
-
         <div className="relative flex-1 min-w-0" ref={searchRef}>
           <div
             className={cn(

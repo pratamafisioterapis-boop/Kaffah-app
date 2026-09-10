@@ -445,7 +445,6 @@ const isPWA =
              clinicName={role === 'super_admin' ? 'System Control' : (clinicInfo?.name || '')}
              navItems={finalNavItems}
              clinicId={userDetails?.clinic_id}
-             onOpenSidebar={() => setIsSidebarOpen(true)}
            />
            {children}
         </div>
