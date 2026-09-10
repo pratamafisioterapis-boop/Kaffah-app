@@ -413,6 +413,133 @@ export const LANDING_TEMPLATES = [
       footer: { tagline: 'Pemulihan modern, presisi, dan terukur untuk setiap pasien.' },
     },
   },
+  {
+    id: 'prestige',
+    name: 'Prestige',
+    description: 'Navy premium, editorial, dan photography-driven. Cocok untuk klinik yang ingin tampil eksklusif dan high-end.',
+    swatch: ['#0b1f3a', '#2563eb'],
+    colors: { primary: '#1d4ed8', accent: '#38bdf8' },
+    style: {
+      // Rendered by PremiumClinicLanding.jsx instead of the shared
+      // ClinicLandingRenderer -- the layout itself (split hero, large photo
+      // service cards, facilities gallery, patient journey) is structurally
+      // different from the other 5 templates, not just a palette swap.
+      premiumLayout: true,
+      font: 'font-sans',
+    },
+    defaultContent: {
+      hero: {
+        eyebrow: 'Premium Physiotherapy & Rehabilitation',
+        title: 'Pulih Lebih Cepat, Bergerak Lebih Bebas.',
+        highlight: ['Lebih Cepat', 'Lebih Bebas'],
+        subtitle: 'Layanan fisioterapi profesional dengan pendekatan personal dan program pemulihan yang disesuaikan dengan kebutuhan setiap pasien.',
+        ctaLabel: 'Booking Konsultasi',
+        ctaWhatsappLabel: 'Chat WhatsApp',
+        image: '',
+        trustPoints: [
+          'Fisioterapis Berlisensi',
+          'Program Terpersonalisasi',
+          'Evidence-Based Treatment',
+          'Pendampingan Personal',
+        ],
+        glassCard: { title: 'Trusted Physiotherapy Care', subtitle: 'Personalized Recovery Program' },
+      },
+      stats: {
+        title: 'Dipercaya untuk mendampingi perjalanan pemulihan pasien',
+        items: [
+          { value: '1.000+', label: 'Pasien Ditangani' },
+          { value: '95%', label: 'Kepuasan Pasien' },
+          { value: '5+', label: 'Tahun Pengalaman' },
+          { value: '4.9/5', label: 'Rating Pasien' },
+        ],
+      },
+      services: {
+        title: 'Layanan Kami',
+        subtitle: 'Pendekatan terapi yang dirancang untuk membantu Anda kembali bergerak dengan optimal.',
+        items: [
+          { title: 'Fisioterapi Umum', description: 'Penanganan nyeri otot, sendi, dan cedera ringan hingga menengah.', image: '' },
+          { title: 'Terapi Pasca Operasi', description: 'Program pemulihan terstruktur setelah tindakan operasi ortopedi.', image: '' },
+          { title: 'Terapi Olahraga (Sports Injury)', description: 'Penanganan cedera atlet dan program kembali ke performa optimal.', image: '' },
+          { title: 'Home Care', description: 'Layanan fisioterapi langsung ke rumah untuk kenyamanan pasien.', image: '' },
+        ],
+      },
+      about: {
+        title: 'Lebih dari Sekadar Terapi. Kami Membantu Anda Kembali Menikmati Aktivitas.',
+        body: 'Grand Physiocare hadir untuk memberikan layanan fisioterapi yang profesional, personal, dan berbasis bukti ilmiah. Setiap pasien memiliki kondisi dan tujuan pemulihan yang berbeda, sehingga setiap program terapi dirancang secara individual.',
+        image: '',
+        points: [
+          'Fisioterapis berpengalaman & tersertifikasi',
+          'Program terapi dipersonalisasi sesuai kondisi pasien',
+          'Peralatan modern dan ruang terapi nyaman',
+          'Pendampingan pemulihan sampai tuntas',
+        ],
+        stats: [
+          { value: '1.000+', label: 'Pasien Terbantu' },
+          { value: '5+', label: 'Tahun Pengalaman' },
+        ],
+        ctaLabel: 'Kenali Kami Lebih Dekat',
+      },
+      advantages: {
+        title: 'Mengapa Memilih Grand Physiocare?',
+        subtitle: 'Alasan mengapa pasien mempercayakan pemulihannya kepada kami.',
+        items: [
+          { title: 'Fisioterapis Berlisensi', description: 'Ditangani oleh fisioterapis profesional dengan kompetensi dan sertifikasi yang relevan.' },
+          { title: 'Pendekatan Personal', description: 'Program terapi disesuaikan dengan kondisi, kebutuhan dan target setiap pasien.' },
+          { title: 'Fasilitas Modern', description: 'Didukung peralatan dan lingkungan terapi yang nyaman.' },
+          { title: 'Evidence-Based Care', description: 'Pendekatan terapi berdasarkan prinsip ilmiah dan evaluasi kondisi pasien.' },
+        ],
+      },
+      facilities: {
+        title: 'Ruang Pemulihan yang Dirancang untuk Kenyamanan',
+        subtitle: 'Fasilitas modern yang mendukung setiap tahap pemulihan Anda.',
+        images: [
+          { url: '', caption: 'Ruang Terapi Utama', size: 'large' },
+          { url: '', caption: 'Peralatan Rehabilitasi', size: 'small' },
+          { url: '', caption: 'Area Konsultasi', size: 'small' },
+          { url: '', caption: 'Lobi & Ruang Tunggu', size: 'panoramic' },
+        ],
+      },
+      journey: {
+        title: 'Perjalanan Pemulihan Anda',
+        subtitle: 'Empat tahap yang memastikan proses pemulihan Anda terarah dan terukur.',
+        steps: [
+          { title: 'Assessment', description: 'Evaluasi menyeluruh untuk memahami kondisi dan tujuan pemulihan Anda.' },
+          { title: 'Personalized Treatment', description: 'Program terapi dirancang khusus sesuai kondisi dan target Anda.' },
+          { title: 'Progress Monitoring', description: 'Perkembangan dipantau secara berkala untuk memastikan hasil optimal.' },
+          { title: 'Return to Activity', description: 'Pendampingan hingga Anda kembali beraktivitas dengan percaya diri.' },
+        ],
+      },
+      testimonials: {
+        title: 'Apa Kata Pasien Kami?',
+        items: [
+          { name: 'Eka Puspita Sari', role: 'Pasien Fisioterapi Umum', quote: 'Nyeri punggung saya jauh berkurang setelah beberapa sesi. Terapisnya sangat komunikatif dan sabar.', rating: 5 },
+          { name: 'Budi H.', role: 'Pasien Pasca Operasi', quote: 'Proses pemulihan pasca operasi lutut saya jadi lebih terarah berkat program terapi di sini. Sangat profesional!', rating: 5 },
+          { name: 'Rina M.', role: 'Pasien Home Care', quote: 'Layanan home care sangat membantu karena mobilitas saya terbatas. Tim datang tepat waktu dan profesional.', rating: 5 },
+        ],
+      },
+      faq: {
+        title: 'Pertanyaan yang Sering Diajukan',
+        items: [
+          { question: 'Apakah saya perlu rujukan dokter untuk memulai fisioterapi?', answer: 'Tidak selalu. Anda bisa langsung melakukan assessment awal bersama tim kami untuk menentukan program terapi yang tepat.' },
+          { question: 'Berapa lama satu sesi terapi berlangsung?', answer: 'Umumnya 45-60 menit per sesi, tergantung kondisi dan rencana terapi yang disepakati.' },
+          { question: 'Apakah tersedia layanan home care?', answer: 'Ya, kami menyediakan layanan fisioterapi langsung ke rumah untuk pasien dengan mobilitas terbatas.' },
+          { question: 'Bagaimana cara melakukan booking konsultasi?', answer: 'Anda dapat booking langsung melalui tombol "Booking Konsultasi" di halaman ini atau menghubungi kami via WhatsApp.' },
+        ],
+      },
+      pricing: {
+        title: 'Daftar Harga Layanan',
+        subtitle: 'Harga transparan tanpa biaya tersembunyi',
+        note: 'Harga dapat berubah sewaktu-waktu. Hubungi kami untuk info paket terbaru.',
+      },
+      cta: {
+        title: 'Siap Kembali Bergerak Tanpa Nyeri?',
+        subtitle: 'Mulai perjalanan pemulihan Anda bersama tim fisioterapis Grand Physiocare.',
+        buttonLabel: 'Booking Sekarang',
+        image: '',
+      },
+      footer: { tagline: 'Better Movement, Brighter Tomorrow.' },
+    },
+  },
 ];
 
 export const getLandingTemplate = (id) =>

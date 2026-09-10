@@ -5,6 +5,7 @@ import { useClinicTenant } from '@/hooks/useClinicTenant';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getLandingTemplate, mergeLandingContent } from '@/config/landingTemplates';
 import ClinicLandingRenderer from '@/components/clinic-landing/ClinicLandingRenderer';
+import PremiumClinicLanding from '@/components/clinic-landing/PremiumClinicLanding';
 
 // Public landing page rendered when a visitor arrives via a clinic's own
 // subdomain (kliniksehat.clinara.id) or verified custom domain
@@ -48,13 +49,14 @@ const ClinicTenantSitePage = () => {
 
   const template = getLandingTemplate(clinic.landing_template);
   const content = mergeLandingContent(template.defaultContent, clinic.landing_content);
+  const Renderer = template.style.premiumLayout ? PremiumClinicLanding : ClinicLandingRenderer;
 
   return (
     <>
       <Helmet>
         <title>{clinic.name}</title>
       </Helmet>
-      <ClinicLandingRenderer
+      <Renderer
         clinic={clinic}
         style={template.style}
         content={content}
