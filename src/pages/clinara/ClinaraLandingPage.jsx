@@ -50,7 +50,31 @@ const SOLUTION_ITEMS = [
   { icon: BarChart3, title: 'Laporan & analytics real-time', desc: 'Pantau perkembangan klinik dengan mudah dan akurat.' },
 ];
 
-const FLOW_STEPS = ['Patient', 'Appointment', 'Clinical Service', 'Payment', 'Follow-up', 'Analytics'];
+// Section 4 — "The Clinara Platform" connected-ecosystem hub. Copy and
+// layout mirror the brand reference verbatim (eyebrow, headline,
+// description, the 6 numbered modules, and the closing CTA) — do not
+// rewrite, shorten, or reorder without being asked. Desktop positions each
+// module around a central Clinara hub (see PLATFORM_MODULE_POSITIONS);
+// mobile falls back to a simple stacked flow.
+const PLATFORM_MODULES = [
+  { n: '01', icon: Users, title: 'Pasien', desc: 'Kelola data dan riwayat pasien dengan mudah.' },
+  { n: '02', icon: CalendarCheck, title: 'Appointment', desc: 'Atur jadwal dan kunjungan lebih terorganisir.' },
+  { n: '03', icon: ClipboardList, title: 'Rekam Medis', desc: 'Dokumentasikan layanan pasien secara sistematis.' },
+  { n: '04', icon: Stethoscope, title: 'Tenaga Kesehatan', desc: 'Kelola tim dan pantau aktivitasnya.' },
+  { n: '05', icon: Wallet, title: 'Keuangan & Paket', desc: 'Kelola transaksi dan paket layanan dalam satu sistem.' },
+  { n: '06', icon: MessageCircle, title: 'Komunikasi & Analytics', desc: 'Otomatisasi komunikasi dan pahami performa klinik.' },
+];
+
+// Percentage coordinates (of the desktop hub canvas) for each module's
+// card center and the point its connector line should touch.
+const PLATFORM_MODULE_POSITIONS = [
+  { card: { x: 50, y: 8 }, line: { x: 50, y: 24 } },
+  { card: { x: 13, y: 34 }, line: { x: 29, y: 38 } },
+  { card: { x: 87, y: 34 }, line: { x: 71, y: 38 } },
+  { card: { x: 13, y: 72 }, line: { x: 30, y: 63 } },
+  { card: { x: 50, y: 88 }, line: { x: 50, y: 68 } },
+  { card: { x: 87, y: 72 }, line: { x: 70, y: 63 } },
+];
 
 const FEATURES = [
   { n: '01', icon: Users, title: 'Patient Management', desc: 'Simpan dan kelola informasi pasien secara terstruktur sehingga tim dapat mengakses informasi yang dibutuhkan dengan lebih cepat.' },
@@ -717,31 +741,121 @@ const ClinaraLandingPage = () => {
           </div>
         </section>
 
-        {/* SOLUTION */}
+        {/* THE CLINARA PLATFORM — connected ecosystem hub */}
         <Section id="cara-kerja">
-          <FadeIn className="text-center max-w-3xl mx-auto mb-14">
-            <Label>The Clinara Way</Label>
-            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">
-              Simplify the complexity behind better healthcare.
+          <FadeIn className="text-center max-w-2xl mx-auto mb-16">
+            <Label>The Clinara Platform</Label>
+            <h2 className="text-3xl md:text-[2.75rem] font-bold text-clinara-navy leading-tight">
+              Semua operasional klinik.<br />
+              <span className="text-clinara-blue">Satu sistem yang terhubung.</span>
             </h2>
             <p className="mt-5 text-slate-600 leading-relaxed">
-              Clinara menyatukan berbagai proses penting dalam operasional klinik sehingga tim dapat bekerja dari
-              satu sumber informasi yang terorganisir.
+              Dari pasien, appointment, layanan, tenaga kesehatan, hingga keuangan dan analytics — semua
+              terhubung dalam satu platform.
             </p>
           </FadeIn>
-          <FadeIn delay={0.1} className="flex flex-wrap items-center justify-center gap-3 mb-8">
-            {FLOW_STEPS.map((step, i) => (
-              <React.Fragment key={step}>
-                <span className="px-5 py-2.5 rounded-full bg-clinara-navy text-white text-sm font-semibold">
-                  {step}
+
+          {/* Desktop / tablet — hub-and-spoke ecosystem */}
+          <div className="hidden lg:block relative mx-auto max-w-4xl" style={{ height: 640 }}>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {PLATFORM_MODULE_POSITIONS.map((pos, i) => (
+                <line
+                  key={i}
+                  x1={50} y1={50} x2={pos.line.x} y2={pos.line.y}
+                  stroke="#2dd4bf" strokeOpacity="0.5" strokeWidth="0.25" strokeDasharray="1.4 1.4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+              {PLATFORM_MODULE_POSITIONS.map((pos, i) => (
+                <circle key={i} cx={pos.line.x} cy={pos.line.y} r="0.7" fill="#2dd4bf" />
+              ))}
+              <circle cx={50} cy={50} r="1" fill="#2dd4bf" />
+            </svg>
+
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+              <FadeIn className="w-44 h-44 rounded-full bg-white shadow-[0_20px_50px_rgba(11,39,71,0.15)] border border-clinara-teal/20 flex flex-col items-center justify-center text-center">
+                <img src={ICON_URL} alt="Clinara" className="w-9 h-9 mb-2" />
+                <span className="font-extrabold text-clinara-navy text-lg leading-none">Clinara</span>
+                <span className="mt-1.5 text-[11px] text-slate-500 leading-snug px-4">
+                  Satu Platform<br />untuk Klinik Anda
                 </span>
-                {i < FLOW_STEPS.length - 1 && <ArrowRight className="w-4 h-4 text-clinara-teal shrink-0" />}
-              </React.Fragment>
-            ))}
-          </FadeIn>
-          <FadeIn delay={0.15} className="text-center text-slate-600 max-w-2xl mx-auto">
-            Dari pasien melakukan booking hingga manajemen memahami performa klinik, seluruh perjalanan dapat
-            terhubung dalam satu ekosistem.
+              </FadeIn>
+            </div>
+
+            {PLATFORM_MODULES.map((m, i) => {
+              const pos = PLATFORM_MODULE_POSITIONS[i].card;
+              return (
+                <div
+                  key={m.n}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 z-[1]"
+                  style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                >
+                  <FadeIn
+                    delay={i * 0.06}
+                    className="w-64 rounded-2xl bg-white border border-slate-100 shadow-[0_12px_32px_rgba(11,39,71,0.08)] p-5 hover:-translate-y-1 transition-transform duration-300"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-clinara-teal/10 flex items-center justify-center shrink-0">
+                        <m.icon className="w-[18px] h-[18px] text-clinara-blue" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-clinara-teal">{m.n}</span>
+                        <h3 className="font-bold text-clinara-navy text-[15px] leading-tight">{m.title}</h3>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-slate-500 leading-relaxed">{m.desc}</p>
+                  </FadeIn>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile — stacked vertical flow */}
+          <div className="lg:hidden">
+            <FadeIn className="mx-auto w-40 h-40 rounded-full bg-white shadow-[0_16px_40px_rgba(11,39,71,0.12)] border border-clinara-teal/20 flex flex-col items-center justify-center text-center mb-6">
+              <img src={ICON_URL} alt="Clinara" className="w-8 h-8 mb-1.5" />
+              <span className="font-extrabold text-clinara-navy text-base leading-none">Clinara</span>
+              <span className="mt-1.5 text-[11px] text-slate-500 leading-snug px-3">
+                Satu Platform<br />untuk Klinik Anda
+              </span>
+            </FadeIn>
+            <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+              {PLATFORM_MODULES.map((m, i) => (
+                <React.Fragment key={m.n}>
+                  <span aria-hidden="true" className="w-px h-4 bg-clinara-teal/40" />
+                  <FadeIn delay={i * 0.05} className="w-full rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-clinara-teal/10 flex items-center justify-center shrink-0">
+                        <m.icon className="w-[18px] h-[18px] text-clinara-blue" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-clinara-teal">{m.n}</span>
+                        <h3 className="font-bold text-clinara-navy text-[15px] leading-tight">{m.title}</h3>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-slate-500 leading-relaxed">{m.desc}</p>
+                  </FadeIn>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <FadeIn delay={0.1} className="mt-16 md:mt-20 rounded-3xl bg-clinara-bg p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-10">
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="text-2xl md:text-[1.75rem] font-bold text-clinara-navy leading-snug">
+                Semua terhubung.<br />
+                Semua <span className="text-clinara-blue">dalam satu sistem.</span>
+              </h3>
+              <p className="mt-3 text-slate-600 leading-relaxed max-w-xl">
+                Clinara membantu tim klinik bekerja dari satu sumber informasi yang terorganisir.
+              </p>
+            </div>
+            <a href="#fitur" className="shrink-0">
+              <Button size="lg" className="h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2">
+                Lihat Semua Fitur <ArrowRight className="w-4 h-4" />
+              </Button>
+            </a>
           </FadeIn>
         </Section>
 
