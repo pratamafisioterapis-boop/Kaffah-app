@@ -258,7 +258,7 @@ const LandingPageManager = () => {
       {/* Template picker */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <h3 className="text-sm font-semibold text-slate-800 mb-4">Pilih Gaya Landing Page</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {LANDING_TEMPLATES.map((tpl) => (
             <button
               key={tpl.id}
@@ -322,6 +322,9 @@ const LandingPageManager = () => {
             <Field label="Teks tombol booking" {...field('hero.ctaLabel')} />
             <Field label="Teks tombol WhatsApp" {...field('hero.ctaWhatsappLabel')} />
           </div>
+          {templateId === 'prestige' && (
+            <Field label="URL Foto Hero (opsional)" placeholder="https://..." {...field('hero.image')} />
+          )}
         </div>
 
         <div className="space-y-3">
@@ -334,6 +337,9 @@ const LandingPageManager = () => {
             value={(getPath(content, 'about.points') || []).join('\n')}
             onChange={(v) => setContent((prev) => setPath(prev, 'about.points', v.split('\n').filter((l) => l.trim())))}
           />
+          {templateId === 'prestige' && (
+            <Field label="URL Foto Tentang Kami (opsional)" placeholder="https://..." {...field('about.image')} />
+          )}
         </div>
 
         <div className="space-y-3">
@@ -345,8 +351,10 @@ const LandingPageManager = () => {
           <ListEditor
             items={content.services?.items}
             onChange={(items) => setContent((prev) => setPath(prev, 'services.items', items))}
-            fields={[{ key: 'title', label: 'Nama Layanan' }, { key: 'description', label: 'Deskripsi', textarea: true }]}
-            emptyItem={{ title: '', description: '' }}
+            fields={templateId === 'prestige'
+              ? [{ key: 'title', label: 'Nama Layanan' }, { key: 'description', label: 'Deskripsi', textarea: true }, { key: 'image', label: 'URL Foto (opsional)' }]
+              : [{ key: 'title', label: 'Nama Layanan' }, { key: 'description', label: 'Deskripsi', textarea: true }]}
+            emptyItem={{ title: '', description: '', image: '' }}
           />
         </div>
 
@@ -381,11 +389,39 @@ const LandingPageManager = () => {
           <Field label="Catatan kecil di bawah harga" {...field('pricing.note')} />
         </div>
 
+        {templateId === 'prestige' && (
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Fasilitas (galeri foto)</p>
+            <ListEditor
+              items={content.facilities?.images}
+              onChange={(items) => setContent((prev) => setPath(prev, 'facilities.images', items))}
+              fields={[{ key: 'url', label: 'URL Foto' }, { key: 'caption', label: 'Keterangan' }]}
+              emptyItem={{ url: '', caption: '', size: 'small' }}
+            />
+          </div>
+        )}
+
+        {templateId === 'prestige' && (
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">FAQ</p>
+            <Field label="Judul bagian" {...field('faq.title')} />
+            <ListEditor
+              items={content.faq?.items}
+              onChange={(items) => setContent((prev) => setPath(prev, 'faq.items', items))}
+              fields={[{ key: 'question', label: 'Pertanyaan' }, { key: 'answer', label: 'Jawaban', textarea: true }]}
+              emptyItem={{ question: '', answer: '' }}
+            />
+          </div>
+        )}
+
         <div className="space-y-3">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Ajakan Booking (CTA)</p>
           <Field label="Judul" {...field('cta.title')} />
           <Field label="Sub-judul" textarea {...field('cta.subtitle')} />
           <Field label="Teks tombol" {...field('cta.buttonLabel')} />
+          {templateId === 'prestige' && (
+            <Field label="URL Foto Latar CTA (opsional)" placeholder="https://..." {...field('cta.image')} />
+          )}
         </div>
 
         <div className="space-y-3">
