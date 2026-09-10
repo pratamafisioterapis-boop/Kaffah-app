@@ -860,26 +860,112 @@ const ClinaraLandingPage = () => {
         </Section>
 
         {/* FEATURES */}
-        <Section id="fitur" className="bg-clinara-bg">
-          <FadeIn className="text-center max-w-2xl mx-auto mb-14">
-            <Label>Powerful Tools. Simple Experience.</Label>
-            <h2 className="text-3xl md:text-4xl font-bold text-clinara-navy">
-              Dirancang untuk kebutuhan nyata klinik.
-            </h2>
-          </FadeIn>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {FEATURES.map((f, i) => (
-              <FadeIn key={f.title} delay={(i % 4) * 0.05} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-clinara-teal/10 flex items-center justify-center">
-                    <f.icon className="w-5 h-5 text-clinara-blue" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-300">{f.n}</span>
-                </div>
-                <h3 className="font-bold text-clinara-navy mb-1.5">{f.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{f.desc}</p>
+        <Section id="fitur" className="relative overflow-hidden bg-clinara-bg">
+          {/* subtle decoration — soft glow, faint dotted grid, very soft curve.
+              Kept low-opacity and behind everything so the section stays clean. */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-clinara-sky/10 blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-[480px] h-[480px] rounded-full bg-clinara-teal/10 blur-3xl translate-x-1/4 translate-y-1/4" />
+            <div
+              className="absolute top-10 left-6 md:left-10 w-28 h-28 opacity-[0.35]"
+              style={{
+                backgroundImage: 'radial-gradient(currentColor 1.4px, transparent 1.4px)',
+                backgroundSize: '14px 14px',
+                color: '#2b6cb0',
+              }}
+            />
+            <svg className="absolute -bottom-6 -left-10 text-clinara-sky/10" width="360" height="200" viewBox="0 0 360 200" fill="none" aria-hidden="true">
+              <path d="M-20 180C60 100 140 220 240 140S400 20 420 60" stroke="currentColor" strokeWidth="60" />
+            </svg>
+          </div>
+
+          <div className="relative">
+            <FadeIn className="text-center max-w-2xl mx-auto mb-4">
+              <Label>Powerful Tools. Simple Experience.</Label>
+            </FadeIn>
+
+            {/* headline + handwritten annotation share one row on desktop so the
+                note sits beside the headline like the reference; on mobile it
+                collapses to a small centered annotation under the subtitle */}
+            <div className="relative max-w-2xl mx-auto mb-14">
+              <FadeIn className="text-center">
+                <h2 className="text-3xl sm:text-4xl md:text-[2.75rem] font-bold leading-tight">
+                  <span className="text-clinara-navy">Dirancang untuk </span>
+                  <span className="text-clinara-blue">
+                    kebutuhan<br className="sm:hidden" /> nyata klinik.
+                  </span>
+                </h2>
+                <p className="mt-5 text-slate-600 leading-relaxed">
+                  Semua fitur yang Anda butuhkan dalam satu platform, untuk membantu operasional klinik berjalan
+                  lebih efisien dan profesional.
+                </p>
               </FadeIn>
-            ))}
+
+              <FadeIn
+                delay={0.15}
+                className="hidden lg:block absolute top-0 right-[-260px] w-56 rotate-3 text-right"
+              >
+                <p
+                  className="text-clinara-navy text-2xl leading-[1.15]"
+                  style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
+                >
+                  Solusi lengkap<br />untuk klinik<br />yang berkembang
+                </p>
+                <svg width="70" height="16" viewBox="0 0 70 16" fill="none" className="mt-1 ml-auto text-clinara-teal">
+                  <path d="M2 8c14-9 40-9 66 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </FadeIn>
+
+              <FadeIn delay={0.15} className="lg:hidden flex justify-center mt-5">
+                <p
+                  className="text-clinara-navy text-xl leading-[1.15] text-center -rotate-1"
+                  style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
+                >
+                  Solusi lengkap untuk klinik yang berkembang
+                </p>
+              </FadeIn>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {FEATURES.map((f, i) => (
+                <FadeIn
+                  key={f.title}
+                  delay={(i % 4) * 0.05}
+                  className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_8px_24px_rgba(11,39,71,0.05)] hover:shadow-[0_16px_36px_rgba(11,39,71,0.10)] hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-clinara-teal/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                      <f.icon className="w-5 h-5 text-clinara-blue" />
+                    </div>
+                    <span className="text-sm font-bold text-clinara-blue/30">{f.n}</span>
+                  </div>
+                  <h3 className="font-bold text-clinara-navy mb-1.5">{f.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+                </FadeIn>
+              ))}
+            </div>
+
+            {/* bottom CTA panel */}
+            <FadeIn delay={0.1} className="mt-14 md:mt-16 rounded-3xl bg-white/70 border border-white p-8 md:p-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+              <div className="flex-1 flex items-start gap-4 text-center md:text-left">
+                <span aria-hidden="true" className="hidden md:block w-1 self-stretch rounded-full bg-clinara-teal shrink-0" />
+                <div>
+                  <h3 className="text-2xl md:text-[1.75rem] font-bold leading-snug">
+                    <span className="text-clinara-navy">Semua fitur, satu tujuan.</span>
+                    <br />
+                    <span className="text-clinara-blue">Klinik yang lebih efisien dan berkembang.</span>
+                  </h3>
+                  <p className="mt-3 text-slate-600 leading-relaxed">
+                    Clinara hadir untuk mendukung setiap langkah pertumbuhan klinik Anda.
+                  </p>
+                </div>
+              </div>
+              <a href="#harga" className="shrink-0">
+                <Button size="lg" className="h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2">
+                  Lihat Semua Fitur <ArrowRight className="w-4 h-4" />
+                </Button>
+              </a>
+            </FadeIn>
           </div>
         </Section>
 
