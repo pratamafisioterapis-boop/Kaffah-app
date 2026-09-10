@@ -1,14 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom';
-import { CalendarCheck, MapPin, Phone, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useClinicTenant } from '@/hooks/useClinicTenant';
+import { supabase } from '@/lib/customSupabaseClient';
+import { getLandingTemplate, mergeLandingContent } from '@/config/landingTemplates';
+import ClinicLandingRenderer from '@/components/clinic-landing/ClinicLandingRenderer';
 
 // Public landing page rendered when a visitor arrives via a clinic's own
 // subdomain (kliniksehat.clinara.id) or verified custom domain
-// (kliniksehat.com) instead of the platform's own domains.
+// (kliniksehat.com) instead of the platform's own domains. Layout, theme
+// colors, and section copy all come from the clinic's own choice of
+// landing_template + landing_content/landing_primary_color/landing_accent_color
+// (set from the "Landing Page" tab in owner Settings) -- unrelated to and
+// never used by kaffahphysio.id, which keeps its own static landing page.
 const ClinicTenantSitePage = () => {
   const { clinic, loading, notFound } = useClinicTenant();
+  const [pricelist, setPricelist] = useState([]);
+
+  useEffect(() => {
+    if (!clinic?.id) return;
+    supabase
+      .rpc('get_clinic_pricelist', { p_clinic_id: clinic.id })
+      .then(({ data }) => setPricelist(data || []));
+  }, [clinic?.id]);
 
   if (loading) {
     return (
@@ -32,68 +46,26 @@ const ClinicTenantSitePage = () => {
   const waNumber = (clinic.phone || '').replace(/[^0-9]/g, '');
   const waHref = waNumber ? `https://wa.me/${waNumber.replace(/^0/, '62')}` : null;
 
+  const template = getLandingTemplate(clinic.landing_template);
+  const content = mergeLandingContent(template.defaultContent, clinic.landing_content);
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       <Helmet>
         <title>{clinic.name}</title>
       </Helmet>
-
-      <header className="bg-white border-b border-slate-100">
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-3">
-          {clinic.logo_url ? (
-            <img src={clinic.logo_url} alt={clinic.name} className="h-10 w-10 rounded-lg object-cover" />
-          ) : null}
-          <span className="font-bold text-lg text-slate-800">{clinic.name}</span>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">{clinic.name}</h1>
-        <p className="text-slate-500 max-w-xl mx-auto mb-10">
-          Layanan fisioterapi profesional. Hubungi kami untuk membuat janji temu.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-          <Link
-            to="/booking"
-            className="inline-flex items-center justify-center gap-2 bg-clinara-navy hover:bg-clinara-blue text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-          >
-            <CalendarCheck className="w-4 h-4" /> Booking Online
-          </Link>
-          {waHref && (
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-green-600 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-colors"
-            >
-              <Phone className="w-4 h-4" /> Chat WhatsApp
-            </a>
-          )}
-        </div>
-
-        {(clinic.address || clinic.phone) && (
-          <div className="bg-white border border-slate-100 rounded-2xl p-6 max-w-md mx-auto text-left space-y-3">
-            {clinic.address && (
-              <div className="flex items-start gap-3 text-slate-600">
-                <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-blue-600" />
-                <span>{clinic.address}</span>
-              </div>
-            )}
-            {clinic.phone && (
-              <div className="flex items-start gap-3 text-slate-600">
-                <Phone className="w-5 h-5 shrink-0 mt-0.5 text-blue-600" />
-                <span>{clinic.phone}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      <footer className="text-center text-xs text-slate-400 py-8">
-        Powered by Clinara
-      </footer>
-    </div>
+      <ClinicLandingRenderer
+        clinic={clinic}
+        style={template.style}
+        content={content}
+        pricelist={pricelist}
+        bookingHref="/booking"
+        waHref={waHref}
+        primaryColor={clinic.landing_primary_color}
+        accentColor={clinic.landing_accent_color}
+        defaultColors={template.colors}
+      />
+    </>
   );
 };
 
