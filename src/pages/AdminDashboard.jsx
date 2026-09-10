@@ -57,8 +57,9 @@ const HeroClock = () => {
   );
 };
 const AdminDashboardHome = () => {
-  const location = useLocation(); 
+  const location = useLocation();
   const today = new Date().toISOString().split('T')[0];
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
@@ -419,47 +420,53 @@ setTrendPatients(trendArray);
       
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
 
-        {/* ── Hero Header — konsisten desktop, tablet & PWA ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#F5F9FC] to-[#EAF4FF] text-[#102F52] p-5 md:p-7 shadow-sm border border-[#DCE8F2]">
-          {/* Premium soft accents */}
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-[#2F8CFF]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-[#35C8C1]/10 rounded-full blur-2xl pointer-events-none" />
-          {/* Blue hairline accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2F8CFF]/40 to-transparent" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-[#EAF4FF] flex items-center justify-center border border-[#DCE8F2]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-[#1677D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[#1677D2] text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
-                <h1 className="text-lg md:text-2xl font-bold tracking-tight text-[#102F52]">Admin Dashboard</h1>
-                <p className="text-[#5B6B7D] text-xs mt-1">Pusat kendali operasional dan manajemen klinik.</p>
-              </div>
+        {/* ── Hero Banner ── */}
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+          <img
+            src="/hero/clinara-owner-hero.png"
+            alt="Kaffah Physiotherapy"
+            className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
+          />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{todayLabel}</p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              >
+                Selamat datang,<br />
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                  Admin!
+                </span>
+              </h1>
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                Pusat kendali operasional dan manajemen klinik.
+              </p>
             </div>
+          </div>
+        </div>
 
-            <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
-              <HeroClock />
-              <div className="flex flex-col gap-1.5 bg-white border border-[#DCE8F2] rounded-xl px-3 py-2.5 w-full sm:w-auto shadow-sm">
-                <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider">Periode</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={dateRange.startDate}
-                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
-                  />
-                  <span className="text-[#DCE8F2] shrink-0">–</span>
-                  <input
-                    type="date"
-                    value={dateRange.endDate}
-                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
-                  />
-                </div>
+        {/* ── Periode Toolbar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <p className="text-sm text-[#5B6B7D]">{useAuth().clinicName || ''}</p>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <HeroClock />
+            <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
+              <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                />
+                <span className="text-[#DCE8F2] shrink-0">–</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                />
               </div>
             </div>
           </div>
