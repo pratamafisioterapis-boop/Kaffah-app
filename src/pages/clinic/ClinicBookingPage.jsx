@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import {
-  ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CheckCircle2, Loader2, Lock, MapPin,
+  ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CalendarCheck2, CheckCircle2, Loader2, Lock, MapPin,
   Sparkles, Stethoscope, User, Users, MessageCircle, Activity, HeartPulse, Home,
-  ClipboardList, RotateCcw,
+  ClipboardList, RotateCcw, ShieldCheck, Lightbulb, Wand2, Cloud,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,31 @@ import { getLandingTemplate, mergeLandingContent } from '@/config/landingTemplat
 const SERVICE_ICONS = [Stethoscope, Activity, HeartPulse, Home, ClipboardList];
 
 const ANY_THERAPIST = { id: null, name: 'Siapa Saja yang Tersedia', specialization: 'Jadwal tercepat' };
+
+// "Bantu Saya Memilih" quick-pick tags for the service step. Each tag is
+// matched against a tenant's own service titles/descriptions by keyword
+// score at runtime (matchServiceByKeywords) - the tags themselves are
+// generic complaint categories, never tied to any one clinic's services.
+const HELP_TAGS = [
+  { label: 'Nyeri Otot & Sendi', keywords: ['nyeri', 'otot', 'sendi', 'umum', 'musculoskeletal'] },
+  { label: 'Pasca Operasi', keywords: ['operasi', 'pasca', 'post', 'ortopedi'] },
+  { label: 'Cedera Olahraga', keywords: ['olahraga', 'cedera', 'sport', 'atlet', 'sports'] },
+  { label: 'Kunjungan ke Rumah', keywords: ['rumah', 'home', 'care', 'kunjungan'] },
+];
+
+const matchServiceByKeywords = (services, keywords) => {
+  let best = null;
+  let bestScore = 0;
+  services.forEach((s) => {
+    const haystack = `${s.title} ${s.description || ''}`.toLowerCase();
+    const score = keywords.reduce((acc, k) => acc + (haystack.includes(k) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = s;
+    }
+  });
+  return bestScore > 0 ? best : null;
+};
 
 const STEP_LABELS = {
   service: 'Layanan',
@@ -63,6 +88,7 @@ const ClinicBookingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState(null);
+  const [helperOpen, setHelperOpen] = useState(false);
 
   const dateOptions = useMemo(
     () => Array.from({ length: 10 }, (_, i) => addDays(new Date(), i)),
@@ -116,9 +142,19 @@ const ClinicBookingPage = () => {
     if (stepIndex > 0) goTo(STEPS[stepIndex - 1]);
   };
 
-  const handlePickService = (s) => {
+  const handleSelectService = (s) => {
     setSelectedService(s);
-    goTo('therapist');
+  };
+
+  const handleHelpTag = (tag) => {
+    const match = matchServiceByKeywords(services, tag.keywords);
+    setHelperOpen(false);
+    if (match) {
+      setSelectedService(match);
+      toast({ title: 'Direkomendasikan', description: match.title });
+    } else {
+      toast({ title: 'Belum ada rekomendasi otomatis', description: 'Silakan pilih layanan secara manual di bawah.' });
+    }
   };
 
   const handlePickTherapist = (t) => {
@@ -275,21 +311,25 @@ const ClinicBookingPage = () => {
             )}
             <div className="min-w-0">
               <p className="font-bold text-slate-900 leading-tight truncate text-sm sm:text-base">{clinic.name}</p>
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-tight">Booking Online</p>
+              <p className="text-[11px] sm:text-xs text-slate-400 leading-tight truncate">{content?.footer?.tagline || 'Booking Online'}</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-slate-400 shrink-0">
-            <Lock className="w-3.5 h-3.5" /> Aman &amp; Privat
+          <div className="flex items-center gap-1.5 text-slate-400 shrink-0 text-right">
+            <Lock className="w-3.5 h-3.5 hidden sm:block" />
+            <div className="leading-tight">
+              <p className="text-[11px] sm:text-xs font-semibold text-slate-600">Booking Online</p>
+              <p className="text-[10px] sm:text-[11px]">Aman &amp; Privat</p>
+            </div>
           </div>
         </div>
       </header>
 
       {!success && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-start">
             {STEPS.map((s, i) => (
               <React.Fragment key={s}>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex flex-col items-center gap-1 shrink-0 w-10 sm:w-14">
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors shrink-0 ${
                       i <= stepIndex ? 'text-white' : 'bg-slate-200 text-slate-400'
@@ -299,14 +339,14 @@ const ClinicBookingPage = () => {
                     {i < stepIndex ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                   </div>
                   <span
-                    className="text-xs font-semibold hidden sm:inline whitespace-nowrap"
+                    className="text-[9px] sm:text-[11px] font-semibold text-center leading-tight"
                     style={{ color: i <= stepIndex ? primary : '#94a3b8' }}
                   >
                     {STEP_LABELS[s]}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className="w-5 sm:flex-1 h-0.5 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                  <div className="flex-1 h-0.5 rounded-full bg-slate-200 overflow-hidden mt-3.5 mx-0.5 sm:mx-1">
                     <div className="h-full rounded-full transition-all" style={{ width: i < stepIndex ? '100%' : '0%', background: accent }} />
                   </div>
                 )}
@@ -391,30 +431,141 @@ const ClinicBookingPage = () => {
                 </motion.div>
               ) : step === 'service' ? (
                 <motion.div key="service" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Mulai Perjalanan Anda</h1>
-                  <p className="text-slate-500 text-sm mb-6">Pilih layanan yang Anda butuhkan.</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: accent }}>
+                    Langkah {stepIndex + 1} dari {STEPS.length}
+                  </p>
+
+                  {content?.hero?.image ? (
+                    <div className="relative rounded-3xl overflow-hidden mb-6 h-40 sm:h-56">
+                      <img src={content.hero.image} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0" style={{ backgroundImage: `linear-gradient(0deg, rgba(15,23,42,0.55), rgba(15,23,42,0.05))` }} />
+                      {content?.hero?.eyebrow && (
+                        <p className="absolute top-4 right-4 text-white text-xs italic font-medium text-right max-w-[60%]">{content.hero.eyebrow}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className="relative rounded-3xl overflow-hidden mb-6 h-28 sm:h-36 flex items-center justify-center"
+                      style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
+                    >
+                      <Sparkles className="w-10 h-10 text-white/40" />
+                    </div>
+                  )}
+
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">
+                    {content?.hero?.title || 'Mulai Perjalanan Pemulihan Anda'}
+                  </h1>
+                  <p className="text-slate-500 text-sm mb-6">
+                    {content?.services?.subtitle || 'Pilih layanan yang sesuai dengan kebutuhan Anda. Jika masih bingung, kami dapat membantu merekomendasikan pilihan yang tepat.'}
+                  </p>
+
+                  <h2 className="text-base font-bold text-slate-900 mb-1">{content?.services?.title || 'Pilih Layanan Terapi'}</h2>
+                  <p className="text-slate-500 text-xs mb-4">Pilih jenis layanan yang Anda butuhkan.</p>
 
                   <div className="grid sm:grid-cols-2 gap-3.5">
                     {services.map((s, i) => {
                       const Icon = SERVICE_ICONS[i % SERVICE_ICONS.length];
+                      const isSelected = selectedService?.title === s.title;
                       return (
                         <button
                           key={s.title}
-                          onClick={() => handlePickService(s)}
-                          className="text-left bg-white border border-slate-100 rounded-2xl p-4 flex items-start gap-3.5 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 min-h-[48px]"
+                          onClick={() => handleSelectService(s)}
+                          className={`text-left bg-white rounded-2xl overflow-hidden transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 min-h-[48px] ${
+                            isSelected ? 'ring-2' : 'border border-slate-100'
+                          }`}
+                          style={isSelected ? { '--tw-ring-color': primary } : undefined}
                         >
-                          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${primary}14` }}>
-                            <Icon className="w-5 h-5" style={{ color: primary }} />
+                          {s.image ? (
+                            <div className="relative h-32">
+                              <img src={s.image} alt="" className="w-full h-full object-cover" />
+                              <div
+                                className="absolute -bottom-4 left-3 w-9 h-9 rounded-full flex items-center justify-center ring-4 ring-white"
+                                style={{ background: primary }}
+                              >
+                                <Icon className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className={`p-4 flex items-start gap-3 ${s.image ? 'pt-6' : ''}`}>
+                            {!s.image && (
+                              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${primary}14` }}>
+                                <Icon className="w-5 h-5" style={{ color: primary }} />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-800 text-sm">{s.title}</p>
+                              {s.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{s.description}</p>}
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-slate-300 mt-1 shrink-0" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-800 text-sm">{s.title}</p>
-                            {s.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{s.description}</p>}
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-slate-300 mt-2 shrink-0" />
                         </button>
                       );
                     })}
                   </div>
+
+                  <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mt-5 flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
+                      <Lightbulb className="w-4 h-4" style={{ color: primary }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm">Belum yakin memilih layanan?</p>
+                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Pilih keluhan Anda dan kami bantu rekomendasikan layanan yang paling sesuai.</p>
+                      {!helperOpen ? (
+                        <button
+                          onClick={() => setHelperOpen(true)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full border bg-white min-h-[36px]"
+                          style={{ color: primary, borderColor: `${primary}55` }}
+                        >
+                          <Wand2 className="w-3.5 h-3.5" /> Bantu Saya Memilih
+                        </button>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {HELP_TAGS.map((tag) => (
+                            <button
+                              key={tag.label}
+                              onClick={() => handleHelpTag(tag)}
+                              className="text-xs font-semibold px-3 py-2 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-slate-300 min-h-[36px]"
+                            >
+                              {tag.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-6 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal terkonfirmasi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:block">
+                    <Button
+                      onClick={() => goTo('therapist')}
+                      disabled={!selectedService}
+                      className="w-full mt-3 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                      style={{ background: primary }}
+                    >
+                      Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                  <StickyMobileCta>
+                    <Button
+                      onClick={() => goTo('therapist')}
+                      disabled={!selectedService}
+                      className="w-full text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                      style={{ background: primary }}
+                    >
+                      Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </StickyMobileCta>
                 </motion.div>
               ) : step === 'therapist' ? (
                 <motion.div key="therapist" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -678,8 +829,10 @@ const ClinicBookingPage = () => {
       </main>
 
       <footer className="text-center py-8 px-4">
-        <p className="text-xs text-slate-400">Powered by <span className="font-semibold text-slate-500">Clinara</span></p>
-        <p className="text-[11px] text-slate-300 mt-0.5">The Complete Clinic Management Platform</p>
+        <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5">
+          Powered by <Cloud className="w-3.5 h-3.5 text-slate-400" /> <span className="font-semibold text-slate-500">Clinara</span>
+        </p>
+        <p className="text-[11px] text-slate-300 mt-0.5">Modern. Flexible. Made for Healthcare.</p>
       </footer>
     </div>
   );
