@@ -15,6 +15,10 @@ import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 // patient-facing brand on the public domain.
 const CLINARA_LOGO_URL = '/clinara-logo.png';
 const CLINARA_LOGIN_BG_URL = '/login-bg.jpg';
+// Portrait crop with the wave accent already baked in, used only below the
+// `sm` breakpoint — the landscape CLINARA_LOGIN_BG_URL above stays for
+// larger screens, where the CSS-drawn wave at the bottom takes over.
+const CLINARA_LOGIN_BG_MOBILE_URL = '/login-bg-mobile.jpg';
 // Icon-only crops (see public/clinara-icon.png generation) - the favicon
 // needs just the mark with no visible box (browser tabs render transparency
 // fine); apple-touch-icon needs an opaque backing since iOS paints
@@ -327,48 +331,56 @@ case 'clinic_admin':
       </Helmet>
 
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center relative overflow-hidden selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
-        {/* Background photo, softly blurred, with just a light tint for text
-            contrast — the saturated blue accent lives only in the bottom
-            shapes, not washed across the whole image. */}
+        {/* Background photo — a portrait crop with the wave accent already
+            baked in on mobile, the landscape clinic photo (blurred, lightly
+            tinted, with a CSS-drawn wave) from `sm` up. */}
         <div className="absolute inset-0 z-0">
+          <img
+            src={CLINARA_LOGIN_BG_MOBILE_URL}
+            alt=""
+            aria-hidden="true"
+            className="sm:hidden w-full h-full object-cover"
+          />
           <img
             src={CLINARA_LOGIN_BG_URL}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover scale-110 blur-[3px]"
+            className="hidden sm:block w-full h-full object-cover scale-110 blur-[3px]"
           />
-          <div className="absolute inset-0 bg-[#0a2a52]/25"></div>
+          <div className="hidden sm:block absolute inset-0 bg-[#0a2a52]/25"></div>
         </div>
 
-        {/* Corner taglines echoing the brand voice, hidden on narrow screens
-            to keep the layout compact and free of scrolling */}
-        <div className="hidden sm:block absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+        {/* Corner taglines echoing the brand voice */}
+        <div className="absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
           <span className="block w-6 border-t border-white/60 mb-2"></span>
           Better Care
           <br />
           Smarter Management
         </div>
-        <div className="hidden sm:block absolute top-5 right-5 z-10 text-white text-sm text-right leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
-          For a Healthier Tomorrow
-        </div>
-        <div className="hidden lg:block absolute top-1/3 right-5 z-10 text-white text-sm font-medium text-right leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
-          Move
+        <div className="absolute top-5 right-5 z-10 text-white text-xl text-right leading-[1.15] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
+          Care
           <br />
-          Recover
+          Manage
           <br />
           Grow
           <br />
           Together
+          <span className="block w-10 h-px bg-white/60 mt-1 ml-auto"></span>
         </div>
-        <div className="hidden sm:block absolute bottom-16 right-5 z-10 text-white text-lg text-right leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
-          Care Manage Grow
+        <div className="absolute bottom-6 left-5 z-10 text-white text-[10px] font-medium tracking-[0.15em] uppercase leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+          Care
+          <br />
+          Manage
+          <br />
+          Grow Together
+          <span className="block w-6 border-t border-white/60 mt-2"></span>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[400px] px-5"
+          className="relative z-10 w-full max-w-[340px] px-5"
         >
           {/* Logo */}
           <div className="flex flex-col items-center justify-center mb-3">
@@ -376,21 +388,21 @@ case 'clinic_admin':
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white rounded-2xl px-6 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              className="bg-white rounded-2xl px-5 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
             >
               <img
                 src={CLINARA_LOGO_URL}
                 alt="Clinara — Better Care. Smarter Management."
-                className="w-24"
+                className="w-20"
               />
             </motion.div>
           </div>
 
           {/* Main Card */}
           <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
-            <div className="px-6 pt-5 pb-5 sm:px-7">
+            <div className="px-5 pt-5 pb-4">
               <div className="text-center mb-4">
-                <h1 className="text-[#102F52] text-lg font-bold">Selamat Datang Kembali</h1>
+                <h1 className="text-[#102F52] text-base font-bold">Selamat Datang Kembali</h1>
                 <p className="text-[#5B6B7D] text-xs mt-1">
                   Masuk untuk mengakses dashboard Clinara
                 </p>
@@ -415,12 +427,12 @@ case 'clinic_admin':
               <form onSubmit={handleLogin} className="space-y-3">
                 <div className="space-y-3">
                   <div className="group relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
+                      className="w-full pl-11 pr-4 py-2.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -429,12 +441,12 @@ case 'clinic_admin':
                   </div>
 
                   <div className="group relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-11 py-3 bg-[#EAF1F8] border border-transparent rounded-2xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
+                      className="w-full pl-11 pr-11 py-2.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm"
                       placeholder="Password"
                       required
                     />
@@ -462,7 +474,7 @@ case 'clinic_admin':
                   <Button
                     type="submit"
                     disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-5 rounded-2xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting || isRedirecting || authLoading ? (
                       <div className="flex items-center gap-2">
@@ -520,9 +532,9 @@ case 'clinic_admin':
           </p>
         </motion.div>
 
-        {/* Bottom decorative blue accent shapes — the only saturated blue
-            accent on the page; everything else is the blurred photo. */}
-        <div className="absolute bottom-0 left-0 w-full h-14 sm:h-16 z-0 overflow-hidden pointer-events-none">
+        {/* Bottom decorative blue accent shapes — desktop only, since the
+            mobile background photo already has the wave baked in. */}
+        <div className="hidden sm:block absolute bottom-0 left-0 w-full h-14 sm:h-16 z-0 overflow-hidden pointer-events-none">
           <div className="absolute -bottom-8 -left-16 w-[70vw] max-w-[420px] h-32 bg-[#0f2a4a] rotate-[-8deg] rounded-tr-[80px]"></div>
           <div className="absolute -bottom-12 -left-24 w-[55vw] max-w-[340px] h-32 bg-[#1677D2] rotate-[-8deg] rounded-tr-[80px] opacity-90"></div>
           <span className="absolute bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 rounded-full bg-white/40"></span>
