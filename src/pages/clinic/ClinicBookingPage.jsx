@@ -7,8 +7,8 @@ import { id as idLocale } from 'date-fns/locale';
 import {
   ArrowLeft, ArrowRight, CalendarDays, CalendarPlus, CalendarCheck2, CheckCircle2, Loader2, Lock, MapPin,
   Sparkles, Stethoscope, User, Users, MessageCircle, Activity, HeartPulse, Home,
-  ClipboardList, RotateCcw, ShieldCheck, Lightbulb, Wand2, Cloud, Search, Clock, ArrowUpDown,
-  ChevronLeft, ChevronRight, Repeat, CalendarClock,
+  ClipboardList, ShieldCheck, Lightbulb, Wand2, Cloud, Search, Clock, ArrowUpDown,
+  ChevronLeft, ChevronRight, Repeat, CalendarClock, Info, Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,17 @@ const THERAPIST_PAGE_SIZE = 6;
 const SCHEDULE_LOOKAHEAD_DAYS = 180;
 const LIMITED_SLOTS_THRESHOLD = 3;
 const SLOT_REFRESH_INTERVAL_MS = 25000;
+
+// Fallback for the confirmation step's "Penting untuk Diketahui" card when a
+// tenant hasn't set its own list - read from content.bookingPolicies (a
+// plain string array a tenant can already set in landing_content, the same
+// free-form jsonb every other tenant override lives in) so this stays
+// tenant-configurable rather than one clinic's hard-coded rules.
+const DEFAULT_BOOKING_POLICIES = [
+  'Mohon hadir 10 menit sebelum jadwal.',
+  'Jika ada perubahan jadwal, kami akan menghubungi Anda melalui WhatsApp.',
+  'Untuk pembatalan atau reschedule, silakan hubungi kami sesegera mungkin.',
+];
 
 // "Bantu Saya Memilih" quick-pick tags for the service step. Each tag is
 // matched against a tenant's own service titles/descriptions by keyword
@@ -109,6 +120,9 @@ const ClinicBookingPage = () => {
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState(null);
   const [helperOpen, setHelperOpen] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [showPrivacyNote, setShowPrivacyNote] = useState(false);
+  const [slotConflict, setSlotConflict] = useState(false);
 
   const [weekStart, setWeekStart] = useState(() => startOfDay(new Date()));
   const [dateAvailability, setDateAvailability] = useState({});
@@ -298,8 +312,24 @@ const ClinicBookingPage = () => {
   const handleSubmitBooking = async () => {
     if (!selectedSlot || !clinic?.id) return;
     setSubmitting(true);
+    setSlotConflict(false);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+      // Re-check the chosen slot is still open right before creating the
+      // appointment - it may have been taken by someone else since the
+      // patient picked it on Step 3. Surfaces a clear message instead of
+      // letting a stale pick through to create_appointment_safe.
+      const { data: freshSlots } = await getAvailableSlots(dateStr, selectedSlot.therapist_id, clinic.id);
+      const stillOpen = (freshSlots || []).some(
+        (s) => s.status === 'aktif' && s.slot_start === selectedSlot.slot_start && s.therapist_id === selectedSlot.therapist_id
+      );
+      if (!stillOpen) {
+        setSlotConflict(true);
+        setSubmitting(false);
+        return;
+      }
+
       const timePart = (selectedSlot.slot_start || '').slice(0, 5);
       const appointmentDate = `${dateStr}T${timePart}:00`;
 
@@ -338,6 +368,12 @@ const ClinicBookingPage = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePickAnotherSchedule = () => {
+    setSlotConflict(false);
+    setSelectedSlot(null);
+    goTo('schedule');
   };
 
   const handleAddToCalendar = () => {
@@ -406,6 +442,17 @@ const ClinicBookingPage = () => {
   const waHref = clinic.phone
     ? `https://wa.me/${clinic.phone.replace(/[^0-9]/g, '').replace(/^0/, '62')}`
     : null;
+
+  const mapsHref = clinic.address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name} ${clinic.address}`)}`
+    : null;
+
+  const slotDurationLabel = (() => {
+    const mins = selectedSlot?.duration_minutes || 60;
+    return mins % 60 === 0 ? `${mins / 60} jam` : `${mins} menit`;
+  })();
+
+  const bookingPolicies = content?.bookingPolicies?.length ? content.bookingPolicies : DEFAULT_BOOKING_POLICIES;
 
   const summaryRows = [
     { label: 'Klinik', value: clinic.name },
@@ -1300,82 +1347,216 @@ const ClinicBookingPage = () => {
                 </motion.div>
               ) : (
                 <motion.div key="confirm" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Konfirmasi Booking</h1>
-                  <p className="text-slate-500 text-sm mb-5">Pastikan informasi berikut sudah sesuai.</p>
-
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
-                    {selectedService && (
-                      <div className="p-4 flex items-center gap-3">
-                        <Sparkles className="w-5 h-5 shrink-0" style={{ color: primary }} />
-                        <div>
-                          <p className="text-xs text-slate-400">Layanan</p>
-                          <p className="font-semibold text-slate-800 text-sm">{selectedService.title}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-4 flex items-center gap-3">
-                      <Stethoscope className="w-5 h-5 shrink-0" style={{ color: primary }} />
-                      <div>
-                        <p className="text-xs text-slate-400">Terapis</p>
-                        <p className="font-semibold text-slate-800 text-sm">{activeTherapist?.name}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 flex items-center gap-3">
-                      <CalendarDays className="w-5 h-5 shrink-0" style={{ color: primary }} />
-                      <div>
-                        <p className="text-xs text-slate-400">Jadwal</p>
-                        <p className="font-semibold text-slate-800 text-sm">
-                          {format(selectedDate, "EEEE, d MMMM yyyy", { locale: idLocale })} — {(selectedSlot?.slot_start || '').slice(0, 5)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 flex items-center gap-3">
-                      <User className="w-5 h-5 shrink-0" style={{ color: primary }} />
-                      <div>
-                        <p className="text-xs text-slate-400">Pasien</p>
-                        <p className="font-semibold text-slate-800 text-sm">{form.name} · {form.phone}</p>
-                      </div>
-                    </div>
-                    {clinic.address && (
-                      <div className="p-4 flex items-center gap-3">
-                        <MapPin className="w-5 h-5 shrink-0" style={{ color: primary }} />
-                        <div>
-                          <p className="text-xs text-slate-400">Lokasi</p>
-                          <p className="font-semibold text-slate-800 text-sm">{clinic.address}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="flex items-center gap-1.5 text-xs text-slate-400 mt-4">
-                    <Lock className="w-3.5 h-3.5 shrink-0" /> Dengan melanjutkan, Anda menyetujui kebijakan privasi dan ketentuan layanan.
+                  <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: accent }}>
+                    Langkah {stepIndex + 1} dari {STEPS.length}
                   </p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Konfirmasi Booking</h1>
+                  <p className="text-slate-500 text-sm mb-5">Pastikan semua informasi berikut sudah sesuai sebelum melanjutkan.</p>
 
-                  <div className="hidden lg:flex flex-col gap-2.5 mt-5">
-                    <Button
-                      onClick={handleSubmitBooking}
-                      disabled={submitting}
-                      className="w-full text-white h-12 rounded-xl font-bold shadow-md hover:opacity-90"
-                      style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
-                    >
-                      {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                      Konfirmasi Booking
-                    </Button>
-                    <button onClick={goBack} className="w-full text-sm font-semibold text-slate-500 hover:text-slate-700 py-2 flex items-center justify-center gap-1.5">
-                      <RotateCcw className="w-3.5 h-3.5" /> Kembali &amp; Edit
-                    </button>
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-4">
+                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
+                      <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                        <CalendarCheck2 className="w-4 h-4" style={{ color: primary }} /> Detail Booking
+                      </p>
+                      <button onClick={() => goTo('schedule')} className="text-xs font-semibold" style={{ color: primary }}>
+                        Edit
+                      </button>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {selectedService && (
+                        <div className="p-4 flex items-start gap-3">
+                          <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                          <div>
+                            <p className="text-xs text-slate-400">Layanan</p>
+                            <p className="font-semibold text-slate-800 text-sm">{selectedService.title}</p>
+                            {selectedService.description && <p className="text-xs text-slate-500 mt-0.5">{selectedService.description}</p>}
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-4 flex items-start gap-3">
+                        <User className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                        <div>
+                          <p className="text-xs text-slate-400">Terapis</p>
+                          <p className="font-semibold text-slate-800 text-sm">{activeTherapist?.name}</p>
+                          {activeTherapist?.specialization && <p className="text-xs text-slate-500 mt-0.5">{activeTherapist.specialization}</p>}
+                        </div>
+                      </div>
+                      <div className="p-4 flex items-start gap-3">
+                        <CalendarDays className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                        <div>
+                          <p className="text-xs text-slate-400">Tanggal</p>
+                          <p className="font-semibold text-slate-800 text-sm">{format(selectedDate, 'EEEE, d MMMM yyyy', { locale: idLocale })}</p>
+                        </div>
+                      </div>
+                      <div className="p-4 flex items-start gap-3">
+                        <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                        <div>
+                          <p className="text-xs text-slate-400">Waktu</p>
+                          <p className="font-semibold text-slate-800 text-sm">{slotTimeRange} ({slotDurationLabel})</p>
+                        </div>
+                      </div>
+                      {clinic.address && (
+                        <div className="p-4 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primary }} />
+                            <div className="min-w-0">
+                              <p className="text-xs text-slate-400">Lokasi</p>
+                              <p className="font-semibold text-slate-800 text-sm">{clinic.name}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{clinic.address}</p>
+                            </div>
+                          </div>
+                          {mapsHref && (
+                            <a
+                              href={mapsHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border shrink-0"
+                              style={{ color: primary, borderColor: `${primary}55` }}
+                            >
+                              <MapPin className="w-3.5 h-3.5" /> Lihat Lokasi
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <StickyMobileCta>
-                    <Button
-                      onClick={handleSubmitBooking}
-                      disabled={submitting}
-                      className="w-full text-white h-12 rounded-xl font-bold shadow-md hover:opacity-90"
-                      style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
+
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-4">
+                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
+                      <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                        <User className="w-4 h-4" style={{ color: primary }} /> Data Pasien
+                      </p>
+                      <button onClick={() => goTo('details')} className="text-xs font-semibold" style={{ color: primary }}>
+                        Edit
+                      </button>
+                    </div>
+                    <div className="divide-y divide-slate-100 text-sm">
+                      {[
+                        ['Nama Lengkap', form.name],
+                        ['Nomor WhatsApp', `+62 ${form.phone.replace(/^0/, '')}`],
+                        ['Tanggal Lahir', form.dob ? format(new Date(form.dob), 'd MMMM yyyy', { locale: idLocale }) : '-'],
+                        ['Jenis Kelamin', form.gender === 'L' ? 'Laki-laki' : form.gender === 'P' ? 'Perempuan' : '-'],
+                        ['Keluhan Utama', form.complaint || '-'],
+                        ['Catatan Tambahan', form.notes || '-'],
+                      ].map(([label, value]) => (
+                        <div key={label} className="p-3.5 flex items-start justify-between gap-4">
+                          <span className="text-slate-400 shrink-0">{label}</span>
+                          <span className="font-semibold text-slate-800 text-right">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {bookingPolicies.length > 0 && (
+                    <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mb-4">
+                      <p className="inline-flex items-center gap-1.5 font-semibold text-slate-800 text-sm mb-2.5">
+                        <Info className="w-4 h-4" style={{ color: primary }} /> Penting untuk Diketahui
+                      </p>
+                      <ul className="space-y-1.5">
+                        {bookingPolicies.map((policy) => (
+                          <li key={policy} className="flex items-start gap-2 text-xs text-slate-600">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: primary }} /> {policy}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <label className="flex items-start gap-2.5 mb-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={consentChecked}
+                      onChange={(e) => setConsentChecked(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <span
+                      className="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                      style={consentChecked ? { background: primary, borderColor: primary } : { borderColor: '#cbd5e1' }}
                     >
-                      {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                      Konfirmasi Booking
-                    </Button>
-                  </StickyMobileCta>
+                      {consentChecked && <Check className="w-3.5 h-3.5 text-white" />}
+                    </span>
+                    <span className="text-xs text-slate-600">
+                      Saya menyetujui kebijakan privasi dan ketentuan layanan klinik ini.
+                      <br />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setShowPrivacyNote((v) => !v); }}
+                        className="font-semibold underline"
+                        style={{ color: primary }}
+                      >
+                        Lihat Kebijakan Privasi
+                      </button>
+                    </span>
+                  </label>
+                  {showPrivacyNote && (
+                    <div className="text-xs text-slate-500 bg-slate-50 rounded-xl p-3 mb-3 leading-relaxed">
+                      {content?.privacyPolicy || 'Data yang Anda berikan pada formulir ini digunakan semata-mata untuk memproses booking dan pelayanan Anda di ' + clinic.name + ', dan tidak dibagikan kepada pihak lain tanpa persetujuan Anda.'}
+                    </div>
+                  )}
+
+                  {slotConflict ? (
+                    <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mt-3 mb-2">
+                      <p className="font-semibold text-red-700 text-sm">Maaf, jadwal tersebut baru saja tidak tersedia.</p>
+                      <p className="text-xs text-red-600/80 mt-0.5 mb-3">Slot ini baru saja diambil pasien lain. Silakan pilih jadwal lain yang masih tersedia.</p>
+                      <button
+                        onClick={handlePickAnotherSchedule}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full bg-white border border-red-200 text-red-700 min-h-[36px]"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5" /> Pilih Jadwal Lain
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="hidden lg:flex gap-3 mt-3">
+                        <button
+                          onClick={goBack}
+                          className="px-6 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        >
+                          <ArrowLeft className="w-4 h-4 inline mr-2" /> Kembali
+                        </button>
+                        <Button
+                          onClick={handleSubmitBooking}
+                          disabled={submitting || !consentChecked}
+                          className="flex-1 text-white h-12 rounded-xl font-bold shadow-md hover:opacity-90"
+                          style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
+                        >
+                          {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarCheck2 className="w-4 h-4 mr-2" />}
+                          {submitting ? 'Memproses booking...' : 'Konfirmasi Booking'}
+                        </Button>
+                      </div>
+                      <StickyMobileCta>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={goBack}
+                            className="px-5 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 shrink-0"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                          </button>
+                          <Button
+                            onClick={handleSubmitBooking}
+                            disabled={submitting || !consentChecked}
+                            className="flex-1 text-white h-12 rounded-xl font-bold shadow-md hover:opacity-90"
+                            style={{ backgroundImage: `linear-gradient(135deg, ${primary}, ${accent})` }}
+                          >
+                            {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarCheck2 className="w-4 h-4 mr-2" />}
+                            {submitting ? 'Memproses booking...' : 'Konfirmasi Booking'}
+                          </Button>
+                        </div>
+                      </StickyMobileCta>
+                    </>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-6 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal real-time
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
