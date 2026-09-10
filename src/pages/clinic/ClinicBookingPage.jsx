@@ -103,7 +103,8 @@ const ClinicBookingPage = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [form, setForm] = useState({ name: '', phone: '', complaint: '', notes: '' });
+  const [form, setForm] = useState({ name: '', phone: '', dob: '', gender: '', complaint: '', notes: '' });
+  const [detailErrors, setDetailErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState(null);
@@ -275,7 +276,24 @@ const ClinicBookingPage = () => {
     setSelectedSlot(slot);
   };
 
-  const canSubmitDetails = form.name.trim().length > 1 && form.phone.trim().length >= 8;
+  const validateDetails = () => {
+    const errors = {};
+    if (!form.name.trim()) errors.name = 'Nama lengkap wajib diisi.';
+    const phoneDigits = form.phone.replace(/[^0-9]/g, '');
+    if (phoneDigits.length < 9 || phoneDigits.length > 14) errors.phone = 'Masukkan nomor WhatsApp yang valid.';
+    if (!form.complaint.trim()) errors.complaint = 'Masukkan keluhan utama Anda.';
+    return errors;
+  };
+  const handleContinueDetails = () => {
+    const errors = validateDetails();
+    setDetailErrors(errors);
+    if (Object.keys(errors).length === 0) goTo('confirm');
+  };
+
+  const updateFormField = (field, value) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setDetailErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
+  };
 
   const handleSubmitBooking = async () => {
     if (!selectedSlot || !clinic?.id) return;
@@ -287,6 +305,8 @@ const ClinicBookingPage = () => {
 
       const noteParts = [];
       if (selectedService?.title) noteParts.push(`Layanan: ${selectedService.title}`);
+      if (form.dob) noteParts.push(`Tanggal Lahir: ${format(new Date(form.dob), 'd MMMM yyyy', { locale: idLocale })}`);
+      if (form.gender) noteParts.push(`Jenis Kelamin: ${form.gender === 'L' ? 'Laki-laki' : 'Perempuan'}`);
       if (form.complaint.trim()) noteParts.push(`Keluhan: ${form.complaint.trim()}`);
       if (form.notes.trim()) noteParts.push(`Catatan: ${form.notes.trim()}`);
       const notes = noteParts.length > 0 ? `[Booking Online] ${noteParts.join(' | ')}` : '[Booking Online]';
@@ -373,6 +393,15 @@ const ClinicBookingPage = () => {
   const activeTherapist = selectedSlot
     ? therapists.find((t) => t.id === selectedSlot.therapist_id) || selectedTherapist
     : selectedTherapist;
+
+  const slotTimeRange = (() => {
+    if (!selectedDate || !selectedSlot) return '';
+    const [h, m] = (selectedSlot.slot_start || '00:00').slice(0, 5).split(':').map(Number);
+    const start = new Date(selectedDate);
+    start.setHours(h, m, 0, 0);
+    const end = new Date(start.getTime() + (selectedSlot.duration_minutes || 60) * 60000);
+    return `${format(start, 'HH:mm')} – ${format(end, 'HH:mm')}`;
+  })();
 
   const waHref = clinic.phone
     ? `https://wa.me/${clinic.phone.replace(/[^0-9]/g, '').replace(/^0/, '62')}`
@@ -1084,51 +1113,189 @@ const ClinicBookingPage = () => {
                 </motion.div>
               ) : step === 'details' ? (
                 <motion.div key="details" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: accent }}>
+                    Langkah {stepIndex + 1} dari {STEPS.length}
+                  </p>
                   <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Lengkapi Data Diri</h1>
-                  <p className="text-slate-500 text-sm mb-6">Data ini digunakan untuk memproses booking Anda.</p>
+                  <p className="text-slate-500 text-sm mb-5">Data ini digunakan untuk memproses booking Anda dan memberikan pelayanan yang lebih baik.</p>
 
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6 space-y-4">
-                    <div>
-                      <Label htmlFor="name">Nama Lengkap *</Label>
-                      <Input id="name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Masukkan nama lengkap" className="mt-1.5 h-12" />
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                        <CalendarCheck2 className="w-4 h-4" style={{ color: primary }} /> Ringkasan Jadwal
+                      </p>
+                      <button onClick={() => goTo('schedule')} className="text-xs font-semibold" style={{ color: primary }}>
+                        Edit
+                      </button>
                     </div>
-                    <div>
-                      <Label htmlFor="phone">Nomor WhatsApp *</Label>
-                      <Input id="phone" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="08xxxxxxxxxx" className="mt-1.5 h-12" />
-                    </div>
-                    <div>
-                      <Label htmlFor="complaint">Keluhan Utama</Label>
-                      <Textarea id="complaint" value={form.complaint} onChange={(e) => setForm((f) => ({ ...f, complaint: e.target.value }))} placeholder="Contoh: Nyeri punggung, cedera lutut, dll." className="mt-1.5" rows={3} />
-                    </div>
-                    <div>
-                      <Label htmlFor="notes">Catatan Tambahan (Opsional)</Label>
-                      <Textarea id="notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Tambahkan informasi lain yang perlu kami ketahui" className="mt-1.5" rows={2} />
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-11 h-11 shrink-0">
+                        <AvatarImage src={activeTherapist?.avatar_url} className="object-cover" />
+                        <AvatarFallback className="text-white" style={{ background: primary }}>
+                          {activeTherapist?.id === null ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        {selectedService && <p className="font-semibold text-slate-800 text-sm truncate">{selectedService.title}</p>}
+                        <p className="text-xs text-slate-500 truncate">{activeTherapist?.name}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="inline-flex items-center gap-1.5 text-xs text-slate-600 justify-end">
+                          <CalendarDays className="w-3.5 h-3.5" style={{ color: primary }} />
+                          {selectedDate ? format(selectedDate, 'EEEE, d MMMM yyyy', { locale: idLocale }) : ''}
+                        </p>
+                        <p className="inline-flex items-center gap-1.5 text-xs text-slate-600 justify-end mt-1">
+                          <Clock className="w-3.5 h-3.5" style={{ color: primary }} /> {slotTimeRange}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <p className="flex items-center gap-1.5 text-xs text-slate-400 mt-4">
-                    <Lock className="w-3.5 h-3.5 shrink-0" /> Data Anda aman dan hanya digunakan untuk kebutuhan pelayanan &amp; booking.
-                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Nama Lengkap *</Label>
+                      <Input
+                        id="name"
+                        value={form.name}
+                        onChange={(e) => updateFormField('name', e.target.value)}
+                        placeholder="Masukkan nama lengkap"
+                        className={`mt-1.5 h-[52px] rounded-xl ${detailErrors.name ? 'border-red-400' : ''}`}
+                      />
+                      {detailErrors.name && <p className="text-xs text-red-500 mt-1">{detailErrors.name}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Nomor WhatsApp *</Label>
+                      <div className={`mt-1.5 flex items-center rounded-xl border bg-white overflow-hidden ${detailErrors.phone ? 'border-red-400' : 'border-input'}`}>
+                        <span className="pl-3.5 pr-3 h-[52px] flex items-center gap-1.5 text-sm font-semibold text-slate-600 border-r border-slate-100 shrink-0">
+                          <MessageCircle className="w-4 h-4 text-emerald-500" /> +62
+                        </span>
+                        <input
+                          id="phone"
+                          value={form.phone}
+                          onChange={(e) => updateFormField('phone', e.target.value)}
+                          placeholder="812 3456 7890"
+                          inputMode="numeric"
+                          className="flex-1 h-[52px] px-3.5 text-sm bg-transparent outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+                      {detailErrors.phone && <p className="text-xs text-red-500 mt-1">{detailErrors.phone}</p>}
+                    </div>
 
-                  <div className="hidden lg:block">
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div>
+                        <Label htmlFor="dob">Tanggal Lahir</Label>
+                        <input
+                          id="dob"
+                          type="date"
+                          value={form.dob}
+                          max={format(new Date(), 'yyyy-MM-dd')}
+                          onChange={(e) => updateFormField('dob', e.target.value)}
+                          className="mt-1.5 w-full h-[52px] px-3.5 rounded-xl border border-input bg-white text-sm text-slate-700 outline-none focus:ring-2"
+                          style={{ '--tw-ring-color': `${primary}55` }}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="gender">Jenis Kelamin</Label>
+                        <select
+                          id="gender"
+                          value={form.gender}
+                          onChange={(e) => updateFormField('gender', e.target.value)}
+                          className="mt-1.5 w-full h-[52px] px-3.5 rounded-xl border border-input bg-white text-sm text-slate-700 outline-none focus:ring-2"
+                          style={{ '--tw-ring-color': `${primary}55` }}
+                        >
+                          <option value="">Pilih jenis kelamin</option>
+                          <option value="L">Laki-laki</option>
+                          <option value="P">Perempuan</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="complaint">Keluhan Utama *</Label>
+                      <Textarea
+                        id="complaint"
+                        value={form.complaint}
+                        onChange={(e) => updateFormField('complaint', e.target.value.slice(0, 200))}
+                        placeholder="Contoh: Nyeri punggung, cedera lutut, dll."
+                        className={`mt-1.5 rounded-xl ${detailErrors.complaint ? 'border-red-400' : ''}`}
+                        rows={3}
+                        maxLength={200}
+                      />
+                      <div className="flex items-center justify-between mt-1">
+                        {detailErrors.complaint ? <p className="text-xs text-red-500">{detailErrors.complaint}</p> : <span />}
+                        <span className="text-[11px] text-slate-300">{form.complaint.length}/200</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="notes">Catatan Tambahan (Opsional)</Label>
+                      <Textarea
+                        id="notes"
+                        value={form.notes}
+                        onChange={(e) => updateFormField('notes', e.target.value.slice(0, 200))}
+                        placeholder="Tambahkan informasi lain yang perlu kami ketahui"
+                        className="mt-1.5 rounded-xl"
+                        rows={2}
+                        maxLength={200}
+                      />
+                      <div className="flex justify-end mt-1">
+                        <span className="text-[11px] text-slate-300">{form.notes.length}/200</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 mt-5 flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
+                      <Lock className="w-4 h-4" style={{ color: primary }} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-800 text-sm">Data Anda aman</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Informasi yang Anda masukkan digunakan hanya untuk keperluan pelayanan dan booking. Kami tidak membagikan data Anda kepada pihak lain.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-6 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: primary }} /> Fisioterapis berlisensi
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <CalendarCheck2 className="w-4 h-4 shrink-0" style={{ color: primary }} /> Jadwal real-time
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Lock className="w-4 h-4 shrink-0" style={{ color: primary }} /> Data Anda terlindungi
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:flex gap-3 mt-3">
+                    <button
+                      onClick={goBack}
+                      className="px-6 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 inline mr-2" /> Kembali
+                    </button>
                     <Button
-                      onClick={() => goTo('confirm')}
-                      disabled={!canSubmitDetails}
-                      className="w-full mt-5 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                      onClick={handleContinueDetails}
+                      className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
                       style={{ background: primary }}
                     >
                       Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                   <StickyMobileCta>
-                    <Button
-                      onClick={() => goTo('confirm')}
-                      disabled={!canSubmitDetails}
-                      className="w-full text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
-                      style={{ background: primary }}
-                    >
-                      Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={goBack}
+                        className="px-5 h-12 rounded-xl font-semibold border border-slate-200 text-slate-600 shrink-0"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <Button
+                        onClick={handleContinueDetails}
+                        className="flex-1 text-white h-12 rounded-xl font-semibold shadow-md hover:opacity-90"
+                        style={{ background: primary }}
+                      >
+                        Lanjutkan <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
                   </StickyMobileCta>
                 </motion.div>
               ) : (
