@@ -628,7 +628,7 @@ const ClinaraLandingPage = () => {
                 <Users className="w-5 h-5 text-clinara-blue" />
               </div>
               <div className="flex-1 text-center sm:text-left">
-                <p className="font-bold text-clinara-navy text-lg leading-snug">Ratuhan klinik telah mempercayai Clinara</p>
+                <p className="font-bold text-clinara-navy text-lg leading-snug">Ratusan klinik telah mempercayai Clinara</p>
                 <p className="text-sm text-slate-500 mt-0.5">Bergabunglah sekarang dan rasakan kemudahan mengelola klinik Anda.</p>
               </div>
               <a href="/register" className="w-full sm:w-auto shrink-0">
