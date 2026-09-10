@@ -95,8 +95,9 @@ const safeExtractNumber = (response) => {
 
 const OwnerDashboardHome = () => {
   const { toast } = useToast();
-  const location = useLocation(); 
-  
+  const location = useLocation();
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
     const now = new Date();
@@ -386,56 +387,84 @@ setTherapists(enrichedTherapists);
       
       <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
-        {/* ── Hero Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
-          {/* Premium texture + glow accents */}
-          <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
-          {/* Gold hairline accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Owner Dashboard</h1>
-              <p className="text-slate-400 text-xs mt-1">Executive overview of clinic performance.</p>
+        {/* ── Hero Banner ── */}
+        <div className="relative overflow-hidden rounded-[22px] border border-[#DCE8F2] shadow-sm">
+          {/* Desktop / tablet — full-bleed photo, text composed over its built-in light wash */}
+          <div className="hidden md:block relative h-64 lg:h-72">
+            <img
+              src="/hero/clinara-owner-hero.png"
+              alt="Kaffah Physiotherapy"
+              className="absolute inset-0 w-full h-full object-cover object-[32%_center]"
+            />
+            <div className="relative z-10 h-full flex flex-col justify-center px-10 lg:px-14 max-w-lg">
+              <p className="text-[#5B6B7D] text-sm font-medium mb-2">{todayLabel}</p>
+              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-[#102F52] leading-tight">
+                Selamat datang,<br />
+                <span className="text-[#2F8CFF]">Owner!</span>
+              </h1>
+              <p className="text-[#5B6B7D] text-sm mt-3 leading-relaxed max-w-sm">
+                Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
+              </p>
             </div>
+          </div>
 
-            {/* Periode Selector */}
-            <div className="flex flex-col gap-1.5 bg-white/10 backdrop-blur-sm border border-amber-300/20 rounded-xl px-3 py-2.5 w-full sm:w-auto">
-              <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider">Periode</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                />
-                <span className="text-white/30 shrink-0">–</span>
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                />
-              </div>
+          {/* Mobile — stacked: text first, photo below */}
+          <div className="md:hidden">
+            <div className="px-6 py-7 bg-[#F5F9FC]">
+              <p className="text-[#5B6B7D] text-sm font-medium mb-2">{todayLabel}</p>
+              <h1 className="text-2xl font-extrabold tracking-tight text-[#102F52] leading-tight">
+                Selamat datang,<br />
+                <span className="text-[#2F8CFF]">Owner!</span>
+              </h1>
+              <p className="text-[#5B6B7D] text-sm mt-3 leading-relaxed">
+                Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
+              </p>
+            </div>
+            <div className="h-40">
+              <img
+                src="/hero/clinara-owner-hero.png"
+                alt="Kaffah Physiotherapy"
+                className="w-full h-full object-cover object-[55%_center]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Periode Toolbar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm text-[#5B6B7D]">{useAuth().clinicName || ''}</p>
+          <div className="flex flex-col gap-1.5 bg-white border border-[#DCE8F2] rounded-xl px-3 py-2.5 w-full sm:w-auto shadow-sm">
+            <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider">Periode</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
+              />
+              <span className="text-[#DCE8F2] shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full"
+              />
             </div>
           </div>
         </div>
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="operational" className="w-full space-y-5">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-slate-200 p-1 rounded-2xl shadow-sm sticky top-2 z-10">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-[#DCE8F2] p-1 rounded-2xl shadow-sm sticky top-2 z-10">
             <TabsTrigger
               value="operational"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#1677D2] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Operational
             </TabsTrigger>
             <TabsTrigger
               value="finance"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Finance
             </TabsTrigger>

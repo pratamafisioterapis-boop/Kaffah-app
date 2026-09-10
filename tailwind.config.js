@@ -62,7 +62,21 @@ module.exports = {
     				sky: '#3b9fe0',
     				teal: '#2dd4bf',
     				mint: '#5eead4',
-    				bg: '#f4f9fc'
+    				bg: '#f4f9fc',
+    				// Clinara color & visual system (light, premium healthcare SaaS)
+    				background: '#F5F9FC',
+    				surface: '#FFFFFF',
+    				primary: '#1677D2',
+    				bright: '#2F8CFF',
+    				soft: '#EAF4FF',
+    				turquoise: '#35C8C1',
+    				textPrimary: '#102F52',
+    				textSecondary: '#5B6B7D',
+    				border: '#DCE8F2',
+    				success: '#3FBF80',
+    				warning: '#F5A623',
+    				danger: '#F16063',
+    				purple: '#9B8CF2'
     			},
     			chart: {
     				'1': 'hsl(var(--chart-1))',
