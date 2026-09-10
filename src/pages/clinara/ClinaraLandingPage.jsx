@@ -237,7 +237,7 @@ const Section = ({ id, className = '', children }) => (
 // card in a stacked/2-col grid (connector omitted — there's no dashboard
 // edge to point at once it's no longer floating alongside it).
 const FloatingCallout = ({ icon: Icon, title, desc, connector = false, connectorSide = 'right' }) => (
-  <div className="relative w-56 rounded-2xl border border-slate-100 bg-white/95 backdrop-blur-sm shadow-[0_16px_40px_rgba(11,39,71,0.10)] p-4">
+  <div className="relative w-full rounded-2xl border border-slate-100 bg-white/95 backdrop-blur-sm shadow-[0_16px_40px_rgba(11,39,71,0.10)] p-4">
     {connector && (
       <span
         aria-hidden="true"
@@ -492,14 +492,14 @@ const ClinaraLandingPage = () => {
 
             {/* capability selector */}
             <FadeIn delay={0.1} className="mt-10 md:mt-12 mb-10 md:mb-14">
-              <div className="flex lg:flex-wrap lg:justify-center gap-2.5 overflow-x-auto lg:overflow-visible px-4 -mx-4 lg:px-0 lg:mx-0 snap-x snap-mandatory">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 px-2">
                 {CAPABILITIES.map((cap) => (
                   <button
                     key={cap}
                     type="button"
                     onClick={() => setActiveCapability(cap)}
                     aria-pressed={activeCapability === cap}
-                    className={`shrink-0 snap-start px-5 py-2.5 rounded-full text-sm font-semibold border transition-colors ${
+                    className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold border transition-colors ${
                       activeCapability === cap
                         ? 'bg-clinara-navy text-white border-clinara-navy'
                         : 'bg-white text-clinara-navy border-slate-200 hover:border-clinara-teal/50'
@@ -533,16 +533,16 @@ const ClinaraLandingPage = () => {
                   transform) so they don't fight framer-motion's own y-transform
                   animation on the FadeIn wrapper */}
               <div className="hidden xl:block">
-                <FadeIn delay={0.25} className="absolute top-[8%]" style={{ right: 'calc(100% + 28px)' }}>
+                <FadeIn delay={0.25} className="absolute top-[8%] w-56" style={{ right: 'calc(100% + 28px)' }}>
                   <FloatingCallout {...PRODUCT_CALLOUTS[0]} connector connectorSide="right" />
                 </FadeIn>
-                <FadeIn delay={0.35} className="absolute bottom-[14%]" style={{ right: 'calc(100% + 28px)' }}>
+                <FadeIn delay={0.35} className="absolute bottom-[14%] w-56" style={{ right: 'calc(100% + 28px)' }}>
                   <FloatingCallout {...PRODUCT_CALLOUTS[1]} connector connectorSide="right" />
                 </FadeIn>
-                <FadeIn delay={0.3} className="absolute top-[6%]" style={{ left: 'calc(100% + 28px)' }}>
+                <FadeIn delay={0.3} className="absolute top-[6%] w-56" style={{ left: 'calc(100% + 28px)' }}>
                   <FloatingCallout {...PRODUCT_CALLOUTS[2]} connector connectorSide="left" />
                 </FadeIn>
-                <FadeIn delay={0.4} className="absolute bottom-[16%]" style={{ left: 'calc(100% + 28px)' }}>
+                <FadeIn delay={0.4} className="absolute bottom-[16%] w-56" style={{ left: 'calc(100% + 28px)' }}>
                   <FloatingCallout {...PRODUCT_CALLOUTS[3]} connector connectorSide="left" />
                 </FadeIn>
               </div>
@@ -559,7 +559,7 @@ const ClinaraLandingPage = () => {
             </div>
 
             {/* mobile/tablet callouts */}
-            <div className="grid sm:grid-cols-2 lg:hidden gap-4 mt-10 max-w-xl sm:max-w-2xl mx-auto">
+            <div className="grid grid-cols-2 lg:hidden gap-3 sm:gap-4 mt-10 max-w-xl sm:max-w-2xl mx-auto">
               {PRODUCT_CALLOUTS.map((c, i) => (
                 <FadeIn key={c.title} delay={i * 0.06}>
                   <FloatingCallout {...c} />
