@@ -388,25 +388,25 @@ setTherapists(enrichedTherapists);
       <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
         {/* ── Hero Banner ── */}
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-40 sm:h-48 md:h-56 lg:h-64">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-owner-hero.png"
             alt="Kaffah Physiotherapy"
             className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
           />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-            <div className="max-w-[58%] sm:max-w-[54%] md:max-w-sm">
-              <p className="text-[#5B6B7D] text-[9px] sm:text-[11px] md:text-sm font-medium mb-0.5 md:mb-1">{todayLabel}</p>
+            <div className="max-w-[62%] sm:max-w-[56%] md:max-w-sm">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{todayLabel}</p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold text-[#102F52] leading-[0.85]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
               >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-1 sm:decoration-2 md:decoration-[3px] underline-offset-2 sm:underline-offset-4 md:underline-offset-8">
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                   Owner!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[9px] sm:text-[10px] md:text-sm mt-1 md:mt-3 leading-snug md:leading-relaxed line-clamp-2">
+              <p className="text-[#5B6B7D] text-[11px] sm:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed line-clamp-2">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
             </div>
