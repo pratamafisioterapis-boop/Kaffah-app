@@ -35,24 +35,24 @@ useEffect(() => {
     // Coba pakai actual_patient_id dulu, lalu fallback ke patient_id
     const { data: dataActual } = await supabase
       .from('daily_recaps_with_labels')
-      .select('recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
+      .select('id, recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
       .eq('actual_patient_id', selectedPatient.id)
       .order('recap_date', { ascending: false });
 
     const { data: dataPatient } = await supabase
       .from('daily_recaps_with_labels')
-      .select('recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
+      .select('id, recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
       .eq('patient_id', selectedPatient.id)
       .is('actual_patient_id', null)
       .order('recap_date', { ascending: false });
 
-    // Gabung dan deduplicate berdasarkan recap_date + amount
+    // Gabung dan deduplicate berdasarkan id (recap_date + amount tidak unik saat
+    // pasien terapi 2x dalam sehari dengan nominal yang sama)
     const combined = [...(dataActual || []), ...(dataPatient || [])];
     const seen = new Set();
     const data = combined.filter(item => {
-      const key = `${item.recap_date}_${item.amount}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
       return true;
     }).sort((a, b) => new Date(b.recap_date) - new Date(a.recap_date));
 
