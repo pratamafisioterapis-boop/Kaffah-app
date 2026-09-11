@@ -385,7 +385,7 @@ case 'clinic_admin':
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[340px] sm:max-w-[420px] px-5"
+          className="relative z-10 w-full max-w-[300px] sm:max-w-[380px] px-5"
         >
           {/* Logo — sized from the source mark's own 1311x1200 aspect ratio
               (via h-auto) so it's never stretched; larger on sm+ where
@@ -395,19 +395,19 @@ case 'clinic_admin':
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white rounded-2xl px-4 py-2.5 sm:px-6 sm:py-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
             >
               <img
                 src={CLINARA_LOGO_URL}
                 alt="Clinara — Better Care. Smarter Management."
-                className="w-24 sm:w-32 h-auto"
+                className="w-20 sm:w-28 h-auto"
               />
             </motion.div>
           </div>
 
           {/* Main Card */}
           <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
-            <div className="px-5 pt-4 pb-3.5 sm:px-8 sm:pt-7 sm:pb-6">
+            <div className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7">
               <div className="text-center mb-3 sm:mb-5">
                 <h1 className="text-[#102F52] text-base sm:text-xl font-bold">Selamat Datang Kembali</h1>
                 <p className="text-[#5B6B7D] text-xs sm:text-sm mt-1">
