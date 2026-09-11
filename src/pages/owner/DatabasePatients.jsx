@@ -156,7 +156,7 @@ const DatabasePatients = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-nowrap items-center justify-end gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
+            <div className="flex flex-nowrap items-center justify-center gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
               <Button
                 onClick={handleRefresh}
                 variant="outline"
