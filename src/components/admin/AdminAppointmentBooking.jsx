@@ -453,7 +453,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* Controls Row */}
-  <div className="flex flex-wrap items-center gap-2 w-full">
+  <div className="flex items-center gap-1.5 w-full min-w-0">
 
     {/* Refresh */}
     <Button
@@ -461,13 +461,13 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       size="icon"
       onClick={() => fetchDayData(date)}
       disabled={isRefreshing}
-      className={cn("h-10 w-10 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
+      className={cn("h-9 w-9 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
     >
       <RefreshCw className="h-4 w-4" />
     </Button>
 
     {/* Date Controller */}
-    <div className="flex items-center gap-0.5 min-w-[210px] flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+    <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
@@ -488,7 +488,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       >
         <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-xs font-semibold tracking-tight whitespace-nowrap text-slate-700">
+        <span className="text-[11px] sm:text-xs font-semibold tracking-tight truncate text-slate-700">
   {formattedDate}
 </span>
       </Button>
@@ -519,7 +519,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     {/* Tombol Template Jadwal */}
     <Button
       size="icon"
-      className="h-10 w-10 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+      className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
       onClick={() => setShowTemplateModal(true)}
       title="Copy Template Jadwal Tersedia"
     >

@@ -413,18 +413,18 @@ const OwnerBookingCalendar = () => {
           <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full">
+        <div className="flex items-center gap-1.5 w-full min-w-0">
             <Button
                 variant="outline"
                 size="icon"
                 onClick={() => fetchDayData(date)}
                 disabled={isRefreshing}
-                className={cn("h-10 w-10 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
+                className={cn("h-9 w-9 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
             >
                 <RefreshCw className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-0.5 min-w-[210px] flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
             <Button
   variant="ghost"
   size="icon"
@@ -441,7 +441,7 @@ const OwnerBookingCalendar = () => {
   className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-1 overflow-hidden"
 >
   <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
-  <span className="text-xs font-semibold leading-tight whitespace-nowrap tracking-tight sm:tracking-normal text-slate-700">
+  <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate tracking-tight text-slate-700">
     {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>
@@ -464,7 +464,7 @@ const OwnerBookingCalendar = () => {
             {/* Tombol Template Jadwal */}
             <Button
                 size="icon"
-                className="h-10 w-10 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => setShowTemplateModal(true)}
                 title="Copy Template Jadwal Tersedia"
             >
