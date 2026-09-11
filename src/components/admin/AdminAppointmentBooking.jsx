@@ -5,7 +5,9 @@ import {
   ChevronRight,
   Loader2,
   AlertTriangle,
-  ClipboardList
+  ClipboardList,
+  RefreshCw,
+  Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { format, addDays, isValid } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -348,27 +351,30 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden">
-  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
 
-    {/* LEFT SIDE */}
-    <div>
-      <h1 className="text-2xl font-bold text-slate-800">
-        Booking Appointment
-      </h1>
-      <p className="text-slate-500 text-sm">
-        Kelola jadwal dan booking pasien secara real-time
-      </p>
+  {/* TITLE */}
+  <div>
+    <h1 className="text-2xl font-bold text-slate-800">
+      Booking Appointment
+    </h1>
+    <p className="text-slate-500 text-sm">
+      Kelola jadwal dan booking pasien secara real-time
+    </p>
+  </div>
+
+  {/* Bablast Toggle */}
+  <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+
+  <div className="flex items-center gap-3 min-w-0">
+    <div className="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+      <Phone className="h-5 w-5 text-white" fill="white" />
     </div>
-
-    {/* RIGHT SIDE */}
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 ml-auto w-full md:w-auto">
-{/* Bablast Toggle */}
-<div className="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shrink-0">
-
-  <span className="text-sm font-medium text-slate-700">
-    WaAuto
-  </span>
+    <div className="min-w-0">
+      <p className="text-sm font-bold text-slate-800">WaAuto</p>
+      <p className="text-xs text-slate-500 leading-tight">Otomatis kirim notifikasi via WhatsApp</p>
+    </div>
+  </div>
 
   <button
     onClick={async () => {
@@ -430,9 +436,9 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   }
 
 }}
-    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 shrink-0 ${
       isBablastEnabled
-        ? 'bg-green-500'
+        ? 'bg-blue-600'
         : 'bg-gray-300'
     }`}
   >
@@ -445,16 +451,30 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     />
   </button>
 
-</div>
+  </div>
 
-      {/* Date Controller */}
-      <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+  {/* Controls Row */}
+  <div className="flex items-center gap-2 w-full min-w-0">
+
+    {/* Refresh */}
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => fetchDayData(date)}
+      disabled={isRefreshing}
+      className={cn("h-10 w-10 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
+    >
+      <RefreshCw className="h-4 w-4" />
+    </Button>
+
+    {/* Date Controller */}
+    <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
     variant="ghost"
     size="icon"
-    className="shrink-0"
+    className="h-7 w-7 shrink-0"
     onClick={() => setDate(addDays(date, -1))}
   >
     <ChevronLeft className="w-4 h-4" />
@@ -467,7 +487,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
         variant="ghost"
         className="flex-1 min-w-0 justify-center text-center"
       >
-        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
+        <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
 
         <span className="text-xs font-semibold tracking-tight whitespace-nowrap text-slate-700">
   {formattedDate}
@@ -489,7 +509,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   <Button
     variant="ghost"
     size="icon"
-    className="shrink-0"
+    className="h-7 w-7 shrink-0"
     onClick={() => setDate(addDays(date, 1))}
   >
     <ChevronRight className="w-4 h-4" />
@@ -497,17 +517,15 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
 </div>
 
-      {/* Tombol Template Jadwal */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="shrink-0"
-        onClick={() => setShowTemplateModal(true)}
-        title="Copy Template Jadwal Tersedia"
-      >
-        <ClipboardList className="h-4 w-4" />
-      </Button>
-    </div>
+    {/* Tombol Template Jadwal */}
+    <Button
+      size="icon"
+      className="h-10 w-10 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+      onClick={() => setShowTemplateModal(true)}
+      title="Copy Template Jadwal Tersedia"
+    >
+      <ClipboardList className="h-4 w-4" />
+    </Button>
   </div>
 </div>
 
