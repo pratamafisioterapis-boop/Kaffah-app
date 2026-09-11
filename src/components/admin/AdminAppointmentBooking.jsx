@@ -364,15 +364,15 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* Bablast Toggle */}
-  <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+  <div className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
 
-  <div className="flex items-center gap-3 min-w-0">
-    <div className="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-      <Phone className="h-5 w-5 text-white" fill="white" />
+  <div className="flex items-center gap-2.5 min-w-0">
+    <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+      <Phone className="h-4 w-4 text-white" fill="white" />
     </div>
     <div className="min-w-0">
-      <p className="text-sm font-bold text-slate-800">WaAuto</p>
-      <p className="text-xs text-slate-500 leading-tight">Otomatis kirim notifikasi via WhatsApp</p>
+      <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
+      <p className="text-xs text-slate-500 leading-snug">Otomatis kirim notifikasi via WhatsApp</p>
     </div>
   </div>
 
@@ -436,16 +436,16 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   }
 
 }}
-    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 shrink-0 ${
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
       isBablastEnabled
         ? 'bg-blue-600'
         : 'bg-gray-300'
     }`}
   >
     <span
-      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
         isBablastEnabled
-          ? 'translate-x-8'
+          ? 'translate-x-6'
           : 'translate-x-1'
       }`}
     />
@@ -468,7 +468,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     </Button>
 
     {/* Date Controller */}
-    <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+    <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
@@ -485,7 +485,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <PopoverTrigger asChild>
       <Button
         variant="ghost"
-        className="flex-1 min-w-0 justify-center text-center"
+        className="flex-1 min-w-0 justify-center text-center px-1.5"
       >
         <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
 
