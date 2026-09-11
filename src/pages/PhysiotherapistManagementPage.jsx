@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TherapistScheduleManager from '@/components/owner/TherapistScheduleManager';
 import TherapistManager from '@/components/owner/TherapistManager';
@@ -8,12 +9,23 @@ import BadgeManager from '@/components/owner/BadgeManager';
 import TherapistSoapLockManager from '@/components/owner/TherapistSoapLockManager';
 import RemunerationManager from '@/components/owner/RemunerationManager';
 import TherapistMonthlyReportManager from '@/components/owner/TherapistMonthlyReportManager';
-import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2 } from 'lucide-react';
+import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const dayNames = [
   "Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"
+];
+
+const MENU_ITEMS = [
+  { value: 'list', label: 'Data Terapis', desc: 'Kelola data terapis', icon: Users, iconBg: 'bg-[#EEF5FC]', iconColor: 'text-[#1683F4]' },
+  { value: 'schedule', label: 'Jadwal', desc: 'Atur jadwal kerja', icon: CalendarClock, iconBg: 'bg-[#EAF3FF]', iconColor: 'text-[#1683F4]' },
+  { value: 'timeoff', label: 'Cuti', desc: 'Kelola cuti & izin', icon: CalendarOff, iconBg: 'bg-[#FDEEEF]', iconColor: 'text-[#E4626F]' },
+  { value: 'targets', label: 'Target', desc: 'Pantau target', icon: Target, iconBg: 'bg-[#EAFBF3]', iconColor: 'text-[#22A86B]' },
+  { value: 'badges', label: 'Badges', desc: 'Kelola pencapaian', icon: Shield, iconBg: 'bg-[#F1EEFC]', iconColor: 'text-[#7C5CE0]' },
+  { value: 'soap-lock', label: 'Kunci Sistem', desc: 'Batasi akses', icon: Lock, iconBg: 'bg-[#FEF6E8]', iconColor: 'text-[#D89A2A]' },
+  { value: 'remuneration', label: 'Remunerasi', desc: 'Kelola remunerasi', icon: Award, iconBg: 'bg-[#FDEEF0]', iconColor: 'text-[#E0607A]' },
+  { value: 'monthly-report', label: 'Laporan Bulanan', desc: 'Lihat laporan performa', icon: FileBarChart2, iconBg: 'bg-[#EAF3FF]', iconColor: 'text-[#1683F4]', wide: true },
 ];
 
 const PhysiotherapistManagementPage = () => {
@@ -77,40 +89,33 @@ const PhysiotherapistManagementPage = () => {
 
       <Tabs defaultValue="list" className="w-full space-y-6">
 
-        {/* TAB MENU */}
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-xl w-full">
-
-          <TabsTrigger value="list" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <Users className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Data Terapis</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="schedule" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <CalendarClock className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Jadwal</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="timeoff" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <CalendarOff className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Cuti</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="targets" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <Target className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Target</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="badges" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <Shield className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Badges</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="soap-lock" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <Lock className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Kunci SOAP</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="remuneration" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <Award className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Remunerasi</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="monthly-report" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-3 py-2 text-xs flex-1 min-w-[80px]">
-            <FileBarChart2 className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Laporan Bulanan</span>
-          </TabsTrigger>
+        {/* MENU GRID */}
+        <TabsList className="grid grid-cols-3 gap-2.5 sm:gap-3 h-auto w-full bg-white p-4 sm:p-5 rounded-[22px] sm:rounded-[24px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">
+          {MENU_ITEMS.map(({ value, label, desc, icon: Icon, iconBg, iconColor, wide }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className={cn(
+                'group flex items-center gap-2.5 rounded-[16px] border border-[#E3ECF4] bg-white px-3 py-3 text-left transition-all',
+                'hover:border-[#C7DEF4] hover:bg-[#F8FBFE]',
+                'data-[state=active]:bg-[#EEF5FC] data-[state=active]:border-[#1683F4]/40 data-[state=active]:shadow-[0_2px_10px_rgba(22,131,244,0.12)]',
+                wide ? 'col-span-2' : 'col-span-1'
+              )}
+            >
+              <span className={cn('flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-[13px]', iconBg)}>
+                <Icon className={cn('w-5 h-5', iconColor)} strokeWidth={2} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] sm:text-[16px] font-semibold text-[#17324D] leading-tight truncate">
+                  {label}
+                </span>
+                <span className="block text-[11px] sm:text-xs text-[#6B7C8F] leading-tight truncate">
+                  {desc}
+                </span>
+              </span>
+              <ChevronRight className="w-[18px] h-[18px] shrink-0 text-[#9FBEDD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* ================= DATA TERAPIS ================= */}
