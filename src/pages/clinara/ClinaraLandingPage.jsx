@@ -261,7 +261,7 @@ const ClinaraLandingPage = () => {
           {/* LAYER 1 — background environment photo */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/hero/clinara-hero-bg.png"
+              src="/hero/clinara-hero-bg.webp"
               alt=""
               aria-hidden="true"
               className="w-full h-full object-cover object-[center_right] opacity-40 md:opacity-100"
@@ -333,7 +333,7 @@ const ClinaraLandingPage = () => {
                   >
                     <div className="rounded-[20px] overflow-hidden border border-white/60 bg-white ring-1 ring-clinara-navy/5">
                       <img
-                        src="/hero/clinara-hero-dashboard.png"
+                        src="/hero/clinara-hero-dashboard.webp"
                         alt="Dashboard aplikasi Clinara menampilkan data pasien, jadwal, dan analitik klinik"
                         className="w-full h-auto block object-contain"
                       />
@@ -355,7 +355,7 @@ const ClinaraLandingPage = () => {
                     className="absolute w-[26%] sm:w-[24%] lg:w-[22%] bottom-[-6%] right-[2%] sm:right-[6%] lg:right-[-2%] rotate-[3deg]"
                   >
                     <img
-                      src="/hero/clinara-hero-mobile-v2.png"
+                      src="/hero/clinara-hero-mobile-v2.webp"
                       alt="Tampilan aplikasi mobile Clinara"
                       className="w-full h-auto block"
                       style={{ filter: 'drop-shadow(0 24px 60px rgba(11, 39, 71, 0.28))' }}
@@ -424,7 +424,7 @@ const ClinaraLandingPage = () => {
                 className="relative w-[112%] -ml-[6%] sm:w-full sm:ml-0"
               >
                 <img
-                  src="/hero/clinara-section2-laptop.png"
+                  src="/hero/clinara-section2-laptop.webp"
                   alt="Dashboard Clinara ditampilkan di laptop — menu pasien, appointment, rekam medis, pembayaran, dan analytics klinik"
                   className="w-full h-auto block"
                 />
