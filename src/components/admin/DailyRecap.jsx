@@ -679,16 +679,16 @@ const getPremiumPastelBadge = (text) => {
           </div>
 
           {/* Filter Tanggal + Refresh */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.start}
                 onChange={(e) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-9 pr-1.5 text-xs sm:text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-7 pr-1 text-[11px] sm:text-xs rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowStartCalendar(true)}
               />
 
@@ -708,17 +708,17 @@ const getPremiumPastelBadge = (text) => {
               )}
             </div>
 
-            <span className="text-slate-400 font-medium shrink-0">-</span>
+            <span className="text-slate-400 font-medium shrink-0 -mx-0.5">-</span>
 
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.end}
                 onChange={(e) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-9 pr-1.5 text-xs sm:text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-7 pr-1 text-[11px] sm:text-xs rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowEndCalendar(true)}
               />
 
@@ -774,7 +774,7 @@ const getPremiumPastelBadge = (text) => {
           {showPaymentFilter && (
             <>
               {/* Total Revenue */}
-              <div className="self-start inline-flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="w-full flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
                 <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
                   Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
