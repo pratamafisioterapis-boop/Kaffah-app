@@ -413,7 +413,7 @@ const OwnerBookingCalendar = () => {
           <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full min-w-0">
+        <div className="flex flex-wrap items-center gap-2 w-full">
             <Button
                 variant="outline"
                 size="icon"
@@ -424,11 +424,11 @@ const OwnerBookingCalendar = () => {
                 <RefreshCw className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-0.5 min-w-[210px] flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
             <Button
   variant="ghost"
   size="icon"
-  className="h-7 w-7 shrink-0 mr-1"
+  className="h-7 w-7 shrink-0"
   onClick={() => setDate(addDays(date, -1))}
 >
                 <ChevronLeft className="w-4 h-4" />
@@ -438,10 +438,10 @@ const OwnerBookingCalendar = () => {
                 <PopoverTrigger asChild>
                 <Button
   variant="ghost"
-  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-2 overflow-hidden"
+  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-1 overflow-hidden"
 >
   <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
-  <span className="text-xs font-semibold leading-tight truncate tracking-tight sm:tracking-normal text-slate-700">
+  <span className="text-xs font-semibold leading-tight whitespace-nowrap tracking-tight sm:tracking-normal text-slate-700">
     {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>
@@ -456,7 +456,7 @@ const OwnerBookingCalendar = () => {
                 </PopoverContent>
             </Popover>
 
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-1" onClick={() => setDate(addDays(date, 1))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setDate(addDays(date, 1))}>
                 <ChevronRight className="w-4 h-4" />
             </Button>
             </div>
