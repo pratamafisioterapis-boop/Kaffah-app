@@ -149,9 +149,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
   return (
     <div className="space-y-6 w-full font-sans">
-      {/* Hero Banner — sembunyikan di PWA */}
-      {!isPWA && (
-      <>
+      {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-accounting-hero.webp"
@@ -177,6 +175,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         </div>
       </div>
 
+      {!isPWA && (
       <div className="flex justify-end">
         <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm p-1.5 rounded-xl">
           <div className="px-2 text-[#1677D2]">
@@ -200,7 +199,6 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
           </Button>
         </div>
       </div>
-      </>
       )}
 
       {/* Filter compact khusus PWA */}
