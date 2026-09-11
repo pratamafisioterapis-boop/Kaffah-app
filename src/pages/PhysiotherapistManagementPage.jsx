@@ -90,24 +90,24 @@ const PhysiotherapistManagementPage = () => {
       <Tabs defaultValue="list" className="w-full space-y-6">
 
         {/* MENU GRID */}
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 h-auto w-full bg-white p-4 rounded-[24px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 gap-2 h-auto w-full bg-white p-3 rounded-[20px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">
           {MENU_ITEMS.map(({ value, label, icon: Icon, iconBg, iconColor }) => (
             <TabsTrigger
               key={value}
               value={value}
               className={cn(
-                'group flex items-center gap-2 rounded-[16px] border border-[#E1EAF2] bg-white px-3 py-3.5 text-left transition-all',
+                'group flex items-center gap-2 rounded-[14px] border border-[#E1EAF2] bg-white px-2.5 py-2.5 text-left transition-all',
                 'hover:border-[#C7DEF4] hover:bg-[#F8FBFE]',
                 'data-[state=active]:bg-[#EEF5FC] data-[state=active]:border-[#1683F4]/40 data-[state=active]:shadow-[0_2px_10px_rgba(22,131,244,0.12)]'
               )}
             >
-              <span className={cn('flex items-center justify-center w-10 h-10 shrink-0 rounded-xl', iconBg)}>
-                <Icon className={cn('w-5 h-5', iconColor)} strokeWidth={2} />
+              <span className={cn('flex items-center justify-center w-8 h-8 shrink-0 rounded-[10px]', iconBg)}>
+                <Icon className={cn('w-4 h-4', iconColor)} strokeWidth={2} />
               </span>
-              <span className="min-w-0 flex-1 text-[14px] font-semibold text-[#17324D] leading-snug">
+              <span className="min-w-0 flex-1 text-[13px] font-semibold text-[#17324D] leading-snug">
                 {label}
               </span>
-              <ChevronRight className="w-4 h-4 shrink-0 text-[#8FA8BD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
+              <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[#8FA8BD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
             </TabsTrigger>
           ))}
         </TabsList>
