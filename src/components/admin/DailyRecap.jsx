@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, Loader2, Plus, Search, X, Clock, Play, Square, 
-  ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3, CreditCard
+import {
+  Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
+  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3, CreditCard, Users
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -527,253 +527,287 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-4 bg-white p-4 sm:p-5 rounded-[28px] border border-slate-100 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
-          <div className={cn("flex flex-wrap items-center gap-2 w-full", isPWA ? "flex-col" : "")}>
-            {/* Filter Tombol Periode */}
-            <div className="flex items-center gap-2 w-full">
-              <div className="grid grid-cols-4 gap-1 flex-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                <Button
-  variant="ghost"
-  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
-  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    const today = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-                      .toISOString()
-                      .split('T')[0];
 
-                    setActiveFilter('today');
+          {/* Filter Tombol Periode */}
+          <div className="grid grid-cols-4 gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                const today = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+                  .toISOString()
+                  .split('T')[0];
 
-                    setDateRange({ start: today, end: today });
-                    setDateRangeDisplay({
-                      start: displayDateID(today),
-                      end: displayDateID(today)
-                    });
-                  }}
-                >
-                  Hari Ini
-                </Button>
+                setActiveFilter('today');
 
-                <Button
-  variant="ghost"
-  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
-  size="sm"
-                  onClick={() => {
-  const now = new Date();
+                setDateRange({ start: today, end: today });
+                setDateRangeDisplay({
+                  start: displayDateID(today),
+                  end: displayDateID(today)
+                });
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                activeFilter === 'today'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
+              )}
+            >
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Hari Ini</span>
+            </button>
 
-  // 🔥 shift ke WITA (+8) dulu, baru pakai getter UTC - biar hasilnya
-  // konsisten & tidak tergantung timezone perangkat admin (sama seperti
-  // filter "Hari Ini"/"Bulan Ini")
-  const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
 
-  const day = base.getUTCDay(); // 0 (Minggu) - 6 (Sabtu)
+                // 🔥 shift ke WITA (+8) dulu, baru pakai getter UTC - biar hasilnya
+                // konsisten & tidak tergantung timezone perangkat admin (sama seperti
+                // filter "Hari Ini"/"Bulan Ini")
+                const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
-  // 🔥 hitung offset ke Senin (ISO)
-  const diffToMonday = (day + 6) % 7;
+                const day = base.getUTCDay(); // 0 (Minggu) - 6 (Sabtu)
 
-  const monday = new Date(base);
-  monday.setUTCDate(base.getUTCDate() - diffToMonday);
+                // 🔥 hitung offset ke Senin (ISO)
+                const diffToMonday = (day + 6) % 7;
 
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
+                const monday = new Date(base);
+                monday.setUTCDate(base.getUTCDate() - diffToMonday);
 
-  const start = monday.toISOString().split('T')[0];
-  const end = sunday.toISOString().split('T')[0];
+                const sunday = new Date(monday);
+                sunday.setUTCDate(monday.getUTCDate() + 6);
 
-  setActiveFilter('week');
+                const start = monday.toISOString().split('T')[0];
+                const end = sunday.toISOString().split('T')[0];
 
-  setDateRange({ start, end });
-  setDateRangeDisplay({
-    start: displayDateID(start),
-    end: displayDateID(end)
-  });
-}}
-                >
-                  Minggu Ini
-                </Button>
+                setActiveFilter('week');
 
-                <Button
-  variant="ghost"
-  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
-  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+                setDateRange({ start, end });
+                setDateRangeDisplay({
+                  start: displayDateID(start),
+                  end: displayDateID(end)
+                });
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                activeFilter === 'week'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
+              )}
+            >
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Minggu Ini</span>
+            </button>
 
-                    const firstDay = new Date(base.getFullYear(), base.getMonth(), 1);
-const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                const base = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
-// 🔥 format manual (bukan toISOString)
-const formatLocal = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
+                const firstDay = new Date(base.getFullYear(), base.getMonth(), 1);
+                const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0);
 
-const start = formatLocal(firstDay);
-const end = formatLocal(lastDay);
+                // 🔥 format manual (bukan toISOString)
+                const formatLocal = (date) => {
+                  const y = date.getFullYear();
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  const d = String(date.getDate()).padStart(2, '0');
+                  return `${y}-${m}-${d}`;
+                };
 
-                    setActiveFilter('month');
+                const start = formatLocal(firstDay);
+                const end = formatLocal(lastDay);
 
-                    setDateRange({ start, end });
-                    setDateRangeDisplay({
-                      start: displayDateID(start),
-                      end: displayDateID(end)
-                    });
-                  }}
-                >
-                  Bulan Ini
-                </Button>
+                setActiveFilter('month');
 
-                <Button
-  variant="ghost"
-  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
-  size="sm"
-                  onClick={() => {
-                    const now = new Date();
-                    const formatLocal = (date) => {
-                      const y = date.getFullYear();
-                      const m = String(date.getMonth() + 1).padStart(2, '0');
-                      const d = String(date.getDate()).padStart(2, '0');
-                      return `${y}-${m}-${d}`;
-                    };
-                    let start, end;
-                    if (now.getDate() >= 28) {
-                      start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28));
-                      end = formatLocal(new Date(now.getFullYear(), now.getMonth() + 1, 27));
-                    } else {
-                      start = formatLocal(new Date(now.getFullYear(), now.getMonth() - 1, 28));
-                      end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27));
-                    }
-                    setActiveFilter('period');
-                    setDateRange({ start, end });
-                    setDateRangeDisplay({
-                      start: displayDateID(start),
-                      end: displayDateID(end)
-                    });
-                  }}
-                >
-                  Periode Ini
-                </Button>
-              </div>
-            </div>
-            {/* Filter Tanggal + Refresh + Terapis + Search */}
-            <div className={cn("flex items-center gap-2 w-full flex-wrap", isPWA && "flex-col")}>
-              <div className="flex items-center gap-2 flex-1 flex-wrap">
+                setDateRange({ start, end });
+                setDateRangeDisplay({
+                  start: displayDateID(start),
+                  end: displayDateID(end)
+                });
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                activeFilter === 'month'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
+              )}
+            >
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Bulan Ini</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                const formatLocal = (date) => {
+                  const y = date.getFullYear();
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  const d = String(date.getDate()).padStart(2, '0');
+                  return `${y}-${m}-${d}`;
+                };
+                let start, end;
+                if (now.getDate() >= 28) {
+                  start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28));
+                  end = formatLocal(new Date(now.getFullYear(), now.getMonth() + 1, 27));
+                } else {
+                  start = formatLocal(new Date(now.getFullYear(), now.getMonth() - 1, 28));
+                  end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27));
+                }
+                setActiveFilter('period');
+                setDateRange({ start, end });
+                setDateRangeDisplay({
+                  start: displayDateID(start),
+                  end: displayDateID(end)
+                });
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                activeFilter === 'period'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
+              )}
+            >
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Periode Ini</span>
+            </button>
+          </div>
+
+          {/* Filter Tanggal + Refresh */}
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-1 min-w-0">
+              <Calendar className="w-[18px] h-[18px] absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
-  value={dateRangeDisplay.start}
-  onChange={(e) => {
-    setActiveFilter(null);
-    setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
-  }}
-  className="h-9 w-32 text-xs"
-  onClick={() => setShowStartCalendar(true)}
-/>
+                value={dateRangeDisplay.start}
+                onChange={(e) => {
+                  setActiveFilter(null);
+                  setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
+                }}
+                className="h-[60px] sm:h-[68px] w-full pl-10 pr-2 text-[13px] sm:text-base rounded-[18px] sm:rounded-[20px] border border-[#D8E2EB]"
+                onClick={() => setShowStartCalendar(true)}
+              />
 
-{showStartCalendar && (
-  <div className="absolute z-50 mt-10">
-    <DatePicker
-      value={parseDateFromDisplay(dateRangeDisplay.start)}
-      onChange={(d) => {
-        setActiveFilter(null);
-        setDateRange(p => ({ ...p, start: d }));
-        setDateRangeDisplay(p => ({ ...p, start: displayDateID(d) }));
-        setShowStartCalendar(false);
-      }}
-      onClose={() => setShowStartCalendar(false)}
-    />
-  </div>
-)}
-
-<span>-</span>
-
-<Input
-  value={dateRangeDisplay.end}
-  onChange={(e) => {
-    setActiveFilter(null);
-    setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
-  }}
-  className="h-9 w-32 text-xs"
-  onClick={() => setShowEndCalendar(true)}
-/>
-
-{showEndCalendar && (
-  <div className="absolute z-50 mt-10 ml-36">
-    <DatePicker
-      value={parseDateFromDisplay(dateRangeDisplay.end)}
-      onChange={(d) => {
-        setActiveFilter(null);
-        setDateRange(p => ({ ...p, end: d }));
-        setDateRangeDisplay(p => ({ ...p, end: displayDateID(d) }));
-        setShowEndCalendar(false);
-      }}
-      onClose={() => setShowEndCalendar(false)}
-    />
-  </div>
-)}
-
-<Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={fetchRecaps}>
-  <RefreshCcw className="w-4 h-4"/>
-</Button>
-<div className="relative">
-  <select
-    value={selectedTherapist}
-    onChange={(e) => {
-      setSelectedTherapist(e.target.value);
-      setCurrentPage(1);
-    }}
-    className={`h-9 rounded-md pl-3 pr-8 text-sm transition-all appearance-none cursor-pointer
-      ${selectedTherapist
-        ? 'bg-blue-600 text-white border border-blue-600 hover:bg-blue-700'
-        : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-      }`}
-  >
-    <option value="">Semua Terapis</option>
-
-    {therapistOptions.map((t) => (
-      <option key={t.id} value={t.id}>
-        {t.name}
-      </option>
-    ))}
-  </select>
-
-  {/* 🔽 ICON PANAH */}
-  <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-    <svg
-      className={`w-4 h-4 ${selectedTherapist ? 'text-white' : 'text-slate-500'}`}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-    </svg>
-  </div>
-</div>
-            {showPaymentFilter && (
-              <>
-                <div className="flex items-center px-3 h-9 rounded-md bg-emerald-50 border border-emerald-200 shrink-0">
-                    <span className="text-xs font-bold text-emerald-700 whitespace-nowrap">Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+              {showStartCalendar && (
+                <div className="absolute z-50 mt-2">
+                  <DatePicker
+                    value={parseDateFromDisplay(dateRangeDisplay.start)}
+                    onChange={(d) => {
+                      setActiveFilter(null);
+                      setDateRange(p => ({ ...p, start: d }));
+                      setDateRangeDisplay(p => ({ ...p, start: displayDateID(d) }));
+                      setShowStartCalendar(false);
+                    }}
+                    onClose={() => setShowStartCalendar(false)}
+                  />
                 </div>
-                <div className="relative">
-                    <CreditCard className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
-                    <select
-                        value={selectedPaymentMethod}
-                        onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                        className={`h-9 rounded-md pl-9 pr-8 text-sm appearance-none cursor-pointer border ${selectedPaymentMethod ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'}`}
-                    >
-                        <option value="">Semua Metode</option>
-                        {paymentMethodOptions.map((pm) => (
-                            <option key={pm.id} value={pm.label}>{pm.label}</option>
-                        ))}
-                    </select>
-                </div>
-              </>
-            )}
-            <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={cn("h-9", isPWA ? "w-full" : "w-[180px]")} />
-              </div>
+              )}
             </div>
+
+            <span className="text-slate-400 font-medium shrink-0">-</span>
+
+            <div className="relative flex-1 min-w-0">
+              <Calendar className="w-[18px] h-[18px] absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Input
+                value={dateRangeDisplay.end}
+                onChange={(e) => {
+                  setActiveFilter(null);
+                  setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
+                }}
+                className="h-[60px] sm:h-[68px] w-full pl-10 pr-2 text-[13px] sm:text-base rounded-[18px] sm:rounded-[20px] border border-[#D8E2EB]"
+                onClick={() => setShowEndCalendar(true)}
+              />
+
+              {showEndCalendar && (
+                <div className="absolute z-50 mt-2 right-0">
+                  <DatePicker
+                    value={parseDateFromDisplay(dateRangeDisplay.end)}
+                    onChange={(d) => {
+                      setActiveFilter(null);
+                      setDateRange(p => ({ ...p, end: d }));
+                      setDateRangeDisplay(p => ({ ...p, end: displayDateID(d) }));
+                      setShowEndCalendar(false);
+                    }}
+                    onClose={() => setShowEndCalendar(false)}
+                  />
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-[60px] w-[60px] sm:h-[68px] sm:w-[68px] shrink-0 rounded-[18px] sm:rounded-[20px] bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]"
+              onClick={fetchRecaps}
+            >
+              <RefreshCcw className="w-5 h-5"/>
+            </Button>
+          </div>
+
+          {/* Terapis */}
+          <div className="relative">
+            <Users className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+            <select
+              value={selectedTherapist}
+              onChange={(e) => {
+                setSelectedTherapist(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full h-16 rounded-[18px] pl-11 pr-10 text-[15px] sm:text-base transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+            >
+              <option value="">Semua Terapis</option>
+
+              {therapistOptions.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+
+            <ChevronDown className="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          </div>
+
+          {showPaymentFilter && (
+            <>
+              {/* Total Revenue */}
+              <div className="self-start inline-flex items-center gap-2 px-4 h-[60px] rounded-[18px] bg-emerald-50 border border-emerald-100">
+                <BarChart3 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span className="text-sm sm:text-[15px] font-medium text-emerald-700 whitespace-nowrap">
+                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                </span>
+              </div>
+
+              {/* Metode Pembayaran */}
+              <div className="relative">
+                <CreditCard className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
+                  className="w-full h-16 rounded-[18px] pl-11 pr-10 text-[15px] sm:text-base appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                >
+                  <option value="">Semua Metode</option>
+                  {paymentMethodOptions.map((pm) => (
+                    <option key={pm.id} value={pm.label}>{pm.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              </div>
+            </>
+          )}
+
+          {/* Cari Pasien */}
+          <div className="relative">
+            <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Input
+              placeholder="Cari Pasien..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-16 w-full pl-11 text-[15px] sm:text-base rounded-[18px] border border-[#D8E2EB]"
+            />
           </div>
         </div>
         </>
