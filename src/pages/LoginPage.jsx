@@ -14,11 +14,12 @@ import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 // (clinara.id), so this never touches the Kaffah Physiotherapy
 // patient-facing brand on the public domain.
 const CLINARA_LOGO_URL = '/clinara-logo.png';
-const CLINARA_LOGIN_BG_URL = '/login-bg.jpg';
-// Portrait crop with the wave accent already baked in, used only below the
-// `sm` breakpoint — the landscape CLINARA_LOGIN_BG_URL above stays for
-// larger screens, where the CSS-drawn wave at the bottom takes over.
+// Both crops have the wave accent already baked in — portrait for below the
+// `sm` breakpoint, landscape (with the wave along the top and bottom edges)
+// from `sm` up — so neither needs the blur/tint/CSS-wave treatment the
+// plain photo used to require.
 const CLINARA_LOGIN_BG_MOBILE_URL = '/login-bg-mobile.jpg';
+const CLINARA_LOGIN_BG_DESKTOP_URL = '/login-bg-desktop.jpg';
 // Icon-only crops (see public/clinara-icon.png generation) - the favicon
 // needs just the mark with no visible box (browser tabs render transparency
 // fine); apple-touch-icon needs an opaque backing since iOS paints
@@ -337,9 +338,8 @@ case 'clinic_admin':
           Taking the whole thing out of document flow removes that
           possibility outright regardless of viewport-unit quirks. */}
       <div className="fixed inset-0 w-full flex flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
-        {/* Background photo — a portrait crop with the wave accent already
-            baked in on mobile, the landscape clinic photo (blurred, lightly
-            tinted, with a CSS-drawn wave) from `sm` up. */}
+        {/* Background photo — portrait crop below `sm`, landscape from `sm`
+            up; both already have the wave accent baked in. */}
         <div className="absolute inset-0 z-0">
           <img
             src={CLINARA_LOGIN_BG_MOBILE_URL}
@@ -348,12 +348,11 @@ case 'clinic_admin':
             className="sm:hidden w-full h-full object-cover"
           />
           <img
-            src={CLINARA_LOGIN_BG_URL}
+            src={CLINARA_LOGIN_BG_DESKTOP_URL}
             alt=""
             aria-hidden="true"
-            className="hidden sm:block w-full h-full object-cover scale-110 blur-[3px]"
+            className="hidden sm:block w-full h-full object-cover"
           />
-          <div className="hidden sm:block absolute inset-0 bg-[#0a2a52]/25"></div>
         </div>
 
         {/* Corner taglines echoing the brand voice */}
@@ -538,14 +537,6 @@ case 'clinic_admin':
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
-
-        {/* Bottom decorative blue accent shapes — desktop only, since the
-            mobile background photo already has the wave baked in. */}
-        <div className="hidden sm:block absolute bottom-0 left-0 w-full h-14 sm:h-16 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute -bottom-8 -left-16 w-[70vw] max-w-[420px] h-32 bg-[#0f2a4a] rotate-[-8deg] rounded-tr-[80px]"></div>
-          <div className="absolute -bottom-12 -left-24 w-[55vw] max-w-[340px] h-32 bg-[#1677D2] rotate-[-8deg] rounded-tr-[80px] opacity-90"></div>
-          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 w-20 h-1 rounded-full bg-white/40"></span>
-        </div>
       </div>
     </>
   );
