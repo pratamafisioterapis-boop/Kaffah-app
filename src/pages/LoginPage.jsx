@@ -330,7 +330,13 @@ case 'clinic_admin':
         <link rel="manifest" href="/manifest-clinara.json" />
       </Helmet>
 
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center relative overflow-hidden selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+      {/* Fixed + overflow-hidden rather than h-[100dvh]: dvh is computed
+          differently across mobile browsers/webviews (address bar
+          show/hide, keyboard-resize modes), which was letting the page
+          rubber-band/scroll on some devices even though the content fit.
+          Taking the whole thing out of document flow removes that
+          possibility outright regardless of viewport-unit quirks. */}
+      <div className="fixed inset-0 w-full flex flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Background photo — a portrait crop with the wave accent already
             baked in on mobile, the landscape clinic photo (blurred, lightly
             tinted, with a CSS-drawn wave) from `sm` up. */}
@@ -382,26 +388,27 @@ case 'clinic_admin':
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 w-full max-w-[340px] px-5"
         >
-          {/* Logo */}
-          <div className="flex flex-col items-center justify-center mb-3">
+          {/* Logo — sized from the source mark's own 1311x1200 aspect ratio
+              (via h-auto) so it's never stretched */}
+          <div className="flex flex-col items-center justify-center mb-2.5">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white rounded-2xl px-5 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              className="bg-white rounded-2xl px-4 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
             >
               <img
                 src={CLINARA_LOGO_URL}
                 alt="Clinara — Better Care. Smarter Management."
-                className="w-20"
+                className="w-24 h-auto"
               />
             </motion.div>
           </div>
 
           {/* Main Card */}
           <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
-            <div className="px-5 pt-5 pb-4">
-              <div className="text-center mb-4">
+            <div className="px-5 pt-4 pb-3.5">
+              <div className="text-center mb-3">
                 <h1 className="text-[#102F52] text-base font-bold">Selamat Datang Kembali</h1>
                 <p className="text-[#5B6B7D] text-xs mt-1">
                   Masuk untuk mengakses dashboard Clinara
@@ -492,32 +499,32 @@ case 'clinic_admin':
               </form>
 
               {/* Trust row */}
-              <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+              <div className="grid grid-cols-3 gap-2 mt-3 text-center">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] text-[#5B6B7D] leading-tight">
                     Authorized
                     <br />
                     Personnel Only
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <Lock className="w-4 h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <Lock className="w-3.5 h-3.5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] text-[#5B6B7D] leading-tight">
                     Secure Encrypted
                     <br />
                     Access
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[9px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] text-[#5B6B7D] leading-tight">
                     Trusted by
                     <br />
                     Healthcare Experts
@@ -527,7 +534,7 @@ case 'clinic_admin':
             </div>
           </div>
 
-          <p className="text-center text-white text-[11px] mt-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+          <p className="text-center text-white text-[10px] mt-2.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </p>
         </motion.div>
