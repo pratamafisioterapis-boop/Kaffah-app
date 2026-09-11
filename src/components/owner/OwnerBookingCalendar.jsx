@@ -438,10 +438,10 @@ const OwnerBookingCalendar = () => {
                 <PopoverTrigger asChild>
                 <Button
   variant="ghost"
-  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-2"
+  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-2 overflow-hidden"
 >
-  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-500 shrink-0" />
-  <span className="text-xs font-semibold leading-tight whitespace-nowrap tracking-tight sm:tracking-normal text-slate-700">
+  <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
+  <span className="text-xs font-semibold leading-tight truncate tracking-tight sm:tracking-normal text-slate-700">
     {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
   </span>
 </Button>

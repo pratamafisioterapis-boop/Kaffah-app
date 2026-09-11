@@ -484,11 +484,11 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <PopoverTrigger asChild>
       <Button
         variant="ghost"
-        className="flex-1 min-w-0 justify-center text-center px-2"
+        className="flex-1 min-w-0 justify-center text-center px-2 overflow-hidden"
       >
-        <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+        <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-xs font-semibold tracking-tight whitespace-nowrap text-slate-700">
+        <span className="text-xs font-semibold tracking-tight truncate text-slate-700">
   {formattedDate}
 </span>
       </Button>
