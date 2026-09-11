@@ -502,7 +502,6 @@ const getPremiumPastelBadge = (text) => {
       {!hideControls && (
         <>
         {/* Hero Banner */}
-        {!isPWA && (
         <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-recap-hero.png"
@@ -527,7 +526,6 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
         </div>
-        )}
         <div className="flex flex-col gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
           <div className={cn("flex flex-wrap items-center gap-2 w-full", isPWA ? "flex-col" : "")}>
