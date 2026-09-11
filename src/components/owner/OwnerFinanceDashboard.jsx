@@ -433,48 +433,58 @@ const OwnerFinanceDashboard = () => {
   return <div className="w-full space-y-6 font-sans text-slate-900">
 
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-              <Wallet className="w-6 h-6 text-amber-300" />
-            </div>
-            <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Accounting System</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Manage finances, analytics & reporting</p>
-            </div>
-          </div>
-          {!isPWA && (
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
-              <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
-              />
-              <span className="text-white/30 shrink-0">–</span>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
-              />
-            </div>
-            <button
-              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-              className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors text-slate-300 hover:text-white shrink-0"
-              title="Refresh"
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-accounting-hero.png"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
             >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+              Accounting<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                System
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola keuangan, analitik & laporan klinik.
+            </p>
           </div>
-          )}
         </div>
       </div>
+
+      {!isPWA && (
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm rounded-xl px-3 py-2">
+          <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <input
+            type="date"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+          />
+          <span className="text-[#DCE8F2] shrink-0">–</span>
+          <input
+            type="date"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+          />
+          <button
+            onClick={() => { fetchOwnerData(); fetchAdminData(); }}
+            className="w-9 h-9 rounded-lg bg-[#F5F9FC] border border-[#DCE8F2] flex items-center justify-center hover:bg-[#EAF4FF] transition-colors text-[#5B6B7D] hover:text-[#1677D2] shrink-0"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      )}
 
       <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingRecord(null); }}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
