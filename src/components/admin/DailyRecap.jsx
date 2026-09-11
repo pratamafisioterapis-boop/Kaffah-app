@@ -527,11 +527,11 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4 bg-white p-4 sm:p-5 rounded-[28px] border border-slate-100 shadow-sm">
+        <div className="flex flex-col gap-2.5 bg-white p-3 sm:p-4 rounded-[22px] border border-slate-100 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
 
           {/* Filter Tombol Periode */}
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => {
@@ -549,14 +549,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
                 activeFilter === 'today'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
-              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Hari Ini</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Hari Ini</span>
             </button>
 
             <button
@@ -592,14 +592,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
                 activeFilter === 'week'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
-              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Minggu Ini</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Minggu Ini</span>
             </button>
 
             <button
@@ -631,14 +631,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
                 activeFilter === 'month'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
-              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Bulan Ini</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Bulan Ini</span>
             </button>
 
             <button
@@ -667,28 +667,28 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1.5 h-[92px] sm:h-[104px] rounded-[20px] border transition-all px-1',
+                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
                 activeFilter === 'period'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
-              <span className="text-[13px] sm:text-base font-semibold leading-tight text-center">Periode Ini</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Periode Ini</span>
             </button>
           </div>
 
           {/* Filter Tanggal + Refresh */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-[18px] h-[18px] absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.start}
                 onChange={(e) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
                 }}
-                className="h-[60px] sm:h-[68px] w-full pl-10 pr-2 text-[13px] sm:text-base rounded-[18px] sm:rounded-[20px] border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-9 pr-1.5 text-xs sm:text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowStartCalendar(true)}
               />
 
@@ -711,14 +711,14 @@ const getPremiumPastelBadge = (text) => {
             <span className="text-slate-400 font-medium shrink-0">-</span>
 
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-[18px] h-[18px] absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.end}
                 onChange={(e) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
                 }}
-                className="h-[60px] sm:h-[68px] w-full pl-10 pr-2 text-[13px] sm:text-base rounded-[18px] sm:rounded-[20px] border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-9 pr-1.5 text-xs sm:text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowEndCalendar(true)}
               />
 
@@ -741,23 +741,23 @@ const getPremiumPastelBadge = (text) => {
             <Button
               variant="outline"
               size="icon"
-              className="h-[60px] w-[60px] sm:h-[68px] sm:w-[68px] shrink-0 rounded-[18px] sm:rounded-[20px] bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]"
+              className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-xl bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]"
               onClick={fetchRecaps}
             >
-              <RefreshCcw className="w-5 h-5"/>
+              <RefreshCcw className="w-4 h-4"/>
             </Button>
           </div>
 
           {/* Terapis */}
           <div className="relative">
-            <Users className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+            <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
             <select
               value={selectedTherapist}
               onChange={(e) => {
                 setSelectedTherapist(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full h-16 rounded-[18px] pl-11 pr-10 text-[15px] sm:text-base transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+              className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
             >
               <option value="">Semua Terapis</option>
 
@@ -768,45 +768,45 @@ const getPremiumPastelBadge = (text) => {
               ))}
             </select>
 
-            <ChevronDown className="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
 
           {showPaymentFilter && (
             <>
               {/* Total Revenue */}
-              <div className="self-start inline-flex items-center gap-2 px-4 h-[60px] rounded-[18px] bg-emerald-50 border border-emerald-100">
-                <BarChart3 className="w-5 h-5 text-emerald-600 shrink-0" />
-                <span className="text-sm sm:text-[15px] font-medium text-emerald-700 whitespace-nowrap">
+              <div className="self-start inline-flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
+                <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
                   Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
                 </span>
               </div>
 
               {/* Metode Pembayaran */}
               <div className="relative">
-                <CreditCard className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+                <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                  className="w-full h-16 rounded-[18px] pl-11 pr-10 text-[15px] sm:text-base appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                  className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
                 >
                   <option value="">Semua Metode</option>
                   {paymentMethodOptions.map((pm) => (
                     <option key={pm.id} value={pm.label}>{pm.label}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               </div>
             </>
           )}
 
           {/* Cari Pasien */}
           <div className="relative">
-            <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <Input
               placeholder="Cari Pasien..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-16 w-full pl-11 text-[15px] sm:text-base rounded-[18px] border border-[#D8E2EB]"
+              className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
             />
           </div>
         </div>
