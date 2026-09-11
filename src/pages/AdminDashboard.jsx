@@ -423,7 +423,7 @@ setTrendPatients(trendArray);
         {/* ── Hero Banner ── */}
         <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
-            src="/hero/clinara-owner-hero.png"
+            src="/hero/clinara-owner-hero.webp"
             alt="Kaffah Physiotherapy"
             className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
           />

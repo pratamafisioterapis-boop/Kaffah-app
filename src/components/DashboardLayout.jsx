@@ -18,6 +18,7 @@ import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
 import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
 import DashboardTopbar from '@/components/DashboardTopbar';
+import { preloadHeroImages } from '@/lib/preloadHeroImages';
 
 // Icon Mapping
 const iconMap = {
@@ -97,6 +98,10 @@ const isPWA =
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    preloadHeroImages();
   }, []);
 
   useEffect(() => {
