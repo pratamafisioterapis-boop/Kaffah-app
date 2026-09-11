@@ -228,6 +228,7 @@ const getCount = (types) => {
         alt="Kaffah Physiotherapy"
         className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
       />
+      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
         <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
           <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
