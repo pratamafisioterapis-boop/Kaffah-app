@@ -364,16 +364,14 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* Bablast Toggle */}
-  <div className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
+  <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
 
-  <div className="flex items-center gap-2.5 min-w-0">
-    <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-      <Phone className="h-4 w-4 text-white" fill="white" />
+  <div className="flex items-center justify-between gap-2">
+  <div className="flex items-center gap-2 min-w-0">
+    <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+      <Phone className="h-3.5 w-3.5 text-white" fill="white" />
     </div>
-    <div className="min-w-0">
-      <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
-      <p className="text-xs text-slate-500 leading-snug">Otomatis kirim notifikasi via WhatsApp</p>
-    </div>
+    <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
   </div>
 
   <button
@@ -450,7 +448,8 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       }`}
     />
   </button>
-
+  </div>
+  <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
   </div>
 
   {/* Controls Row */}
@@ -468,13 +467,13 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     </Button>
 
     {/* Date Controller */}
-    <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+    <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1.5 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
     variant="ghost"
     size="icon"
-    className="h-7 w-7 shrink-0"
+    className="h-7 w-7 shrink-0 mr-1"
     onClick={() => setDate(addDays(date, -1))}
   >
     <ChevronLeft className="w-4 h-4" />
@@ -485,7 +484,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <PopoverTrigger asChild>
       <Button
         variant="ghost"
-        className="flex-1 min-w-0 justify-center text-center px-1.5"
+        className="flex-1 min-w-0 justify-center text-center px-2"
       >
         <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
 
@@ -509,7 +508,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   <Button
     variant="ghost"
     size="icon"
-    className="h-7 w-7 shrink-0"
+    className="h-7 w-7 shrink-0 ml-1"
     onClick={() => setDate(addDays(date, 1))}
   >
     <ChevronRight className="w-4 h-4" />
