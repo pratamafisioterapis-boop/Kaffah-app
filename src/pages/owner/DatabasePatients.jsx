@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Upload } from 'lucide-react';
+import { Database, Plus, Upload, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -156,19 +156,29 @@ const DatabasePatients = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button onClick={handleRefresh} variant="outline" size="sm" className="border-[#DCE8F2] text-[#102F52] hover:bg-[#F5F9FC]">
-                {isPWA ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                ) : 'Refresh Data'}
+            <div className="flex flex-wrap items-center justify-end gap-4 sm:gap-5 !mt-12 sm:!mt-14">
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="h-12 sm:h-16 md:h-[72px] min-w-[110px] sm:min-w-[130px] md:min-w-[150px] px-4 sm:px-5 rounded-[20px] border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] font-semibold text-sm sm:text-[17px] gap-2 sm:gap-2.5 shadow-sm hover:bg-[#E4EFFA] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap">{isPWA ? 'Refresh' : 'Refresh Data'}</span>
               </Button>
-              <Button onClick={() => setIsImportOpen(true)} variant="outline" size="sm" className="border-[#DCE8F2] text-[#102F52] hover:bg-[#F5F9FC] gap-2">
-                <Upload className="w-4 h-4" /> {isPWA ? 'Import' : 'Import Excel'}
+              <Button
+                onClick={() => setIsImportOpen(true)}
+                variant="outline"
+                className="h-12 sm:h-16 md:h-[72px] min-w-[110px] sm:min-w-[200px] md:min-w-[240px] px-4 sm:px-6 rounded-[20px] border border-[#DCE6EF] bg-white text-[#102F52] font-semibold text-sm sm:text-[18px] gap-2 sm:gap-3 shadow-sm hover:bg-[#F5F9FC] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <Upload className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap">{isPWA ? 'Import' : 'Import Excel'}</span>
               </Button>
-              <Button onClick={handleAddClick} className="bg-[#1677D2] hover:bg-[#125fac] text-white gap-2">
-                <Plus className="w-4 h-4" /> {isPWA ? 'Tambah' : 'Tambah Pasien'}
+              <Button
+                onClick={handleAddClick}
+                className="h-12 sm:h-16 md:h-[72px] min-w-[130px] sm:min-w-[260px] md:min-w-[320px] px-5 sm:px-7 rounded-[20px] bg-[#1683F4] hover:bg-[#125fac] text-white font-semibold text-sm sm:text-[19px] gap-2 sm:gap-3 shadow-[0_8px_20px_-4px_rgba(22,131,244,0.45)] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <Plus className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" strokeWidth={2.2} />
+                <span className="whitespace-nowrap">{isPWA ? 'Tambah' : 'Tambah Pasien'}</span>
               </Button>
             </div>
 
