@@ -532,10 +532,10 @@ const getPremiumPastelBadge = (text) => {
           <div className={cn("flex flex-wrap items-center gap-2 w-full", isPWA ? "flex-col" : "")}>
             {/* Filter Tombol Periode */}
             <div className="flex items-center gap-2 w-full">
-              <div className="grid grid-cols-4 gap-1.5 flex-1">
+              <div className="grid grid-cols-4 gap-1 flex-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
                 <Button
-  variant={activeFilter === 'today' ? 'default' : 'outline'}
-  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
+  variant="ghost"
+  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
@@ -556,8 +556,8 @@ const getPremiumPastelBadge = (text) => {
                 </Button>
 
                 <Button
-  variant={activeFilter === 'week' ? 'default' : 'outline'}
-  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
+  variant="ghost"
+  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
   size="sm"
                   onClick={() => {
   const now = new Date();
@@ -594,8 +594,8 @@ const getPremiumPastelBadge = (text) => {
                 </Button>
 
                 <Button
-  variant={activeFilter === 'month' ? 'default' : 'outline'}
-  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white' : '')}
+  variant="ghost"
+  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
@@ -628,8 +628,8 @@ const end = formatLocal(lastDay);
                 </Button>
 
                 <Button
-  variant={activeFilter === 'period' ? 'default' : 'outline'}
-  className={cn('h-9 px-2 text-xs sm:text-sm', activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : '')}
+  variant="ghost"
+  className={cn('h-9 px-2 text-xs sm:text-sm rounded-xl transition-all', activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900')}
   size="sm"
                   onClick={() => {
                     const now = new Date();
