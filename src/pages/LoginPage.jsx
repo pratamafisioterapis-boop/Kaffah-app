@@ -27,6 +27,19 @@ const CLINARA_LOGIN_BG_DESKTOP_URL = '/login-bg-desktop.jpg';
 const CLINARA_ICON_URL = '/clinara-icon.png';
 const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
 
+// Staggered entrance for the card's inner sections (heading, form, trust
+// row) so they settle in sequence rather than popping in all at once.
+const cardStagger = {
+  hidden: {},
+  visible: {
+    transition: { delayChildren: 0.45, staggerChildren: 0.12 },
+  },
+};
+const cardItem = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -339,30 +352,47 @@ case 'clinic_admin':
           possibility outright regardless of viewport-unit quirks. */}
       <div className="fixed inset-0 w-full flex flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Background photo — portrait crop below `sm`, landscape from `sm`
-            up; both already have the wave accent baked in. */}
-        <div className="absolute inset-0 z-0">
+            up; both already have the wave accent baked in. Slow Ken-Burns
+            drift (animate-bg-zoom) adds ambient motion behind the card. */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="absolute inset-0 z-0"
+        >
           <img
             src={CLINARA_LOGIN_BG_MOBILE_URL}
             alt=""
             aria-hidden="true"
-            className="sm:hidden w-full h-full object-cover"
+            className="sm:hidden w-full h-full object-cover animate-bg-zoom"
           />
           <img
             src={CLINARA_LOGIN_BG_DESKTOP_URL}
             alt=""
             aria-hidden="true"
-            className="hidden sm:block w-full h-full object-cover"
+            className="hidden sm:block w-full h-full object-cover animate-bg-zoom"
           />
-        </div>
+        </motion.div>
 
         {/* Corner taglines echoing the brand voice */}
-        <div className="absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+        <motion.div
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+          className="absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+        >
           <span className="block w-6 border-t border-white/60 mb-2"></span>
           Better Care
           <br />
           Smarter Management
-        </div>
-        <div className="absolute top-5 right-5 z-10 text-white text-xl text-right leading-[1.15] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]" style={{ fontFamily: "'Caveat', cursive" }}>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 0.6, ease: "easeOut" }}
+          className="absolute top-5 right-5 z-10 text-white text-xl text-right leading-[1.15] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+          style={{ fontFamily: "'Caveat', cursive" }}
+        >
           Care
           <br />
           Manage
@@ -371,15 +401,20 @@ case 'clinic_admin':
           <br />
           Together
           <span className="block w-10 h-px bg-white/60 mt-1 ml-auto"></span>
-        </div>
-        <div className="absolute bottom-6 left-5 z-10 text-white text-[10px] font-medium tracking-[0.15em] uppercase leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6, ease: "easeOut" }}
+          className="absolute bottom-6 left-5 z-10 text-white text-[10px] font-medium tracking-[0.15em] uppercase leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+        >
           Care
           <br />
           Manage
           <br />
           Grow Together
           <span className="block w-6 border-t border-white/60 mt-2"></span>
-        </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -395,25 +430,40 @@ case 'clinic_admin':
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
             >
-              <img
-                src={CLINARA_LOGO_URL}
-                alt="Clinara — Better Care. Smarter Management."
-                className="w-20 sm:w-28 h-auto"
-              />
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ delay: 0.9, duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              >
+                <img
+                  src={CLINARA_LOGO_URL}
+                  alt="Clinara — Better Care. Smarter Management."
+                  className="w-20 sm:w-28 h-auto"
+                />
+              </motion.div>
             </motion.div>
           </div>
 
           {/* Main Card */}
-          <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]">
-            <div className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7">
-              <div className="text-center mb-3 sm:mb-5">
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.55, ease: "easeOut" }}
+            className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]"
+          >
+            <motion.div
+              variants={cardStagger}
+              initial="hidden"
+              animate="visible"
+              className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7"
+            >
+              <motion.div variants={cardItem} className="text-center mb-3 sm:mb-5">
                 <h1 className="text-[#102F52] text-base sm:text-xl font-bold">Selamat Datang Kembali</h1>
                 <p className="text-[#5B6B7D] text-xs sm:text-sm mt-1">
                   Masuk untuk mengakses dashboard Clinara
                 </p>
-              </div>
+              </motion.div>
 
               {/* Error Message */}
               <AnimatePresence>
@@ -431,9 +481,9 @@ case 'clinic_admin':
               </AnimatePresence>
 
               {/* Form */}
-              <form onSubmit={handleLogin} className="space-y-3">
+              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-3">
                 <div className="space-y-3">
-                  <div className="group relative">
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
                     <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
@@ -445,9 +495,9 @@ case 'clinic_admin':
                       autoCorrect="off"
                       required
                     />
-                  </div>
+                  </motion.div>
 
-                  <div className="group relative">
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
                     <Lock className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -465,7 +515,7 @@ case 'clinic_admin':
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
-                  </div>
+                  </motion.div>
 
                   <div className="flex justify-end">
                     <Link
@@ -478,28 +528,36 @@ case 'clinic_admin':
                 </div>
 
                 <div className="pt-1">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 sm:py-4 sm:text-base rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting || isRedirecting || authLoading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Verifying Access...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <span>Sign In to Dashboard</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                    )}
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isRedirecting || authLoading}
+                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 sm:py-4 sm:text-base rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {!(isSubmitting || isRedirecting || authLoading) && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                        />
+                      )}
+                      {isSubmitting || isRedirecting || authLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying Access...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Sign In to Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </motion.div>
                 </div>
-              </form>
+              </motion.form>
 
               {/* Trust row */}
-              <div className="grid grid-cols-3 gap-2 mt-3 sm:mt-5 text-center">
+              <motion.div variants={cardItem} className="grid grid-cols-3 gap-2 mt-3 sm:mt-5 text-center">
                 <div className="flex flex-col items-center gap-1 sm:gap-1.5">
                   <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
                     <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1677D2]" />
@@ -530,13 +588,18 @@ case 'clinic_admin':
                     Healthcare Experts
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
 
-          <p className="text-center text-white text-[10px] sm:text-xs mt-2.5 sm:mt-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="text-center text-white text-[10px] sm:text-xs mt-2.5 sm:mt-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+          >
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
-          </p>
+          </motion.p>
         </motion.div>
       </div>
     </>
