@@ -272,25 +272,52 @@ export const PackageRecapsContent = () => {
                 <span className="text-sm text-slate-500 hidden sm:inline mr-2">
                     {filteredAndSortedPackages.length > 0 ? `Menampilkan ${startItem} - ${endItem} dari ${filteredAndSortedPackages.length} data` : ''}
                 </span>
-                <div className="flex gap-1">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 w-8 p-0" 
+
+                {/* Mobile: compact, touch-friendly pagination */}
+                <div className="flex sm:hidden items-center gap-1.5">
+                    <button
+                        type="button"
+                        className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed active:bg-slate-100 transition-colors"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap px-1">
+                        Halaman <span className="text-blue-600 font-semibold">{currentPage}</span> dari {totalPages}
+                    </span>
+
+                    <button
+                        type="button"
+                        className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed active:bg-slate-100 transition-colors"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                </div>
+
+                {/* Desktop: unchanged */}
+                <div className="hidden sm:flex gap-1">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-    
+
                     <div className="flex items-center gap-1 mx-1">
                         <span className="text-sm font-medium">Halaman {currentPage}</span>
                     </div>
-    
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 w-8 p-0" 
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     >
