@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, AlertCircle } from 'lucide-react';
+import { User, AlertCircle, CalendarRange, Users } from 'lucide-react';
 import { getPhysiotherapists } from '@/lib/api';
 import TherapistScheduleOverrideForm from './TherapistScheduleOverrideForm';
 import TherapistScheduleOverrideList from './TherapistScheduleOverrideList';
@@ -33,12 +33,28 @@ const TherapistScheduleOverrideManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-800">Jadwal Pengganti (Per Tanggal)</h2>
-        <p className="text-sm text-slate-500">
-          Untuk perubahan jam kerja sementara di tanggal tertentu (mis. tukar shift) — tidak mengubah jadwal mingguan tetap.
-          Dipakai otomatis oleh fitur Absensi Karyawan untuk menentukan jam masuk yang seharusnya pada tanggal itu.
-        </p>
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <CalendarRange className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Jadwal Pengganti (Per Tanggal)</h2>
+            <p className="text-sm text-slate-500">
+              Untuk perubahan jam kerja sementara di tanggal tertentu (mis. tukar shift) — tidak mengubah jadwal mingguan tetap.
+              Dipakai otomatis oleh fitur Absensi Karyawan untuk menentukan jam masuk yang seharusnya pada tanggal itu.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-2.5 shrink-0">
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-blue-700 leading-tight">Tim Fisioterapis</p>
+            <p className="text-xs text-slate-500 leading-tight">Bekerja bersama untuk pemulihan yang lebih baik</p>
+          </div>
+        </div>
       </div>
 
       {error && (

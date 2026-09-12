@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, AlertCircle } from 'lucide-react';
+import { User, AlertCircle, CalendarOff, Users } from 'lucide-react';
 import { getPhysiotherapists } from '@/lib/api';
 import TherapistTimeOffForm from './TherapistTimeOffForm';
 import TherapistTimeOffList from './TherapistTimeOffList';
@@ -34,9 +34,25 @@ const TherapistTimeOffManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-         <h2 className="text-xl font-bold text-slate-800">Manajemen Cuti Terapis</h2>
-         <p className="text-sm text-slate-500">Kelola izin dan hari libur fisioterapis</p>
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <CalendarOff className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Manajemen Cuti Terapis</h2>
+            <p className="text-sm text-slate-500">Kelola izin dan hari libur fisioterapis</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-2.5 shrink-0">
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-blue-700 leading-tight">Tim Fisioterapis</p>
+            <p className="text-xs text-slate-500 leading-tight">Bekerja bersama untuk pemulihan yang lebih baik</p>
+          </div>
+        </div>
       </div>
 
       {error && (
