@@ -365,19 +365,19 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-0">
-                <div className="px-6 py-6 border-b border-slate-100">
+            <DialogContent className="w-full h-full sm:h-auto max-w-full sm:max-w-2xl max-h-full sm:max-h-[90vh] overflow-hidden rounded-none sm:rounded-xl shadow-lg p-0 gap-0 flex flex-col">
+                <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 sm:py-6 border-b border-slate-100 shrink-0">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">{mode === 'add' ? 'Tambah Pasien Baru' : 'Edit Data Pasien'}</DialogTitle>
-                        <DialogDescription className="text-sm text-slate-500">
+                        <DialogTitle className="text-lg sm:text-xl font-bold text-slate-900 pr-6">{mode === 'add' ? 'Tambah Pasien Baru' : 'Edit Data Pasien'}</DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm text-slate-500">
                             Lengkapi informasi pasien di bawah ini. Field dengan tanda (*) wajib diisi.
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
-                <div className="px-6 py-4 space-y-5">
+                <div className="px-4 sm:px-6 py-4 space-y-5 overflow-y-auto flex-1">
                     {/* Row 1: RM & Status */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">No. Rekam Medis</Label>
                             <Input 
@@ -634,21 +634,21 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4 bg-slate-50/50">
+                <div className="sticky bottom-0 shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-white sm:bg-slate-50/50">
                     {mode === 'edit' ? (
-                        <div className="flex-1 flex justify-start">
+                        <div className="flex justify-start">
                              {!showDeleteConfirm ? (
-                                <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto justify-center sm:justify-start"
                                     onClick={() => setShowDeleteConfirm(true)}
                                     disabled={loading}
                                 >
                                     <Trash2 className="w-4 h-4 mr-2" /> Hapus Pasien
                                 </Button>
                              ) : (
-                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200">
+                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200 w-full sm:w-auto">
                                      <span className="text-xs text-red-700 font-medium px-2">Yakin hapus?</span>
                                      <Button size="sm" variant="destructive" onClick={handleDelete} disabled={loading}>{loading ? '...' : 'Ya, Hapus'}</Button>
                                      <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={loading} className="text-slate-600 hover:text-slate-800">Batal</Button>
@@ -656,12 +656,12 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                              )}
                         </div>
                     ) : (
-                        <div></div> 
+                        <div className="hidden sm:block"></div>
                     )}
-                    
+
                     <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="px-6">Batal</Button>
-                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="flex-1 sm:flex-none px-6">Batal</Button>
+                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6">
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {mode === 'add' ? 'Simpan Pasien' : 'Simpan Perubahan'}
                         </Button>
