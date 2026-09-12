@@ -8,6 +8,15 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Link2, Copy, Star, MapPin, Info } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
+import { PUBLIC_DOMAIN } from '@/lib/domainRouting';
+
+// Always build the shareable link on the clinic's own public domain, never
+// on window.location.origin: staff generate these from inside the app
+// (clinara.id), and a patient opening a clinara.id link on a phone that
+// already has the app installed as a PWA gets the SaaS platform's own
+// native splash screen (Clinara logo on white) before anything else loads
+// -- confusing branding and a jarring flash for a one-off patient link.
+const buildFeedbackUrl = (token) => `https://${PUBLIC_DOMAIN}/feedback/${token}`;
 
 // Shared feedback-link management UI, embedded by the owner and admin
 // dashboard wrapper pages (same pattern as PackageRecapsContent). Lets
@@ -82,7 +91,7 @@ export const FeedbackManagementContent = () => {
     }
     setLinks((prev) => [data, ...prev]);
     setPatientName('');
-    const url = `${window.location.origin}/feedback/${token}`;
+    const url = buildFeedbackUrl(token);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link feedback dibuat & disalin', description: url });
@@ -92,7 +101,7 @@ export const FeedbackManagementContent = () => {
   };
 
   const handleCopyLink = async (token) => {
-    const url = `${window.location.origin}/feedback/${token}`;
+    const url = buildFeedbackUrl(token);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link disalin', description: url });
