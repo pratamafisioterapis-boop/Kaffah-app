@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
-  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCcw, BarChart3, CreditCard, Users
+  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -678,7 +678,7 @@ const getPremiumPastelBadge = (text) => {
             </button>
           </div>
 
-          {/* Filter Tanggal + Refresh */}
+          {/* Filter Tanggal */}
           <div className="flex items-center gap-1.5">
             <div className="relative flex-1 min-w-0">
               <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -737,15 +737,6 @@ const getPremiumPastelBadge = (text) => {
                 </div>
               )}
             </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-xl bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]"
-              onClick={fetchRecaps}
-            >
-              <RefreshCcw className="w-4 h-4"/>
-            </Button>
           </div>
 
           {/* Terapis + Cari Pasien (satu baris di tablet/desktop) */}
