@@ -1,0 +1,678 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import {
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft, ClipboardList, Phone
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format, addDays } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/customSupabaseClient';
+import { useToast } from '@/components/ui/use-toast';
+
+import {
+  getActivePhysiotherapists,
+  getAppointments,
+  getAvailableSlots,
+  getPatientByPhone,
+  getClinicTherapistsSoapLockStatus
+} from '@/lib/api';
+
+// Reuse Admin Components
+import TherapistCard from '@/components/admin/booking/TherapistCard';
+import SlotBookingForm from '@/components/admin/booking/SlotBookingForm';
+import ManualBookingForm from '@/components/admin/booking/ManualBookingForm';
+import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailModal';
+import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
+
+const OwnerBookingCalendar = () => {
+  const navigate = useNavigate();
+  const { userDetails } = useAuth();
+  const { toast } = useToast();
+  const [date, setDate] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isBablastEnabled, setIsBablastEnabled] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  
+  // Data State
+  const [therapists, setTherapists] = useState([]);
+  const [schedulesMap, setSchedulesMap] = useState({});
+  const [appointments, setAppointments] = useState([]);
+  const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
+  const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
+  const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
+
+  // Modal State
+  const [activeModal, setActiveModal] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [patientHistory, setPatientHistory] = useState([]);
+
+  useEffect(() => {
+    loadInitialData();
+    loadWaSettings();
+  }, []);
+
+  const loadWaSettings = async () => {
+    if (!userDetails?.clinic_id) return;
+    const { data } = await supabase
+      .from('wa_settings')
+      .select('id, enabled')
+      .eq('clinic_id', userDetails.clinic_id)
+      .maybeSingle();
+    if (data) setIsBablastEnabled(data.enabled);
+  };
+
+
+  useEffect(() => {
+    if (therapists.length > 0) {
+      fetchDayData(date);
+    }
+  }, [date, therapists]);
+
+  useEffect(() => {
+    if (therapists.length > 0) {
+      loadSoapStatus();
+    }
+  }, [therapists]);
+
+  const loadSoapStatus = async () => {
+    const { data } = await getClinicTherapistsSoapLockStatus();
+    if (Array.isArray(data)) {
+      const map = {};
+      data.forEach(s => { map[s.therapist_id] = s; });
+      setSoapStatusByTherapist(map);
+    }
+  };
+
+  // Real-time subscription
+  useEffect(() => {
+    
+    const leaveChannel = supabase
+      .channel('public:therapist_time_off')
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'therapist_time_off' }, 
+        (payload) => {
+          fetchDayData(date);
+        }
+      )
+      .subscribe();
+
+    const appChannel = supabase
+      .channel('public:appointments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+           fetchDayData(date);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leaveChannel);
+      supabase.removeChannel(appChannel);
+    };
+  }, [date]);
+
+  // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
+  // write ke appointments/therapist_time_off), jadi realtime subscription di atas
+  // tidak menangkapnya. Poll berkala supaya kartu terapis (badge terkunci & slot
+  // kosong) tetap akurat walau tab dibiarkan terbuka melewati ambang batas umur.
+  useEffect(() => {
+    if (therapists.length === 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchDayData(date);
+      loadSoapStatus();
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [date, therapists]);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    const response = await getActivePhysiotherapists();
+    const data = response?.data || [];
+    setTherapists(data);
+    setLoading(false);
+  };
+
+  const fetchDayData = async (selectedDate) => {
+    setIsRefreshing(true);
+    try {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      
+      // === STEP 5: LOGGING START ===
+      console.log(`[OwnerBookingCalendar] === FETCH START ===`);
+      console.log(`[OwnerBookingCalendar] Fetching data for date: ${dateStr}`);
+      console.log(`[OwnerBookingCalendar] Total Therapists: ${therapists.length}`);
+
+      // 1️⃣ Appointments (DISPLAY ONLY)
+      const appsRes = await getAppointments({
+        startDate: `${dateStr}T00:00:00`,
+        endDate: `${dateStr}T23:59:59`
+      });
+      // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
+      setAppointments((appsRes?.data || []).map(a => ({
+        ...a,
+        is_new_patient: !a.patient_id
+      })));
+
+      // 2️⃣ SLOT + STATUS (SOURCE OF TRUTH)
+      const { data, error } = await getAvailableSlots(dateStr);
+      
+      if (error) throw error;
+      
+      console.log('[OwnerBookingCalendar] RAW RPC RESPONSE:', data);
+      console.log('[OwnerBookingCalendar] Response Length:', data?.length || 0);
+
+      // 3️⃣ schedulesMap & Status Map
+      const newSchedulesMap = {};
+      const statusMap = {};
+
+      // Initialize all therapists with default state
+      therapists.forEach(t => {
+         statusMap[t.id] = 'tidak_ada_jadwal'; // Default assumption
+         newSchedulesMap[t.id] = [];
+      });
+
+      // Satu terapis bisa punya slot dengan status campuran di hari yang sama
+      // (mis. sebagian 'terisi' karena sudah dibooking, sisanya 'terkunci' karena
+      // SOAP menunggak). Rangking eksplisit ini memastikan status yang paling
+      // relevan (terkunci lebih penting daripada terisi) yang menang, bukan
+      // sekadar status slot mana yang lebih dulu diproses.
+      const STATUS_RANK = { aktif: 3, terkunci: 2, terisi: 1 };
+
+      if (data && data.length > 0) {
+          // Pass 1: Determine Status from RPC
+          data.forEach(s => {
+            if (s.therapist_id && s.status) {
+               const currentRank = STATUS_RANK[statusMap[s.therapist_id]] ?? -1;
+               const newRank = STATUS_RANK[s.status] ?? 0;
+               if (newRank >= currentRank) {
+                  statusMap[s.therapist_id] = s.status;
+               }
+            }
+         });
+
+          // Pass 2: Map Slots
+          therapists.forEach(t => {
+              // Include BOTH 'aktif' and 'terisi' slots so UI can show booked state
+              const tSlots = data.filter(s => s.therapist_id === t.id && (s.status === 'aktif' || s.status === 'terisi'));
+              newSchedulesMap[t.id] = tSlots.map(s => ({
+                  id: s.id, 
+                  therapist_id: t.id,
+                  slot_start_time: s.slot_start,
+                  slot_end_time: s.slot_end,
+                  duration_minutes: s.duration_minutes || 60,
+                  status: s.status // Pass status to card
+              }));
+          });
+      }
+
+      // 4️⃣ CEK LANGSUNG THERAPIST_TIME_OFF (agar hari tanpa slot tetap ketahuan cuti/libur)
+      const reasonMap = {};
+      const { data: timeOffRows } = await supabase
+        .from('therapist_time_off')
+        .select('therapist_id, reason')
+        .lte('start_date', dateStr)
+        .gte('end_date', dateStr);
+
+      (timeOffRows || []).forEach(row => {
+        // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
+        // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
+        // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
+        // dan catatan bebas bisa memuat kata apa saja, termasuk "cuti" secara kebetulan.
+        const category = (row.reason || '').split(' - ')[0].trim().toLowerCase();
+        const label = category.includes('sakit') ? 'Sakit'
+          : category.includes('training') ? 'Training'
+          : category.includes('cuti') ? 'Cuti'
+          : category.includes('izin') ? 'Izin Pribadi'
+          : category.includes('libur') ? 'Libur'
+          : 'Lainnya';
+        statusMap[row.therapist_id] = 'cuti';
+        reasonMap[row.therapist_id] = label;
+      });
+
+      // === LOGGING END ===
+      console.log('[OwnerBookingCalendar] === MAPPING RESULT ===');
+      console.log('[OwnerBookingCalendar] Schedules Map:', newSchedulesMap);
+      console.log('[OwnerBookingCalendar] Status Map:', statusMap);
+      
+      setSchedulesMap(newSchedulesMap);
+      setTherapistLeaveStatus(statusMap);
+      setTherapistLeaveReason(reasonMap);
+
+    } catch (error) {
+      console.error('[OwnerBookingCalendar] fetchDayData ERROR:', error);
+    } finally {
+      setIsRefreshing(false);
+      setLoading(false);
+    }
+  };
+
+  // 🔁 Setelah booking / delete / edit berhasil
+  const handleSuccess = () => {
+    fetchDayData(date);
+  };
+
+  const handleViewHistory = async (patientId, guestName, guestPhone) => {
+    let resolvedPatientId = patientId;
+
+    // Booking guest yang belum ter-link ke patient_id — coba cocokkan lewat
+    // nomor telepon ke pasien terdaftar yang sudah ada sebelum menyerah.
+    if (!resolvedPatientId && guestPhone) {
+      const { data: matchedPatient } = await getPatientByPhone(guestPhone);
+      resolvedPatientId = matchedPatient?.id || null;
+    }
+
+    if (!resolvedPatientId) {
+      toast({
+        variant: "destructive",
+        title: "Patient tidak ditemukan"
+      });
+      return;
+    }
+
+    // Beberapa appointment awalnya booking guest lalu baru ter-link ke pasien
+    // terdaftar di sisi daily_recaps saja (appointments.patient_id tetap null).
+    // Ambil juga appointment_id dari daily_recaps supaya riwayat tidak bolong.
+    const { data: linkedRecaps } = await supabase
+      .from('daily_recaps')
+      .select('appointment_id')
+      .eq('patient_id', resolvedPatientId)
+      .not('appointment_id', 'is', null);
+
+    const recapAppointmentIds = [...new Set((linkedRecaps || []).map((r) => r.appointment_id))];
+
+    let query = supabase
+      .from('appointments')
+      .select(`
+        *,
+        patient:patients(full_name),
+        therapist:physiotherapists(name)
+      `)
+      .order('appointment_date', { ascending: false });
+
+    query = recapAppointmentIds.length > 0
+      ? query.or(`patient_id.eq.${resolvedPatientId},id.in.(${recapAppointmentIds.join(',')})`)
+      : query.eq('patient_id', resolvedPatientId);
+
+    const { data, error } = await query;
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal ambil history"
+      });
+      return;
+    }
+
+    setPatientHistory(data || []);
+    setShowHistoryModal(true);
+  };
+
+  // ❌ Tutup modal
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  // 🧠 Ambil status therapist utk modal
+  const getModalLeaveStatus = () => {
+    if (!activeModal?.data?.therapist?.id) return 'aktif';
+    return therapistLeaveStatus[activeModal.data.therapist.id] || 'aktif';
+  };
+
+  return (
+    <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+      <div className="flex items-center gap-4 mt-4 mb-4">
+        <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600" onClick={() => navigate('/owner')}>
+           <ArrowLeft className="w-4 h-4" />
+           Back to Dashboard
+        </Button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-4 z-20 overflow-hidden space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
+          <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
+          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <Phone className="h-3.5 w-3.5 text-white" fill="white" />
+            </div>
+            <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!userDetails?.clinic_id) return;
+
+              const { data: current } = await supabase
+                .from('wa_settings')
+                .select('id, enabled')
+                .eq('clinic_id', userDetails.clinic_id)
+                .maybeSingle();
+
+              let result;
+              if (current) {
+                const newValue = !current.enabled;
+                result = await supabase
+                  .from('wa_settings')
+                  .update({
+                    enabled: newValue,
+                    updated_at: new Date().toISOString(),
+                    ...(newValue && { last_enabled_at: new Date().toISOString() })
+                  })
+                  .eq('id', current.id)
+                  .select()
+                  .single();
+              } else {
+                result = await supabase
+                  .from('wa_settings')
+                  .insert({
+                    clinic_id: userDetails.clinic_id,
+                    enabled: true,
+                    last_enabled_at: new Date().toISOString()
+                  })
+                  .select()
+                  .single();
+              }
+
+              const { data, error } = result;
+              if (!error && data) {
+                setIsBablastEnabled(data.enabled);
+                toast({
+                  title: data.enabled ? 'Bablast Aktif' : 'Bablast Nonaktif',
+                  description: data.enabled ? 'WhatsApp otomatis diaktifkan' : 'WhatsApp otomatis dimatikan'
+                });
+              }
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
+              isBablastEnabled ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                isBablastEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          </div>
+          <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
+        </div>
+
+        <div className="flex items-center gap-1.5 w-full min-w-0">
+            <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fetchDayData(date)}
+                disabled={isRefreshing}
+                className={cn("h-9 w-9 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
+            >
+                <RefreshCw className="h-4 w-4" />
+            </Button>
+
+            <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <Button
+  variant="ghost"
+  size="icon"
+  className="h-7 w-7 shrink-0"
+  onClick={() => setDate(addDays(date, -1))}
+>
+                <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            <Popover>
+                <PopoverTrigger asChild>
+                <Button
+  variant="ghost"
+  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-1 overflow-hidden"
+>
+  <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
+  <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate tracking-tight text-slate-700">
+    {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
+  </span>
+</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => d && setDate(d)}
+                    initialFocus
+                />
+                </PopoverContent>
+            </Popover>
+
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setDate(addDays(date, 1))}>
+                <ChevronRight className="w-4 h-4" />
+            </Button>
+            </div>
+
+            {/* Tombol Template Jadwal */}
+            <Button
+                size="icon"
+                className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => setShowTemplateModal(true)}
+                title="Copy Template Jadwal Tersedia"
+            >
+                <ClipboardList className="h-4 w-4" />
+            </Button>
+        </div>
+      </div>
+
+      {loading ? (
+         <div className="flex flex-col justify-center items-center h-64 gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+            <p className="text-slate-400">Loading schedules...</p>
+         </div>
+      ) : (
+       <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+          {[...therapists]
+  .sort((a, b) => {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const selectedStr = format(date, 'yyyy-MM-dd');
+    const isToday = selectedStr === todayStr;
+
+    const getSortKey = (therapist) => {
+      const slots = schedulesMap[therapist.id] || [];
+      const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
+
+      // Group 3: Tidak ada jadwal / cuti / non_active
+      if (
+        slots.length === 0 ||
+        ['tidak_ada_jadwal', 'cuti', 'non_active', 'terkunci'].includes(leaveStatus)
+      ) {
+        return { group: 3, time: '99:99' };
+      }
+
+      // Group 2: Full booked (semua slot terisi)
+      const allFull = slots.every(s => s.status === 'terisi');
+      if (allFull) {
+        return { group: 2, time: '99:99' };
+      }
+
+      // Ambil slot aktif paling awal
+      const aktifSlots = slots.filter(s => s.status === 'aktif' || !s.status);
+      const sorted = [...aktifSlots].sort((x, y) =>
+        (x.slot_start_time || '').localeCompare(y.slot_start_time || '')
+      );
+      const firstSlot = sorted[0]?.slot_start_time || '99:99';
+
+      // Group 1: Hari ini dan jam slot sudah lewat
+      if (isToday && firstSlot < currentTime) {
+        return { group: 1, time: firstSlot };
+      }
+
+      // Group 0: Slot masih akan datang / bukan hari ini
+      return { group: 0, time: firstSlot };
+    };
+
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+
+    if (keyA.group !== keyB.group) return keyA.group - keyB.group;
+    return keyA.time.localeCompare(keyB.time);
+  })
+  .map((therapist) => {
+            const slots = schedulesMap[therapist.id] || [];
+            const therapistApps = appointments.filter(a => a.therapist_id === therapist.id);
+            const leaveStatus = therapistLeaveStatus[therapist.id] || 'aktif';
+
+            return (
+              <TherapistCard
+                key={therapist.id}
+                therapist={therapist}
+                scheduleSlots={slots}
+                appointments={therapistApps}
+                date={date}
+                leaveStatus={leaveStatus}
+                leaveReason={therapistLeaveReason[therapist.id]}
+                soapStatus={soapStatusByTherapist[therapist.id]}
+                onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
+                onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
+                onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
+                onPatientClick={handleViewHistory}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
+        <DialogContent className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto bg-white p-4 sm:p-6">
+          <DialogHeader className="mb-4">
+             <DialogTitle>
+                {activeModal?.type === 'slot' && 'Booking Slot'}
+                {activeModal?.type === 'manual' && 'Booking Manual'}
+                {activeModal?.type === 'detail' && 'Detail Appointment'}
+             </DialogTitle>
+             <DialogDescription>
+                {activeModal?.type === 'slot' && 'Isi data pasien untuk konfirmasi slot ini.'}
+                {activeModal?.type === 'manual' && 'Buat jadwal manual di luar slot tersedia.'}
+                {activeModal?.type === 'detail' && 'Informasi detail jadwal yang sudah di-booking.'}
+             </DialogDescription>
+          </DialogHeader>
+
+          {activeModal?.type === 'slot' && (
+            <SlotBookingForm 
+               slot={activeModal.data.slot} 
+               therapist={activeModal.data.therapist} 
+               date={date}
+               leaveStatus={getModalLeaveStatus()}
+               onClose={closeModal}
+               onSuccess={handleSuccess}
+            />
+          )}
+
+          {activeModal?.type === 'manual' && (
+             <ManualBookingForm 
+                therapist={activeModal.data.therapist} 
+                date={date}
+                leaveStatus={getModalLeaveStatus()}
+                onClose={closeModal}
+                onSuccess={handleSuccess}
+             />
+          )}
+
+          {activeModal?.type === 'detail' && (
+             <BookedSlotDetailModal
+                appointment={activeModal.data}
+                onClose={closeModal}
+                onSuccess={handleSuccess}
+                onViewHistory={handleViewHistory}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Riwayat Appointment</DialogTitle>
+            <DialogDescription>
+              History appointment pasien
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-4">
+            {patientHistory.filter(item => item.status !== 'cancelled').length > 0 ? (
+              patientHistory
+                .filter(item => item.status !== 'cancelled')
+                .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
+                .map((item) => {
+                  const isUpcoming = new Date(item.appointment_date) > new Date();
+                  return (
+                    <div key={item.id} className="border rounded-xl p-4 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {item.patient?.full_name || item.guest_name || '-'}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {item.therapist?.name || '-'}
+                          </p>
+                        </div>
+                        <Badge
+                          className={
+                            isUpcoming
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-200 text-slate-700'
+                          }
+                        >
+                          {isUpcoming ? 'Upcoming' : item.status || '-'}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-sm text-slate-600">
+                        {item.appointment_date
+                          ? format(
+                              new Date(item.appointment_date),
+                              'EEEE, dd MMMM yyyy HH:mm',
+                              { locale: idLocale }
+                            )
+                          : '-'}
+                      </div>
+                      {item.notes && (
+                        <div className="mt-2 text-sm italic text-slate-500">
+                          {item.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            ) : (
+              <div className="text-center text-slate-500 py-10">
+                Tidak ada history appointment
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ScheduleTemplateModal
+        open={showTemplateModal}
+        onOpenChange={setShowTemplateModal}
+        date={date}
+        therapists={therapists}
+        schedulesMap={schedulesMap}
+        therapistLeaveStatus={therapistLeaveStatus}
+      />
+    </div>
+  );
+};
+
+export default OwnerBookingCalendar;
