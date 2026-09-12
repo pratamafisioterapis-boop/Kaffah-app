@@ -817,15 +817,15 @@ const getPremiumPastelBadge = (text) => {
 
           {/* Terapis + Cari Pasien (satu baris di tablet/desktop), atau Terapis + Metode Pembayaran (satu baris di semua ukuran) */}
           <div className={cn('flex gap-2.5', showPaymentFilter ? 'flex-row' : 'flex-col sm:flex-row')}>
-            <div className={cn('relative', showPaymentFilter ? 'flex-1' : 'sm:flex-1')}>
-              <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+            <div className={cn('relative', showPaymentFilter ? 'flex-1 min-w-0' : 'sm:flex-1')}>
+              <Users className={cn('w-4 h-4 absolute top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10', showPaymentFilter ? 'left-2 sm:left-3' : 'left-3')} />
               <select
                 value={selectedTherapist}
                 onChange={(e) => {
                   setSelectedTherapist(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+                className={cn('w-full h-11 sm:h-12 rounded-xl transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
               >
                 <option value="">Semua Terapis</option>
 
@@ -836,7 +836,7 @@ const getPremiumPastelBadge = (text) => {
                 ))}
               </select>
 
-              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <ChevronDown className={cn('w-4 h-4 absolute top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none', showPaymentFilter ? 'right-1.5 sm:right-3' : 'right-3')} />
             </div>
 
             {!showPaymentFilter && (
@@ -852,19 +852,19 @@ const getPremiumPastelBadge = (text) => {
             )}
 
             {showPaymentFilter && (
-              <div className="relative flex-1">
-                <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+              <div className="relative flex-1 min-w-0">
+                <CreditCard className="w-4 h-4 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                  className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                  className="w-full h-11 sm:h-12 rounded-xl pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
                 >
                   <option value="">Semua Metode</option>
                   {paymentMethodOptions.map((pm) => (
                     <option key={pm.id} value={pm.label}>{pm.label}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               </div>
             )}
           </div>
