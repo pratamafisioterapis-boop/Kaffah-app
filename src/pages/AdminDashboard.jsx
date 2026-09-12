@@ -419,7 +419,7 @@ setTrendPatients(trendArray);
           />
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-md lg:max-w-xl">
               <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
                 {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono">{heroTime}</span>
               </p>
@@ -428,7 +428,7 @@ setTrendPatients(trendArray);
                 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
               >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
                   Admin {clinicName || ''}!
                 </span>
               </h1>
