@@ -382,11 +382,10 @@ const isPWA =
           <div className="overflow-hidden min-w-0">
             <p className="text-sm font-semibold text-[#102F52] truncate">
               {typeof userName === 'string' ? userName : 'User'}
-              {role === 'admin' && clinicInfo?.name ? ` (${clinicInfo.name})` : ''}
             </p>
-            <p className="text-xs text-[#5B6B7D] capitalize truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block"></span>
-              {typeof role === 'string' ? role : 'User'}
+            <p className="text-xs text-[#5B6B7D] truncate flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block flex-shrink-0"></span>
+              {role === 'admin' && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
             </p>
           </div>
         </div>
