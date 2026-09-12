@@ -5,6 +5,8 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,6 +34,20 @@ import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+
+// Tanggal WITA (UTC+8) untuk offset hari tertentu dari hari ini, dipakai
+// oleh navigasi panah kiri/kanan pada tombol "Hari Ini".
+const getMakassarDateForOffset = (offsetDays) => {
+  const now = new Date();
+  const wita = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  wita.setUTCDate(wita.getUTCDate() + offsetDays);
+  return wita;
+};
+
+const getMakassarDateStringForOffset = (offsetDays) => {
+  const wita = getMakassarDateForOffset(offsetDays);
+  return wita.toISOString().split('T')[0];
+};
 
 const getTherapistName = (recap) => {
   if (recap.therapist_name && recap.therapist_name !== '-') {
@@ -74,6 +90,7 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   
   const [recaps, setRecaps] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
+  const [todayOffset, setTodayOffset] = useState(0);
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
@@ -277,8 +294,9 @@ useEffect(() => {
       .toISOString()
       .split('T')[0];
 
-    // 🔥 HANYA RESET kalau filter = today, terlepas dari localStorage
-    if (activeFilter === 'today') {
+    // 🔥 HANYA RESET kalau filter = today DAN tidak sedang geser hari (offset 0),
+    // terlepas dari localStorage
+    if (activeFilter === 'today' && todayOffset === 0) {
       if (
         dateRange.start !== todayMakassar ||
         dateRange.end !== todayMakassar
@@ -292,7 +310,7 @@ useEffect(() => {
   }, 60000);
 
   return () => clearInterval(interval);
-}, [activeFilter, dateRange]);
+}, [activeFilter, dateRange, todayOffset]);
   const fetchRecaps = useCallback(async () => {
     if (!queryDateRange.start || !queryDateRange.end) return;
     setLoadingRecaps(true);
@@ -532,32 +550,90 @@ const getPremiumPastelBadge = (text) => {
 
           {/* Filter Tombol Periode */}
           <div className="grid grid-cols-4 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const now = new Date();
-                const today = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-                  .toISOString()
-                  .split('T')[0];
-
-                setActiveFilter('today');
-
-                setDateRange({ start: today, end: today });
-                setDateRangeDisplay({
-                  start: displayDateID(today),
-                  end: displayDateID(today)
-                });
-              }}
+            <div
               className={cn(
-                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
+                'relative flex items-center justify-center h-[68px] sm:h-[76px] rounded-2xl border transition-all',
                 activeFilter === 'today'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Hari Ini</span>
-            </button>
+              <button
+                type="button"
+                aria-label="Hari sebelumnya"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newOffset = todayOffset - 1;
+                  const target = getMakassarDateStringForOffset(newOffset);
+
+                  setTodayOffset(newOffset);
+                  setActiveFilter('today');
+                  setDateRange({ start: target, end: target });
+                  setDateRangeDisplay({
+                    start: displayDateID(target),
+                    end: displayDateID(target)
+                  });
+                }}
+                className={cn(
+                  'absolute left-0.5 sm:left-1 p-1 rounded-full',
+                  activeFilter === 'today' ? 'hover:bg-white/20' : 'hover:bg-[#DCE8F5]'
+                )}
+              >
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTodayOffset(0);
+                  setActiveFilter('today');
+
+                  const today = getMakassarDateStringForOffset(0);
+                  setDateRange({ start: today, end: today });
+                  setDateRangeDisplay({
+                    start: displayDateID(today),
+                    end: displayDateID(today)
+                  });
+                }}
+                className="flex flex-col items-center justify-center gap-1 h-full px-4 sm:px-5 min-w-0"
+              >
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2} />
+                <span
+                  className={cn(
+                    'font-semibold leading-tight text-center whitespace-nowrap',
+                    todayOffset === 0 ? 'text-[11px] sm:text-sm' : 'text-[9px] sm:text-[11px]'
+                  )}
+                >
+                  {todayOffset === 0
+                    ? 'Hari Ini'
+                    : format(getMakassarDateForOffset(todayOffset), 'EEE, dd MMM', { locale: idLocale })}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                aria-label="Hari berikutnya"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newOffset = todayOffset + 1;
+                  const target = getMakassarDateStringForOffset(newOffset);
+
+                  setTodayOffset(newOffset);
+                  setActiveFilter('today');
+                  setDateRange({ start: target, end: target });
+                  setDateRangeDisplay({
+                    start: displayDateID(target),
+                    end: displayDateID(target)
+                  });
+                }}
+                className={cn(
+                  'absolute right-0.5 sm:right-1 p-1 rounded-full',
+                  activeFilter === 'today' ? 'hover:bg-white/20' : 'hover:bg-[#DCE8F5]'
+                )}
+              >
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
+              </button>
+            </div>
 
             <button
               type="button"
