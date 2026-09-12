@@ -259,7 +259,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
               placeholder="Cari pasien, appointment, atau menu lainnya..."
               className="flex-1 min-w-0 bg-transparent outline-none text-sm text-[#102F52] placeholder:text-[#5B6B7D]"
             />
-            {query ? (
+            {query && (
               <button
                 onClick={() => { setQuery(''); inputRef.current?.focus(); }}
                 className="text-[#5B6B7D] hover:text-[#102F52] flex-shrink-0"
@@ -267,10 +267,6 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-            ) : (
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-semibold text-[#5B6B7D] bg-[#F5F9FC] border border-[#DCE8F2] rounded px-1.5 py-0.5 flex-shrink-0">
-                ⌘K
-              </kbd>
             )}
           </div>
 
