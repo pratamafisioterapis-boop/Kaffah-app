@@ -21,6 +21,8 @@ const COLOR_PALETTE = [
 const UNKNOWN_STYLE = { color: '#94a3b8', bg: 'bg-slate-100', text: 'text-slate-500' };
 const OLD_PATIENT_LABEL = 'Pasien Lama';
 const OLD_PATIENT_STYLE = { color: '#334155', bg: 'bg-slate-100', text: 'text-slate-700' };
+const GUEST_LABEL = 'Tamu';
+const GUEST_STYLE = { color: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-600' };
 
 const PatientSourceChart = ({ dateRange }) => {
   const [data, setData] = useState([]);
@@ -72,9 +74,14 @@ const PatientSourceChart = ({ dateRange }) => {
         const labelPatientMaps = {};
         (recaps || []).forEach(r => {
           const isOld = oldPatientIds.has(r.patient_id);
+          // Sesi tamu (belum jadi pasien terdaftar) belum bisa diisi sumber pasiennya,
+          // jadi jangan dihitung ke "Tidak Diketahui" — langsung digabung ke grup "Tamu".
+          const isGuest = !r.patient_id;
           const label = isOld
             ? OLD_PATIENT_LABEL
-            : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
+            : isGuest
+              ? GUEST_LABEL
+              : (r.patients?.patient_info_options?.label || 'Tidak Diketahui');
           countMap[label] = (countMap[label] || 0) + 1;
 
           // Sesi tamu (booking tanpa data pasien terdaftar) tidak punya patient_id, tapi nama
@@ -116,6 +123,7 @@ const PatientSourceChart = ({ dateRange }) => {
             let style;
             if (label === 'Tidak Diketahui') style = UNKNOWN_STYLE;
             else if (label === OLD_PATIENT_LABEL) style = OLD_PATIENT_STYLE;
+            else if (label === GUEST_LABEL) style = GUEST_STYLE;
             else style = COLOR_PALETTE[paletteIndex++ % COLOR_PALETTE.length];
 
             return {
@@ -218,7 +226,9 @@ const PatientSourceChart = ({ dateRange }) => {
             <DialogDescription className="text-xs text-slate-500">
               {selectedLabel === 'Tidak Diketahui'
                 ? `${(patientsByLabel[selectedLabel]?.length || 0)} pasien/sesi yang belum diisi sumber pasiennya pada periode ini.`
-                : `${(patientsByLabel[selectedLabel]?.length || 0)} pasien dengan sumber "${selectedLabel}" pada periode ini.`}
+                : selectedLabel === GUEST_LABEL
+                  ? `${(patientsByLabel[selectedLabel]?.length || 0)} sesi booking tamu yang belum jadi pasien terdaftar pada periode ini.`
+                  : `${(patientsByLabel[selectedLabel]?.length || 0)} pasien dengan sumber "${selectedLabel}" pada periode ini.`}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 min-h-0">
