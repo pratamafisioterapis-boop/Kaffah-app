@@ -389,26 +389,34 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                   {results.summary && (
                     <div className="mx-2 mb-2 p-3 rounded-lg bg-[#EAF4FF] border border-[#DCE8F2]">
                       <div className="text-[10px] font-bold uppercase tracking-wider text-[#1677D2] mb-1.5">Ringkasan Pasien</div>
-                      <div className="grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs text-[#102F52]">
-                        <span className="text-[#5B6B7D]">Total sesi selesai</span>
-                        <span className="font-medium text-right">{results.summary.totalSessions}x</span>
-                        <span className="text-[#5B6B7D]">Terapis favorit</span>
-                        <span className="font-medium text-right truncate flex items-center justify-end gap-1">
-                          {results.summary.favoriteTherapistName ? (
-                            <>
-                              <Award className="w-3 h-3 text-[#1677D2] flex-shrink-0" />
-                              {results.summary.favoriteTherapistName} ({results.summary.favoriteTherapistCount}x)
-                            </>
-                          ) : '-'}
-                        </span>
-                        <span className="text-[#5B6B7D]">Sesi terakhir</span>
-                        <span className="font-medium text-right">{results.summary.lastSessionDate ? formatShortDate(results.summary.lastSessionDate) : '-'}</span>
-                        <span className="text-[#5B6B7D]">Paket aktif</span>
-                        <span className="font-medium text-right truncate">
-                          {results.summary.activePackage
-                            ? `${results.summary.activePackage.package_name} (${results.summary.activePackage.sessions_used}/${results.summary.activePackage.total_sessions})`
-                            : '-'}
-                        </span>
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-[#102F52]">
+                        <div className="flex flex-col">
+                          <span className="text-[#5B6B7D]">Total sesi selesai</span>
+                          <span className="font-medium">{results.summary.totalSessions}x</span>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[#5B6B7D]">Terapis favorit</span>
+                          <span className="font-medium flex items-start gap-1">
+                            {results.summary.favoriteTherapistName ? (
+                              <>
+                                <Award className="w-3 h-3 text-[#1677D2] flex-shrink-0 mt-0.5" />
+                                <span className="break-words">{results.summary.favoriteTherapistName} ({results.summary.favoriteTherapistCount}x)</span>
+                              </>
+                            ) : '-'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[#5B6B7D]">Sesi terakhir</span>
+                          <span className="font-medium">{results.summary.lastSessionDate ? formatShortDate(results.summary.lastSessionDate) : '-'}</span>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[#5B6B7D]">Paket aktif</span>
+                          <span className="font-medium break-words">
+                            {results.summary.activePackage
+                              ? `${results.summary.activePackage.package_name} (${results.summary.activePackage.sessions_used}/${results.summary.activePackage.total_sessions})`
+                              : '-'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
