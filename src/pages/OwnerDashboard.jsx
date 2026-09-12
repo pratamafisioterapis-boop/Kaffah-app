@@ -11,7 +11,6 @@ import { Activity } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Pages
-import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
 import OwnerPresentationPage from '@/pages/owner/OwnerPresentationPage';
 import DatabasePatients from '@/pages/owner/DatabasePatients'; // Updated Import
 import PhysiotherapistManagementPage from '@/pages/PhysiotherapistManagementPage';
@@ -551,7 +550,6 @@ const OwnerDashboard = () => {
         <Route path="/presentation" element={<OwnerPresentationPage />} />
 
         {/* Pages */}
-        <Route path="/appointments" element={<OwnerAppointmentsPage />} />
         <Route path="/database-patients" element={<DatabasePatients />} />
         
         {/* Other Existing Routes */}
@@ -570,7 +568,8 @@ const OwnerDashboard = () => {
         
 
         {/* Fallback for old routes */}
-        <Route path="/appointment" element={<Navigate to="/owner/appointments" replace />} />
+        <Route path="/appointment" element={<Navigate to="/owner/dashboard" replace />} />
+        <Route path="/appointments" element={<Navigate to="/owner/dashboard" replace />} />
         <Route path="/patients" element={<Navigate to="/owner/database-patients" replace />} />
         <Route path="/packages" element={<Navigate to="/owner/database-patients" replace />} />
         
