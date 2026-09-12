@@ -256,8 +256,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
               value={query}
               onChange={(e) => { setQuery(e.target.value); setIsSearchOpen(true); }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Cari pasien, appointment, atau menu lainnya..."
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-[#102F52] placeholder:text-[#5B6B7D]"
+              placeholder="Cari pasien, appointment..."
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-[#102F52] placeholder:text-[#5B6B7D] placeholder:truncate"
             />
             {query && (
               <button
