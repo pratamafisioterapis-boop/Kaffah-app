@@ -63,8 +63,7 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                     <img
                       src={t.avatar_url}
                       alt={t.name}
-                      className="w-full h-full object-cover"
-                      style={{ imageRendering: 'high-quality' }}
+                      className="avatar-img w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"
                     />

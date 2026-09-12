@@ -550,7 +550,7 @@ const headerColorMap = {
               <div className="relative px-5 pb-5 flex-1 flex flex-col">
                 <div className="absolute -top-8 left-5 w-16 h-16 rounded-full ring-4 ring-white bg-slate-100 overflow-hidden shadow-md">
                   {therapist.avatar_url ? (
-                    <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                    <img src={therapist.avatar_url} alt={therapist.name} className="avatar-img w-full h-full object-cover" />
                   ) : (
                     <User className="w-full h-full p-3.5 text-slate-400" />
                   )}
@@ -680,7 +680,7 @@ const headerColorMap = {
                 <div className="flex flex-col items-center gap-2.5 min-w-[104px]">
                   <div className="w-20 h-20 rounded-full bg-slate-100 border flex items-center justify-center overflow-hidden shrink-0 relative group">
                     {formData.avatar_url ? (
-                      <img src={formData.avatar_url} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={formData.avatar_url} alt="Preview" className="avatar-img w-full h-full object-cover" />
                     ) : (
                       <User className="w-8 h-8 text-slate-400" />
                     )}
