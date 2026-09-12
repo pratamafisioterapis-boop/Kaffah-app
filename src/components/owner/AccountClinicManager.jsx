@@ -203,7 +203,7 @@ const AccountClinicManager = () => {
         <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border">
-            {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="avatar-img w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
+            {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
           </div>
           <label className="cursor-pointer">
             <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
@@ -218,7 +218,7 @@ const AccountClinicManager = () => {
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 className="w-4 h-4" /> Profil Klinik</h3>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center border">
-            {clinic?.logo_url ? <img src={clinic.logo_url} alt="Logo" className="avatar-img w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-slate-400" />}
+            {clinic?.logo_url ? <img src={clinic.logo_url} alt="Logo" className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-slate-400" />}
           </div>
           <label className="cursor-pointer">
             <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
