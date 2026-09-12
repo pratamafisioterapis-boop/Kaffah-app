@@ -385,8 +385,8 @@ case 'clinic_admin':
               walls), so a single soft drop-shadow wasn't enough contrast.
               These gradients darken just the top/bottom strips the text
               occupies, independent of what's in the photo there. */}
-          <div className="absolute inset-x-0 top-0 h-28 md:h-40 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-28 md:h-40 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-28 md:h-56 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-28 md:h-56 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
         </motion.div>
 
         {/* Corner taglines echoing the brand voice. Layered textShadow
@@ -397,10 +397,10 @@ case 'clinic_admin':
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
-          className="absolute top-5 left-5 md:top-8 md:left-8 z-10 text-white text-xs md:text-base font-semibold leading-tight max-w-[140px] md:max-w-[220px]"
+          className="absolute top-5 left-5 md:top-10 md:left-10 z-10 text-white text-xs md:text-2xl font-semibold leading-tight max-w-[140px] md:max-w-[320px]"
           style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.55)" }}
         >
-          <span className="block w-6 md:w-10 border-t border-white/80 mb-2"></span>
+          <span className="block w-6 md:w-14 border-t border-white/80 mb-2 md:mb-3"></span>
           Better Care
           <br />
           Smarter Management
@@ -409,7 +409,7 @@ case 'clinic_admin':
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6, duration: 0.6, ease: "easeOut" }}
-          className="absolute top-5 right-5 md:top-8 md:right-8 z-10 text-white text-xl md:text-4xl text-right leading-[1.15]"
+          className="absolute top-5 right-5 md:top-10 md:right-10 z-10 text-white text-xl md:text-7xl text-right leading-[1.15]"
           style={{ fontFamily: "'Caveat', cursive", textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.55)" }}
         >
           Care
@@ -419,13 +419,13 @@ case 'clinic_admin':
           Grow
           <br />
           Together
-          <span className="block w-10 md:w-16 h-px bg-white/80 mt-1 ml-auto"></span>
+          <span className="block w-10 md:w-24 h-px md:h-0.5 bg-white/80 mt-1 md:mt-2 ml-auto"></span>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.6, ease: "easeOut" }}
-          className="absolute bottom-6 left-5 md:bottom-10 md:left-8 z-10 text-white text-[10px] md:text-sm font-medium tracking-[0.15em] uppercase leading-relaxed"
+          className="absolute bottom-6 left-5 md:bottom-14 md:left-10 z-10 text-white text-[10px] md:text-lg font-medium tracking-[0.15em] uppercase leading-relaxed"
           style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.55)" }}
         >
           Care
@@ -433,7 +433,7 @@ case 'clinic_admin':
           Manage
           <br />
           Grow Together
-          <span className="block w-6 border-t border-white/80 mt-2"></span>
+          <span className="block w-6 md:w-14 border-t border-white/80 mt-2 md:mt-3"></span>
         </motion.div>
 
         <motion.div
