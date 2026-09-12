@@ -52,18 +52,25 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                 key={t.id}
                 onClick={() => onSelect(t)}
                 className={cn(
-                  "group flex items-center gap-3 p-3 rounded-2xl border bg-white text-left transition-all",
+                  "group flex items-center gap-3.5 p-4 rounded-2xl border bg-white text-left transition-all",
                   selected
                     ? "border-blue-400 bg-blue-50/60 shadow-sm ring-1 ring-blue-200"
                     : "border-slate-200 hover:border-blue-200 hover:shadow-md"
                 )}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm">
+                <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm bg-slate-100">
                   {t.avatar_url ? (
-                    <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                    <img
+                      src={t.avatar_url}
+                      alt={t.name}
+                      className="w-full h-full object-cover"
+                      style={{ imageRendering: 'high-quality' }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <div className={cn(
-                      "w-full h-full flex items-center justify-center font-bold text-sm",
+                      "w-full h-full flex items-center justify-center font-bold text-base",
                       selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
                     )}>
                       {getInitials(t.name)}
