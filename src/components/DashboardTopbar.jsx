@@ -2,18 +2,12 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Bell, X, User as UserIcon,
-  Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon, ChevronDown
+  Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 
 const ACTIVITY_LIMIT = 20;
-
-function initials(name) {
-  if (!name || typeof name !== 'string') return 'U';
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'U';
-}
 
 function timeAgo(dateStr) {
   const d = new Date(dateStr);
@@ -249,7 +243,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   return (
     <div className="sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 sm:pt-0 bg-[#F5F9FC]/95 backdrop-blur-sm">
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="relative flex-1 min-w-0" ref={searchRef}>
+        <div className="relative flex-1 min-w-0 max-w-md" ref={searchRef}>
           <div
             className={cn(
               'flex items-center gap-2 bg-white border rounded-xl px-3 h-10 transition-colors shadow-sm',
@@ -424,20 +418,6 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           )}
         </div>
 
-        <button className="hidden sm:flex items-center gap-2 pl-2 flex-shrink-0 group">
-          <span className="w-9 h-9 rounded-full bg-[#1677D2] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {initials(userName)}
-          </span>
-          <span className="min-w-0 text-left">
-            <span className="block text-sm font-semibold text-[#102F52] truncate max-w-[140px]">
-              {typeof userName === 'string' ? userName : 'User'}
-            </span>
-            <span className="block text-xs text-[#5B6B7D] truncate max-w-[140px]">
-              {clinicName || (role === 'super_admin' ? 'Super Admin' : role)}
-            </span>
-          </span>
-          <ChevronDown className="w-3.5 h-3.5 text-[#5B6B7D] group-hover:text-[#1677D2] flex-shrink-0" />
-        </button>
       </div>
     </div>
   );
