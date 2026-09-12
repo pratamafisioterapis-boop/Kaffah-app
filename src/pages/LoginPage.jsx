@@ -649,7 +649,7 @@ case 'clinic_admin':
             src={CLINARA_LOGIN_BG_DESKTOP_URL}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover animate-bg-zoom"
+            className="w-full h-full object-cover"
           />
         </motion.div>
 
@@ -658,8 +658,13 @@ case 'clinic_admin':
               and vertically centered per the reference mockup. "Care" and
               "Manage" are dark navy, "Grow Together" is brand blue with a
               matching blue underline beneath it, followed by a small
-              tracked-uppercase sub-line. */}
-          <div className="flex-1 h-full flex flex-col justify-center items-start pl-12 lg:pl-20 pr-8 min-w-0 text-left">
+              tracked-uppercase sub-line. A blurred white glow sits behind
+              the whole block (like the soft light patch in the reference)
+              so the text holds contrast regardless of what's in the photo
+              directly behind it, and the italic style plus per-letter
+              skew push the script further into a slanted, handwritten feel. */}
+          <div className="relative flex-1 h-full flex flex-col justify-center items-start pl-12 lg:pl-20 pr-8 min-w-0 text-left">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[36rem] h-[26rem] max-w-[85%] bg-white/40 rounded-full blur-3xl pointer-events-none" />
             <motion.h2
               initial="hidden"
               animate="visible"
@@ -667,8 +672,8 @@ case 'clinic_admin':
                 hidden: {},
                 visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
               }}
-              className="font-bold leading-[1.05] text-6xl lg:text-7xl"
-              style={{ fontFamily: "'Caveat', cursive" }}
+              className="relative italic font-bold leading-[1.05] text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Caveat', cursive", transform: "skewX(-6deg)" }}
             >
               {[
                 { word: 'Care', className: 'text-[#0f2a4a]' },
@@ -682,6 +687,7 @@ case 'clinic_admin':
                     visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
                   }}
                   className={`block ${className}`}
+                  style={{ textShadow: "0 2px 10px rgba(255,255,255,0.8), 0 1px 2px rgba(255,255,255,0.9)" }}
                 >
                   {word}
                 </motion.span>
@@ -691,13 +697,14 @@ case 'clinic_admin':
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.15, duration: 0.6, ease: "easeOut" }}
-              className="block h-1 w-40 lg:w-52 bg-[#2F8CFF] rounded-full origin-left mt-2"
+              className="relative block h-1 w-40 lg:w-52 bg-[#2F8CFF] rounded-full origin-left mt-2"
             />
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.3, duration: 0.5, ease: "easeOut" }}
-              className="mt-6 text-[#0f2a4a] text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase leading-relaxed"
+              className="relative mt-6 text-[#0f2a4a] text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase leading-relaxed"
+              style={{ textShadow: "0 1px 6px rgba(255,255,255,0.8)" }}
             >
               A Healthier
               <br />
