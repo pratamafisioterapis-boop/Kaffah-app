@@ -214,7 +214,7 @@ const isPWA =
   // Converted to standard function rendering to avoid unmount/remount on parent render
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full text-[#102F52] shadow-lg relative overflow-hidden bg-white border-r border-[#DCE8F2]">
-      <div className="relative flex items-center gap-4 px-6 py-8 overflow-hidden border-b border-[#DCE8F2] flex-shrink-0">
+      <div className="relative overflow-hidden border-b border-[#DCE8F2] flex-shrink-0">
         {/* Clinic photo behind only this header block, faded into white so
             the clinic logo/name stay fully legible on top of it. */}
         <div className="absolute inset-0 pointer-events-none z-0">
@@ -226,23 +226,24 @@ const isPWA =
           />
           <div className="absolute inset-0 bg-white/70" />
         </div>
+        <div className="relative z-10 flex items-center gap-4 px-6 py-10">
         {role === 'super_admin' ? (
           <>
             <div className="relative">
-              <div className="w-14 h-14 bg-[#EAF4FF] flex items-center justify-center" style={{ borderRadius: activeTheme.radius }}>
-                <ShieldCheck className="w-7 h-7 text-[#1677D2]" />
+              <div className="w-16 h-16 bg-[#EAF4FF] flex items-center justify-center" style={{ borderRadius: activeTheme.radius }}>
+                <ShieldCheck className="w-8 h-8 text-[#1677D2]" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#102F52] tracking-tight leading-none">Super Admin</h2>
-              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1 text-[#1677D2]">SYSTEM CONTROL</p>
+              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">Super Admin</h2>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">SYSTEM CONTROL</p>
             </div>
           </>
         ) : (
           <>
             <div className="relative">
-               <div className="w-14 h-14 bg-white flex items-center justify-center overflow-hidden border border-[#DCE8F2]" style={{ borderRadius: activeTheme.radius }}>
+               <div className="w-16 h-16 bg-white flex items-center justify-center overflow-hidden border border-[#DCE8F2]" style={{ borderRadius: activeTheme.radius }}>
                  {clinicInfo ? (
                    <img
                      src={clinicInfo.logo_url || "/clinara-logo.png"}
@@ -256,13 +257,14 @@ const isPWA =
                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#102F52] tracking-tight leading-none">
+              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">
                 {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-[#EAF4FF] align-middle" />}
               </h2>
-              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1 text-[#1677D2]">CLINIC MANAGEMENT</p>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">CLINIC MANAGEMENT</p>
             </div>
           </>
         )}
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6 relative z-10 min-h-0">
