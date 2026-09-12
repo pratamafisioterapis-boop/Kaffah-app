@@ -119,7 +119,7 @@ const formatTanggal = (date) => {
                         <select
                             value={status}
                             onChange={(e) => handleStatusFilter(e.target.value)}
-                            className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                            className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
                         >
                             <option value="all">Semua Status</option>
                             <option value="aktif">Aktif</option>
@@ -128,7 +128,7 @@ const formatTanggal = (date) => {
                         <select
                              value={completeness}
                              onChange={(e) => handleCompletenessFilter(e.target.value)}
-                             className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                             className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
                         >
                             <option value="all">Semua Kelengkapan</option>
                             <option value="complete">Lengkap</option>
