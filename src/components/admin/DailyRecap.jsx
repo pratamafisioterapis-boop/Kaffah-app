@@ -815,9 +815,9 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
 
-          {/* Terapis + Cari Pasien (satu baris di tablet/desktop) */}
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            <div className="relative sm:flex-1">
+          {/* Terapis + Cari Pasien (satu baris di tablet/desktop), atau Terapis + Metode Pembayaran (satu baris di semua ukuran) */}
+          <div className={cn('flex gap-2.5', showPaymentFilter ? 'flex-row' : 'flex-col sm:flex-row')}>
+            <div className={cn('relative', showPaymentFilter ? 'flex-1' : 'sm:flex-1')}>
               <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
               <select
                 value={selectedTherapist}
@@ -850,20 +850,9 @@ const getPremiumPastelBadge = (text) => {
                 />
               </div>
             )}
-          </div>
 
-          {showPaymentFilter && (
-            <>
-              {/* Total Revenue */}
-              <div className="w-full flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
-                <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
-                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
-                </span>
-              </div>
-
-              {/* Metode Pembayaran */}
-              <div className="relative">
+            {showPaymentFilter && (
+              <div className="relative flex-1">
                 <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
                 <select
                   value={selectedPaymentMethod}
@@ -876,6 +865,18 @@ const getPremiumPastelBadge = (text) => {
                   ))}
                 </select>
                 <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              </div>
+            )}
+          </div>
+
+          {showPaymentFilter && (
+            <>
+              {/* Total Revenue */}
+              <div className="w-full flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
+                <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
+                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                </span>
               </div>
             </>
           )}
