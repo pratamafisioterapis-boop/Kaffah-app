@@ -214,9 +214,16 @@ const isPWA =
   // Converted to standard function rendering to avoid unmount/remount on parent render
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full text-[#102F52] shadow-lg relative overflow-hidden bg-white border-r border-[#DCE8F2]">
+      {/* Clinic photo behind the sidebar, faded into white toward the bottom
+          so the nav items further down stay fully legible. */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-         <div className="absolute top-[-10%] right-[-20%] w-[200px] h-[200px] bg-[#EAF4FF] rounded-full blur-[60px]" />
-         <div className="absolute bottom-[10%] left-[-10%] w-[150px] h-[150px] bg-[#35C8C1]/10 rounded-full blur-[50px]" />
+        <img
+          src="/sidebar-header-bg.jpg"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/85 to-white" />
       </div>
 
       <div className="flex items-center gap-4 px-6 py-8 relative z-10 border-b border-[#DCE8F2] flex-shrink-0">
