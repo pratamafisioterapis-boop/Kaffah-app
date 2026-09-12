@@ -249,11 +249,64 @@ export const PackageRecapsContent = () => {
     };
 
     const PaginationControls = () => (
-        <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-none sm:border-0 sm:border-t sm:border-slate-100 sm:bg-slate-50 sm:shadow-none sm:px-6 sm:py-3 sm:gap-0">
+
+            {/* Mobile: card layout matching reference design */}
+            <div className="flex sm:hidden items-center justify-between">
+                <span className="text-sm text-slate-600">Tampilkan</span>
+                <span className="text-sm text-slate-600">
+                    Halaman <span className="font-semibold text-slate-900">{currentPage}</span> dari <span className="font-semibold text-slate-900">{totalPages}</span>
+                </span>
+            </div>
+
+            <div className="flex sm:hidden items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={itemsPerPage.toString()}
+                        onValueChange={(val) => setItemsPerPage(Number(val))}
+                    >
+                        <SelectTrigger className="h-11 w-16 rounded-lg border-slate-200">
+                            <SelectValue placeholder={itemsPerPage} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <span className="text-sm text-slate-500 leading-tight">data<br />per halaman</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-100 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-blue-600 text-white text-sm font-semibold">
+                        {currentPage}
+                    </div>
+
+                    <button
+                        type="button"
+                        className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-100 text-slate-500 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Desktop: unchanged */}
+            <div className="hidden sm:flex sm:items-center sm:gap-2 sm:text-sm sm:text-slate-600">
                 <span className="hidden sm:inline">Tampilkan</span>
-                <Select 
-                    value={itemsPerPage.toString()} 
+                <Select
+                    value={itemsPerPage.toString()}
                     onValueChange={(val) => setItemsPerPage(Number(val))}
                 >
                     <SelectTrigger className="h-8 w-[70px]">
@@ -267,39 +320,13 @@ export const PackageRecapsContent = () => {
                 </Select>
                 <span>data per halaman</span>
             </div>
-    
-            <div className="flex items-center gap-2">
+
+            <div className="hidden sm:flex sm:items-center sm:gap-2">
                 <span className="text-sm text-slate-500 hidden sm:inline mr-2">
                     {filteredAndSortedPackages.length > 0 ? `Menampilkan ${startItem} - ${endItem} dari ${filteredAndSortedPackages.length} data` : ''}
                 </span>
 
-                {/* Mobile: compact, touch-friendly pagination */}
-                <div className="flex sm:hidden items-center gap-1.5">
-                    <button
-                        type="button"
-                        className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed active:bg-slate-100 transition-colors"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap px-1">
-                        Halaman <span className="text-blue-600 font-semibold">{currentPage}</span> dari {totalPages}
-                    </span>
-
-                    <button
-                        type="button"
-                        className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed active:bg-slate-100 transition-colors"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
-
-                {/* Desktop: unchanged */}
-                <div className="hidden sm:flex gap-1">
+                <div className="flex gap-1">
                     <Button
                         variant="outline"
                         size="sm"
