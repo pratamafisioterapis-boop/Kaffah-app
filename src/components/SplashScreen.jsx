@@ -186,7 +186,7 @@ export default function SplashScreen({ onDone }) {
                 }}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={avatarUrl} alt="" className="avatar-img w-full h-full object-cover" />
                 ) : (
                   monogram
                 )}

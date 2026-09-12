@@ -119,6 +119,26 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Hidden SVG filter applied to every avatar/profile photo (see
+         .avatar-img in src/index.css). Many uploaded photos come from
+         phone cameras or WhatsApp forwards that are already soft/low-res;
+         this unsharp-mask style convolution restores edge contrast so
+         avatars read as crisp instead of blurry, without needing the
+         source photo re-uploaded. -->
+    <svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+      <defs>
+        <filter id="avatar-sharpen" x="-10%" y="-10%" width="120%" height="120%">
+          <feConvolveMatrix
+            order="3"
+            kernelMatrix="0 -1 0 -1 5 -1 0 -1 0"
+            divisor="1"
+            preserveAlpha="true"
+          />
+        </filter>
+      </defs>
+    </svg>
+
     <script type="module" src="/src/main.jsx"></script>
     
     <!-- Fallback if JS fails completely -->

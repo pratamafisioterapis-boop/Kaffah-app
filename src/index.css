@@ -153,3 +153,12 @@
     transform: translateY(0);
   }
 }
+
+/* Applied to every avatar/profile-photo <img> across the app. Uploaded
+   photos are frequently already soft (phone camera, WhatsApp re-compression)
+   and look blurrier still once scaled into a small circular avatar; this
+   sharpens edge contrast in-browser so they read as crisp regardless of the
+   source quality. The SVG filter it references lives in index.html. */
+.avatar-img {
+  filter: url(#avatar-sharpen);
+}

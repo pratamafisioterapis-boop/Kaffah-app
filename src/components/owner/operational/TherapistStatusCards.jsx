@@ -132,7 +132,7 @@ const TherapistStatusCards = ({
                     <div className={`relative shrink-0`}>
                       <div className={`w-16 h-16 rounded-2xl overflow-hidden ring-2 ${ring}`}>
                         {therapist.avatar_url ? (
-                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                          <img src={therapist.avatar_url} alt={therapist.name} className="avatar-img w-full h-full object-cover" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center font-bold text-lg text-white ${color}`}>
                             {getInitials(therapist.name)}
@@ -245,7 +245,7 @@ const TherapistStatusCards = ({
                     <div className={`relative shrink-0 ring-2 ${ring} rounded-xl`}>
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100">
                         {therapist.avatar_url ? (
-                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                          <img src={therapist.avatar_url} alt={therapist.name} className="avatar-img w-full h-full object-cover" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center font-bold text-sm text-white ${color}`}>
                             {getInitials(therapist.name)}

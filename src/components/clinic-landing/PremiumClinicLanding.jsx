@@ -454,7 +454,7 @@ const PremiumClinicLanding = ({ clinic, content, pricelist = [], bookingHref = '
                   <p className="text-[#334155] text-sm sm:text-base leading-relaxed mb-6 relative">&ldquo;{t.quote}&rdquo;</p>
                   <div className="flex items-center gap-3">
                     {t.photo ? (
-                      <img src={t.photo} alt={t.name} className="w-11 h-11 rounded-full object-cover shrink-0" />
+                      <img src={t.photo} alt={t.name} className="avatar-img w-11 h-11 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ backgroundColor: primary }}>
                         {(t.name || '?').trim().charAt(0).toUpperCase()}
