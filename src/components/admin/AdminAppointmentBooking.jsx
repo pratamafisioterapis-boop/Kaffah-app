@@ -6,7 +6,6 @@ import {
   Loader2,
   AlertTriangle,
   ClipboardList,
-  RefreshCw,
   Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { format, addDays, isValid } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -51,7 +49,6 @@ const AdminAppointmentBooking = () => {
   return saved ? new Date(saved) : new Date();
 });
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   const [therapists, setTherapists] = useState([]);
@@ -65,9 +62,6 @@ const AdminAppointmentBooking = () => {
 const [patientHistory, setPatientHistory] = useState([]);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-const formattedDate = date
-  ? format(date, "EEE, dd MMM yy", { locale: idLocale })
-  : '';
 const formattedDateFull = date
   ? format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })
   : '';
@@ -174,7 +168,6 @@ const formattedDateFull = date
   const fetchDayData = async (selectedDate) => {
     if (!selectedDate || !isValid(selectedDate)) return;
 
-    setIsRefreshing(true);
     setError(null);
 
     try {
@@ -281,7 +274,6 @@ const formattedDateFull = date
       });
     }
 
-    setIsRefreshing(false);
     setLoading(false);
   };
 
@@ -458,17 +450,6 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   {/* Controls Row */}
   <div className="flex items-center gap-1.5 w-full min-w-0">
 
-    {/* Refresh */}
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={() => fetchDayData(date)}
-      disabled={isRefreshing}
-      className={cn("h-9 w-9 shrink-0 bg-slate-50 border-slate-200", isRefreshing && "animate-spin")}
-    >
-      <RefreshCw className="h-4 w-4" />
-    </Button>
-
     {/* Date Controller */}
     <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
 
@@ -491,9 +472,8 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       >
         <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-[11px] sm:text-sm font-semibold tracking-tight truncate text-slate-700">
-  <span className="sm:hidden">{formattedDate}</span>
-  <span className="hidden sm:inline">{formattedDateFull}</span>
+        <span className="text-[10px] sm:text-sm font-semibold tracking-tight truncate text-slate-700">
+  {formattedDateFull}
 </span>
       </Button>
     </PopoverTrigger>
@@ -522,8 +502,9 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
     {/* Tombol Template Jadwal */}
     <Button
+      variant="outline"
       size="icon"
-      className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+      className="h-9 w-9 shrink-0 bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
       onClick={() => setShowTemplateModal(true)}
       title="Copy Template Jadwal Tersedia"
     >
