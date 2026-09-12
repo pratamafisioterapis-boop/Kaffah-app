@@ -349,23 +349,25 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     || results.packages.length || results.medicalRecords.length || results.menu.length;
 
   return (
-    <div className="sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 sm:pt-0 bg-[#F5F9FC]/95 backdrop-blur-sm">
-      <div className="flex items-center gap-2 sm:gap-3">
+    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 overflow-hidden sm:overflow-visible bg-gradient-to-b from-[#EAF4FF]/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
+      <div className="absolute -top-12 -right-8 w-28 h-28 rounded-full bg-[#1677D2]/10 blur-2xl pointer-events-none sm:hidden" aria-hidden="true" />
+      <div className="absolute -top-6 right-16 w-14 h-14 rounded-full bg-[#2F8CFF]/10 blur-xl pointer-events-none sm:hidden" aria-hidden="true" />
+      <div className="relative flex items-center gap-2 sm:gap-3">
         <div className="relative flex-1 min-w-0 max-w-md" ref={searchRef}>
           <div
             className={cn(
-              'flex items-center gap-2 bg-white border rounded-xl px-3 h-10 transition-colors shadow-sm',
+              'flex items-center gap-1.5 bg-white border rounded-full sm:rounded-xl px-2.5 h-9 transition-colors shadow-sm',
               isSearchOpen ? 'border-[#1677D2]' : 'border-[#DCE8F2]'
             )}
           >
-            <Search className="w-4 h-4 text-[#5B6B7D] flex-shrink-0" />
+            <Search className="w-3.5 h-3.5 text-[#5B6B7D] flex-shrink-0" />
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setIsSearchOpen(true); }}
               onFocus={() => setIsSearchOpen(true)}
               placeholder="Cari pasien, appointment..."
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-[#102F52] placeholder:text-[#5B6B7D] placeholder:truncate"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[13px] sm:text-sm text-[#102F52] placeholder:text-[#5B6B7D] placeholder:truncate"
             />
             {query && (
               <button
@@ -373,7 +375,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                 className="text-[#5B6B7D] hover:text-[#102F52] flex-shrink-0"
                 aria-label="Hapus pencarian"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -528,12 +530,12 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button
             onClick={() => setIsActivityOpen((o) => !o)}
-            className="relative w-10 h-10 rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
+            className="relative w-9 h-9 rounded-full sm:rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
             aria-label="Aktivitas"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F16063] border border-white" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#F16063] border border-white" />
             )}
           </button>
 
