@@ -764,7 +764,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-7 pr-1 text-[11px] sm:text-xs rounded-xl border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowStartCalendar(true)}
               />
 
@@ -794,7 +794,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-7 pr-1 text-[11px] sm:text-xs rounded-xl border border-[#D8E2EB]"
+                className="h-11 sm:h-12 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowEndCalendar(true)}
               />
 
