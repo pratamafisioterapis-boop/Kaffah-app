@@ -68,6 +68,9 @@ const [patientHistory, setPatientHistory] = useState([]);
 const formattedDate = date
   ? format(date, "EEE, dd MMM yy", { locale: idLocale })
   : '';
+const formattedDateFull = date
+  ? format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })
+  : '';
   useEffect(() => {
 
   loadInitialData();
@@ -488,8 +491,9 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       >
         <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-[11px] sm:text-xs font-semibold tracking-tight truncate text-slate-700">
-  {formattedDate}
+        <span className="text-[11px] sm:text-sm font-semibold tracking-tight truncate text-slate-700">
+  <span className="sm:hidden">{formattedDate}</span>
+  <span className="hidden sm:inline">{formattedDateFull}</span>
 </span>
       </Button>
     </PopoverTrigger>
