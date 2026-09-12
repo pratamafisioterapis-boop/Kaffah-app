@@ -74,20 +74,44 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl shadow-2xl">
-                <div className="px-6 py-5 border-b border-slate-100 bg-white">
+                <div className="px-4 sm:px-6 py-3.5 sm:py-5 border-b border-slate-100 bg-white">
                     <DialogHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <DialogTitle className="text-xl font-bold text-slate-900">Riwayat Penggunaan Paket</DialogTitle>
-                            <p className="text-sm text-slate-500 mt-1">Detail penggunaan sesi paket perawatan.</p>
+                            <DialogTitle className="text-base sm:text-xl font-bold text-slate-900">Riwayat Penggunaan Paket</DialogTitle>
+                            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Detail penggunaan sesi paket perawatan.</p>
                         </div>
                         {/* Native Close is used by DialogContent but we can hide it via CSS if needed, usually it's absolute top-right */}
                     </DialogHeader>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50/30">
+
+                <div className="flex-1 overflow-y-auto px-3.5 sm:px-6 py-3.5 sm:py-6 bg-slate-50/30">
                     {/* Header Info from packageData prop */}
-                    <div className="mb-6 p-5 bg-white rounded-xl border border-slate-200 shadow-sm">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="mb-4 sm:mb-6 p-3.5 sm:p-5 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        {/* Mobile: compact summary row */}
+                        <div className="sm:hidden">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="font-bold text-slate-900 text-base leading-tight truncate">{packageData?.package_name || '-'}</p>
+                                    <p className="text-sm text-slate-500 truncate mt-0.5">{packageData?.patients?.full_name || packageData?.patient_name || '-'}</p>
+                                </div>
+                                <Badge variant="outline" className={cn("px-2 py-0.5 rounded-full font-medium border text-[11px] shrink-0", getStatusStyle(packageData?.status))}>
+                                    {packageData?.status || '-'}
+                                </Badge>
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-bold text-blue-600">{packageData?.sessions_remaining ?? '-'}</span>
+                                    <span className="text-slate-400 text-xs font-medium">/ {packageData?.total_sessions ?? '-'} sesi tersisa</span>
+                                </div>
+                                {packageData?.end_date && (
+                                    <span className="text-xs text-slate-500 font-medium shrink-0">s.d. {formatDateIndonesian(packageData.end_date)}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Desktop: full detail grid */}
+                        <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-1">
                                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Jenis Paket</span>
                                 <p className="font-bold text-slate-900 text-lg">{packageData?.package_name || '-'}</p>
@@ -105,8 +129,8 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                 </div>
                             </div>
                         </div>
-                        
-                        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+
+                        <div className="hidden sm:flex mt-4 pt-4 border-t border-slate-100 items-center justify-between">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                 <span className="text-sm text-slate-500">Sisa Sesi:</span>
                                 <div className="flex items-center gap-1">
@@ -149,29 +173,19 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                     const displayPatientName = isDifferent ? actualName : (ownerName || '-');
 
                                     return (
-                                        <div key={item.id} className="p-4 space-y-2">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <p className="font-semibold text-slate-900">{displayPatientName}</p>
+                                        <div key={item.id} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="font-semibold text-slate-900 text-sm truncate">{displayPatientName}</p>
                                                     {isDifferent && (
-                                                        <div className="text-[10px] text-amber-600 mt-1 flex items-center gap-1.5 font-medium bg-amber-50 px-2 py-0.5 rounded-full w-fit border border-amber-100">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
-                                                            Pasien Kerabat
-                                                        </div>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block shrink-0" title="Pasien Kerabat"></span>
                                                     )}
                                                 </div>
-                                                <p className="text-slate-900 font-bold font-mono shrink-0">{formatCurrency(item.amount)}</p>
+                                                <p className="text-xs text-slate-500 truncate mt-0.5">
+                                                    {formatDateIndonesian(item.recap_date)} · {item.therapist_name || '-'}
+                                                </p>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                                <div>
-                                                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tanggal Kunjungan</p>
-                                                    <p className="text-slate-700 font-medium">{formatDateIndonesian(item.recap_date)}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Fisioterapis</p>
-                                                    <p className="text-slate-600 font-medium">{item.therapist_name || '-'}</p>
-                                                </div>
-                                            </div>
+                                            <p className="text-slate-900 font-bold font-mono text-sm shrink-0">{formatCurrency(item.amount)}</p>
                                         </div>
                                     );
                                 })
@@ -251,7 +265,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 bg-white flex justify-end">
+                <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white flex justify-end">
                      <Button variant="secondary" onClick={onClose} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">Tutup</Button>
                 </div>
             </DialogContent>
