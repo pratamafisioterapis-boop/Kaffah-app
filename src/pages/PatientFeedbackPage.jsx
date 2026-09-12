@@ -142,7 +142,13 @@ const PatientFeedbackPage = () => {
                   <p className="text-sm text-slate-500">
                     Senang mendengarnya! Mau bantu klinik dengan membagikan ulasan singkat di Google?
                   </p>
-                  <a href={googleReviewUrl} target="_blank" rel="noreferrer" className="w-full">
+                  <a
+                    href={googleReviewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full"
+                    onClick={() => supabase.rpc('mark_feedback_google_review_clicked', { p_token: token })}
+                  >
                     <Button className="w-full bg-blue-600 hover:bg-blue-700">
                       <ExternalLink className="w-4 h-4 mr-2" /> Tulis Ulasan di Google
                     </Button>

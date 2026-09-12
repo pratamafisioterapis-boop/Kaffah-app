@@ -197,6 +197,10 @@ export const FeedbackManagementContent = () => {
 
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800">Feedback Masuk</h3>
+        <p className="text-xs text-slate-400">
+          Badge "Diarahkan ke Google" berarti pasien klik tombol menuju halaman Google Review -- Google tidak
+          menyediakan cara untuk memastikan review-nya benar-benar terkirim di sana.
+        </p>
         {responses.length === 0 && <p className="text-sm text-slate-500">Belum ada feedback masuk.</p>}
         <div className="divide-y divide-slate-100">
           {responses.map((response) => (
@@ -214,6 +218,13 @@ export const FeedbackManagementContent = () => {
                       />
                     ))}
                   </div>
+                  {response.rating >= 4 && (
+                    response.google_review_clicked_at ? (
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 mt-1">Diarahkan ke Google</Badge>
+                    ) : (
+                      <Badge variant="outline" className="mt-1">Belum klik ke Google</Badge>
+                    )
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs text-slate-500">Tampilkan di website</span>
