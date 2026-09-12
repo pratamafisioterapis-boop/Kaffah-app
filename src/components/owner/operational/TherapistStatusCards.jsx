@@ -120,7 +120,7 @@ const TherapistStatusCards = ({
           return (
             <div
               key={therapist.id}
-              onClick={() => navigate('/owner/physiotherapist-management')}
+              onClick={() => navigate('/owner/appointments')}
               className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98]"
             >
               {/* ── Desktop: layout vertikal lebih besar ── */}
