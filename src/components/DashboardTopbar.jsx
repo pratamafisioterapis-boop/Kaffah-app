@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Bell, X, User as UserIcon,
   Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon,
-  Package as PackageIcon, FileText as FileTextIcon, Award
+  Package as PackageIcon, FileText as FileTextIcon, Award, Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const ACTIVITY_LIMIT = 20;
 
@@ -33,6 +35,11 @@ function formatShortDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  return `Rp ${Number(value).toLocaleString('id-ID')}`;
 }
 
 function flattenNavItems(items) {
@@ -137,6 +144,57 @@ async function loadPatientSummary(patientId) {
   }
 }
 
+// Fetches the full record for the quick-search detail popup so a click can
+// show data inline instead of forcing a trip to the record's own page.
+async function loadDetailData(type, id) {
+  if (type === 'patient') {
+    const [{ data: patient, error }, summary] = await Promise.all([
+      supabase.from('patients').select('*').eq('id', id).single(),
+      loadPatientSummary(id),
+    ]);
+    if (error) throw error;
+    return { ...patient, summary };
+  }
+
+  if (type === 'appointment') {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*, patients(full_name, medical_record_number, phone), therapist:physiotherapists!therapist_id(name), service:services!service_id(name)')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  if (type === 'package') {
+    const { data, error } = await supabase
+      .from('package_tracking')
+      .select('*, patients(full_name, medical_record_number, phone)')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  if (type === 'medicalRecord') {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*, patients(full_name, medical_record_number), daily_recap:daily_recaps(recap_date)')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    if (!data?.created_by) return data;
+    const { data: therapist } = await supabase
+      .from('physiotherapists')
+      .select('name')
+      .eq('user_id', data.created_by)
+      .maybeSingle();
+    return { ...data, therapist_name: therapist?.name || null };
+  }
+
+  return null;
+}
+
 const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
   const navigate = useNavigate();
   const searchRef = useRef(null);
@@ -147,6 +205,12 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState({ patients: [], appointments: [], packages: [], medicalRecords: [], menu: [], summary: null });
+
+  // Detail popup shown when a search result is clicked, instead of jumping
+  // straight to that record's full page.
+  const [detail, setDetail] = useState(null); // { type, id } | null
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const [activities, setActivities] = useState([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
@@ -349,6 +413,31 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     await supabase.rpc('mark_audit_log_read', { p_id: id });
   };
 
+  useEffect(() => {
+    if (!detail) {
+      setDetailData(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailData(null);
+    loadDetailData(detail.type, detail.id)
+      .then((data) => { if (!cancelled) setDetailData(data); })
+      .catch((err) => console.error('Failed to load detail:', err))
+      .finally(() => { if (!cancelled) setDetailLoading(false); });
+    return () => { cancelled = true; };
+  }, [detail]);
+
+  // Opens the detail popup for a search result instead of navigating away —
+  // closes the dropdown but keeps the query so it's still there if the user
+  // closes the popup and wants to pick a different result.
+  const openDetail = (type, id) => {
+    setIsSearchOpen(false);
+    setDetail({ type, id });
+  };
+
+  const closeDetail = () => setDetail(null);
+
   const goTo = (path) => {
     navigate(path);
     setIsSearchOpen(false);
@@ -360,6 +449,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     || results.packages.length || results.medicalRecords.length || results.menu.length;
 
   return (
+    <>
     <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-[#EAF4FF]/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
       {/* Clipped separately from the content below so it never crops the
           search results dropdown, which must overflow past this header. */}
@@ -444,7 +534,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       {results.patients.map((p) => (
                         <button
                           key={p.id}
-                          onClick={() => goTo(`/${role}/database-patients`)}
+                          onClick={() => openDetail('patient', p.id)}
                           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
                         >
                           <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
@@ -465,7 +555,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       {results.appointments.map((a) => (
                         <button
                           key={a.id}
-                          onClick={() => goTo(`/${role}/appointments`)}
+                          onClick={() => openDetail('appointment', a.id)}
                           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
                         >
                           <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
@@ -486,7 +576,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       {results.packages.map((pkg) => (
                         <button
                           key={pkg.id}
-                          onClick={() => goTo(`/${role}/package-recaps`)}
+                          onClick={() => openDetail('package', pkg.id)}
                           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
                         >
                           <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
@@ -509,7 +599,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       {results.medicalRecords.map((mr) => (
                         <button
                           key={mr.id}
-                          onClick={() => goTo(`/${role}/medical-records`)}
+                          onClick={() => openDetail('medicalRecord', mr.id)}
                           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
                         >
                           <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
@@ -623,7 +713,127 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
       </div>
     </div>
+
+    <Dialog open={!!detail} onOpenChange={(open) => !open && closeDetail()}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        {detailLoading ? (
+          <div className="py-10 flex items-center justify-center text-[#5B6B7D]">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Memuat detail...
+          </div>
+        ) : !detailData ? (
+          <div className="py-10 text-center text-sm text-[#5B6B7D]">Data tidak ditemukan.</div>
+        ) : detail?.type === 'patient' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.full_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+              <DetailField label="No RM" value={detailData.medical_record_number} />
+              <DetailField label="No HP" value={detailData.phone} />
+              <DetailField label="Nama Panggilan" value={detailData.nickname} />
+              <DetailField label="Gender" value={detailData.gender} />
+              <DetailField label="Tgl Lahir" value={detailData.birth_date ? formatShortDate(detailData.birth_date) : null} />
+              <DetailField label="Status" value={detailData.status} />
+              <DetailField label="Alamat" value={detailData.address} full />
+            </div>
+            {detailData.summary && (
+              <div className="p-3 rounded-lg bg-[#EAF4FF] border border-[#DCE8F2] grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-[#102F52]">
+                <DetailField label="Total sesi selesai" value={`${detailData.summary.totalSessions}x`} />
+                <DetailField
+                  label="Terapis favorit"
+                  value={detailData.summary.favoriteTherapistName
+                    ? `${detailData.summary.favoriteTherapistName} (${detailData.summary.favoriteTherapistCount}x)`
+                    : null}
+                />
+                <DetailField label="Sesi terakhir" value={detailData.summary.lastSessionDate ? formatShortDate(detailData.summary.lastSessionDate) : null} />
+                <DetailField
+                  label="Paket aktif"
+                  value={detailData.summary.activePackage
+                    ? `${detailData.summary.activePackage.package_name} (${detailData.summary.activePackage.sessions_used}/${detailData.summary.activePackage.total_sessions})`
+                    : null}
+                />
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => goTo(`/${role}/database-patients`)}>Lihat Semua Data Pasien</Button>
+            </DialogFooter>
+          </>
+        ) : detail?.type === 'appointment' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.patients?.full_name || detailData.guest_name || 'Tamu'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+              <DetailField label="Tanggal & Jam" value={formatApptDate(detailData.appointment_date)} full />
+              <DetailField label="Durasi" value={detailData.duration_minutes ? `${detailData.duration_minutes} menit` : null} />
+              <DetailField label="Status" value={detailData.status} />
+              <DetailField label="Layanan" value={detailData.service?.name} />
+              <DetailField label="Terapis" value={detailData.therapist?.name} />
+              <DetailField label="No HP" value={detailData.patients?.phone || detailData.guest_phone} />
+              <DetailField label="Keluhan" value={detailData.guest_complaint} full />
+              <DetailField label="Catatan" value={detailData.notes} full />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => goTo(`/${role}/appointments`)}>Buka Booking Calendar</Button>
+            </DialogFooter>
+          </>
+        ) : detail?.type === 'package' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <PackageIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.package_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+              <DetailField label="Pasien" value={detailData.patients?.full_name} full />
+              <DetailField label="Sesi Terpakai" value={`${detailData.sessions_used ?? 0}/${detailData.total_sessions ?? 0}`} />
+              <DetailField label="Sisa Sesi" value={detailData.sessions_remaining} />
+              <DetailField label="Status" value={detailData.status} />
+              <DetailField label="Mulai" value={detailData.start_date ? formatShortDate(detailData.start_date) : null} />
+              <DetailField label="Berakhir" value={detailData.end_date ? formatShortDate(detailData.end_date) : null} />
+              <DetailField label="Metode Bayar" value={detailData.payment_method} />
+              <DetailField label="Nominal" value={formatCurrency(detailData.nominal)} />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => goTo(`/${role}/package-recaps`)}>Lihat Rekap Paket</Button>
+            </DialogFooter>
+          </>
+        ) : detail?.type === 'medicalRecord' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileTextIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.patients?.full_name || 'Pasien'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+              <DetailField label="Tanggal" value={formatShortDate(detailData.daily_recap?.recap_date || detailData.created_at)} />
+              <DetailField label="Terapis" value={detailData.therapist_name} />
+              <DetailField label="Subjective" value={detailData.subjective} full />
+              <DetailField label="Objective" value={detailData.objective} full />
+              <DetailField label="Assessment" value={detailData.assessment} full />
+              <DetailField label="Plan" value={detailData.plan} full />
+              <DetailField label="Catatan Tambahan" value={detailData.treatment_notes} full />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => goTo(`/${role}/medical-records`)}>Lihat Semua Medical Record</Button>
+            </DialogFooter>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
+
+const DetailField = ({ label, value, full }) => (
+  <div className={cn('flex flex-col min-w-0', full && 'col-span-2')}>
+    <span className="text-xs text-[#5B6B7D]">{label}</span>
+    <span className="font-medium text-[#102F52] break-words">{value || '-'}</span>
+  </div>
+);
 
 export default DashboardTopbar;
