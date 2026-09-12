@@ -748,27 +748,41 @@ const getPremiumPastelBadge = (text) => {
             </Button>
           </div>
 
-          {/* Terapis */}
-          <div className="relative">
-            <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
-            <select
-              value={selectedTherapist}
-              onChange={(e) => {
-                setSelectedTherapist(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
-            >
-              <option value="">Semua Terapis</option>
+          {/* Terapis + Cari Pasien (satu baris di tablet/desktop) */}
+          <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="relative sm:flex-1">
+              <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+              <select
+                value={selectedTherapist}
+                onChange={(e) => {
+                  setSelectedTherapist(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full h-11 sm:h-12 rounded-xl pl-9 pr-9 text-sm transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+              >
+                <option value="">Semua Terapis</option>
 
-              {therapistOptions.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
+                {therapistOptions.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
 
-            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            </div>
+
+            {!showPaymentFilter && (
+              <div className="relative sm:flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Input
+                  placeholder="Cari Pasien..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+                />
+              </div>
+            )}
           </div>
 
           {showPaymentFilter && (
@@ -799,16 +813,17 @@ const getPremiumPastelBadge = (text) => {
             </>
           )}
 
-          {/* Cari Pasien */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input
-              placeholder="Cari Pasien..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
-            />
-          </div>
+          {showPaymentFilter && (
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Input
+                placeholder="Cari Pasien..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+              />
+            </div>
+          )}
         </div>
         </>
       )}
