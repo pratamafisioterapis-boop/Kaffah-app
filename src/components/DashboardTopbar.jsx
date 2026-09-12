@@ -204,7 +204,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           .or(`full_name.ilike.%${q}%,medical_record_number.ilike.%${q}%,phone.ilike.%${q}%`)
           .limit(5);
         if (clinicId) patientQuery = patientQuery.eq('clinic_id', clinicId);
-        const { data: patientRows } = await patientQuery;
+        const { data: patientRows, error: patientError } = await patientQuery;
+        if (patientError) console.error('Patient search error:', patientError);
 
         const patientIds = (patientRows || []).map((p) => p.id);
 
@@ -218,6 +219,9 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           ? apptQuery.or(`patient_id.in.(${patientIds.join(',')}),guest_name.ilike.%${q}%`)
           : apptQuery.ilike('guest_name', `%${q}%`);
 
+        // Each of these is a nice-to-have on top of the patient/appointment
+        // match above — a failure here (RLS, a bad join, a network blip)
+        // should never blank out results the user already has.
         let packagePromise = Promise.resolve({ data: [] });
         let medicalRecordPromise = Promise.resolve({ data: [] });
         if (patientIds.length) {
@@ -236,21 +240,28 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
             .limit(5);
         }
 
-        const [{ data: apptRows }, { data: packageRows }, { data: mrRows }] = await Promise.all([
-          apptQuery,
-          packagePromise,
-          medicalRecordPromise,
+        const [apptResult, packageResult, mrResult] = await Promise.all([
+          apptQuery.then((r) => r, (err) => ({ data: [], error: err })),
+          packagePromise.then((r) => r, (err) => ({ data: [], error: err })),
+          medicalRecordPromise.then((r) => r, (err) => ({ data: [], error: err })),
         ]);
+        if (apptResult.error) console.error('Appointment search error:', apptResult.error);
+        if (packageResult.error) console.error('Package search error:', packageResult.error);
+        if (mrResult.error) console.error('Medical record search error:', mrResult.error);
 
-        let medicalRecords = mrRows || [];
+        let medicalRecords = mrResult.data || [];
         const therapistIds = [...new Set(medicalRecords.map((r) => r.created_by).filter(Boolean))];
         if (therapistIds.length) {
-          const { data: therapists } = await supabase
-            .from('physiotherapists')
-            .select('user_id, name')
-            .in('user_id', therapistIds);
-          const nameByUserId = Object.fromEntries((therapists || []).map((t) => [t.user_id, t.name]));
-          medicalRecords = medicalRecords.map((r) => ({ ...r, therapist_name: nameByUserId[r.created_by] || null }));
+          try {
+            const { data: therapists } = await supabase
+              .from('physiotherapists')
+              .select('user_id, name')
+              .in('user_id', therapistIds);
+            const nameByUserId = Object.fromEntries((therapists || []).map((t) => [t.user_id, t.name]));
+            medicalRecords = medicalRecords.map((r) => ({ ...r, therapist_name: nameByUserId[r.created_by] || null }));
+          } catch (err) {
+            console.error('Therapist name lookup error:', err);
+          }
         }
 
         // Only worth the extra round-trip when the search clearly points at one
@@ -262,8 +273,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
         setResults({
           patients: patientRows || [],
-          appointments: apptRows || [],
-          packages: packageRows || [],
+          appointments: apptResult.data || [],
+          packages: packageResult.data || [],
           medicalRecords,
           menu: menuMatches,
           summary,
@@ -349,9 +360,13 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     || results.packages.length || results.medicalRecords.length || results.menu.length;
 
   return (
-    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 overflow-hidden sm:overflow-visible bg-gradient-to-b from-[#EAF4FF]/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
-      <div className="absolute -top-12 -right-8 w-28 h-28 rounded-full bg-[#1677D2]/10 blur-2xl pointer-events-none sm:hidden" aria-hidden="true" />
-      <div className="absolute -top-6 right-16 w-14 h-14 rounded-full bg-[#2F8CFF]/10 blur-xl pointer-events-none sm:hidden" aria-hidden="true" />
+    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-[#EAF4FF]/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
+      {/* Clipped separately from the content below so it never crops the
+          search results dropdown, which must overflow past this header. */}
+      <div className="absolute inset-0 overflow-hidden rounded-b-[20px] pointer-events-none sm:hidden" aria-hidden="true">
+        <div className="absolute -top-12 -right-8 w-28 h-28 rounded-full bg-[#1677D2]/10 blur-2xl" />
+        <div className="absolute -top-6 right-16 w-14 h-14 rounded-full bg-[#2F8CFF]/10 blur-xl" />
+      </div>
       <div className="relative flex items-center gap-2 sm:gap-3">
         <div className="relative flex-1 min-w-0 max-w-md" ref={searchRef}>
           <div
