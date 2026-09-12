@@ -350,10 +350,15 @@ case 'clinic_admin':
           rubber-band/scroll on some devices even though the content fit.
           Taking the whole thing out of document flow removes that
           possibility outright regardless of viewport-unit quirks.
-          Below `md` this renders the stacked card-over-photo layout;
-          `md` and up switch to the split-screen layout further down, so
-          only one of the two trees is ever visible at a time. */}
-      <div className="fixed inset-0 w-full flex md:hidden flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+          This stacked card-over-photo layout is the fallback for anything
+          narrower than `md`, but also for a `md`-or-wider viewport that's
+          still portrait/very tall (min-aspect-ratio guard below) — e.g. a
+          phone's "Desktop site" mode reports a desktop-width viewport
+          while the physical screen stays phone-tall, which stretched the
+          full-bleed split-screen layout into a mostly-empty column with
+          an over-cropped photo. The split-screen further down only takes
+          over once the viewport is both wide AND landscape-ish. */}
+      <div className="fixed inset-0 w-full flex [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:hidden flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Background photo — portrait crop below `sm`, landscape from `sm`
             up; both already have the wave accent baked in. Slow Ken-Burns
             drift (animate-bg-zoom) adds ambient motion behind the card. */}
@@ -606,11 +611,17 @@ case 'clinic_admin':
         </motion.div>
       </div>
 
-      {/* Split-screen layout for md (tablet) and up: photo + brush-script
-          tagline on the left, a centered form card on a light panel to the
-          right — mirrors the reference mockup rather than scaling up the
-          mobile card-over-photo composition. */}
-      <div className="fixed inset-0 w-full hidden md:flex overflow-hidden overscroll-none bg-[#EEF3F9] selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+      {/* Split-screen layout for viewports that are both `md`-or-wider AND
+          landscape-ish (width >= height): photo + brush-script tagline on
+          the left, a centered form card on a light panel to the right —
+          mirrors the reference mockup rather than scaling up the mobile
+          card-over-photo composition. Gated on aspect ratio too, not just
+          width, so a portrait/very-tall `md`+ viewport (a phone's
+          "Desktop site" mode, which fakes viewport width but keeps the
+          phone's tall screen) falls back to the card layout above instead
+          of stretching this full-bleed layout into a mostly-empty column
+          with an over-cropped photo. */}
+      <div className="fixed inset-0 w-full hidden [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:flex overflow-hidden overscroll-none bg-[#EEF3F9] selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Left: background photo with the brand tagline */}
         <div className="relative w-[58%] lg:w-[60%] h-full overflow-hidden">
           <motion.div
