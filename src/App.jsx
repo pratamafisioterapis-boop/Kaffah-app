@@ -42,6 +42,9 @@ const PackageRecapsAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/Pack
 const InventoryStockPage = React.lazy(lazyRetry(() => import('@/pages/owner/InventoryStock'), 'InventoryStockPage'));
 const InventoryTakeOutPage = React.lazy(lazyRetry(() => import('@/pages/admin/InventoryTakeOut'), 'InventoryTakeOutPage'));
 const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
+const PatientFeedbackPage = React.lazy(lazyRetry(() => import('@/pages/PatientFeedbackPage'), 'PatientFeedbackPage'));
+const FeedbackManagementOwner = React.lazy(lazyRetry(() => import('@/pages/owner/FeedbackManagement'), 'FeedbackManagementOwner'));
+const FeedbackManagementAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/FeedbackManagement'), 'FeedbackManagementAdmin'));
 
 // Dashboard Imports
 const OwnerDashboard = React.lazy(lazyRetry(() => import('@/pages/OwnerDashboard'), 'OwnerDashboard'));
@@ -281,6 +284,7 @@ function App() {
                 <Route path="/artikel" element={<BlogIndexPage />} />
                 <Route path="/artikel/:slug" element={<BlogArticlePage />} />
                 <Route path="/i/:recapId" element={<InvoiceViewPage />} />
+                <Route path="/feedback/:token" element={<PatientFeedbackPage />} />
                 
                 {/* Protected Routes */}
                 <Route
@@ -302,6 +306,24 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
                       <InventoryStockPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/owner/feedback"
+                  element={
+                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                      <FeedbackManagementOwner />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/feedback"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                      <FeedbackManagementAdmin />
                     </ProtectedRoute>
                   }
                 />
