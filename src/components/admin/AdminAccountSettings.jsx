@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Mail, Lock, UserCircle, Upload } from 'lucide-react';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 
 const AdminAccountSettings = () => {
   const { user, userDetails, clinicName } = useAuth();
@@ -49,9 +50,10 @@ const AdminAccountSettings = () => {
     if (!file || !user) return;
     setUploadingAvatar(true);
     try {
-      const ext = file.name.split('.').pop();
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
       const path = `user-avatars/${user.id}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
       const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', user.id);

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 
 // ─── Tab konstanta ────────────────────────────────────────────────────────────
 const TABS = [
@@ -82,9 +83,10 @@ const TabProfil = ({ therapist, onUpdated }) => {
     }
     setUploadingSplash(true);
     try {
-      const ext = file.name.split('.').pop();
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
       const path = `user-avatars/${user.id}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
       if (upErr) throw upErr;
 
       const { data: urlData } = supabase.storage.from('images').getPublicUrl(path);
@@ -109,11 +111,12 @@ const TabProfil = ({ therapist, onUpdated }) => {
     }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
       const filename = `${therapist.id}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('therapist-photos')
-        .upload(filename, file, { upsert: true });
+        .upload(filename, uploadFile, { upsert: true });
       if (upErr) throw upErr;
 
       const { data: urlData } = supabase.storage

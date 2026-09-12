@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Mail, Lock, Building2, Upload, UserCircle } from 'lucide-react';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 
 const AccountClinicManager = () => {
   const { user, userDetails } = useAuth();
@@ -100,9 +101,10 @@ const AccountClinicManager = () => {
     if (!file || !clinic) return;
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
       const path = `clinic-logos/${clinic.id}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('clinic-assets').upload(path, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('clinic-assets').upload(path, uploadFile, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: pub } = supabase.storage.from('clinic-assets').getPublicUrl(path);
       const { error: updateError } = await supabase.from('clinics').update({ logo_url: pub.publicUrl }).eq('id', clinic.id);
@@ -122,9 +124,10 @@ const AccountClinicManager = () => {
     if (!file || !user) return;
     setUploadingAvatar(true);
     try {
-      const ext = file.name.split('.').pop();
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
       const path = `user-avatars/${user.id}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
       const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', user.id);

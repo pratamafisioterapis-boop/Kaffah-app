@@ -13,6 +13,7 @@ import {
 import { validatePatientId } from '@/lib/validationHelpers';
 import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
 import { resolveAttendanceStatus } from '@/utils/attendanceStatusResolver';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 import { buildHomecareLookup } from '@/utils/attendanceHomecareLookup';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
@@ -6173,14 +6174,15 @@ export const uploadTherapistPhoto = async (file) => {
       return { error: { message: "File tidak ditemukan" } };
     }
 
-    const fileExt = file.name.split('.').pop();
+    const uploadFile = await prepareImageForUpload(file);
+    const fileExt = uploadFile.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
     // 1️⃣ Upload ke bucket therapist-photos
     const { error: uploadError } = await supabase.storage
       .from('therapist-photos')
-      .upload(filePath, file, {
+      .upload(filePath, uploadFile, {
         cacheControl: '3600',
         upsert: false
       });
