@@ -129,17 +129,17 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
           <div className="hidden sm:block">
           <table className="w-full table-fixed text-sm text-left">
             <colgroup>
-              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
               <col className="w-[13%]" />
-              <col className="w-[14%]" />
-              <col className="w-[13%]" />
+              <col className="w-[12%]" />
               <col className="w-[24%]" />
               <col className="w-[16%]" />
-              {(canEdit || canDelete) && <col className="w-[10%]" />}
+              {(canEdit || canDelete) && <col className="w-[12%]" />}
             </colgroup>
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-3 py-3 font-semibold">Tanggal</th>
+                <th className="px-3 py-3 font-semibold whitespace-nowrap">Tanggal</th>
                 <th className="px-3 py-3 font-semibold">Kategori</th>
                 <th className="px-3 py-3 font-semibold">Sub Kategori</th>
                 <th className="px-3 py-3 font-semibold">Akun Bank</th>
@@ -151,7 +151,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             <tbody className="divide-y divide-slate-100">
               {dataToRender.map((ex, index) => (
                 <tr key={ex.id || index} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-3 py-3 text-slate-700 font-medium break-words">
+                  <td className="px-3 py-3 text-slate-700 font-medium whitespace-nowrap">
                     {formatDate(ex.transaction_date)}
                   </td>
                   <td className="px-3 py-3">
