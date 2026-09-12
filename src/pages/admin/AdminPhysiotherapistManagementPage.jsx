@@ -5,6 +5,7 @@ import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager'
 import TherapistScheduleOverrideManager from '@/components/owner/TherapistScheduleOverrideManager';
 import { CalendarClock, CalendarOff, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import WaveBackground from '@/components/ui/wave-background';
 
 const AdminPhysiotherapistManagementPage = () => {
   const { clinicName } = useAuth();
@@ -75,8 +76,11 @@ const AdminPhysiotherapistManagementPage = () => {
           value="schedule"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <TherapistScheduleManager />
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistScheduleManager />
+            </div>
           </div>
         </TabsContent>
 
@@ -85,8 +89,11 @@ const AdminPhysiotherapistManagementPage = () => {
           value="overrides"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <TherapistScheduleOverrideManager />
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistScheduleOverrideManager />
+            </div>
           </div>
         </TabsContent>
 
@@ -95,8 +102,11 @@ const AdminPhysiotherapistManagementPage = () => {
           value="timeoff"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <TherapistTimeOffManager />
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistTimeOffManager />
+            </div>
           </div>
         </TabsContent>
 

@@ -114,10 +114,10 @@ const SmartResultsStep = ({ therapists, complaintSlugs, timePreference, preferre
                 key={`${r.therapist.id}_${r.date.toDateString()}_${r.window.id}`}
                 className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_10px_30px_-20px_rgba(15,30,61,0.15)] p-5 flex flex-col"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="w-12 h-12 border-2 border-white shadow ring-1 ring-slate-100">
+                <div className="flex items-center gap-3.5 mb-3">
+                  <Avatar className="w-16 h-16 sm:w-[72px] sm:h-[72px] border-2 border-white shadow-md ring-1 ring-slate-100 shrink-0">
                     <AvatarImage src={r.therapist.avatar_url} className="object-cover" />
-                    <AvatarFallback className="bg-slate-100 text-slate-400"><User className="w-5 h-5" /></AvatarFallback>
+                    <AvatarFallback className="bg-slate-100 text-slate-400"><User className="w-7 h-7" /></AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <p className="font-bold text-[#0f1e3d] text-sm truncate">{r.therapist.name}</p>
