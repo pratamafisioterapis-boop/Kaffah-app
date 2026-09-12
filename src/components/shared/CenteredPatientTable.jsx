@@ -115,24 +115,26 @@ const formatTanggal = (date) => {
                             className="pl-9 h-9 text-xs"
                         />
                     </div>
-                    <select 
-                        value={status}
-                        onChange={(e) => handleStatusFilter(e.target.value)}
-                        className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500"
-                    >
-                        <option value="all">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="nonaktif">Nonaktif</option>
-                    </select>
-                    <select 
-                         value={completeness}
-                         onChange={(e) => handleCompletenessFilter(e.target.value)}
-                         className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500"
-                    >
-                        <option value="all">Semua Kelengkapan</option>
-                        <option value="complete">Lengkap</option>
-                        <option value="incomplete">Belum Lengkap</option>
-                    </select>
+                    <div className="flex w-full gap-2 basis-full">
+                        <select
+                            value={status}
+                            onChange={(e) => handleStatusFilter(e.target.value)}
+                            className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                        >
+                            <option value="all">Semua Status</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                        <select
+                             value={completeness}
+                             onChange={(e) => handleCompletenessFilter(e.target.value)}
+                             className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                        >
+                            <option value="all">Semua Kelengkapan</option>
+                            <option value="complete">Lengkap</option>
+                            <option value="incomplete">Belum Lengkap</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
