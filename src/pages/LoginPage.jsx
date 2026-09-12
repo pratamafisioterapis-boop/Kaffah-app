@@ -627,33 +627,35 @@ case 'clinic_admin':
       </div>
 
       {/* Split-screen layout for viewports that are both `md`-or-wider AND
-          landscape-ish (width >= height): photo + brush-script tagline on
-          the left, a centered form card on a light panel to the right —
-          mirrors the reference mockup rather than scaling up the mobile
-          card-over-photo composition. Gated on aspect ratio too, not just
-          width, so a portrait/very-tall `md`+ viewport (a phone's
-          "Desktop site" mode, which fakes viewport width but keeps the
-          phone's tall screen) falls back to the card layout above instead
-          of stretching this full-bleed layout into a mostly-empty column
-          with an over-cropped photo. */}
-      <div className="fixed inset-0 w-full hidden [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:flex overflow-hidden overscroll-none bg-[#EEF3F9] selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
-        {/* Left: background photo with the brand tagline */}
-        <div className="relative w-[58%] lg:w-[60%] h-full overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="absolute inset-0"
-          >
-            <img
-              src={CLINARA_LOGIN_BG_DESKTOP_URL}
-              alt=""
-              aria-hidden="true"
-              className="w-full h-full object-cover animate-bg-zoom"
-            />
-          </motion.div>
+          landscape-ish (width >= height): a single full-bleed photo behind
+          everything, with the brush-script tagline on the left and the
+          form card floating on the right — both sit directly on the same
+          photo (per the reference mockup), rather than the tagline's half
+          and the card's half being two visually separate panels. Gated on
+          aspect ratio too, not just width, so a portrait/very-tall `md`+
+          viewport (a phone's "Desktop site" mode, which fakes viewport
+          width but keeps the phone's tall screen) falls back to the card
+          layout above instead of stretching this full-bleed layout into a
+          mostly-empty column with an over-cropped photo. */}
+      <div className="fixed inset-0 w-full hidden [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:flex overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+        {/* Full-bleed background photo behind both the tagline and the card */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
+          className="absolute inset-0"
+        >
+          <img
+            src={CLINARA_LOGIN_BG_DESKTOP_URL}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover animate-bg-zoom"
+          />
+        </motion.div>
 
-          <div className="relative z-10 h-full flex flex-col justify-center pl-12 lg:pl-20 pr-8">
+        <div className="relative z-10 w-full h-full flex items-center">
+          {/* Left: brush-script tagline directly over the photo */}
+          <div className="flex-1 h-full flex flex-col justify-center pl-12 lg:pl-20 pr-8 min-w-0">
             <motion.h2
               initial="hidden"
               animate="visible"
@@ -684,16 +686,15 @@ case 'clinic_admin':
               className="block h-1 w-40 lg:w-52 bg-[#0f2a4a]/70 rounded-full origin-left mt-5"
             />
           </div>
-        </div>
 
-        {/* Right: login card */}
-        <div className="relative flex-1 h-full flex items-center justify-center px-8 lg:px-16">
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-full max-w-[420px] bg-white rounded-3xl shadow-[0_20px_60px_rgba(8,20,45,0.15)] px-10 py-10"
-          >
+          {/* Right: login card, floating over the same photo */}
+          <div className="shrink-0 pr-10 lg:pr-20">
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="w-[420px] bg-white rounded-3xl shadow-[0_20px_60px_rgba(8,20,45,0.35)] px-10 py-10"
+            >
             <motion.div variants={cardStagger} initial="hidden" animate="visible">
               <motion.div variants={cardItem} className="flex justify-center mb-6">
                 <motion.img
@@ -808,6 +809,7 @@ case 'clinic_admin':
               </motion.p>
             </motion.div>
           </motion.div>
+          </div>
         </div>
       </div>
     </>
