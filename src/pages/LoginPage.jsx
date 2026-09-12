@@ -654,13 +654,12 @@ case 'clinic_admin':
         </motion.div>
 
         <div className="relative z-10 w-full h-full flex items-center">
-          {/* Left: brush-script tagline directly over the photo, centered
-              in the available left space. White text (with a soft dark
-              glow for contrast, since it sits on whatever part of the
-              photo happens to be behind it) rather than the earlier dark
-              navy, which read fine over the bright wall but not reliably
-              across the rest of the photo. */}
-          <div className="flex-1 h-full flex flex-col items-center justify-center px-8 min-w-0 text-center">
+          {/* Left: brush-script tagline directly over the photo, left-aligned
+              and vertically centered per the reference mockup. "Care" and
+              "Manage" are dark navy, "Grow Together" is brand blue with a
+              matching blue underline beneath it, followed by a small
+              tracked-uppercase sub-line. */}
+          <div className="flex-1 h-full flex flex-col justify-center items-start pl-12 lg:pl-20 pr-8 min-w-0 text-left">
             <motion.h2
               initial="hidden"
               animate="visible"
@@ -668,17 +667,21 @@ case 'clinic_admin':
                 hidden: {},
                 visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
               }}
-              className="font-bold text-white leading-[1.05] text-6xl lg:text-7xl"
-              style={{ fontFamily: "'Caveat', cursive", textShadow: "0 2px 6px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.35)" }}
+              className="font-bold leading-[1.05] text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Caveat', cursive" }}
             >
-              {['Care', 'Manage', 'Grow Together'].map((word) => (
+              {[
+                { word: 'Care', className: 'text-[#0f2a4a]' },
+                { word: 'Manage', className: 'text-[#0f2a4a]' },
+                { word: 'Grow Together', className: 'text-[#2F8CFF]' },
+              ].map(({ word, className }) => (
                 <motion.span
                   key={word}
                   variants={{
                     hidden: { opacity: 0, x: -30 },
                     visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
                   }}
-                  className="block"
+                  className={`block ${className}`}
                 >
                   {word}
                 </motion.span>
@@ -688,8 +691,19 @@ case 'clinic_admin':
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.15, duration: 0.6, ease: "easeOut" }}
-              className="block h-1 w-40 lg:w-52 bg-white/80 rounded-full mt-5"
+              className="block h-1 w-40 lg:w-52 bg-[#2F8CFF] rounded-full origin-left mt-2"
             />
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.5, ease: "easeOut" }}
+              className="mt-6 text-[#0f2a4a] text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase leading-relaxed"
+            >
+              A Healthier
+              <br />
+              <span className="inline-block w-4 border-t border-[#0f2a4a]/70 align-middle mr-2"></span>
+              Brighter Tomorrow
+            </motion.div>
           </div>
 
           {/* Right: login card, floating over the same photo */}
