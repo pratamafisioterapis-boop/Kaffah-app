@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay, BookOpen
+  UploadCloud, UserCog, MonitorPlay, BookOpen, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -35,6 +35,7 @@ const iconMap = {
   Database,
   DollarSign,
   MessageSquare,
+  Star,
   Boxes,
   Wallet,
   FileSearch,
