@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
+import { stripSignatureBackground } from '@/lib/signatureImage';
 
 const PROGRAM_TERAPI_LABELS = {
   tens: 'TENS',
@@ -19,6 +20,23 @@ const formatDate = (value) => {
 const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
   const programTerapi = data?.program_terapi || [];
   const otherProgram = data?.program_terapi_lainnya;
+
+  // Strip the signature scan's background to transparent and boost contrast,
+  // same as the invoice template — otherwise it prints with a visible box
+  // behind it and reads small/blurry against the page.
+  const [signatureUrl, setSignatureUrl] = useState(null);
+  useEffect(() => {
+    const rawUrl = data?.therapist_signature_url;
+    if (!rawUrl) {
+      setSignatureUrl(null);
+      return;
+    }
+    let cancelled = false;
+    stripSignatureBackground(rawUrl).then((result) => {
+      if (!cancelled) setSignatureUrl(result);
+    });
+    return () => { cancelled = true; };
+  }, [data?.therapist_signature_url]);
 
   return (
     <div
@@ -169,14 +187,14 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
               {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
             </p>
             <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
-            <div style={{ position: 'relative', height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              {data?.therapist_signature_url && (
-                <img src={data.therapist_signature_url} style={{ maxHeight: '55px', maxWidth: '120px' }} />
+            <div style={{ position: 'relative', height: '90px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              {signatureUrl && (
+                <img src={signatureUrl} style={{ maxHeight: '85px', maxWidth: '180px' }} />
               )}
               {clinic?.stamp_url && (
                 <img
                   src={clinic.stamp_url}
-                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }}
+                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '80px', maxWidth: '80px', objectFit: 'contain' }}
                 />
               )}
             </div>
