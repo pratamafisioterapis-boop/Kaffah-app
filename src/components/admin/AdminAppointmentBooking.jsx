@@ -451,7 +451,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   <div className="flex items-center gap-1.5 w-full min-w-0">
 
     {/* Date Controller */}
-    <div className="flex items-center gap-0.5 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+    <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
