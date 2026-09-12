@@ -349,8 +349,11 @@ case 'clinic_admin':
           show/hide, keyboard-resize modes), which was letting the page
           rubber-band/scroll on some devices even though the content fit.
           Taking the whole thing out of document flow removes that
-          possibility outright regardless of viewport-unit quirks. */}
-      <div className="fixed inset-0 w-full flex flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+          possibility outright regardless of viewport-unit quirks.
+          Below `md` this renders the stacked card-over-photo layout;
+          `md` and up switch to the split-screen layout further down, so
+          only one of the two trees is ever visible at a time. */}
+      <div className="fixed inset-0 w-full flex md:hidden flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Background photo — portrait crop below `sm`, landscape from `sm`
             up; both already have the wave accent baked in. Slow Ken-Burns
             drift (animate-bg-zoom) adds ambient motion behind the card. */}
@@ -601,6 +604,185 @@ case 'clinic_admin':
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </motion.p>
         </motion.div>
+      </div>
+
+      {/* Split-screen layout for md (tablet) and up: photo + brush-script
+          tagline on the left, a centered form card on a light panel to the
+          right — mirrors the reference mockup rather than scaling up the
+          mobile card-over-photo composition. */}
+      <div className="fixed inset-0 w-full hidden md:flex overflow-hidden overscroll-none bg-[#EEF3F9] selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+        {/* Left: background photo with the brand tagline */}
+        <div className="relative w-[58%] lg:w-[60%] h-full overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="absolute inset-0"
+          >
+            <img
+              src={CLINARA_LOGIN_BG_DESKTOP_URL}
+              alt=""
+              aria-hidden="true"
+              className="w-full h-full object-cover animate-bg-zoom"
+            />
+          </motion.div>
+
+          <div className="relative z-10 h-full flex flex-col justify-center pl-12 lg:pl-20 pr-8">
+            <motion.h2
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
+              }}
+              className="font-bold text-[#0f2a4a] leading-[1.05] text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Caveat', cursive" }}
+            >
+              {['Care', 'Manage', 'Grow Together'].map((word) => (
+                <motion.span
+                  key={word}
+                  variants={{
+                    hidden: { opacity: 0, x: -30 },
+                    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
+                  }}
+                  className="block"
+                >
+                  {word}
+                </motion.span>
+              ))}
+            </motion.h2>
+            <motion.span
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 1.15, duration: 0.6, ease: "easeOut" }}
+              className="block h-1 w-40 lg:w-52 bg-[#0f2a4a]/70 rounded-full origin-left mt-5"
+            />
+          </div>
+        </div>
+
+        {/* Right: login card */}
+        <div className="relative flex-1 h-full flex items-center justify-center px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-full max-w-[420px] bg-white rounded-3xl shadow-[0_20px_60px_rgba(8,20,45,0.15)] px-10 py-10"
+          >
+            <motion.div variants={cardStagger} initial="hidden" animate="visible">
+              <motion.div variants={cardItem} className="flex justify-center mb-6">
+                <motion.img
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ delay: 1, duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                  src={CLINARA_LOGO_URL}
+                  alt="Clinara — Better Care. Smarter Management."
+                  className="w-36 lg:w-40 h-auto"
+                />
+              </motion.div>
+
+              <motion.div variants={cardItem} className="text-center mb-6">
+                <h1 className="text-[#102F52] text-2xl font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-sm mt-1.5">
+                  Masuk untuk mengakses dashboard Clinara
+                </p>
+              </motion.div>
+
+              {/* Error Message */}
+              <AnimatePresence>
+                {authError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 overflow-hidden"
+                  >
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-600 leading-snug">{authError}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Form */}
+              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-4">
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <input
+                      type="text"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-base"
+                      placeholder="Email atau Username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      required
+                    />
+                  </motion.div>
+
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-12 pr-12 py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-base"
+                      placeholder="Password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA3B8] hover:text-[#2F8CFF] transition-colors"
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </motion.div>
+
+                  <div className="flex justify-end">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
+                    >
+                      Lupa Password?
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isRedirecting || authLoading}
+                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-4 text-base rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {!(isSubmitting || isRedirecting || authLoading) && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                        />
+                      )}
+                      {isSubmitting || isRedirecting || authLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying Access...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Sign In to Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.form>
+
+              <motion.p variants={cardItem} className="text-center text-[#8FA3B8] text-xs mt-6 pt-5 border-t border-[#EAF1F8]">
+                &copy; {new Date().getFullYear()} Clinara. All rights reserved.
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        </div>
       </div>
     </>
   );
