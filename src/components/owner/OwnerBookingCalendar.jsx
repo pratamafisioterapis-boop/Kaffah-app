@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft, ClipboardList, Phone
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ClipboardList, Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -33,7 +32,6 @@ import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailMo
 import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
 
 const OwnerBookingCalendar = () => {
-  const navigate = useNavigate();
   const { userDetails } = useAuth();
   const { toast } = useToast();
   const [date, setDate] = useState(new Date());
@@ -334,13 +332,6 @@ const OwnerBookingCalendar = () => {
 
   return (
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
-      <div className="flex items-center gap-4 mt-4 mb-4">
-        <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600" onClick={() => navigate('/owner')}>
-           <ArrowLeft className="w-4 h-4" />
-           Back to Dashboard
-        </Button>
-      </div>
-
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-4 z-20 overflow-hidden space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
