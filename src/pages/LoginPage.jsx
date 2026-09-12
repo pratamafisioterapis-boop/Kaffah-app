@@ -387,9 +387,9 @@ case 'clinic_admin':
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
-          className="absolute top-5 left-5 z-10 text-white text-xs font-semibold leading-tight max-w-[140px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+          className="absolute top-5 left-5 md:top-8 md:left-8 z-10 text-white text-xs md:text-base font-semibold leading-tight max-w-[140px] md:max-w-[220px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
         >
-          <span className="block w-6 border-t border-white/60 mb-2"></span>
+          <span className="block w-6 md:w-10 border-t border-white/60 mb-2"></span>
           Better Care
           <br />
           Smarter Management
@@ -398,7 +398,7 @@ case 'clinic_admin':
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6, duration: 0.6, ease: "easeOut" }}
-          className="absolute top-5 right-5 z-10 text-white text-xl text-right leading-[1.15] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+          className="absolute top-5 right-5 md:top-8 md:right-8 z-10 text-white text-xl md:text-4xl text-right leading-[1.15] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
           style={{ fontFamily: "'Caveat', cursive" }}
         >
           Care
@@ -408,13 +408,13 @@ case 'clinic_admin':
           Grow
           <br />
           Together
-          <span className="block w-10 h-px bg-white/60 mt-1 ml-auto"></span>
+          <span className="block w-10 md:w-16 h-px bg-white/60 mt-1 ml-auto"></span>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.6, ease: "easeOut" }}
-          className="absolute bottom-6 left-5 z-10 text-white text-[10px] font-medium tracking-[0.15em] uppercase leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+          className="absolute bottom-6 left-5 md:bottom-10 md:left-8 z-10 text-white text-[10px] md:text-sm font-medium tracking-[0.15em] uppercase leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
         >
           Care
           <br />
@@ -428,12 +428,15 @@ case 'clinic_admin':
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[300px] sm:max-w-[380px] px-5"
+          className="relative z-10 w-full max-w-[300px] sm:max-w-[380px] md:max-w-[460px] px-5"
         >
           {/* Logo — sized from the source mark's own 1311x1200 aspect ratio
               (via h-auto) so it's never stretched; larger on sm+ where
-              there's room without forcing a scroll */}
-          <div className="flex flex-col items-center justify-center mb-2.5 sm:mb-4">
+              there's room without forcing a scroll. Scales again at `md`
+              for the portrait/tall-aspect fallback (e.g. a phone's
+              "Desktop site" mode), which reports a much wider viewport
+              than a real phone but still lands in this tree. */}
+          <div className="flex flex-col items-center justify-center mb-2.5 sm:mb-4 md:mb-6">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -442,12 +445,12 @@ case 'clinic_admin':
               <motion.div
                 animate={{ y: [0, -5, 0] }}
                 transition={{ delay: 0.9, duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 md:px-9 md:py-6 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
               >
                 <img
                   src={CLINARA_LOGO_URL}
                   alt="Clinara — Better Care. Smarter Management."
-                  className="w-20 sm:w-28 h-auto"
+                  className="w-20 sm:w-28 md:w-36 h-auto"
                 />
               </motion.div>
             </motion.div>
@@ -464,11 +467,11 @@ case 'clinic_admin':
               variants={cardStagger}
               initial="hidden"
               animate="visible"
-              className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7"
+              className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7 md:px-9 md:pt-9 md:pb-8"
             >
-              <motion.div variants={cardItem} className="text-center mb-3 sm:mb-5">
-                <h1 className="text-[#102F52] text-base sm:text-xl font-bold">Selamat Datang Kembali</h1>
-                <p className="text-[#5B6B7D] text-xs sm:text-sm mt-1">
+              <motion.div variants={cardItem} className="text-center mb-3 sm:mb-5 md:mb-6">
+                <h1 className="text-[#102F52] text-base sm:text-xl md:text-2xl font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-xs sm:text-sm md:text-base mt-1 md:mt-1.5">
                   Masuk untuk mengakses dashboard Clinara
                 </p>
               </motion.div>
@@ -489,15 +492,15 @@ case 'clinic_admin':
               </AnimatePresence>
 
               {/* Form */}
-              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-3">
-                <div className="space-y-3">
+              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-3 md:space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
                     <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
+                      className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3.5 md:py-4 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -511,7 +514,7 @@ case 'clinic_admin':
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 sm:pl-12 pr-11 sm:pr-12 py-2.5 sm:py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
+                      className="w-full pl-11 sm:pl-12 pr-11 sm:pr-12 py-2.5 sm:py-3.5 md:py-4 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
                       placeholder="Password"
                       required
                     />
@@ -528,7 +531,7 @@ case 'clinic_admin':
                   <div className="flex justify-end">
                     <Link
                       to="/forgot-password"
-                      className="text-xs sm:text-sm text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
+                      className="text-xs sm:text-sm md:text-base text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
                     >
                       Lupa Password?
                     </Link>
@@ -540,7 +543,7 @@ case 'clinic_admin':
                     <Button
                       type="submit"
                       disabled={isSubmitting || isRedirecting || authLoading}
-                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 sm:py-4 sm:text-base rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 sm:py-4 sm:text-base md:py-5 md:text-lg rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {!(isSubmitting || isRedirecting || authLoading) && (
                         <span
@@ -565,32 +568,32 @@ case 'clinic_admin':
               </motion.form>
 
               {/* Trust row */}
-              <motion.div variants={cardItem} className="grid grid-cols-3 gap-2 mt-3 sm:mt-5 text-center">
+              <motion.div variants={cardItem} className="grid grid-cols-3 gap-2 mt-3 sm:mt-5 md:mt-6 text-center">
                 <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                  <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[8px] sm:text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
                     Authorized
                     <br />
                     Personnel Only
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                  <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[8px] sm:text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
                     Secure Encrypted
                     <br />
                     Access
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                  <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#EAF4FF] flex items-center justify-center">
-                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1677D2]" />
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
                   </span>
-                  <span className="text-[8px] sm:text-[10px] text-[#5B6B7D] leading-tight">
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
                     Trusted by
                     <br />
                     Healthcare Experts
@@ -604,7 +607,7 @@ case 'clinic_admin':
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.9, duration: 0.6 }}
-            className="text-center text-white text-[10px] sm:text-xs mt-2.5 sm:mt-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+            className="text-center text-white text-[10px] sm:text-xs md:text-sm mt-2.5 sm:mt-4 md:mt-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
           >
             &copy; {new Date().getFullYear()} Clinara. All rights reserved.
           </motion.p>
