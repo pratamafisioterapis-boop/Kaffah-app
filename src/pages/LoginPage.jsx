@@ -342,6 +342,12 @@ case 'clinic_admin':
         <link rel="icon" type="image/png" href={CLINARA_ICON_URL} />
         <link rel="apple-touch-icon" href={CLINARA_APP_ICON_URL} />
         <link rel="manifest" href="/manifest-clinara.json" />
+        {/* Preload the background photos so the browser starts fetching them
+            while the HTML is still parsing, instead of waiting for React to
+            mount and render the <img> tags — that gap was the visible delay
+            before the background appeared. */}
+        <link rel="preload" as="image" href={CLINARA_LOGIN_BG_MOBILE_URL} fetchpriority="high" media="(max-width: 639px)" />
+        <link rel="preload" as="image" href={CLINARA_LOGIN_BG_DESKTOP_URL} fetchpriority="high" media="(min-width: 640px)" />
       </Helmet>
 
       {/* Fixed + overflow-hidden rather than h-[100dvh]: dvh is computed
@@ -361,23 +367,28 @@ case 'clinic_admin':
       <div className="fixed inset-0 w-full flex [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:hidden flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
         {/* Background photo — portrait crop below `sm`, landscape from `sm`
             up; both already have the wave accent baked in. Slow Ken-Burns
-            drift (animate-bg-zoom) adds ambient motion behind the card. */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="absolute inset-0 z-0"
-        >
+            drift (animate-bg-zoom) adds ambient motion behind the card.
+            No fade-in wrapper and eager/high-priority loading (backed by
+            the <link rel="preload"> above) so the photo appears as soon as
+            it's decoded instead of waiting out a deliberate opacity
+            transition on top of the network fetch. */}
+        <div className="absolute inset-0 z-0">
           <img
             src={CLINARA_LOGIN_BG_MOBILE_URL}
             alt=""
             aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
             className="sm:hidden w-full h-full object-cover animate-bg-zoom"
           />
           <img
             src={CLINARA_LOGIN_BG_DESKTOP_URL}
             alt=""
             aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
             className="hidden sm:block w-full h-full object-cover animate-bg-zoom"
           />
           {/* Corner taglines sit in white text over a photo that's often
@@ -387,7 +398,7 @@ case 'clinic_admin':
               occupies, independent of what's in the photo there. */}
           <div className="absolute inset-x-0 top-0 h-28 md:h-56 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
           <div className="absolute inset-x-0 bottom-0 h-28 md:h-56 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
-        </motion.div>
+        </div>
 
         {/* Corner taglines echoing the brand voice. Layered textShadow
             (tight dark core + wider soft glow) reads as a subtle outline,
@@ -638,20 +649,21 @@ case 'clinic_admin':
           layout above instead of stretching this full-bleed layout into a
           mostly-empty column with an over-cropped photo. */}
       <div className="fixed inset-0 w-full hidden [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:flex overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
-        {/* Full-bleed background photo behind both the tagline and the card */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-          className="absolute inset-0"
-        >
+        {/* Full-bleed background photo behind both the tagline and the card.
+            No fade-in wrapper and eager/high-priority loading (backed by
+            the <link rel="preload"> in <Helmet>) so it appears as soon as
+            it's decoded rather than after a deliberate opacity transition. */}
+        <div className="absolute inset-0">
           <img
             src={CLINARA_LOGIN_BG_DESKTOP_URL}
             alt=""
             aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
             className="w-full h-full object-cover"
           />
-        </motion.div>
+        </div>
 
         <div className="relative z-10 w-full h-full flex items-center">
           {/* Left: brush-script tagline directly over the photo, left-aligned
