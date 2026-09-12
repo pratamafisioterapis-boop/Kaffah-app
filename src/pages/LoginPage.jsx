@@ -654,8 +654,13 @@ case 'clinic_admin':
         </motion.div>
 
         <div className="relative z-10 w-full h-full flex items-center">
-          {/* Left: brush-script tagline directly over the photo */}
-          <div className="flex-1 h-full flex flex-col justify-center pl-12 lg:pl-20 pr-8 min-w-0">
+          {/* Left: brush-script tagline directly over the photo, centered
+              in the available left space. White text (with a soft dark
+              glow for contrast, since it sits on whatever part of the
+              photo happens to be behind it) rather than the earlier dark
+              navy, which read fine over the bright wall but not reliably
+              across the rest of the photo. */}
+          <div className="flex-1 h-full flex flex-col items-center justify-center px-8 min-w-0 text-center">
             <motion.h2
               initial="hidden"
               animate="visible"
@@ -663,8 +668,8 @@ case 'clinic_admin':
                 hidden: {},
                 visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
               }}
-              className="font-bold text-[#0f2a4a] leading-[1.05] text-6xl lg:text-7xl"
-              style={{ fontFamily: "'Caveat', cursive" }}
+              className="font-bold text-white leading-[1.05] text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Caveat', cursive", textShadow: "0 2px 6px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.35)" }}
             >
               {['Care', 'Manage', 'Grow Together'].map((word) => (
                 <motion.span
@@ -683,7 +688,7 @@ case 'clinic_admin':
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 1.15, duration: 0.6, ease: "easeOut" }}
-              className="block h-1 w-40 lg:w-52 bg-[#0f2a4a]/70 rounded-full origin-left mt-5"
+              className="block h-1 w-40 lg:w-52 bg-white/80 rounded-full mt-5"
             />
           </div>
 
