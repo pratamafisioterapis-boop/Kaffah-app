@@ -189,7 +189,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
                            <TableCell>
                               <div className="flex items-center gap-2">
                                  {app.therapist?.avatar_url ? (
-                                    <img src={app.therapist.avatar_url} className="avatar-img w-6 h-6 rounded-full object-cover" alt="" />
+                                    <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" />
                                  ) : (
                                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
                                        <User className="w-3 h-3 text-slate-400" />
@@ -250,7 +250,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
                   <div className="flex items-center justify-between pt-1">
                      <div className="flex items-center gap-2">
                         {app.therapist?.avatar_url ? (
-                           <img src={app.therapist.avatar_url} className="avatar-img w-6 h-6 rounded-full object-cover" alt="" />
+                           <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" />
                         ) : (
                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
                               <User className="w-3 h-3 text-slate-400" />

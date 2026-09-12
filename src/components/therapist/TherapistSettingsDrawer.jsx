@@ -32,7 +32,7 @@ const TABS = [
 const Avatar = ({ url, name, size = 'lg' }) => {
   const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-10 h-10 text-base';
   return url ? (
-    <img src={url} alt={name} className={`avatar-img ${dim} rounded-full object-cover border-2 border-white shadow-md`} />
+    <img src={url} alt={name} className={`${dim} rounded-full object-cover border-2 border-white shadow-md`} />
   ) : (
     <div className={`${dim} rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold border-2 border-white shadow-md`}>
       {name?.charAt(0)?.toUpperCase() || 'T'}
@@ -685,7 +685,7 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
           <div className="px-5 pt-5 pb-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base border-2 border-slate-100">
               {therapist?.avatar_url
-                ? <img src={therapist.avatar_url} alt="" className="avatar-img w-full h-full object-cover" />
+                ? <img src={therapist.avatar_url} alt="" className="w-full h-full object-cover" />
                 : therapist?.name?.charAt(0)?.toUpperCase()
               }
             </div>
