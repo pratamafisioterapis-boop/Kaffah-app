@@ -179,6 +179,11 @@ class AuthErrorBoundary extends React.Component {
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
     try {
+      // Shareable public links (e.g. a patient's feedback link) should open
+      // straight to their content even when tapped from inside the
+      // installed PWA -- they're one-off pages opened by someone outside
+      // the clinic, not a login into the app.
+      if (window.location.pathname.startsWith('/feedback/')) return false;
       return window.matchMedia('(display-mode: standalone)').matches ||
              window.navigator.standalone === true;
     } catch {
