@@ -575,7 +575,7 @@ const getPremiumPastelBadge = (text) => {
                   });
                 }}
                 className={cn(
-                  'absolute left-0.5 sm:left-1 p-1 rounded-full',
+                  'hidden sm:block absolute left-0.5 sm:left-1 p-1 rounded-full',
                   activeFilter === 'today' ? 'hover:bg-white/20' : 'hover:bg-[#DCE8F5]'
                 )}
               >
@@ -595,7 +595,7 @@ const getPremiumPastelBadge = (text) => {
                     end: displayDateID(today)
                   });
                 }}
-                className="flex flex-col items-center justify-center gap-1 h-full px-4 sm:px-5 min-w-0"
+                className="flex flex-col items-center justify-center gap-1 h-full px-1 sm:px-5 min-w-0"
               >
                 <Calendar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2} />
                 <span
@@ -627,7 +627,7 @@ const getPremiumPastelBadge = (text) => {
                   });
                 }}
                 className={cn(
-                  'absolute right-0.5 sm:right-1 p-1 rounded-full',
+                  'hidden sm:block absolute right-0.5 sm:right-1 p-1 rounded-full',
                   activeFilter === 'today' ? 'hover:bg-white/20' : 'hover:bg-[#DCE8F5]'
                 )}
               >
