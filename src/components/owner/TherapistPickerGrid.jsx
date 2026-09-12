@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Search, User, Check } from 'lucide-react';
+import { Search, User, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const getInitials = (name) => {
@@ -8,8 +8,9 @@ const getInitials = (name) => {
 };
 
 /**
- * Shared therapist picker used by Jadwal & Cuti tabs. Only shows active
- * therapists (inactive ones have nothing to schedule/take leave for here).
+ * Shared therapist picker used by Jadwal, Jadwal Pengganti & Cuti tabs. Only
+ * shows active therapists (inactive ones have nothing to schedule/take leave
+ * for here).
  */
 const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'Belum ada terapis aktif.' }) => {
   const [search, setSearch] = useState('');
@@ -43,7 +44,7 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
           <p className="text-sm font-medium">{emptyLabel}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {activeTherapists.map((t) => {
             const selected = t.id === selectedId;
             return (
@@ -51,40 +52,47 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                 key={t.id}
                 onClick={() => onSelect(t)}
                 className={cn(
-                  "group flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all text-center",
+                  "group flex items-center gap-3 p-3 rounded-2xl border bg-white text-left transition-all",
                   selected
-                    ? "border-blue-500 bg-blue-50/70 shadow-sm ring-1 ring-blue-200"
-                    : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-md"
+                    ? "border-blue-400 bg-blue-50/60 shadow-sm ring-1 ring-blue-200"
+                    : "border-slate-200 hover:border-blue-200 hover:shadow-md"
                 )}
               >
-                <div className="relative shrink-0">
-                  <div className={cn(
-                    "w-14 h-14 rounded-full overflow-hidden ring-2 transition-all",
-                    selected ? "ring-blue-500" : "ring-white group-hover:ring-blue-100"
-                  )}>
-                    {t.avatar_url ? (
-                      <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className={cn(
-                        "w-full h-full flex items-center justify-center font-bold text-sm",
-                        selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
-                      )}>
-                        {getInitials(t.name)}
-                      </div>
-                    )}
-                  </div>
-                  {selected && (
-                    <span className="absolute -bottom-0.5 -right-0.5 bg-blue-600 text-white rounded-full p-0.5 shadow ring-2 ring-white">
-                      <Check className="w-2.5 h-2.5" />
-                    </span>
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm">
+                  {t.avatar_url ? (
+                    <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={cn(
+                      "w-full h-full flex items-center justify-center font-bold text-sm",
+                      selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                    )}>
+                      {getInitials(t.name)}
+                    </div>
                   )}
                 </div>
-                <span className={cn(
-                  "text-xs font-semibold leading-snug line-clamp-2",
-                  selected ? "text-blue-700" : "text-slate-700"
-                )}>
-                  {t.name}
-                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className={cn(
+                    "text-sm font-bold leading-snug truncate",
+                    selected ? "text-blue-700" : "text-slate-800"
+                  )}>
+                    {t.name}
+                  </p>
+                  {t.specialization && (
+                    <p className="text-xs text-slate-400 truncate">{t.specialization}</p>
+                  )}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={cn("w-1.5 h-1.5 rounded-full", t.is_active ? "bg-emerald-500" : "bg-slate-300")} />
+                    <span className="text-[11px] font-medium text-slate-400">
+                      {t.is_active ? 'Aktif' : 'Non Aktif'}
+                    </span>
+                  </div>
+                </div>
+
+                <ChevronRight className={cn(
+                  "w-4 h-4 shrink-0 transition-colors",
+                  selected ? "text-blue-500" : "text-slate-300 group-hover:text-slate-400"
+                )} />
               </button>
             );
           })}
