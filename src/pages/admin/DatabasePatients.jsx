@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Upload, RefreshCw } from 'lucide-react';
+import { Database, Plus, Upload } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -155,15 +155,7 @@ const AdminDatabasePatients = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-nowrap items-center justify-center gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
-              <Button
-                onClick={handleRefresh}
-                variant="outline"
-                className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 rounded-2xl border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-sm hover:bg-[#E4EFFA] active:scale-[0.97] transition-all duration-200 ease-in-out"
-              >
-                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.1} />
-                <span className="whitespace-nowrap">Refresh Data</span>
-              </Button>
+            <div className="flex flex-nowrap items-center justify-end gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
