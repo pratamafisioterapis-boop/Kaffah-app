@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Bell, X, User as UserIcon,
-  Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon
+  Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon,
+  Package as PackageIcon, FileText as FileTextIcon, Award
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,12 @@ function formatApptDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '-';
   return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function formatShortDate(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function flattenNavItems(items) {
@@ -81,6 +88,55 @@ function mapRecapLog(row) {
   };
 }
 
+// Ringkasan pasien: total sesi selesai, terapis paling sering menangani,
+// tanggal sesi terakhir, dan paket yang sedang aktif (kalau ada).
+async function loadPatientSummary(patientId) {
+  try {
+    const [{ count: totalSessions }, { data: completedRecaps }, { data: activePackage }] = await Promise.all([
+      supabase
+        .from('daily_recaps')
+        .select('id', { count: 'exact', head: true })
+        .eq('patient_id', patientId)
+        .eq('status', 'completed'),
+      supabase
+        .from('daily_recaps')
+        .select('recap_date, therapist:physiotherapists!therapist_id(name)')
+        .eq('patient_id', patientId)
+        .eq('status', 'completed')
+        .order('recap_date', { ascending: false })
+        .limit(50),
+      supabase
+        .from('package_tracking')
+        .select('package_name, sessions_used, total_sessions, status')
+        .eq('patient_id', patientId)
+        .in('status', ['aktif', 'diperpanjang', 'active'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const recaps = completedRecaps || [];
+    const therapistCounts = {};
+    recaps.forEach((r) => {
+      const name = r.therapist?.name;
+      if (!name) return;
+      therapistCounts[name] = (therapistCounts[name] || 0) + 1;
+    });
+    const favoriteTherapist = Object.entries(therapistCounts).sort((a, b) => b[1] - a[1])[0] || null;
+
+    return {
+      totalSessions: totalSessions || 0,
+      lastSessionDate: recaps[0]?.recap_date || null,
+      favoriteTherapistName: favoriteTherapist?.[0] || null,
+      favoriteTherapistCount: favoriteTherapist?.[1] || 0,
+      activePackage: activePackage || null,
+    };
+  } catch (err) {
+    console.error('Failed to load patient summary:', err);
+    return null;
+  }
+}
+
 const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
   const navigate = useNavigate();
   const searchRef = useRef(null);
@@ -90,7 +146,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   const [query, setQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState({ patients: [], appointments: [], menu: [] });
+  const [results, setResults] = useState({ patients: [], appointments: [], packages: [], medicalRecords: [], menu: [], summary: null });
 
   const [activities, setActivities] = useState([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
@@ -128,7 +184,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
-      setResults({ patients: [], appointments: [], menu: [] });
+      setResults({ patients: [], appointments: [], packages: [], medicalRecords: [], menu: [], summary: null });
       setIsSearching(false);
       return;
     }
@@ -140,15 +196,18 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           .filter((m) => m.label.toLowerCase().includes(q.toLowerCase()))
           .slice(0, 5);
 
+        // Match by name, no. RM, or no. HP so a receptionist can search however
+        // the patient gives their info.
         let patientQuery = supabase
           .from('patients')
-          .select('id, full_name, medical_record_number')
-          .ilike('full_name', `%${q}%`)
+          .select('id, full_name, medical_record_number, phone')
+          .or(`full_name.ilike.%${q}%,medical_record_number.ilike.%${q}%,phone.ilike.%${q}%`)
           .limit(5);
         if (clinicId) patientQuery = patientQuery.eq('clinic_id', clinicId);
         const { data: patientRows } = await patientQuery;
 
         const patientIds = (patientRows || []).map((p) => p.id);
+
         let apptQuery = supabase
           .from('appointments')
           .select('id, appointment_date, status, guest_name, patient_id, patients(full_name)')
@@ -158,12 +217,60 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         apptQuery = patientIds.length
           ? apptQuery.or(`patient_id.in.(${patientIds.join(',')}),guest_name.ilike.%${q}%`)
           : apptQuery.ilike('guest_name', `%${q}%`);
-        const { data: apptRows } = await apptQuery;
 
-        setResults({ patients: patientRows || [], appointments: apptRows || [], menu: menuMatches });
+        let packagePromise = Promise.resolve({ data: [] });
+        let medicalRecordPromise = Promise.resolve({ data: [] });
+        if (patientIds.length) {
+          packagePromise = supabase
+            .from('package_tracking')
+            .select('id, package_name, sessions_used, total_sessions, status, patient_id, patients(full_name)')
+            .in('patient_id', patientIds)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          medicalRecordPromise = supabase
+            .from('medical_records')
+            .select('id, patient_id, created_at, created_by, assessment, patients(full_name), daily_recap:daily_recaps(recap_date)')
+            .in('patient_id', patientIds)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        }
+
+        const [{ data: apptRows }, { data: packageRows }, { data: mrRows }] = await Promise.all([
+          apptQuery,
+          packagePromise,
+          medicalRecordPromise,
+        ]);
+
+        let medicalRecords = mrRows || [];
+        const therapistIds = [...new Set(medicalRecords.map((r) => r.created_by).filter(Boolean))];
+        if (therapistIds.length) {
+          const { data: therapists } = await supabase
+            .from('physiotherapists')
+            .select('user_id, name')
+            .in('user_id', therapistIds);
+          const nameByUserId = Object.fromEntries((therapists || []).map((t) => [t.user_id, t.name]));
+          medicalRecords = medicalRecords.map((r) => ({ ...r, therapist_name: nameByUserId[r.created_by] || null }));
+        }
+
+        // Only worth the extra round-trip when the search clearly points at one
+        // patient (e.g. by no. RM/HP) — not on every keystroke of a name search.
+        let summary = null;
+        if (patientIds.length === 1) {
+          summary = await loadPatientSummary(patientIds[0]);
+        }
+
+        setResults({
+          patients: patientRows || [],
+          appointments: apptRows || [],
+          packages: packageRows || [],
+          medicalRecords,
+          menu: menuMatches,
+          summary,
+        });
       } catch (err) {
         console.error('Search error:', err);
-        setResults({ patients: [], appointments: [], menu: [] });
+        setResults({ patients: [], appointments: [], packages: [], medicalRecords: [], menu: [], summary: null });
       } finally {
         setIsSearching(false);
       }
@@ -238,7 +345,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   };
 
   const hasQuery = query.trim().length >= 2;
-  const hasResults = results.patients.length || results.appointments.length || results.menu.length;
+  const hasResults = results.patients.length || results.appointments.length
+    || results.packages.length || results.medicalRecords.length || results.menu.length;
 
   return (
     <div className="sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 sm:pt-0 bg-[#F5F9FC]/95 backdrop-blur-sm">
@@ -278,6 +386,33 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                 <div className="p-4 text-sm text-[#5B6B7D]">Tidak ada hasil untuk &ldquo;{query}&rdquo;</div>
               ) : (
                 <div className="py-2">
+                  {results.summary && (
+                    <div className="mx-2 mb-2 p-3 rounded-lg bg-[#EAF4FF] border border-[#DCE8F2]">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1677D2] mb-1.5">Ringkasan Pasien</div>
+                      <div className="grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs text-[#102F52]">
+                        <span className="text-[#5B6B7D]">Total sesi selesai</span>
+                        <span className="font-medium text-right">{results.summary.totalSessions}x</span>
+                        <span className="text-[#5B6B7D]">Terapis favorit</span>
+                        <span className="font-medium text-right truncate flex items-center justify-end gap-1">
+                          {results.summary.favoriteTherapistName ? (
+                            <>
+                              <Award className="w-3 h-3 text-[#1677D2] flex-shrink-0" />
+                              {results.summary.favoriteTherapistName} ({results.summary.favoriteTherapistCount}x)
+                            </>
+                          ) : '-'}
+                        </span>
+                        <span className="text-[#5B6B7D]">Sesi terakhir</span>
+                        <span className="font-medium text-right">{results.summary.lastSessionDate ? formatShortDate(results.summary.lastSessionDate) : '-'}</span>
+                        <span className="text-[#5B6B7D]">Paket aktif</span>
+                        <span className="font-medium text-right truncate">
+                          {results.summary.activePackage
+                            ? `${results.summary.activePackage.package_name} (${results.summary.activePackage.sessions_used}/${results.summary.activePackage.total_sessions})`
+                            : '-'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {results.patients.length > 0 && (
                     <div className="px-2">
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Pasien</div>
@@ -314,6 +449,53 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                           <span className="min-w-0">
                             <span className="block text-sm font-medium text-[#102F52] truncate">{a.patients?.full_name || a.guest_name || 'Tamu'}</span>
                             <span className="block text-xs text-[#5B6B7D] truncate">{formatApptDate(a.appointment_date)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {results.packages.length > 0 && (
+                    <div className="px-2 mt-1">
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Rekap Paket</div>
+                      {results.packages.map((pkg) => (
+                        <button
+                          key={pkg.id}
+                          onClick={() => goTo(`/${role}/package-recaps`)}
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                        >
+                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                            <PackageIcon className="w-4 h-4" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-[#102F52] truncate">{pkg.package_name} · {pkg.patients?.full_name}</span>
+                            <span className="block text-xs text-[#5B6B7D] truncate">
+                              {pkg.sessions_used}/{pkg.total_sessions} sesi · {pkg.status || '-'}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {results.medicalRecords.length > 0 && (
+                    <div className="px-2 mt-1">
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Medical Record</div>
+                      {results.medicalRecords.map((mr) => (
+                        <button
+                          key={mr.id}
+                          onClick={() => goTo(`/${role}/medical-records`)}
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                        >
+                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                            <FileTextIcon className="w-4 h-4" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-[#102F52] truncate">{mr.patients?.full_name || 'Pasien'}</span>
+                            <span className="block text-xs text-[#5B6B7D] truncate">
+                              {formatShortDate(mr.daily_recap?.recap_date || mr.created_at)}
+                              {mr.therapist_name ? ` · ${mr.therapist_name}` : ''}
+                            </span>
                           </span>
                         </button>
                       ))}
