@@ -425,7 +425,7 @@ const RevenueOverview = ({ dateRange }) => {
         <div className="absolute top-6 left-1/3 w-40 h-40 bg-cyan-50 rounded-full blur-3xl pointer-events-none" />
 
         <CardContent className="p-4 md:p-8 pb-0 relative z-10">
-          <div className="relative mb-3 md:mb-5">
+          <div className="relative mb-2.5 md:mb-5">
             <button type="button" className="absolute top-0 right-0 text-slate-300 hover:text-slate-400 transition-colors" aria-label="More options">
               <MoreHorizontal className="w-5 h-5" />
             </button>
@@ -464,9 +464,9 @@ const RevenueOverview = ({ dateRange }) => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="rounded-2xl p-2.5 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60">
-              <div className="flex items-center gap-2.5 md:gap-3 mb-1.5 md:mb-2.5">
+          <div className="space-y-1.5 md:space-y-2">
+            <div className="rounded-2xl p-2 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60">
+              <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
                 <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                   <Coins className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-emerald-600" />
                 </div>
@@ -481,8 +481,8 @@ const RevenueOverview = ({ dateRange }) => {
               </div>
             </div>
 
-            <div className="rounded-2xl p-2.5 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50/60">
-              <div className="flex items-center gap-2.5 md:gap-3 mb-1.5 md:mb-2.5">
+            <div className="rounded-2xl p-2 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50/60">
+              <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
                 <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                   <PieChartIcon className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-amber-600" />
                 </div>
@@ -500,7 +500,7 @@ const RevenueOverview = ({ dateRange }) => {
         </CardContent>
 
         {/* Subtle soft-blue wave footer */}
-        <div className="relative mt-2.5 md:mt-4 pt-7 md:pt-9 overflow-hidden">
+        <div className="relative mt-1 md:mt-4 pt-0 md:pt-9 overflow-hidden">
           <svg viewBox="0 0 1440 110" className="w-full h-14 md:h-20 block" preserveAspectRatio="none">
             <path fill="#dbeafe" d="M0,58L80,53C160,48,320,38,480,42C640,47,800,67,960,72C1120,77,1280,67,1360,62L1440,57L1440,110L0,110Z" />
             <path fill="#bfdbfe" opacity="0.55" d="M0,82L120,78C240,73,480,64,720,66C960,68,1200,82,1320,88L1440,94L1440,110L0,110Z" />
