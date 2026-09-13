@@ -1,9 +1,9 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import SplashScreen from "@/components/SplashScreen";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { AuthProvider } from '@/contexts/SupabaseAuthContext';
+import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -180,8 +180,18 @@ class AuthErrorBoundary extends React.Component {
   }
 }
 
-function App() {
-  const [showSplash, setShowSplash] = useState(() => {
+// Splash only ever makes sense once we know whether there's someone to
+// greet — showing it before we know that meant it played on the login
+// screen too, for people who weren't signed in yet. It now waits for the
+// auth check to settle and fires exactly when a user becomes present:
+// immediately on cold launch with a restored session, or right after a
+// fresh sign-in — never while the login form itself is showing.
+const AppSplashGate = () => {
+  const { user, loading: authLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(false);
+  const prevUserIdRef = useRef(undefined);
+
+  const isPWA = useMemo(() => {
     try {
       // Shareable public links (e.g. a patient's feedback link) should open
       // straight to their content even when tapped from inside the
@@ -193,8 +203,23 @@ function App() {
     } catch {
       return false;
     }
-  });
+  }, []);
 
+  useEffect(() => {
+    if (!isPWA || authLoading) return;
+
+    const currentUserId = user?.id || null;
+    if (currentUserId && prevUserIdRef.current !== currentUserId) {
+      setShowSplash(true);
+    }
+    prevUserIdRef.current = currentUserId;
+  }, [isPWA, authLoading, user]);
+
+  if (!showSplash) return null;
+  return <SplashScreen onDone={() => setShowSplash(false)} />;
+};
+
+function App() {
   useEffect(() => {
     // App mounted successfully — clear the stale-chunk reload guards so a
     // future deploy can trigger one more auto-reload if needed, instead of
@@ -269,7 +294,7 @@ function App() {
           )}
           <Router>
             <DomainGuard />
-            {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+            <AppSplashGate />
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
