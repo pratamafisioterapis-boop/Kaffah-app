@@ -90,22 +90,22 @@ const PhysiotherapistManagementPage = () => {
       <Tabs defaultValue="list" className="w-full space-y-6">
 
         {/* MENU GRID */}
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 h-auto w-full bg-white p-3 rounded-[20px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">
+        <TabsList className="grid grid-cols-3 gap-1.5 sm:gap-2 h-auto w-full bg-white p-2.5 sm:p-3 rounded-[20px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">
           {MENU_ITEMS.map(({ value, label, icon: Icon, iconBg, iconColor }) => (
             <TabsTrigger
               key={value}
               value={value}
               className={cn(
-                'group relative flex flex-col items-center justify-center gap-1.5 rounded-[12px] border border-[#E1EAF2] bg-white px-2 py-3 text-center whitespace-normal transition-all min-h-[84px]',
+                'group relative flex flex-col items-center justify-center gap-1 rounded-[12px] border border-[#E1EAF2] bg-white px-1 py-2.5 text-center whitespace-normal transition-all min-h-[76px]',
                 'hover:border-[#C7DEF4] hover:bg-[#F8FBFE]',
                 'data-[state=active]:bg-[#EEF5FC] data-[state=active]:border-[#1683F4]/40 data-[state=active]:shadow-[0_2px_10px_rgba(22,131,244,0.12)]'
               )}
             >
-              <ChevronRight className="absolute top-2 right-2 w-3 h-3 shrink-0 text-[#8FA8BD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
-              <span className={cn('flex items-center justify-center w-8 h-8 shrink-0 rounded-[9px]', iconBg)}>
-                <Icon className={cn('w-4 h-4', iconColor)} strokeWidth={2} />
+              <ChevronRight className="absolute top-1.5 right-1.5 w-3 h-3 shrink-0 text-[#8FA8BD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
+              <span className={cn('flex items-center justify-center w-7 h-7 shrink-0 rounded-[9px]', iconBg)}>
+                <Icon className={cn('w-3.5 h-3.5', iconColor)} strokeWidth={2} />
               </span>
-              <span className="w-full text-[11px] font-semibold text-[#17324D] leading-tight break-words">
+              <span className="w-full text-[10px] sm:text-[11px] font-semibold text-[#17324D] leading-tight break-words px-0.5">
                 {label}
               </span>
             </TabsTrigger>
