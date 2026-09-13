@@ -694,9 +694,6 @@ const OwnerPackageRecap = () => {
           </div>
         </div>
         
-        {/* Top Pagination Controls */}
-        {filteredHistory.length > 0 && <PaginationControls />}
-
         {error ? (
             <div className="p-12 text-center text-red-500 bg-red-50">
                 <AlertCircle className="w-8 h-8 mx-auto mb-2"/>
