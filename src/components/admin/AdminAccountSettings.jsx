@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Mail, Lock, UserCircle, Upload } from 'lucide-react';
+import { Loader2, Mail, Lock, UserCircle, Upload, Bell } from 'lucide-react';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { prepareImageForUpload } from '@/lib/imageUpload';
+import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
 
 const AdminAccountSettings = () => {
   const { user, userDetails, clinicName } = useAuth();
@@ -127,6 +128,12 @@ const AdminAccountSettings = () => {
           <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-blue-600">
             {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
           </Button>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Bell className="w-4 h-4" /> Notifikasi Push</h3>
+          <p className="text-sm text-slate-500">Pilih jenis notifikasi push yang ingin Anda terima sebagai admin.</p>
+          <NotificationPreferencesCard userId={user?.id} items={NOTIFICATION_CATALOG.admin} />
         </div>
       </div>
 
