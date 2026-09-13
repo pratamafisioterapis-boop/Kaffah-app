@@ -5,7 +5,7 @@ import {
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
   FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
-  ChevronRight, Globe, LayoutTemplate
+  ChevronRight, Globe, LayoutTemplate, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -38,6 +38,7 @@ import DomainSettingsManager from '@/components/owner/DomainSettingsManager';
 import LandingPageManager from '@/components/owner/LandingPageManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
+import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -984,6 +985,7 @@ const SETTINGS_TAB_GROUPS = [
       { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
       { value: 'domain', icon: Globe, label: 'Domain Klinik' },
       { value: 'landing_page', icon: LayoutTemplate, label: 'Landing Page' },
+      { value: 'notifications', icon: Bell, label: 'Notifikasi' },
     ],
   },
   {
@@ -1023,7 +1025,7 @@ const SETTINGS_TAB_GROUPS = [
 ];
 
 const SettingsPage = () => {
-  const { userDetails } = useAuth();
+  const { userDetails, user } = useAuth();
   const [reloadGallery, setReloadGallery] = useState(0);
   const [disabledFeatures, setDisabledFeatures] = useState([]);
   const [openGroups, setOpenGroups] = useState(() => {
@@ -1151,6 +1153,13 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="landing_page">
             <LandingPageManager />
+          </TabsContent>
+          <TabsContent value="notifications">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4 max-w-xl">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Bell className="w-4 h-4" /> Notifikasi Push</h3>
+              <p className="text-sm text-slate-500">Pilih jenis notifikasi push yang ingin Anda terima sebagai owner.</p>
+              <NotificationPreferencesCard userId={user?.id} items={NOTIFICATION_CATALOG.owner} />
+            </div>
           </TabsContent>
           <TabsContent value="bank_accounts">
             <OwnerBankAccountManager />
