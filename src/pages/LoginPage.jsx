@@ -40,6 +40,19 @@ const cardItem = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
 
+// The role-lookup queries below (rotasi/pemilih admin & relawan/dpc checks)
+// go straight to Supabase with no timeout, unlike getUser/getPhysiotherapist
+// which are wrapped in safeQuery. A single stalled request among them used
+// to hang the "Verifying Access..." spinner forever even though sign-in had
+// already succeeded — a refresh would then drop straight into the dashboard
+// since the session was already valid. Each lookup now falls through to
+// "not found" after a few seconds instead of hanging indefinitely.
+const withRoleCheckTimeout = (promise, ms = 8000) =>
+  Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve({ data: null, error: null }), ms)),
+  ]);
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -102,11 +115,11 @@ const LoginPage = () => {
           }
 
           console.log("[LoginPage] Checking Rotasi Jadwal admin status...");
-          const { data: rotasiAdmin } = await supabase
+          const { data: rotasiAdmin } = await withRoleCheckTimeout(supabase
             .from('rotasi_admins')
             .select('user_id')
             .eq('user_id', user.id)
-            .maybeSingle();
+            .maybeSingle());
 
           if (rotasiAdmin) {
             console.log("[LoginPage] Rotasi admin detected, redirecting.");
@@ -115,11 +128,11 @@ const LoginPage = () => {
           }
 
           console.log("[LoginPage] Checking Pemilih admin status...");
-          const { data: pemilihAdminFallback } = await supabase
+          const { data: pemilihAdminFallback } = await withRoleCheckTimeout(supabase
             .from('pemilih_admins')
             .select('user_id')
             .eq('user_id', user.id)
-            .maybeSingle();
+            .maybeSingle());
 
           if (pemilihAdminFallback) {
             console.log("[LoginPage] Pemilih admin detected, redirecting.");
@@ -128,11 +141,11 @@ const LoginPage = () => {
           }
 
           console.log("[LoginPage] Checking Pemilih relawan status...");
-          const { data: relawanFallback } = await supabase
+          const { data: relawanFallback } = await withRoleCheckTimeout(supabase
             .from('pemilih_relawan')
             .select('user_id, is_active')
             .eq('user_id', user.id)
-            .maybeSingle();
+            .maybeSingle());
 
           if (relawanFallback?.is_active) {
             console.log("[LoginPage] Pemilih relawan detected, redirecting.");
@@ -141,11 +154,11 @@ const LoginPage = () => {
           }
 
           console.log("[LoginPage] Checking Pemilih DPC status...");
-          const { data: dpcFallback } = await supabase
+          const { data: dpcFallback } = await withRoleCheckTimeout(supabase
             .from('pemilih_dpc')
             .select('user_id, is_active')
             .eq('user_id', user.id)
-            .maybeSingle();
+            .maybeSingle());
 
           if (dpcFallback?.is_active) {
             console.log("[LoginPage] Pemilih DPC detected, redirecting.");
@@ -172,11 +185,11 @@ const LoginPage = () => {
         }
 
         console.log("[LoginPage] Checking Rotasi Jadwal admin status...");
-        const { data: rotasiAdmin } = await supabase
+        const { data: rotasiAdmin } = await withRoleCheckTimeout(supabase
           .from('rotasi_admins')
           .select('user_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .maybeSingle());
 
         if (rotasiAdmin) {
           console.log("[LoginPage] Rotasi admin detected, redirecting.");
@@ -185,11 +198,11 @@ const LoginPage = () => {
         }
 
         console.log("[LoginPage] Checking Pemilih admin status...");
-        const { data: pemilihAdmin } = await supabase
+        const { data: pemilihAdmin } = await withRoleCheckTimeout(supabase
           .from('pemilih_admins')
           .select('user_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .maybeSingle());
 
         if (pemilihAdmin) {
           console.log("[LoginPage] Pemilih admin detected, redirecting.");
@@ -198,11 +211,11 @@ const LoginPage = () => {
         }
 
         console.log("[LoginPage] Checking Pemilih relawan status...");
-        const { data: relawan } = await supabase
+        const { data: relawan } = await withRoleCheckTimeout(supabase
           .from('pemilih_relawan')
           .select('user_id, is_active')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .maybeSingle());
 
         if (relawan?.is_active) {
           console.log("[LoginPage] Pemilih relawan detected, redirecting.");
@@ -211,11 +224,11 @@ const LoginPage = () => {
         }
 
         console.log("[LoginPage] Checking Pemilih DPC status...");
-        const { data: dpc } = await supabase
+        const { data: dpc } = await withRoleCheckTimeout(supabase
           .from('pemilih_dpc')
           .select('user_id, is_active')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .maybeSingle());
 
         if (dpc?.is_active) {
           console.log("[LoginPage] Pemilih DPC detected, redirecting.");
@@ -288,12 +301,23 @@ case 'clinic_admin':
       }
     };
 
+    let watchdog;
     if (user && !authLoading) {
-      checkUserRoleAndRedirect();
+      // Safety net: even with the per-query timeouts above, don't let the
+      // spinner spin forever if something else unexpected stalls.
+      watchdog = setTimeout(() => {
+        if (mounted) {
+          console.error("[LoginPage] Role check timed out.");
+          setAuthError("Login memakan waktu terlalu lama. Silakan coba lagi.");
+          setIsRedirecting(false);
+        }
+      }, 20000);
+      checkUserRoleAndRedirect().finally(() => clearTimeout(watchdog));
     }
 
     return () => {
       mounted = false;
+      clearTimeout(watchdog);
     };
   }, [user, authLoading, navigate, signOut, location.state]);
   
