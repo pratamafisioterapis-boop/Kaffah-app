@@ -493,9 +493,9 @@ case 'clinic_admin':
               className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7 md:px-9 md:pt-9 md:pb-8"
             >
               <motion.div variants={cardItem} className="text-center mb-3 sm:mb-5 md:mb-6">
-                <h1 className="text-[#102F52] text-base sm:text-xl md:text-2xl font-bold">Selamat Datang Kembali</h1>
+                <h1 className="text-[#102F52] text-base sm:text-xl md:text-2xl font-bold">Welcome Back</h1>
                 <p className="text-[#5B6B7D] text-xs sm:text-sm md:text-base mt-1 md:mt-1.5">
-                  Masuk untuk mengakses dashboard Clinara
+                  Sign in to access your Clinara dashboard
                 </p>
               </motion.div>
 
@@ -745,9 +745,9 @@ case 'clinic_admin':
               </motion.div>
 
               <motion.div variants={cardItem} className="text-center mb-6">
-                <h1 className="text-[#102F52] text-2xl font-bold">Selamat Datang Kembali</h1>
+                <h1 className="text-[#102F52] text-2xl font-bold">Welcome Back</h1>
                 <p className="text-[#5B6B7D] text-sm mt-1.5">
-                  Masuk untuk mengakses dashboard Clinara
+                  Sign in to access your Clinara dashboard
                 </p>
               </motion.div>
 
