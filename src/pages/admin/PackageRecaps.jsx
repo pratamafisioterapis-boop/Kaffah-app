@@ -457,9 +457,6 @@ export const PackageRecapsContent = () => {
                 </div>
             </div>
             
-            {/* Top Pagination Controls */}
-            {filteredAndSortedPackages.length > 0 && <PaginationControls />}
-
             {/* CARD LAYOUT PWA */}
             <div className="sm:hidden space-y-3">
                     {isLoading ? (
