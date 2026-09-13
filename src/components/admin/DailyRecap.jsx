@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists } from '@/lib/api';
+import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -229,7 +229,7 @@ useEffect(() => {
     const fetchPaymentMethods = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       const { data } = await supabase
         .from('operational_options')

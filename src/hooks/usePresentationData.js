@@ -2,23 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format, eachDayOfInterval, isSameDay, parseISO, getDay, getHours } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
-import {
-  fetchTotalSessions,
-  fetchTotalPatients,
-  fetchTotalPackages,
-  fetchActiveTherapists,
-  getOwnerIncome,
-  getAdminIncome,
-  getPatientIncomeFromPackages,
-  getOwnerExpenditures,
-  getAdminExpenses,
-  fetchPatientMixForRange,
-  fetchCancellationRate,
-  getPackageRenewalRate,
-  getTotalOutstandingReceivables,
-  getClinicStaffQualitySummary,
-  getPeriodGrowth,
-} from '@/lib/api';
+import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchActiveTherapists, getOwnerIncome, getAdminIncome, getPatientIncomeFromPackages, getOwnerExpenditures, getAdminExpenses, fetchPatientMixForRange, fetchCancellationRate, getPackageRenewalRate, getTotalOutstandingReceivables, getClinicStaffQualitySummary, getPeriodGrowth, getCachedClinicId } from '@/lib/api';
 import { getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
 
 const WEEKDAY_LABELS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -28,7 +12,7 @@ const resolveClinicId = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
   return userRow?.clinic_id || null;
 };
 

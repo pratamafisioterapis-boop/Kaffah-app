@@ -1,5 +1,6 @@
 import { parse, format, isValid, differenceInYears } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getCachedClinicId } from '@/lib/api';
 
 /**
  * Generates the next Medical Record Number via the atomic DB-side RPC
@@ -13,7 +14,7 @@ export const generateMedicalRecordNumber = async () => {
     try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         if (!userRow?.clinic_id) {
             console.error("RM Generation: missing clinic_id for current user");

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Save, MessageCircle, Clock, History, Info, KeyRound, ShieldCheck, ShieldAlert, Eye, EyeOff } from 'lucide-react';
-import { getWaApiSettings, upsertWaApiSettings } from '@/lib/api';
+import { getWaApiSettings, upsertWaApiSettings, getCachedClinicId } from '@/lib/api';
 
 import WhatsAppMessagePreview from './WhatsAppMessagePreview';
 import WhatsAppScheduleConfig from './WhatsAppScheduleConfig';
@@ -320,7 +320,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
         setLoading(true);
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         const { data } = await supabase.from('wa_templates').select('*').eq('category', categoryId).eq('clinic_id', userRow?.clinic_id).maybeSingle();
         if (data) {
@@ -335,7 +335,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
 
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
 
   const payload = {
     category: categoryId,

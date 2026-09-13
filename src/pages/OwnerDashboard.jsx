@@ -45,22 +45,7 @@ import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 
 // API
-import { 
-  fetchTotalSessions, 
-  fetchTotalPatients, 
-  fetchTotalPackages, 
-  fetchTodaySessions,
-  fetchOngoingSessions,
-  fetchCompletedSessions,
-  fetchCancelledAppointments,
-  fetchActiveTherapists,
-  fetchEmptySlots,
-  fetchTodayNewPatients,
-  fetchTodayReturningPatients,
-  fetchAllTherapists,
-  fetchTodaySessionsByTherapist,
-  getClinicTherapistsSoapLockStatus
-} from '@/lib/api';
+import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId } from '@/lib/api';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
@@ -239,7 +224,7 @@ const today = new Intl.DateTimeFormat('en-CA', {
 
 const { data: sessionData } = await supabase.auth.getSession();
 const currentUserId = sessionData?.session?.user?.id;
-const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
 // 🔥 Gunakan RPC yang sama persis dengan halaman Appointments
 // agar konsisten (tabel therapist_schedules tidak memperhitungkan

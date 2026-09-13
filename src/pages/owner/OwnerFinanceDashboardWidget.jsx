@@ -4,6 +4,7 @@ import { format, startOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, RefreshCw, ArrowDownRight, Users, UserCheck, Zap, Plus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getCachedClinicId } from '@/lib/api';
 
 const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 const fmtShort = (n) => {
@@ -48,7 +49,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
       const clinicId = currentUserRow?.clinic_id;
 
       const [

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { getPhysiotherapists, getPatients, createAppointment, getUser } from '@/lib/api';
+import { getPhysiotherapists, getPatients, createAppointment, getUser, getCachedClinicId } from '@/lib/api';
 import { Calendar, AlertTriangle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -65,7 +65,7 @@ const AdminAppointmentScheduler = () => {
   const fetchSlots = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUserId = sessionData?.session?.user?.id;
-    const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+    const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
     const { data, error } = await supabase.rpc(
         'get_available_slots_with_status_by_date',

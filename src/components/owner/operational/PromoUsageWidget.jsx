@@ -5,6 +5,7 @@ import { Loader2, Gift, ChevronRight, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { getCachedClinicId } from '@/lib/api';
 
 const UNCATEGORIZED_LABEL = 'Tanpa Kategori';
 
@@ -34,7 +35,7 @@ const PromoUsageWidget = ({ dateRange }) => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         let query = supabase
           .from('daily_recaps')

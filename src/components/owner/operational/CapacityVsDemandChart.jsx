@@ -29,6 +29,7 @@ import {
 import { id } from 'date-fns/locale';
 import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { getCachedClinicId } from '@/lib/api';
 
 const CapacityVsDemandChart = () => {
   const [data, setData] = useState([]);
@@ -62,7 +63,7 @@ const CapacityVsDemandChart = () => {
 
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
       const currentClinicId = currentUserRow?.clinic_id;
 
       // Fetch all days in parallel (monthly view can span ~30 days)

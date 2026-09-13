@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { getCachedClinicId } from '@/lib/api';
 
 export const useMediaAssets = () => {
   const [assets, setAssets] = useState([]);
@@ -12,7 +13,7 @@ export const useMediaAssets = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       const { data, error } = await supabase
         .from('media_assets')
@@ -38,7 +39,7 @@ export const useMediaAssets = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       // Priority 1: Check for 'logo' category
       let { data } = await supabase

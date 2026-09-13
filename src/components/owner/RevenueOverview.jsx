@@ -14,11 +14,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
-import {
-  getOwnerIncome, getOwnerExpenditures, getAdminIncome,
-  getAdminExpenses, getPatientIncomeFromPackages, getServiceRates,
-  getBepFinancials
-} from '@/lib/api';
+import { getOwnerIncome, getOwnerExpenditures, getAdminIncome, getAdminExpenses, getPatientIncomeFromPackages, getServiceRates, getBepFinancials, getCachedClinicId } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
@@ -95,7 +91,7 @@ const RevenueOverview = ({ dateRange }) => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
       const clinicId = currentUserRow?.clinic_id;
 
       const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes, bepRes] = await Promise.all([
