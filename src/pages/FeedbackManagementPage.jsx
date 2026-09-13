@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Link2, Copy, Star, MapPin, Info } from 'lucide-react';
+import { Loader2, Link2, Copy, Star } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { PUBLIC_DOMAIN } from '@/lib/domainRouting';
 
@@ -27,10 +27,6 @@ export const FeedbackManagementContent = () => {
   const { userDetails } = useAuth();
   const { toast } = useToast();
 
-  const [clinic, setClinic] = useState(null);
-  const [placeIdInput, setPlaceIdInput] = useState('');
-  const [savingPlaceId, setSavingPlaceId] = useState(false);
-
   const [patientName, setPatientName] = useState('');
   const [generating, setGenerating] = useState(false);
 
@@ -43,37 +39,16 @@ export const FeedbackManagementContent = () => {
   const fetchData = useCallback(async () => {
     if (!clinicId) return;
     setLoading(true);
-    const [{ data: clinicData }, { data: linkData }, { data: responseData }] = await Promise.all([
-      supabase.from('clinics').select('id, google_place_id').eq('id', clinicId).single(),
+    const [{ data: linkData }, { data: responseData }] = await Promise.all([
       supabase.from('patient_feedback_links').select('*').eq('clinic_id', clinicId).order('created_at', { ascending: false }),
       supabase.from('patient_feedback_responses').select('*').eq('clinic_id', clinicId).order('created_at', { ascending: false }),
     ]);
-    if (clinicData) {
-      setClinic(clinicData);
-      setPlaceIdInput(clinicData.google_place_id || '');
-    }
     setLinks(linkData || []);
     setResponses(responseData || []);
     setLoading(false);
   }, [clinicId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleSavePlaceId = async () => {
-    if (!clinicId) return;
-    setSavingPlaceId(true);
-    const { error } = await supabase
-      .from('clinics')
-      .update({ google_place_id: placeIdInput.trim() || null })
-      .eq('id', clinicId);
-    setSavingPlaceId(false);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal menyimpan Google Place ID', description: error.message });
-    } else {
-      toast({ title: 'Google Place ID tersimpan' });
-      setClinic((c) => (c ? { ...c, google_place_id: placeIdInput.trim() || null } : c));
-    }
-  };
 
   const handleGenerateLink = async () => {
     if (!clinicId) return;
@@ -140,29 +115,6 @@ export const FeedbackManagementContent = () => {
           Buat link unik untuk seorang pasien mengisi feedback. Rating 4-5 bintang otomatis diarahkan
           ke halaman "Tulis Ulasan Google" klinik; rating rendah hanya tersimpan internal.
         </p>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2"><MapPin className="w-4 h-4" /> Google Place ID</h3>
-        <div className="flex items-start gap-2 bg-blue-50 text-blue-700 text-xs p-3 rounded-lg">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>
-            Wajib diisi supaya redirect ke Google Review berfungsi. Cari lewat{' '}
-            <a href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank" rel="noreferrer" className="underline">
-              Google Place ID Finder
-            </a>{' '}
-            menggunakan nama & alamat klinik.
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <Input placeholder="ChIJ..." value={placeIdInput} onChange={(e) => setPlaceIdInput(e.target.value)} />
-          <Button onClick={handleSavePlaceId} disabled={savingPlaceId} className="bg-blue-600 shrink-0">
-            {savingPlaceId && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
-          </Button>
-        </div>
-        {!clinic?.google_place_id && (
-          <p className="text-xs text-amber-600">Belum diisi — feedback rating tinggi belum bisa diarahkan ke Google Review.</p>
-        )}
       </div>
 
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
