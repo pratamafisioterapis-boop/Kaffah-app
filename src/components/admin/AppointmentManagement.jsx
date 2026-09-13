@@ -9,17 +9,21 @@ import {
 } from '@/lib/api';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import AppointmentDetailModal from './AppointmentDetailModal'; 
+import AppointmentDetailModal from './AppointmentDetailModal';
 import ListViewAppointments from './ListViewAppointments';
+import { getCachedData, setCachedData } from '@/lib/dataCache';
 
 const AppointmentManagement = () => {
   const { toast } = useToast();
   const { role } = useAuth();
-  
-  const [loading, setLoading] = useState(true);
-  const [appointments, setAppointments] = useState([]);
-  const [therapists, setTherapists] = useState([]);
-  const [patients, setPatients] = useState([]);
+
+  const initialCacheKey = `appointments:${startOfMonth(new Date()).toISOString()}`;
+  const initialCache = getCachedData(initialCacheKey);
+
+  const [loading, setLoading] = useState(!initialCache);
+  const [appointments, setAppointments] = useState(initialCache?.appointments || []);
+  const [therapists, setTherapists] = useState(initialCache?.therapists || []);
+  const [patients, setPatients] = useState(initialCache?.patients || []);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Modal State
@@ -28,27 +32,48 @@ const AppointmentManagement = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
 
   const fetchData = async () => {
-    setLoading(true);
-    try {
-      const start = startOfMonth(currentDate).toISOString();
-      const end = endOfMonth(currentDate).toISOString();
+    const start = startOfMonth(currentDate).toISOString();
+    const end = endOfMonth(currentDate).toISOString();
+    const cacheKey = `appointments:${start}`;
 
+    // Show the last known data for this month instantly (no spinner) while
+    // fresh data loads in the background, instead of blanking the screen
+    // every time this page remounts after a menu switch.
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      setAppointments(cached.appointments);
+      setTherapists(cached.therapists);
+      setPatients(cached.patients);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    try {
       const [apptRes, therapistRes, patientRes] = await Promise.all([
         getAppointments({ startDate: start, endDate: end }),
         getPhysiotherapists(),
         getPatients()
       ]);
 
-      if (apptRes.data) setAppointments(apptRes.data);
-      if (therapistRes.data) setTherapists(therapistRes.data);
-      if (patientRes.data) setPatients(patientRes.data);
-      
+      const fresh = {
+        appointments: apptRes.data || cached?.appointments || [],
+        therapists: therapistRes.data || cached?.therapists || [],
+        patients: patientRes.data || cached?.patients || []
+      };
+
+      if (apptRes.data) setAppointments(fresh.appointments);
+      if (therapistRes.data) setTherapists(fresh.therapists);
+      if (patientRes.data) setPatients(fresh.patients);
+      setCachedData(cacheKey, fresh);
+
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({ variant: "destructive", title: "Error loading data" });
+      if (!cached) toast({ variant: "destructive", title: "Error loading data" });
     } finally {
       setLoading(false);
     }

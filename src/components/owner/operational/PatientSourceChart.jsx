@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { getCachedClinicId } from '@/lib/api';
 
 const COLOR_PALETTE = [
   { color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
@@ -37,7 +38,7 @@ const PatientSourceChart = ({ dateRange }) => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         let query = supabase
           .from('daily_recaps')

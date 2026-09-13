@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Activity, Package, Users, Gift, RefreshCcw, Stethoscope } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
+import { getCachedClinicId } from '@/lib/api';
 
 const MetricCard = ({ title, value, icon: Icon, colorClass, loading }) => (
   <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-slate-200">
@@ -47,7 +48,7 @@ const AdminDashboardMetrics = ({ dateRange }) => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       // 1. Fetch Daily Recaps
       const { data: recaps, error: recapsError } = await supabase

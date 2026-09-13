@@ -7,6 +7,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'da
 import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
+import { getCachedClinicId } from '@/lib/api';
 
 const TrendSessionChart = () => {
   const [data, setData] = useState([]);
@@ -27,7 +28,7 @@ const TrendSessionChart = () => {
 
         const { data: sessionData } = await supabase.auth.getSession();
         const currentUserId = sessionData?.session?.user?.id;
-        const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+        const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
         // Fetch daily recaps for this range
         const { data: recaps, error: fetchError } = await supabase

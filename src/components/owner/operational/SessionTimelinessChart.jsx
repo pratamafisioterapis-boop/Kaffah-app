@@ -6,6 +6,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { getCachedClinicId } from '@/lib/api';
 
 const SessionTimelinessChart = ({ dateRange }) => {
   const [chartData, setChartData] = useState([]);
@@ -27,7 +28,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
       // FIX: Use explicit foreign key to avoid ambiguity (PGRST201)
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
       const { data: recaps, error: fetchError } = await supabase
         .from('daily_recaps')

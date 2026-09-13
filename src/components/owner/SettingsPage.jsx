@@ -10,16 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
-import { 
-  getPatientInfoOptions, 
-  createPatientInfoOption, 
-  updatePatientInfoOption, 
-  deletePatientInfoOption,
-  getOperationalOptions, 
-  createOperationalOption, 
-  updateOperationalOption, 
-  deleteOperationalOption
-} from '@/lib/api';
+import { getPatientInfoOptions, createPatientInfoOption, updatePatientInfoOption, deletePatientInfoOption, getOperationalOptions, createOperationalOption, updateOperationalOption, deleteOperationalOption, getCachedClinicId } from '@/lib/api';
 import { Palette, Wallet } from 'lucide-react';
 import DesignStyleManager from '@/components/owner/DesignStyleManager';
 import ServiceRateManager from '@/components/owner/ServiceRateManager';
@@ -75,7 +66,7 @@ const DiscountTypeManager = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       const { data, error } = await supabase
         .from('operational_options')
@@ -149,7 +140,7 @@ const DiscountTypeManager = () => {
 
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         const { data, error } = await supabase
           .from('operational_options')

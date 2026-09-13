@@ -1,6 +1,7 @@
 import { differenceInYears, parseISO, isValid, format, parse } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getCachedClinicId } from '@/lib/api';
 
 /**
  * Calculates age from birth date
@@ -160,7 +161,7 @@ export const generateNextRM = async () => {
     try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
 
         if (!userRow?.clinic_id) {
             console.error("RM Generation: missing clinic_id for current user");

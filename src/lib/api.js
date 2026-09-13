@@ -44,6 +44,38 @@ const fetchAllRows = async (buildQuery) => {
   return { data: allRows, error: null };
 };
 
+// Every data-fetching function below needs the caller's clinic_id, which
+// previously meant a fresh `users` table round trip on *every single* call
+// (100+ call sites). clinic_id never changes for a signed-in session, so we
+// cache it per userId and invalidate on sign-out/user-switch.
+let clinicIdCache = { userId: null, clinicId: null, promise: null };
+
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+    clinicIdCache = { userId: null, clinicId: null, promise: null };
+  }
+});
+
+export const getCachedClinicId = async (userId) => {
+  if (!userId) return null;
+  if (clinicIdCache.userId === userId && (clinicIdCache.clinicId || clinicIdCache.promise)) {
+    return clinicIdCache.promise ? clinicIdCache.promise : clinicIdCache.clinicId;
+  }
+
+  const promise = supabase
+    .from('users')
+    .select('clinic_id')
+    .eq('id', userId)
+    .single()
+    .then(({ data }) => {
+      clinicIdCache = { userId, clinicId: data?.clinic_id ?? null, promise: null };
+      return clinicIdCache.clinicId;
+    });
+
+  clinicIdCache = { userId, clinicId: null, promise };
+  return promise;
+};
+
 const getTodayWITA = () => {
   const now = new Date();
 
@@ -102,7 +134,7 @@ const enrichRecapsWithOptions = async (recaps) => {
   // dikenal" even though the option exists.
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
 
   const { data: options } = await supabase
     .from('operational_options')
@@ -321,7 +353,7 @@ export const getFollowUpQueue = async (status = null, type = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
@@ -605,7 +637,7 @@ export const getAvailableSlots = async (date, therapistId, clinicIdOverride = nu
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       if (userId) {
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
         clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
       }
     }
@@ -635,7 +667,7 @@ export const getAppointments = async (filters = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('appointments')
@@ -827,7 +859,7 @@ export const getPhysiotherapists = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase.from('physiotherapists').select('*').eq('clinic_id', userRow?.clinic_id);
   }, 'getPhysiotherapists', { retry: true });
@@ -845,7 +877,7 @@ export const getActivePhysiotherapists = async (filters = {}) => {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       if (userId) {
-        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        const userRow = { clinic_id: await getCachedClinicId(userId) };
         clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
       }
     }
@@ -918,7 +950,7 @@ export const getPatients = async (searchTerm = '') => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('patients')
@@ -1070,7 +1102,7 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+      const userRow = { clinic_id: await getCachedClinicId(userId) };
 
       let query = supabase
         .from('operational_options')
@@ -1114,7 +1146,7 @@ export const getDiscountTypeOptions = async (term) => getOperationalOptionsByCat
 export const getAllRecapOptions = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
 
   const { data, error } = await supabase
     .from('operational_options')
@@ -1467,7 +1499,7 @@ export const getBankAccounts = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_accounts')
@@ -1484,7 +1516,7 @@ export const getBankAccountsWithBalance = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_account_balances')
@@ -1498,7 +1530,7 @@ export const createBankAccount = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_accounts')
@@ -1512,7 +1544,7 @@ export const updateBankAccount = async (id, payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_accounts')
@@ -1528,7 +1560,7 @@ export const deleteBankAccount = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { error } = await supabase
       .from('bank_accounts')
@@ -1549,7 +1581,7 @@ export const getBankAccountFees = async (bankAccountId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('bank_account_fees')
@@ -1567,7 +1599,7 @@ export const createBankAccountFee = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_account_fees')
@@ -1618,7 +1650,7 @@ export const getBankAccountAdjustments = async (bankAccountId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('bank_account_adjustments')
@@ -1637,7 +1669,7 @@ export const createBankAccountAdjustment = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_account_adjustments')
@@ -1670,7 +1702,7 @@ export const getBankTransfers = async (bankAccountId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('bank_transfers')
@@ -1697,7 +1729,7 @@ export const createBankTransfer = async (payload) => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('bank_transfers')
@@ -1730,7 +1762,7 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     // 🔥 EXPENSE
     let expenseQuery = supabase
@@ -1790,7 +1822,7 @@ export const getAccountingCategories = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('accounting_categories')
@@ -1803,7 +1835,7 @@ export const getAccountingSubcategories = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('accounting_subcategories')
@@ -1823,7 +1855,7 @@ export const createAccountingCategory = async (category_name, type = 'expense') 
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('accounting_categories')
@@ -1836,7 +1868,7 @@ export const createAccountingSubcategory = async (subcategory_name, category_id)
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     return await supabase
       .from('accounting_subcategories')
@@ -1933,7 +1965,7 @@ export const autoPostFixedCosts = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) return { data: [], error: null };
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
     const clinicId = userRow?.clinic_id;
     if (!clinicId) return { data: [], error: null };
 
@@ -2016,7 +2048,7 @@ export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const buildQuery = () => {
       let query = supabase
@@ -2054,7 +2086,7 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const buildQuery = () => {
       let query = supabase
@@ -2092,7 +2124,7 @@ export const getAdminExpenses = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const buildQuery = () => {
       let query = supabase
@@ -2147,7 +2179,7 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const buildQuery = () => {
       let query = supabase
@@ -2208,7 +2240,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const buildQuery = () => {
       let query = supabase
@@ -2349,7 +2381,7 @@ export const getOwnerReceivables = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('owner_receivables')
@@ -2405,7 +2437,7 @@ export const createOwnerExpenditure = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_expenditures')
@@ -2453,7 +2485,7 @@ export const createOwnerIncome = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_income')
@@ -2505,7 +2537,7 @@ export const getOwnerInitialCapital = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('owner_initial_capital')
@@ -2535,7 +2567,7 @@ export const createOwnerInitialCapital = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_initial_capital')
@@ -2572,7 +2604,7 @@ export const updateOwnerInitialCapital = async (id, payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_initial_capital')
@@ -2609,7 +2641,7 @@ export const deleteOwnerInitialCapital = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { error } = await supabase
       .from('owner_initial_capital')
@@ -2625,7 +2657,7 @@ export const createOwnerReceivable = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_receivables')
@@ -2682,7 +2714,7 @@ export const getExpenses = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_expenditures')
@@ -2708,7 +2740,7 @@ export const createExpense = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_expenditures')
@@ -2737,7 +2769,7 @@ export const getAdditionalIncome = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_income')
@@ -2763,7 +2795,7 @@ export const createAdditionalIncome = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_income')
@@ -2792,7 +2824,7 @@ export const getReceivables = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_receivables')
@@ -2812,7 +2844,7 @@ export const createReceivable = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('owner_receivables')
@@ -2925,7 +2957,7 @@ export const createAdminExpense = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('admin_expenses')
@@ -2964,7 +2996,7 @@ export const getInventoryItems = async ({ activeOnly = true } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('inventory_items')
@@ -2994,7 +3026,7 @@ export const createInventoryItem = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const quantity = Number(payload.quantity) || 0;
     const totalPrice = Number(payload.total_price) || 0;
@@ -3036,7 +3068,7 @@ export const updateInventoryItem = async (id, payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('inventory_items')
@@ -3062,7 +3094,7 @@ export const deleteInventoryItem = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { error } = await supabase.from('inventory_items').delete().eq('id', id).eq('clinic_id', userRow?.clinic_id);
     if (error) return { error };
@@ -3212,7 +3244,7 @@ export const createAdminIncome = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('admin_income')
@@ -3440,7 +3472,7 @@ export const fetchTotalPackages = async (startDate, endDate) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('daily_recaps')
@@ -3551,7 +3583,7 @@ export const getMedicalRecordsWithPatients = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
@@ -3795,7 +3827,7 @@ export const getMissingRecaps = async ({
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('appointments')
@@ -4156,7 +4188,7 @@ export const getPatientById = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase.from('patients').select('*').eq('id', id).eq('clinic_id', userRow?.clinic_id).single();
     if (error) return { error };
@@ -4169,7 +4201,7 @@ export const getPatientByPhone = async (phone) => {
     if (!phone) return { data: null, error: null };
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('patients')
@@ -4270,7 +4302,7 @@ export const fetchTotalPatients = async (startDate, endDate) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('daily_recaps')
@@ -4398,7 +4430,7 @@ const getCurrentClinicId = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
   return userRow?.clinic_id || null;
 };
 
@@ -5434,7 +5466,7 @@ export const getFollowUpQueueFiltered = async ({
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     if (!userRow?.clinic_id) {
       return { data: [], success: true, error: null };
@@ -5580,7 +5612,7 @@ export const getOperationalOptions = async (category) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('operational_options')
@@ -5596,7 +5628,7 @@ export const getAdditionalInfoOptions = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('patient_info_options')
@@ -5613,7 +5645,7 @@ export const getPatientInfoOptions = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('patient_info_options')
@@ -5629,7 +5661,7 @@ export const createPatientInfoOption = async (label) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('patient_info_options')
@@ -5675,7 +5707,7 @@ export const createOperationalOption = async (category, label, extra = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const payload = {
       category,
@@ -6484,7 +6516,7 @@ export const getAllTherapistTargets = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('therapist_targets')
@@ -6687,7 +6719,7 @@ export const fetchTotalSessions = async (startDate, endDate) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('daily_recaps')
@@ -6718,7 +6750,7 @@ export const fetchTodaySessions = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('appointments')
@@ -6743,7 +6775,7 @@ export const fetchOngoingSessions = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('daily_recaps')
@@ -6767,7 +6799,7 @@ export const fetchCompletedSessions = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('daily_recaps')
@@ -6791,7 +6823,7 @@ export const fetchCancelledAppointments = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('appointments')
@@ -6816,7 +6848,7 @@ export const fetchTodayNewPatients = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('appointments')
@@ -6842,7 +6874,7 @@ export const fetchTodayReturningPatients = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { count, error } = await supabase
       .from('appointments')
@@ -6868,7 +6900,7 @@ export const fetchEmptySlots = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase.rpc(
       'get_available_slots_with_status_by_date',
@@ -6897,7 +6929,7 @@ export const fetchTodaySessionsByTherapist = async () => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('appointments')
@@ -6967,7 +6999,7 @@ export const getAdminChecklistItemsSetup = async (assignedAdminId = null) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let query = supabase
       .from('admin_checklist_items')
@@ -6987,7 +7019,7 @@ export const createAdminChecklistItem = async (title, description = '', assigned
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let existingQuery = supabase
       .from('admin_checklist_items')
@@ -7067,7 +7099,7 @@ export const getTodayAdminChecklist = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
@@ -7107,7 +7139,7 @@ export const toggleAdminChecklistItem = async (itemId, isDone) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
@@ -7131,7 +7163,7 @@ export const updateAdminChecklistNote = async (itemId, note) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
 
@@ -7154,7 +7186,7 @@ export const getAdminChecklistHistory = async (startDate, endDate, assignedAdmin
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     let itemsQuery = supabase
       .from('admin_checklist_items')
@@ -7229,7 +7261,7 @@ export const getClinicDetails = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
     if (!userRow?.clinic_id) return { data: null, error: null };
 
     const { data, error } = await supabase
@@ -7246,7 +7278,7 @@ export const createClinicalDocument = async (payload) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
 
     const { data, error } = await supabase
       .from('clinical_documents')
@@ -7732,7 +7764,7 @@ export const getBepFinancials = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) return { data: null, error: null };
-    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
     const clinicId = userRow?.clinic_id;
     if (!clinicId) return { data: null, error: null };
 
@@ -7992,7 +8024,7 @@ const resolveCurrentClinicId = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
   return userRow?.clinic_id || null;
 };
 
@@ -8261,7 +8293,7 @@ const getMyClinicIdForAttendance = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return { clinicId: null, userId: null };
-  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  const userRow = { clinic_id: await getCachedClinicId(userId) };
   return { clinicId: userRow?.clinic_id || null, userId };
 };
 

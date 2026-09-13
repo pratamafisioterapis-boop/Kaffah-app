@@ -4,6 +4,7 @@ import { Calendar, XCircle, Clock, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { startOfDay, endOfDay } from 'date-fns';
+import { getCachedClinicId } from '@/lib/api';
 
 const OverviewCard = ({ title, value, icon: Icon, colorClass, loading }) => (
   <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-slate-200">
@@ -46,7 +47,7 @@ const TodaysOverviewWidget = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
       // 1. Total Appointments Today
       const { count: appointmentCount, error: appError } = await supabase

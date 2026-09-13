@@ -21,7 +21,7 @@ import {
     isValidDateFormat,
     autoFillNickname
 } from '@/lib/patientFormHelpers';
-import { deletePatient } from '@/lib/api';
+import { deletePatient, getCachedClinicId } from '@/lib/api';
 
 const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
     const { toast } = useToast();
@@ -50,7 +50,7 @@ const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
         const fetchOptions = async () => {
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData?.session?.user?.id;
-            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+            const userRow = { clinic_id: await getCachedClinicId(userId) };
 
             const { data } = await supabase
                 .from('patient_info_options')

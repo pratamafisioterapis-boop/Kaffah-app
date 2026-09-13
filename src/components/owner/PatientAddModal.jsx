@@ -13,14 +13,15 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { 
-    generateMedicalRecordNumber, 
-    autoFillNickname, 
-    parseDateFromDisplay, 
-    validatePatientForm, 
+import {
+    generateMedicalRecordNumber,
+    autoFillNickname,
+    parseDateFromDisplay,
+    validatePatientForm,
     normalizePhone,
     isValidDateFormat
 } from '@/lib/patientFormHelpers';
+import { getCachedClinicId } from '@/lib/api';
 
 const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
     const { toast } = useToast();
@@ -49,7 +50,7 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
         const fetchOptions = async () => {
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData?.session?.user?.id;
-            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+            const userRow = { clinic_id: await getCachedClinicId(userId) };
 
             const { data } = await supabase
                 .from('patient_info_options')

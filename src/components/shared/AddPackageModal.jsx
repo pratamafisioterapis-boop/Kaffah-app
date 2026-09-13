@@ -7,6 +7,7 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { getCachedClinicId } from '@/lib/api';
 
 const AddPackageModal = ({ isOpen, onClose, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +53,7 @@ const AddPackageModal = ({ isOpen, onClose, onSuccess }) => {
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const currentUserId = sessionData?.session?.user?.id;
-            const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+            const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
             const clinicId = currentUserRow?.clinic_id;
 
             // Fetch Patients

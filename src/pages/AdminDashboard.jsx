@@ -35,6 +35,7 @@ import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapi
 import AdminAccountSettings from '@/components/admin/AdminAccountSettings';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
+import { getCachedClinicId } from '@/lib/api';
 const useNow = () => {
   const [now, setNow] = React.useState(new Date());
   React.useEffect(() => {
@@ -97,7 +98,7 @@ const today = new Date().toISOString().split('T')[0];
 
 const { data: sessionData } = await supabase.auth.getSession();
 const currentUserId = sessionData?.session?.user?.id;
-const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
 const { data: slotsData, error: slotError } = await supabase
   .rpc('get_available_slots_with_status_by_date', {

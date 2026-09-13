@@ -11,6 +11,7 @@ import { Save, Plus, Trash2, Edit2, CheckCircle2, AlertCircle, MessageSquare, Cl
 import { supabase } from '@/lib/customSupabaseClient';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { getCachedClinicId } from '@/lib/api';
 
 const WhatsAppSettings = () => {
     const [templates, setTemplates] = useState([]);
@@ -37,7 +38,7 @@ const WhatsAppSettings = () => {
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData?.session?.user?.id;
-            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+            const userRow = { clinic_id: await getCachedClinicId(userId) };
 
             const { data, error } = await supabase.from('wa_templates').select('*').eq('clinic_id', userRow?.clinic_id).order('category');
             if (error) throw error;
@@ -51,7 +52,7 @@ const WhatsAppSettings = () => {
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData?.session?.user?.id;
-            const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+            const userRow = { clinic_id: await getCachedClinicId(userId) };
 
             const { data, error } = await supabase.from('wa_schedule_config').select('*').eq('clinic_id', userRow?.clinic_id);
             if (error) throw error;

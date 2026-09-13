@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { getAllTherapistTargets, getDailyRecaps } from '@/lib/api';
+import { getAllTherapistTargets, getDailyRecaps, getCachedClinicId } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from 'date-fns';
 
@@ -136,7 +136,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       // Fetch langsung dari supabase agar bisa select field spesifik
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
+      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
       // Paginate explicitly so we never silently drop rows if a clinic/period
       // ends up with more than one page (PostgREST default cap is 1000 rows).
