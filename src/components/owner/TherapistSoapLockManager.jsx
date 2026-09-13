@@ -29,6 +29,7 @@ const RULE_SOURCE_LABEL = {
   exempt: 'Dikecualikan',
   custom: 'Aturan Khusus',
   clinic: 'Aturan Klinik',
+  age: 'SOAP Menunggak Lama',
   manual_unlock: 'Dibuka Manual',
   disabled: 'Aturan Nonaktif',
   not_found: '-'
@@ -106,6 +107,8 @@ const TherapistSoapLockManager = () => {
       soap_lock_exempt: !!therapist.soap_lock_exempt,
       soap_lock_custom_enabled: !!therapist.soap_lock_custom_enabled,
       soap_lock_threshold_count: therapist.soap_lock_threshold_count ?? settings.threshold_count,
+      soap_lock_age_rule_enabled: !!therapist.soap_lock_age_rule_enabled,
+      soap_lock_max_age_days: therapist.soap_lock_max_age_days ?? 4,
       soap_lock_manual_unlock: !!therapist.soap_lock_manual_unlock,
       soap_lock_manual_unlock_note: therapist.soap_lock_manual_unlock_note || ''
     });
@@ -123,7 +126,9 @@ const TherapistSoapLockManager = () => {
     const { error: overrideError } = await updateTherapistSoapLockOverride(editTherapist.id, {
       soap_lock_exempt: editForm.soap_lock_exempt,
       soap_lock_custom_enabled: editForm.soap_lock_custom_enabled,
-      soap_lock_threshold_count: editForm.soap_lock_custom_enabled ? (parseInt(editForm.soap_lock_threshold_count) || 5) : null
+      soap_lock_threshold_count: editForm.soap_lock_custom_enabled ? (parseInt(editForm.soap_lock_threshold_count) || 5) : null,
+      soap_lock_age_rule_enabled: editForm.soap_lock_age_rule_enabled,
+      soap_lock_max_age_days: parseInt(editForm.soap_lock_max_age_days) || 4
     });
 
     const { error: unlockError } = await setTherapistManualUnlock(
@@ -273,6 +278,20 @@ const TherapistSoapLockManager = () => {
                   </span>
                 </div>
 
+                {status?.age_rule_enabled && (
+                  <div className={cn(
+                    "flex items-center gap-2 text-xs rounded-lg px-3 py-2 border",
+                    status?.age_rule_triggered ? "text-red-700 bg-red-50 border-red-100" : "text-slate-500 bg-slate-50 border-slate-100"
+                  )}>
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      {status?.oldest_unfilled_age_days != null
+                        ? <>SOAP tertua menunggak <strong>{status.oldest_unfilled_age_days} hari</strong> / maks {status.max_age_days} hari</>
+                        : <>Aturan usia aktif, maks {status.max_age_days} hari</>}
+                    </span>
+                  </div>
+                )}
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -332,6 +351,35 @@ const TherapistSoapLockManager = () => {
                       min={1}
                       value={editForm.soap_lock_threshold_count}
                       onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_threshold_count: e.target.value }))}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className={cn("p-3 rounded-lg border space-y-3", editForm.soap_lock_exempt ? "bg-slate-50 opacity-50 pointer-events-none" : "bg-white")}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">Kunci jika SOAP menunggak lama</p>
+                    <p className="text-[11px] text-slate-500">
+                      Kunci otomatis begitu ada SOAP yang belum diisi lebih dari X hari, berapa pun total SOAP kosongnya.
+                      Untuk terapis yang sengaja menahan SOAP kosong tetap di bawah ambang.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={editForm.soap_lock_age_rule_enabled}
+                    onCheckedChange={(c) => setEditForm(prev => ({ ...prev, soap_lock_age_rule_enabled: c }))}
+                  />
+                </div>
+
+                {editForm.soap_lock_age_rule_enabled && (
+                  <div className="space-y-1 pt-1">
+                    <Label className="text-[11px] text-slate-500">Maksimal SOAP menunggak (hari)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editForm.soap_lock_max_age_days}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_max_age_days: e.target.value }))}
+                      className="w-24"
                     />
                   </div>
                 )}

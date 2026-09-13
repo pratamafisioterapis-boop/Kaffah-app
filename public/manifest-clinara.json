@@ -1,0 +1,17 @@
+{
+  "short_name": "Clinara",
+  "name": "Clinara",
+  "start_url": "/login",
+  "id": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0f2a4a",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/clinara-icon-app.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

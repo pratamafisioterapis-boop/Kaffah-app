@@ -56,6 +56,28 @@ module.exports = {
     				gray: '#6b7280',
     				light: '#e5e7eb'
     			},
+    			clinara: {
+    				navy: '#0f2a4a',
+    				blue: '#2b6cb0',
+    				sky: '#3b9fe0',
+    				teal: '#2dd4bf',
+    				mint: '#5eead4',
+    				bg: '#f4f9fc',
+    				// Clinara color & visual system (light, premium healthcare SaaS)
+    				background: '#F5F9FC',
+    				surface: '#FFFFFF',
+    				primary: '#1677D2',
+    				bright: '#2F8CFF',
+    				soft: '#EAF4FF',
+    				turquoise: '#35C8C1',
+    				textPrimary: '#102F52',
+    				textSecondary: '#5B6B7D',
+    				border: '#DCE8F2',
+    				success: '#3FBF80',
+    				warning: '#F5A623',
+    				danger: '#F16063',
+    				purple: '#9B8CF2'
+    			},
     			chart: {
     				'1': 'hsl(var(--chart-1))',
     				'2': 'hsl(var(--chart-2))',
@@ -85,11 +107,21 @@ module.exports = {
     				to: {
     					height: 0
     				}
+    			},
+    			shimmer: {
+    				'0%': { transform: 'translateX(-150%) skewX(-12deg)' },
+    				'100%': { transform: 'translateX(250%) skewX(-12deg)' }
+    			},
+    			'bg-zoom': {
+    				'0%': { transform: 'scale(1)' },
+    				'100%': { transform: 'scale(1.08)' }
     			}
     		},
     		animation: {
     			'accordion-down': 'accordion-down 0.2s ease-out',
-    			'accordion-up': 'accordion-up 0.2s ease-out'
+    			'accordion-up': 'accordion-up 0.2s ease-out',
+    			shimmer: 'shimmer 2.8s ease-in-out infinite',
+    			'bg-zoom': 'bg-zoom 20s ease-in-out infinite alternate'
     		}
     	}
     },

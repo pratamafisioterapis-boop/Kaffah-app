@@ -107,7 +107,7 @@ export const listenForegroundNotifications = () => {
         payload?.data?.body ||
         "NO BODY";
 
-      const icon = payload?.data?.icon_url || "/logo192.png?v=kaffahtech1";
+      const icon = payload?.data?.icon_url || "/clinara-icon-app.png";
       const data = {
         url: payload?.data?.url,
         appointment_date: payload?.data?.appointment_date,

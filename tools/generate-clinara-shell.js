@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+// Runs after `vite build`. Clones dist/index.html into dist/index-clinara.html
+// with the head's brand meta swapped to Clinara, so clinara.id gets the right
+// <title>/favicon/og tags in the initial HTML response rather than waiting on
+// react-helmet to patch them in after JS hydrates (which caused a visible
+// flash of "Kaffah Physiotherapy" in the browser tab). vercel.json rewrites
+// clinara.id/www.clinara.id requests to this file instead of index.html; the
+// script/link tags Vite injected (hashed JS/CSS) are left untouched since
+// both domains share the same app bundle.
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.join(__dirname, '..', 'dist');
+const srcPath = path.join(distDir, 'index.html');
+const outPath = path.join(distDir, 'index-clinara.html');
+
+if (!fs.existsSync(srcPath)) {
+  console.warn('[generate-clinara-shell] dist/index.html not found, skipping.');
+  process.exit(0);
+}
+
+// clinara-icon.png: the mark alone, cropped tight, transparent background -
+// used for the favicon so the browser tab shows just the icon, no visible
+// box (matches how Claude's own tab icon looks). clinara-icon-app.png: the
+// same mark composited onto a white rounded square - used anywhere a
+// transparent icon would render wrong (iOS turns transparent areas black on
+// home-screen icons; PWA/app icons generally want an opaque background too).
+// Root-relative for tags the browser itself resolves (favicon, apple-touch-icon,
+// manifest icons) - same-origin, no extra DNS/CORS hop. Absolute for og:image/
+// twitter:image, which social-media scrapers fetch directly and can't resolve
+// a relative URL for.
+const CLINARA_ICON_PATH = '/clinara-icon.png';
+const CLINARA_APP_ICON_PATH = '/clinara-icon-app.png';
+const CLINARA_APP_ICON_ABSOLUTE_URL = 'https://clinara.id/clinara-icon-app.png';
+
+let html = fs.readFileSync(srcPath, 'utf8');
+
+const replacements = [
+  [/<link rel="icon" type="image\/x-icon" href="\/favicon\.ico(?:\?v=[^"]*)?" \/>/, `<link rel="icon" type="image/png" href="${CLINARA_ICON_PATH}" />`],
+  [/<link rel="icon" type="image\/png" sizes="48x48" href="\/favicon-48\.png(?:\?v=[^"]*)?" \/>/, `<link rel="icon" type="image/png" sizes="48x48" href="${CLINARA_ICON_PATH}" />`],
+  [/<meta name="theme-color" content="#1e3a5f" \/>/, '<meta name="theme-color" content="#0f2a4a" />'],
+  [/<link rel="manifest" href="\/manifest\.json" \/>/, '<link rel="manifest" href="/manifest-clinara.json" />'],
+  [/<meta name="apple-mobile-web-app-title" content="Kaffah Physiotherapy" \/>/, '<meta name="apple-mobile-web-app-title" content="Clinara" />'],
+  [/<link rel="apple-touch-icon" href="\/logo192\.png(?:\?v=[^"]*)?" \/>/, `<link rel="apple-touch-icon" href="${CLINARA_APP_ICON_PATH}" />`],
+  [/<title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan<\/title>/, '<title>Clinara — Better Care. Smarter Management.</title>'],
+  [/<meta name="description" content="Kaffah Physiotherapy adalah klinik fisioterapi[^"]*" \/>/, '<meta name="description" content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi." />'],
+  [/<meta property="og:site_name" content="Kaffah Physiotherapy" \/>/, '<meta property="og:site_name" content="Clinara" />'],
+  [/<meta property="og:url" content="https:\/\/kaffahphysio\.id\/" \/>/, '<meta property="og:url" content="https://clinara.id/" />'],
+  [/<meta property="og:title" content="Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan" \/>/, '<meta property="og:title" content="Clinara — Better Care. Smarter Management." />'],
+  [/<meta property="og:description" content="Klinik fisioterapi di Batu Ampar[^"]*" \/>/, '<meta property="og:description" content="Platform manajemen layanan kesehatan untuk klinik dan pusat terapi." />'],
+  [/<meta property="og:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>\s*\n\s*<meta property="og:image:width" content="512" \/>\s*\n\s*<meta property="og:image:height" content="512" \/>/, `<meta property="og:image" content="${CLINARA_APP_ICON_ABSOLUTE_URL}" />`],
+  [/<meta name="twitter:image" content="https:\/\/kaffahphysio\.id\/logo512\.png" \/>/, `<meta name="twitter:image" content="${CLINARA_APP_ICON_ABSOLUTE_URL}" />`],
+];
+
+let missed = [];
+for (const [pattern, replacement] of replacements) {
+  if (!pattern.test(html)) {
+    missed.push(pattern.toString());
+    continue;
+  }
+  html = html.replace(pattern, replacement);
+}
+
+if (missed.length) {
+  console.error('[generate-clinara-shell] Some expected tags were not found (index.html may have changed):');
+  missed.forEach((m) => console.error('  -', m));
+  process.exit(1);
+}
+
+fs.writeFileSync(outPath, html);
+console.log('[generate-clinara-shell] Wrote dist/index-clinara.html');

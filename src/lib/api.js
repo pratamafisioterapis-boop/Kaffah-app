@@ -11,8 +11,12 @@ import {
     calculateCustomSalary
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
+import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
+import { resolveAttendanceStatus } from '@/utils/attendanceStatusResolver';
+import { prepareImageForUpload } from '@/lib/imageUpload';
+import { buildHomecareLookup } from '@/utils/attendanceHomecareLookup';
 import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 
@@ -55,14 +59,15 @@ const getTodayWITA = () => {
 // ============================================
 const cleanDailyRecapPayload = (data) => {
   if (!data) return data;
-  
+
   const cleaned = { ...data };
   const fieldsToRemove = [
     'patient_name',
-    'service_type_id', 
+    'service_type_id',
     'therapist_name',
     'is_auto_filled',
-    'package_type_id'
+    'package_type_id',
+    'payment_splits'
   ];
 
   fieldsToRemove.forEach(field => {
@@ -401,6 +406,58 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       }
     }
 
+    // KLASIFIKASI PRIORITAS FOLLOW UP RUTIN — pasien baru (belum pernah
+    // terapi sebelumnya) atau pasien lama yang sudah >30 hari tidak terapi
+    // wajib diprioritaskan; pasien rutin (kunjungan rutin bulanan) opsional.
+    const followUpSourceIds = queueData
+      .filter(item =>
+        item.follow_up_type === 'follow_up' &&
+        item.source_table === 'daily_recaps' &&
+        item.source_id
+      )
+      .map(item => item.source_id);
+
+    let patientCategoryBySourceId = {};
+
+    if (followUpSourceIds.length > 0) {
+      const { data: sourceRecaps } = await supabase
+        .from('daily_recaps')
+        .select('id, patient_id, recap_date')
+        .in('id', followUpSourceIds);
+
+      const patientIds = [...new Set((sourceRecaps || []).map(r => r.patient_id).filter(Boolean))];
+      let historyByPatient = {};
+
+      if (patientIds.length > 0) {
+        const { data: history } = await supabase
+          .from('daily_recaps')
+          .select('patient_id, recap_date')
+          .in('patient_id', patientIds)
+          .order('recap_date', { ascending: true });
+
+        historyByPatient = (history || []).reduce((acc, row) => {
+          if (!row.patient_id || !row.recap_date) return acc;
+          if (!acc[row.patient_id]) acc[row.patient_id] = [];
+          acc[row.patient_id].push(row.recap_date);
+          return acc;
+        }, {});
+      }
+
+      patientCategoryBySourceId = (sourceRecaps || []).reduce((acc, recap) => {
+        const priorDates = (historyByPatient[recap.patient_id] || []).filter(d => d < recap.recap_date);
+
+        if (priorDates.length === 0) {
+          acc[recap.id] = 'new';
+        } else {
+          const lastPriorDate = priorDates[priorDates.length - 1];
+          const gapDays = differenceInCalendarDays(new Date(recap.recap_date), new Date(lastPriorDate));
+          acc[recap.id] = gapDays > 30 ? 'lapsed' : 'routine';
+        }
+
+        return acc;
+      }, {});
+    }
+
     // ENRICH DATA
     const enrichedData = (queueData || []).map(item => {
       let appointmentData = null;
@@ -416,7 +473,11 @@ export const getFollowUpQueue = async (status = null, type = null) => {
       return {
         ...item,
         patient: item.patient || item.patients || null,
-        appointment_data: appointmentData
+        appointment_data: appointmentData,
+        patient_category:
+          item.follow_up_type === 'follow_up'
+            ? patientCategoryBySourceId[item.source_id] || null
+            : null
       };
     });
 
@@ -534,14 +595,19 @@ export const getBirthdayPatients = async () => getFollowUpQueue('pending', 'birt
 // APPOINTMENTS & SLOTS
 // ============================================
 
-export const getAvailableSlots = async (date, therapistId) => {
+export const getAvailableSlots = async (date, therapistId, clinicIdOverride = null) => {
   return safeQuery(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    let clinicId = PUBLIC_CLINIC_ID;
-    if (userId) {
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
-      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    // clinicIdOverride lets unauthenticated callers (e.g. a tenant clinic's
+    // own booking page) target a specific clinic instead of falling back to
+    // Kaffah's PUBLIC_CLINIC_ID.
+    let clinicId = clinicIdOverride || PUBLIC_CLINIC_ID;
+    if (!clinicIdOverride) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+      }
     }
 
     const { data, error } = await supabase.rpc('get_available_slots_with_status_by_date', { 
@@ -771,12 +837,17 @@ const PUBLIC_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a'; // fallback unt
 
 export const getActivePhysiotherapists = async (filters = {}) => {
   return safeQuery(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    let clinicId = PUBLIC_CLINIC_ID;
-    if (userId) {
-      const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
-      clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+    // filters.clinicId lets unauthenticated callers (e.g. a tenant clinic's
+    // own booking page) target a specific clinic instead of falling back to
+    // Kaffah's PUBLIC_CLINIC_ID.
+    let clinicId = filters.clinicId || PUBLIC_CLINIC_ID;
+    if (!filters.clinicId) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
+        const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+        clinicId = userRow?.clinic_id || PUBLIC_CLINIC_ID;
+      }
     }
 
     let query = supabase.from('physiotherapists').select('*').eq('is_active', true).eq('clinic_id', clinicId);
@@ -901,6 +972,29 @@ export const searchPatientByBirthDateAndLastName = async (fullName, birthDate) =
   }, 'searchPatientByBirthDateAndLastName', { retry: false });
 };
 
+// Public-safe (no login required) — used by Smart Booking's "Pasien Baru" flow
+// to suggest a possible existing-patient match (nama + no HP + tanggal lahir)
+// so the patient can confirm instead of unknowingly creating a duplicate
+// medical record. Caller must still let the patient confirm/reject the match.
+export const matchPatientForNewRegistration = async (fullName, phone, birthDate) => {
+  return safeQuery(async () => {
+    if (!fullName || !phone || !birthDate) {
+      return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase.rpc('match_patient_for_new_registration', {
+      p_full_name: fullName,
+      p_phone: phone,
+      p_birth_date: birthDate,
+      p_clinic_id: PUBLIC_CLINIC_ID
+    });
+
+    if (error) return { error };
+
+    return { data: data || [], error: null };
+  }, 'matchPatientForNewRegistration', { retry: false });
+};
+
 // Public-safe (no login required) — used by Smart Booking's "Pasien Lama" flow
 // to recommend therapists who have treated this patient before.
 export const getPatientTherapistHistory = async (patientId) => {
@@ -980,7 +1074,7 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
 
       let query = supabase
         .from('operational_options')
-        .select('id, label, category, parent_id')
+        .select('id, label, category, parent_id, discount_value_type, discount_value')
         .eq('category', category)
         .eq('clinic_id', userRow?.clinic_id)
         .eq('is_active', true);
@@ -998,7 +1092,9 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
           id: i.id,
           value: i.id,
           label: i.label,
-          parent_id: i.parent_id || null
+          parent_id: i.parent_id || null,
+          discount_value_type: i.discount_value_type,
+          discount_value: i.discount_value
         })),
         error: null
       };
@@ -1120,10 +1216,40 @@ if (baseDate < today) {
   }, 'extendPackage');
 };
 
+// Simpan rincian split pembayaran (mis. QRIS 200rb + Cash 50rb) untuk satu
+// recap. Mengganti seluruh baris lama recap tsb dengan `splits` yang baru.
+// `splits` diabaikan jika kosong/tidak berupa array (mis. recap dgn 1 metode
+// pembayaran biasa, tidak perlu baris di tabel anak ini).
+const saveDailyRecapPaymentSplits = async (recapId, splits) => {
+  const { error: deleteError } = await supabase
+    .from('daily_recap_payment_splits')
+    .delete()
+    .eq('recap_id', recapId);
+
+  if (deleteError) throw deleteError;
+
+  const rows = (Array.isArray(splits) ? splits : [])
+    .filter(s => s && s.payment_method && parseFloat(s.amount) > 0)
+    .map(s => ({
+      recap_id: recapId,
+      payment_method: s.payment_method,
+      amount: parseFloat(s.amount)
+    }));
+
+  if (rows.length === 0) return;
+
+  const { error: insertError } = await supabase
+    .from('daily_recap_payment_splits')
+    .insert(rows);
+
+  if (insertError) throw insertError;
+};
+
 export const createDailyRecap = async (payload) => {
   return safeQuery(async () => {
+    const paymentSplits = payload.payment_splits;
     const cleanedPayload = cleanDailyRecapPayload(payload);
-    
+
     if (cleanedPayload.package_type && typeof cleanedPayload.package_type !== 'string') {
       cleanedPayload.package_type = String(cleanedPayload.package_type);
     }
@@ -1139,6 +1265,10 @@ export const createDailyRecap = async (payload) => {
         return { error: { message: "Gagal membuat recap: ID tidak dikembalikan oleh server." } };
     }
 
+    if (Array.isArray(paymentSplits) && paymentSplits.length > 0) {
+      await saveDailyRecapPaymentSplits(data.recap_id, paymentSplits);
+    }
+
     return { data, error: null };
 
   }, 'createDailyRecap');
@@ -1147,6 +1277,7 @@ export const createDailyRecap = async (payload) => {
 export const updateDailyRecap = async (id, payload) => {
   return safeQuery(async () => {
 
+    const paymentSplits = payload.payment_splits;
     const cleanedPayload = cleanDailyRecapPayload(payload);
 
 cleanedPayload.amount_original = payload.amount_original;
@@ -1175,6 +1306,10 @@ cleanedPayload.amount_original = payload.amount_original;
       .single();
 
     if (error) return { error };
+
+    if (Array.isArray(paymentSplits)) {
+      await saveDailyRecapPaymentSplits(id, paymentSplits);
+    }
 
     return { data, error: null };
 
@@ -1215,6 +1350,7 @@ export const getDailyRecaps = async ({
   discount_value,
   discount_label,
   created_at,
+  payment_splits:daily_recap_payment_splits(id, payment_method, amount),
   start_time,
   end_time,
   status,
@@ -1599,26 +1735,44 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     // 🔥 EXPENSE
     let expenseQuery = supabase
       .from('admin_expenses')
-      .select('*')
+      .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
       .eq('clinic_id', userRow?.clinic_id)
       .order('transaction_date', { ascending: false });
 
     if (startDate) expenseQuery = expenseQuery.gte('transaction_date', startDate);
     if (endDate) expenseQuery = expenseQuery.lte('transaction_date', endDate);
 
-    const { data: expenses } = await expenseQuery;
+    const { data: expenses, error: expenseError } = await expenseQuery;
+    if (expenseError) throw expenseError;
 
     // 🔥 INCOME
     let incomeQuery = supabase
       .from('admin_income')
-      .select('*')
+      .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
       .eq('clinic_id', userRow?.clinic_id)
       .order('date', { ascending: false });
 
     if (startDate) incomeQuery = incomeQuery.gte('date', startDate);
     if (endDate) incomeQuery = incomeQuery.lte('date', endDate);
 
-    const { data: income } = await incomeQuery;
+    const { data: income, error: incomeError } = await incomeQuery;
+    if (incomeError) throw incomeError;
 
     return {
       data: {
@@ -1764,8 +1918,13 @@ export const deleteAccountingSubcategory = async (id) => {
 // once their `post_day` has passed each month. There's no cron/edge-function
 // in this project to do that on a schedule, so this runs opportunistically
 // whenever the owner opens a page that needs the total (Fixed Cost manager,
-// BEP widget) — idempotent via `last_posted_month` so it only posts once per
-// item per calendar month no matter how many times it runs.
+// BEP widget, Owner Accounting) — idempotent via `last_posted_month` so it
+// only posts once per item per calendar month no matter how many times it
+// runs. It also catches up any months that were missed entirely — e.g. an
+// item whose post_day fell on a day nobody opened one of those pages, so it
+// never got a chance to run for that month — by walking forward from
+// `last_posted_month` (or the item's creation month, if it never posted)
+// up through the current month, posting each month that's due.
 // Items with `auto_post = false` (salary/"gaji" items by default) are
 // skipped here on purpose: they post to accounting once their payroll
 // record is marked paid instead, so they aren't double-counted.
@@ -1781,44 +1940,72 @@ export const autoPostFixedCosts = async () => {
     const { data: items, error: fetchError } = await supabase
       .from('clinic_fixed_costs')
       .select(`
-        id, item_name, amount, post_day, last_posted_month, auto_post,
+        id, item_name, amount, post_day, last_posted_month, auto_post, created_at,
         subcategory:subcategory_id ( id, subcategory_name, parent_category:accounting_categories ( category_name ) )
       `)
       .eq('clinic_id', clinicId);
     if (fetchError) return { error: fetchError };
 
     const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const currentYear = now.getFullYear();
+    const currentMonthIdx = now.getMonth(); // 0-indexed
     const today = now.getDate();
-
-    const due = (items || []).filter(i => {
-      if (i.auto_post === false) return false;
-      if (i.last_posted_month === currentMonth) return false;
-      const effectiveDay = Math.min(i.post_day || 1, daysInMonth);
-      return effectiveDay <= today;
-    });
+    const monthKey = (y, mIdx) => `${y}-${String(mIdx + 1).padStart(2, '0')}`;
+    const MAX_MONTHS_BACK = 24; // safety cap so a bad row can't loop forever
 
     const posted = [];
-    for (const item of due) {
-      const effectiveDay = Math.min(item.post_day || 1, daysInMonth);
-      const postDate = `${currentMonth}-${String(effectiveDay).padStart(2, '0')}`;
-      // eslint-disable-next-line no-await-in-loop
-      const { error: insertError } = await supabase.from('owner_expenditures').insert({
-        clinic_id: clinicId,
-        date: postDate,
-        amount: item.amount,
-        category: item.subcategory?.parent_category?.category_name || 'FIXED COST',
-        sub_category: item.subcategory?.id || null,
-        description: item.item_name,
-        is_auto_fixed_cost: true,
-        created_by: userId,
-        created_at: new Date().toISOString()
-      });
-      if (insertError) continue;
-      // eslint-disable-next-line no-await-in-loop
-      await supabase.from('clinic_fixed_costs').update({ last_posted_month: currentMonth }).eq('id', item.id);
-      posted.push(item.item_name);
+    for (const item of (items || [])) {
+      if (item.auto_post === false) continue;
+
+      let y, mIdx;
+      if (item.last_posted_month) {
+        const [ly, lm] = item.last_posted_month.split('-').map(Number);
+        mIdx = lm; // next month after last_posted_month, 0-indexed
+        y = ly;
+        if (mIdx > 11) { mIdx = 0; y += 1; }
+      } else if (item.created_at) {
+        const created = new Date(item.created_at);
+        y = created.getFullYear();
+        mIdx = created.getMonth();
+      } else {
+        y = currentYear;
+        mIdx = currentMonthIdx;
+      }
+
+      let guard = 0;
+      while (
+        guard < MAX_MONTHS_BACK &&
+        (y < currentYear || (y === currentYear && mIdx <= currentMonthIdx))
+      ) {
+        guard += 1;
+        const isCurrentMonth = y === currentYear && mIdx === currentMonthIdx;
+        const daysInThisMonth = new Date(y, mIdx + 1, 0).getDate();
+        const effectiveDay = Math.min(item.post_day || 1, daysInThisMonth);
+        const due = isCurrentMonth ? effectiveDay <= today : true;
+        if (!due) break;
+
+        const thisMonthKey = monthKey(y, mIdx);
+        const postDate = `${thisMonthKey}-${String(effectiveDay).padStart(2, '0')}`;
+        // eslint-disable-next-line no-await-in-loop
+        const { error: insertError } = await supabase.from('owner_expenditures').insert({
+          clinic_id: clinicId,
+          date: postDate,
+          amount: item.amount,
+          category: item.subcategory?.parent_category?.category_name || 'FIXED COST',
+          sub_category: item.subcategory?.id || null,
+          description: item.item_name,
+          is_auto_fixed_cost: true,
+          created_by: userId,
+          created_at: new Date().toISOString()
+        });
+        if (insertError) break;
+        // eslint-disable-next-line no-await-in-loop
+        await supabase.from('clinic_fixed_costs').update({ last_posted_month: thisMonthKey }).eq('id', item.id);
+        posted.push(item.item_name);
+
+        mIdx += 1;
+        if (mIdx > 11) { mIdx = 0; y += 1; }
+      }
     }
 
     return { data: posted, error: null };
@@ -1839,6 +2026,12 @@ export const getOwnerExpenditures = async ({ startDate, endDate } = {}) => {
   subcategory:sub_category (
     id,
     subcategory_name
+  ),
+  bank_accounts (
+    id,
+    bank_name,
+    account_number,
+    holder_name
   )
 `)
         .eq('clinic_id', userRow?.clinic_id)
@@ -1871,6 +2064,12 @@ export const getOwnerIncome = async ({ startDate, endDate } = {}) => {
   subcategory:sub_category (
     id,
     subcategory_name
+  ),
+  bank_accounts (
+    id,
+    bank_name,
+    account_number,
+    holder_name
   )
 `)
         .eq('clinic_id', userRow?.clinic_id)
@@ -1953,7 +2152,15 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
     const buildQuery = () => {
       let query = supabase
         .from('admin_income')
-        .select('*')
+        .select(`
+        *,
+        bank_accounts (
+          id,
+          bank_name,
+          account_number,
+          holder_name
+        )
+      `)
         .eq('clinic_id', userRow?.clinic_id)
         .order('date', { ascending: false });
 
@@ -2012,7 +2219,9 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         amount,
         amount_package,
         package_type,
+        package_tracking_id,
         patient_type,
+        payment_method,
         guest_name,
 
         patient:patients!patient_id (
@@ -2055,6 +2264,34 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
       return acc;
     }, {});
 
+    // Nomor urut sesi di dalam paket (1 = sesi pertama pembelian, 2 = sesi
+    // ke-2, dst). Dihitung dari SELURUH recap yang terhubung ke paket
+    // tersebut (bukan hanya yang ada di rentang tanggal laporan), supaya
+    // nomornya tetap benar walau periode laporan mulai di tengah paket.
+    const trackingIds = [...new Set((data || []).map(i => i.package_tracking_id).filter(Boolean))];
+    const sessionNumberMap = {};
+
+    if (trackingIds.length > 0) {
+      const { data: allLinkedRecaps } = await supabase
+        .from('daily_recaps')
+        .select('id, recap_date, package_tracking_id')
+        .in('package_tracking_id', trackingIds)
+        .order('recap_date', { ascending: true })
+        .order('id', { ascending: true });
+
+      const groupedByPackage = {};
+      (allLinkedRecaps || []).forEach(row => {
+        if (!groupedByPackage[row.package_tracking_id]) groupedByPackage[row.package_tracking_id] = [];
+        groupedByPackage[row.package_tracking_id].push(row.id);
+      });
+
+      Object.values(groupedByPackage).forEach(ids => {
+        ids.forEach((id, idx) => {
+          sessionNumberMap[id] = idx + 1;
+        });
+      });
+    }
+
     const formatted = (data || []).map(item => ({
       id: item.id,
 
@@ -2076,11 +2313,28 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         item.package_type ||
         'Visit',
 
+      // Nomor urut sesi dalam paket ini (null jika bukan bagian dari
+      // paket bertahap / package_tracking_id kosong).
+      session_number: item.package_tracking_id
+        ? (sessionNumberMap[item.id] || null)
+        : null,
+
+      payment_method:
+        optionsMap[item.payment_method] ||
+        item.payment_method ||
+        '-',
+
       amount:
         item.amount_package &&
         Number(item.amount_package) > 0
           ? Number(item.amount_package)
-          : Number(item.amount || 0)
+          : Number(item.amount || 0),
+
+      // Nominal riil yang benar-benar diterima pada tanggal recap ini
+      // (0 untuk sesi lanjutan paket yang tidak ada pembayaran baru).
+      // Dipakai untuk laporan Excel mode "Real-time" (kas masuk),
+      // berbeda dari `amount` di atas yang bersifat akrual per sesi.
+      cash_amount: Number(item.amount || 0)
     }));
 
     return {
@@ -2091,17 +2345,28 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
 
   }, 'getPatientIncomeFromPackages', { retry: true });
 };
-export const getOwnerReceivables = async () => {
+export const getOwnerReceivables = async ({ startDate, endDate } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('owner_receivables')
       .select('*')
       .eq('clinic_id', userRow?.clinic_id)
       .order('date', { ascending: true });
+
+    // Piutang yang belum lunas tetap harus ikut kebawa berapapun tanggal
+    // dibuatnya (masih utang aktif, dipakai getTotalOutstandingReceivables).
+    // Kalau dikasih rentang tanggal, piutang yang SUDAH lunas dibatasi ke
+    // periode itu saja supaya query nggak menarik seluruh riwayat piutang
+    // klinik sejak awal berdiri setiap kali dashboard dibuka.
+    if (startDate && endDate) {
+      query = query.or(`status.neq.Paid,and(date.gte.${startDate},date.lte.${endDate})`);
+    }
+
+    const { data, error } = await query;
     if (error) return { error };
     return { data, success: true, error: null };
   }, 'getOwnerReceivables', { retry: true });
@@ -2281,6 +2546,9 @@ export const createOwnerInitialCapital = async (payload) => {
         source: payload.source,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        quantity: payload.quantity ?? 1,
+        is_fixed_asset: payload.is_fixed_asset || false,
+        estimated_resale_value: payload.is_fixed_asset ? (payload.estimated_resale_value ?? null) : null,
         created_by: userId || null,
         created_at: new Date().toISOString()
       })
@@ -2314,6 +2582,9 @@ export const updateOwnerInitialCapital = async (id, payload) => {
         source: payload.source,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        quantity: payload.quantity ?? 1,
+        is_fixed_asset: payload.is_fixed_asset || false,
+        estimated_resale_value: payload.is_fixed_asset ? (payload.estimated_resale_value ?? null) : null,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -2853,6 +3124,27 @@ export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {})
     return { data, success: true, error: null };
   }, 'getInventoryStockOuts');
 };
+
+export const updateInventoryStockOut = async (id, { quantity, taken_date, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('update_inventory_stock_out', {
+      p_id: id,
+      p_quantity: Number(quantity),
+      p_taken_date: taken_date || new Date().toISOString().slice(0, 10),
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateInventoryStockOut');
+};
+
+export const deleteInventoryStockOut = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.rpc('delete_inventory_stock_out', { p_id: id });
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteInventoryStockOut');
+};
 export const deleteAdminIncome = async (id) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -3277,6 +3569,7 @@ export const getMedicalRecordsWithPatients = async () => {
         patient_id,
         medical_diagnosis,
         history_main_problem,
+        complaint_onset_date,
         vital_nadi,
         vital_blood_pressure,
         vital_height,
@@ -3327,6 +3620,27 @@ export const getMedicalRecordsWithPatients = async () => {
   }, 'getMedicalRecordsWithPatients', { retry: true });
 };
 
+
+// 🔹 SMART ONSET REMINDER — ambil tanggal mulai keluhan (onset) terbaru milik
+// seorang pasien, supaya terapis diingatkan sudah berapa lama keluhan itu
+// dialami saat membuat/mengisi SOAP.
+export const getPatientOnsetInfo = async (patientId) => {
+  return safeQuery(async () => {
+    if (!patientId) return { data: null, error: null };
+
+    const { data, error } = await supabase
+      .from('medical_records_detailed')
+      .select('id, record_date, complaint_onset_date, history_main_problem, medical_diagnosis')
+      .eq('patient_id', patientId)
+      .not('complaint_onset_date', 'is', null)
+      .order('record_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+    return { data: data || null, success: true, error: null };
+  }, 'getPatientOnsetInfo', { retry: true });
+};
 
 // 🔹 CREATE BULK MEDICAL RECORDS
 export const createBulkMedicalRecordsDetailed = async (payloads) => {
@@ -3700,8 +4014,23 @@ export const getMedicalRecords = async ({
 
     if (error) return { error };
 
+    const therapistIds = [...new Set((data || []).map(row => row.created_by).filter(Boolean))];
+    let namesByUserId = {};
+    if (therapistIds.length > 0) {
+      const { data: therapists } = await supabase
+        .from('physiotherapists')
+        .select('user_id, name')
+        .in('user_id', therapistIds);
+      namesByUserId = Object.fromEntries((therapists || []).map(t => [t.user_id, t.name]));
+    }
+
+    const enriched = (data || []).map(row => ({
+      ...row,
+      therapist_name: namesByUserId[row.created_by] || null,
+    }));
+
     return {
-      data: data || [],
+      data: enriched,
       total: count || 0,
       success: true,
       error: null
@@ -3782,7 +4111,9 @@ export const getTherapistRecaps = async (
 
     if (error) return { error };
 
-    return { data, success: true, error: null };
+    const enrichedData = await enrichRecapsWithOptions(data);
+
+    return { data: enrichedData, success: true, error: null };
 
   }, 'getTherapistRecaps', { retry: true });
 };
@@ -4470,9 +4801,10 @@ export const getMyPayrollRecords = async () => {
 
 // Setiap item slip gaji dicatat sebagai satu baris owner_expenditures terpisah
 // (bukan digabung jadi satu total) supaya breakdown per komponen tetap terlihat
-// di pembukuan owner. `date` dipakai sama persis dengan `created_at` slip gaji
-// (bukan `new Date()` baru) supaya tanggal pembukuan selalu konsisten dengan
-// tanggal payroll tersimpan, walau proses posting ini berjalan belakangan.
+// di pembukuan owner. `date` dipakai dari `payroll_period_end` (akhir periode
+// payroll), bukan `created_at`/tanggal posting, supaya pengeluaran tercatat di
+// bulan periode gajinya walau slip baru dibuat/dibayar belakangan (mis. gaji
+// Juli yang baru diproses di Agustus tetap tercatat 31 Juli).
 //
 // subcategoryNames dicocokkan (case-insensitive) ke accounting_subcategories
 // milik klinik yang sama, supaya Sub Kategori & Kategori Utama-nya konsisten
@@ -4485,6 +4817,7 @@ const PAYROLL_EXPENSE_ITEMS = [
   { field: 'transport_per_day', label: 'Uang Transport Harian', subcategoryNames: ['uang transport harian'] },
   { field: 'incentive_amount', label: 'Jasa Insentif per Terapis', subcategoryNames: ['jasa/fee fisioterapis (per sesi/insentif)'] },
   { field: 'custom_commission', label: 'Komisi', subcategoryNames: ['komisi'] },
+  { field: 'tips', label: 'Tips Non-Cash Pasien', subcategoryNames: ['tips', 'tips non-cash'] },
 ];
 
 const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
@@ -4498,7 +4831,7 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
   if (!clinicId) return;
 
   const therapistName = therapist?.name || 'Terapis';
-  const postDate = (record.created_at || new Date().toISOString()).slice(0, 10);
+  const postDate = (record.payroll_period_end || record.created_at || new Date().toISOString()).slice(0, 10);
 
   const items = PAYROLL_EXPENSE_ITEMS
     .map(({ field, label, subcategoryNames }) => ({ amount: parseFloat(record[field]) || 0, label, subcategoryNames }))
@@ -4553,6 +4886,7 @@ export const upsertPayrollRecord = async (payload) => {
       transport_per_day: parseFloat(payload.transport_per_day) || 0,
       incentive_amount: parseFloat(payload.incentive_amount) || 0,
       custom_commission: parseFloat(payload.custom_commission) || 0,
+      tips: parseFloat(payload.tips) || 0,
       total_salary: parseFloat(payload.total_salary) || 0,
       status: payload.status || 'paid',
     };
@@ -4743,6 +5077,352 @@ export const getMouSignedFileUrl = async (path) => {
     if (error) return { error };
     return { data: data?.signedUrl, success: true, error: null };
   }, 'getMouSignedFileUrl');
+};
+
+// ============================================
+// SURAT PERINGATAN (SP) - Pelanggaran Terapis
+// ============================================
+export const getWarningLettersForTherapist = async (physiotherapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('*')
+      .eq('physiotherapist_id', physiotherapistId)
+      .order('letter_date', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getWarningLettersForTherapist', { retry: true });
+};
+
+// Dipakai untuk menghitung nomor surat berikutnya secara sekaligus di seluruh
+// klinik (bukan per-terapis) supaya tidak ada nomor surat yang bentrok antar
+// terapis berbeda.
+export const getWarningLettersForClinic = async (clinicId) => {
+  return safeQuery(async () => {
+    if (!clinicId) return { data: [] };
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('id, level, letter_number, letter_date')
+      .eq('clinic_id', clinicId);
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getWarningLettersForClinic', { retry: true });
+};
+
+export const getMyWarningLetters = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return { data: [] };
+
+    const { data: therapistRow } = await supabase
+      .from('physiotherapists')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!therapistRow?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .select('*')
+      .eq('physiotherapist_id', therapistRow.id)
+      .order('letter_date', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getMyWarningLetters', { retry: true });
+};
+
+export const upsertWarningLetter = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    // Satu SP bisa memuat lebih dari satu tanggal pelanggaran (jenis
+    // pelanggaran boleh beda-beda tiap tanggal), dan tanggalnya sendiri
+    // opsional (kadang owner cuma mau jelaskan pelanggarannya tanpa tanggal
+    // pasti). violation_date/violation_description tetap disimpan sebagai
+    // ringkasan (tanggal paling awal yang ada & gabungan uraian) supaya kode
+    // lama (laporan bulanan, dsb) yang membaca kedua kolom itu tetap jalan.
+    const violations = (payload.violations || []).filter((v) => v?.date || v?.description?.trim());
+    const sortedDates = violations.map((v) => v.date).filter(Boolean).sort();
+    const violationDate = sortedDates[0] || payload.violation_date || null;
+    const violationDescription = violations.length > 0
+      ? violations
+        .map((v) => `${v.date ? new Date(v.date).toLocaleDateString('id-ID') : 'Tanpa tanggal'} - ${v.description || '-'}`)
+        .join('\n')
+      : payload.violation_description;
+
+    const record = {
+      clinic_id: payload.clinic_id,
+      physiotherapist_id: payload.physiotherapist_id,
+      letter_number: payload.letter_number,
+      level: payload.level,
+      letter_date: payload.letter_date,
+      letter_city: payload.letter_city,
+      violation_date: violationDate,
+      violation_description: violationDescription,
+      violations,
+      consequence_note: payload.consequence_note || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let result;
+    if (payload.id) {
+      result = await supabase
+        .from('therapist_warning_letters')
+        .update(record)
+        .eq('id', payload.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('therapist_warning_letters')
+        .insert({ ...record, created_by: userId || null })
+        .select()
+        .single();
+    }
+
+    if (result.error) return { error: result.error };
+    return { data: result.data, success: true, error: null };
+  }, 'upsertWarningLetter');
+};
+
+export const markWarningLetterIssued = async (id) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .update({ status: 'issued', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'draft')
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'markWarningLetterIssued');
+};
+
+export const deleteWarningLetter = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('therapist_warning_letters').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteWarningLetter');
+};
+
+// Bucket privat (dokumen kepegawaian) — dibaca lewat signed URL, mengikuti
+// pola mou-documents.
+export const uploadSignedWarningLetterFile = async (file, physiotherapistId, letterId) => {
+  return safeQuery(async () => {
+    if (!file) return { error: { message: 'File tidak ditemukan' } };
+    const ext = file.name.split('.').pop();
+    const path = `${physiotherapistId}/${letterId}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('warning-letters')
+      .upload(path, file, { upsert: true, contentType: file.type || 'application/pdf' });
+
+    if (uploadError) return { error: uploadError };
+    return { data: { path, name: file.name }, success: true, error: null };
+  }, 'uploadSignedWarningLetterFile');
+};
+
+export const markWarningLetterAcknowledged = async (letterId, { path, name }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_warning_letters')
+      .update({
+        status: 'acknowledged',
+        signed_file_path: path,
+        signed_file_name: name,
+        signed_file_uploaded_at: new Date().toISOString(),
+        signed_file_uploaded_by: userId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', letterId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'markWarningLetterAcknowledged');
+};
+
+export const getWarningLetterSignedFileUrl = async (path) => {
+  return safeQuery(async () => {
+    if (!path) return { error: { message: 'Path file tidak ditemukan' } };
+    const { data, error } = await supabase.storage
+      .from('warning-letters')
+      .createSignedUrl(path, 60 * 10);
+
+    if (error) return { error };
+    return { data: data?.signedUrl, success: true, error: null };
+  }, 'getWarningLetterSignedFileUrl');
+};
+
+// ============================================
+// JOURNAL KNOWLEDGE BASE - Saran Assessment & Klinis AI (RAG)
+// ============================================
+// Owner menempel isi jurnal/ebook fisioterapi sebagai basis referensi,
+// ditandai peruntukannya (document_scope: 'assessment' | 'tindakan' |
+// 'both'). Dicari lewat full-text search Postgres oleh
+// `soap-assessment-advice` (bantu diagnosa/pemeriksaan, sebelum Assessment
+// diisi) dan `soap-clinical-advice` (saran tindakan/latihan, setelah
+// Assessment diisi). Lihat supabase/functions/ untuk detail server-side.
+export const getJournalDocuments = async () => {
+  return safeQuery(async () => {
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('journal_documents')
+      .select('*')
+      .eq('clinic_id', clinicData.id)
+      .order('created_at', { ascending: false });
+
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getJournalDocuments', { retry: true });
+};
+
+// Dipecah per paragraf (baris kosong) supaya potongan tetap koheren, lalu
+// paragraf yang kepanjangan dipotong lagi dengan overlap kecil. Tidak ada
+// PDF/embedding API lagi di sini — full-text search Postgres yang mencari
+// potongan mana yang relevan (lihat match_journal_chunks_fts), jadi
+// chunking ini hanya perlu cukup granular untuk sitasi yang berguna.
+const CHUNK_TARGET_CHARS = 1500;
+const CHUNK_OVERLAP_CHARS = 150;
+
+const chunkJournalText = (rawText) => {
+  const paragraphs = rawText.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const chunks = [];
+  for (const paragraph of paragraphs) {
+    if (paragraph.length <= CHUNK_TARGET_CHARS) {
+      chunks.push(paragraph);
+      continue;
+    }
+    let start = 0;
+    while (start < paragraph.length) {
+      const end = Math.min(start + CHUNK_TARGET_CHARS, paragraph.length);
+      chunks.push(paragraph.slice(start, end));
+      if (end >= paragraph.length) break;
+      start = end - CHUNK_OVERLAP_CHARS;
+    }
+  }
+  return chunks;
+};
+
+export const createJournalDocument = async (content, metadata) => {
+  return safeQuery(async () => {
+    const trimmedContent = (content || '').trim();
+    if (!trimmedContent) return { error: { message: 'Isi jurnal tidak boleh kosong' } };
+
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { error: { message: 'Klinik tidak ditemukan' } };
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const chunks = chunkJournalText(trimmedContent);
+    if (chunks.length === 0) return { error: { message: 'Tidak ada teks yang bisa diproses dari isi yang ditempel.' } };
+
+    const { data: docRow, error: insertError } = await supabase
+      .from('journal_documents')
+      .insert({
+        clinic_id: clinicData.id,
+        title: metadata.title,
+        author: metadata.author || null,
+        publication_year: metadata.publication_year || null,
+        source_language: metadata.source_language || 'en',
+        topic_tags: metadata.topic_tags || [],
+        document_scope: metadata.document_scope || 'both',
+        status: 'ready',
+        progress_percent: 100,
+        uploaded_by: userId || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) return { error: insertError };
+
+    const chunkRows = chunks.map((chunkContent, idx) => ({
+      document_id: docRow.id,
+      clinic_id: clinicData.id,
+      chunk_index: idx,
+      content: chunkContent,
+    }));
+
+    const INSERT_BATCH = 100;
+    for (let i = 0; i < chunkRows.length; i += INSERT_BATCH) {
+      const { error: chunkError } = await supabase.from('journal_chunks').insert(chunkRows.slice(i, i + INSERT_BATCH));
+      if (chunkError) {
+        // Bersihkan dokumen yang sudah terlanjur dibuat supaya tidak ada
+        // entri "ready" tanpa potongan (match_journal_chunks_fts tidak
+        // akan pernah menemukannya, tapi lebih baik tidak setengah jadi).
+        await supabase.from('journal_documents').delete().eq('id', docRow.id);
+        return { error: chunkError };
+      }
+    }
+
+    return { data: docRow, success: true, error: null };
+  }, 'createJournalDocument');
+};
+
+export const deleteJournalDocument = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('journal_documents').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteJournalDocument');
+};
+
+// Ubah peruntukan dokumen yang sudah tersimpan (mis. owner salah pilih
+// scope saat upload) tanpa perlu menghapus dan menempel ulang isinya.
+export const updateJournalDocumentScope = async (id, document_scope) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('journal_documents')
+      .update({ document_scope })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateJournalDocumentScope');
+};
+
+export const getSoapClinicalAdvice = async ({ diagnosis, subjective, objective, assessment, plan, is_progress_stalled }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('soap-clinical-advice', {
+      body: { diagnosis, subjective, objective, assessment, plan, is_progress_stalled },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'getSoapClinicalAdvice', { timeout: 60000 });
+};
+
+// Kebalikan dari getSoapClinicalAdvice: dipanggil SEBELUM Assessment diisi
+// (cukup modal Subjective + Objective) untuk bantu terapis merumuskan
+// kemungkinan diagnosa, pemeriksaan spesifik, dan hal yang perlu
+// dievaluasi — pakai basis jurnal yang ditandai document_scope
+// 'assessment' atau 'both'. Lihat supabase/functions/soap-assessment-advice.
+export const getSoapAssessmentAdvice = async ({ diagnosis, subjective, objective }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('soap-assessment-advice', {
+      body: { diagnosis, subjective, objective },
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'getSoapAssessmentAdvice', { timeout: 60000 });
 };
 
 export const getFollowUpQueueFiltered = async ({
@@ -5441,7 +6121,9 @@ export const getTherapistSoapLockStatus = async (therapistId) => {
 export const updateTherapistSoapLockOverride = async (therapistId, {
   soap_lock_exempt,
   soap_lock_custom_enabled,
-  soap_lock_threshold_count
+  soap_lock_threshold_count,
+  soap_lock_age_rule_enabled,
+  soap_lock_max_age_days
 }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase
@@ -5449,7 +6131,9 @@ export const updateTherapistSoapLockOverride = async (therapistId, {
       .update({
         soap_lock_exempt,
         soap_lock_custom_enabled,
-        soap_lock_threshold_count
+        soap_lock_threshold_count,
+        soap_lock_age_rule_enabled,
+        soap_lock_max_age_days
       })
       .eq('id', therapistId)
       .select()
@@ -5563,14 +6247,15 @@ export const uploadTherapistPhoto = async (file) => {
       return { error: { message: "File tidak ditemukan" } };
     }
 
-    const fileExt = file.name.split('.').pop();
+    const uploadFile = await prepareImageForUpload(file);
+    const fileExt = uploadFile.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
     // 1️⃣ Upload ke bucket therapist-photos
     const { error: uploadError } = await supabase.storage
       .from('therapist-photos')
-      .upload(filePath, file, {
+      .upload(filePath, uploadFile, {
         cacheControl: '3600',
         upsert: false
       });
@@ -5642,6 +6327,66 @@ export const deleteTherapistTimeOff = async (id) => {
     return { data: true, error: null };
 
   }, 'deleteTherapistTimeOff');
+};
+
+// ============================================
+// THERAPIST SCHEDULE OVERRIDES (one-off date-specific shift changes,
+// separate from the recurring weekly template in therapist_schedules)
+// ============================================
+
+export const getTherapistScheduleOverrides = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .order('override_date', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getTherapistScheduleOverrides');
+};
+
+export const upsertTherapistScheduleOverride = async ({ therapist_id, override_date, start_time, end_time, note }) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    const { data, error } = await supabase
+      .from('therapist_schedule_overrides')
+      .upsert(
+        { therapist_id, override_date, start_time, end_time: end_time || null, note: note || null, created_by: userId || null },
+        { onConflict: 'therapist_id,override_date' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+
+    // Bring any already-saved attendance row for this exact therapist+date
+    // in sync with the new override, instead of leaving it on the stale
+    // status/expected time it was imported with.
+    await recalculateAttendanceForTherapistDate(therapist_id, override_date);
+
+    return { data, success: true, error: null };
+  }, 'upsertTherapistScheduleOverride');
+};
+
+export const deleteTherapistScheduleOverride = async (id) => {
+  return safeQuery(async () => {
+    const { data: existing } = await supabase
+      .from('therapist_schedule_overrides')
+      .select('therapist_id, override_date')
+      .eq('id', id)
+      .maybeSingle();
+
+    const { error } = await supabase.from('therapist_schedule_overrides').delete().eq('id', id);
+    if (error) return { error };
+
+    // Removing the override means that date reverts to the weekly
+    // schedule — recompute so any saved attendance row reflects that too.
+    if (existing) await recalculateAttendanceForTherapistDate(existing.therapist_id, existing.override_date);
+
+    return { data: true, success: true, error: null };
+  }, 'deleteTherapistScheduleOverride');
 };
 
 export const createTherapistSchedule = async (payload) => {
@@ -6144,22 +6889,30 @@ export const fetchEmptySlots = async () => {
 // ============================
 // TODAY SESSIONS PER THERAPIST
 // ============================
-export const fetchTodaySessionsPerTherapist = async (therapistId) => {
+// Jumlah sesi hari ini utk SEMUA terapis klinik dalam satu query (dikelompokkan
+// di JS), dipakai OwnerDashboard supaya tidak query per-terapis satu-satu.
+export const fetchTodaySessionsByTherapist = async () => {
   return safeQuery(async () => {
     const today = getTodayWITA();
 
-    const { count, error } = await supabase
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+
+    const { data, error } = await supabase
       .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('therapist_id', therapistId)
+      .select('therapist_id')
+      .eq('clinic_id', userRow?.clinic_id)
       .gte('appointment_date', `${today}T00:00:00`)
       .lte('appointment_date', `${today}T23:59:59`)
       .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed']);
 
     if (error) return { error };
 
-    return { data: count || 0 };
-  }, 'fetchTodaySessionsPerTherapist');
+    const counts = {};
+    (data || []).forEach(r => { counts[r.therapist_id] = (counts[r.therapist_id] || 0) + 1; });
+    return { data: counts };
+  }, 'fetchTodaySessionsByTherapist');
 };
 // ============================================
 // SERVICE RATES
@@ -6825,6 +7578,38 @@ export const getTherapistSoapCompleteness = async (therapistId, startDate, endDa
   }, 'getTherapistSoapCompleteness', { retry: true });
 };
 
+// Daftar daily_recap_id yang sudah punya SOAP (medical_records) terisi,
+// untuk satu terapis pada satu periode. Dipakai UI yang perlu menampilkan
+// status SOAP per kunjungan (bukan cuma persentase agregat).
+export const getTherapistFilledRecapIds = async (therapistId, startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: recaps, error: recapError } = await supabase
+      .from('daily_recaps')
+      .select('id')
+      .eq('therapist_id', therapistId)
+      .gte('recap_date', startDate)
+      .lte('recap_date', endDate);
+
+    if (recapError) return { error: recapError };
+
+    const recapIds = (recaps || []).map(r => r.id);
+    if (recapIds.length === 0) {
+      return { data: [], success: true, error: null };
+    }
+
+    const { data: medicalRecords, error: mrError } = await supabase
+      .from('medical_records')
+      .select('daily_recap_id')
+      .in('daily_recap_id', recapIds);
+
+    if (mrError) return { error: mrError };
+
+    const filledIds = [...new Set((medicalRecords || []).map(r => r.daily_recap_id).filter(Boolean))];
+
+    return { data: filledIds, success: true, error: null };
+  }, 'getTherapistFilledRecapIds', { retry: true });
+};
+
 // Laporan remunerasi lengkap untuk satu terapis pada satu periode: gabungan
 // kriteria (dari owner), realisasi manual, dan metrik otomatis dari DB.
 export const getRemunerationReport = async (therapistId, startDate, endDate) => {
@@ -6980,14 +7765,18 @@ export const getBepFinancials = async () => {
       getServiceRates(),
       // Semua terapis klinik ini (termasuk yang sudah non-aktif) — dipakai untuk
       // membatasi query payroll ke klinik yang benar; terapis yang resign di
-      // tengah bulan tetap punya biaya payroll yang harus masuk BEP.
-      supabase.from('physiotherapists').select('id').eq('clinic_id', clinicId)
+      // tengah bulan tetap punya biaya payroll yang harus masuk BEP. Nama
+      // dibawa sekalian supaya breakdown transport/insentif per terapis bisa
+      // ditampilkan tanpa query tambahan.
+      supabase.from('physiotherapists').select('id, name').eq('clinic_id', clinicId)
     ]);
 
     // Payroll beberapa periode terakhir: dipakai untuk tahu terapis mana yang
     // transport & insentifnya sudah dibayar (jadi akrual hariannya berhenti)
     // dan mana yang periodenya masih menggantung.
     const clinicTherapistIds = (clinicTherapistsRes?.data || []).map(t => t.id);
+    const therapistNameMap = {};
+    (clinicTherapistsRes?.data || []).forEach(t => { therapistNameMap[t.id] = t.name; });
     const payrollRes = clinicTherapistIds.length
       ? await supabase
         .from('payroll_records')
@@ -7002,27 +7791,53 @@ export const getBepFinancials = async () => {
     const adminExpense = sumAmount(adminExpRes.data);
     const revenueThisMonth = sumAmount(ownerIncRes.data) + sumAmount(adminIncRes.data) + sumAmount(patientIncRes.data);
 
+    // Rincian baris pengeluaran (owner + admin) supaya widget BEP bisa
+    // menampilkan detail per transaksi saat "Pengeluaran" diklik.
+    const expenseItems = [
+      ...excludeAlreadyCountedRows(ownerExpRes.data).map(r => ({
+        id: r.id, description: r.description || r.category || 'Pengeluaran',
+        category: r.category, date: r.date, amount: Number(r.amount) || 0, source: 'owner'
+      })),
+      ...(adminExpRes.data || []).map(r => ({
+        id: r.id, description: r.description || r.category || 'Pengeluaran',
+        category: r.category, date: r.transaction_date, amount: Number(r.amount) || 0, source: 'admin'
+      }))
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
     const therapists = therapistsRes.data || [];
     const ratesMap = {};
     (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
 
     // ── Fase 2: transport & insentif yang sudah terkunci di payroll ──
-    // Payroll yang dibuat dalam bulan kalender berjalan menggantikan akrual
-    // harian terapis yang bersangkutan sampai akhir bulan. Angkanya diambil
-    // dari payroll_records (bukan dari baris owner_expenditures hasil posting)
+    // Payroll yang PERIODENYA menyentuh bulan kalender berjalan menggantikan
+    // akrual harian terapis yang bersangkutan sampai akhir bulan. Dicek dari
+    // payroll_period_start/end, BUKAN created_at — slip yang telat dibuat
+    // (mis. periode Juli baru diinput awal Agustus) tetap milik periode Juli
+    // dan tidak boleh nyasar jadi biaya Agustus. Angkanya diambil dari
+    // payroll_records (bukan dari baris owner_expenditures hasil posting)
     // supaya tetap benar walau slip gaji belum sempat terpost ke accounting.
     const payrollRecords = payrollRes?.data || [];
     const payrollThisMonth = payrollRecords.filter(r => {
-      const createdAt = r.created_at ? new Date(r.created_at) : null;
-      return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+      return r.payroll_period_start && r.payroll_period_end
+        && r.payroll_period_start <= monthEndStr && r.payroll_period_end >= monthStartStr;
     });
     const paidTherapistIds = new Set(payrollThisMonth.map(r => r.physiotherapist_id));
 
     let transportFromPayroll = 0;
     let incentiveFromPayroll = 0;
+    // Rincian per terapis supaya widget BEP bisa menampilkan detail saat
+    // "Transport Terapis" / "Insentif Terapis" diklik.
+    const transportBreakdown = [];
+    const incentiveBreakdown = [];
     payrollThisMonth.forEach(r => {
-      transportFromPayroll += Number(r.transport_per_day) || 0;
-      incentiveFromPayroll += (Number(r.incentive_amount) || 0) + (Number(r.custom_commission) || 0);
+      const transportAmt = Number(r.transport_per_day) || 0;
+      const incentiveAmt = (Number(r.incentive_amount) || 0) + (Number(r.custom_commission) || 0);
+      transportFromPayroll += transportAmt;
+      incentiveFromPayroll += incentiveAmt;
+      const name = therapistNameMap[r.physiotherapist_id] || 'Terapis';
+      const detail = `Payroll ${format(parseISO(r.payroll_period_start), 'd MMM', { locale: idLocale })} – ${format(parseISO(r.payroll_period_end), 'd MMM yyyy', { locale: idLocale })}`;
+      if (transportAmt > 0) transportBreakdown.push({ therapistId: r.physiotherapist_id, name, amount: transportAmt, source: 'payroll', detail });
+      if (incentiveAmt > 0) incentiveBreakdown.push({ therapistId: r.physiotherapist_id, name, amount: incentiveAmt, source: 'payroll', detail });
     });
 
     // ── Fase 1: akrual harian untuk terapis yang periodenya belum dibayar ──
@@ -7062,13 +7877,22 @@ export const getBepFinancials = async () => {
       ]);
 
       const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], accrualStart, effectiveEnd);
-      transportLive += (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+      const therapistTransport = (parseFloat(t.transport_per_day) || 0) * attendanceDays;
+      transportLive += therapistTransport;
 
       const recaps = recapsRes.data || [];
-      incentiveLive += salaryScheme === 'full_salary'
+      const therapistIncentive = salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
         : calculateCustomSalary(recaps, ratesMap);
+      incentiveLive += therapistIncentive;
+
+      const detail = `Akrual harian ${format(accrualStart, 'd MMM', { locale: idLocale })} – ${format(effectiveEnd, 'd MMM yyyy', { locale: idLocale })}`;
+      if (therapistTransport > 0) transportBreakdown.push({ therapistId: t.id, name: t.name, amount: therapistTransport, source: 'akrual', detail });
+      if (therapistIncentive > 0) incentiveBreakdown.push({ therapistId: t.id, name: t.name, amount: therapistIncentive, source: 'akrual', detail });
     }));
+
+    transportBreakdown.sort((a, b) => b.amount - a.amount);
+    incentiveBreakdown.sort((a, b) => b.amount - a.amount);
 
     const transportTotal = transportFromPayroll + transportLive;
     const incentiveTotal = incentiveFromPayroll + incentiveLive;
@@ -7145,8 +7969,631 @@ export const getBepFinancials = async () => {
         revenueThisMonth,
         isBreakEven: revenueThisMonth >= totalCost,
         breakEvenDate,
+        // Rincian per item supaya widget BEP bisa menampilkan detail saat
+        // salah satu baris (Pengeluaran/Transport/Insentif) diklik.
+        expenseItems,
+        transportBreakdown,
+        incentiveBreakdown,
       },
       error: null
     };
   }, 'getBepFinancials', { retry: true });
+};
+
+// ============================================
+// BOARD PRESENTATION / SLIDESHOW METRICS
+// Metrik agregat untuk fitur "Presentasi Direksi" (Owner Presentation
+// Slideshow). Semua fungsi di bawah menerima { startDate, endDate } mengikuti
+// konvensi `dateRange` yang sudah dipakai RevenueOverview/operational charts,
+// supaya konsisten dengan angka yang tampil di dashboard biasa.
+// ============================================
+
+const resolveCurrentClinicId = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return null;
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  return userRow?.clinic_id || null;
+};
+
+// New vs returning patient untuk sebuah rentang tanggal (generalisasi dari
+// fetchTodayNewPatients/fetchTodayReturningPatients yang hanya untuk hari ini).
+export const fetchPatientMixForRange = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    const { count: newCount, error: newError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .is('patient_id', null);
+    if (newError) return { error: newError };
+
+    const { count: returningCount, error: returningError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .in('status', ['confirmed', 'rescheduled', 'ongoing', 'completed'])
+      .not('patient_id', 'is', null);
+    if (returningError) return { error: returningError };
+
+    const total = (newCount || 0) + (returningCount || 0);
+    return {
+      data: {
+        newPatients: newCount || 0,
+        returningPatients: returningCount || 0,
+        returningRate: total > 0 ? Math.round(((returningCount || 0) / total) * 100) : 0,
+      },
+      error: null,
+    };
+  }, 'fetchPatientMixForRange', { retry: true });
+};
+
+// Persentase pembatalan appointment dalam rentang tanggal (bukan cuma count
+// hari ini seperti fetchCancelledAppointments).
+export const fetchCancellationRate = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    const { count: totalAppointments, error: totalError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`);
+    if (totalError) return { error: totalError };
+
+    const { count: cancelled, error: cancelledError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', `${startDate}T00:00:00`)
+      .lte('appointment_date', `${endDate}T23:59:59`)
+      .eq('status', 'cancelled');
+    if (cancelledError) return { error: cancelledError };
+
+    return {
+      data: {
+        totalAppointments: totalAppointments || 0,
+        cancelled: cancelled || 0,
+        rate: totalAppointments > 0 ? Math.round(((cancelled || 0) / totalAppointments) * 100) : 0,
+      },
+      error: null,
+    };
+  }, 'fetchCancellationRate', { retry: true });
+};
+
+// Tingkat perpanjangan paket: dari paket yang sudah habis/expired dalam
+// rentang tanggal, berapa persen pasiennya membeli paket baru lagi setelahnya.
+export const getPackageRenewalRate = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const clinicId = await resolveCurrentClinicId();
+
+    // package_tracking tidak punya kolom clinic_id (lihat pola query yang sama
+    // di RevenueOverview.jsx) — cakupan klinik ditentukan lewat daftar
+    // patient_id milik klinik ini.
+    const { data: clinicPatients, error: patientsError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('clinic_id', clinicId);
+    if (patientsError) return { error: patientsError };
+    const clinicPatientIds = (clinicPatients || []).map(p => p.id);
+    if (clinicPatientIds.length === 0) {
+      return { data: { totalExpired: 0, renewed: 0, rate: 0 }, error: null };
+    }
+
+    const { data: expiredPackages, error: expiredError } = await supabase
+      .from('package_tracking')
+      .select('id, patient_id, updated_at, status')
+      .in('patient_id', clinicPatientIds)
+      .in('status', ['expired', 'selesai', 'habis', 'completed', 'done'])
+      .gte('updated_at', `${startDate}T00:00:00`)
+      .lte('updated_at', `${endDate}T23:59:59`);
+    if (expiredError) return { error: expiredError };
+
+    const expiredList = (expiredPackages || []).filter(p => p.patient_id);
+    if (expiredList.length === 0) {
+      return { data: { totalExpired: 0, renewed: 0, rate: 0 }, error: null };
+    }
+
+    const patientIds = [...new Set(expiredList.map(p => p.patient_id))];
+    const { data: allPackagesForPatients, error: allError } = await supabase
+      .from('package_tracking')
+      .select('id, patient_id, created_at')
+      .in('patient_id', patientIds);
+    if (allError) return { error: allError };
+
+    let renewedCount = 0;
+    expiredList.forEach(expired => {
+      const hasNewerPackage = (allPackagesForPatients || []).some(
+        p => p.patient_id === expired.patient_id &&
+          p.id !== expired.id &&
+          new Date(p.created_at) > new Date(expired.updated_at)
+      );
+      if (hasNewerPackage) renewedCount += 1;
+    });
+
+    return {
+      data: {
+        totalExpired: expiredList.length,
+        renewed: renewedCount,
+        rate: Math.round((renewedCount / expiredList.length) * 100),
+      },
+      error: null,
+    };
+  }, 'getPackageRenewalRate', { retry: true });
+};
+
+// Total piutang (receivables) outstanding — getOwnerReceivables() sudah ada
+// tapi cuma mengembalikan daftar baris, di sini dijumlahkan jadi satu angka.
+export const getTotalOutstandingReceivables = async () => {
+  return safeQuery(async () => {
+    const { data: receivables, error } = await getOwnerReceivables();
+    if (error) return { error };
+
+    // Kolom nominal piutang yang belum lunas adalah `outstanding_amount`
+    // (lihat FinanceInput.jsx) — piutang berstatus 'Paid' sudah lunas, tidak dihitung.
+    const rows = (receivables || []).filter(r => r.status !== 'Paid');
+    const total = rows.reduce((s, r) => s + (Number(r.outstanding_amount) || 0), 0);
+    return {
+      data: {
+        total,
+        count: rows.length,
+      },
+      error: null,
+    };
+  }, 'getTotalOutstandingReceivables', { retry: true });
+};
+
+// Kedisiplinan kehadiran & kelengkapan SOAP di level klinik (agregat dari
+// getTherapistAttendanceRate/getTherapistSoapCompleteness per terapis, yang
+// selama ini hanya dipakai untuk remunerasi per-terapis).
+export const getClinicStaffQualitySummary = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const { data: therapists, error: therapistsError } = await getActivePhysiotherapists();
+    if (therapistsError) return { error: therapistsError };
+
+    const therapistList = therapists || [];
+    if (therapistList.length === 0) {
+      return {
+        data: { attendanceRate: 100, soapCompletenessRate: 100, therapistCount: 0 },
+        error: null,
+      };
+    }
+
+    const results = await Promise.all(
+      therapistList.map(async (t) => {
+        const [attendanceRes, soapRes] = await Promise.all([
+          getTherapistAttendanceRate(t.id, startDate, endDate),
+          getTherapistSoapCompleteness(t.id, startDate, endDate),
+        ]);
+        return { attendance: attendanceRes?.data, soap: soapRes?.data };
+      })
+    );
+
+    let totalScheduled = 0, totalAttended = 0, totalRecaps = 0, totalFilled = 0;
+    results.forEach(({ attendance, soap }) => {
+      if (attendance) {
+        totalScheduled += attendance.totalScheduled || 0;
+        totalAttended += attendance.totalAttended || 0;
+      }
+      if (soap) {
+        totalRecaps += soap.totalRecaps || 0;
+        totalFilled += soap.totalFilled || 0;
+      }
+    });
+
+    return {
+      data: {
+        attendanceRate: totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 100,
+        soapCompletenessRate: totalRecaps > 0 ? Math.round((totalFilled / totalRecaps) * 100) : 100,
+        therapistCount: therapistList.length,
+      },
+      error: null,
+    };
+  }, 'getClinicStaffQualitySummary', { retry: true });
+};
+
+// Pertumbuhan sesi/pasien/revenue: periode terpilih dibandingkan dengan
+// periode sebelumnya yang panjangnya sama (mis. 1-15 Agu vs 16-31 Jul).
+export const getPeriodGrowth = async ({ startDate, endDate }) => {
+  return safeQuery(async () => {
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    const rangeDays = Math.max(differenceInCalendarDays(end, start) + 1, 1);
+    const prevEnd = addDays(start, -1);
+    const prevStart = addDays(prevEnd, -(rangeDays - 1));
+    const prevStartStr = format(prevStart, 'yyyy-MM-dd');
+    const prevEndStr = format(prevEnd, 'yyyy-MM-dd');
+
+    const sumRevenue = (rows) => (rows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+
+    const [
+      sessionsNow, sessionsPrev,
+      patientsNow, patientsPrev,
+      ownerIncNow, adminIncNow, patientIncNow,
+      ownerIncPrev, adminIncPrev, patientIncPrev,
+    ] = await Promise.all([
+      fetchTotalSessions(startDate, endDate),
+      fetchTotalSessions(prevStartStr, prevEndStr),
+      fetchTotalPatients(startDate, endDate),
+      fetchTotalPatients(prevStartStr, prevEndStr),
+      getOwnerIncome({ startDate, endDate }),
+      getAdminIncome({ startDate, endDate }),
+      getPatientIncomeFromPackages({ startDate, endDate }),
+      getOwnerIncome({ startDate: prevStartStr, endDate: prevEndStr }),
+      getAdminIncome({ startDate: prevStartStr, endDate: prevEndStr }),
+      getPatientIncomeFromPackages({ startDate: prevStartStr, endDate: prevEndStr }),
+    ]);
+
+    const sessionsNowVal = sessionsNow?.data || 0;
+    const sessionsPrevVal = sessionsPrev?.data || 0;
+    const patientsNowVal = patientsNow?.data || 0;
+    const patientsPrevVal = patientsPrev?.data || 0;
+    const revenueNowVal = sumRevenue(ownerIncNow?.data) + sumRevenue(adminIncNow?.data) + sumRevenue(patientIncNow?.data);
+    const revenuePrevVal = sumRevenue(ownerIncPrev?.data) + sumRevenue(adminIncPrev?.data) + sumRevenue(patientIncPrev?.data);
+
+    const pctChange = (now, prev) => {
+      if (prev === 0) return now > 0 ? 100 : 0;
+      return Math.round(((now - prev) / prev) * 100);
+    };
+
+    return {
+      data: {
+        previousPeriod: { startDate: prevStartStr, endDate: prevEndStr },
+        sessions: { now: sessionsNowVal, previous: sessionsPrevVal, growth: pctChange(sessionsNowVal, sessionsPrevVal) },
+        patients: { now: patientsNowVal, previous: patientsPrevVal, growth: pctChange(patientsNowVal, patientsPrevVal) },
+        revenue: { now: revenueNowVal, previous: revenuePrevVal, growth: pctChange(revenueNowVal, revenuePrevVal) },
+      },
+      error: null,
+    };
+  }, 'getPeriodGrowth', { retry: true });
+};
+
+// ===================== Employee Attendance (Absensi Karyawan) =====================
+
+const getMyClinicIdForAttendance = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return { clinicId: null, userId: null };
+  const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
+  return { clinicId: userRow?.clinic_id || null, userId };
+};
+
+export const getAttendanceShiftSettings = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('employee_attendance_shift_settings')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('department', { ascending: true });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceShiftSettings');
+};
+
+export const upsertAttendanceShiftSetting = async ({ department, expected_check_in, grace_minutes }) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+    const { data, error } = await supabase
+      .from('employee_attendance_shift_settings')
+      .upsert({ clinic_id: clinicId, department, expected_check_in, grace_minutes }, { onConflict: 'clinic_id,department' })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'upsertAttendanceShiftSetting');
+};
+
+export const deleteAttendanceShiftSetting = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('employee_attendance_shift_settings').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteAttendanceShiftSetting');
+};
+
+/**
+ * Manual employee-name -> physiotherapist mappings, for attendance-machine
+ * nicknames the automatic word/prefix matcher can't safely resolve on its
+ * own (e.g. "dilla" for "Nurfadilah" — spelling doesn't share a common word
+ * or prefix). Checked before matchEmployeeNameToTherapist on every import.
+ */
+export const getAttendanceEmployeeAliases = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .select('id, employee_name, physiotherapist_id, physiotherapists(name)')
+      .eq('clinic_id', clinicId);
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceEmployeeAliases');
+};
+
+export const upsertAttendanceEmployeeAlias = async ({ employee_name, physiotherapist_id }) => {
+  return safeQuery(async () => {
+    const { clinicId, userId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+    const { data, error } = await supabase
+      .from('attendance_employee_aliases')
+      .upsert(
+        { clinic_id: clinicId, employee_name, physiotherapist_id, created_by: userId || null },
+        { onConflict: 'clinic_id,employee_name' }
+      )
+      .select()
+      .single();
+    if (error) return { error };
+
+    // Retroactively link + recompute any attendance rows already saved for
+    // this employee name under the old (missing) match, so confirming an
+    // alias fixes past uploads too, not just future ones.
+    const { data: existingRows } = await supabase
+      .from('employee_attendance_records')
+      .select('id')
+      .eq('clinic_id', clinicId)
+      .eq('employee_name', employee_name);
+    const rowIds = (existingRows || []).map((r) => r.id);
+    if (rowIds.length > 0) {
+      await supabase.from('employee_attendance_records').update({ physiotherapist_id }).in('id', rowIds);
+      await recalculateAttendanceRecordsByIds(rowIds);
+    }
+
+    return { data, success: true, error: null };
+  }, 'upsertAttendanceEmployeeAlias');
+};
+
+export const deleteAttendanceEmployeeAlias = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('attendance_employee_aliases').delete().eq('id', id);
+    if (error) return { error };
+    return { data: true, success: true, error: null };
+  }, 'deleteAttendanceEmployeeAlias');
+};
+
+/**
+ * Bulk-imports parsed attendance day-records (see attendanceExcelParser.js).
+ * Rows are matched to an existing physiotherapist by exact (case-insensitive)
+ * name when possible, and upserted keyed by (clinic, employee name, date) so
+ * re-uploading the same period safely overwrites previous punches.
+ */
+export const bulkUpsertAttendanceRecords = async (rows, sourceFileName) => {
+  return safeQuery(async () => {
+    if (!rows || rows.length === 0) return { data: [], success: true, error: null };
+    const { clinicId, userId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+
+    const { data: therapists } = await supabase
+      .from('physiotherapists')
+      .select('id, name')
+      .eq('clinic_id', clinicId);
+    const { data: aliases } = await supabase
+      .from('attendance_employee_aliases')
+      .select('employee_name, physiotherapist_id')
+      .eq('clinic_id', clinicId);
+    const aliasMap = new Map((aliases || []).map((a) => [a.employee_name.trim().toLowerCase(), a.physiotherapist_id]));
+
+    const payload = rows.map((r) => ({
+      clinic_id: clinicId,
+      physiotherapist_id: matchEmployeeNameToTherapist(r.employee_name, therapists || [], aliasMap)?.id || null,
+      employee_external_id: r.employee_external_id || null,
+      employee_name: r.employee_name,
+      department: r.department || null,
+      attendance_date: r.attendance_date,
+      check_in: r.check_in || null,
+      check_out: r.check_out || null,
+      raw_punches: r.raw_punches || [],
+      status: r.status,
+      late_minutes: r.late_minutes || 0,
+      expected_check_in: r.expected_check_in || null,
+      expected_source: r.expected_source || null,
+      source_file_name: sourceFileName || null,
+      uploaded_by: userId || null,
+    }));
+
+    const CHUNK_SIZE = 500;
+    let imported = 0;
+    for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
+      const chunk = payload.slice(i, i + CHUNK_SIZE);
+      const { error } = await supabase
+        .from('employee_attendance_records')
+        .upsert(chunk, { onConflict: 'clinic_id,employee_name,attendance_date' });
+      if (error) return { error };
+      imported += chunk.length;
+    }
+
+    return { data: { imported }, success: true, error: null };
+  }, 'bulkUpsertAttendanceRecords');
+};
+
+/**
+ * Re-evaluates status/late_minutes/expected_check_in for already-saved
+ * attendance rows using each row's CURRENT physiotherapist schedule,
+ * date-specific override, and department shift setting — so a schedule
+ * change made after the fact is reflected without re-uploading the file.
+ */
+export const recalculateAttendanceRecordsByIds = async (ids) => {
+  return safeQuery(async () => {
+    if (!ids || ids.length === 0) return { data: { updated: 0 }, success: true, error: null };
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { error: { message: 'Clinic tidak ditemukan untuk akun ini.' } };
+
+    const { data: records, error: recordsError } = await supabase
+      .from('employee_attendance_records')
+      .select('id, physiotherapist_id, department, attendance_date, check_in, check_out')
+      .in('id', ids);
+    if (recordsError) return { error: recordsError };
+    if (!records || records.length === 0) return { data: { updated: 0 }, success: true, error: null };
+
+    const { data: therapistRows } = await supabase
+      .from('physiotherapists')
+      .select('id, therapist_schedules(day_of_week, start_time, is_active), therapist_schedule_overrides(override_date, start_time)')
+      .eq('clinic_id', clinicId);
+
+    const therapistById = {};
+    (therapistRows || []).forEach((t) => {
+      const schedule = {};
+      (t.therapist_schedules || []).forEach((s) => {
+        if (!s.is_active || !s.start_time) return;
+        if (!schedule[s.day_of_week] || s.start_time < schedule[s.day_of_week]) schedule[s.day_of_week] = s.start_time;
+      });
+      const overrides = {};
+      (t.therapist_schedule_overrides || []).forEach((o) => {
+        if (o.override_date && o.start_time) overrides[o.override_date] = o.start_time;
+      });
+      therapistById[t.id] = { schedule, overrides };
+    });
+
+    const { data: shiftSettings } = await supabase
+      .from('employee_attendance_shift_settings')
+      .select('department, expected_check_in, grace_minutes')
+      .eq('clinic_id', clinicId);
+    const shiftSettingsByDept = {};
+    (shiftSettings || []).forEach((s) => {
+      shiftSettingsByDept[s.department] = { expected_check_in: s.expected_check_in, grace_minutes: s.grace_minutes };
+    });
+
+    const recordDates = records.map((r) => r.attendance_date).sort();
+    const { data: appointments } = await getAppointments({
+      startDate: `${recordDates[0]}T00:00:00`,
+      endDate: `${recordDates[recordDates.length - 1]}T23:59:59`,
+    });
+    const homecareLookup = buildHomecareLookup(appointments || []);
+
+    let updated = 0;
+    for (const r of records) {
+      const t = r.physiotherapist_id ? therapistById[r.physiotherapist_id] : null;
+      const resolved = resolveAttendanceStatus({
+        checkIn: r.check_in?.slice(0, 5),
+        checkOut: r.check_out ? r.check_out.slice(0, 5) : null,
+        date: r.attendance_date,
+        department: r.department,
+        therapistSchedule: t?.schedule,
+        therapistOverrides: t?.overrides,
+        shiftSettingsByDept,
+        homecare: r.physiotherapist_id ? homecareLookup?.[r.physiotherapist_id]?.[r.attendance_date] : null,
+      });
+
+      const { error: updateError } = await supabase
+        .from('employee_attendance_records')
+        .update({
+          status: resolved.status,
+          late_minutes: resolved.late_minutes,
+          expected_check_in: resolved.expected_check_in,
+          expected_source: resolved.expected_source,
+        })
+        .eq('id', r.id);
+      if (!updateError) updated += 1;
+    }
+
+    return { data: { updated }, success: true, error: null };
+  }, 'recalculateAttendanceRecordsByIds');
+};
+
+/** Recalculates every already-saved attendance row for one therapist on one date (see recalculateAttendanceRecordsByIds). */
+export const recalculateAttendanceForTherapistDate = async (physiotherapistId, date) => {
+  return safeQuery(async () => {
+    if (!physiotherapistId || !date) return { data: { updated: 0 }, success: true, error: null };
+    const { data: rows, error } = await supabase
+      .from('employee_attendance_records')
+      .select('id')
+      .eq('physiotherapist_id', physiotherapistId)
+      .eq('attendance_date', date);
+    if (error) return { error };
+    return recalculateAttendanceRecordsByIds((rows || []).map((r) => r.id));
+  }, 'recalculateAttendanceForTherapistDate');
+};
+
+/** Recalculates every already-saved attendance row for a clinic within an optional date range — useful after a bulk schedule/alias fix. */
+export const recalculateAllAttendanceRecords = async ({ startDate, endDate } = {}) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: { updated: 0 }, success: true, error: null };
+    let query = supabase.from('employee_attendance_records').select('id').eq('clinic_id', clinicId);
+    if (startDate) query = query.gte('attendance_date', startDate);
+    if (endDate) query = query.lte('attendance_date', endDate);
+    const { data: rows, error } = await query;
+    if (error) return { error };
+    return recalculateAttendanceRecordsByIds((rows || []).map((r) => r.id));
+  }, 'recalculateAllAttendanceRecords');
+};
+
+export const getAttendanceRecords = async ({ startDate, endDate, department, employeeName, status } = {}) => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+
+    let query = supabase
+      .from('employee_attendance_records')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('attendance_date', { ascending: false });
+
+    if (startDate) query = query.gte('attendance_date', startDate);
+    if (endDate) query = query.lte('attendance_date', endDate);
+    if (department) query = query.eq('department', department);
+    if (employeeName) query = query.eq('employee_name', employeeName);
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getAttendanceRecords');
+};
+
+/**
+ * Returns every active physiotherapist with their weekly practice-hour
+ * schedule (the same schedule that drives the booking calendar), as
+ * { id, name, schedule: { [dayOfWeek 0-6]: 'HH:MM:SS' } }[]. Attendance
+ * employee names (short/nicknames from the machine export) are matched to
+ * these full formal names with matchEmployeeNameToTherapist — see
+ * src/utils/therapistNameMatch.js for why an exact match doesn't work.
+ */
+export const getAttendanceScheduleLookup = async () => {
+  return safeQuery(async () => {
+    const { clinicId } = await getMyClinicIdForAttendance();
+    if (!clinicId) return { data: [], success: true, error: null };
+
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .select('id, name, therapist_schedules(day_of_week, start_time, is_active), therapist_schedule_overrides(override_date, start_time)')
+      .eq('clinic_id', clinicId);
+    if (error) return { error };
+
+    const therapists = (data || [])
+      .filter((t) => t.name)
+      .map((t) => {
+        // Each work day is stored as several ~90min bookable-slot rows
+        // sharing the same day_of_week (e.g. Monday: 09:00, 10:30, 12:00,
+        // 13:30, 15:00), not one row per day — the expected check-in is the
+        // EARLIEST slot's start_time for that day, not just any of them.
+        const schedule = {};
+        (t.therapist_schedules || []).forEach((s) => {
+          if (!s.is_active || !s.start_time) return;
+          if (!schedule[s.day_of_week] || s.start_time < schedule[s.day_of_week]) {
+            schedule[s.day_of_week] = s.start_time;
+          }
+        });
+
+        // One-off date-specific overrides take priority over the weekly
+        // template — see therapist_schedule_overrides.
+        const overrides = {};
+        (t.therapist_schedule_overrides || []).forEach((o) => {
+          if (o.override_date && o.start_time) overrides[o.override_date] = o.start_time;
+        });
+
+        return { id: t.id, name: t.name, schedule, overrides };
+      });
+
+    return { data: therapists, success: true, error: null };
+  }, 'getAttendanceScheduleLookup');
 };

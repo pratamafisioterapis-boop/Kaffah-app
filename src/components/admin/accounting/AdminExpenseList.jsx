@@ -125,56 +125,63 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             </div>
           </div>
 
-          {/* Desktop: tabel */}
-          <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          {/* Desktop: tabel, kolom menyesuaikan lebar layar tanpa perlu geser */}
+          <div className="hidden sm:block">
+          <table className="w-full table-fixed text-sm text-left">
+            <colgroup>
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[13%]" />
+              <col className="w-[12%]" />
+              <col className="w-[24%]" />
+              <col className="w-[16%]" />
+              {(canEdit || canDelete) && <col className="w-[12%]" />}
+            </colgroup>
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal</th>
-                <th className="px-6 py-4 font-semibold">Kategori</th>
-                <th className="px-6 py-4 font-semibold">Sub Kategori</th>
-                <th className="px-6 py-4 font-semibold">Akun Bank</th>
-                <th className="px-6 py-4 font-semibold">Deskripsi</th>
-                <th className="px-6 py-4 font-semibold text-right">Jumlah</th>
-                {(canEdit || canDelete) && <th className="px-6 py-4 font-semibold text-center w-[120px]">Aksi</th>}
+                <th className="px-3 py-3 font-semibold whitespace-nowrap">Tanggal</th>
+                <th className="px-3 py-3 font-semibold">Kategori</th>
+                <th className="px-3 py-3 font-semibold">Sub Kategori</th>
+                <th className="px-3 py-3 font-semibold">Akun Bank</th>
+                <th className="px-3 py-3 font-semibold">Deskripsi</th>
+                <th className="px-3 py-3 font-semibold text-right">Jumlah</th>
+                {(canEdit || canDelete) && <th className="px-3 py-3 font-semibold text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {dataToRender.map((ex, index) => (
                 <tr key={ex.id || index} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4 whitespace-nowrap text-slate-700 font-medium">
+                  <td className="px-3 py-3 text-slate-700 font-medium whitespace-nowrap">
                     {formatDate(ex.transaction_date)}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide">
+                  <td className="px-3 py-3">
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide break-words">
                         {ex.category || 'Uncategorized'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-600 text-xs uppercase font-medium tracking-wide">
+                  <td className="px-3 py-3 text-slate-600 text-xs uppercase font-medium tracking-wide break-words">
                     {ex.sub_category || '-'}
                   </td>
-                  <td className="px-6 py-4 text-slate-600">
+                  <td className="px-3 py-3 text-slate-600 break-words">
                     {ex.bank_account ? (
-                        <div className="flex items-center gap-2">
-                           <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
-                        </div>
+                        <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
                     ) : (
                         <span className="text-slate-400 italic text-xs">Tunai/Lain</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-slate-600 max-w-[250px] truncate" title={ex.description}>
+                  <td className="px-3 py-3 text-slate-600 break-words" title={ex.description}>
                     {ex.description || '-'}
                   </td>
-                  <td className="px-6 py-4 text-right font-bold text-rose-600 whitespace-nowrap font-mono">
+                  <td className="px-3 py-3 text-right font-bold text-rose-600 whitespace-nowrap font-mono">
                     Rp {parseFloat(ex.amount || 0).toLocaleString('id-ID')}
                   </td>
                   {(canEdit || canDelete) && (
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-3 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
                         {canEdit && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all hover:scale-105"
                             onClick={() => onEdit && onEdit(ex)}
                             title="Edit Pengeluaran"
@@ -183,9 +190,9 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                           </Button>
                         )}
                         {canDelete && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all hover:scale-105"
                             onClick={() => onDelete && onDelete(ex)}
                             title="Hapus Pengeluaran"
@@ -201,8 +208,8 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
             </tbody>
             <tfoot className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
                 <tr>
-                    <td colSpan={5} className="px-6 py-4 text-right text-sm uppercase tracking-wider text-slate-500">Total Pengeluaran</td>
-                    <td className="px-6 py-4 text-right text-rose-700 text-base font-bold font-mono">Rp {totalAmount.toLocaleString('id-ID')}</td>
+                    <td colSpan={5} className="px-3 py-3 text-right text-sm uppercase tracking-wider text-slate-500">Total Pengeluaran</td>
+                    <td className="px-3 py-3 text-right text-rose-700 text-base font-bold font-mono">Rp {totalAmount.toLocaleString('id-ID')}</td>
                     {(canEdit || canDelete) && <td></td>}
                 </tr>
             </tfoot>

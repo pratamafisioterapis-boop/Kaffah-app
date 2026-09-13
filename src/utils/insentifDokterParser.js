@@ -127,6 +127,39 @@ function detectFormat(firstPageWords) {
   return null;
 }
 
+// Setiap PDF mencetak baris "Periode : DD/MM/YYYY S.D DD/MM/YYYY" di header,
+// menandai rentang tanggal transaksi yang tercakup di laporan itu. Dibaca
+// langsung dari teks halaman pertama (bukan dari baris hasil clusterLines,
+// karena pdf.js kadang memecah "Periode : 01/06/2026 S.D 15/06/2026" jadi
+// beberapa token yang urutannya tetap terjaga saat digabung jadi 1 string).
+function extractPeriodeRange(firstPageWords) {
+  const text = firstPageWords.map((w) => w.text).join(' ');
+  const m = text.match(/(\d{2}\/\d{2}\/\d{4})\s*S\.?\s*D\.?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (!m) return null;
+  return { awal: m[1], akhir: m[2] };
+}
+
+// PDF "Praktek Swasta" (format A/C) mencantumkan kata "PRAKTEK SWASTA" di
+// judul header, sementara PDF BPJS Individu (format B) tidak pernah punya
+// kata itu. Dipakai untuk memberi label yang jelas di UI/Excel supaya
+// pengguna bisa langsung membedakan mana laporan Praktek Swasta.
+function detectIsSwasta(firstPageWords) {
+  const text = firstPageWords.map((w) => w.text).join(' ').toUpperCase();
+  return text.includes('SWASTA');
+}
+
+const FORMAT_LABELS = {
+  A: { swasta: 'Praktek Swasta - Pasien Jaminan (PWTT/PWT)', default: 'PWTT/PWT (Pasien Jaminan)' },
+  C: { swasta: 'Praktek Swasta - Pasien Tunai (PWTT/PWT)', default: 'PWTT/PWT (Pasien Tunai)' },
+  B: { swasta: 'BPJS Individu', default: 'BPJS Individu' },
+};
+
+function formatLabelFor(format, isSwasta) {
+  const labels = FORMAT_LABELS[format];
+  if (!labels) return format;
+  return isSwasta ? labels.swasta : labels.default;
+}
+
 // â”€â”€ FORMAT A: PWTT/PWT Pasien Jaminan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // PENTING: posisi kolom TIDAK di-hardcode, karena beda file PDF (beda ukuran
 // halaman / template) punya koordinat piksel yang beda, dan jumlah sub-kolom
@@ -697,6 +730,13 @@ export function toNumber(str) {
   return isNaN(n) ? 0 : n;
 }
 
+// â”€â”€ "DD/MM/YYYY" â†’ "YYYY-MM" (dipakai untuk auto-isi pemilih bulan Periode) â”€
+export function dmyToMonthValue(dmy) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy || '');
+  if (!m) return null;
+  return `${m[3]}-${m[2]}`;
+}
+
 // Bangun laporan rekap terpisah per jenis asuransi dari hasil parsing.
 // BPJS: nilainya ada di kolom TOTAL, direkap per Desc Transaksi.
 // Jaminan (PWTT/PWT): nilainya ada di sub-kolom TIPE PASIEN (Pertamina/
@@ -709,14 +749,62 @@ const JAMINAN_SUBTYPE_LABELS = {
   pribadi: 'Pribadi',
 };
 
+function buildJaminanBreakdown(jaminanRows) {
+  const jaminan = {};
+  Object.keys(JAMINAN_SUBTYPE_LABELS).forEach((key) => {
+    const byDesc = {};
+    jaminanRows.forEach((r) => {
+      const val = toNumber(r[key]);
+      if (!val) return;
+      const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+      if (!byDesc[deskKey]) byDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+      byDesc[deskKey].count += 1;
+      byDesc[deskKey].total += val;
+    });
+    const byDeskripsi = Object.values(byDesc).sort((a, b) => b.total - a.total);
+    jaminan[key] = {
+      label: JAMINAN_SUBTYPE_LABELS[key],
+      count: byDeskripsi.reduce((s, r) => s + r.count, 0),
+      total: byDeskripsi.reduce((s, r) => s + r.total, 0),
+      byDeskripsi,
+    };
+  });
+  return jaminan;
+}
+
+function buildTunaiBreakdown(tunaiRows) {
+  const tunaiByDesc = {};
+  tunaiRows.forEach((r) => {
+    const val = toNumber(r.tunai);
+    if (!val) return;
+    const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
+    if (!tunaiByDesc[deskKey]) tunaiByDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
+    tunaiByDesc[deskKey].count += 1;
+    tunaiByDesc[deskKey].total += val;
+  });
+  const tunaiByDeskripsi = Object.values(tunaiByDesc).sort((a, b) => b.total - a.total);
+  return {
+    count: tunaiRows.length,
+    total: tunaiByDeskripsi.reduce((s, r) => s + r.total, 0),
+    byDeskripsi: tunaiByDeskripsi,
+  };
+}
+
+// Laporan Praktek Swasta (Jaminan/Pribadi & Tunai — dari PDF yang berjudul
+// "PRAKTEK SWASTA") ditampilkan TERPISAH dari laporan Bukan Praktek Swasta
+// (BPJS Individu, dan andaikan ada PDF Jaminan/Tunai non-swasta di masa
+// depan) — supaya owner tidak perlu menjumlahkan manual mana pendapatan
+// dari praktek swasta dokter vs mana yang dari jalur lain.
 export function buildInsentifDokterReport(results) {
   const bpjsRows = [];
-  const jaminanRows = [];
-  const tunaiRows = [];
+  const swastaJaminanRows = [];
+  const swastaTunaiRows = [];
+  const nonSwastaJaminanRows = [];
+  const nonSwastaTunaiRows = [];
   (results || []).forEach((res) => {
     if (res.format === 'B') bpjsRows.push(...res.rows);
-    else if (res.format === 'A') jaminanRows.push(...res.rows);
-    else if (res.format === 'C') tunaiRows.push(...res.rows);
+    else if (res.format === 'A') (res.isSwasta ? swastaJaminanRows : nonSwastaJaminanRows).push(...res.rows);
+    else if (res.format === 'C') (res.isSwasta ? swastaTunaiRows : nonSwastaTunaiRows).push(...res.rows);
   });
 
   // BPJS: baris "KONSUL DOKTER" menandai bahwa pasien tsb kontrol/periksa ke
@@ -766,43 +854,39 @@ export function buildInsentifDokterReport(results) {
     byDeskripsi: bpjsByDeskripsi,
   };
 
-  const jaminan = {};
-  Object.keys(JAMINAN_SUBTYPE_LABELS).forEach((key) => {
-    const byDesc = {};
-    jaminanRows.forEach((r) => {
-      const val = toNumber(r[key]);
-      if (!val) return;
-      const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
-      if (!byDesc[deskKey]) byDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
-      byDesc[deskKey].count += 1;
-      byDesc[deskKey].total += val;
-    });
-    const byDeskripsi = Object.values(byDesc).sort((a, b) => b.total - a.total);
-    jaminan[key] = {
-      label: JAMINAN_SUBTYPE_LABELS[key],
-      count: byDeskripsi.reduce((s, r) => s + r.count, 0),
-      total: byDeskripsi.reduce((s, r) => s + r.total, 0),
-      byDeskripsi,
-    };
-  });
-
-  const tunaiByDesc = {};
-  tunaiRows.forEach((r) => {
-    const val = toNumber(r.tunai);
-    if (!val) return;
-    const deskKey = (r.deskripsi || '(Tanpa Deskripsi)').trim();
-    if (!tunaiByDesc[deskKey]) tunaiByDesc[deskKey] = { deskripsi: deskKey, count: 0, total: 0 };
-    tunaiByDesc[deskKey].count += 1;
-    tunaiByDesc[deskKey].total += val;
-  });
-  const tunaiByDeskripsi = Object.values(tunaiByDesc).sort((a, b) => b.total - a.total);
-  const tunai = {
-    count: tunaiRows.length,
-    total: tunaiByDeskripsi.reduce((s, r) => s + r.total, 0),
-    byDeskripsi: tunaiByDeskripsi,
+  return {
+    bpjs,
+    swasta: {
+      jaminan: buildJaminanBreakdown(swastaJaminanRows),
+      tunai: buildTunaiBreakdown(swastaTunaiRows),
+    },
+    nonSwasta: {
+      jaminan: buildJaminanBreakdown(nonSwastaJaminanRows),
+      tunai: buildTunaiBreakdown(nonSwastaTunaiRows),
+    },
   };
+}
 
-  return { bpjs, jaminan, tunai };
+// Riwayat lama (tersimpan sebelum pemisahan Swasta/Bukan Swasta) punya shape
+// datar { bpjs, jaminan, tunai } — semua data Jaminan/Tunai di riwayat lama
+// itu memang selalu berasal dari PDF Praktek Swasta, jadi aman dipetakan ke
+// `swasta` supaya laporan lama tetap tampil benar tanpa perlu migrasi data.
+export function normalizeInsentifDokterReport(report) {
+  if (!report) return null;
+  if (report.swasta && report.nonSwasta) return report;
+  const emptyJaminan = buildJaminanBreakdown([]);
+  const emptyTunai = buildTunaiBreakdown([]);
+  return {
+    bpjs: report.bpjs || buildTunaiBreakdown([]),
+    swasta: {
+      jaminan: report.jaminan || emptyJaminan,
+      tunai: report.tunai || emptyTunai,
+    },
+    nonSwasta: {
+      jaminan: emptyJaminan,
+      tunai: emptyTunai,
+    },
+  };
 }
 
 // â”€â”€ Fungsi utama: parse 1 file PDF â†’ { format, rows, summary, verification, meta } â”€
@@ -817,6 +901,10 @@ export async function parseInsentifDokterPdf(file) {
       'dari sistem IHC (format PWTT/PWT atau BPJS Individu).'
     );
   }
+
+  const isSwasta = detectIsSwasta(pages[0]);
+  const formatLabel = formatLabelFor(format, isSwasta);
+  const periode = extractPeriodeRange(pages[0]);
 
   const parsed = format === 'A' ? parseFormatA(pages) : format === 'C' ? parseFormatC(pages) : parseFormatB(pages);
 
@@ -854,6 +942,10 @@ export async function parseInsentifDokterPdf(file) {
 
   return {
     format,
+    formatLabel,
+    isSwasta,
+    periodeAwal: periode?.awal || null,
+    periodeAkhir: periode?.akhir || null,
     fileName: file.name,
     rows: parsed.rows,
     summary: parsed.summary,
@@ -877,7 +969,7 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
     let aoa = [];
     if (res.format === 'A') {
       const hasSubCols = res.rows.some((r) => r.pertamina || r.pertamedika);
-      aoa.push(['PERINCIAN INSENTIF DOKTER PRAKTEK SWASTA PASIEN JAMINAN ( PWTT/PWT )']);
+      aoa.push([`PERINCIAN INSENTIF DOKTER ${res.isSwasta ? 'PRAKTEK SWASTA ' : ''}PASIEN JAMINAN ( PWTT/PWT )`]);
       if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
       aoa.push([`File asal: ${res.fileName}`]);
       aoa.push([]);
@@ -914,7 +1006,7 @@ export function generateInsentifDokterExcel(results, periodeLabel = '') {
       aoa.push([]);
       aoa.push(['JUMLAH PENDAPATAN BERSIH DOKTER SBLM PPH', ...new Array(headerA.length - 2).fill(''), toNumber(res.summary.jumlahBersih)]);
     } else if (res.format === 'C') {
-      aoa.push(['PERINCIAN INSENTIF JASA DOKTER PASIEN TUNAI ( PWTT/PWT )']);
+      aoa.push([`PERINCIAN INSENTIF ${res.isSwasta ? 'DOKTER PRAKTEK SWASTA' : 'JASA DOKTER'} PASIEN TUNAI ( PWTT/PWT )`]);
       if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
       aoa.push([`File asal: ${res.fileName}`]);
       aoa.push([]);

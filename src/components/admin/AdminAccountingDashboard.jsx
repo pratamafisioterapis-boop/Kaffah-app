@@ -149,42 +149,55 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
   return (
     <div className="space-y-6 w-full font-sans">
-      {/* Hero Banner — sembunyikan di PWA */}
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-accounting-hero.webp"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+            >
+              Akuntansi &<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                Keuangan
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola arus kas operasional klinik.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {!isPWA && (
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-              <Wallet className="w-6 h-6 text-amber-300" />
-            </div>
-            <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{clinicName || ''}</p>
-              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Akuntansi & Keuangan</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Kelola arus kas operasional klinik (Admin)</p>
-            </div>
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm p-1.5 rounded-xl">
+          <div className="px-2 text-[#1677D2]">
+            <Calendar className="w-4 h-4" />
           </div>
-          <div className="flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm p-1.5 rounded-xl shrink-0">
-            <div className="px-2 text-amber-300/80">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <input
-              type="date"
-              className="bg-transparent border-none text-sm font-medium focus:ring-0 text-white [color-scheme:dark] w-32"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-            />
-            <span className="text-white/30">|</span>
-            <input
-              type="date"
-              className="bg-transparent border-none text-sm font-medium focus:ring-0 text-white [color-scheme:dark] w-32"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-            />
-            <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white rounded-lg h-8">
-              <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
-            </Button>
-          </div>
+          <input
+            type="date"
+            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-[#102F52] w-32"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+          />
+          <span className="text-[#DCE8F2]">|</span>
+          <input
+            type="date"
+            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-[#102F52] w-32"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+          />
+          <Button onClick={fetchData} size="sm" className="bg-[#1677D2] hover:bg-[#125fac] text-white rounded-lg h-8">
+            <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
+          </Button>
         </div>
       </div>
       )}

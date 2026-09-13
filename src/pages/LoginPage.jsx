@@ -1,14 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, ShieldCheck, BarChart3 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
-import kaffahTechLogo from '@/assets/kaffah-tech-icon.png';
+
+// Served from /public rather than bundled, so swapping the brand asset
+// later is a file replace, not a code change. Only rendered on APP_DOMAIN
+// (clinara.id), so this never touches the Kaffah Physiotherapy
+// patient-facing brand on the public domain.
+const CLINARA_LOGO_URL = '/clinara-logo.png';
+// Both crops have the wave accent already baked in — portrait for below the
+// `sm` breakpoint, landscape (with the wave along the top and bottom edges)
+// from `sm` up — so neither needs the blur/tint/CSS-wave treatment the
+// plain photo used to require.
+const CLINARA_LOGIN_BG_MOBILE_URL = '/login-bg-mobile.jpg';
+const CLINARA_LOGIN_BG_DESKTOP_URL = '/login-bg-desktop.jpg';
+// Icon-only crops (see public/clinara-icon.png generation) - the favicon
+// needs just the mark with no visible box (browser tabs render transparency
+// fine); apple-touch-icon needs an opaque backing since iOS paints
+// transparent areas black on home-screen icons.
+const CLINARA_ICON_URL = '/clinara-icon.png';
+const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
+
+// Staggered entrance for the card's inner sections (heading, form, trust
+// row) so they settle in sequence rather than popping in all at once.
+const cardStagger = {
+  hidden: {},
+  visible: {
+    transition: { delayChildren: 0.45, staggerChildren: 0.12 },
+  },
+};
+const cardItem = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +46,7 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { signIn, user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -109,6 +140,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Pemilih DPC status...");
+          const { data: dpcFallback } = await supabase
+            .from('pemilih_dpc')
+            .select('user_id, is_active')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (dpcFallback?.is_active) {
+            console.log("[LoginPage] Pemilih DPC detected, redirecting.");
+            navigate('/pemilih-dpc', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Validating fallback metadata role...");
           // Fallback: Check metadata
           const metaRole = user.user_metadata?.role;
@@ -163,6 +207,19 @@ const LoginPage = () => {
         if (relawan?.is_active) {
           console.log("[LoginPage] Pemilih relawan detected, redirecting.");
           navigate('/relawan', { replace: true });
+          return;
+        }
+
+        console.log("[LoginPage] Checking Pemilih DPC status...");
+        const { data: dpc } = await supabase
+          .from('pemilih_dpc')
+          .select('user_id, is_active')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (dpc?.is_active) {
+          console.log("[LoginPage] Pemilih DPC detected, redirecting.");
+          navigate('/pemilih-dpc', { replace: true });
           return;
         }
 
@@ -280,143 +337,518 @@ case 'clinic_admin':
   return (
     <>
       <Helmet>
-        <title>Login - Kaffah Tech</title>
-        <meta name="description" content="Secure Login to Kaffah Tech Digital System" />
+        <title>Login - Clinara</title>
+        <meta name="description" content="Secure login to Clinara — Healthcare Management Platform" />
+        <link rel="icon" type="image/png" href={CLINARA_ICON_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_APP_ICON_URL} />
+        <link rel="manifest" href="/manifest-clinara.json" />
+        {/* Preload the background photos so the browser starts fetching them
+            while the HTML is still parsing, instead of waiting for React to
+            mount and render the <img> tags — that gap was the visible delay
+            before the background appeared. */}
+        <link rel="preload" as="image" href={CLINARA_LOGIN_BG_MOBILE_URL} fetchpriority="high" media="(max-width: 639px)" />
+        <link rel="preload" as="image" href={CLINARA_LOGIN_BG_DESKTOP_URL} fetchpriority="high" media="(min-width: 640px)" />
       </Helmet>
 
-      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden font-sans selection:bg-cyan-500/30">
-        {/* Animated Background */}
+      {/* Fixed + overflow-hidden rather than h-[100dvh]: dvh is computed
+          differently across mobile browsers/webviews (address bar
+          show/hide, keyboard-resize modes), which was letting the page
+          rubber-band/scroll on some devices even though the content fit.
+          Taking the whole thing out of document flow removes that
+          possibility outright regardless of viewport-unit quirks.
+          This stacked card-over-photo layout is the fallback for anything
+          narrower than `md`, but also for a `md`-or-wider viewport that's
+          still portrait/very tall (min-aspect-ratio guard below) — e.g. a
+          phone's "Desktop site" mode reports a desktop-width viewport
+          while the physical screen stays phone-tall, which stretched the
+          full-bleed split-screen layout into a mostly-empty column with
+          an over-cropped photo. The split-screen further down only takes
+          over once the viewport is both wide AND landscape-ish. */}
+      <div className="fixed inset-0 w-full flex [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:hidden flex-col items-center justify-center overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+        {/* Background photo — portrait crop below `sm`, landscape from `sm`
+            up; both already have the wave accent baked in. Slow Ken-Burns
+            drift (animate-bg-zoom) adds ambient motion behind the card.
+            No fade-in wrapper and eager/high-priority loading (backed by
+            the <link rel="preload"> above) so the photo appears as soon as
+            it's decoded instead of waiting out a deliberate opacity
+            transition on top of the network fetch. */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_#1e293b_0%,_#020617_100%)]"></div>
-          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px]"></div>
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
+          <img
+            src={CLINARA_LOGIN_BG_MOBILE_URL}
+            alt=""
+            aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            className="sm:hidden w-full h-full object-cover animate-bg-zoom"
+          />
+          <img
+            src={CLINARA_LOGIN_BG_DESKTOP_URL}
+            alt=""
+            aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            className="hidden sm:block w-full h-full object-cover animate-bg-zoom"
+          />
+          {/* Corner taglines sit in white text over a photo that's often
+              bright/washed-out right where they land (window light, pale
+              walls), so a single soft drop-shadow wasn't enough contrast.
+              These gradients darken just the top/bottom strips the text
+              occupies, independent of what's in the photo there. */}
+          <div className="absolute inset-x-0 top-0 h-28 md:h-56 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-28 md:h-56 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
         </div>
 
-        <motion.div 
+        {/* Corner taglines echoing the brand voice. Layered textShadow
+            (tight dark core + wider soft glow) reads as a subtle outline,
+            which — combined with the gradients above — keeps the white
+            text legible even over the brightest parts of the photo. */}
+        <motion.div
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+          className="absolute top-5 left-5 md:top-10 md:left-10 z-10 text-white text-xs md:text-2xl font-semibold leading-tight max-w-[140px] md:max-w-[320px]"
+          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.55)" }}
+        >
+          <span className="block w-6 md:w-14 border-t border-white/80 mb-2 md:mb-3"></span>
+          Better Care
+          <br />
+          Smarter Management
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 0.6, ease: "easeOut" }}
+          className="absolute top-5 right-5 md:top-10 md:right-10 z-10 text-white text-xl md:text-7xl text-right leading-[1.15]"
+          style={{ fontFamily: "'Caveat', cursive", textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.55)" }}
+        >
+          Care
+          <br />
+          Manage
+          <br />
+          Grow
+          <br />
+          Together
+          <span className="block w-10 md:w-24 h-px md:h-0.5 bg-white/80 mt-1 md:mt-2 ml-auto"></span>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6, ease: "easeOut" }}
+          className="absolute bottom-6 left-5 md:bottom-14 md:left-10 z-10 text-white text-[10px] md:text-lg font-medium tracking-[0.15em] uppercase leading-relaxed"
+          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.55)" }}
+        >
+          Care
+          <br />
+          Manage
+          <br />
+          Grow Together
+          <span className="block w-6 md:w-14 border-t border-white/80 mt-2 md:mt-3"></span>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-[420px] p-6"
+          className="relative z-10 w-full max-w-[300px] sm:max-w-[380px] md:max-w-[460px] px-5"
         >
+          {/* Logo — sized from the source mark's own 1311x1200 aspect ratio
+              (via h-auto) so it's never stretched; larger on sm+ where
+              there's room without forcing a scroll. Scales again at `md`
+              for the portrait/tall-aspect fallback (e.g. a phone's
+              "Desktop site" mode), which reports a much wider viewport
+              than a real phone but still lands in this tree. */}
+          <div className="flex flex-col items-center justify-center mb-2.5 sm:mb-4 md:mb-6">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ delay: 0.9, duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                className="bg-white rounded-2xl px-5 py-4 sm:px-7 sm:py-5 md:px-9 md:py-6 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              >
+                <img
+                  src={CLINARA_LOGO_URL}
+                  alt="Clinara — Better Care. Smarter Management."
+                  className="w-20 sm:w-28 md:w-36 h-auto"
+                />
+              </motion.div>
+            </motion.div>
+          </div>
+
           {/* Main Card */}
-          <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden relative group">
-            
-            {/* Top decorative line */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="p-8 sm:p-10">
-              {/* Logo Section */}
-              <div className="flex flex-col items-center justify-center mb-10">
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="w-24 h-24 mb-6 relative"
-                >
-                  <div className="absolute inset-0 bg-blue-500/30 blur-2xl rounded-full"></div>
-                  <div className="relative w-full h-full bg-white rounded-2xl border border-white/10 shadow-lg flex items-center justify-center overflow-hidden p-2">
-                     <img
-  src={kaffahTechLogo}
-  alt="Kaffah Tech Logo"
-  className="w-full h-full object-contain"
-/>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-center"
-                >
-                  <h1 className="text-2xl font-bold text-white tracking-tight">Kaffah Tech</h1>
-                  <p className="text-slate-400 text-sm mt-1.5 font-medium">Digital Solutions, Real Impact</p>
-                </motion.div>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.55, ease: "easeOut" }}
+            className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(8,20,45,0.35)]"
+          >
+            <motion.div
+              variants={cardStagger}
+              initial="hidden"
+              animate="visible"
+              className="px-5 pt-5 pb-4 sm:px-7 sm:pt-8 sm:pb-7 md:px-9 md:pt-9 md:pb-8"
+            >
+              <motion.div variants={cardItem} className="text-center mb-3 sm:mb-5 md:mb-6">
+                <h1 className="text-[#102F52] text-base sm:text-xl md:text-2xl font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-xs sm:text-sm md:text-base mt-1 md:mt-1.5">
+                  Masuk untuk mengakses dashboard Clinara
+                </p>
+              </motion.div>
 
               {/* Error Message */}
               <AnimatePresence>
                 {authError && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0, mb: 0 }}
-                    animate={{ opacity: 1, height: "auto", mb: 24 }}
-                    exit={{ opacity: 0, height: 0, mb: 0 }}
-                    className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 overflow-hidden"
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 overflow-hidden"
                   >
-                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-200 leading-snug">{authError}</p>
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-600 leading-snug">{authError}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Form */}
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-5">
-                  <div className="group relative">
-                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-3 md:space-y-4">
+                <div className="space-y-3 md:space-y-4">
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3.5 md:py-4 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
                       placeholder="Email atau Username"
                       autoCapitalize="none"
                       autoCorrect="off"
                       required
                     />
-                  </div>
+                  </motion.div>
 
-                  <div className="group relative">
-                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                      type="password" 
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Lock className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      className="w-full pl-11 sm:pl-12 pr-11 sm:pr-12 py-2.5 sm:py-3.5 md:py-4 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-sm sm:text-base"
                       placeholder="Password"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA3B8] hover:text-[#2F8CFF] transition-colors"
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </motion.div>
+
+                  <div className="flex justify-end">
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs sm:text-sm md:text-base text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
+                    >
+                      Lupa Password?
+                    </Link>
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting || isRedirecting || authLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white py-6 rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting || isRedirecting || authLoading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Verifying Access...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <span>Sign In to Dashboard</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                    )}
-                  </Button>
+                <div className="pt-1">
+                  <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isRedirecting || authLoading}
+                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-3.5 sm:py-4 sm:text-base md:py-5 md:text-lg rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {!(isSubmitting || isRedirecting || authLoading) && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                        />
+                      )}
+                      {isSubmitting || isRedirecting || authLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying Access...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Sign In to Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </motion.div>
                 </div>
-              </form>
-            </div>
-            
-            {/* Footer */}
-            <div className="bg-slate-950/30 p-4 text-center border-t border-white/5 backdrop-blur-sm">
-              <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-medium tracking-wide uppercase">
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                <span>Hanya untuk internal team</span>
-                <span className="mx-1">•</span>
-                <span>Thank u 😊</span>
-              </div>
-            </div>
-          </div>
-          
-          <p className="text-center text-slate-600 text-xs mt-6">
-            &copy; {new Date().getFullYear()} Kaffah Tech. All rights reserved.
-          </p>
+              </motion.form>
+
+              {/* Trust row */}
+              <motion.div variants={cardItem} className="grid grid-cols-3 gap-2 mt-3 sm:mt-5 md:mt-6 text-center">
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
+                    Authorized
+                    <br />
+                    Personnel Only
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
+                    Secure Encrypted
+                    <br />
+                    Access
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+                  <span className="w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-[#EAF4FF] flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#1677D2]" />
+                  </span>
+                  <span className="text-[8px] sm:text-[10px] md:text-xs text-[#5B6B7D] leading-tight">
+                    Trusted by
+                    <br />
+                    Healthcare Experts
+                  </span>
+                </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="text-center text-white text-[10px] sm:text-xs md:text-sm mt-2.5 sm:mt-4 md:mt-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+          >
+            &copy; {new Date().getFullYear()} Clinara. All rights reserved.
+          </motion.p>
         </motion.div>
+      </div>
+
+      {/* Split-screen layout for viewports that are both `md`-or-wider AND
+          landscape-ish (width >= height): a single full-bleed photo behind
+          everything, with the brush-script tagline on the left and the
+          form card floating on the right — both sit directly on the same
+          photo (per the reference mockup), rather than the tagline's half
+          and the card's half being two visually separate panels. Gated on
+          aspect ratio too, not just width, so a portrait/very-tall `md`+
+          viewport (a phone's "Desktop site" mode, which fakes viewport
+          width but keeps the phone's tall screen) falls back to the card
+          layout above instead of stretching this full-bleed layout into a
+          mostly-empty column with an over-cropped photo. */}
+      <div className="fixed inset-0 w-full hidden [@media(min-width:768px)_and_(min-aspect-ratio:1/1)]:flex overflow-hidden overscroll-none selection:bg-[#2F8CFF]/30" style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}>
+        {/* Full-bleed background photo behind both the tagline and the card.
+            No fade-in wrapper and eager/high-priority loading (backed by
+            the <link rel="preload"> in <Helmet>) so it appears as soon as
+            it's decoded rather than after a deliberate opacity transition. */}
+        <div className="absolute inset-0">
+          <img
+            src={CLINARA_LOGIN_BG_DESKTOP_URL}
+            alt=""
+            aria-hidden="true"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="relative z-10 w-full h-full flex items-center">
+          {/* Left: brush-script tagline directly over the photo, left-aligned
+              and vertically centered per the reference mockup. "Care" and
+              "Manage" are dark navy, "Grow Together" is brand blue with a
+              matching blue underline beneath it, followed by a small
+              tracked-uppercase sub-line. A blurred white glow sits behind
+              the whole block (like the soft light patch in the reference)
+              so the text holds contrast regardless of what's in the photo
+              directly behind it, and the italic style plus per-letter
+              skew push the script further into a slanted, handwritten feel. */}
+          <div className="relative flex-1 h-full flex flex-col justify-center items-start pl-12 lg:pl-20 pr-8 min-w-0 text-left">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[36rem] h-[26rem] max-w-[85%] bg-white/40 rounded-full blur-3xl pointer-events-none" />
+            <motion.h2
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.18, delayChildren: 0.35 } },
+              }}
+              className="relative italic font-bold leading-[1.05] text-6xl lg:text-7xl"
+              style={{ fontFamily: "'Caveat', cursive", transform: "skewX(-6deg)" }}
+            >
+              {[
+                { word: 'Care', className: 'text-[#0f2a4a]' },
+                { word: 'Manage', className: 'text-[#0f2a4a]' },
+                { word: 'Grow Together', className: 'text-[#2F8CFF]' },
+              ].map(({ word, className }) => (
+                <motion.span
+                  key={word}
+                  variants={{
+                    hidden: { opacity: 0, x: -30 },
+                    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
+                  }}
+                  className={`block ${className}`}
+                  style={{ textShadow: "0 2px 10px rgba(255,255,255,0.8), 0 1px 2px rgba(255,255,255,0.9)" }}
+                >
+                  {word}
+                </motion.span>
+              ))}
+            </motion.h2>
+            <motion.span
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 1.15, duration: 0.6, ease: "easeOut" }}
+              className="relative block h-1 w-40 lg:w-52 bg-[#2F8CFF] rounded-full origin-left mt-2"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.5, ease: "easeOut" }}
+              className="relative mt-6 text-[#0f2a4a] text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase leading-relaxed"
+              style={{ textShadow: "0 1px 6px rgba(255,255,255,0.8)" }}
+            >
+              A Healthier
+              <br />
+              <span className="inline-block w-4 border-t border-[#0f2a4a]/70 align-middle mr-2"></span>
+              Brighter Tomorrow
+            </motion.div>
+          </div>
+
+          {/* Right: login card, floating over the same photo */}
+          <div className="shrink-0 pr-10 lg:pr-20">
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="w-[420px] bg-white rounded-3xl shadow-[0_20px_60px_rgba(8,20,45,0.35)] px-10 py-10"
+            >
+            <motion.div variants={cardStagger} initial="hidden" animate="visible">
+              <motion.div variants={cardItem} className="flex justify-center mb-6">
+                <motion.img
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ delay: 1, duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                  src={CLINARA_LOGO_URL}
+                  alt="Clinara — Better Care. Smarter Management."
+                  className="w-36 lg:w-40 h-auto"
+                />
+              </motion.div>
+
+              <motion.div variants={cardItem} className="text-center mb-6">
+                <h1 className="text-[#102F52] text-2xl font-bold">Selamat Datang Kembali</h1>
+                <p className="text-[#5B6B7D] text-sm mt-1.5">
+                  Masuk untuk mengakses dashboard Clinara
+                </p>
+              </motion.div>
+
+              {/* Error Message */}
+              <AnimatePresence>
+                {authError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 overflow-hidden"
+                  >
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-600 leading-snug">{authError}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Form */}
+              <motion.form variants={cardItem} onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-4">
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <input
+                      type="text"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-base"
+                      placeholder="Email atau Username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      required
+                    />
+                  </motion.div>
+
+                  <motion.div whileFocus={{ scale: 1.01 }} whileHover={{ scale: 1.01 }} className="group relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA3B8] group-focus-within:text-[#2F8CFF] transition-colors" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-12 pr-12 py-3.5 bg-[#EAF1F8] border border-transparent rounded-xl text-[#102F52] placeholder:text-[#8FA3B8] focus:border-[#2F8CFF]/50 focus:ring-2 focus:ring-[#2F8CFF]/20 focus:bg-white transition-all outline-none text-base"
+                      placeholder="Password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA3B8] hover:text-[#2F8CFF] transition-colors"
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </motion.div>
+
+                  <div className="flex justify-end">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-[#1677D2] hover:text-[#2F8CFF] transition-colors font-semibold"
+                    >
+                      Lupa Password?
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isRedirecting || authLoading}
+                      className="relative w-full overflow-hidden bg-gradient-to-r from-[#0f2a4a] to-[#2F8CFF] hover:from-[#0f2a4a] hover:to-[#1677D2] text-white py-4 text-base rounded-xl font-semibold shadow-lg shadow-[#1677D2]/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {!(isSubmitting || isRedirecting || authLoading) && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                        />
+                      )}
+                      {isSubmitting || isRedirecting || authLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying Access...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Sign In to Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.form>
+
+              <motion.p variants={cardItem} className="text-center text-[#8FA3B8] text-xs mt-6 pt-5 border-t border-[#EAF1F8]">
+                &copy; {new Date().getFullYear()} Clinara. All rights reserved.
+              </motion.p>
+            </motion.div>
+          </motion.div>
+          </div>
+        </div>
       </div>
     </>
   );

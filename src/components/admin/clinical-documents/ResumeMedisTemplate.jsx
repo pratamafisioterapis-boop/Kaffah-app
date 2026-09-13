@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
+import { stripSignatureBackground } from '@/lib/signatureImage';
 
 const PROGRAM_TERAPI_LABELS = {
   tens: 'TENS',
@@ -19,6 +20,23 @@ const formatDate = (value) => {
 const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
   const programTerapi = data?.program_terapi || [];
   const otherProgram = data?.program_terapi_lainnya;
+
+  // Strip the signature scan's background to transparent and boost contrast,
+  // same as the invoice template — otherwise it prints with a visible box
+  // behind it and reads small/blurry against the page.
+  const [signatureUrl, setSignatureUrl] = useState(null);
+  useEffect(() => {
+    const rawUrl = data?.therapist_signature_url;
+    if (!rawUrl) {
+      setSignatureUrl(null);
+      return;
+    }
+    let cancelled = false;
+    stripSignatureBackground(rawUrl).then((result) => {
+      if (!cancelled) setSignatureUrl(result);
+    });
+    return () => { cancelled = true; };
+  }, [data?.therapist_signature_url]);
 
   return (
     <div
@@ -41,11 +59,9 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {clinic?.logo_url && (
-            <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
-              <img src={clinic.logo_url} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} />
-            </div>
-          )}
+          <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
+            <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} />
+          </div>
           <div>
             <p style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px', margin: 0 }}>
               {(clinic?.name || '').toUpperCase()}
@@ -171,19 +187,22 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
               {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
             </p>
             <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
-            <div style={{ position: 'relative', height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              {data?.therapist_signature_url && (
-                <img src={data.therapist_signature_url} style={{ maxHeight: '55px', maxWidth: '120px' }} />
+            <div style={{ position: 'relative', height: '90px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              {signatureUrl && (
+                <img src={signatureUrl} style={{ maxHeight: '85px', maxWidth: '180px' }} />
               )}
               {clinic?.stamp_url && (
                 <img
                   src={clinic.stamp_url}
-                  style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '8px', maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }}
+                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '80px', maxWidth: '80px', objectFit: 'contain' }}
                 />
               )}
             </div>
             <div style={{ borderTop: '1px solid #0f172a', width: '180px', margin: '4px auto 0' }} />
             <p style={{ fontSize: '12.5px', fontWeight: 700, margin: '6px 0 0' }}>{data?.therapist_name || '-'}</p>
+            {data?.therapist_license && (
+              <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0' }}>SIPF: {data.therapist_license}</p>
+            )}
           </div>
         </div>
       </div>

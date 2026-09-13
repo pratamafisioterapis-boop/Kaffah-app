@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Plus, Trash2, Settings, Save, Loader2, Edit2, AlertCircle,
+  Plus, Trash2, Save, Loader2, Edit2, AlertCircle,
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
   FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
-  ChevronRight
+  ChevronRight, Globe, LayoutTemplate
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -43,6 +43,8 @@ import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
 import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
+import DomainSettingsManager from '@/components/owner/DomainSettingsManager';
+import LandingPageManager from '@/components/owner/LandingPageManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
@@ -54,7 +56,7 @@ const DiscountTypeManager = () => {
   const { toast } = useToast();
   // State Initialization as requested
   const [discountTypes, setDiscountTypes] = useState([]);
-  const [discountTypeForm, setDiscountTypeForm] = useState({ label: '' });
+  const [discountTypeForm, setDiscountTypeForm] = useState({ label: '', discount_value_type: 'nominal', discount_value: '' });
   const [editingDiscountType, setEditingDiscountType] = useState(null);
   const [showDiscountTypeModal, setShowDiscountTypeModal] = useState(false);
   
@@ -77,7 +79,7 @@ const DiscountTypeManager = () => {
 
       const { data, error } = await supabase
         .from('operational_options')
-        .select('id, category, label, is_active, created_at')
+        .select('id, category, label, is_active, created_at, discount_value_type, discount_value')
         .eq('category', 'discount_type')
         .eq('clinic_id', userRow?.clinic_id)
         .order('created_at', { ascending: true });
@@ -101,13 +103,25 @@ const DiscountTypeManager = () => {
       return;
     }
 
+    const valueNumber = parseFloat(discountTypeForm.discount_value);
+    if (!discountTypeForm.discount_value || isNaN(valueNumber) || valueNumber <= 0) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Nilai diskon harus diisi dan lebih besar dari 0." });
+      return;
+    }
+    if (discountTypeForm.discount_value_type === 'percentage' && valueNumber > 100) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Persentase diskon tidak boleh lebih dari 100." });
+      return;
+    }
+
     setIsProcessing(true);
     console.log(`💾 Saving discount type: "${labelTrimmed}"...`);
 
     const payload = {
       category: 'discount_type',
       label: labelTrimmed,
-      is_active: true
+      is_active: true,
+      discount_value_type: discountTypeForm.discount_value_type,
+      discount_value: valueNumber
     };
 
     try {
@@ -150,7 +164,7 @@ const DiscountTypeManager = () => {
         setDiscountTypes(prev => [...prev, data]);
       }
       setShowDiscountTypeModal(false);
-      setDiscountTypeForm({ label: '' });
+      setDiscountTypeForm({ label: '', discount_value_type: 'nominal', discount_value: '' });
       setEditingDiscountType(null);
     } catch (error) {
       console.error("❌ Save failed:", error);
@@ -189,13 +203,17 @@ const DiscountTypeManager = () => {
 
   const openAdd = () => {
     setEditingDiscountType(null);
-    setDiscountTypeForm({ label: '' });
+    setDiscountTypeForm({ label: '', discount_value_type: 'nominal', discount_value: '' });
     setShowDiscountTypeModal(true);
   };
 
   const openEdit = (item) => {
     setEditingDiscountType(item);
-    setDiscountTypeForm({ label: item.label });
+    setDiscountTypeForm({
+      label: item.label,
+      discount_value_type: item.discount_value_type || 'nominal',
+      discount_value: item.discount_value ?? ''
+    });
     setShowDiscountTypeModal(true);
   };
 
@@ -209,7 +227,7 @@ const DiscountTypeManager = () => {
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Jenis Diskon</h2>
-          <p className="text-sm text-slate-500">Kelola label diskon (Misal: Promo Merdeka, Diskon Teman).</p>
+          <p className="text-sm text-slate-500">Kelola label diskon beserta nominal atau persentase potongannya (Misal: Promo Merdeka, Diskon Teman).</p>
         </div>
         <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -236,6 +254,13 @@ const DiscountTypeManager = () => {
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
+                  {opt.discount_value != null && (
+                    <span className="text-xs text-blue-600 ml-2">
+                      {opt.discount_value_type === 'percentage'
+                        ? `${opt.discount_value}%`
+                        : `Rp${new Intl.NumberFormat('id-ID').format(opt.discount_value)}`}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(opt)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
@@ -258,11 +283,51 @@ const DiscountTypeManager = () => {
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">Nama Label Diskon</label>
-              <Input 
-                value={discountTypeForm.label} 
-                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, label: e.target.value })} 
+              <Input
+                value={discountTypeForm.label}
+                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, label: e.target.value })}
                 placeholder="Contoh: Promo Agustusan"
-                autoFocus 
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Tipe Diskon</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'nominal' })}
+                  className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
+                    discountTypeForm.discount_value_type === 'nominal'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  Nominal (Rp)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'percentage' })}
+                  className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
+                    discountTypeForm.discount_value_type === 'percentage'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  Persentase (%)
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Nilai Diskon {discountTypeForm.discount_value_type === 'percentage' ? '(%)' : '(Rp)'}
+              </label>
+              <Input
+                type="number"
+                min="0"
+                max={discountTypeForm.discount_value_type === 'percentage' ? 100 : undefined}
+                value={discountTypeForm.discount_value}
+                onChange={(e) => setDiscountTypeForm({ ...discountTypeForm, discount_value: e.target.value })}
+                placeholder={discountTypeForm.discount_value_type === 'percentage' ? 'Contoh: 10' : 'Contoh: 50000'}
               />
             </div>
           </div>
@@ -926,6 +991,8 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Akun & Tim',
     items: [
       { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
+      { value: 'domain', icon: Globe, label: 'Domain Klinik' },
+      { value: 'landing_page', icon: LayoutTemplate, label: 'Landing Page' },
     ],
   },
   {
@@ -1021,16 +1088,28 @@ const SettingsPage = () => {
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
 
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-            <Settings className="w-6 h-6 text-amber-300" />
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Pengaturan Sistem</h2>
-            <p className="text-sm text-slate-400 mt-0.5">Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi</p>
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-setup-hero.webp"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+            >
+              Pengaturan<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                Sistem
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi.
+            </p>
           </div>
         </div>
       </div>
@@ -1075,6 +1154,12 @@ const SettingsPage = () => {
         <div className="mt-6">
           <TabsContent value="account_clinic">
             <AccountClinicManager />
+          </TabsContent>
+          <TabsContent value="domain">
+            <DomainSettingsManager />
+          </TabsContent>
+          <TabsContent value="landing_page">
+            <LandingPageManager />
           </TabsContent>
           <TabsContent value="bank_accounts">
             <OwnerBankAccountManager />

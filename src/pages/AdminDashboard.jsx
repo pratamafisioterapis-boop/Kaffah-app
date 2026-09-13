@@ -25,6 +25,7 @@ import AdminAccountingDashboard from '@/components/admin/AdminAccountingDashboar
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
+import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 // Consolidated Pages
 import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
 import AppointmentsPage from '@/pages/AppointmentsPage';
@@ -32,31 +33,23 @@ import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
 import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
 import AdminAccountSettings from '@/components/admin/AdminAccountSettings';
+import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
-const HeroClock = () => {
+const useNow = () => {
   const [now, setNow] = React.useState(new Date());
   React.useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-  return (
-    <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 backdrop-blur-sm px-3 py-2 rounded-xl">
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-300/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span className="text-sm font-bold text-white font-mono tracking-wider">
-        {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-      </span>
-      <div className="h-3.5 w-px bg-white/20"></div>
-      <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
-        {now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-      </span>
-    </div>
-  );
+  return now;
 };
 const AdminDashboardHome = () => {
-  const location = useLocation(); 
+  const location = useLocation();
+  const { clinicName } = useAuth();
+  const now = useNow();
   const today = new Date().toISOString().split('T')[0];
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
@@ -417,48 +410,54 @@ setTrendPatients(trendArray);
       
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
 
-        {/* ── Hero Header — konsisten desktop, tablet & PWA ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
-          {/* Premium texture + glow accents */}
-          <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
-          {/* Gold hairline accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm flex items-center justify-center shadow-inner border border-amber-300/30">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
-                <h1 className="text-lg md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-                <p className="text-slate-400 text-xs mt-1">Pusat kendali operasional dan manajemen klinik.</p>
-              </div>
+        {/* ── Hero Banner ── */}
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+          <img
+            src="/hero/clinara-owner-hero.webp"
+            alt="Kaffah Physiotherapy"
+            className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-md lg:max-w-xl">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
+                {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono">{heroTime}</span>
+              </p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              >
+                Selamat datang,<br />
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
+                  Admin {clinicName || ''}!
+                </span>
+              </h1>
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                Pusat kendali operasional dan manajemen klinik.
+              </p>
             </div>
+          </div>
+        </div>
 
-            <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
-              <HeroClock />
-              <div className="flex flex-col gap-1.5 bg-white/10 backdrop-blur-sm border border-amber-300/20 rounded-xl px-3 py-2.5 w-full sm:w-auto">
-                <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider">Periode</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={dateRange.startDate}
-                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                  />
-                  <span className="text-white/30 shrink-0">–</span>
-                  <input
-                    type="date"
-                    value={dateRange.endDate}
-                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                    className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                  />
-                </div>
+        {/* ── Periode Toolbar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
+              <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                />
+                <span className="text-[#DCE8F2] shrink-0">–</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                />
               </div>
             </div>
           </div>
@@ -817,11 +816,9 @@ setTrendPatients(trendArray);
                 
              </div>
 
-             <div className="min-h-[200px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
-               <h3 className="text-lg font-semibold text-slate-700">Detailed Operational Reports</h3>
-               <p className="text-slate-500 mt-2 max-w-sm text-center">
-                 More specific operational breakdown charts can be added here.
-               </p>
+             <div className="space-y-3">
+               <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Sumber Pasien</h3>
+               <PatientSourceChart dateRange={dateRange} />
              </div>
           </TabsContent>
           
@@ -868,6 +865,7 @@ return (
         {/* Accounting Route */}
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
         <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
+        <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/settings" element={<AdminAccountSettings />} />
 
         {/* Redirects for legacy routes */}

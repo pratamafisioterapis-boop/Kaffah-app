@@ -157,6 +157,7 @@ const SuperAdminClinics = () => {
       phone: form.phone || null,
       subscription_status: form.subscription_status || 'active',
       owner_role_label: form.owner_role_label?.trim() || null,
+      subdomain: form.subdomain?.trim().toLowerCase() || null,
     };
 
     if (form.id) {
@@ -326,6 +327,17 @@ const SuperAdminClinics = () => {
                   <p className="font-semibold text-slate-800 truncate">{clinic.name}</p>
                   <p className="text-sm text-slate-500 truncate">{clinic.address || '-'}</p>
                   <p className="text-sm text-slate-500">{clinic.phone || '-'}</p>
+                  {(clinic.subdomain || clinic.custom_domain) && (
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      {clinic.subdomain && <span>{clinic.subdomain}.clinara.id</span>}
+                      {clinic.subdomain && clinic.custom_domain && <span> &bull; </span>}
+                      {clinic.custom_domain && (
+                        <span className={clinic.custom_domain_status === 'verified' ? 'text-green-600' : 'text-amber-600'}>
+                          {clinic.custom_domain} ({clinic.custom_domain_status})
+                        </span>
+                      )}
+                    </p>
+                  )}
                   <div className="text-sm text-blue-600 mt-1">
                     {(owners[clinic.id]?.length ?? 0) === 0 ? (
                       <span className="text-slate-400 italic">Owner: belum ada</span>
@@ -442,6 +454,22 @@ const SuperAdminClinics = () => {
               <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Alamat" /></div>
             <div className="space-y-2"><label className="text-sm font-medium">No. Telepon</label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="No. Telepon" /></div>
+            <div className="space-y-2"><label className="text-sm font-medium">Subdomain</label>
+              <div className="flex items-center border border-slate-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                <Input
+                  value={form.subdomain || ''}
+                  onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase() })}
+                  placeholder="nama-klinik"
+                  className="border-0 focus-visible:ring-0"
+                />
+                <span className="px-3 text-sm text-slate-400 bg-slate-50 whitespace-nowrap">.clinara.id</span>
+              </div>
+              {form.custom_domain && (
+                <p className="text-xs text-slate-500">
+                  Custom domain: <span className="font-medium">{form.custom_domain}</span> ({form.custom_domain_status || 'none'})
+                </p>
+              )}
+            </div>
             <div className="space-y-2"><label className="text-sm font-medium">Label "Pemilik Klinik"</label>
               <Input value={form.owner_role_label} onChange={(e) => setForm({ ...form, owner_role_label: e.target.value })} placeholder="Pemilik Klinik" />
               <p className="text-xs text-slate-500">Teks yang tampil di badge peran owner pada layar sambutan (splash screen). Kosongkan untuk memakai default "Pemilik Klinik".</p>

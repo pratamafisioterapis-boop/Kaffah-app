@@ -35,24 +35,24 @@ useEffect(() => {
     // Coba pakai actual_patient_id dulu, lalu fallback ke patient_id
     const { data: dataActual } = await supabase
       .from('daily_recaps_with_labels')
-      .select('recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
+      .select('id, recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
       .eq('actual_patient_id', selectedPatient.id)
       .order('recap_date', { ascending: false });
 
     const { data: dataPatient } = await supabase
       .from('daily_recaps_with_labels')
-      .select('recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
+      .select('id, recap_date, therapist_name, service_type, package_type, patient_type, diagnosis_labels, amount')
       .eq('patient_id', selectedPatient.id)
       .is('actual_patient_id', null)
       .order('recap_date', { ascending: false });
 
-    // Gabung dan deduplicate berdasarkan recap_date + amount
+    // Gabung dan deduplicate berdasarkan id (recap_date + amount tidak unik saat
+    // pasien terapi 2x dalam sehari dengan nominal yang sama)
     const combined = [...(dataActual || []), ...(dataPatient || [])];
     const seen = new Set();
     const data = combined.filter(item => {
-      const key = `${item.recap_date}_${item.amount}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
       return true;
     }).sort((a, b) => new Date(b.recap_date) - new Date(a.recap_date));
 
@@ -115,24 +115,26 @@ const formatTanggal = (date) => {
                             className="pl-9 h-9 text-xs"
                         />
                     </div>
-                    <select 
-                        value={status}
-                        onChange={(e) => handleStatusFilter(e.target.value)}
-                        className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500"
-                    >
-                        <option value="all">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="nonaktif">Nonaktif</option>
-                    </select>
-                    <select 
-                         value={completeness}
-                         onChange={(e) => handleCompletenessFilter(e.target.value)}
-                         className="h-9 text-xs border border-slate-200 rounded-md px-2 bg-white outline-none focus:border-indigo-500"
-                    >
-                        <option value="all">Semua Kelengkapan</option>
-                        <option value="complete">Lengkap</option>
-                        <option value="incomplete">Belum Lengkap</option>
-                    </select>
+                    <div className="flex w-full gap-2 basis-full">
+                        <select
+                            value={status}
+                            onChange={(e) => handleStatusFilter(e.target.value)}
+                            className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                        >
+                            <option value="all">Semua Status</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                        <select
+                             value={completeness}
+                             onChange={(e) => handleCompletenessFilter(e.target.value)}
+                             className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                        >
+                            <option value="all">Semua Kelengkapan</option>
+                            <option value="complete">Lengkap</option>
+                            <option value="incomplete">Belum Lengkap</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

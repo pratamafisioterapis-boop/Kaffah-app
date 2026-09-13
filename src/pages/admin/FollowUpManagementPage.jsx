@@ -10,7 +10,7 @@ import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle, Gift } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -185,7 +185,7 @@ const FollowUpManagementPage = () => {
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertTitle className="text-blue-900 font-semibold">Automated Follow Up System</AlertTitle>
                 <AlertDescription className="text-xs mt-1 space-y-1">
-                    <p>• <strong>Auto-Triggers:</strong> Booking confirmations and daily recap follow-ups are created automatically.</p>
+                    <p>• <strong>Auto-Triggers:</strong> Booking confirmations, daily recap follow-ups, and referral rewards (Tab Reward) are created automatically.</p>
                     <p>• <strong>Scheduled Tasks:</strong> Therapy reminders (H-0), Package Expiry (H-7,3,1), and Birthdays are auto-generated daily at 00:00 via cron.</p>
                     <p>• <strong>Manual Generation:</strong> Use the buttons below to manually trigger generation if auto-scheduler fails.</p>
                 </AlertDescription>
@@ -209,6 +209,10 @@ const FollowUpManagementPage = () => {
                     <TabsTrigger value="expiry_package" className="flex-1 min-w-[100px]">Paket ({getCount('expiry_package')})</TabsTrigger>
                     <TabsTrigger value="therapy_reminder" className="flex-1 min-w-[100px]">Jadwal ({getCount('therapy_reminder')})</TabsTrigger>
                     <TabsTrigger value="birthday_greeting" className="flex-1 min-w-[100px]">Ultah ({getCount('birthday_greeting')})</TabsTrigger>
+                    <TabsTrigger value="referral_reward" className="flex-1 min-w-[100px]">
+                        <Gift className="w-3.5 h-3.5 mr-1 hidden sm:inline" />
+                        Reward ({getCount('referral_reward')})
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value={activeTab} className="mt-0">
                     {isLoading ? (

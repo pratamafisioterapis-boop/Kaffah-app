@@ -360,10 +360,18 @@ const handleViewRecord = (record) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl"
-        style={{ background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+      <div className="relative overflow-hidden flex flex-col gap-3 p-4 rounded-2xl sm:flex-row sm:items-center sm:justify-between"
+        style={{ background: 'linear-gradient(135deg, #ffffff 55%, #f3f6ff 100%)', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+        {/* Decorative subtle blue accents */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <div className="absolute -top-14 -right-10 w-36 h-36 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, rgba(79,70,229,0) 70%)' }} />
+          <div className="absolute -bottom-16 -left-8 w-28 h-28 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, rgba(59,130,246,0) 70%)' }} />
+        </div>
+
+        <div className="relative flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
             <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
           </div>
           <div>
@@ -371,32 +379,35 @@ const handleViewRecord = (record) => {
             <p className="text-xs text-slate-400">Kelola data rekam medis pasien secara terpusat</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+
+        <div className="relative flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative w-full sm:w-52">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
             <input
               placeholder="Cari nama atau RM..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-3 h-8 text-xs rounded-xl outline-none w-52"
+              className="w-full pl-7 pr-3 h-8 text-[11px] rounded-lg outline-none"
               style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}
             />
           </div>
-          <button onClick={handleOpenCreateModal}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold text-white"
-            style={{ background: '#4f46e5' }}>
-            <Plus className="w-3.5 h-3.5" /> Tambah
-          </button>
-          <button onClick={() => setImportDialogOpen(true)}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
-            style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
-            <Upload className="w-3.5 h-3.5" /> Import
-          </button>
-          <button onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
-            style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>
-            <Download className="w-3.5 h-3.5" /> Export
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleOpenCreateModal}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold text-white"
+              style={{ background: '#4f46e5' }}>
+              <Plus className="w-3.5 h-3.5" /> Tambah
+            </button>
+            <button onClick={() => setImportDialogOpen(true)}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
+              style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+              <Upload className="w-3.5 h-3.5" /> Import
+            </button>
+            <button onClick={handleExportCSV}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
+              style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          </div>
         </div>
       </div>
 

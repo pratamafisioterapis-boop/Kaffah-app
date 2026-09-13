@@ -10,6 +10,32 @@ export function cn(...inputs) {
   return twMerge(clsx(...inputs));
 }
 
+// Stopwords yang sengaja tidak tumpang tindih antar bahasa, supaya skornya
+// tetap jelas beda walau teksnya penuh istilah medis/ilmiah yang sama di
+// kedua bahasa (mis. "diagnosis", "assessment").
+const ID_LANGUAGE_MARKERS = ['yang', 'dan', 'dengan', 'pada', 'adalah', 'tidak', 'dalam', 'untuk', 'dari', 'akan', 'atau', 'ini', 'itu', 'dapat', 'juga', 'tersebut', 'kepada', 'oleh', 'sebagai', 'karena'];
+const EN_LANGUAGE_MARKERS = ['the', 'and', 'of', 'to', 'in', 'is', 'that', 'for', 'on', 'with', 'as', 'are', 'this', 'be', 'by', 'was', 'were', 'from', 'which', 'their'];
+
+/**
+ * Mendeteksi bahasa sumber (Indonesia/Inggris) sebuah teks dengan
+ * menghitung kemunculan stopword umum tiap bahasa (whole-word match).
+ * Dipakai untuk auto-isi field "Bahasa Sumber" di Basis Jurnal AI.
+ * @param {string} text - Teks yang mau dideteksi bahasanya
+ * @returns {'id'|'en'|null} null kalau teks terlalu pendek/ambigu untuk disimpulkan
+ */
+export function detectJournalLanguage(text) {
+  if (!text || text.trim().length < 20) return null;
+  const lower = text.toLowerCase();
+  const countMarkers = (markers) => markers.reduce((sum, word) => {
+    const matches = lower.match(new RegExp(`\\b${word}\\b`, 'g'));
+    return sum + (matches ? matches.length : 0);
+  }, 0);
+  const idScore = countMarkers(ID_LANGUAGE_MARKERS);
+  const enScore = countMarkers(EN_LANGUAGE_MARKERS);
+  if (idScore === 0 && enScore === 0) return null;
+  return idScore >= enScore ? 'id' : 'en';
+}
+
 /**
  * Formats a numeric amount into Indonesian Rupiah (IDR) currency format.
  * @param {number|string} amount - The numeric value to format

@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=kaffahtech1" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=kaffahtech2" />
+  <!-- Google's search result icon requires a favicon >= 48x48px; the .ico
+       above now embeds 16/32/48/64px sizes, and this explicit PNG link
+       gives crawlers a directly-fetchable large icon to prefer. -->
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=kaffahtech2" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1e3a5f" />
   <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
@@ -22,15 +26,15 @@
          with it on every route except "/". -->
     <meta property="og:site_name" content="Kaffah Physiotherapy" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://kaffahphysiotherapy.com/" />
+    <meta property="og:url" content="https://kaffahphysio.id/" />
     <meta property="og:title" content="Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan" />
     <meta property="og:description" content="Klinik fisioterapi di Batu Ampar, Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based. Booking online sekarang." />
-    <meta property="og:image" content="https://kaffahphysiotherapy.com/logo512.png" />
+    <meta property="og:image" content="https://kaffahphysio.id/logo512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:locale" content="id_ID" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:image" content="https://kaffahphysiotherapy.com/logo512.png" />
+    <meta name="twitter:image" content="https://kaffahphysio.id/logo512.png" />
 
     <!-- Critical CSS to prevent FOUC -->
     <style>
@@ -45,10 +49,73 @@
     overflow-x: hidden; /* ❗ tambah ini */
   }
 
-  #root { 
-    min-height: 100vh; 
+  #root {
+    min-height: 100vh;
   }
 </style>
+    <script>
+      // Runs synchronously as the parser reaches the end of <head>, so every
+      // static tag above already exists in the DOM - this overwrites their
+      // properties directly rather than inserting competing duplicates
+      // (an earlier version tried document.write-ing Clinara tags before
+      // these, relying on "first <title>/<link rel=icon> wins": that lost
+      // to the static Kaffah <title> in real browser testing, since tab
+      // titles track the most recently parsed/mutated title element, not
+      // strictly the first). Direct mutation has no such ambiguity, and
+      // still finishes before <body> renders, so there's no visible flash.
+      // tools/generate-clinara-shell.js separately produces a
+      // Clinara-branded index-clinara.html for non-JS clients (social-share
+      // crawlers) that never run this script.
+      (function () {
+        var h = window.location.hostname;
+        var isKaffahHost = h === 'kaffahphysio.id' || h === 'www.kaffahphysio.id';
+        var isLocalOrPreview = h === 'localhost' || h === '127.0.0.1' ||
+          /\.local$/.test(h) || /\.vercel\.app$/.test(h);
+        if (isKaffahHost || isLocalOrPreview) return;
+
+        // Everything else - the Clinara product domain itself, and every
+        // tenant clinic's own free subdomain (xyz.clinara.id) or connected
+        // custom domain - gets Clinara's own favicon/branding instead of
+        // Kaffah's default, so a clinic's site never looks Kaffah-run.
+        // ClinicTenantSitePage/ClinicBookingPage set the real page <title>
+        // (the clinic's own name) via react-helmet once the app mounts;
+        // this just fixes the tab icon/title shown before that.
+        var isClinaraApex = h === 'clinara.id' || h === 'www.clinara.id';
+
+        var icon = '/clinara-icon.png';
+        var appIcon = '/clinara-icon-app.png';
+        var appIconAbsolute = 'https://clinara.id/clinara-icon-app.png';
+        var title = isClinaraApex ? 'Clinara — Better Care. Smarter Management.' : 'Clinara';
+
+        document.title = title;
+
+        var set = function (selector, prop, value) {
+          var el = document.querySelector(selector);
+          if (el) el[prop] = value;
+        };
+
+        var setAll = function (selector, prop, value) {
+          var els = document.querySelectorAll(selector);
+          for (var i = 0; i < els.length; i++) els[i][prop] = value;
+        };
+
+        setAll('link[rel="icon"]', 'href', icon);
+        set('link[rel="apple-touch-icon"]', 'href', appIcon);
+        set('link[rel="manifest"]', 'href', '/manifest-clinara.json');
+        set('meta[name="theme-color"]', 'content', '#0f2a4a');
+        set('meta[name="apple-mobile-web-app-title"]', 'content', 'Clinara');
+
+        if (isClinaraApex) {
+          set('meta[name="description"]', 'content', 'Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi.');
+          set('meta[property="og:site_name"]', 'content', 'Clinara');
+          set('meta[property="og:url"]', 'content', 'https://clinara.id/');
+          set('meta[property="og:title"]', 'content', title);
+          set('meta[property="og:description"]', 'content', 'Platform manajemen layanan kesehatan untuk klinik dan pusat terapi.');
+          set('meta[property="og:image"]', 'content', appIconAbsolute);
+          set('meta[name="twitter:image"]', 'content', appIconAbsolute);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

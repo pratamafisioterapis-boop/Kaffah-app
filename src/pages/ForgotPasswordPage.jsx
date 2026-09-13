@@ -1,0 +1,177 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import { motion } from 'framer-motion';
+import { supabase } from '@/lib/customSupabaseClient';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+
+const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_ICON_URL = '/clinara-icon.png';
+const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
+
+const ForgotPasswordPage = () => {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (resetError) throw resetError;
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error('[ForgotPasswordPage] Reset request failed:', err);
+      setError(err.message || 'Gagal mengirim email reset password. Silakan coba lagi.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Lupa Password - Clinara</title>
+        <meta name="description" content="Reset password akun Clinara" />
+        <link rel="icon" type="image/png" href={CLINARA_ICON_URL} />
+        <link rel="apple-touch-icon" href={CLINARA_APP_ICON_URL} />
+        <link rel="manifest" href="/manifest-clinara.json" />
+      </Helmet>
+
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#050b16] via-[#0a1e30] to-[#04141c] relative overflow-hidden font-sans selection:bg-cyan-500/30">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse duration-[4000ms]"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-[420px] p-6"
+        >
+          <div className="rounded-[26px] p-px bg-gradient-to-b from-white/25 via-white/10 to-white/0 shadow-[0_30px_80px_-25px_rgba(20,184,166,0.35)]">
+          <div className="bg-[#071322]/80 backdrop-blur-2xl rounded-[25px] overflow-hidden relative group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            <div className="p-8 sm:p-10">
+              <div className="flex flex-col items-center justify-center mb-10">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="relative mb-4"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/30 to-emerald-400/20 blur-3xl rounded-full scale-90"></div>
+                  <div className="relative bg-white/95 rounded-2xl px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                    <img
+                      src={CLINARA_LOGO_URL}
+                      alt="Clinara — Better Care. Smarter Management."
+                      className="w-24"
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-center"
+                >
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Lupa Password</h1>
+                  <p className="text-slate-400 text-sm mt-1.5 font-medium">
+                    Masukkan email Anda untuk menerima link reset password
+                  </p>
+                </motion.div>
+              </div>
+
+              {error && (
+                <div className="p-3 mb-6 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-200 leading-snug">{error}</p>
+                </div>
+              )}
+
+              {submitted ? (
+                <div className="space-y-6">
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-emerald-200 leading-snug">
+                      Jika email <span className="font-semibold">{email}</span> terdaftar, kami telah mengirimkan
+                      link reset password. Silakan cek inbox atau folder spam Anda.
+                    </p>
+                  </div>
+                  <Link
+                    to="/login"
+                    className="flex items-center justify-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Kembali ke Login</span>
+                  </Link>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="group relative">
+                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 bg-[#03090f]/70 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
+                      placeholder="Email terdaftar"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      required
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 py-6 rounded-xl font-semibold shadow-lg shadow-cyan-900/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Mengirim...</span>
+                        </div>
+                      ) : (
+                        <span>Kirim Link Reset Password</span>
+                      )}
+                    </Button>
+                  </div>
+
+                  <Link
+                    to="/login"
+                    className="flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-cyan-400 transition-colors font-medium pt-1"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Kembali ke Login</span>
+                  </Link>
+                </form>
+              )}
+            </div>
+          </div>
+          </div>
+
+          <p className="text-center text-slate-600 text-xs mt-6">
+            &copy; {new Date().getFullYear()} Clinara. All rights reserved.
+          </p>
+        </motion.div>
+      </div>
+    </>
+  );
+};
+
+export default ForgotPasswordPage;

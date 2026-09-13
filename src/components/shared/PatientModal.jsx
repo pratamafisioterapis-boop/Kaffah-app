@@ -7,25 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { 
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
-import { Loader2, Calendar as CalendarIcon, AlertCircle, Trash2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Loader2, Calendar as CalendarIcon, AlertCircle, Trash2, ChevronsUpDown, Gift, X } from 'lucide-react';
 import DatePicker from '@/components/DatePicker';
-import { 
-    generateNextRM, 
-    generateNickname, 
-    parseBirthDate, 
-    formatBirthDateDisplay, 
-    calculateAge 
+import {
+    generateNextRM,
+    generateNickname,
+    parseBirthDate,
+    formatBirthDateDisplay,
+    calculateAge
 } from '@/lib/patientHelpers';
-import { 
-    getAdditionalInfoOptions, 
-    createPatient, 
-    updatePatient, 
-    deletePatient 
+import {
+    getAdditionalInfoOptions,
+    createPatient,
+    updatePatient,
+    deletePatient
 } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -51,12 +54,60 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
         nik: '',
         address: '',
         additional_info_option_id: '',
-        status: 'aktif'
+        status: 'aktif',
+        referred_by_patient_id: null
     });
 
     // Validation Errors
     const [errors, setErrors] = useState({});
     const [nicknameManuallyEdited, setNicknameManuallyEdited] = useState(false);
+
+    // Referral picker state ("Direferensikan oleh Pasien")
+    const [selectedReferrer, setSelectedReferrer] = useState(null);
+    const [referrerPopoverOpen, setReferrerPopoverOpen] = useState(false);
+    const [referrerQuery, setReferrerQuery] = useState('');
+    const [referrerResults, setReferrerResults] = useState([]);
+    const [referrerSearching, setReferrerSearching] = useState(false);
+
+    useEffect(() => {
+        if (!referrerPopoverOpen) return;
+        const q = referrerQuery.trim().replace(/[,()]/g, '');
+        if (q.length < 2) {
+            setReferrerResults([]);
+            return;
+        }
+        const handle = setTimeout(async () => {
+            setReferrerSearching(true);
+            try {
+                let query = supabase
+                    .from('patients')
+                    .select('id, full_name, nickname, phone, medical_record_number')
+                    .or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,medical_record_number.ilike.%${q}%`)
+                    .eq('status', 'aktif')
+                    .limit(8);
+                if (mode === 'edit' && patient?.id) query = query.neq('id', patient.id);
+                const { data, error } = await query;
+                if (!error) setReferrerResults(data || []);
+            } catch (err) {
+                console.error('Referrer search failed:', err);
+            } finally {
+                setReferrerSearching(false);
+            }
+        }, 300);
+        return () => clearTimeout(handle);
+    }, [referrerQuery, referrerPopoverOpen, mode, patient]);
+
+    const handleSelectReferrer = (p) => {
+        setSelectedReferrer(p);
+        setFormData(prev => ({ ...prev, referred_by_patient_id: p.id }));
+        setReferrerPopoverOpen(false);
+        setReferrerQuery('');
+    };
+
+    const handleClearReferrer = () => {
+        setSelectedReferrer(null);
+        setFormData(prev => ({ ...prev, referred_by_patient_id: null }));
+    };
 
     // Reset form when modal opens
     useEffect(() => {
@@ -80,8 +131,20 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     nik: patient.nik || '',
                     address: patient.address || '',
                     additional_info_option_id: patient.additional_info_option_id || '',
-                    status: patient.status || 'aktif'
+                    status: patient.status || 'aktif',
+                    referred_by_patient_id: patient.referred_by_patient_id || null
                 });
+
+                if (patient.referred_by_patient_id) {
+                    supabase
+                        .from('patients')
+                        .select('id, full_name, nickname, phone, medical_record_number')
+                        .eq('id', patient.referred_by_patient_id)
+                        .maybeSingle()
+                        .then(({ data }) => setSelectedReferrer(data || null));
+                } else {
+                    setSelectedReferrer(null);
+                }
             } else {
                 // Initialize for add
                 setFormData({
@@ -95,8 +158,12 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     nik: '',
                     address: '',
                     additional_info_option_id: '',
-                    status: 'aktif'
+                    status: 'aktif',
+                    referred_by_patient_id: null
                 });
+                setSelectedReferrer(null);
+                setReferrerQuery('');
+                setReferrerResults([]);
                 fetchNextRM();
             }
         }
@@ -239,7 +306,8 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                 address: formData.address,
                 additional_info_option_id: formData.additional_info_option_id || null,
                 status: formData.status,
-                nickname_custom: true
+                nickname_custom: true,
+                referred_by_patient_id: formData.referred_by_patient_id || null
             };
 
             if (mode === 'add') {
@@ -297,19 +365,19 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-0">
-                <div className="px-6 py-6 border-b border-slate-100">
+            <DialogContent className="w-full h-full sm:h-auto max-w-full sm:max-w-2xl max-h-full sm:max-h-[90vh] overflow-hidden rounded-none sm:rounded-xl shadow-lg p-0 gap-0 flex flex-col">
+                <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 sm:py-6 border-b border-slate-100 shrink-0">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">{mode === 'add' ? 'Tambah Pasien Baru' : 'Edit Data Pasien'}</DialogTitle>
-                        <DialogDescription className="text-sm text-slate-500">
+                        <DialogTitle className="text-lg sm:text-xl font-bold text-slate-900 pr-6">{mode === 'add' ? 'Tambah Pasien Baru' : 'Edit Data Pasien'}</DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm text-slate-500">
                             Lengkapi informasi pasien di bawah ini. Field dengan tanda (*) wajib diisi.
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
-                <div className="px-6 py-4 space-y-5">
+                <div className="px-4 sm:px-6 py-4 space-y-5 overflow-y-auto flex-1">
                     {/* Row 1: RM & Status */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">No. Rekam Medis</Label>
                             <Input 
@@ -476,6 +544,82 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                         </Select>
                     </div>
 
+                    {/* Row 5b: Referral */}
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                            <Gift className="w-3.5 h-3.5 text-amber-500" />
+                            Direferensikan oleh Pasien (Opsional)
+                        </Label>
+                        <Popover open={referrerPopoverOpen} onOpenChange={setReferrerPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    role="combobox"
+                                    className="w-full justify-between font-normal border-slate-300"
+                                >
+                                    {selectedReferrer ? (
+                                        <span className="truncate">
+                                            {selectedReferrer.full_name}
+                                            {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-400">Cari nama / no. HP pasien lama...</span>
+                                    )}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                <Command shouldFilter={false}>
+                                    <CommandInput
+                                        placeholder="Ketik nama atau no. HP..."
+                                        value={referrerQuery}
+                                        onValueChange={setReferrerQuery}
+                                    />
+                                    <CommandList>
+                                        {referrerSearching && (
+                                            <div className="py-4 flex justify-center">
+                                                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                            </div>
+                                        )}
+                                        {!referrerSearching && referrerQuery.trim().length < 2 && (
+                                            <div className="py-4 px-3 text-xs text-slate-400 text-center">
+                                                Ketik minimal 2 huruf untuk mencari
+                                            </div>
+                                        )}
+                                        {!referrerSearching && referrerQuery.trim().length >= 2 && referrerResults.length === 0 && (
+                                            <CommandEmpty>Pasien tidak ditemukan.</CommandEmpty>
+                                        )}
+                                        <CommandGroup>
+                                            {referrerResults.map(p => (
+                                                <CommandItem key={p.id} value={p.id} onSelect={() => handleSelectReferrer(p)}>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm">{p.full_name}</span>
+                                                        <span className="text-xs text-slate-400">
+                                                            {p.phone || '-'}{p.medical_record_number ? ` · ${p.medical_record_number}` : ''}
+                                                        </span>
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                        {selectedReferrer && (
+                            <button
+                                type="button"
+                                onClick={handleClearReferrer}
+                                className="text-[11px] text-red-500 hover:underline flex items-center gap-0.5"
+                            >
+                                <X className="w-3 h-3" /> Hapus pilihan referral
+                            </button>
+                        )}
+                        <p className="text-[11px] text-slate-400">
+                            Jika pasien ini direferensikan oleh pasien lama, cari &amp; pilih nama pasien tersebut agar reward WhatsApp otomatis terkirim ke pasien lama saat terapi pertama pasien ini selesai.
+                        </p>
+                    </div>
+
                     {/* Row 6: Address */}
                     <div className="space-y-2">
                         <Label htmlFor="address" className="text-sm font-medium text-slate-700">Alamat Lengkap</Label>
@@ -490,21 +634,21 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4 bg-slate-50/50">
+                <div className="sticky bottom-0 shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-white sm:bg-slate-50/50">
                     {mode === 'edit' ? (
-                        <div className="flex-1 flex justify-start">
+                        <div className="flex justify-start">
                              {!showDeleteConfirm ? (
-                                <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto justify-center sm:justify-start"
                                     onClick={() => setShowDeleteConfirm(true)}
                                     disabled={loading}
                                 >
                                     <Trash2 className="w-4 h-4 mr-2" /> Hapus Pasien
                                 </Button>
                              ) : (
-                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200">
+                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200 w-full sm:w-auto">
                                      <span className="text-xs text-red-700 font-medium px-2">Yakin hapus?</span>
                                      <Button size="sm" variant="destructive" onClick={handleDelete} disabled={loading}>{loading ? '...' : 'Ya, Hapus'}</Button>
                                      <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={loading} className="text-slate-600 hover:text-slate-800">Batal</Button>
@@ -512,12 +656,12 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                              )}
                         </div>
                     ) : (
-                        <div></div> 
+                        <div className="hidden sm:block"></div>
                     )}
-                    
+
                     <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="px-6">Batal</Button>
-                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="flex-1 sm:flex-none px-6">Batal</Button>
+                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6">
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {mode === 'add' ? 'Simpan Pasien' : 'Simpan Perubahan'}
                         </Button>

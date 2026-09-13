@@ -5,7 +5,8 @@ import {
   ChevronRight,
   Loader2,
   AlertTriangle,
-  ClipboardList
+  ClipboardList,
+  Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,6 @@ const AdminAppointmentBooking = () => {
   return saved ? new Date(saved) : new Date();
 });
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   const [therapists, setTherapists] = useState([]);
@@ -62,8 +62,8 @@ const AdminAppointmentBooking = () => {
 const [patientHistory, setPatientHistory] = useState([]);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-const formattedDate = date
-  ? format(date, "EEE, dd MMM yy", { locale: idLocale })
+const formattedDateFull = date
+  ? format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })
   : '';
   useEffect(() => {
 
@@ -131,6 +131,21 @@ const formattedDate = date
     };
   }, [date, therapists]);
 
+  // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
+  // write ke appointments/therapist_time_off), jadi realtime subscription di atas
+  // tidak menangkapnya. Poll berkala supaya kartu terapis (badge terkunci & slot
+  // kosong) tetap akurat walau tab dibiarkan terbuka melewati ambang batas umur.
+  useEffect(() => {
+    if (therapists.length === 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchDayData(date);
+      loadSoapStatus();
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [date, therapists]);
+
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
@@ -153,7 +168,6 @@ const formattedDate = date
   const fetchDayData = async (selectedDate) => {
     if (!selectedDate || !isValid(selectedDate)) return;
 
-    setIsRefreshing(true);
     setError(null);
 
     try {
@@ -183,14 +197,23 @@ const formattedDate = date
         newSchedulesMap[t.id] = [];
       });
 
+      // Satu terapis bisa punya slot dengan status campuran di hari yang sama
+      // (mis. sebagian 'terisi' karena sudah dibooking, sisanya 'terkunci' karena
+      // SOAP menunggak). Rangking eksplisit ini memastikan status yang paling
+      // relevan buat admin (terkunci lebih penting daripada terisi) yang menang,
+      // bukan sekadar status slot terakhir yang diproses.
+      const STATUS_RANK = { aktif: 3, terkunci: 2, terisi: 1 };
+
       if (Array.isArray(slots)) {
         slots.forEach(s => {
           if (!s.therapist_id) return;
 
-          if (s.status === 'aktif') {
-            statusMap[s.therapist_id] = 'aktif';
-          } else if (statusMap[s.therapist_id] !== 'aktif' && s.status) {
-            statusMap[s.therapist_id] = s.status;
+          if (s.status) {
+            const currentRank = STATUS_RANK[statusMap[s.therapist_id]] ?? -1;
+            const newRank = STATUS_RANK[s.status] ?? 0;
+            if (newRank >= currentRank) {
+              statusMap[s.therapist_id] = s.status;
+            }
           }
 
           const slotObj = {
@@ -223,11 +246,19 @@ const formattedDate = date
         .gte('end_date', dateStr);
 
       (timeOffRows || []).forEach(row => {
-        const reasonLower = (row.reason || '').toLowerCase();
-        statusMap[row.therapist_id] = reasonLower.includes('cuti')
-          ? 'cuti'
-          : 'libur_mingguan';
-        reasonMap[row.therapist_id] = row.reason || '';
+        // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
+        // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
+        // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
+        // dan catatan bebas bisa memuat kata apa saja, termasuk "cuti" secara kebetulan.
+        const category = (row.reason || '').split(' - ')[0].trim().toLowerCase();
+        const label = category.includes('sakit') ? 'Sakit'
+          : category.includes('training') ? 'Training'
+          : category.includes('cuti') ? 'Cuti'
+          : category.includes('izin') ? 'Izin Pribadi'
+          : category.includes('libur') ? 'Libur'
+          : 'Lainnya';
+        statusMap[row.therapist_id] = 'cuti';
+        reasonMap[row.therapist_id] = label;
       });
 
       setSchedulesMap(newSchedulesMap);
@@ -243,7 +274,6 @@ const formattedDate = date
       });
     }
 
-    setIsRefreshing(false);
     setLoading(false);
   };
 
@@ -316,27 +346,28 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden">
-  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
 
-    {/* LEFT SIDE */}
-    <div>
-      <h1 className="text-2xl font-bold text-slate-800">
-        Booking Appointment
-      </h1>
-      <p className="text-slate-500 text-sm">
-        Kelola jadwal dan booking pasien secara real-time
-      </p>
+  {/* TITLE */}
+  <div>
+    <h1 className="text-2xl font-bold text-slate-800">
+      Booking Appointment
+    </h1>
+    <p className="text-slate-500 text-sm">
+      Kelola jadwal dan booking pasien secara real-time
+    </p>
+  </div>
+
+  {/* Bablast Toggle */}
+  <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
+
+  <div className="flex items-center justify-between gap-2">
+  <div className="flex items-center gap-2 min-w-0">
+    <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+      <Phone className="h-3.5 w-3.5 text-white" fill="white" />
     </div>
-
-    {/* RIGHT SIDE */}
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 ml-auto w-full md:w-auto">
-{/* Bablast Toggle */}
-<div className="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shrink-0">
-
-  <span className="text-sm font-medium text-slate-700">
-    WaAuto
-  </span>
+    <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
+  </div>
 
   <button
     onClick={async () => {
@@ -398,31 +429,35 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   }
 
 }}
-    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
       isBablastEnabled
-        ? 'bg-green-500'
+        ? 'bg-blue-600'
         : 'bg-gray-300'
     }`}
   >
     <span
-      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
         isBablastEnabled
-          ? 'translate-x-8'
+          ? 'translate-x-6'
           : 'translate-x-1'
       }`}
     />
   </button>
+  </div>
+  <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
+  </div>
 
-</div>
+  {/* Controls Row */}
+  <div className="flex items-center gap-1.5 w-full min-w-0">
 
-      {/* Date Controller */}
-      <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden bg-slate-50 p-1 rounded-lg border border-slate-200">
+    {/* Date Controller */}
+    <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
 
   {/* tombol kiri */}
   <Button
     variant="ghost"
     size="icon"
-    className="shrink-0"
+    className="h-7 w-7 shrink-0"
     onClick={() => setDate(addDays(date, -1))}
   >
     <ChevronLeft className="w-4 h-4" />
@@ -433,12 +468,12 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <PopoverTrigger asChild>
       <Button
         variant="ghost"
-        className="flex-1 min-w-0 justify-center text-center"
+        className="flex-1 min-w-0 justify-center text-center px-1 overflow-hidden"
       >
-        <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-slate-500" />
+        <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-xs font-semibold tracking-tight whitespace-nowrap text-slate-700">
-  {formattedDate}
+        <span className="text-[10px] sm:text-sm font-semibold tracking-tight truncate text-slate-700">
+  {formattedDateFull}
 </span>
       </Button>
     </PopoverTrigger>
@@ -457,7 +492,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   <Button
     variant="ghost"
     size="icon"
-    className="shrink-0"
+    className="h-7 w-7 shrink-0"
     onClick={() => setDate(addDays(date, 1))}
   >
     <ChevronRight className="w-4 h-4" />
@@ -465,17 +500,16 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
 </div>
 
-      {/* Tombol Template Jadwal */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="shrink-0"
-        onClick={() => setShowTemplateModal(true)}
-        title="Copy Template Jadwal Tersedia"
-      >
-        <ClipboardList className="h-4 w-4" />
-      </Button>
-    </div>
+    {/* Tombol Template Jadwal */}
+    <Button
+      variant="outline"
+      size="icon"
+      className="h-9 w-9 shrink-0 bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+      onClick={() => setShowTemplateModal(true)}
+      title="Copy Template Jadwal Tersedia"
+    >
+      <ClipboardList className="h-4 w-4" />
+    </Button>
   </div>
 </div>
 
@@ -647,7 +681,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            {item.patient?.full_name || '-'}
+                            {item.patient?.full_name || item.guest_name || '-'}
                           </p>
 
                           <p className="text-sm text-slate-500">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn, MessageCircle } from 'lucide-react';
+import { Menu, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BUSINESS } from '@/lib/businessInfo';
@@ -87,11 +87,6 @@ const Navbar = () => {
               <MessageCircle className="w-4 h-4" /> Konsultasi WA
             </Button>
           </a>
-          <Link to="/login">
-            <Button variant={showBackground ? "secondary" : "default"} className={`gap-2 ${!showBackground && 'bg-kaffah-navy hover:bg-kaffah-navy/90 text-white'}`}>
-              <LogIn className="w-4 h-4" /> Login
-            </Button>
-          </Link>
         </div>
 
         {/* Mobile Toggle */}
@@ -137,11 +132,6 @@ const Navbar = () => {
                     <MessageCircle className="w-4 h-4" /> Konsultasi WhatsApp
                 </Button>
               </a>
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="secondary" className="w-full gap-2">
-                  <LogIn className="w-4 h-4" /> Login Staff
-                </Button>
-              </Link>
               <Link to="/booking" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="w-full bg-kaffah-blue hover:bg-kaffah-blue/90 text-white">
                     Booking Online

@@ -3,7 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
@@ -13,10 +21,10 @@ import {
   getAdminIncome, 
   getPatientIncomeFromPackages 
 } from '@/lib/api';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { generateAccountingReportPDF } from '@/lib/accountingReportPdfGenerator';
 
 const ReportTable = ({ title, data, columns, total, type }) => {
     const isIncome = type === 'income';
@@ -151,6 +159,7 @@ const AccountingReport = ({
   onDateRangeChange
 }) => {
   const { toast } = useToast();
+  const { clinicName } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('income');
   
@@ -225,40 +234,56 @@ const AccountingReport = ({
 
   return format(date, 'dd/MM/yyyy');
 };
-const handleExportExcel = () => {
+const handleExportExcel = (mode = 'accrual') => {
+  const isCashBasis = mode === 'cash';
+
   // =========================
   // GABUNG PEMASUKAN
   // =========================
   const combinedIncome = [
     ...data.ownerIncome.map(item => ({
       tanggal: formatDate(item.date),
-      sumber: 'Pemasukan Owner',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
+      bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
     ...data.adminIncome.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      sumber: 'Pemasukan Admin',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
       nama: '-',
       paket: '-',
+      bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
-    ...data.patientIncome.map(item => ({
-      tanggal: formatDate(item.date),
-      sumber: 'Pendapatan Pasien',
-      kategori: '-',
-      deskripsi: '-',
-      nama: item.patient_name || '-',
-      paket: item.package_name || '-',
-      jumlah: Number(item.amount) || 0
-    }))
+    // Mode "Real-time (Kas Masuk)": nominal paket hanya ditulis pada sesi
+    // yang benar-benar ada pembayaran (cash_amount > 0). Sesi lanjutan
+    // paket yang belum ada pembayaran baru tetap ditulis 0.
+    //
+    // Label kolom paket: sesi pertama tetap "Paket X", sesi ke-2 dst
+    // ditulis "Sesi ke-N (Paket X)". Baris tanpa paket ("Visit") tidak
+    // diubah.
+    ...data.patientIncome.map(item => {
+      const packageLabel = item.package_name || '-';
+      const paket = item.session_number && item.session_number >= 2
+        ? `Sesi ke-${item.session_number} (${packageLabel})`
+        : packageLabel;
+
+      return {
+        tanggal: formatDate(item.date),
+        deskripsi: '-',
+        nama: item.patient_name || '-',
+        paket,
+        bank: '-',
+        metode_pembayaran: item.payment_method || '-',
+        jumlah: isCashBasis ? (Number(item.cash_amount) || 0) : (Number(item.amount) || 0)
+      };
+    })
   ];
   combinedIncome.sort((a, b) => {
   const [dayA, monthA, yearA] = a.tanggal.split('/');
@@ -276,17 +301,17 @@ const handleExportExcel = () => {
   const combinedExpenses = [
     ...data.ownerExpenses.map(item => ({
       tanggal: formatDate(item.date),
-      sumber: 'Pengeluaran Owner',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
+      bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     })),
 
     ...data.adminExpenses.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      sumber: 'Pengeluaran Admin',
-      kategori: item.category || '-',
       deskripsi: item.description || '-',
+      bank: item.bank_accounts?.bank_name || '-',
+      metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
     }))
   ];
@@ -299,6 +324,10 @@ combinedExpenses.sort((a, b) => {
 
   return dateA - dateB;
 });
+  // Total pemasukan mengikuti mode yang dipilih (akrual vs kas riil)
+  const exportTotalIncome = combinedIncome.reduce((acc, item) => acc + (Number(item.jumlah) || 0), 0);
+  const exportNetProfit = exportTotalIncome - totalExpenses;
+
   // =========================
   // WORKBOOK
   // =========================
@@ -318,10 +347,48 @@ combinedExpenses.sort((a, b) => {
     incomeSheet,
     [
       [],
-      ['TOTAL PEMASUKAN', totalIncome]
+      ['TOTAL PEMASUKAN', exportTotalIncome]
     ],
     { origin: -1 }
   );
+
+  // Rekap per metode pembayaran per tanggal — hanya untuk mode Real-time
+  // (Kas Masuk). Hanya baris dengan uang yang benar-benar masuk (jumlah > 0)
+  // yang direkap.
+  if (isCashBasis) {
+    const recapMap = new Map();
+    combinedIncome.forEach(item => {
+      const jumlah = Number(item.jumlah) || 0;
+      if (jumlah <= 0) return;
+      const key = `${item.tanggal}||${item.metode_pembayaran || '-'}`;
+      recapMap.set(key, (recapMap.get(key) || 0) + jumlah);
+    });
+
+    const recapRows = Array.from(recapMap.entries())
+      .map(([key, total]) => {
+        const [tanggal, metode] = key.split('||');
+        return { tanggal, metode, total };
+      })
+      .sort((a, b) => {
+        const [dayA, monthA, yearA] = a.tanggal.split('/');
+        const [dayB, monthB, yearB] = b.tanggal.split('/');
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return a.metode.localeCompare(b.metode);
+      });
+
+    XLSX.utils.sheet_add_aoa(
+      incomeSheet,
+      [
+        [],
+        ['REKAP PER METODE PEMBAYARAN PER TANGGAL'],
+        ['Tanggal', 'Metode Pembayaran', 'Total'],
+        ...recapRows.map(r => [r.tanggal, r.metode, r.total])
+      ],
+      { origin: -1 }
+    );
+  }
 
   // =========================
   // SHEET PENGELUARAN
@@ -349,10 +416,11 @@ combinedExpenses.sort((a, b) => {
     ['LAPORAN AKUNTANSI'],
     [],
     ['Periode', `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`],
+    ['Format', isCashBasis ? 'Real-time (Kas Masuk)' : 'Standar (Akrual per Sesi)'],
     [],
-    ['Total Pemasukan', totalIncome],
+    ['Total Pemasukan', exportTotalIncome],
     ['Total Pengeluaran', totalExpenses],
-    ['Net Profit', netProfit]
+    ['Net Profit', exportNetProfit]
   ]);
 
   // =========================
@@ -365,103 +433,27 @@ combinedExpenses.sort((a, b) => {
   // =========================
   // EXPORT
   // =========================
+  const fileSuffix = isCashBasis ? 'realtime' : 'standar';
   XLSX.writeFile(
     workbook,
-    `laporan_akuntansi_${dateRange.startDate}_${dateRange.endDate}.xlsx`
+    `laporan_akuntansi_${fileSuffix}_${dateRange.startDate}_${dateRange.endDate}.xlsx`
   );
 };
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(18);
-    doc.text("Laporan Akuntansi Lengkap", 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Periode: ${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`, 14, 30);
-    
-    let finalY = 35;
-
-    // Helper for sections
-    const addSection = (title, tableData, columns, subtotal, theme = 'green') => {
-        doc.setFontSize(12);
-        doc.setTextColor(theme === 'green' ? 0 : 200, theme === 'green' ? 100 : 0, 0);
-        doc.text(title, 14, finalY + 10);
-        doc.setTextColor(0, 0, 0);
-
-        autoTable(doc, {
-            startY: finalY + 15,
-            head: [columns.map(c => c.header)],
-            body: tableData.map(row => columns.map(c => {
-                 if (c.id === 'amount') return new Intl.NumberFormat('id-ID').format(row.amount);
-                 if (c.id === 'date') return formatDate(row[c.accessor]);
-                 return row[c.accessor];
-            })),
-            theme: 'grid',
-            headStyles: { fillColor: theme === 'green' ? [46, 139, 87] : [178, 34, 34] },
-            styles: { fontSize: 8 },
-        });
-
-        finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(10);
-        doc.text(`Subtotal: Rp ${new Intl.NumberFormat('id-ID').format(subtotal)}`, 140, finalY - 2, { align: 'right' });
-    };
-
-    // Income Sections
-    addSection("Pemasukan Owner", data.ownerIncome, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalOwnerInc, 'green');
-
-    addSection("Pemasukan Admin", data.adminIncome, [
-        { header: "Tanggal", accessor: "transaction_date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalAdminInc, 'green');
-
-    addSection("Pendapatan Pasien (Paket/Visit)", data.patientIncome, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Pasien", accessor: "patient_name" },
-        { header: "Paket", accessor: "package_name" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalPatientInc, 'green');
-
-    // Expense Sections
-    doc.addPage();
-    finalY = 20;
-
-    addSection("Pengeluaran Owner", data.ownerExpenses, [
-        { header: "Tanggal", accessor: "date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalOwnerExp, 'red');
-
-    addSection("Pengeluaran Admin", data.adminExpenses, [
-        { header: "Tanggal", accessor: "transaction_date", id: "date" },
-        { header: "Kategori", accessor: "category" },
-        { header: "Deskripsi", accessor: "description" },
-        { header: "Jumlah", accessor: "amount", id: "amount" }
-    ], subTotalAdminExp, 'red');
-
-    // Summary
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, finalY + 5, 196, finalY + 5);
-    
-    doc.setFontSize(12);
-    doc.text("Ringkasan Akhir", 14, finalY + 15);
-    
-    doc.setFontSize(10);
-    doc.text(`Total Pemasukan: Rp ${new Intl.NumberFormat('id-ID').format(totalIncome)}`, 14, finalY + 25);
-    doc.text(`Total Pengeluaran: Rp ${new Intl.NumberFormat('id-ID').format(totalExpenses)}`, 14, finalY + 32);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(netProfit >= 0 ? 46 : 220, netProfit >= 0 ? 139 : 20, netProfit >= 0 ? 87 : 60);
-    doc.text(`Net Profit: Rp ${new Intl.NumberFormat('id-ID').format(netProfit)}`, 14, finalY + 45);
-
-    doc.save(`laporan_akuntansi_${dateRange.startDate}_${dateRange.endDate}.pdf`);
+    generateAccountingReportPDF(data, {
+      dateRange,
+      clinicName,
+      totals: {
+        totalIncome,
+        totalExpenses,
+        netProfit,
+        subTotalOwnerInc,
+        subTotalAdminInc,
+        subTotalPatientInc,
+        subTotalOwnerExp,
+        subTotalAdminExp,
+      },
+    });
   };
 
   if (loading) {
@@ -488,10 +480,27 @@ combinedExpenses.sort((a, b) => {
             <Download className="w-3.5 h-3.5 mr-1.5" />
             PDF
           </Button>
-          <Button onClick={handleExportExcel} variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Excel
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Excel
+                <ChevronDown className="w-3 h-3 ml-1.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel className="text-xs">Pilih Format Laporan</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportExcel('accrual')} className="flex flex-col items-start gap-0.5 py-2">
+                <span className="text-xs font-semibold">Standar (Akrual per Sesi)</span>
+                <span className="text-[11px] text-slate-400">Nominal paket dibagi rata per sesi terapi</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportExcel('cash')} className="flex flex-col items-start gap-0.5 py-2">
+                <span className="text-xs font-semibold">Real-time (Kas Masuk)</span>
+                <span className="text-[11px] text-slate-400">Nominal hanya dicatat saat uang benar-benar diterima; sesi lanjutan tertulis 0</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -563,7 +572,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -575,7 +585,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -612,7 +623,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
           <ReportTable
@@ -624,7 +636,8 @@ combinedExpenses.sort((a, b) => {
               { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
               { header: 'Kategori', accessor: 'category' },
               { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' }
+              { header: 'Deskripsi', accessor: 'description' },
+              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
             ]}
           />
         </div>

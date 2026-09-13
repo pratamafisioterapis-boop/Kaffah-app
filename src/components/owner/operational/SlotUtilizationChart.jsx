@@ -88,11 +88,37 @@ const SlotUtilizationChart = () => {
   
 
  const total = metrics.filled + metrics.empty;
-  const utilizationColor = metrics.utilization >= 80 ? '#6366f1' : metrics.utilization >= 50 ? '#10b981' : '#f59e0b';
+
+  // Interpolasi warna kontinu sesuai persentase: merah (rendah) → kuning →
+  // hijau → indigo (penuh), bukan lompatan 3 tingkat.
+  const UTILIZATION_COLOR_STOPS = [
+    { p: 0, rgb: [239, 68, 68] },   // red-500
+    { p: 50, rgb: [245, 158, 11] }, // amber-500
+    { p: 80, rgb: [16, 185, 129] }, // emerald-500
+    { p: 100, rgb: [99, 102, 241] } // indigo-500
+  ];
+  const getUtilizationColor = (pct) => {
+    const clamped = Math.min(100, Math.max(0, pct));
+    let lower = UTILIZATION_COLOR_STOPS[0];
+    let upper = UTILIZATION_COLOR_STOPS[UTILIZATION_COLOR_STOPS.length - 1];
+    for (let i = 0; i < UTILIZATION_COLOR_STOPS.length - 1; i++) {
+      if (clamped >= UTILIZATION_COLOR_STOPS[i].p && clamped <= UTILIZATION_COLOR_STOPS[i + 1].p) {
+        lower = UTILIZATION_COLOR_STOPS[i];
+        upper = UTILIZATION_COLOR_STOPS[i + 1];
+        break;
+      }
+    }
+    const range = upper.p - lower.p || 1;
+    const t = (clamped - lower.p) / range;
+    const rgb = lower.rgb.map((c, i) => Math.round(c + (upper.rgb[i] - c) * t));
+    return `rgb(${rgb.join(',')})`;
+  };
+  const utilizationColor = getUtilizationColor(metrics.utilization);
 
   // SVG donut manual agar lebih besar dan premium
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
+  const isFull = metrics.utilization >= 100;
   const strokeDash = (metrics.utilization / 100) * circumference;
 
   return (
@@ -130,17 +156,30 @@ const SlotUtilizationChart = () => {
               <svg width="180" height="180" viewBox="0 0 180 180">
                 {/* Track */}
                 <circle cx="90" cy="90" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="16" />
-                {/* Progress */}
-                <circle
-                  cx="90" cy="90" r={radius}
-                  fill="none"
-                  stroke={utilizationColor}
-                  strokeWidth="16"
-                  strokeLinecap="round"
-                  strokeDasharray={`${strokeDash} ${circumference}`}
-                  strokeDashoffset={circumference / 4}
-                  style={{ transition: 'stroke-dasharray 0.8s ease' }}
-                />
+                {/* Progress — saat 100% gambar lingkaran solid tanpa dasharray sama
+                    sekali, supaya tidak bergantung pada perhitungan panjang lingkaran
+                    (circumference) milik browser yang bisa sedikit meleset di sebagian
+                    WebView/mobile dan menyisakan celah walau nilainya sudah penuh. */}
+                {isFull ? (
+                  <circle
+                    cx="90" cy="90" r={radius}
+                    fill="none"
+                    stroke={utilizationColor}
+                    strokeWidth="16"
+                    style={{ transition: 'stroke 0.8s ease' }}
+                  />
+                ) : (
+                  <circle
+                    cx="90" cy="90" r={radius}
+                    fill="none"
+                    stroke={utilizationColor}
+                    strokeWidth="16"
+                    strokeLinecap="round"
+                    strokeDasharray={`${strokeDash} ${circumference}`}
+                    strokeDashoffset={circumference / 4}
+                    style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.8s ease' }}
+                  />
+                )}
               </svg>
               {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">

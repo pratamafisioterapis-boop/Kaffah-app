@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
+import { stripSignatureBackground } from '@/lib/signatureImage';
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -18,6 +19,23 @@ const calcAge = (birthDate) => {
 const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
   const age = data?.age ?? calcAge(data?.birth_date);
 
+  // Strip the signature scan's background to transparent and boost contrast,
+  // same as the invoice template — otherwise it prints with a visible box
+  // behind it and reads small/blurry against the page.
+  const [signatureUrl, setSignatureUrl] = useState(null);
+  useEffect(() => {
+    const rawUrl = data?.therapist_signature_url;
+    if (!rawUrl) {
+      setSignatureUrl(null);
+      return;
+    }
+    let cancelled = false;
+    stripSignatureBackground(rawUrl).then((result) => {
+      if (!cancelled) setSignatureUrl(result);
+    });
+    return () => { cancelled = true; };
+  }, [data?.therapist_signature_url]);
+
   return (
     <div
       ref={ref}
@@ -34,7 +52,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       {/* LETTERHEAD — logo pinned left, text truly centered on the page via a mirrored spacer column */}
       <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr 96px', alignItems: 'center', gap: '16px', paddingBottom: '18px' }}>
         <div>
-          {clinic?.logo_url && <img src={clinic.logo_url} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />}
+          <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />
         </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>
@@ -104,21 +122,21 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
             {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
           </p>
           <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
-          <div style={{ position: 'relative', height: '65px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-            {data?.therapist_signature_url && (
-              <img src={data.therapist_signature_url} style={{ maxHeight: '60px', maxWidth: '130px' }} />
+          <div style={{ position: 'relative', height: '95px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            {signatureUrl && (
+              <img src={signatureUrl} style={{ maxHeight: '90px', maxWidth: '190px' }} />
             )}
             {clinic?.stamp_url && (
               <img
                 src={clinic.stamp_url}
-                style={{ position: 'absolute', right: '100%', bottom: 0, marginRight: '-10px', maxHeight: '62px', maxWidth: '62px', objectFit: 'contain', opacity: 0.92 }}
+                style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.92 }}
               />
             )}
           </div>
           <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />
           <p style={{ fontSize: '13px', fontWeight: 700, margin: '6px 0 0' }}>{data?.therapist_name || '-'}</p>
           {data?.therapist_license && (
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{data.therapist_license}</p>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0' }}>SIPF: {data.therapist_license}</p>
           )}
         </div>
       </div>

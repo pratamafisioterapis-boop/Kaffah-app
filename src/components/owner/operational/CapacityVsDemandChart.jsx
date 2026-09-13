@@ -13,84 +13,121 @@ import {
   Legend
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
-import { startOfWeek, endOfWeek, format, eachDayOfInterval, getDay, isWithinInterval, parseISO } from 'date-fns';
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addWeeks,
+  addMonths,
+  isSameWeek,
+  isSameMonth,
+  format,
+  eachDayOfInterval,
+  getISOWeek,
+} from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const CapacityVsDemandChart = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [view, setView] = useState('weekly'); // 'weekly' | 'monthly'
+  const [anchorDate, setAnchorDate] = useState(new Date()); // periode (minggu/bulan) yang sedang dilihat
+
+  const isCurrentPeriod = view === 'monthly'
+    ? isSameMonth(anchorDate, new Date())
+    : isSameWeek(anchorDate, new Date(), { weekStartsOn: 1 });
+
+  const goToPrevious = () => {
+    setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, -1) : addWeeks(prev, -1)));
+  };
+  const goToNext = () => {
+    if (isCurrentPeriod) return; // jangan izinkan lihat periode masa depan
+    setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, 1) : addWeeks(prev, 1)));
+  };
+  const goToToday = () => setAnchorDate(new Date());
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const today = new Date();
-      // Calculate start (Monday) and end (Sunday) of the current week
-      const startDate = startOfWeek(today, { weekStartsOn: 1 }); // 1 = Monday
-      const endDate = endOfWeek(today, { weekStartsOn: 1 });
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
+      // Weekly: Monday-Sunday of the selected week. Monthly: 1st-last day of the selected month.
+      const startDate = view === 'monthly' ? startOfMonth(anchorDate) : startOfWeek(anchorDate, { weekStartsOn: 1 });
+      const endDate = view === 'monthly' ? endOfMonth(anchorDate) : endOfWeek(anchorDate, { weekStartsOn: 1 });
 
-      // 1. Fetch Appointments for Demand
-      // User requested: Filter for status IN ('confirmed', 'ongoing', 'completed')
-      // We also include 'scheduled' as it usually represents valid future demand in most systems, 
-      // but will prioritize the user's specific list if they are strict. 
-      // Given "Demand Calculation" usually implies booked slots, and 'scheduled' is the standard initial state,
-      // excluding it would show 0 demand for future days. We will include it for completeness unless strictly forbidden.
-      // Based on strict prompt: "Filter for status IN ('confirmed', 'ongoing', 'completed')"
-      // However, usually 'scheduled' is vital. I will stick to the prompt's list to be safe, 
-      // but append 'scheduled' if it seems like a mistake. 
-      // Let's stick to the prompt's explicit list: confirmed, ongoing, completed.
-      // Wait, if I don't include 'scheduled', future demand might be zero. 
-      // I will add 'scheduled' to ensure the chart is useful, as "confirmed" might be a manual step.
-      
-
-      // Process Data by Day
       const days = eachDayOfInterval({ start: startDate, end: endDate });
-      
-      const processedData = [];
 
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
       const { data: currentUserRow } = await supabase.from('users').select('clinic_id').eq('id', currentUserId).single();
       const currentClinicId = currentUserRow?.clinic_id;
 
-for (const day of days) {
-  const dateStr = format(day, 'yyyy-MM-dd');
+      // Fetch all days in parallel (monthly view can span ~30 days)
+      const slotResults = await Promise.all(
+        days.map((day) =>
+          supabase.rpc('get_available_slots_with_status_by_date', {
+            p_date: format(day, 'yyyy-MM-dd'),
+            p_clinic_id: currentClinicId,
+          })
+        )
+      );
 
-  const { data: slotData, error } = await supabase.rpc(
-    'get_available_slots_with_status_by_date',
-    { p_date: dateStr, p_clinic_id: currentClinicId }
-  );
+      const dailyData = days.map((day, idx) => {
+        const { data: slotData, error: rpcError } = slotResults[idx] || {};
+        if (rpcError) console.error(rpcError);
 
-  if (error) {
-  console.error(error);
-  continue;
-}
+        // 🔥 kapasitas = slot yang benar-benar tersedia (exclude yang cuti)
+        const capacity = (slotData || []).filter(s => s.status !== 'cuti').length;
+        // 🔥 permintaan = slot terisi
+        const demand = (slotData || []).filter(s => s.status === 'terisi').length;
 
-  // 🔥 kapasitas = slot yang benar-benar tersedia (exclude yang cuti)
-const capacity = (slotData || []).filter(s => s.status !== 'cuti').length;
+        return {
+          day: format(day, 'EEEE', { locale: id }),
+          shortDay: format(day, 'EEE', { locale: id }),
+          fullDate: format(day, 'dd MMM yyyy', { locale: id }),
+          isoWeek: getISOWeek(day),
+          capacity,
+          demand,
+          utilization: capacity > 0 ? Math.round((demand / capacity) * 100) : 0,
+        };
+      });
 
-// 🔥 permintaan = slot terisi
-const demand = (slotData || []).filter(
-  s => s.status === 'terisi'
-).length;
+      if (view === 'weekly') {
+        setData(dailyData);
+      } else {
+        // Group days into weeks so the monthly view compares week-over-week within the month
+        const weekOrder = [];
+        const weekMap = {};
+        dailyData.forEach((d) => {
+          if (!weekMap[d.isoWeek]) {
+            weekMap[d.isoWeek] = { days: [] };
+            weekOrder.push(d.isoWeek);
+          }
+          weekMap[d.isoWeek].days.push(d);
+        });
 
-  processedData.push({
-  day: format(day, 'EEEE', { locale: id }),
-  shortDay: format(day, 'EEE', { locale: id }),
-  fullDate: format(day, 'dd MMM yyyy', { locale: id }),
-  capacity,
-  demand,
-  utilization: capacity > 0
-    ? Math.round((demand / capacity) * 100)
-    : 0
-});
-}
-setData(processedData);
+        const monthlyData = weekOrder.map((isoWeek, idx) => {
+          const weekDays = weekMap[isoWeek].days;
+          const capacity = weekDays.reduce((s, d) => s + d.capacity, 0);
+          const demand = weekDays.reduce((s, d) => s + d.demand, 0);
+          const activeDays = weekDays.filter((d) => d.capacity > 0);
+          const utilization = activeDays.length > 0
+            ? Math.round(activeDays.reduce((s, d) => s + d.utilization, 0) / activeDays.length)
+            : 0;
+          return {
+            day: `Minggu ${idx + 1}`,
+            shortDay: `Mgg ${idx + 1}`,
+            fullDate: `${weekDays[0].fullDate} - ${weekDays[weekDays.length - 1].fullDate}`,
+            capacity,
+            demand,
+            utilization,
+          };
+        });
+        setData(monthlyData);
+      }
     } catch (err) {
       console.error("Error fetching capacity vs demand:", err);
       setError("Gagal memuat data.");
@@ -101,10 +138,10 @@ setData(processedData);
 
   useEffect(() => {
     fetchData();
-    
+
     // Subscribe to changes
     const channel = supabase
-      .channel('capacity-demand-updates')
+      .channel(`capacity-demand-updates-${view}-${format(anchorDate, 'yyyy-MM-dd')}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_schedules' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, () => fetchData())
@@ -113,11 +150,14 @@ setData(processedData);
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [view, anchorDate]);
 
  const todayData = data.find(d => d.fullDate === format(new Date(), 'dd MMM yyyy', { locale: id }));
-  const avgUtilization = data.length > 0
-    ? Math.round(data.reduce((s, d) => s + d.utilization, 0) / data.length)
+  // Hari tanpa jadwal aktif (kapasitas 0) tidak dihitung ke avg utilisasi
+  // supaya rata-rata tidak turun akibat hari libur/tanpa slot, bukan sepi pasien.
+  const activeDays = data.filter(d => d.capacity > 0);
+  const avgUtilization = activeDays.length > 0
+    ? Math.round(activeDays.reduce((s, d) => s + d.utilization, 0) / activeDays.length)
     : 0;
 
   return (
@@ -127,7 +167,11 @@ setData(processedData);
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Overview minggu ini</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {view === 'monthly'
+                ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
+                : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -142,6 +186,54 @@ setData(processedData);
                   <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
                 </button>
             }
+          </div>
+        </div>
+
+        {/* Weekly / Monthly toggle + period navigation */}
+        <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
+            <button
+              onClick={() => { setView('weekly'); setAnchorDate(new Date()); }}
+              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Mingguan
+            </button>
+            <button
+              onClick={() => { setView('monthly'); setAnchorDate(new Date()); }}
+              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Bulanan
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={goToPrevious}
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors"
+              aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'}
+            >
+              <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
+            </button>
+            {!isCurrentPeriod && (
+              <button
+                onClick={goToToday}
+                className="text-[11px] font-semibold text-indigo-600 px-2 hover:underline"
+              >
+                {view === 'monthly' ? 'Bulan ini' : 'Minggu ini'}
+              </button>
+            )}
+            <button
+              onClick={goToNext}
+              disabled={isCurrentPeriod}
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
+              aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
+            >
+              <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+            </button>
           </div>
         </div>
 
@@ -194,6 +286,7 @@ setData(processedData);
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
                   dy={8}
+                  interval={0}
                 />
                 <YAxis
                   yAxisId="left"

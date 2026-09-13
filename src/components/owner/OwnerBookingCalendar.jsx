@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { 
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, ArrowLeft, ClipboardList
+import {
+  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, ClipboardList, Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,10 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { format, addDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -33,12 +31,10 @@ import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailMo
 import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
 
 const OwnerBookingCalendar = () => {
-  const navigate = useNavigate();
   const { userDetails } = useAuth();
   const { toast } = useToast();
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   
@@ -123,6 +119,21 @@ const OwnerBookingCalendar = () => {
     };
   }, [date]);
 
+  // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
+  // write ke appointments/therapist_time_off), jadi realtime subscription di atas
+  // tidak menangkapnya. Poll berkala supaya kartu terapis (badge terkunci & slot
+  // kosong) tetap akurat walau tab dibiarkan terbuka melewati ambang batas umur.
+  useEffect(() => {
+    if (therapists.length === 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchDayData(date);
+      loadSoapStatus();
+    }, 3 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [date, therapists]);
+
   const loadInitialData = async () => {
     setLoading(true);
     const response = await getActivePhysiotherapists();
@@ -132,7 +143,6 @@ const OwnerBookingCalendar = () => {
   };
 
   const fetchDayData = async (selectedDate) => {
-    setIsRefreshing(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
@@ -170,16 +180,20 @@ const OwnerBookingCalendar = () => {
          newSchedulesMap[t.id] = [];
       });
 
+      // Satu terapis bisa punya slot dengan status campuran di hari yang sama
+      // (mis. sebagian 'terisi' karena sudah dibooking, sisanya 'terkunci' karena
+      // SOAP menunggak). Rangking eksplisit ini memastikan status yang paling
+      // relevan (terkunci lebih penting daripada terisi) yang menang, bukan
+      // sekadar status slot mana yang lebih dulu diproses.
+      const STATUS_RANK = { aktif: 3, terkunci: 2, terisi: 1 };
+
       if (data && data.length > 0) {
           // Pass 1: Determine Status from RPC
           data.forEach(s => {
-            if (s.therapist_id) {
-               // Prioritize active or terisi statuses over 'tidak_ada_jadwal'
-               if (s.status === 'aktif') {
-                  statusMap[s.therapist_id] = 'aktif';
-               } else if (s.status === 'terisi' && statusMap[s.therapist_id] !== 'aktif') {
-                  statusMap[s.therapist_id] = 'terisi';
-               } else if (statusMap[s.therapist_id] === 'tidak_ada_jadwal') {
+            if (s.therapist_id && s.status) {
+               const currentRank = STATUS_RANK[statusMap[s.therapist_id]] ?? -1;
+               const newRank = STATUS_RANK[s.status] ?? 0;
+               if (newRank >= currentRank) {
                   statusMap[s.therapist_id] = s.status;
                }
             }
@@ -209,14 +223,19 @@ const OwnerBookingCalendar = () => {
         .gte('end_date', dateStr);
 
       (timeOffRows || []).forEach(row => {
-        // Only treat it as real leave ("cuti") when the reason says so —
-        // any other day-off reason (e.g. "Libur", "Libur Mingguan") is a
-        // recurring weekly off, not leave.
-        const reasonLower = (row.reason || '').toLowerCase();
-        statusMap[row.therapist_id] = reasonLower.includes('cuti')
-          ? 'cuti'
-          : 'libur_mingguan';
-        reasonMap[row.therapist_id] = row.reason || '';
+        // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
+        // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
+        // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
+        // dan catatan bebas bisa memuat kata apa saja, termasuk "cuti" secara kebetulan.
+        const category = (row.reason || '').split(' - ')[0].trim().toLowerCase();
+        const label = category.includes('sakit') ? 'Sakit'
+          : category.includes('training') ? 'Training'
+          : category.includes('cuti') ? 'Cuti'
+          : category.includes('izin') ? 'Izin Pribadi'
+          : category.includes('libur') ? 'Libur'
+          : 'Lainnya';
+        statusMap[row.therapist_id] = 'cuti';
+        reasonMap[row.therapist_id] = label;
       });
 
       // === LOGGING END ===
@@ -231,7 +250,6 @@ const OwnerBookingCalendar = () => {
     } catch (error) {
       console.error('[OwnerBookingCalendar] fetchDayData ERROR:', error);
     } finally {
-      setIsRefreshing(false);
       setLoading(false);
     }
   };
@@ -310,21 +328,20 @@ const OwnerBookingCalendar = () => {
 
   return (
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
-      <div className="flex items-center gap-4 mt-4 mb-4">
-        <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600" onClick={() => navigate('/owner')}>
-           <ArrowLeft className="w-4 h-4" />
-           Back to Dashboard
-        </Button>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-4 z-20 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-4 z-20 overflow-hidden space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
           <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shrink-0">
-          <span className="text-sm font-medium text-slate-700">WaAuto</span>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
+          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <Phone className="h-3.5 w-3.5 text-white" fill="white" />
+            </div>
+            <p className="text-sm font-bold text-slate-800 leading-tight">WaAuto</p>
+          </div>
           <button
             onClick={async () => {
               if (!userDetails?.clinic_id) return;
@@ -369,30 +386,22 @@ const OwnerBookingCalendar = () => {
                 });
               }
             }}
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
-              isBablastEnabled ? 'bg-green-500' : 'bg-gray-300'
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
+              isBablastEnabled ? 'bg-blue-600' : 'bg-gray-300'
             }`}
           >
             <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
-                isBablastEnabled ? 'translate-x-8' : 'translate-x-1'
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                isBablastEnabled ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>
+          </div>
+          <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
         </div>
 
-        <div className="flex items-center gap-1 w-full min-w-0 overflow-hidden">
-            <Button
-                variant="outline"
-                size="icon"
-                onClick={() => fetchDayData(date)}
-                disabled={isRefreshing}
-                className={cn("h-9 w-9 shrink-0", isRefreshing && "animate-spin")}
-            >
-                <RefreshCw className="h-4 w-4" />
-            </Button>
-
-            <div className="flex items-center gap-0.5 min-w-0 w-full overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
+        <div className="flex items-center gap-1.5 w-full min-w-0">
+            <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
             <Button
   variant="ghost"
   size="icon"
@@ -405,12 +414,12 @@ const OwnerBookingCalendar = () => {
             <Popover>
                 <PopoverTrigger asChild>
                 <Button
-  variant="outline"
-  className="flex-1 min-w-0 max-w-full overflow-hidden justify-center text-center font-medium border-none bg-transparent hover:bg-white shadow-none focus:ring-0 px-0"
+  variant="ghost"
+  className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-1 overflow-hidden"
 >
-  <CalendarIcon className="mr-0.5 h-3.5 w-3.5 text-slate-500 shrink-0" />
-  <span className="text-[11px] sm:text-xs leading-tight whitespace-nowrap">
-    {format(date, "EEE, dd MMM yyyy", { locale: idLocale })}
+  <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
+  <span className="text-[10px] sm:text-sm font-semibold leading-tight truncate tracking-tight text-slate-700">
+    {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
   </span>
 </Button>
                 </PopoverTrigger>
@@ -433,7 +442,7 @@ const OwnerBookingCalendar = () => {
             <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 shrink-0"
+                className="h-9 w-9 shrink-0 bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                 onClick={() => setShowTemplateModal(true)}
                 title="Copy Template Jadwal Tersedia"
             >
@@ -590,7 +599,7 @@ const OwnerBookingCalendar = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800">
-                            {item.patient?.full_name || '-'}
+                            {item.patient?.full_name || item.guest_name || '-'}
                           </p>
                           <p className="text-sm text-slate-500">
                             {item.therapist?.name || '-'}

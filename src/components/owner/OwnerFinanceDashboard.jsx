@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Loader2, AlertCircle, RefreshCw, Wallet, Trash2, Edit2, CreditCard, TrendingDown, TrendingUp, Plus, FileBarChart, ShieldCheck, Briefcase, DollarSign, Calculator, Package, CheckCircle2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable } from '@/lib/api';
+import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable, autoPostFixedCosts } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import SearchableSelect from '@/components/ui/searchable-select';
@@ -305,10 +305,11 @@ const OwnerFinanceDashboard = () => {
   setOwnerLoading(true);
 
   try {
+    await autoPostFixedCosts();
     const [expRes, incRes, recRes, bankRes] = await Promise.all([
       getOwnerExpenditures(dateRange), 
       getOwnerIncome(dateRange), 
-      getOwnerReceivables(), 
+      getOwnerReceivables(dateRange),
       getBankAccounts()
     ]);
 
@@ -372,11 +373,17 @@ const OwnerFinanceDashboard = () => {
     }
   };
   
-  // Re-fetch when dateRange changes
+  // Owner/Admin Accounting data cuma dipakai di tab "owner" & "admin" (tab
+  // lain seperti Accounting Report punya fetch sendiri) — fetch on-demand
+  // saat tab-nya aktif supaya nggak nembak 2x query yang sama di background
+  // tiap kali dashboard dibuka atau dateRange berubah.
   useEffect(() => {
-    fetchOwnerData();
-    fetchAdminData();
-  }, [dateRange]);
+    if (activeTab === 'owner') fetchOwnerData();
+  }, [dateRange, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'admin') fetchAdminData();
+  }, [dateRange, activeTab]);
 
   // Handlers
   const handleDelete = async (deleteFn, id, type, refreshFn) => {
@@ -426,48 +433,59 @@ const OwnerFinanceDashboard = () => {
   return <div className="w-full space-y-6 font-sans text-slate-900">
 
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-              <Wallet className="w-6 h-6 text-amber-300" />
-            </div>
-            <div>
-              <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Accounting System</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Manage finances, analytics & reporting</p>
-            </div>
-          </div>
-          {!isPWA && (
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
-              <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
-              />
-              <span className="text-white/30 shrink-0">–</span>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                className="text-xs bg-transparent border-0 outline-none text-white font-medium w-[110px] [color-scheme:dark]"
-              />
-            </div>
-            <button
-              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-              className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors text-slate-300 hover:text-white shrink-0"
-              title="Refresh"
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-accounting-hero.webp"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
             >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+              Accounting<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                System
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola keuangan, analitik & laporan klinik.
+            </p>
           </div>
-          )}
         </div>
       </div>
+
+      {!isPWA && (
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm rounded-xl px-3 py-2">
+          <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <input
+            type="date"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+          />
+          <span className="text-[#DCE8F2] shrink-0">–</span>
+          <input
+            type="date"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+          />
+          <button
+            onClick={() => { fetchOwnerData(); fetchAdminData(); }}
+            className="w-9 h-9 rounded-lg bg-[#F5F9FC] border border-[#DCE8F2] flex items-center justify-center hover:bg-[#EAF4FF] transition-colors text-[#5B6B7D] hover:text-[#1677D2] shrink-0"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      )}
 
       <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingRecord(null); }}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
@@ -623,6 +641,10 @@ const OwnerFinanceDashboard = () => {
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -662,6 +684,10 @@ const OwnerFinanceDashboard = () => {
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -779,6 +805,10 @@ const OwnerFinanceDashboard = () => {
                         </span>
                       )},
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#e11d48' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -811,6 +841,10 @@ const OwnerFinanceDashboard = () => {
                           ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{val}</span>
                           : <span style={{ color: '#cbd5e1' }}>—</span>;
                       }},
+                      { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
+                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        : <span style={{ color: '#cbd5e1' }}>—</span>
+                      },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
                         <span className="font-bold tabular-nums" style={{ color: '#059669' }}>{formatCurrency(row.amount)}</span>
                       )},
@@ -820,7 +854,7 @@ const OwnerFinanceDashboard = () => {
             </div>
           </motion.div>}
 
-        
+
           {/* --- PACKAGE FUNDS SECTION --- */}
 {activeTab === 'package_funds' && (
   <motion.div

@@ -2,7 +2,10 @@ import { parse, format, isValid, differenceInYears } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 
 /**
- * Generates a Medical Record Number by querying the last one from DB
+ * Generates the next Medical Record Number via the atomic DB-side RPC
+ * (generate_next_medical_record_number). The RPC locks per clinic and
+ * computes the max existing number server-side, so concurrent callers
+ * can never be handed the same number.
  * Format: RMxxxxx (e.g., RM00001)
  * @returns {Promise<string>}
  */
@@ -12,28 +15,21 @@ export const generateMedicalRecordNumber = async () => {
         const userId = sessionData?.session?.user?.id;
         const { data: userRow } = await supabase.from('users').select('clinic_id').eq('id', userId).single();
 
-        const { data, error } = await supabase
-            .from('patients')
-            .select('medical_record_number')
-            .eq('clinic_id', userRow?.clinic_id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-        if (error && error.code !== 'PGRST116') {
-            console.error("Error fetching last RM:", error);
+        if (!userRow?.clinic_id) {
+            console.error("RM Generation: missing clinic_id for current user");
             return 'RM00001';
         }
 
-        if (!data || !data.medical_record_number) {
+        const { data, error } = await supabase.rpc('generate_next_medical_record_number', {
+            p_clinic_id: userRow.clinic_id
+        });
+
+        if (error || !data) {
+            console.error("Error generating RM:", error);
             return 'RM00001';
         }
 
-        const numberPart = data.medical_record_number.replace(/\D/g, '');
-        if (!numberPart) return 'RM00001';
-
-        const nextNumber = parseInt(numberPart, 10) + 1;
-        return `RM${String(nextNumber).padStart(5, '0')}`;
+        return data;
 
     } catch (e) {
         console.error("RM Generation Exception:", e);

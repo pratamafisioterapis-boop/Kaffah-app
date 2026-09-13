@@ -4,7 +4,7 @@ import { getTherapistVisits } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,13 +12,20 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
-import { format } from 'date-fns';
-import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn } from '@/lib/utils';
+import { format, subMonths } from 'date-fns';
+import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
 
+const formatLocalDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
-  const { user } = useAuth();
+  const { user, clinicName } = useAuth();
   const [patients, setPatients] = useState([]);
   const [patientVisits, setPatientVisits] = useState({});
   const [patientRecords, setPatientRecords] = useState({});
@@ -27,12 +34,20 @@ const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const statusFilter = searchParams.get('status') || 'empty';
+  const statusFilter = searchParams.get('status') || 'unfilled';
   const [searchTerm, setSearchTerm] = useState('');
 const [currentPage, setCurrentPage] = useState(1);
 const itemsPerPage = 20;
   // Sort State
-  const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ sortBy: 'date', sortOrder: 'asc' });
+
+  // Period Navigation State (0 = periode berjalan, 1 = satu periode lalu, dst.)
+  const [periodOffset, setPeriodOffset] = useState(0);
+  const [periodRange, setPeriodRange] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(''); // yyyy-MM-dd, kosong = pakai periodOffset
+
+  // Mode pencarian: jika ada kata kunci nama, cari pasien di SEMUA periode (bukan hanya periode aktif)
+  const isSearchMode = searchTerm.trim().length >= 2;
 
   // Modal State
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -47,7 +62,7 @@ const itemsPerPage = 20;
 
 useEffect(() => {
   setCurrentPage(1);
-}, [searchTerm, statusFilter]);
+}, [searchTerm, statusFilter, periodOffset, selectedDate]);
   useEffect(() => {
     if (therapist?.id) { fetchData(); }
     else {
@@ -58,7 +73,7 @@ useEffect(() => {
     const handleUpdate = () => { if (therapist?.id) fetchData(true); };
     window.addEventListener('medical-record-updated', handleUpdate);
     return () => window.removeEventListener('medical-record-updated', handleUpdate);
-  }, [therapist?.id]); 
+  }, [therapist?.id, periodOffset, selectedDate, isSearchMode]);
 
   
 
@@ -73,8 +88,24 @@ useEffect(() => {
     
     try {
       console.log("Fetching recaps for therapist:", therapist.id);
-      
-      const { data: visits, error: visitsError } = await getTherapistVisits(therapist.id);
+
+      let startDate = null;
+      let endDate = null;
+
+      if (isSearchMode) {
+        // Mode pencarian nama: ambil kunjungan di semua periode, filter nama dilakukan di client-side.
+        setPeriodRange(null);
+      } else {
+        const referenceDate = selectedDate ? new Date(`${selectedDate}T00:00:00`) : subMonths(new Date(), periodOffset);
+        ({ startDate, endDate } = getTherapistPeriodRange(therapist, referenceDate));
+        setPeriodRange({ startDate, endDate });
+      }
+
+      const { data: visits, error: visitsError } = await getTherapistVisits(
+        therapist.id,
+        startDate ? formatLocalDate(startDate) : null,
+        endDate ? formatLocalDate(endDate) : null
+      );
       
       if (visitsError) throw visitsError;
       
@@ -264,7 +295,11 @@ setPatients(patientList);
       if (!item) return false; 
       const searchLower = searchTerm.toLowerCase(); 
       const matchesSearch = (item.full_name || '').toLowerCase().includes(searchLower) || (item.medical_record_number || '').toLowerCase().includes(searchLower); 
-      const matchesStatus = statusFilter === 'all' ? true : item.status === statusFilter; 
+      const matchesStatus = statusFilter === 'all'
+        ? true
+        : statusFilter === 'unfilled'
+          ? (item.status === 'empty' || item.status === 'incomplete')
+          : item.status === statusFilter;
       return matchesSearch && matchesStatus; 
   });
   
@@ -309,8 +344,36 @@ const paginatedList = sortedList.slice(
 
   return (
     <div className="space-y-6">
+      {!isOwnerView && (
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+          <img
+            src="/hero/clinara-medrec-hero.webp"
+            alt="Kaffah Physiotherapy"
+            className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              >
+                Evaluasi<br />
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                  Harian
+                </span>
+              </h1>
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.</p></div>
+        <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50"><Upload className="w-4 h-4 mr-2" /> Import</Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
@@ -318,9 +381,62 @@ const paginatedList = sortedList.slice(
         </div>
       </div>
 
+      <div className="flex flex-col md:flex-row md:items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
+        <span>
+          {isSearchMode
+            ? 'Mode pencarian: menampilkan hasil dari semua periode.'
+            : `Menampilkan kunjungan ${periodRange ? `${format(periodRange.startDate, 'dd MMM yyyy')} - ${format(periodRange.endDate, 'dd MMM yyyy')}` : '...'}.`}
+        </span>
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400 md:ml-auto" />}
+        <div className={cn("flex items-center gap-1 shrink-0 flex-wrap", !loading && "md:ml-auto")}>
+          <Input
+            type="date"
+            className="h-7 w-[140px] text-xs"
+            value={selectedDate}
+            onChange={(e) => { setSelectedDate(e.target.value); setPeriodOffset(0); }}
+            disabled={loading || isSearchMode}
+            title="Lihat periode yang berisi tanggal ini"
+          />
+          {selectedDate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setSelectedDate('')}
+              disabled={loading}
+            >
+              Reset Tanggal
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => { setSelectedDate(''); setPeriodOffset(p => p + 1); }}
+            disabled={loading || isSearchMode}
+            title="Periode sebelumnya"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+          <span className="min-w-[110px] text-center font-semibold text-slate-600">
+            {selectedDate ? 'Periode Kustom' : periodOffset === 0 ? 'Periode Berjalan' : `${periodOffset} Periode Lalu`}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => { setSelectedDate(''); setPeriodOffset(p => Math.max(0, p - 1)); }}
+            disabled={loading || isSearchMode || (periodOffset === 0 && !selectedDate)}
+            title="Periode berikutnya"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
       <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col md:flex-row gap-4 items-end">
-         <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
-         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Nama pasien atau No. RM..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
+         <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
+         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
       {/* ── Tampilan Mobile (narrow) ── */}

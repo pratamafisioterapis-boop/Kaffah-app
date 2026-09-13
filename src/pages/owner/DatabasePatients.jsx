@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Upload } from 'lucide-react';
+import { Database, Plus, Upload, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -128,38 +128,58 @@ const DatabasePatients = () => {
 
     return (
         <div className="space-y-6">
-            {/* Hero Banner — desktop & PWA */}
-            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-              <div className={`relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isPWA ? 'px-4 py-4' : 'px-5 py-5 sm:px-7 sm:py-6'}`}>
-                <div className="flex items-center gap-4">
-                  <div className={`flex-shrink-0 ${isPWA ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-amber-300`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{useAuth().clinicName || ''}</p>
-                    <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Database Pasien</h2>
-                    <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Total {pagination.totalItems} pasien terdaftar dalam sistem</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  <Button onClick={handleRefresh} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                    {isPWA ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    ) : 'Refresh Data'}
-                  </Button>
-                  <Button onClick={() => setIsImportOpen(true)} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
-                    <Upload className="w-4 h-4" /> {isPWA ? 'Import' : 'Import Excel'}
-                  </Button>
-                  <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white gap-2">
-                    <Plus className="w-4 h-4" /> {isPWA ? 'Tambah' : 'Tambah Pasien'}
-                  </Button>
+            {/* Hero Banner */}
+            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+              <img
+                src="/hero/clinara-patients-hero.webp"
+                alt="Kaffah Physiotherapy"
+                className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+              <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+                <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+                  <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+                  <h1
+                    style={{ fontFamily: "'Caveat', cursive" }}
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                  >
+                    Database<br />
+                    <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                      Pasien
+                    </span>
+                  </h1>
+                  <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                    Total {pagination.totalItems} pasien terdaftar dalam sistem.
+                  </p>
                 </div>
               </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex flex-nowrap items-center justify-center gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 rounded-2xl border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-sm hover:bg-[#E4EFFA] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap">{isPWA ? 'Refresh' : 'Refresh Data'}</span>
+              </Button>
+              <Button
+                onClick={() => setIsImportOpen(true)}
+                variant="outline"
+                className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 rounded-2xl border border-[#DCE6EF] bg-white text-[#102F52] font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-sm hover:bg-[#F5F9FC] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <Upload className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap">{isPWA ? 'Import' : 'Import Excel'}</span>
+              </Button>
+              <Button
+                onClick={handleAddClick}
+                className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 rounded-2xl bg-[#1683F4] hover:bg-[#125fac] text-white font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-[0_6px_14px_-4px_rgba(22,131,244,0.45)] active:scale-[0.97] transition-all duration-200 ease-in-out"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.2} />
+                <span className="whitespace-nowrap">{isPWA ? 'Tambah' : 'Tambah Pasien'}</span>
+              </Button>
             </div>
 
             {/* Patient Table Component */}

@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Pages
 import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
+import OwnerPresentationPage from '@/pages/owner/OwnerPresentationPage';
 import DatabasePatients from '@/pages/owner/DatabasePatients'; // Updated Import
 import PhysiotherapistManagementPage from '@/pages/PhysiotherapistManagementPage';
 import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
@@ -19,6 +20,7 @@ import OwnerFollowUpManagementPage from '@/components/admin/FollowUpManagementPa
 
 // Components
 import SettingsPage from '@/components/owner/SettingsPage';
+import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
 import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
 import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
 import RevenueOverview from '@/components/owner/RevenueOverview';
@@ -36,7 +38,11 @@ import SlotUtilizationChart from '@/components/owner/operational/SlotUtilization
 import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDemandChart';
 import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
+import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
+import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
+import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
+import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 
 // API
 import { 
@@ -52,9 +58,10 @@ import {
   fetchTodayNewPatients,
   fetchTodayReturningPatients,
   fetchAllTherapists,
-  fetchTodaySessionsPerTherapist
+  fetchTodaySessionsByTherapist,
+  getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
-import { getUnfilledSOAPVisits, getTherapistPatientMetrics } from '@/lib/therapistDataUtils';
+import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -75,6 +82,15 @@ const InsentifDokterConverter = React.lazy(() =>
     )
   }))
 );
+const useNow = () => {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+};
+
 // Helper to safely extract numeric values
 const safeExtractNumber = (response) => {
   if (typeof response === 'number') return response;
@@ -88,8 +104,12 @@ const safeExtractNumber = (response) => {
 
 const OwnerDashboardHome = () => {
   const { toast } = useToast();
-  const location = useLocation(); 
-  
+  const location = useLocation();
+  const { clinicName } = useAuth();
+  const now = useNow();
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
     const now = new Date();
@@ -244,13 +264,14 @@ const { data: timeOffData } = await supabase
   .gte('end_date', today);
 
 // Reason disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm),
-// kategori valid: Sakit, Libur, Training, Izin Pribadi, Lainnya. Ambil kategorinya
-// saja alih-alih memaksa semua non-"sakit" menjadi label "cuti".
+// kategori valid: Cuti, Sakit, Libur, Training, Izin Pribadi, Lainnya. Ambil
+// kategorinya saja alih-alih memaksa semua non-"sakit" menjadi label "cuti".
 const leaveMap = {};
 (timeOffData || []).forEach(t => {
   const category = (t.reason || '').split(' - ')[0].trim().toLowerCase();
   if (category.includes('sakit')) leaveMap[t.therapist_id] = 'sakit';
   else if (category.includes('training')) leaveMap[t.therapist_id] = 'training';
+  else if (category.includes('cuti')) leaveMap[t.therapist_id] = 'cuti';
   else if (category.includes('izin')) leaveMap[t.therapist_id] = 'izin';
   else if (category.includes('libur')) leaveMap[t.therapist_id] = 'libur';
   else leaveMap[t.therapist_id] = 'lainnya';
@@ -265,22 +286,9 @@ const enrichedTherapists = activeTherapistsOnly.map(t => ({
 
 setTherapists(enrichedTherapists);
 
-      // 2. Fetch session counts for each therapist
-      const sessionCounts = {};
-      if (therapistList && therapistList.length > 0) {
-        // Parallel fetch for better performance
-        const results = await Promise.all(
-          therapistList.map(async (t) => {
-            const countRes = await fetchTodaySessionsPerTherapist(t.id);
-            return { id: t.id, count: safeExtractNumber(countRes) };
-          })
-        );
-        
-        results.forEach(r => {
-          sessionCounts[r.id] = r.count;
-        });
-      }
-      setTherapistSessions(sessionCounts);
+      // 2. Fetch today's session count for all therapists in one query
+      const { data: sessionCounts } = await fetchTodaySessionsByTherapist();
+      setTherapistSessions(sessionCounts || {});
 
     } catch (error) {
       console.error("Failed to fetch therapist status:", error);
@@ -294,7 +302,9 @@ setTherapists(enrichedTherapists);
     }
   }, [toast]);
 
-  // SOAP belum diisi per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
+  // SOAP belum diisi per terapis. Menggunakan RPC get_clinic_therapists_soap_lock_status
+  // yang sama dengan Booking Calendar, agar kedua tempat menampilkan angka yang konsisten
+  // (periode per-terapis, clamp ke hari ini, dan grace period 60 menit setelah sesi selesai).
   const loadUnfilledSoapCounts = useCallback(async () => {
     if (!therapists.length) {
       setUnfilledSoapCounts({});
@@ -303,21 +313,17 @@ setTherapists(enrichedTherapists);
     }
     setIsLoadingSoap(true);
     try {
-      const results = await Promise.all(
-        therapists.map(async (t) => {
-          const { count } = await getUnfilledSOAPVisits(null, t.id, dateRange.startDate, dateRange.endDate);
-          return { id: t.id, count: count || 0 };
-        })
-      );
+      const { data, error } = await getClinicTherapistsSoapLockStatus();
+      if (error) throw error;
       const counts = {};
-      results.forEach(r => { counts[r.id] = r.count; });
+      (data || []).forEach(r => { counts[r.therapist_id] = r.unfilled_count || 0; });
       setUnfilledSoapCounts(counts);
     } catch (error) {
       console.error("Failed to fetch unfilled SOAP counts:", error);
     } finally {
       setIsLoadingSoap(false);
     }
-  }, [therapists, dateRange]);
+  }, [therapists]);
 
   // Pasien unik & pasien kembali per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
   const loadPatientMetrics = useCallback(async () => {
@@ -328,17 +334,10 @@ setTherapists(enrichedTherapists);
     }
     setIsLoadingPatientMetrics(true);
     try {
-      const results = await Promise.all(
-        therapists.map(async (t) => {
-          const { uniquePatients, returningPatients } = await getTherapistPatientMetrics(t.id, dateRange.startDate, dateRange.endDate);
-          return { id: t.id, uniquePatients, returningPatients };
-        })
-      );
-      const metrics = {};
-      results.forEach(r => {
-        metrics[r.id] = { uniquePatients: r.uniquePatients, returningPatients: r.returningPatients };
-      });
-      setPatientMetrics(metrics);
+      const therapistIds = therapists.map(t => t.id);
+      const { data: metrics, error } = await getTherapistsPatientMetrics(therapistIds, dateRange.startDate, dateRange.endDate);
+      if (error) throw error;
+      setPatientMetrics(metrics || {});
     } catch (error) {
       console.error("Failed to fetch therapist patient metrics:", error);
     } finally {
@@ -400,56 +399,69 @@ setTherapists(enrichedTherapists);
       
       <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
 
-        {/* ── Hero Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
-          {/* Premium texture + glow accents */}
-          <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
-          {/* Gold hairline accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-widest mb-1">{useAuth().clinicName || ''}</p>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Owner Dashboard</h1>
-              <p className="text-slate-400 text-xs mt-1">Executive overview of clinic performance.</p>
+        {/* ── Hero Banner ── */}
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+          <img
+            src="/hero/clinara-owner-hero.webp"
+            alt="Kaffah Physiotherapy"
+            className="absolute inset-0 w-full h-full object-cover object-[36%_center]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-md lg:max-w-xl">
+              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
+                {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono">{heroTime}</span>
+              </p>
+              <h1
+                style={{ fontFamily: "'Caveat', cursive" }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              >
+                Selamat datang,<br />
+                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
+                  Owner {clinicName || ''}!
+                </span>
+              </h1>
+              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
+              </p>
             </div>
+          </div>
+        </div>
 
-            {/* Periode Selector */}
-            <div className="flex flex-col gap-1.5 bg-white/10 backdrop-blur-sm border border-amber-300/20 rounded-xl px-3 py-2.5 w-full sm:w-auto">
-              <span className="text-amber-300/80 text-[10px] font-bold uppercase tracking-wider">Periode</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                />
-                <span className="text-white/30 shrink-0">–</span>
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-white font-medium bg-transparent w-full [color-scheme:dark]"
-                />
-              </div>
+        {/* ── Periode Toolbar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
+          <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
+            <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+              />
+              <span className="text-[#DCE8F2] shrink-0">–</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+              />
             </div>
           </div>
         </div>
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="operational" className="w-full space-y-5">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-slate-200 p-1 rounded-2xl shadow-sm sticky top-2 z-10">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-[#DCE8F2] p-1 rounded-2xl shadow-sm sticky top-2 z-10">
             <TabsTrigger
               value="operational"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#1677D2] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Operational
             </TabsTrigger>
             <TabsTrigger
               value="finance"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500"
+              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Finance
             </TabsTrigger>
@@ -501,15 +513,21 @@ setTherapists(enrichedTherapists);
                  <SessionTimelinessChart dateRange={dateRange} />
                </div>
                {/* Row 3: Target vs Realisasi + Distribusi Layanan SEBELAHAN */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-stretch">
                  <BulletChartTargetVsRealization dateRange={dateRange} />
                  <ServiceDistributionChart dateRange={dateRange} />
                </div>
+               {/* Row 4: Sumber Pasien + Promo */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
+                 <PatientSourceChart dateRange={dateRange} />
+                 <PromoUsageWidget dateRange={dateRange} />
+               </div>
              </section>
           </TabsContent>
-          
+
           <TabsContent value="finance" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
             <RevenueOverview dateRange={dateRange} />
+            <PromoDiscountWidget dateRange={dateRange} />
           </TabsContent>
         </Tabs>
       </div>
@@ -528,7 +546,10 @@ const OwnerDashboard = () => {
         
         {/* Main Dashboard (Tabbed) */}
         <Route path="/dashboard" element={<OwnerDashboardHome />} />
-        
+
+        {/* Board Presentation Slideshow */}
+        <Route path="/presentation" element={<OwnerPresentationPage />} />
+
         {/* Pages */}
         <Route path="/appointments" element={<OwnerAppointmentsPage />} />
         <Route path="/database-patients" element={<DatabasePatients />} />
@@ -543,7 +564,9 @@ const OwnerDashboard = () => {
         <Route path="/modal-awal" element={<ModalAwalManagement />} />
         <Route path="/daily-recap" element={<OwnerDailyRecap />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
         <Route path="/admin-management" element={<AdminManagementPage />} />
+        <Route path="/attendance" element={<AttendanceManagement />} />
         
 
         {/* Fallback for old routes */}

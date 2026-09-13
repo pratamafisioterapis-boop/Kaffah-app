@@ -20,6 +20,7 @@ const formatShortDate = (dateStr) => {
 };
 
 const LEAVE_LABELS = {
+  cuti: 'Cuti',
   sakit: 'Sakit',
   libur: 'Libur',
   training: 'Training',

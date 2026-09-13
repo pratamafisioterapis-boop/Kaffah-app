@@ -12,6 +12,7 @@ export const ROLE_LABELS = {
 
 export const FEATURE_CATALOG = [
   { key: 'dashboard', label: 'Dashboard', roles: ['owner', 'admin', 'therapist'], match: (label) => label === 'dashboard' },
+  { key: 'presentation', label: 'Presentasi Direksi', roles: ['owner'], match: (label) => label.includes('presentasi') },
   { key: 'appointments', label: 'Appointments', roles: ['owner', 'admin'], match: (label) => label.includes('appointment') || label.includes('calendar') },
   { key: 'daily_recaps', label: 'Daily Recaps', roles: ['owner', 'admin'], match: (label) => label.includes('daily recaps') },
   { key: 'package_recaps', label: 'Package Recaps', roles: ['owner', 'admin'], match: (label) => label.includes('package recaps') },

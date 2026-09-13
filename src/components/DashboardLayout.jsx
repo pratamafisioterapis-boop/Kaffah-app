@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog
+  UploadCloud, UserCog, MonitorPlay, BookOpen, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -17,6 +17,8 @@ import { useDesignTheme } from '@/contexts/ThemeContext';
 import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
 import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
+import DashboardTopbar from '@/components/DashboardTopbar';
+import { preloadHeroImages } from '@/lib/preloadHeroImages';
 
 // Icon Mapping
 const iconMap = {
@@ -33,13 +35,17 @@ const iconMap = {
   Database,
   DollarSign,
   MessageSquare,
+  Star,
   Boxes,
   Wallet,
   FileSearch,
   FileSpreadsheet,
   Award,
   UploadCloud,
-  UserCog
+  UserCog,
+  MonitorPlay,
+  Clock,
+  BookOpen
 };
 
 // Safe date formatter to prevent runtime crashes
@@ -85,116 +91,18 @@ useEffect(() => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [openNotif, setOpenNotif] = useState(false);
 const isPWA =
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
-  useEffect(() => {
-    const channel = supabase
-      .channel('audit_logs_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'audit_logs'
-        },
-        async (payload) => {
-          const newData = payload.new;
-          // Guard against null payload
-          if (!newData) return;
-
-          let fullName = 'System';
-          
-          // Only fetch user if user_id exists
-          if (newData.user_id) {
-            const { data: user } = await supabase
-              .from('users')
-              .select('full_name')
-              .eq('id', newData.user_id)
-              .maybeSingle();
-              
-            if (user) fullName = user.full_name;
-          }
-
-          let patientName = '-';
-          const patientId = newData.changes?.patient_id;
-
-          if (patientId) {
-            const { data: patient } = await supabase
-              .from('patients')
-              .select('full_name')
-              .eq('id', patientId)
-              .maybeSingle();
-
-            if (patient) patientName = patient.full_name;
-          }
-
-          const enriched = {
-            ...newData,
-            users: { full_name: fullName },
-            patient_name: patientName
-          };
-
-          setNotifications((prev) => [enriched, ...prev]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select(`
-          *,
-          users:user_id (
-            id,
-            full_name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (!error && data) {
-        const patientIds = data
-          .map(item => item.changes?.patient_id)
-          .filter(Boolean);
-
-        let patientsMap = {};
-
-        if (patientIds.length > 0) {
-          const { data: patients } = await supabase
-            .from('patients')
-            .select('id, full_name')
-            .in('id', patientIds);
-
-          patientsMap = Object.fromEntries(
-            (patients || []).map(p => [p.id, p.full_name])
-          );
-        }
-
-        const enriched = data.map(item => ({
-          ...item,
-          patient_name: patientsMap[item.changes?.patient_id] || '-'
-        }));
-
-        setNotifications(enriched);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    preloadHeroImages();
   }, []);
 
   useEffect(() => {
@@ -240,7 +148,7 @@ const isPWA =
      });
 
      if (role === 'admin') {
-        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang'];
+        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang', 'Absensi Karyawan'];
         const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
@@ -305,54 +213,62 @@ const isPWA =
 
   // Converted to standard function rendering to avoid unmount/remount on parent render
   const renderSidebarContent = () => (
-    <div className="flex flex-col h-full text-white shadow-2xl relative overflow-hidden" style={{ background: 'var(--app-sidebar-bg, #0f172a)' }}>
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-         <div className="absolute top-[-10%] right-[-20%] w-[200px] h-[200px] bg-blue-600/20 rounded-full blur-[60px]" />
-         <div className="absolute bottom-[10%] left-[-10%] w-[150px] h-[150px] bg-cyan-500/10 rounded-full blur-[50px]" />
-      </div>
-
-      <div className="flex items-center gap-4 px-6 py-8 relative z-10 border-b border-white/10 flex-shrink-0">
+    <div className="flex flex-col h-full text-[#102F52] shadow-lg relative overflow-hidden bg-white border-r border-[#DCE8F2]">
+      <div className="relative overflow-hidden border-b border-[#DCE8F2] flex-shrink-0">
+        {/* Clinic photo behind only this header block, faded into white so
+            the clinic logo/name stay fully legible on top of it. */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <img
+            src="/sidebar-header-bg.jpg"
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-white/70" />
+        </div>
+        <div className="relative z-10 flex items-center gap-4 px-6 py-10">
         {role === 'super_admin' ? (
           <>
             <div className="relative">
-              <div className="w-14 h-14 bg-white flex items-center justify-center" style={{ borderRadius: activeTheme.radius, boxShadow: activeTheme.shadow }}>
-                <ShieldCheck className="w-7 h-7 text-blue-600" />
+              <div className="w-16 h-16 bg-[#EAF4FF] flex items-center justify-center" style={{ borderRadius: activeTheme.radius }}>
+                <ShieldCheck className="w-8 h-8 text-[#1677D2]" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight leading-none">Super Admin</h2>
-              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>SYSTEM CONTROL</p>
+              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">Super Admin</h2>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">SYSTEM CONTROL</p>
             </div>
           </>
         ) : (
           <>
             <div className="relative">
-               <div className="w-14 h-14 bg-white flex items-center justify-center overflow-hidden" style={{ borderRadius: activeTheme.radius, boxShadow: activeTheme.shadow }}>
+               <div className="w-16 h-16 bg-white flex items-center justify-center overflow-hidden border border-[#DCE8F2]" style={{ borderRadius: activeTheme.radius }}>
                  {clinicInfo ? (
                    <img
-                     src={clinicInfo.logo_url || "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/clinic-assets/logo/1768432355481-n3ep8u.png"}
+                     src={clinicInfo.logo_url || "/clinara-logo.png"}
                      alt={clinicInfo.name || "Clinic Logo"}
                      className="w-full h-full object-contain p-1"
                    />
                  ) : (
-                   <div className="w-full h-full animate-pulse bg-slate-200" />
+                   <div className="w-full h-full animate-pulse bg-[#EAF4FF]" />
                  )}
                </div>
-               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900 shadow-sm"></div>
+               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight leading-none">
-                {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-slate-700 align-middle" />}
+              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">
+                {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-[#EAF4FF] align-middle" />}
               </h2>
-              <p className="text-[10px] font-bold tracking-[0.1em] uppercase mt-1" style={{ color: 'var(--app-accent, #93c5fd)' }}>CLINIC MANAGEMENT</p>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">CLINIC MANAGEMENT</p>
             </div>
           </>
         )}
+        </div>
       </div>
-      
+
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6 relative z-10 min-h-0">
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">Menu Utama</div>
+        <div className="text-xs font-semibold text-[#5B6B7D] uppercase tracking-wider mb-4 px-2">Menu Utama</div>
         {finalNavItems.map((item, index) => {
           const Icon = iconMap[item.icon] || Home;
           const isActive = location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path) && !item.submenu);
@@ -367,19 +283,19 @@ const isPWA =
                   onClick={() => toggleSubmenu(index)}
                   className={cn(
                     "w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden select-none",
-                    isParentActive ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5"
+                    isParentActive ? "bg-[#EAF4FF] text-[#1677D2]" : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
                   )}
                 >
-                  <Icon className={cn("h-5 w-5 transition-colors", isParentActive ? "text-white" : "text-slate-400 group-hover:text-blue-400")} />
+                  <Icon className={cn("h-5 w-5 transition-colors", isParentActive ? "text-[#1677D2]" : "text-[#5B6B7D] group-hover:text-[#1677D2]")} />
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
                   <ChevronDown className={cn("w-4 h-4 transition-transform duration-200 opacity-50", isExpanded ? "rotate-180" : "")} />
                 </button>
               ) : item.onClick ? (
                 <button
                   onClick={() => { item.onClick(); setIsSidebarOpen(false); }}
-                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden text-slate-400 hover:text-white hover:bg-white/5"
+                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
                 >
-                  <Icon className="h-5 w-5 transition-colors text-slate-400 group-hover:text-blue-400" />
+                  <Icon className="h-5 w-5 transition-colors text-[#5B6B7D] group-hover:text-[#1677D2]" />
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
                 </button>
               ) : (
@@ -391,7 +307,7 @@ const isPWA =
                       "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden",
                       linkActive || (isActive && item.path !== `/${role}`)
                         ? ""
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                        : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
                     )
                   }
                   style={({ isActive: linkActive }) =>
@@ -411,10 +327,10 @@ const isPWA =
                     const activeState = linkActive || (isActive && item.path !== `/${role}`);
                     return (
                     <>
-                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "" : "text-slate-400 group-hover:text-blue-400")} style={activeState ? { color: navActive.color } : undefined} />
+                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "" : "text-[#5B6B7D] group-hover:text-[#1677D2]")} style={activeState ? { color: navActive.color } : undefined} />
                       <span className="font-medium text-sm flex-1">{item.label}</span>
                       {activeState && <ChevronRight className="w-4 h-4 opacity-50" />}
-                      {activeState && navActive.indicator && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white/20 rounded-r-full" />}
+                      {activeState && navActive.indicator && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full" style={{ background: navActive.color }} />}
                     </>
                   )}}
                 </NavLink>
@@ -439,15 +355,15 @@ const isPWA =
                             cn(
                               "block px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
                               isActive
-                                ? "bg-white/5"
-                                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                                ? "bg-[#EAF4FF]"
+                                : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
                             )
                           }
                           style={({ isActive }) => isActive ? { color: navActive.color, fontWeight: navActive.weight } : undefined}
                         >
                           {({ isActive }) => (
                             <div className="flex items-center gap-2">
-                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-slate-600")} style={isActive ? { background: navActive.color } : undefined} />
+                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-[#DCE8F2]")} style={isActive ? { background: navActive.color } : undefined} />
                               {subItem.label}
                             </div>
                           )}
@@ -462,27 +378,29 @@ const isPWA =
         })}
       </nav>
 
-      <div className="mt-auto p-4 border-t border-white/10 relative z-10 bg-slate-950/30 backdrop-blur-sm flex-shrink-0">
-        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 mb-3">
+      <div className="mt-auto p-4 border-t border-[#DCE8F2] relative z-10 bg-[#F5F9FC] flex-shrink-0">
+        <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#DCE8F2] mb-3">
           <div className="flex-shrink-0 relative">
-            <img 
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=0ea5e9`} 
-              alt="Avatar" 
-              className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700" 
+            <img
+              src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=1677D2`}
+              alt="Avatar"
+              className="h-10 w-10 rounded-full bg-[#EAF4FF] border-2 border-white shadow-sm"
             />
           </div>
           <div className="overflow-hidden min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{typeof userName === 'string' ? userName : 'User'}</p>
-            <p className="text-xs text-slate-400 capitalize truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-              {typeof role === 'string' ? role : 'User'}
+            <p className="text-sm font-semibold text-[#102F52] truncate">
+              {typeof userName === 'string' ? userName : 'User'}
+            </p>
+            <p className="text-xs text-[#5B6B7D] truncate flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block flex-shrink-0"></span>
+              {role === 'admin' && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
             </p>
           </div>
         </div>
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 h-10 rounded-xl"
+          className="w-full justify-start gap-3 text-[#F16063] hover:text-[#F16063] hover:bg-[#F16063]/10 h-10 rounded-xl"
         >
           <LogOut className="h-4 w-4" />
           <span className="text-sm font-medium">Keluar Aplikasi</span>
@@ -492,7 +410,7 @@ const isPWA =
   );
 
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50" style={{ fontFamily: 'var(--app-font, inherit)' }}>
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-[#F5F9FC]" style={{ fontFamily: 'var(--app-font, inherit)' }}>
       <AnimatePresence>
         {isSidebarOpen && (
           <>
@@ -537,6 +455,13 @@ const isPWA =
           "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
           isPWA && (role === 'therapist' || role === 'owner' || role === 'admin' || role === 'super_admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
+           <DashboardTopbar
+             role={role}
+             userName={userName}
+             clinicName={role === 'super_admin' ? 'System Control' : (clinicInfo?.name || '')}
+             navItems={finalNavItems}
+             clinicId={userDetails?.clinic_id}
+           />
            {children}
         </div>
       </main>

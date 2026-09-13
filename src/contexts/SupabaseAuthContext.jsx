@@ -8,6 +8,17 @@ import { useToast } from '@/components/ui/use-toast';
 
 const AuthContext = createContext(undefined);
 
+// Bungkus panggilan Supabase dengan batas waktu supaya `loading` tidak
+// tersangkut selamanya kalau getSession()/query hang tanpa resolve atau reject
+// (mis. IndexedDB terkunci di PWA, service worker basi, atau koneksi lambat).
+const withTimeout = (promise, ms = 8000) =>
+  Promise.race([
+    promise,
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ data: null, error: new Error('Waktu permintaan habis') }), ms)
+    ),
+  ]);
+
 export const AuthProvider = ({ children }) => {
   const { toast } = useToast();
   const [user, setUser] = useState(null);
@@ -58,12 +69,10 @@ export const AuthProvider = ({ children }) => {
       if (!navigator.onLine) return null;
 
       console.log(`[AuthContext] Fetching user details for: ${userId}`);
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
+      const { data, error } = await withTimeout(
+        supabase.from('users').select('*').eq('id', userId).single()
+      );
+
       if (error) {
         if (error.message !== 'Failed to fetch' && !error.message.includes('Network request failed')) {
             console.warn('[AuthContext] User details fetch warning:', error.message);
@@ -153,8 +162,8 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         // Attempt to recover session from local storage first (implicit in getSession)
-        const { data, error } = await supabase.auth.getSession();
-        
+        const { data, error } = await withTimeout(supabase.auth.getSession());
+
         if (error) {
            console.warn(`[AuthContext] Session initialization error:`, error.message);
            if (

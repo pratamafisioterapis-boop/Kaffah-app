@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import SplashScreen from "@/components/SplashScreen";
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -12,53 +12,91 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
+import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
+import { lazyRetry } from '@/lib/lazyRetry';
+import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
+import ClinicTenantSitePage from '@/pages/clinic/ClinicTenantSitePage';
+const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
 
 // Lazy Pages
-const SimpleTestPage = React.lazy(() => import('@/pages/SimpleTestPage'));
-const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
-const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
-const SmartBookingPage = React.lazy(() => import('@/pages/SmartBookingPage'));
-const InvoiceViewPage = React.lazy(() => import('@/pages/InvoiceViewPage'));
-const PricingPage = React.lazy(() => import('@/pages/PricingPage'));
-const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
-const TeamPage = React.lazy(() => import('@/pages/TeamPage'));
-const LocationPage = React.lazy(() => import('@/pages/LocationPage'));
-const FaqPage = React.lazy(() => import('@/pages/FaqPage'));
-const ServicesIndexPage = React.lazy(() => import('@/pages/layanan/ServicesIndexPage'));
-const ServiceDetailPage = React.lazy(() => import('@/pages/layanan/ServiceDetailPage'));
-const BlogIndexPage = React.lazy(() => import('@/pages/artikel/BlogIndexPage'));
-const BlogArticlePage = React.lazy(() => import('@/pages/artikel/BlogArticlePage'));
-const PackageRecapsOwner = React.lazy(() => import('@/pages/owner/PackageRecaps'));
-const PackageRecapsAdmin = React.lazy(() => import('@/pages/admin/PackageRecaps'));
-const InventoryStockPage = React.lazy(() => import('@/pages/owner/InventoryStock'));
-const InventoryTakeOutPage = React.lazy(() => import('@/pages/admin/InventoryTakeOut'));
-const FollowUpManagementPage = React.lazy(() => import('@/pages/admin/FollowUpManagementPage'));
+const SimpleTestPage = React.lazy(lazyRetry(() => import('@/pages/SimpleTestPage'), 'SimpleTestPage'));
+const LandingPage = React.lazy(lazyRetry(() => import('@/pages/LandingPage'), 'LandingPage'));
+const ClinaraLandingPage = React.lazy(lazyRetry(() => import('@/pages/clinara/ClinaraLandingPage'), 'ClinaraLandingPage'));
+const LoginPage = React.lazy(lazyRetry(() => import('@/pages/LoginPage'), 'LoginPage'));
+const RegisterClinicPage = React.lazy(lazyRetry(() => import('@/pages/RegisterClinicPage'), 'RegisterClinicPage'));
+const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
+const SmartBookingPage = React.lazy(lazyRetry(() => import('@/pages/SmartBookingPage'), 'SmartBookingPage'));
+const InvoiceViewPage = React.lazy(lazyRetry(() => import('@/pages/InvoiceViewPage'), 'InvoiceViewPage'));
+const PricingPage = React.lazy(lazyRetry(() => import('@/pages/PricingPage'), 'PricingPage'));
+const AboutPage = React.lazy(lazyRetry(() => import('@/pages/AboutPage'), 'AboutPage'));
+const TeamPage = React.lazy(lazyRetry(() => import('@/pages/TeamPage'), 'TeamPage'));
+const LocationPage = React.lazy(lazyRetry(() => import('@/pages/LocationPage'), 'LocationPage'));
+const FaqPage = React.lazy(lazyRetry(() => import('@/pages/FaqPage'), 'FaqPage'));
+const ServicesIndexPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServicesIndexPage'), 'ServicesIndexPage'));
+const ServiceDetailPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServiceDetailPage'), 'ServiceDetailPage'));
+const BlogIndexPage = React.lazy(lazyRetry(() => import('@/pages/artikel/BlogIndexPage'), 'BlogIndexPage'));
+const BlogArticlePage = React.lazy(lazyRetry(() => import('@/pages/artikel/BlogArticlePage'), 'BlogArticlePage'));
+const PackageRecapsOwner = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'PackageRecapsOwner'));
+const PackageRecapsAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/PackageRecaps'), 'PackageRecapsAdmin'));
+const InventoryStockPage = React.lazy(lazyRetry(() => import('@/pages/owner/InventoryStock'), 'InventoryStockPage'));
+const InventoryTakeOutPage = React.lazy(lazyRetry(() => import('@/pages/admin/InventoryTakeOut'), 'InventoryTakeOutPage'));
+const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
+const PatientFeedbackPage = React.lazy(lazyRetry(() => import('@/pages/PatientFeedbackPage'), 'PatientFeedbackPage'));
+const FeedbackManagementOwner = React.lazy(lazyRetry(() => import('@/pages/owner/FeedbackManagement'), 'FeedbackManagementOwner'));
+const FeedbackManagementAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/FeedbackManagement'), 'FeedbackManagementAdmin'));
 
 // Dashboard Imports
-const OwnerDashboard = React.lazy(() => import('@/pages/OwnerDashboard'));
-const SuperAdminDashboard = React.lazy(() => import('@/pages/SuperAdminDashboard'));
-const AdminDashboard = React.lazy(() => import('@/pages/AdminDashboard'));
-const TherapistDashboard = React.lazy(() => import('@/pages/TherapistDashboard'));
-const RotasiApp = React.lazy(() => import('@/pages/rotasi/RotasiApp'));
-const PemilihApp = React.lazy(() => import('@/pages/pemilih/PemilihApp'));
-const RelawanUploadKTP = React.lazy(() => import('@/pages/relawan/RelawanUploadKTP'));
+const OwnerDashboard = React.lazy(lazyRetry(() => import('@/pages/OwnerDashboard'), 'OwnerDashboard'));
+const SuperAdminDashboard = React.lazy(lazyRetry(() => import('@/pages/SuperAdminDashboard'), 'SuperAdminDashboard'));
+const AdminDashboard = React.lazy(lazyRetry(() => import('@/pages/AdminDashboard'), 'AdminDashboard'));
+const TherapistDashboard = React.lazy(lazyRetry(() => import('@/pages/TherapistDashboard'), 'TherapistDashboard'));
+const RotasiApp = React.lazy(lazyRetry(() => import('@/pages/rotasi/RotasiApp'), 'RotasiApp'));
+const PemilihApp = React.lazy(lazyRetry(() => import('@/pages/pemilih/PemilihApp'), 'PemilihApp'));
+const RelawanUploadKTP = React.lazy(lazyRetry(() => import('@/pages/relawan/RelawanUploadKTP'), 'RelawanUploadKTP'));
+const PemilihDpcApp = React.lazy(lazyRetry(() => import('@/pages/dpc/PemilihDpcApp'), 'PemilihDpcApp'));
 
+
+// Sends visitors to the right domain: public marketing/booking pages live on
+// PUBLIC_DOMAIN, everything behind login lives on APP_DOMAIN. Both domains
+// point at this same deployment, so this is the only thing keeping them
+// apart. Runs on first load and on every client-side route change.
+const DomainGuard = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const { hostname, search, hash } = window.location;
+
+    if (isOnAppDomain(hostname) && !staysOnAppDomain(location.pathname)) {
+      window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
+    } else if (isOnPublicDomain(hostname) && isAppOnlyPath(location.pathname)) {
+      window.location.replace(`https://${APP_DOMAIN}${location.pathname}${search}${hash}`);
+    }
+  }, [location.pathname]);
+
+  return null;
+};
+
+// The Kaffah Physiotherapy landing page lives on PUBLIC_DOMAIN; the Clinara
+// product landing page lives at the same "/" route on APP_DOMAIN.
+const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage />);
 
 // Loading Component
 const LoadingFallback = () => (
-  <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 z-50">
-    <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-950 z-50">
+    <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
     <div className="relative z-10 flex flex-col items-center gap-8">
       {/* Spinner ring */}
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-2 border-white/10" />
         <div
-          className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-400"
+          className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-400"
           style={{ animation: 'spin 0.9s linear infinite' }}
         />
       </div>
-      <p className="text-indigo-300/60 text-xs font-semibold uppercase tracking-widest">Memuat...</p>
+      <p className="text-cyan-300/60 text-xs font-semibold uppercase tracking-widest">Memuat...</p>
     </div>
     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
@@ -141,6 +179,11 @@ class AuthErrorBoundary extends React.Component {
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
     try {
+      // Shareable public links (e.g. a patient's feedback link) should open
+      // straight to their content even when tapped from inside the
+      // installed PWA -- they're one-off pages opened by someone outside
+      // the clinic, not a login into the app.
+      if (window.location.pathname.startsWith('/feedback/')) return false;
       return window.matchMedia('(display-mode: standalone)').matches ||
              window.navigator.standalone === true;
     } catch {
@@ -149,10 +192,32 @@ function App() {
   });
 
   useEffect(() => {
-    // App mounted successfully — clear the stale-chunk reload guard so a
-    // future deploy can trigger one more auto-reload if needed.
+    // App mounted successfully — clear the stale-chunk reload guards so a
+    // future deploy can trigger one more auto-reload if needed, instead of
+    // being permanently blocked by a guard tripped earlier this tab session.
     sessionStorage.removeItem('stale-chunk-reloaded');
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith('lazy-retry-reloaded-'))
+      .forEach((key) => sessionStorage.removeItem(key));
   }, []);
+
+  // A clinic's own subdomain (kliniksehat.clinara.id) or verified custom
+  // domain (kliniksehat.com) gets its own minimal branded site instead of
+  // the full platform routing below - that routing assumes it's serving
+  // either the SaaS app or the single reference clinic's marketing site.
+  if (isTenantHost()) {
+    return (
+      <Router>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/booking" element={<ClinicBookingPage />} />
+            <Route path="*" element={<ClinicTenantSitePage />} />
+          </Routes>
+        </Suspense>
+        <Toaster />
+      </Router>
+    );
+  }
 
   if (!supabase) {
     return (
@@ -175,22 +240,42 @@ function App() {
 
   
 
-          <Helmet>
-            <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
-            <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
-            <meta name="theme-color" content="#1e3a5f" />
-            <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
-            <link rel="manifest" href="/manifest.json" />
-          </Helmet>
+          {/* Always-mounted (never unmounts on route changes, unlike per-page
+              Helmets), so it must already carry the right brand for the
+              current domain - otherwise its later re-renders (e.g. the
+              splash screen's onDone toggling App's own state) can win
+              react-helmet's tag-resolution race and flip the tab back to
+              Kaffah branding on clinara.id after a page-level Helmet had
+              already set the correct title. */}
+          {isOnAppDomain() ? (
+            <Helmet>
+              <title>Clinara — Better Care. Smarter Management.</title>
+              <meta name="description" content="Clinara adalah Healthcare Management Platform yang membantu klinik dan pusat terapi mengelola pasien, tenaga kesehatan, jadwal, layanan, komunikasi, dan data dalam satu sistem terintegrasi." />
+              <meta name="theme-color" content="#0f2a4a" />
+              <link rel="manifest" href="/manifest-clinara.json" />
+            </Helmet>
+          ) : (
+            <Helmet>
+              <title>Kaffah Physiotherapy - Klinik Fisioterapi Terpercaya di Balikpapan</title>
+              <meta name="description" content="Kaffah Physiotherapy - klinik fisioterapi di Batu Ampar, Balikpapan Utara. Terapis bersertifikat SIPF, pendekatan evidence-based." />
+              <meta name="theme-color" content="#1e3a5f" />
+              <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />
+              <link rel="manifest" href="/manifest.json" />
+            </Helmet>
+          )}
           <Router>
+            <DomainGuard />
             {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<HomeRoute />} />
                 <Route path="/test" element={<SimpleTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterClinicPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/booking" element={<SmartBookingPage />} />
                 <Route path="/book" element={<Navigate to="/booking" replace />} />
                 <Route path="/booking/smart" element={<Navigate to="/booking" replace />} />
@@ -204,6 +289,7 @@ function App() {
                 <Route path="/artikel" element={<BlogIndexPage />} />
                 <Route path="/artikel/:slug" element={<BlogArticlePage />} />
                 <Route path="/i/:recapId" element={<InvoiceViewPage />} />
+                <Route path="/feedback/:token" element={<PatientFeedbackPage />} />
                 
                 {/* Protected Routes */}
                 <Route
@@ -225,6 +311,24 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
                       <InventoryStockPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/owner/feedback"
+                  element={
+                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                      <FeedbackManagementOwner />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/feedback"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                      <FeedbackManagementAdmin />
                     </ProtectedRoute>
                   }
                 />
@@ -314,6 +418,15 @@ function App() {
                     <PemilihRelawanProtectedRoute>
                       <RelawanUploadKTP />
                     </PemilihRelawanProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/pemilih-dpc"
+                  element={
+                    <PemilihDpcProtectedRoute>
+                      <PemilihDpcApp />
+                    </PemilihDpcProtectedRoute>
                   }
                 />
 

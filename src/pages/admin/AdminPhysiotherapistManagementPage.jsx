@@ -2,29 +2,40 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TherapistScheduleManager from '@/components/owner/TherapistScheduleManager';
 import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager';
-import { Users, CalendarClock, CalendarOff } from 'lucide-react';
+import TherapistScheduleOverrideManager from '@/components/owner/TherapistScheduleOverrideManager';
+import { CalendarClock, CalendarOff, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import WaveBackground from '@/components/ui/wave-background';
 
 const AdminPhysiotherapistManagementPage = () => {
-  const isPWA =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://');
+  const { clinicName } = useAuth();
 
   return (
     <div className="space-y-6">
 
-      {/* Hero Banner — desktop & PWA */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className={`relative flex items-center gap-4 ${isPWA ? 'px-4 py-4' : 'px-5 py-5 sm:px-7 sm:py-6'}`}>
-          <div className={`flex-shrink-0 ${isPWA ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg`}>
-            <Users className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-amber-300`} />
-          </div>
-          <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{useAuth().clinicName || ''}</p>
-            <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Physiotherapist Management</h2>
-            <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola terapis, jadwal, dan cuti</p>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <img
+          src="/hero/clinara-physio-hero.webp"
+          alt="Kaffah Physiotherapy"
+          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
+          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+            <h1
+              style={{ fontFamily: "'Caveat', cursive" }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+            >
+              Kelola<br />
+              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                Terapis
+              </span>
+            </h1>
+            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              Kelola terapis, jadwal, dan cuti.
+            </p>
           </div>
         </div>
       </div>
@@ -32,7 +43,7 @@ const AdminPhysiotherapistManagementPage = () => {
       {/* Tabs */}
       <Tabs defaultValue="schedule" className="w-full space-y-6">
         
-        <TabsList className="grid w-full md:w-[467px] grid-cols-2 bg-slate-100 p-1 rounded-lg">
+        <TabsList className="grid w-full md:w-[700px] grid-cols-3 bg-slate-100 p-1 rounded-lg">
 
           <TabsTrigger
             value="schedule"
@@ -40,6 +51,14 @@ const AdminPhysiotherapistManagementPage = () => {
           >
             <CalendarClock className="w-4 h-4" />
             Jadwal
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="overrides"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+          >
+            <CalendarRange className="w-4 h-4" />
+            Jadwal Pengganti
           </TabsTrigger>
 
           <TabsTrigger
@@ -57,8 +76,24 @@ const AdminPhysiotherapistManagementPage = () => {
           value="schedule"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <TherapistScheduleManager />
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistScheduleManager />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* JADWAL PENGGANTI */}
+        <TabsContent
+          value="overrides"
+          className="outline-none animate-in fade-in-50 duration-500"
+        >
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistScheduleOverrideManager />
+            </div>
           </div>
         </TabsContent>
 
@@ -67,8 +102,11 @@ const AdminPhysiotherapistManagementPage = () => {
           value="timeoff"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <TherapistTimeOffManager />
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+            <WaveBackground />
+            <div className="relative z-10">
+              <TherapistTimeOffManager />
+            </div>
           </div>
         </TabsContent>
 

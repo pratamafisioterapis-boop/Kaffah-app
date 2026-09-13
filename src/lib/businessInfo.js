@@ -5,7 +5,7 @@
 export const BUSINESS = {
   name: 'Kaffah Physiotherapy',
   shortName: 'Kaffah Physio',
-  url: 'https://kaffahphysiotherapy.com',
+  url: 'https://kaffahphysio.id',
   description:
     'Klinik fisioterapi di Batu Ampar, Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based untuk nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, dan gangguan neuromuskular.',
   telephone: '+6281233339435',

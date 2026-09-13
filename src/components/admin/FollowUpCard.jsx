@@ -13,7 +13,8 @@ import {
   Loader2,
   CalendarCheck,
   Copy,
-  Check
+  Check,
+  Gift
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
@@ -135,6 +136,16 @@ const patientName =
         badge: 'bg-pink-100 text-pink-700 border-pink-200'
       };
 
+    // 🎁 REWARD REFERRAL
+    case 'referral_reward':
+      return {
+        label: 'Reward Referral',
+        icon: <Gift className="w-3 h-3" />,
+        header: 'from-amber-50 to-white',
+        avatar: 'bg-amber-100 text-amber-700',
+        badge: 'bg-amber-100 text-amber-700 border-amber-200'
+      };
+
     default:
       return {
         label: type?.replace(/_/g, ' ') || 'General',
@@ -148,6 +159,25 @@ const patientName =
 
   const typeConfig = getTypeConfig(item.follow_up_type);
 
+  // ==============================
+  // Prioritas Follow Up Rutin
+  // ==============================
+  const getPatientCategoryConfig = (category) => {
+    switch (category) {
+      case 'new':
+        return { label: 'Pasien Baru', badge: 'bg-blue-100 text-blue-700 border-blue-200' };
+      case 'lapsed':
+        return { label: '>30 Hari Tidak Terapi', badge: 'bg-red-100 text-red-700 border-red-200' };
+      case 'routine':
+        return { label: 'Pasien Rutin • Opsional', badge: 'bg-slate-100 text-slate-600 border-slate-200' };
+      default:
+        return null;
+    }
+  };
+
+  const patientCategoryConfig =
+    item.follow_up_type === 'follow_up' ? getPatientCategoryConfig(item.patient_category) : null;
+
   const handleAction = async (fn) => {
     if (!fn) return;
     setIsProcessing(true);
@@ -157,6 +187,13 @@ const patientName =
       setIsProcessing(false);
     }
   };
+
+  // Hanya "Follow Up Rutin" yang sekarang dikirim manual — kategori lain
+  // (booking, reminder, paket, ultah) masih auto-terkirim lewat cron, jadi
+  // tombolnya tidak boleh ikut terkunci walau status-nya sudah bukan pending.
+  const locksOnSend = item.follow_up_type === 'follow_up';
+  const isPending = item.status === 'pending';
+  const isLocked = locksOnSend && !isPending;
 
   const handleSendWhatsApp = () => {
     onSend && onSend(item);
@@ -316,6 +353,15 @@ const packageRisk = getPackageRisk();
     </div>
   </Badge>
 
+  {patientCategoryConfig && (
+    <Badge
+      variant="outline"
+      className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-semibold ${patientCategoryConfig.badge}`}
+    >
+      {patientCategoryConfig.label}
+    </Badge>
+  )}
+
 </div>
 
             <div className="flex items-center flex-wrap text-[11px] sm:text-xs text-slate-600 mt-2 gap-x-3 gap-y-1">
@@ -471,9 +517,9 @@ const packageRisk = getPackageRisk();
 
   <Button
     size="sm"
-    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
+    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={handleSendWhatsApp}
-    disabled={isProcessing}
+    disabled={isProcessing || isLocked}
   >
     {isProcessing
       ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -484,9 +530,9 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="outline"
-    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3"
+    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={() => handleAction(onComplete)}
-    disabled={isProcessing}
+    disabled={isProcessing || isLocked}
   >
     <CheckCircle className="w-3 h-3" />
     Selesai

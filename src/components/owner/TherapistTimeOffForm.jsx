@@ -14,10 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Loader2, CalendarX, CheckCircle } from 'lucide-react';
 
-const REASONS = ['Cuti Tahunan', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
 
 const REASON_TO_LEAVE_TYPE = {
-  'Cuti Tahunan': 'annual',
+  'Cuti': 'annual',
   'Sakit': 'sick',
   'Libur': 'weekly_off',
   'Training': 'training',

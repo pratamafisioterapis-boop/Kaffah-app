@@ -65,7 +65,9 @@ export const generateBookingAvailabilityMessage = ({ clinicName, date, therapist
   const hari = calculateDayNameIndonesia(date);
   const tanggal = format(new Date(date), 'dd MMMM yyyy', { locale: idLocale });
 
-  const activeSummaries = therapistSummaries.filter(t => t.summary);
+  const activeSummaries = therapistSummaries
+    .filter(t => t.summary)
+    .sort((a, b) => a.summary.shownSlots[0].slot_start_time.localeCompare(b.summary.shownSlots[0].slot_start_time));
 
   if (activeSummaries.length === 0) {
     return `Mohon maaf, untuk hari ${hari}, ${tanggal} jadwal kami sudah penuh 🙏\nBoleh infokan tanggal lain, nanti kami carikan jadwal terbaik untuk Anda.`;

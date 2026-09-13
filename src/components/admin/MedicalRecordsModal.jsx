@@ -25,12 +25,14 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { formatOnsetDuration } from '@/lib/onsetHelpers';
 
 const initialFormState = {
   record_date: format(new Date(), 'yyyy-MM-dd'),
   patient_id: '',
   medical_diagnosis: [],
   history_main_problem: '',
+  complaint_onset_date: '',
   vital_nadi: '',
   vital_blood_pressure: '',
   vital_height: '',
@@ -120,6 +122,9 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
     record_date: recordData.record_date
       ? format(new Date(recordData.record_date), 'yyyy-MM-dd')
       : initialFormState.record_date,
+    complaint_onset_date: recordData.complaint_onset_date
+      ? format(new Date(recordData.complaint_onset_date), 'yyyy-MM-dd')
+      : '',
     medical_diagnosis: Array.isArray(recordData.medical_diagnosis)
       ? recordData.medical_diagnosis
       : recordData.medical_diagnosis
@@ -241,6 +246,11 @@ console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
   id,
   ...cleanedData
 } = formData;
+
+        // Kolom date tidak boleh diisi string kosong
+        if (!cleanedData.complaint_onset_date) {
+          cleanedData.complaint_onset_date = null;
+        }
 
         // Stringify array fields agar bisa disimpan ke kolom text
         if (Array.isArray(cleanedData.medical_diagnosis)) {
@@ -371,6 +381,25 @@ onClose();
                         placeholder="Pilih atau cari diagnosis..."
                         multiple={true}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Sejak Kapan Keluhan Dirasakan (Onset)</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                          type="date"
+                          name="complaint_onset_date"
+                          value={formData.complaint_onset_date}
+                          onChange={handleInputChange}
+                          max={format(new Date(), 'yyyy-MM-dd')}
+                          className="pl-9"
+                        />
+                      </div>
+                      {formData.complaint_onset_date && (
+                        <p className="text-xs font-medium" style={{ color: '#4f46e5' }}>
+                          Sudah {formatOnsetDuration(formData.complaint_onset_date)} mengalami keluhan ini
+                        </p>
+                      )}
                     </div>
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-sm font-medium text-slate-700">History Taking & Main Problem</label>
