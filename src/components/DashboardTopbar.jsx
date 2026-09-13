@@ -31,6 +31,17 @@ function formatApptDate(dateStr) {
   return `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+// Weekday + date + time, used in the activity feed so a notification says
+// exactly which day and what time an appointment/session is for.
+function formatActivityDateTime(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const dateLabel = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+  const timeLabel = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return `${dateLabel}, pukul ${timeLabel}`;
+}
+
 function formatShortDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '-';
@@ -55,22 +66,28 @@ function flattenNavItems(items) {
 
 // `changes` on appointment audit rows is either the raw row (INSERT/DELETE)
 // or { old, new } (UPDATE) — action_by_name/action_by_role live inside it.
-function mapAppointmentLog(row) {
+// `patientNameById` resolves the patient's name for registered patients,
+// since the appointment row itself only stores patient_id (guest_name
+// already covers walk-ins directly).
+function mapAppointmentLog(row, patientNameById = {}) {
   const c = row.changes || {};
   const data = row.action === 'UPDATE' ? (c.new || c) : c;
   const old = row.action === 'UPDATE' ? (c.old || null) : null;
-  const who = data.guest_name || 'pasien';
-  const actorRole = (data.action_by_role || '').toLowerCase() === 'therapist' ? 'therapist' : 'admin';
+  const who = data.guest_name || patientNameById[data.patient_id] || 'pasien';
+  const actorRoleRaw = (data.action_by_role || '').toLowerCase();
+  const actorRole = actorRoleRaw === 'therapist' ? 'therapist' : 'admin';
+  const when = formatActivityDateTime(data.appointment_date);
+  const scheduleSuffix = when ? ` untuk jadwal ${when}` : '';
 
   let text;
   if (row.action === 'INSERT') {
-    text = `menambahkan appointment baru untuk ${who}`;
+    text = `menambahkan appointment baru untuk ${who}${scheduleSuffix}`;
   } else if (row.action === 'DELETE') {
-    text = `menghapus appointment ${who}`;
+    text = `menghapus appointment ${who}${scheduleSuffix}`;
   } else if (old && old.status !== data.status && data.status === 'cancelled') {
-    text = `membatalkan appointment ${who}`;
+    text = `membatalkan appointment ${who}${scheduleSuffix}`;
   } else {
-    text = `memperbarui appointment ${who}`;
+    text = `memperbarui appointment ${who}${scheduleSuffix}`;
   }
 
   return {
@@ -79,19 +96,24 @@ function mapAppointmentLog(row) {
     isRead: !!row.is_read,
     actorName: data.action_by_name || 'Seseorang',
     actorRole,
+    actorRoleRaw,
     text,
   };
 }
 
 function mapRecapLog(row) {
   const data = (row.changes || {}).new || {};
+  const who = data.full_name || data.guest_name || 'pasien';
+  const when = formatActivityDateTime(data.start_time);
+  const scheduleSuffix = when ? ` (sesi ${when})` : '';
   return {
     id: row.id,
     time: row.created_at,
     isRead: !!row.is_read,
     actorName: data.therapist_name || 'Terapis',
     actorRole: 'therapist',
-    text: `menyelesaikan sesi terapi untuk ${data.full_name || data.guest_name || 'pasien'}`,
+    actorRoleRaw: 'therapist',
+    text: `menyelesaikan sesi terapi untuk ${who}${scheduleSuffix}`,
   };
 }
 
@@ -379,9 +401,38 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
       const [{ data: apptLogs }, { data: recapLogs }] = await Promise.all([apptLogQuery, recapLogQuery]);
 
-      const mapped = [...(apptLogs || []).map(mapAppointmentLog), ...(recapLogs || []).map(mapRecapLog)]
+      // Registered-patient appointments only carry patient_id in the audit
+      // row, so resolve their names in one batch (guest_name already covers
+      // walk-ins without a lookup).
+      const patientIds = [...new Set((apptLogs || [])
+        .map((row) => {
+          const c = row.changes || {};
+          const data = row.action === 'UPDATE' ? (c.new || c) : c;
+          return !data.guest_name && data.patient_id ? data.patient_id : null;
+        })
+        .filter(Boolean))];
+
+      let patientNameById = {};
+      if (patientIds.length) {
+        const { data: patientRows } = await supabase
+          .from('patients')
+          .select('id, full_name')
+          .in('id', patientIds);
+        patientNameById = Object.fromEntries((patientRows || []).map((p) => [p.id, p.full_name]));
+      }
+
+      let mapped = [
+        ...(apptLogs || []).map((row) => mapAppointmentLog(row, patientNameById)),
+        ...(recapLogs || []).map(mapRecapLog),
+      ]
         .sort((a, b) => new Date(b.time) - new Date(a.time))
         .slice(0, ACTIVITY_LIMIT);
+
+      // Admin's notification feed must never include the owner's own
+      // activity; the owner's feed keeps seeing every admin/therapist action.
+      if (role === 'admin' || role === 'clinic_admin') {
+        mapped = mapped.filter((item) => item.actorRoleRaw !== 'owner');
+      }
 
       setActivities(mapped);
     } catch (err) {
@@ -389,7 +440,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     } finally {
       setIsLoadingActivities(false);
     }
-  }, [clinicId]);
+  }, [clinicId, role]);
 
   useEffect(() => { loadActivities(); }, [loadActivities]);
 
