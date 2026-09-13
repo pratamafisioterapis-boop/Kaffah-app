@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClient';
 import { Star, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,6 +61,30 @@ const PatientFeedbackPage = () => {
 
     setGoogleReviewUrl(data.google_review_url || null);
     setStatus('submitted');
+  };
+
+  // Fires via fetch(..., { keepalive: true }) instead of supabase.rpc(): the
+  // anchor below navigates away immediately after this click (often to the
+  // *same* tab, since many in-app browsers -- WhatsApp, Instagram -- ignore
+  // target="_blank" and reuse the current webview). A plain supabase-js call
+  // is an ordinary fetch that gets cancelled the instant the page unloads,
+  // so the click can be silently lost; keepalive keeps the request alive
+  // past unload, same as navigator.sendBeacon.
+  const handleGoogleReviewClick = () => {
+    try {
+      fetch(`${supabaseUrl}/rest/v1/rpc/mark_feedback_google_review_clicked`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ p_token: token }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch (_) {
+      // best-effort click tracking; never block navigation to Google
+    }
   };
 
   return (
@@ -147,7 +171,7 @@ const PatientFeedbackPage = () => {
                     target="_blank"
                     rel="noreferrer"
                     className="w-full"
-                    onClick={() => supabase.rpc('mark_feedback_google_review_clicked', { p_token: token })}
+                    onClick={handleGoogleReviewClick}
                   >
                     <Button className="w-full bg-blue-600 hover:bg-blue-700">
                       <ExternalLink className="w-4 h-4 mr-2" /> Tulis Ulasan di Google
