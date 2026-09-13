@@ -500,12 +500,12 @@ const RevenueOverview = ({ dateRange }) => {
         </CardContent>
 
         {/* Subtle soft-blue wave footer */}
-        <div className="relative mt-2.5 md:mt-4 pt-4 md:pt-9 overflow-hidden">
-          <svg viewBox="0 0 1440 110" className="w-full h-8 md:h-20 block" preserveAspectRatio="none">
+        <div className="relative mt-2.5 md:mt-4 pt-7 md:pt-9 overflow-hidden">
+          <svg viewBox="0 0 1440 110" className="w-full h-14 md:h-20 block" preserveAspectRatio="none">
             <path fill="#dbeafe" d="M0,58L80,53C160,48,320,38,480,42C640,47,800,67,960,72C1120,77,1280,67,1360,62L1440,57L1440,110L0,110Z" />
             <path fill="#bfdbfe" opacity="0.55" d="M0,82L120,78C240,73,480,64,720,66C960,68,1200,82,1320,88L1440,94L1440,110L0,110Z" />
           </svg>
-          <div className="absolute inset-0 flex items-end justify-between px-4 md:px-8 pb-1.5 md:pb-4">
+          <div className="absolute inset-0 flex items-end justify-between px-4 md:px-8 pb-2.5 md:pb-4">
             <p className="hidden sm:flex items-start gap-2 text-[10px] md:text-[11px] text-[#0b1f4b]/70 font-semibold leading-tight">
               <BarChart3 className="w-3.5 h-3.5 text-[#0b1f4b]/40 mt-0.5 shrink-0" />
               <span>Better Financial Health<br />for a Stronger Tomorrow</span>
