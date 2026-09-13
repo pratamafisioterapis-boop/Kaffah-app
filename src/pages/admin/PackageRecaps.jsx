@@ -507,24 +507,24 @@ export const PackageRecapsContent = () => {
                                     </div>
 
                                     {/* Baris 3: Tgl Selesai + Aksi */}
-                                    <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                            <span>{pkg.extended_until
+                                    <div className="flex flex-col gap-2 border-t border-slate-100 pt-2">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap overflow-hidden">
+                                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <span className="truncate">{pkg.extended_until
                                                 ? <span className="text-orange-600 font-semibold">{formatDateIndonesian(pkg.extended_until)}</span>
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                             }</span>
                                         </div>
-                                        <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex gap-1.5 justify-end" onClick={(e) => e.stopPropagation()}>
                                             {pkg.status === 'expired' && (
-                                                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700" onClick={(e) => handleExtendClick(e, pkg)}>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700 whitespace-nowrap shrink-0" onClick={(e) => handleExtendClick(e, pkg)}>
                                                     Perpanjang
                                                 </Button>
                                             )}
-                                            <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700" onClick={(e) => handleEditStatusClick(e, pkg)}>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700 whitespace-nowrap shrink-0" onClick={(e) => handleEditStatusClick(e, pkg)}>
                                                 Ubah Status
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
+                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 shrink-0" onClick={(e) => handleDeleteClick(e, pkg)}>
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </Button>
                                         </div>
