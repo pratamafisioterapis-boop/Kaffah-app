@@ -86,7 +86,7 @@ const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage
 const LoadingFallback = () => (
   <div
     className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-slate-50 bg-cover bg-center bg-no-repeat"
-    style={{ backgroundImage: "url('/loading-bg.png')" }}
+    style={{ backgroundImage: "url('/loading-bg.jpg')" }}
   >
     <div className="relative z-10 flex flex-col items-center gap-6">
       {/* Spinner ring */}
