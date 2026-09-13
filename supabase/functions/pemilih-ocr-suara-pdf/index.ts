@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Edge Function: pemilih-ocr-suara-pdf
 // Menerima satu halaman gambar (base64) dari dokumen Sertifikat Rekapitulasi
@@ -174,6 +175,21 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Fungsi ini memanggil Anthropic API dengan cost per-request (gambar +
+    // max_tokens besar). Tanpa cek autentikasi, endpoint publik ini bisa
+    // dipanggil siapa saja lewat internet untuk menghabiskan kuota/biaya
+    // ANTHROPIC_API_KEY (cost-abuse), jadi wajib login dulu.
+    const authHeader = req.headers.get("Authorization") || "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await callerClient.auth.getUser();
+    if (userError || !userData?.user) {
+      return json({ error: "Tidak terautentikasi" }, 401);
+    }
+
     const body = await req.json();
     const { image_base64, media_type, party_filter, is_partial } = body || {};
     const maxTokens = Number(body?.max_tokens) > 0 ? Math.min(Number(body.max_tokens), 32000) : DEFAULT_MAX_TOKENS;

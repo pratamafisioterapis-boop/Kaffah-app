@@ -25,16 +25,56 @@ async function getAccessToken() {
 Deno.serve(async (req) => {
   try {
     const body = await req.json();
-console.log("BODY RECEIVED:", body);
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    if (!body?.user_id) {
+      return Response.json({ success: false, error: "user_id wajib diisi." }, { status: 400 });
+    }
+
 const { data: userData } = await supabase
   .from("users")
   .select("role, clinic_id")
   .eq("id", body.user_id)
   .single();
+
+// Endpoint ini juga dipanggil langsung dari browser (lihat sendPushNotification
+// di src/lib/api.js). Tanpa cek ini, pengguna yang login bisa memalsukan
+// notifikasi push (judul/isi bebas) ke user_id siapa pun di sistem, bukan
+// cuma dirinya sendiri — celah spoofing/phishing lintas klinik. Panggilan
+// dari trigger Postgres (net.http_post) tidak membawa header Authorization
+// sama sekali, jadi baris ini hanya menjaga jalur pemanggilan langsung dari
+// klien; jalur trigger DB tetap seperti semula.
+const authHeader = req.headers.get("Authorization") || "";
+if (authHeader) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const callerClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: callerAuth, error: callerAuthErr } = await callerClient.auth.getUser();
+  if (callerAuthErr || !callerAuth?.user) {
+    return Response.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 });
+  }
+
+  const isSelf = callerAuth.user.id === body.user_id;
+  let isSameClinicManager = false;
+  if (!isSelf) {
+    const { data: callerRow } = await supabase
+      .from("users")
+      .select("role, clinic_id")
+      .eq("id", callerAuth.user.id)
+      .single();
+    isSameClinicManager = !!callerRow &&
+      ["owner", "admin", "clinic_admin", "super_admin"].includes(callerRow.role) &&
+      (callerRow.role === "super_admin" || (userData?.clinic_id && callerRow.clinic_id === userData.clinic_id));
+  }
+
+  if (!isSelf && !isSameClinicManager) {
+    return Response.json({ success: false, error: "Anda tidak punya akses untuk mengirim notifikasi ke pengguna ini." }, { status: 403 });
+  }
+}
 
 // Logo klinik dipakai sebagai icon notifikasi supaya tiap klinik lihat
 // logonya sendiri, bukan logo Kaffah Tech generik.
@@ -64,7 +104,6 @@ if (!body.url) {
   }
 }
 
-console.log("TARGET URL:", targetUrl);
     const { data: tokens, error } = await supabase
       .from("fcm_tokens")
       .select("token")
@@ -75,12 +114,6 @@ console.log("TARGET URL:", targetUrl);
     if (!tokens || tokens.length === 0) {
       throw new Error("FCM token tidak ditemukan");
     }
-console.log("PUSH PAYLOAD:", {
-  title: body.title,
-  body: body.body,
-  raw: body,
-});
-
     const accessToken = await getAccessToken();
 
     const results = [];
