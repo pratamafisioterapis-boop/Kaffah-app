@@ -15,6 +15,7 @@ export const OWNER_NAV_ITEMS = [
   { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'ClipboardList' },
   { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'Users' },
   { label: 'Feedback Pasien', path: '/owner/feedback', icon: 'Star' },
+  { label: 'Clinical Documents', path: '/owner/clinical-documents', icon: 'FileText' },
   { label: 'Basis Jurnal AI', path: '/owner/journal-knowledge-base', icon: 'BookOpen' },
   { label: 'Admin Management', path: '/owner/admin-management', icon: 'UserCog' },
   { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
