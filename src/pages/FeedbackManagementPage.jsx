@@ -108,7 +108,7 @@ export const FeedbackManagementContent = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
@@ -136,6 +136,7 @@ export const FeedbackManagementContent = () => {
         </div>
       </div>
 
+      <div className="max-w-3xl space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-800">Feedback Pasien</h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -224,6 +225,7 @@ export const FeedbackManagementContent = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
