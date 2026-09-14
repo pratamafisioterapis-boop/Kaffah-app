@@ -57,23 +57,23 @@ const TherapistStatusCards = ({
   const navigate = useNavigate();
 
   // Urutan: aktif & bertugas (0) -> Non Aktif (1) -> Cuti/Ijin (2, paling akhir)
-  // Di dalam grup "aktif & bertugas", urutkan dari slot kosong terbanyak ke yang paling sedikit (full booked di ujung).
+  // Di dalam grup "aktif & bertugas", urutkan dari persentase load capacity terendah ke tertinggi (full booked di ujung).
   const getPriority = (therapist) => {
     if (therapist.leave_status) return 2;
     if (!therapist.is_active) return 1;
     return 0;
   };
 
-  const getEmptySlots = (therapist) => {
+  const getLoadPercentage = (therapist) => {
     const sessions = therapistSessions[therapist.id] || 0;
     const totalSlots = therapist.total_slots || 0;
-    return totalSlots - sessions;
+    return totalSlots > 0 ? (sessions / totalSlots) * 100 : 0;
   };
 
   const sortedTherapists = [...therapists].sort((a, b) => {
     const priorityDiff = getPriority(a) - getPriority(b);
     if (priorityDiff !== 0) return priorityDiff;
-    return getEmptySlots(b) - getEmptySlots(a);
+    return getLoadPercentage(a) - getLoadPercentage(b);
   });
 
   if (isLoading) {
