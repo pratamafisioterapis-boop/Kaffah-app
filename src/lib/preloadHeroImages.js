@@ -8,6 +8,7 @@ const HERO_IMAGES = [
   '/hero/clinara-accounting-hero.webp',
   '/hero/clinara-appointment-hero.webp',
   '/hero/clinara-clinicaldoc-hero.webp',
+  '/hero/clinara-feedback-hero.webp',
   '/hero/clinara-followup-hero.webp',
   '/hero/clinara-hero-dashboard.webp',
   '/hero/clinara-medrec-hero.webp',
