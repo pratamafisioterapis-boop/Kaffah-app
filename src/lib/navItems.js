@@ -13,6 +13,7 @@ export const OWNER_NAV_ITEMS = [
     submenu: [
       { label: 'Appointments', path: '/owner/appointments' },
       { label: 'Daily Recaps', path: '/owner/daily-recap' },
+      { label: 'Package Recaps', path: '/owner/package-recaps' },
       { label: 'Database Patients', path: '/owner/database-patients' },
       { label: 'Medical Records', path: '/owner/medical-records' },
       { label: 'Clinical Documents', path: '/owner/clinical-documents' },
@@ -20,7 +21,6 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Patients Feedback', path: '/owner/feedback' },
     ],
   },
-  { label: 'Package Recaps', path: '/owner/package-recaps', icon: 'Package' },
   {
     label: 'Teams & Staffs',
     icon: 'Users',
