@@ -388,7 +388,7 @@ const isPWA =
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="pl-11 pr-2 space-y-1 py-1">
+                    <div className="pl-4 pr-2 space-y-1 py-1">
                       {item.submenu.map((subItem, subIndex) => (
                         <NavLink
                           key={subIndex}
