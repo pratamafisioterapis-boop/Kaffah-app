@@ -204,23 +204,6 @@ const isPWA =
 
 
 
-  useEffect(() => {
-    const newExpanded = {};
-    finalNavItems.forEach((item, index) => {
-      if (item.submenu) {
-        const isSubmenuActive = item.submenu.some(sub => location.pathname === sub.path);
-        if (isSubmenuActive) newExpanded[index] = true;
-      }
-    });
-
-    setExpandedMenus(prev => {
-      const prevStr = JSON.stringify(prev);
-      const newStr = JSON.stringify(newExpanded);
-      return prevStr === newStr ? prev : newExpanded;
-    });
-
-  }, [location.pathname, finalNavItems]);
-
   const handleLogout = async () => {
     try {
       await signOut();
@@ -238,7 +221,7 @@ const isPWA =
   };
 
   const toggleSubmenu = (index) => {
-    setExpandedMenus(prev => ({ ...prev, [index]: !prev[index] }));
+    setExpandedMenus(prev => (prev[index] ? {} : { [index]: true }));
   };
 
   // Converted to standard function rendering to avoid unmount/remount on parent render
