@@ -91,6 +91,7 @@ useEffect(() => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [menuSearchQuery, setMenuSearchQuery] = useState('');
 const isPWA =
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
@@ -163,6 +164,10 @@ const isPWA =
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      }
 
+     if (role === 'owner') {
+        newItems = newItems.map(item => item.label === 'Dashboard' ? { ...item, label: 'Overview' } : item);
+     }
+
      return newItems;
   };
   const finalNavItems = useMemo(() => {
@@ -172,7 +177,23 @@ const isPWA =
     return processed.filter((item) => !isNavItemDisabled(item.label, role, disabledFeatures));
   }, [navItems, role, clinicInfo]);
 
-  
+  const displayedNavItems = useMemo(() => {
+    if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
+    const query = menuSearchQuery.trim().toLowerCase();
+    return finalNavItems
+      .map((item) => {
+        if (item.submenu) {
+          const filteredSubmenu = item.submenu.filter((sub) => sub.label.toLowerCase().includes(query));
+          if (item.label.toLowerCase().includes(query)) return item;
+          if (filteredSubmenu.length > 0) return { ...item, submenu: filteredSubmenu };
+          return null;
+        }
+        return item.label.toLowerCase().includes(query) ? item : null;
+      })
+      .filter(Boolean);
+  }, [finalNavItems, role, menuSearchQuery]);
+
+
 
   useEffect(() => {
     const newExpanded = {};
@@ -268,8 +289,20 @@ const isPWA =
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6 relative z-10 min-h-0">
+        {role === 'owner' && (
+          <div className="relative mb-4 px-2">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5B6B7D] pointer-events-none" />
+            <input
+              type="text"
+              value={menuSearchQuery}
+              onChange={(e) => setMenuSearchQuery(e.target.value)}
+              placeholder="Cari menu..."
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[#DCE8F2] bg-[#F5F9FC] text-[#102F52] placeholder:text-[#5B6B7D] focus:outline-none focus:ring-2 focus:ring-[#1677D2]/30 focus:border-[#1677D2] transition-colors"
+            />
+          </div>
+        )}
         <div className="text-xs font-semibold text-[#5B6B7D] uppercase tracking-wider mb-4 px-2">Menu Utama</div>
-        {finalNavItems.map((item, index) => {
+        {displayedNavItems.map((item, index) => {
           const Icon = iconMap[item.icon] || Home;
           const isActive = location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path) && !item.submenu);
           const hasSubmenu = item.submenu && item.submenu.length > 0;
