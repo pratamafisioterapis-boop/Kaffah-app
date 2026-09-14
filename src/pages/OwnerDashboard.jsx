@@ -43,6 +43,7 @@ import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
+import ClinicalDocuments from '@/pages/admin/ClinicalDocuments';
 
 // API
 import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId } from '@/lib/api';
@@ -552,6 +553,7 @@ const OwnerDashboard = () => {
         <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
         <Route path="/admin-management" element={<AdminManagementPage />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
+        <Route path="/clinical-documents" element={<ClinicalDocuments />} />
         
 
         {/* Fallback for old routes */}
