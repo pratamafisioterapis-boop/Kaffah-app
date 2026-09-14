@@ -121,24 +121,25 @@ const isPWA =
 
    let newItems = [...items];
      const isOwnerOrAdmin = ['owner', 'admin'].includes(role);
+     const hasPath = (path) => newItems.some(item => item.path === path || (item.submenu || []).some(sub => sub.path === path));
 
      if (isOwnerOrAdmin) {
          const dbPath = role === 'owner' ? '/owner/database-patients' : '/admin/database-patients';
-         if (!newItems.some(item => item.path === dbPath)) {
+         if (!hasPath(dbPath)) {
              newItems.push({ label: 'Database Pasien', path: dbPath, icon: 'Database' });
          }
 
-         const packagePath = role === 'admin' 
-  ? '/admin/package-recaps' 
-  : role === 'owner' 
-    ? '/owner/package-recaps' 
+         const packagePath = role === 'admin'
+  ? '/admin/package-recaps'
+  : role === 'owner'
+    ? '/owner/package-recaps'
     : null;
-         if (!newItems.some(item => item.path === packagePath)) {
+         if (!hasPath(packagePath)) {
              newItems.push({ label: 'Package Recaps', path: packagePath, icon: 'Package' });
          }
 
          const followUpPath = '/admin/follow-up-management';
-         if (role === 'admin' && !newItems.some(item => item.path === followUpPath)) {
+         if (role === 'admin' && !hasPath(followUpPath)) {
             newItems.push({ label: 'Follow Up Management', path: followUpPath, icon: 'MessageSquare' });
          }
      }
@@ -156,7 +157,7 @@ const isPWA =
         };
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      } else if (role === 'owner') {
-         const order = ['Dashboard', 'Appointments', 'Database Pasien', 'Daily Recaps', 'Package Recaps', 'Medical Records', 'Follow Up Management', 'Physiotherapist Management', 'Admin Management', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
+         const order = ['Dashboard', 'Clinic Management', 'Package Recaps', 'Teams & Staffs', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
          const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
@@ -174,7 +175,15 @@ const isPWA =
     const processed = processNavItems(navItems);
     const disabledFeatures = clinicInfo?.disabled_features_by_role?.[role];
     if (!disabledFeatures || disabledFeatures.length === 0) return processed;
-    return processed.filter((item) => !isNavItemDisabled(item.label, role, disabledFeatures));
+    return processed
+      .map((item) => {
+        if (item.submenu) {
+          const submenu = item.submenu.filter((sub) => !isNavItemDisabled(sub.label, role, disabledFeatures));
+          return submenu.length > 0 ? { ...item, submenu } : null;
+        }
+        return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
+      })
+      .filter(Boolean);
   }, [navItems, role, clinicInfo]);
 
   const displayedNavItems = useMemo(() => {
@@ -527,7 +536,7 @@ const isPWA =
                 transition={{ duration: 0.18 }}
                 className="flex flex-col items-end gap-3 max-h-[38vh] overflow-y-auto pr-1 pb-1"
               >
-                {finalNavItems.map((item, idx) => {
+                {finalNavItems.flatMap((item) => item.submenu || [item]).map((item, idx) => {
                   const Icon = iconMap[item.icon] || Home;
                   const isActive = location.pathname === item.path;
                   return (
