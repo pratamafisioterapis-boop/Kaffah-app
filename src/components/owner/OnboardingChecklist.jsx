@@ -187,7 +187,7 @@ const OnboardingChecklist = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 bg-clinara-navy text-white pl-3 pr-4 py-2.5 rounded-full shadow-lg hover:bg-clinara-blue transition-colors text-sm font-semibold"
+        className="fixed bottom-24 right-5 z-40 flex items-center gap-2 bg-clinara-navy text-white pl-3 pr-4 py-2.5 rounded-full shadow-lg hover:bg-clinara-blue transition-colors text-sm font-semibold"
       >
         <Rocket className="w-4 h-4" />
         Setup Awal ({requiredDoneCount}/{requiredSteps.length})
