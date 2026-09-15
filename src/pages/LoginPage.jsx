@@ -750,7 +750,7 @@ case 'clinic_admin':
           </div>
 
           {/* Right: login card, floating over the same photo */}
-          <div className="shrink-0 pr-10 lg:pr-20">
+          <div className="shrink-0 pr-16 lg:pr-32">
             <motion.div
               initial={{ opacity: 0, y: 24, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
