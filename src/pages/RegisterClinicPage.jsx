@@ -106,9 +106,7 @@ const RegisterClinicPage = () => {
             <div className="p-8">
               <div className="text-center mb-8">
                 <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight text-clinara-navy">
-                  <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-clinara-sky to-clinara-teal flex items-center justify-center text-white text-sm font-black">
-                    C
-                  </span>
+                  <img src="/clinara-icon.png" alt="" className="w-8 h-8" />
                   Clinara
                 </span>
                 <h1 className="mt-4 text-2xl font-bold text-clinara-navy">Daftarkan Klinik Anda</h1>
@@ -125,12 +123,12 @@ const RegisterClinicPage = () => {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <Field icon={Building2} type="text" value={form.clinic_name} onChange={setField('clinic_name')} placeholder="Nama Klinik" required />
-                <Field icon={User} type="text" value={form.owner_full_name} onChange={setField('owner_full_name')} placeholder="Nama Lengkap Pemilik" required />
-                <Field icon={Mail} type="email" value={form.email} onChange={setField('email')} placeholder="Email" autoCapitalize="none" autoCorrect="off" required />
-                <Field icon={Phone} type="tel" value={form.phone} onChange={setField('phone')} placeholder="No. Telepon (opsional)" />
-                <Field icon={Lock} type="password" value={form.password} onChange={setField('password')} placeholder="Password (min. 6 karakter)" required />
-                <Field icon={Lock} type="password" value={form.confirm_password} onChange={setField('confirm_password')} placeholder="Konfirmasi Password" required />
+                <Field icon={Building2} type="text" name="clinic_name" value={form.clinic_name} onChange={setField('clinic_name')} placeholder="Nama Klinik" autoComplete="off" required />
+                <Field icon={User} type="text" name="owner_full_name" value={form.owner_full_name} onChange={setField('owner_full_name')} placeholder="Nama Lengkap Pemilik" autoComplete="off" required />
+                <Field icon={Mail} type="email" name="clinic_owner_email" value={form.email} onChange={setField('email')} placeholder="Email" autoCapitalize="none" autoCorrect="off" autoComplete="off" required />
+                <Field icon={Phone} type="tel" name="phone" value={form.phone} onChange={setField('phone')} placeholder="No. Telepon (opsional)" autoComplete="off" />
+                <Field icon={Lock} type="password" name="new-clinic-password" value={form.password} onChange={setField('password')} placeholder="Password (min. 6 karakter)" autoComplete="new-password" required />
+                <Field icon={Lock} type="password" name="confirm-clinic-password" value={form.confirm_password} onChange={setField('confirm_password')} placeholder="Konfirmasi Password" autoComplete="new-password" required />
 
                 <Button
                   type="submit"
