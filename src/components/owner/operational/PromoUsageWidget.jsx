@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, Gift, ChevronRight, HelpCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Loader2, Gift, ChevronRight, HelpCircle, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
@@ -264,9 +264,9 @@ const PromoUsageWidget = ({ dateRange }) => {
           this avoids horizontal clipping on mobile widths instead of the shared
           component's default vw-based centering. */}
       <Dialog open={showUncategorizedModal} onOpenChange={setShowUncategorizedModal}>
-        <DialogContent className="left-0 top-0 h-full w-full max-w-none translate-x-0 translate-y-0 flex items-center justify-center gap-0 border-0 bg-transparent p-4 shadow-none rounded-none">
+        <DialogContent hideClose className="left-0 top-0 h-full w-full max-w-none translate-x-0 translate-y-0 flex items-center justify-center gap-0 border-0 bg-transparent p-4 shadow-none rounded-none">
           <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-xl bg-white shadow-lg">
-            <DialogHeader className="sticky top-0 z-10 px-5 py-4 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
+            <DialogHeader className="sticky top-0 z-10 px-5 py-4 pr-12 border-b border-slate-100 bg-slate-50/95 backdrop-blur relative">
               <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                 Sesi Tanpa Kategori Diskon
@@ -274,6 +274,10 @@ const PromoUsageWidget = ({ dateRange }) => {
               <DialogDescription className="text-xs text-slate-500">
                 {uncategorizedRecaps.length} sesi punya diskon tapi belum diisi "Jenis Diskon"-nya. Buka rekap harian pasien ini untuk melengkapi kategorinya.
               </DialogDescription>
+              <DialogClose className="absolute right-4 top-4 rounded-full p-1 text-slate-400 hover:bg-slate-200/70 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
+                <X className="w-4 h-4" />
+                <span className="sr-only">Tutup</span>
+              </DialogClose>
             </DialogHeader>
             <div className="divide-y divide-slate-100">
               {uncategorizedRecaps.length === 0 ? (
