@@ -241,6 +241,28 @@ Deno.serve(async (req) => {
       // Non-fatal: the clinic still works with an empty Diagnosa & Layanan list.
     }
 
+    // Clone payment methods from the reference clinic (Cash, Debit, Qris,
+    // Transfer, ...). Left unlinked to any bank account - the clinic doesn't
+    // have its own bank accounts yet at this point - the owner links each
+    // method to a bank account later from Setup > Pembayaran.
+    try {
+      const { data: paymentMethods } = await adminClient
+        .from("operational_options")
+        .select("*")
+        .eq("clinic_id", REFERENCE_CLINIC_ID)
+        .eq("category", "payment_method");
+      const newPaymentMethods = (paymentMethods || []).map((p) => ({
+        id: crypto.randomUUID(),
+        category: p.category,
+        label: p.label,
+        is_active: p.is_active,
+        clinic_id: clinic.id,
+      }));
+      if (newPaymentMethods.length) await adminClient.from("operational_options").insert(newPaymentMethods);
+    } catch (_e) {
+      // Non-fatal: the clinic still works with an empty payment method list.
+    }
+
     // Clone accounting categories + subcategories from the reference clinic,
     // so a new clinic starts with a ready-made chart of accounts instead of
     // an empty one.
