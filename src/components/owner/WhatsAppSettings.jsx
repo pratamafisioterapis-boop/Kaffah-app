@@ -555,17 +555,18 @@ const WhatsAppSettings = ({ hideApiKey = false }) => {
             {!hideApiKey && <WaApiKeySection />}
 
             <Tabs defaultValue="booking_appointment" className="w-full">
-                <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto flex flex-wrap gap-1 mb-6">
+                <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto flex flex-wrap items-center gap-1 mb-6">
                     {CATEGORIES.map(cat => (
-                        <TabsTrigger 
-                            key={cat.id} 
+                        <TabsTrigger
+                            key={cat.id}
                             value={cat.id}
                             className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 px-4 py-2 rounded-lg"
                         >
                             {cat.label}
                         </TabsTrigger>
                     ))}
-                    <TabsTrigger value="logs" className="ml-auto data-[state=active]:bg-slate-100 gap-2">
+                    <div className="w-px self-stretch bg-slate-200 mx-1" />
+                    <TabsTrigger value="logs" className="data-[state=active]:bg-slate-100 px-4 py-2 rounded-lg gap-2">
                         <History className="w-3 h-3" /> Riwayat
                     </TabsTrigger>
                 </TabsList>
