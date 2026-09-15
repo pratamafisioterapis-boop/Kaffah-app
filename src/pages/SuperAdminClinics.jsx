@@ -445,7 +445,7 @@ const SuperAdminClinics = () => {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{form.id ? 'Edit Klinik' : 'Tambah Klinik'}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Nama Klinik</label>
@@ -502,7 +502,7 @@ const SuperAdminClinics = () => {
       </Dialog>
 
       <Dialog open={ownerOpen} onOpenChange={setOwnerOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Tambah Owner untuk {ownerClinic?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Nama Lengkap</label>
