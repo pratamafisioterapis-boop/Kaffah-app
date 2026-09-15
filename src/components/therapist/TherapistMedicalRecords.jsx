@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { getMedicalRecords, getPatients, createBulkMedicalRecords } from '@/lib/api';
+import React, { useState, useEffect } from 'react';
+import { getMedicalRecords } from '@/lib/api';
 import { getTherapistVisits } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Upload, Download, FileDown, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Loader2, AlertCircle, CheckCircle2, ArrowRight, ClipboardList, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import PatientSOAPStatusModal from './PatientSOAPStatusModal';
 import { format, subMonths } from 'date-fns';
-import { downloadCSV, parseCSVText, findPatientMatch, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
+import { downloadCSV, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
 
@@ -25,7 +24,7 @@ const formatLocalDate = (date) => {
 };
 
 const TherapistMedicalRecords = ({ therapist, isOwnerView = false, basePath = '/therapist/records' }) => {
-  const { user, clinicName } = useAuth();
+  const { clinicName } = useAuth();
   const [patients, setPatients] = useState([]);
   const [patientVisits, setPatientVisits] = useState({});
   const [patientRecords, setPatientRecords] = useState({});
@@ -53,12 +52,6 @@ const itemsPerPage = 20;
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Import CSV States
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importStats, setImportStats] = useState(null);
-  const fileInputRef = useRef(null);
 
 useEffect(() => {
   setCurrentPage(1);
@@ -221,7 +214,6 @@ setPatients(patientList);
 
   const handlePatientClick = (patient) => { setSelectedPatient(patient); setIsModalOpen(true); };
   const handleFilterChange = (val) => { setSearchParams(prev => { const newParams = new URLSearchParams(prev); newParams.set('status', val); return newParams; }); };
-  const downloadTemplate = () => { const sample = [{ patient_name: 'John Doe', date: '2023-01-01', therapist_name: therapist.name, evaluation: 'Pasien mengalami nyeri punggung bawah', notes: 'Latihan stretching 15 menit' }]; downloadCSV(sample, 'template_evaluasi_pasien.csv'); };
   const handleExportCSV = () => {
      const exportRows = [];
      patients.forEach(p => {
@@ -232,54 +224,6 @@ setPatients(patientList);
      downloadCSV(exportRows, `evaluasi_pasien_${therapist.name}_${format(new Date(), 'yyyyMMdd')}.csv`);
   };
 
-  const processImport = async () => {
-      if (!importFile) return;
-      setImporting(true);
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const text = e.target.result;
-          const rawData = parseCSVText(text);
-          if (rawData.length === 0) throw new Error("No valid data found");
-          const validRecords = [];
-          const errors = [];
-          const { data: allPatients } = await getPatients();
-
-          rawData.forEach((row, idx) => {
-             const pName = row.patient_name || row['nama pasien'];
-             const date = row.date || row['tanggal'];
-
-             if (!pName || !date) { errors.push(`Row ${idx + 1}: Missing name or date`); return; }
-             
-             const matchResult = findPatientMatch(pName, allPatients);
-             if (matchResult.status !== 'exact') {
-                 errors.push(`Row ${idx + 1}: Patient '${pName}' not found or name ambiguous. Requires exact match.`);
-                 return;
-             }
-
-             validRecords.push({
-                 patient_id: matchResult.patient.id,
-                 created_by: user.id, 
-                 record_type: 'soap', 
-                 assessment: row.evaluation || row['evaluation'] || '',
-                 plan: row.notes || row['notes'] || '',
-                 subjective: '', objective: '',
-                 created_at: new Date(date).toISOString() 
-             });
-          });
-
-          if (validRecords.length > 0) {
-              const { error } = await createBulkMedicalRecords(validRecords);
-              if (error) throw error;
-          }
-
-          setImportStats({ total: rawData.length, success: validRecords.length, failed: errors.length, errors: errors });
-          if (validRecords.length > 0) fetchData(true);
-        } catch (err) { console.error(err); toast({ variant: "destructive", title: "Import Failed", description: err.message }); } finally { setImporting(false); setImportFile(null); }
-      };
-      reader.readAsText(importFile);
-  };
-  
   const handleSort = (field) => {
     setSortConfig(prev => {
       if (prev.sortBy === field) {
@@ -343,7 +287,7 @@ const paginatedList = sortedList.slice(
   };
 
   return (
-    <div className="space-y-6">
+    <div className={isOwnerView ? "space-y-3" : "space-y-6"}>
       {!isOwnerView && (
         <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
@@ -372,17 +316,18 @@ const paginatedList = sortedList.slice(
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div><h2 className="text-2xl font-bold text-slate-900">{isOwnerView ? 'Evaluasi Pasien' : 'Manajemen Rekam Medis'}</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50"><Upload className="w-4 h-4 mr-2" /> Import</Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+        {!isOwnerView && (
+          <div><h2 className="text-2xl font-bold text-slate-900">Manajemen Rekam Medis</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
+        )}
+        <div className="flex items-center gap-2 ml-auto">
+            <Button variant="outline" size={isOwnerView ? 'sm' : 'default'} onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
             {!isOwnerView && (<Button onClick={() => navigate(`${basePath}/new/select`)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500">
-        <span>
+      <div className={cn("flex flex-col md:flex-row md:items-center gap-2 bg-white rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500", isOwnerView ? "p-2" : "p-3")}>
+        <span className={isOwnerView ? "hidden sm:inline" : undefined}>
           {isSearchMode
             ? 'Mode pencarian: menampilkan hasil dari semua periode.'
             : `Menampilkan kunjungan ${periodRange ? `${format(periodRange.startDate, 'dd MMM yyyy')} - ${format(periodRange.endDate, 'dd MMM yyyy')}` : '...'}.`}
@@ -434,8 +379,8 @@ const paginatedList = sortedList.slice(
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col md:flex-row gap-4 items-end">
-         <div className="w-full md:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
+      <div className={cn("bg-white rounded-lg border shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end", isOwnerView ? "p-2" : "p-4")}>
+         <div className="w-full sm:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
          <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
@@ -583,21 +528,6 @@ const paginatedList = sortedList.slice(
   </div>
 )}
       <PatientSOAPStatusModal patient={selectedPatient} visits={selectedPatient ? (patientVisits[selectedPatient.id] || []) : []} records={selectedPatient ? (patientRecords[selectedPatient.id] || []) : []} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} basePath={basePath} />
-
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Import Evaluasi Pasien (CSV)</DialogTitle><DialogDescription>Upload file CSV untuk import data evaluasi massal.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-4">
-             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between"><div className="text-sm text-slate-600"><p className="font-medium">Belum punya format?</p><p className="text-xs">Download template CSV</p></div><Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2 h-8"><FileDown className="w-4 h-4" /> Download</Button></div>
-             {!importStats ? (
-               <div className="grid w-full items-center gap-1.5"><div className="flex items-center justify-center w-full"><label htmlFor="eval-dropzone" className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100"><div className="flex flex-col items-center justify-center pt-5 pb-6"><Upload className="w-8 h-8 mb-2 text-slate-400" /><p className="mb-2 text-sm text-slate-500"><span className="font-semibold">Klik upload</span> atau drag and drop</p><p className="text-xs text-slate-500">Hanya file CSV</p></div><input id="eval-dropzone" type="file" className="hidden" accept=".csv" onChange={(e) => { if(e.target.files && e.target.files[0]) { setImportFile(e.target.files[0]); setImportStats(null); } }} ref={fileInputRef} /></label></div>{importFile && (<div className="text-sm text-blue-600 font-medium flex items-center gap-2 mt-2"><FileDown className="w-4 h-4" />{importFile.name}</div>)}</div>
-             ) : (
-                <div className="space-y-3"><div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-md border border-emerald-100"><CheckCircle className="w-5 h-5" /><div className="text-sm"><span className="font-bold">{importStats.success}</span> data berhasil diimport.</div></div>{importStats.failed > 0 && (<div className="bg-rose-50 p-3 rounded-md border border-rose-100"><div className="flex items-center gap-2 text-rose-600 mb-2"><AlertCircle className="w-5 h-5" /><div className="text-sm font-bold">{importStats.failed} data gagal</div></div><ul className="text-xs text-rose-600 list-disc pl-5 max-h-32 overflow-y-auto space-y-1">{importStats.errors.map((err, idx) => (<li key={idx}>{err}</li>))}</ul></div>)}</div>
-             )}
-          </div>
-          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => { setImportDialogOpen(false); setImportStats(null); setImportFile(null); }}>{importStats ? 'Tutup' : 'Batal'}</Button>{!importStats && (<Button onClick={processImport} disabled={!importFile || importing} className="bg-blue-600 hover:bg-blue-700">{importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Import Data</Button>)}</div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
