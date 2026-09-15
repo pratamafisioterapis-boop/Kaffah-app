@@ -26,6 +26,7 @@ import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics';
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
+import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 // Consolidated Pages
 import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
 import AppointmentsPage from '@/pages/AppointmentsPage';
@@ -817,9 +818,15 @@ setTrendPatients(trendArray);
                 
              </div>
 
-             <div className="space-y-3">
-               <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Sumber Pasien</h3>
-               <PatientSourceChart dateRange={dateRange} />
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               <div className="space-y-3">
+                 <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Sumber Pasien</h3>
+                 <PatientSourceChart dateRange={dateRange} />
+               </div>
+
+               <div className="space-y-3">
+                 <PromoUsageWidget dateRange={dateRange} />
+               </div>
              </div>
           </TabsContent>
           
