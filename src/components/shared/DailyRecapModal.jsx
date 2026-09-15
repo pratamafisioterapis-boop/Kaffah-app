@@ -240,7 +240,7 @@ setFormData({
     payment_method: initialData.payment_method || '',
     discount_type: initialData.discount_type || 'none',
     discount_value: initialData.discount_value || 0,
-    discount_label: initialData.is_auto_filled?.discount_label || ''
+    discount_label: initialData.discount_label || ''
 });
 
                 const existingSplits = Array.isArray(initialData.payment_splits) ? initialData.payment_splits : [];
@@ -1338,7 +1338,7 @@ setFormData({
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Nilai</Label>
-                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={formData.discount_type === 'none'}/>
+                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={formData.discount_type === 'none' || !formData.discount_label}/>
                                         </div>
                                     </div>
                                 </div>
