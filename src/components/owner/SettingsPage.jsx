@@ -1148,7 +1148,7 @@ const SettingsPage = () => {
 
         <div className="mt-6">
           <TabsContent value="account_clinic">
-            <AccountClinicManager />
+            <AccountClinicManager hideOwnerIdentity={disabledFeatures.includes('owner_identity')} />
           </TabsContent>
           <TabsContent value="domain">
             <DomainSettingsManager />
@@ -1167,7 +1167,7 @@ const SettingsPage = () => {
             <OwnerBankAccountManager />
           </TabsContent>
           <TabsContent value="whatsapp_settings">
-            <WhatsAppSettings />
+            <WhatsAppSettings hideApiKey={disabledFeatures.includes('wa_api_key')} />
           </TabsContent>
           <TabsContent value="google_drive" className="space-y-6">
             <GoogleDriveSettings />

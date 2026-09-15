@@ -14,7 +14,10 @@ const TRIAL_DAYS = 7;
 // clinic doesn't need on day one. Super Admin can still re-enable any of
 // these per clinic from Manajemen Klinik.
 const DEFAULT_DISABLED_FEATURES_BY_ROLE = {
-  owner: ["presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance", "bsi_reconciliation"],
+  owner: [
+    "presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance",
+    "bsi_reconciliation", "notifications", "owner_identity", "wa_api_key",
+  ],
   admin: ["inventory", "attendance"],
 };
 const MAX_ATTEMPTS_PER_IP_PER_HOUR = 5;
@@ -236,6 +239,85 @@ Deno.serve(async (req) => {
       if (newDiagnoses.length) await adminClient.from("operational_options").insert(newDiagnoses);
     } catch (_e) {
       // Non-fatal: the clinic still works with an empty Diagnosa & Layanan list.
+    }
+
+    // Clone accounting categories + subcategories from the reference clinic,
+    // so a new clinic starts with a ready-made chart of accounts instead of
+    // an empty one.
+    try {
+      const { data: categories } = await adminClient
+        .from("accounting_categories")
+        .select("*")
+        .eq("clinic_id", REFERENCE_CLINIC_ID);
+      const { data: subcategories } = await adminClient
+        .from("accounting_subcategories")
+        .select("*")
+        .eq("clinic_id", REFERENCE_CLINIC_ID);
+
+      const categoryIdMap = {};
+      const newCategories = (categories || []).map((c) => {
+        const newId = crypto.randomUUID();
+        categoryIdMap[c.id] = newId;
+        return { id: newId, category_name: c.category_name, type: c.type, clinic_id: clinic.id };
+      });
+      if (newCategories.length) await adminClient.from("accounting_categories").insert(newCategories);
+
+      const newSubcategories = (subcategories || [])
+        .filter((s) => categoryIdMap[s.category_id])
+        .map((s) => ({
+          id: crypto.randomUUID(),
+          category_id: categoryIdMap[s.category_id],
+          subcategory_name: s.subcategory_name,
+          clinic_id: clinic.id,
+        }));
+      if (newSubcategories.length) await adminClient.from("accounting_subcategories").insert(newSubcategories);
+    } catch (_e) {
+      // Non-fatal: the clinic still works with an empty accounting category list.
+    }
+
+    // Clone referral-source options ("Referensi") from the reference clinic.
+    try {
+      const { data: sources } = await adminClient
+        .from("patient_info_options")
+        .select("*")
+        .eq("clinic_id", REFERENCE_CLINIC_ID);
+      const newSources = (sources || []).map((s) => ({
+        id: crypto.randomUUID(),
+        label: s.label,
+        is_active: s.is_active,
+        clinic_id: clinic.id,
+      }));
+      if (newSources.length) await adminClient.from("patient_info_options").insert(newSources);
+    } catch (_e) {
+      // Non-fatal: the clinic still works with an empty Referensi list.
+    }
+
+    // Clone WhatsApp message templates from the reference clinic, swapping
+    // its clinic name in the template text for this clinic's own name so
+    // the messages read naturally without any manual editing.
+    try {
+      const { data: templates } = await adminClient
+        .from("wa_templates")
+        .select("*")
+        .eq("clinic_id", REFERENCE_CLINIC_ID);
+      const { data: referenceClinic } = await adminClient
+        .from("clinics")
+        .select("name")
+        .eq("id", REFERENCE_CLINIC_ID)
+        .single();
+      const referenceName = referenceClinic?.name || "Kaffah Physiotherapy";
+      const nameRegex = new RegExp(referenceName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+      const newTemplates = (templates || []).map((t) => ({
+        id: crypto.randomUUID(),
+        category: t.category,
+        template_text: (t.template_text || "").replace(nameRegex, clinic_name),
+        placeholders: t.placeholders,
+        is_enabled: t.is_enabled,
+        clinic_id: clinic.id,
+      }));
+      if (newTemplates.length) await adminClient.from("wa_templates").insert(newTemplates);
+    } catch (_e) {
+      // Non-fatal: the clinic still works with empty WhatsApp templates.
     }
 
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({

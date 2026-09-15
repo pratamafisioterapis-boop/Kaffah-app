@@ -59,6 +59,9 @@ export const isNavItemDisabled = (label, role, disabledFeaturesForRole) => {
 // top-level "Setup" toggle. Keys here match each tab's `value`.
 export const SETUP_SUB_FEATURES = [
   { key: 'account_clinic', label: 'Akun & Klinik' },
+  // Section inside the "Akun & Klinik" tab, not the whole tab — see
+  // AccountClinicManager.jsx.
+  { key: 'owner_identity', label: '↳ Identitas Pihak Pertama (MOU)' },
   { key: 'domain', label: 'Domain Klinik' },
   { key: 'landing_page', label: 'Landing Page' },
   { key: 'notifications', label: 'Notifikasi' },
@@ -68,6 +71,9 @@ export const SETUP_SUB_FEATURES = [
   { key: 'payment', label: 'Pembayaran' },
   { key: 'discount', label: 'Jenis Diskon' },
   { key: 'whatsapp_settings', label: 'WhatsApp' },
+  // Section inside the "WhatsApp" tab, not the whole tab — see
+  // WhatsAppSettings.jsx.
+  { key: 'wa_api_key', label: '↳ API Key Watzap' },
   { key: 'google_drive', label: 'Google Drive' },
   { key: 'google_sheets', label: 'Backup Google Sheets' },
   { key: 'google_review', label: 'Google Review' },
