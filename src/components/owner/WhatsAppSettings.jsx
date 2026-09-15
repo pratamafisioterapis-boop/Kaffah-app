@@ -538,7 +538,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
     );
 };
 
-const WhatsAppSettings = () => {
+const WhatsAppSettings = ({ hideApiKey = false }) => {
     return (
         <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -549,7 +549,7 @@ const WhatsAppSettings = () => {
                 <p className="text-slate-500 mt-1">Kelola pesan otomatis dan notifikasi WhatsApp untuk pasien klinik.</p>
             </div>
 
-            <WaApiKeySection />
+            {!hideApiKey && <WaApiKeySection />}
 
             <Tabs defaultValue="booking_appointment" className="w-full">
                 <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto flex flex-wrap gap-1 mb-6">

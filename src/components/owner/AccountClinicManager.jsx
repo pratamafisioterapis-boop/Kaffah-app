@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Mail, Lock, Building2, Upload, UserCircle } from 'lucide-react';
 import { prepareImageForUpload } from '@/lib/imageUpload';
 
-const AccountClinicManager = () => {
+const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
   const { user, userDetails } = useAuth();
   const { toast } = useToast();
 
@@ -261,6 +261,7 @@ const AccountClinicManager = () => {
         </Button>
       </div>
 
+      {!hideOwnerIdentity && (
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Identitas Pihak Pertama</h3>
         <p className="text-sm text-slate-500">
@@ -288,6 +289,7 @@ const AccountClinicManager = () => {
           {savingOwnerIdentity && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Identitas
         </Button>
       </div>
+      )}
     </div>
   );
 };
