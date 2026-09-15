@@ -15,7 +15,7 @@ const TRIAL_DAYS = 7;
 // these per clinic from Manajemen Klinik.
 const DEFAULT_DISABLED_FEATURES_BY_ROLE = {
   owner: [
-    "presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance",
+    "presentation", "modal_awal", "insentif_dokter", "inventory", "attendance",
     "bsi_reconciliation", "notifications", "owner_identity", "wa_api_key",
   ],
   admin: ["inventory", "attendance"],

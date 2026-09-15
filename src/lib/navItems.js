@@ -19,6 +19,7 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Clinical Documents', path: '/owner/clinical-documents', icon: 'UploadCloud' },
       { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'MessageSquare' },
       { label: 'Patients Feedback', path: '/owner/feedback', icon: 'Star' },
+      { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
     ],
   },
   {
@@ -30,12 +31,16 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Absensi Karyawan', path: '/owner/attendance', icon: 'Clock' },
     ],
   },
-  { label: 'Basis Jurnal AI', path: '/owner/journal-knowledge-base', icon: 'BookOpen' },
-  { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
+  {
+    label: 'Accounting System',
+    icon: 'BriefcaseMedical',
+    submenu: [
+      { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
+      { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
+      { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
+    ],
+  },
   { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },
-  { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
-  { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
-  { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
   { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
 ];
 
