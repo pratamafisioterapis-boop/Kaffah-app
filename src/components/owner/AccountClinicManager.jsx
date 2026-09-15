@@ -222,7 +222,7 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
           </div>
           <label className="cursor-pointer">
             <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Logo
             </span>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploading} />
           </label>

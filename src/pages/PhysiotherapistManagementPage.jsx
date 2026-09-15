@@ -87,7 +87,7 @@ const PhysiotherapistManagementPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="list" className="w-full space-y-6">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'list'} className="w-full space-y-6">
 
         {/* MENU GRID */}
         <TabsList className="grid grid-cols-3 gap-1.5 sm:gap-2 h-auto w-full bg-white p-2.5 sm:p-3 rounded-[20px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">

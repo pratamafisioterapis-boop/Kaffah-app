@@ -26,6 +26,7 @@ import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashb
 import RevenueOverview from '@/components/owner/RevenueOverview';
 import ModalAwalManagement from '@/components/owner/ModalAwalManagement';
 import AdminManagementPage from '@/components/owner/AdminManagementPage';
+import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
 
 
 
@@ -552,6 +553,7 @@ const OwnerDashboard = () => {
 
   return (
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
+      <OnboardingChecklist />
       <Routes>
         {/* Redirect root /owner to dashboard */}
         <Route path="/" element={<Navigate to="/owner/dashboard" replace />} />
