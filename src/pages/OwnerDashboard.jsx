@@ -45,13 +45,11 @@ import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments';
 
-// Therapist-side SOAP components, reused here for clinics where the owner
-// is also the therapist (see linkOwnerAsTherapist in Super Admin > Manajemen
-// Klinik) — one login, but the therapist's own SOAP workflow is surfaced
-// straight in the owner sidebar instead of needing a second account.
-import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
-import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
-import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
+// Reused for clinics where the owner is also the therapist (see
+// linkOwnerAsTherapist in Super Admin > Manajemen Klinik): no extra
+// sidebar menu is added, the SOAP form itself is only reachable from the
+// "Evaluasi Harian" tab inside Medical Records (see MedicalRecordsPage /
+// DailyEvaluationReadOnly), which routes here for a given patient.
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 
 // API
@@ -536,8 +534,9 @@ const OwnerDashboard = () => {
 
   // Klinik yang ownernya juga terapis: physiotherapists.user_id akan
   // menunjuk ke akun owner ini sendiri (lihat linkOwnerAsTherapist), tanpa
-  // mengubah role owner di public.users. Kalau ketemu (dan masih aktif),
-  // tambahkan menu SOAP terapis ke sidebar owner.
+  // mengubah role owner di public.users maupun menambah menu sidebar baru.
+  // Dipakai supaya tab "Evaluasi Harian" di Medical Records bisa menawarkan
+  // input SOAP untuk pasien yang ditangani owner sendiri.
   useEffect(() => {
     let isMounted = true;
     const loadTherapistProfile = async () => {
@@ -549,20 +548,7 @@ const OwnerDashboard = () => {
     return () => { isMounted = false; };
   }, [user]);
 
-  const navItems = therapistProfile
-    ? [
-        ...OWNER_NAV_ITEMS,
-        {
-          label: 'SOAP Terapis',
-          icon: 'BriefcaseMedical',
-          submenu: [
-            { label: 'Booking Calendar Saya', path: '/owner/therapist-booking', icon: 'Calendar' },
-            { label: 'Riwayat Pasien Saya', path: '/owner/therapist-appointments', icon: 'ClipboardList' },
-            { label: 'Isi SOAP / Evaluasi', path: '/owner/therapist-records', icon: 'Activity' },
-          ],
-        },
-      ]
-    : OWNER_NAV_ITEMS;
+  const navItems = OWNER_NAV_ITEMS;
 
   return (
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
@@ -585,18 +571,16 @@ const OwnerDashboard = () => {
         <Route path="/medical-records" element={<MedicalRecordsPage />} />
         <Route path="/follow-up-management" element={<OwnerFollowUpManagementPage />} />
 
-        {/* Owner-as-therapist SOAP routes (only reachable once a linked
-            physiotherapist profile is loaded; nav items above are hidden
-            otherwise, but guard the routes too in case of a direct link) */}
+        {/* Reached only from the "Evaluasi Harian" tab's "Isi SOAP" button
+            for a patient the owner (as therapist) actually handles — not
+            listed in the sidebar. */}
         {therapistProfile && (
-          <>
-            <Route path="/therapist-booking" element={<TherapistBookingCalendar therapist={therapistProfile} />} />
-            <Route path="/therapist-appointments" element={<TherapistPatientHistory therapist={therapistProfile} />} />
-            <Route path="/therapist-records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
-            <Route path="/therapist-records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
-          </>
+          <Route
+            path="/medical-records-soap/new/:patientId"
+            element={<MedicalRecordForm therapist={therapistProfile} basePath="/owner/medical-records" />}
+          />
         )}
-        
+
         {/* Functional Pages */}
         <Route path="/accounting" element={<OwnerFinanceDashboardComponent />} />
         <Route path="/modal-awal" element={<ModalAwalManagement />} />

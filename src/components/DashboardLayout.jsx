@@ -158,7 +158,7 @@ const isPWA =
         };
         newItems.sort((a, b) => getOrderIndex(a.label) - getOrderIndex(b.label));
      } else if (role === 'owner') {
-         const order = ['Dashboard', 'Clinic Management', 'Teams & Staffs', 'SOAP Terapis', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
+         const order = ['Dashboard', 'Clinic Management', 'Teams & Staffs', 'Accounting System', 'Stok Barang', 'Rekonsiliasi BSI', 'Konversi Insentif Dokter', 'Setup'];
          const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;

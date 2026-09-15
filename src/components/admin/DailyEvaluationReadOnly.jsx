@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Calendar, ChevronRight, Search, ClipboardList, Upload, Download } from 'lucide-react';
+import { Loader2, User, Calendar, ChevronRight, Search, ClipboardList, Upload, Download, Stethoscope } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -13,8 +13,14 @@ import { getPatients, createBulkMedicalRecords, getCachedClinicId } from '@/lib/
 import { exportDailyRecapsToCSV, parseDailyRecapsCSV, findPatientMatch, isValidUUID } from '@/lib/utils';
 import ImportSummaryModal from '@/components/owner/ImportSummaryModal';
 import { validatePatientId } from '@/lib/validationHelpers';
+import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
 
-const DailyEvaluationReadOnly = () => {
+// therapistProfile & basePath are only passed when the current account is
+// itself linked as a therapist (owner merged with a therapist profile via
+// Super Admin's "Jadikan Terapis") — in that case this tab also offers a
+// "SOAP Saya" section to input SOAP for patients that therapist actually
+// handles, on top of the read-only view of every patient's evaluations.
+const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapist/records' }) => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
   const fileInputRef = useRef(null);
@@ -145,11 +151,25 @@ const DailyEvaluationReadOnly = () => {
   if (loading) { return ( <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-slate-200 shadow-sm"><Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" /><p className="text-slate-500 font-medium">Memuat data evaluasi harian...</p></div> ); }
 
   return (
+    <div className="space-y-6">
+      {therapistProfile && (
+        <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Stethoscope className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-bold text-slate-900">SOAP Saya</h2>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">
+            Input SOAP untuk pasien yang Anda tangani sendiri sebagai terapis. Klik pasien lalu pilih kunjungan yang mau diisi.
+          </p>
+          <TherapistMedicalRecords therapist={therapistProfile} isOwnerView={true} basePath={basePath} />
+        </div>
+      )}
+
     <div className={isPWA ? "min-h-[600px]" : "bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[600px]"}>
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex-1">
-            {!isPWA && <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />Daftar Evaluasi Harian (SOAP)</h2>}
+            {!isPWA && <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />{therapistProfile ? 'Evaluasi Harian Semua Pasien (Lihat Saja)' : 'Daftar Evaluasi Harian (SOAP)'}</h2>}
             {!isPWA && <p className="text-sm text-slate-500 mt-1">Pantau perkembangan pasien melalui catatan SOAP dari terapis.</p>}
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
@@ -190,6 +210,7 @@ const DailyEvaluationReadOnly = () => {
         <DailyEvaluationDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} patientData={selectedPatientGroup} />
         <ImportSummaryModal isOpen={showImportSummary} onClose={() => setShowImportSummary(false)} summary={importSummary} />
       </div>
+    </div>
     </div>
   );
 };

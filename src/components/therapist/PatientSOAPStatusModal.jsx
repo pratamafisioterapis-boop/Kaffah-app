@@ -12,19 +12,19 @@ import { id } from 'date-fns/locale';
 import { FileText, Edit, CheckCircle2, AlertCircle, PlusCircle, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose }) => {
+const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, basePath = '/therapist/records' }) => {
   const navigate = useNavigate();
 
   if (!patient) return null;
 
   const handleCreate = (date, dailyRecapId) => {
     onClose();
-    navigate(`/therapist/records/new/${patient.id}?date=${date}&dailyRecapId=${dailyRecapId}`);
+    navigate(`${basePath}/new/${patient.id}?date=${date}&dailyRecapId=${dailyRecapId}`);
   };
 
   const handleEdit = (recordId, date) => {
     onClose();
-    navigate(`/therapist/records/new/${patient.id}?recordId=${recordId}&date=${date}`);
+    navigate(`${basePath}/new/${patient.id}?recordId=${recordId}&date=${date}`);
   };
 
   const timeline = visits

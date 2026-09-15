@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagement';
 import DailyEvaluationReadOnly from '@/components/admin/DailyEvaluationReadOnly';
 import { FileText, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { getPhysiotherapistByUserId } from '@/lib/api';
 
 const MedicalRecordsPage = () => {
+  const { user, role, clinicName } = useAuth();
+  const [therapistProfile, setTherapistProfile] = useState(null);
+
+  // Klinik yang ownernya (atau, secara umum, akun manapun yang membuka
+  // halaman ini) juga terdaftar sebagai terapis lewat fitur "Jadikan
+  // Terapis" di Super Admin: physiotherapists.user_id menunjuk ke akun ini
+  // sendiri. Kalau ketemu, tab "Evaluasi Harian" boleh menawarkan input
+  // SOAP untuk pasien yang ditangani sendiri, tanpa menu sidebar baru.
+  useEffect(() => {
+    let isMounted = true;
+    const loadTherapistProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await getPhysiotherapistByUserId(user.id);
+      if (isMounted) setTherapistProfile(data && data.is_active !== false ? data : null);
+    };
+    loadTherapistProfile();
+    return () => { isMounted = false; };
+  }, [user]);
+
+  const basePath = role === 'owner' ? '/owner' : '/admin';
+
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
@@ -19,7 +41,7 @@ const MedicalRecordsPage = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
@@ -56,7 +78,7 @@ const MedicalRecordsPage = () => {
         </TabsContent>
 
         <TabsContent value="evaluasi-harian" className="mt-0 outline-none">
-          <DailyEvaluationReadOnly />
+          <DailyEvaluationReadOnly therapistProfile={therapistProfile} basePath={`${basePath}/medical-records-soap`} />
         </TabsContent>
       </Tabs>
     </div>
