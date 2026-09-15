@@ -5789,6 +5789,22 @@ export const getAdmins = async () => {
   }, 'getAdmins');
 };
 
+export const getOwners = async () => {
+  return safeQuery(async () => {
+    const { data: clinicData } = await getCurrentClinic();
+    if (!clinicData?.id) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'owner')
+      .eq('clinic_id', clinicData.id)
+      .order('created_at', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getOwners');
+};
+
 export const createAdminAccount = async (payload, password) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
