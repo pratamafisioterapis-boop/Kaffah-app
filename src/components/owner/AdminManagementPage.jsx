@@ -1,14 +1,12 @@
 import React from 'react';
-import { Users, ListChecks, History, UserCog, Crown } from 'lucide-react';
+import { Users, ListChecks, History, UserCog } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminManager from '@/components/owner/AdminManager';
-import OwnerAccountManager from '@/components/owner/OwnerAccountManager';
 import AdminChecklistManager from '@/components/owner/AdminChecklistManager';
 import AdminChecklistHistory from '@/components/owner/AdminChecklistHistory';
 
 const TABS = [
   { value: 'admin_staff', icon: Users, label: 'Admin & Staff' },
-  { value: 'owner_accounts', icon: Crown, label: 'Akun Owner' },
   { value: 'admin_checklist', icon: ListChecks, label: 'Checklist Admin' },
   { value: 'admin_checklist_history', icon: History, label: 'Riwayat Checklist' },
 ];
@@ -48,9 +46,6 @@ const AdminManagementPage = () => {
         <div className="mt-6">
           <TabsContent value="admin_staff">
             <AdminManager />
-          </TabsContent>
-          <TabsContent value="owner_accounts">
-            <OwnerAccountManager />
           </TabsContent>
           <TabsContent value="admin_checklist">
             <AdminChecklistManager />
