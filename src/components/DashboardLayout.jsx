@@ -43,6 +43,7 @@ const iconMap = {
   Award,
   UploadCloud,
   UserCog,
+  ShieldCheck,
   MonitorPlay,
   Clock,
   BookOpen
