@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getCachedClinicId } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,13 +19,23 @@ const WhatsAppLogs = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUserId = sessionData?.session?.user?.id;
+    const clinicId = await getCachedClinicId(currentUserId);
+
+    if (!clinicId) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
+
     // Now that FK is added, we can use the relationship
-    let query = supabase.from('wa_schedule_logs').select('*, patient:patients(full_name)').order('created_at', { ascending: false }).limit(50);
-    
+    let query = supabase.from('wa_schedule_logs').select('*, patient:patients(full_name)').eq('clinic_id', clinicId).order('created_at', { ascending: false }).limit(50);
+
     if (filter !== 'all') {
         query = query.eq('status', filter);
     }
-    
+
     const { data } = await query;
     setLogs(data || []);
     setLoading(false);
