@@ -3,9 +3,11 @@ import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Gift, ChevronRight, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { getCachedClinicId } from '@/lib/api';
+import { getCachedClinicId, getDiscountTypeOptions } from '@/lib/api';
 
 const UNCATEGORIZED_LABEL = 'Tanpa Kategori';
 
@@ -21,6 +23,7 @@ const COLOR_PALETTE = [
 ];
 
 const PromoUsageWidget = ({ dateRange }) => {
+  const { toast } = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -28,6 +31,53 @@ const PromoUsageWidget = ({ dateRange }) => {
   const [freePatientCount, setFreePatientCount] = useState(0);
   const [uncategorizedRecaps, setUncategorizedRecaps] = useState([]);
   const [showUncategorizedModal, setShowUncategorizedModal] = useState(false);
+  const [discountOptions, setDiscountOptions] = useState([]);
+  const [savingRowId, setSavingRowId] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: options } = await getDiscountTypeOptions('');
+      setDiscountOptions((options || []).map(o => ({ value: o.label, label: o.label })));
+    })();
+  }, []);
+
+  const handleAssignDiscountLabel = async (recapId, label) => {
+    if (!label) return;
+    setSavingRowId(recapId);
+    try {
+      const { error } = await supabase
+        .from('daily_recaps')
+        .update({ discount_label: label })
+        .eq('id', recapId);
+      if (error) throw error;
+
+      setUncategorizedRecaps(prev => prev.filter(r => r.id !== recapId));
+      setData(prev => {
+        const next = prev.map(s => s.key === UNCATEGORIZED_LABEL ? { ...s, count: s.count - 1 } : s);
+        const existing = next.find(s => s.key === label);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          next.push({
+            key: label,
+            count: 1,
+            ...COLOR_PALETTE[next.length % COLOR_PALETTE.length]
+          });
+        }
+        return next
+          .filter(s => s.count > 0)
+          .map(s => ({ ...s, pct: total > 0 ? Math.round((s.count / total) * 100) : 0 }))
+          .sort((a, b) => b.count - a.count);
+      });
+
+      toast({ title: 'Jenis diskon disimpan', description: `Sesi ditandai sebagai "${label}".` });
+    } catch (err) {
+      console.error('handleAssignDiscountLabel error:', err);
+      toast({ title: 'Gagal menyimpan', description: 'Tidak dapat menyimpan jenis diskon. Coba lagi.', variant: 'destructive' });
+    } finally {
+      setSavingRowId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,21 +273,39 @@ const PromoUsageWidget = ({ dateRange }) => {
               </DialogDescription>
             </DialogHeader>
             <div className="divide-y divide-slate-100">
-              {uncategorizedRecaps.map((r) => (
-                <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                      {r.medicalRecordNumber ? `RM ${r.medicalRecordNumber} • ` : ''}{r.therapistName}
-                      {' • '}{r.discountType === 'percentage' ? `${r.discountValue}%` : `Rp${Number(r.discountValue).toLocaleString('id-ID')}`}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {r.recapDate && (
-                      <p className="text-[10px] text-slate-400">
-                        {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+              {uncategorizedRecaps.length === 0 ? (
+                <div className="px-5 py-8 text-center text-sm text-slate-400">
+                  Semua sesi sudah punya jenis diskon. 🎉
+                </div>
+              ) : uncategorizedRecaps.map((r) => (
+                <div key={r.id} className="px-5 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                        {r.medicalRecordNumber ? `RM ${r.medicalRecordNumber} • ` : ''}{r.therapistName}
+                        {' • '}{r.discountType === 'percentage' ? `${r.discountValue}%` : `Rp${Number(r.discountValue).toLocaleString('id-ID')}`}
                       </p>
-                    )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {r.recapDate && (
+                        <p className="text-[10px] text-slate-400">
+                          {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <SearchableSelect
+                      options={discountOptions}
+                      value=""
+                      onChange={(val) => handleAssignDiscountLabel(r.id, val)}
+                      placeholder="Pilih jenis diskon..."
+                      disabled={savingRowId === r.id}
+                      allowCreate
+                      notFoundText="Belum ada jenis diskon. Ketik untuk membuat baru."
+                    />
+                    {savingRowId === r.id && <Loader2 className="w-4 h-4 animate-spin text-slate-400 shrink-0" />}
                   </div>
                 </div>
               ))}
