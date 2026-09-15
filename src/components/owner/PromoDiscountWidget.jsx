@@ -77,8 +77,11 @@ const PromoDiscountWidget = ({ dateRange }) => {
         const groupMap = {};
         let grandTotal = 0;
         const uncategorizedList = [];
+        // Sesi dengan `discount_type` terisi tapi nilainya 0/kosong bukan promo
+        // sungguhan — jangan dihitung sebagai "Tanpa Kategori".
+        const discountedRecaps = (recaps || []).filter(r => Number(r.discount_value) > 0);
 
-        (recaps || []).forEach(r => {
+        discountedRecaps.forEach(r => {
           const money = estimateDiscountRupiah(r.discount_type, r.discount_value, r.amount);
           grandTotal += money;
           // Sesi bisa punya diskon (tipe + nilai) tanpa admin memilih kategori
@@ -110,7 +113,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
         );
 
         setTotalAmount(grandTotal);
-        setTotalSessions((recaps || []).length);
+        setTotalSessions(discountedRecaps.length);
 
         const result = Object.entries(groupMap)
           .map(([label, v], i) => ({
