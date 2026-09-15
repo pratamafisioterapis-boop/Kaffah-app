@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope } from 'lucide-react';
 import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
+import { linkOwnerAsTherapist, setOwnerTherapistActive } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const emptyForm = {
@@ -16,6 +17,7 @@ const emptyForm = {
 };
 const emptyOwnerForm = { full_name: '', email: '', password: '', phone: '' };
 const emptyEditOwnerForm = { id: null, full_name: '', phone: '' };
+const emptyMergeForm = { specialization: '', phone: '' };
 
 // Reference clinic whose Diagnosa + Layanan (parent service) list is cloned
 // into every newly created clinic, so new owners start with a ready-made
@@ -85,6 +87,11 @@ const SuperAdminClinics = () => {
   const [editOwnerForm, setEditOwnerForm] = useState(emptyEditOwnerForm);
   const [savingOwnerEdit, setSavingOwnerEdit] = useState(false);
   const [featureRoleTab, setFeatureRoleTab] = useState({}); // { [clinicId]: 'owner' | 'admin' | 'therapist' }
+  const [ownerTherapists, setOwnerTherapists] = useState({}); // { [ownerId]: physiotherapists row }
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState(null); // { owner, clinic }
+  const [mergeForm, setMergeForm] = useState(emptyMergeForm);
+  const [merging, setMerging] = useState(false);
 
   const fetchClinics = async () => {
     setLoading(true);
@@ -99,6 +106,19 @@ const SuperAdminClinics = () => {
       ownerMap[o.clinic_id].push(o);
     });
     setOwners(ownerMap);
+
+    const ownerIds = (ownerRows || []).map((o) => o.id);
+    if (ownerIds.length) {
+      const { data: physioRows } = await supabase
+        .from('physiotherapists')
+        .select('id, user_id, is_active, specialization')
+        .in('user_id', ownerIds);
+      const therapistMap = {};
+      (physioRows || []).forEach((p) => { therapistMap[p.user_id] = p; });
+      setOwnerTherapists(therapistMap);
+    } else {
+      setOwnerTherapists({});
+    }
 
     setLoading(false);
   };
@@ -300,6 +320,47 @@ const SuperAdminClinics = () => {
     }
   };
 
+  const openMergeTherapist = (owner, clinic) => {
+    setMergeTarget({ owner, clinic });
+    setMergeForm(emptyMergeForm);
+    setMergeOpen(true);
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!mergeTarget) return;
+    const { owner, clinic } = mergeTarget;
+    setMerging(true);
+    const { data, error } = await linkOwnerAsTherapist({
+      user_id: owner.id,
+      clinic_id: clinic.id,
+      name: owner.full_name,
+      email: owner.email,
+      phone: mergeForm.phone || owner.phone,
+      specialization: mergeForm.specialization,
+    });
+    setMerging(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menjadikan owner sebagai terapis', description: error.message });
+      return;
+    }
+    toast({ title: 'Berhasil', description: `${owner.full_name} kini juga terapis di ${clinic.name}. Menu SOAP akan muncul di sidebar owner.` });
+    setOwnerTherapists((prev) => ({ ...prev, [owner.id]: data }));
+    setMergeOpen(false);
+  };
+
+  const handleToggleOwnerTherapist = async (owner) => {
+    const physio = ownerTherapists[owner.id];
+    if (!physio) return;
+    const nextActive = !physio.is_active;
+    const { error } = await setOwnerTherapistActive(physio.id, nextActive);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah status terapis', description: error.message });
+      return;
+    }
+    setOwnerTherapists((prev) => ({ ...prev, [owner.id]: { ...physio, is_active: nextActive } }));
+    toast({ title: nextActive ? 'Status terapis diaktifkan kembali' : 'Status terapis dinonaktifkan' });
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
@@ -342,20 +403,47 @@ const SuperAdminClinics = () => {
                     {(owners[clinic.id]?.length ?? 0) === 0 ? (
                       <span className="text-slate-400 italic">Owner: belum ada</span>
                     ) : (
-                      <div className="flex flex-col gap-1">
-                        {owners[clinic.id].map((o) => (
-                          <div key={o.id} className="flex items-center gap-1.5">
-                            <span>Owner: {o.full_name}</span>
-                            <button
-                              type="button"
-                              onClick={() => openEditOwner(o)}
-                              className="text-slate-400 hover:text-blue-600"
-                              title="Edit owner ini"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
+                      <div className="flex flex-col gap-1.5">
+                        {owners[clinic.id].map((o) => {
+                          const physio = ownerTherapists[o.id];
+                          return (
+                            <div key={o.id} className="flex items-center gap-1.5 flex-wrap">
+                              <span>Owner: {o.full_name}</span>
+                              <button
+                                type="button"
+                                onClick={() => openEditOwner(o)}
+                                className="text-slate-400 hover:text-blue-600"
+                                title="Edit owner ini"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              {!physio ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openMergeTherapist(o, clinic)}
+                                  className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600"
+                                  title="Jadikan owner ini juga sebagai terapis (satu akun, menu SOAP muncul di sidebar owner)"
+                                >
+                                  <Stethoscope className="w-3 h-3" /> Jadikan Terapis
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleOwnerTherapist(o)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border",
+                                    physio.is_active
+                                      ? "border-green-200 bg-green-50 text-green-700"
+                                      : "border-slate-200 bg-slate-50 text-slate-400"
+                                  )}
+                                  title={physio.is_active ? 'Klik untuk nonaktifkan profil terapis owner ini' : 'Klik untuk aktifkan kembali'}
+                                >
+                                  <Stethoscope className="w-3 h-3" /> {physio.is_active ? 'Terapis Aktif' : 'Terapis Nonaktif'}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -535,6 +623,29 @@ const SuperAdminClinics = () => {
             <Button variant="outline" onClick={() => setEditOwnerOpen(false)}>Batal</Button>
             <Button onClick={handleSaveOwnerEdit} disabled={savingOwnerEdit} className="bg-blue-600">
               {savingOwnerEdit && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Jadikan {mergeTarget?.owner?.full_name} sebagai Terapis</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-slate-500">
+              Dipakai untuk klinik yang ownernya juga langsung menangani pasien sebagai terapis.
+              Tidak ada akun login baru yang dibuat — owner tetap login dengan akun yang sama, dan
+              menu SOAP/Booking terapis akan otomatis muncul di sidebar owner-nya.
+            </p>
+            <div className="space-y-2"><label className="text-sm font-medium">Spesialisasi (opsional)</label>
+              <Input value={mergeForm.specialization} onChange={(e) => setMergeForm({ ...mergeForm, specialization: e.target.value })} placeholder="Mis. Fisioterapi Muskuloskeletal" /></div>
+            <div className="space-y-2"><label className="text-sm font-medium">No. Telepon Terapis (opsional)</label>
+              <Input value={mergeForm.phone} onChange={(e) => setMergeForm({ ...mergeForm, phone: e.target.value })} placeholder={mergeTarget?.owner?.phone || 'Samakan dengan No. Telepon owner'} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMergeOpen(false)}>Batal</Button>
+            <Button onClick={handleConfirmMerge} disabled={merging} className="bg-blue-600">
+              {merging && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Jadikan Terapis
             </Button>
           </DialogFooter>
         </DialogContent>
