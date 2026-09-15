@@ -5,8 +5,6 @@ import OwnerPackageRecap from '@/pages/owner/PackageRecaps';
 import AdminCheckTransaksi from '@/pages/admin/AdminCheckTransaksi';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign } from 'lucide-react'; 
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
   LineChart,
@@ -465,23 +463,7 @@ setTrendPatients(trendArray);
           </div>
         </div>
 
-        <Tabs defaultValue="operational" className="w-full space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1">
-            <TabsTrigger 
-              value="operational"
-              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
-            >
-              Operational
-            </TabsTrigger>
-            <TabsTrigger 
-              value="finance"
-              className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
-            >
-              Finance
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="operational" className="space-y-8 focus-visible:outline-none focus-visible:ring-0">
+        <div className="w-full space-y-8">
              {/* Top Section: Today's Overview */}
              <div className="space-y-3">
                <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Today's Overview</h3>
@@ -819,29 +801,10 @@ setTrendPatients(trendArray);
              </div>
 
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-               <div className="space-y-3">
-                 <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Sumber Pasien</h3>
-                 <PatientSourceChart dateRange={dateRange} />
-               </div>
-
-               <div className="space-y-3">
-                 <PromoUsageWidget dateRange={dateRange} />
-               </div>
+               <PatientSourceChart dateRange={dateRange} />
+               <PromoUsageWidget dateRange={dateRange} />
              </div>
-          </TabsContent>
-          
-          <TabsContent value="finance" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-            <div className="min-h-[400px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-8">
-              <div className="p-4 rounded-full bg-emerald-50 mb-4">
-                <DollarSign className="w-8 h-8 text-emerald-300" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-700">Financial Overview Coming Soon</h3>
-              <p className="text-slate-500 mt-2 max-w-sm text-center">
-                This section is reserved for financial reports, revenue charts, and transaction summaries for the selected date range from <span className="font-semibold">{dateRange.startDate}</span> to <span className="font-semibold">{dateRange.endDate}</span>.
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </>
   );
