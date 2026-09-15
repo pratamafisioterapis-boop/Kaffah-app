@@ -328,11 +328,26 @@ Deno.serve(async (req) => {
         .eq("id", REFERENCE_CLINIC_ID)
         .single();
       const referenceName = referenceClinic?.name || "Kaffah Physiotherapy";
-      const nameRegex = new RegExp(referenceName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+      // Match the reference name with any run of whitespace treated as
+      // interchangeable (regular space, non-breaking space  , tabs,
+      // ...): a stray non-breaking space pasted into a reference template
+      // (e.g. its WhatsApp signature line) silently breaks a literal-space
+      // match, leaving that one occurrence un-swapped for every clinic that
+      // registers afterwards even though the rest of the same template
+      // gets replaced fine. Normalizing whitespace in the pattern - and in
+      // the source text itself, once, so the cloned copy doesn't carry the
+      // stray character forward either - makes the swap robust regardless
+      // of what whitespace character ends up in the reference clinic's
+      // templates.
+      const escapedName = referenceName
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\s+/g, "\\s+");
+      const nameRegex = new RegExp(escapedName, "g");
+      const normalizeWhitespace = (text) => text.replace(/[   ]/g, " ");
       const newTemplates = (templates || []).map((t) => ({
         id: crypto.randomUUID(),
         category: t.category,
-        template_text: (t.template_text || "").replace(nameRegex, clinic_name),
+        template_text: normalizeWhitespace(t.template_text || "").replace(nameRegex, clinic_name),
         placeholders: t.placeholders,
         is_enabled: t.is_enabled,
         clinic_id: clinic.id,
