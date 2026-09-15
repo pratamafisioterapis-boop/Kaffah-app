@@ -113,6 +113,15 @@ const isPWA =
     setIsFabOpen(false);
   }, [location.pathname]);
 
+  // Keep only the submenu that contains the current route expanded;
+  // collapse it when navigating to a page outside any submenu (e.g. Overview).
+  useEffect(() => {
+    const activeIndex = displayedNavItems.findIndex(
+      (item) => item.submenu && item.submenu.some((sub) => location.pathname === sub.path)
+    );
+    setExpandedMenus(activeIndex !== -1 ? { [activeIndex]: true } : {});
+  }, [location.pathname, displayedNavItems]);
+
   const processNavItems = (items) => {
    if (!items) return [];
 
