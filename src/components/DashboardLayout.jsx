@@ -420,7 +420,7 @@ const isPWA =
             </p>
             <p className="text-xs text-[#5B6B7D] truncate flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block flex-shrink-0"></span>
-              {role === 'admin' && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
+              {(role === 'admin' || role === 'owner') && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
             </p>
           </div>
         </div>
