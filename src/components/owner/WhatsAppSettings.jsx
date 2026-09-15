@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Save, MessageCircle, Clock, History, Info, KeyRound, ShieldCheck, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { getWaApiSettings, upsertWaApiSettings, getCachedClinicId } from '@/lib/api';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 import WhatsAppMessagePreview from './WhatsAppMessagePreview';
 import WhatsAppScheduleConfig from './WhatsAppScheduleConfig';
@@ -306,6 +307,7 @@ const SAMPLE_DATA = {
 
 const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
     const { toast } = useToast();
+    const { clinicName } = useAuth();
     const [template, setTemplate] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -519,10 +521,11 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                             Passing nickname will trigger Priority 1 (Nickname only).
                             Remove nickname to test Priority 2 ("Ka" + Full Name).
                         */}
-                        <WhatsAppMessagePreview 
-                            template={template} 
-                            placeholders={SAMPLE_DATA} 
-                            patient={{ 
+                        <WhatsAppMessagePreview
+                            template={template}
+                            placeholders={{ ...SAMPLE_DATA, lokasi: clinicName || SAMPLE_DATA.lokasi }}
+                            clinicName={clinicName}
+                            patient={{
   nickname: previewHasNickname ? 'Sakti' : '',
   full_name: 'Sakti Mandraguna',
   date_of_birth: '1994-01-15'

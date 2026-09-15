@@ -10,7 +10,17 @@ import {
     calculateDayNameIndonesia
 } from '@/lib/whatsappService';
 
-const WhatsAppMessagePreview = ({ template, placeholders, patient }) => {
+// Two-letter avatar initials from a clinic name, e.g. "Klinik Sehat Mandiri"
+// -> "KS". Falls back to "KC" (this preview's original hardcoded brand,
+// "Kaffah Care") only while the clinic's own name hasn't loaded yet.
+const getClinicInitials = (name) => {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'KC';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+};
+
+const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName }) => {
   // If patient data provided, recalculate specific values to show realistic preview
   const previewPlaceholders = { ...placeholders };
   
@@ -45,10 +55,10 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient }) => {
       {/* Header */}
       <div className="bg-[#075e54] p-3 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[#075e54] font-bold text-xs">
-           KC
+           {getClinicInitials(clinicName)}
         </div>
         <div className="text-white">
-          <p className="font-bold text-sm leading-none">Kaffah Care</p>
+          <p className="font-bold text-sm leading-none">{clinicName || 'Kaffah Care'}</p>
           <p className="text-[10px] opacity-80">Online</p>
         </div>
       </div>
