@@ -304,7 +304,23 @@ export default defineConfig({
 				'@babel/traverse',
 				'@babel/generator',
 				'@babel/types'
-			]
+			],
+			output: {
+				// Recharts' internal modules (generateCategoricalChart, D3Scale, etc.)
+				// import each other circularly. Left to Rollup's default heuristics
+				// they get split across several separate async chunks shared between
+				// different lazily-loaded dashboard routes, and the load order across
+				// those chunks isn't guaranteed to match the circular reference order
+				// — this is what produced "Cannot access 'X' before initialization"
+				// (a TDZ error) on first paint of chart-heavy pages like Owner
+				// Dashboard. Keeping recharts and its charting dependencies in one
+				// chunk means they always evaluate together, in one guaranteed order.
+				manualChunks(id) {
+					if (/node_modules\/(recharts|d3-|victory-vendor|decimal\.js-light|eventemitter3)/.test(id)) {
+						return 'recharts-vendor';
+					}
+				}
+			}
 		}
 	}
 });
