@@ -6289,6 +6289,51 @@ export const linkOwnerAsTherapist = async (payload) => {
   }, 'linkOwnerAsTherapist', { retry: false });
 };
 
+// Untuk klinik yang sebelumnya sudah punya baris physiotherapists +
+// login terpisah (dibuat lewat createTherapistAccount), tapi ternyata
+// terapis itu adalah owner sendiri: pindahkan baris physiotherapists yang
+// SUDAH ADA (beserta seluruh riwayat SOAP/appointment/payroll-nya) ke akun
+// owner, alih-alih membuat profil kosong baru. Login lama otomatis
+// dinonaktifkan (is_active=false, bukan dihapus) supaya tidak ada dua
+// akun aktif untuk orang yang sama; get_my_role()/get_my_clinic_id()
+// sudah menganggap is_active=false sebagai "tanpa role", dan LoginPage
+// menolak login akun yang is_active-nya false.
+export const reassignTherapistToOwner = async (physiotherapistId, ownerUserId) => {
+  return safeQuery(async () => {
+    const { data: physio, error: fetchError } = await supabase
+      .from('physiotherapists')
+      .select('id, user_id')
+      .eq('id', physiotherapistId)
+      .single();
+    if (fetchError) return { error: fetchError };
+
+    const previousUserId = physio.user_id;
+
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .update({ user_id: ownerUserId })
+      .eq('id', physiotherapistId)
+      .select()
+      .single();
+    if (error) return { error };
+
+    if (previousUserId && previousUserId !== ownerUserId) {
+      const { error: deactivateError } = await supabase
+        .from('users')
+        .update({ is_active: false })
+        .eq('id', previousUserId);
+      if (deactivateError) {
+        return {
+          data,
+          error: { message: `Profil terapis berhasil dipindah ke owner, tapi gagal menonaktifkan login lamanya: ${deactivateError.message}` },
+        };
+      }
+    }
+
+    return { data, error: null };
+  }, 'reassignTherapistToOwner', { retry: false });
+};
+
 // Aktif/nonaktifkan kembali profil terapis milik owner (soal seperti soft
 // delete terapis biasa) tanpa menghapus baris physiotherapists-nya, supaya
 // riwayat SOAP/appointment/payroll yang sudah terhubung tetap aman.

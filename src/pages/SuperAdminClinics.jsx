@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope } from 'lucide-react';
 import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
-import { linkOwnerAsTherapist, setOwnerTherapistActive } from '@/lib/api';
+import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const emptyForm = {
@@ -92,6 +92,10 @@ const SuperAdminClinics = () => {
   const [mergeTarget, setMergeTarget] = useState(null); // { owner, clinic }
   const [mergeForm, setMergeForm] = useState(emptyMergeForm);
   const [merging, setMerging] = useState(false);
+  const [mergeMode, setMergeMode] = useState('new'); // 'new' | 'existing'
+  const [existingTherapists, setExistingTherapists] = useState([]);
+  const [loadingExistingTherapists, setLoadingExistingTherapists] = useState(false);
+  const [selectedExistingTherapistId, setSelectedExistingTherapistId] = useState('');
 
   const fetchClinics = async () => {
     setLoading(true);
@@ -320,15 +324,46 @@ const SuperAdminClinics = () => {
     }
   };
 
-  const openMergeTherapist = (owner, clinic) => {
+  const openMergeTherapist = async (owner, clinic) => {
     setMergeTarget({ owner, clinic });
     setMergeForm(emptyMergeForm);
+    setMergeMode('new');
+    setSelectedExistingTherapistId('');
+    setExistingTherapists([]);
     setMergeOpen(true);
+
+    setLoadingExistingTherapists(true);
+    const { data } = await supabase
+      .from('physiotherapists')
+      .select('id, name, email, phone, specialization, is_active, user_id')
+      .eq('clinic_id', clinic.id)
+      .order('name', { ascending: true });
+    setExistingTherapists((data || []).filter((t) => t.user_id !== owner.id));
+    setLoadingExistingTherapists(false);
   };
 
   const handleConfirmMerge = async () => {
     if (!mergeTarget) return;
     const { owner, clinic } = mergeTarget;
+
+    if (mergeMode === 'existing') {
+      if (!selectedExistingTherapistId) {
+        toast({ variant: 'destructive', title: 'Pilih dulu profil terapis yang mau digabung' });
+        return;
+      }
+      setMerging(true);
+      const { data, error } = await reassignTherapistToOwner(selectedExistingTherapistId, owner.id);
+      setMerging(false);
+      if (error) {
+        toast({ variant: 'destructive', title: 'Gagal menggabungkan profil terapis', description: error.message });
+        return;
+      }
+      toast({ title: 'Berhasil', description: `Profil terapis dipindah ke ${owner.full_name}. Login terpisah terapis lama sudah dinonaktifkan.` });
+      setOwnerTherapists((prev) => ({ ...prev, [owner.id]: data }));
+      setMergeOpen(false);
+      return;
+    }
+
     setMerging(true);
     const { data, error } = await linkOwnerAsTherapist({
       user_id: owner.id,
@@ -629,7 +664,7 @@ const SuperAdminClinics = () => {
       </Dialog>
 
       <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Jadikan {mergeTarget?.owner?.full_name} sebagai Terapis</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-slate-500">
@@ -637,10 +672,76 @@ const SuperAdminClinics = () => {
               Tidak ada akun login baru yang dibuat — owner tetap login dengan akun yang sama, dan
               menu SOAP/Booking terapis akan otomatis muncul di sidebar owner-nya.
             </p>
-            <div className="space-y-2"><label className="text-sm font-medium">Spesialisasi (opsional)</label>
-              <Input value={mergeForm.specialization} onChange={(e) => setMergeForm({ ...mergeForm, specialization: e.target.value })} placeholder="Mis. Fisioterapi Muskuloskeletal" /></div>
-            <div className="space-y-2"><label className="text-sm font-medium">No. Telepon Terapis (opsional)</label>
-              <Input value={mergeForm.phone} onChange={(e) => setMergeForm({ ...mergeForm, phone: e.target.value })} placeholder={mergeTarget?.owner?.phone || 'Samakan dengan No. Telepon owner'} /></div>
+
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setMergeMode('new')}
+                className={cn(
+                  "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors",
+                  mergeMode === 'new' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                )}
+              >
+                Buat Profil Baru
+              </button>
+              <button
+                type="button"
+                onClick={() => setMergeMode('existing')}
+                className={cn(
+                  "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors",
+                  mergeMode === 'existing' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                )}
+              >
+                Pakai Data Terapis yang Sudah Ada
+              </button>
+            </div>
+
+            {mergeMode === 'new' ? (
+              <>
+                <div className="space-y-2"><label className="text-sm font-medium">Spesialisasi (opsional)</label>
+                  <Input value={mergeForm.specialization} onChange={(e) => setMergeForm({ ...mergeForm, specialization: e.target.value })} placeholder="Mis. Fisioterapi Muskuloskeletal" /></div>
+                <div className="space-y-2"><label className="text-sm font-medium">No. Telepon Terapis (opsional)</label>
+                  <Input value={mergeForm.phone} onChange={(e) => setMergeForm({ ...mergeForm, phone: e.target.value })} placeholder={mergeTarget?.owner?.phone || 'Samakan dengan No. Telepon owner'} /></div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2">
+                  Riwayat SOAP, appointment, jadwal, dan payroll dari profil terapis yang dipilih akan
+                  tetap terhubung, hanya kepemilikan login-nya yang dipindah ke owner. Kalau profil ini
+                  masih punya login terpisah, login tersebut otomatis dinonaktifkan.
+                </p>
+                {loadingExistingTherapists ? (
+                  <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
+                ) : existingTherapists.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic py-2">Belum ada data terapis lain di klinik ini.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                    {existingTherapists.map((t) => (
+                      <label
+                        key={t.id}
+                        className={cn(
+                          "flex items-center gap-2 text-sm border rounded-lg px-2.5 py-2 cursor-pointer",
+                          selectedExistingTherapistId === t.id ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-200"
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="existing-therapist"
+                          checked={selectedExistingTherapistId === t.id}
+                          onChange={() => setSelectedExistingTherapistId(t.id)}
+                        />
+                        <span className="flex-1 min-w-0">
+                          <span className="block font-medium text-slate-700 truncate">{t.name || '(tanpa nama)'}</span>
+                          <span className="block text-xs text-slate-400 truncate">
+                            {t.email || '-'} {t.user_id ? '· punya login terpisah' : '· belum ada login'} {t.is_active === false ? '· nonaktif' : ''}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMergeOpen(false)}>Batal</Button>
