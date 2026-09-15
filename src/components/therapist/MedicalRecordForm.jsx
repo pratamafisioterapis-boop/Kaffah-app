@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { id } from 'date-fns/locale';
 
-const MedicalRecordForm = ({ therapist }) => {
+const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const { patientId: paramPatientId } = useParams();
   const [searchParams] = useSearchParams();
   const dailyRecapId = searchParams.get('dailyRecapId');
@@ -295,7 +295,7 @@ if (isCreate) {
             if (window.history.length > 1) {
               navigate(-1);
             } else {
-              navigate('/therapist/records');
+              navigate(basePath);
             }
           }}>
             <ArrowLeft className="w-5 h-5" />
@@ -401,7 +401,7 @@ if (isCreate) {
                 if (window.history.length > 1) {
                   navigate(-1);
                 } else {
-                  navigate('/therapist/records');
+                  navigate(basePath);
                 }
               }}>Batal</Button>
               <Button type="submit" className={`bg-blue-600 hover:bg-blue-700 rounded-xl ${isPWA ? 'flex-1' : 'min-w-[140px]'}`} disabled={loading}>

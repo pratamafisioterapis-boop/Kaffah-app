@@ -24,7 +24,7 @@ const formatLocalDate = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-const TherapistMedicalRecords = ({ therapist, isOwnerView = false }) => {
+const TherapistMedicalRecords = ({ therapist, isOwnerView = false, basePath = '/therapist/records' }) => {
   const { user, clinicName } = useAuth();
   const [patients, setPatients] = useState([]);
   const [patientVisits, setPatientVisits] = useState({});
@@ -377,7 +377,7 @@ const paginatedList = sortedList.slice(
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50"><Upload className="w-4 h-4 mr-2" /> Import</Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
-            {!isOwnerView && (<Button onClick={() => navigate('/therapist/records/new/select')} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
+            {!isOwnerView && (<Button onClick={() => navigate(`${basePath}/new/select`)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
         </div>
       </div>
 
@@ -582,7 +582,7 @@ const paginatedList = sortedList.slice(
 
   </div>
 )}
-      <PatientSOAPStatusModal patient={selectedPatient} visits={selectedPatient ? (patientVisits[selectedPatient.id] || []) : []} records={selectedPatient ? (patientRecords[selectedPatient.id] || []) : []} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <PatientSOAPStatusModal patient={selectedPatient} visits={selectedPatient ? (patientVisits[selectedPatient.id] || []) : []} records={selectedPatient ? (patientRecords[selectedPatient.id] || []) : []} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} basePath={basePath} />
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="sm:max-w-md">
