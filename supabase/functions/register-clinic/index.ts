@@ -14,7 +14,7 @@ const TRIAL_DAYS = 7;
 // clinic doesn't need on day one. Super Admin can still re-enable any of
 // these per clinic from Manajemen Klinik.
 const DEFAULT_DISABLED_FEATURES_BY_ROLE = {
-  owner: ["presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance"],
+  owner: ["presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance", "bsi_reconciliation"],
   admin: ["inventory", "attendance"],
 };
 const MAX_ATTEMPTS_PER_IP_PER_HOUR = 5;
