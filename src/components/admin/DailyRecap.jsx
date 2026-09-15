@@ -5,8 +5,6 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -47,6 +45,21 @@ const getMakassarDateForOffset = (offsetDays) => {
 const getMakassarDateStringForOffset = (offsetDays) => {
   const wita = getMakassarDateForOffset(offsetDays);
   return wita.toISOString().split('T')[0];
+};
+
+// Label singkat (mis. "Sen, 14 Sep") dari tanggal WITA yang sama dengan yang
+// dipakai untuk query/tabel. Dibangun manual dari getter UTC (bukan
+// date-fns `format`, yang membaca lewat timezone lokal browser) supaya tidak
+// pernah selisih satu hari dengan data yang ditampilkan di tabel.
+const WEEKDAY_SHORT_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const MONTH_SHORT_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+const getMakassarDayLabel = (offsetDays) => {
+  const wita = getMakassarDateForOffset(offsetDays);
+  const weekday = WEEKDAY_SHORT_ID[wita.getUTCDay()];
+  const day = String(wita.getUTCDate()).padStart(2, '0');
+  const month = MONTH_SHORT_ID[wita.getUTCMonth()];
+  return `${weekday}, ${day} ${month}`;
 };
 
 const getTherapistName = (recap) => {
@@ -606,7 +619,7 @@ const getPremiumPastelBadge = (text) => {
                 >
                   {todayOffset === 0
                     ? 'Hari Ini'
-                    : format(getMakassarDateForOffset(todayOffset), 'EEE, dd MMM', { locale: idLocale })}
+                    : getMakassarDayLabel(todayOffset)}
                 </span>
               </button>
 
