@@ -119,7 +119,10 @@ const PromoUsageWidget = ({ dateRange }) => {
         const uncategorizedList = [];
 
         (recaps || []).forEach(r => {
-          if (r.discount_type) {
+          // Sesi bisa punya `discount_type` terisi tapi nilainya 0/kosong (staf
+          // memilih jenis diskon lalu batal mengisi nominalnya) — itu bukan
+          // promo sungguhan, jadi jangan dihitung sebagai "Tanpa Kategori".
+          if (r.discount_type && Number(r.discount_value) > 0) {
             // Sesi bisa punya diskon tanpa admin memilih kategori "Jenis
             // Diskon"-nya — kelompokkan sebagai "Tanpa Kategori" alih-alih
             // diam-diam tidak dihitung.
