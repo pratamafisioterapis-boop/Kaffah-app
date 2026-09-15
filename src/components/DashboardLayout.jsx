@@ -90,6 +90,7 @@ useEffect(() => {
   }, [userDetails]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+  const [fabExpandedParent, setFabExpandedParent] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [menuSearchQuery, setMenuSearchQuery] = useState('');
@@ -503,7 +504,7 @@ const isPWA =
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => setIsFabOpen(false)}
+                onClick={() => { setIsFabOpen(false); setFabExpandedParent(null); }}
                 className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75]"
               />
             )}
@@ -520,35 +521,95 @@ const isPWA =
                 transition={{ duration: 0.18 }}
                 className="flex flex-col items-end gap-3 max-h-[38vh] overflow-y-auto pr-1 pb-1"
               >
-                {finalNavItems.flatMap((item) => item.submenu || [item]).map((item, idx) => {
+                {finalNavItems.map((item, idx) => {
                   const Icon = iconMap[item.icon] || Home;
-                  const isActive = location.pathname === item.path;
+                  const hasSubmenu = item.submenu && item.submenu.length > 0;
+                  const isActive = hasSubmenu
+                    ? item.submenu.some(sub => location.pathname === sub.path)
+                    : location.pathname === item.path;
+                  const isExpanded = fabExpandedParent === idx;
+
                   return (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        if (item.onClick) { item.onClick(); } else { navigate(item.path); }
-                        setIsFabOpen(false);
-                      }}
-                      className="flex items-center gap-2 shrink-0"
-                    >
-                      <span className={cn(
-                        "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap",
-                        isActive
-                          ? "text-white"
-                          : "bg-white text-slate-700 border-slate-200"
-                      )} style={isActive ? { background: 'var(--app-accent, #2563eb)', borderColor: 'var(--app-accent, #2563eb)' } : undefined}>
-                        {item.label}
-                      </span>
-                      <span className={cn(
-                        "w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0",
-                        isActive
-                          ? "border-transparent"
-                          : "bg-white border-slate-200"
-                      )} style={isActive ? { background: 'var(--app-accent, #2563eb)' } : undefined}>
-                        <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-slate-600")} />
-                      </span>
-                    </button>
+                    <div key={idx} className="flex flex-col items-end gap-2 shrink-0 w-full">
+                      <button
+                        onClick={() => {
+                          if (hasSubmenu) {
+                            setFabExpandedParent(isExpanded ? null : idx);
+                            return;
+                          }
+                          if (item.onClick) { item.onClick(); } else { navigate(item.path); }
+                          setIsFabOpen(false);
+                        }}
+                        className="flex items-center gap-2 shrink-0 self-end"
+                      >
+                        <span className={cn(
+                          "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap flex items-center gap-1",
+                          isActive
+                            ? "text-white"
+                            : "bg-white text-slate-700 border-slate-200"
+                        )} style={isActive ? { background: 'var(--app-accent, #2563eb)', borderColor: 'var(--app-accent, #2563eb)' } : undefined}>
+                          {item.label}
+                          {hasSubmenu && (
+                            <ChevronDown className={cn("w-3 h-3 transition-transform", isExpanded && "rotate-180")} />
+                          )}
+                        </span>
+                        <span className={cn(
+                          "w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0",
+                          isActive
+                            ? "border-transparent"
+                            : "bg-white border-slate-200"
+                        )} style={isActive ? { background: 'var(--app-accent, #2563eb)' } : undefined}>
+                          <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-slate-600")} />
+                        </span>
+                      </button>
+
+                      {hasSubmenu && (
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.15 }}
+                              className="flex flex-col items-end gap-2 pr-1 overflow-hidden self-end"
+                            >
+                              {item.submenu.map((sub, subIdx) => {
+                                const SubIcon = iconMap[sub.icon] || Home;
+                                const isSubActive = location.pathname === sub.path;
+                                return (
+                                  <button
+                                    key={subIdx}
+                                    onClick={() => {
+                                      if (sub.onClick) { sub.onClick(); } else { navigate(sub.path); }
+                                      setIsFabOpen(false);
+                                      setFabExpandedParent(null);
+                                    }}
+                                    className="flex items-center gap-2 shrink-0"
+                                  >
+                                    <span className={cn(
+                                      "text-[11px] font-medium px-2 py-1 rounded-lg shadow-sm border whitespace-nowrap",
+                                      isSubActive
+                                        ? "text-white"
+                                        : "bg-slate-50 text-slate-600 border-slate-200"
+                                    )} style={isSubActive ? { background: 'var(--app-accent, #2563eb)', borderColor: 'var(--app-accent, #2563eb)' } : undefined}>
+                                      {sub.label}
+                                    </span>
+                                    <span className={cn(
+                                      "w-7 h-7 rounded-full flex items-center justify-center shadow-sm border shrink-0",
+                                      isSubActive
+                                        ? "border-transparent"
+                                        : "bg-white border-slate-200"
+                                    )} style={isSubActive ? { background: 'var(--app-accent, #2563eb)' } : undefined}>
+                                      <SubIcon className={cn("w-3.5 h-3.5", isSubActive ? "text-white" : "text-slate-500")} />
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      )}
+                    </div>
                   );
                 })}
 
@@ -573,7 +634,10 @@ const isPWA =
           </AnimatePresence>
 
           <button
-            onClick={() => setIsFabOpen(prev => !prev)}
+            onClick={() => {
+              setIsFabOpen(prev => !prev);
+              setFabExpandedParent(null);
+            }}
             className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform shrink-0",
               isFabOpen ? "bg-slate-900 rotate-45" : ""
