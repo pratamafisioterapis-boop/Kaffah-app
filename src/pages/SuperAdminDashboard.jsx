@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminOverview from '@/pages/SuperAdminOverview';
 import SuperAdminClinics from '@/pages/SuperAdminClinics';
+import SuperAdminClinicViewer from '@/pages/SuperAdminClinicViewer';
 import SuperAdminUsers from '@/pages/SuperAdminUsers';
 import SuperAdminSubscriptions from '@/pages/SuperAdminSubscriptions';
 import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
@@ -11,6 +12,7 @@ const SuperAdminDashboard = () => {
   const navItems = [
     { label: 'Ringkasan', path: '/super-admin/overview', icon: 'Home' },
     { label: 'Manajemen Klinik', path: '/super-admin/clinics', icon: 'Database' },
+    { label: 'Lihat Data Klinik', path: '/super-admin/clinic-viewer', icon: 'Eye' },
     { label: 'Manajemen User', path: '/super-admin/users', icon: 'Users' },
     { label: 'Langganan', path: '/super-admin/subscriptions', icon: 'DollarSign' },
     { label: 'Basis Jurnal AI', path: '/super-admin/journal-knowledge-base', icon: 'BookOpen' },
@@ -22,6 +24,7 @@ const SuperAdminDashboard = () => {
         <Route path="/" element={<Navigate to="/super-admin/overview" replace />} />
         <Route path="/overview" element={<SuperAdminOverview />} />
         <Route path="/clinics" element={<SuperAdminClinics />} />
+        <Route path="/clinic-viewer" element={<SuperAdminClinicViewer />} />
         <Route path="/users" element={<SuperAdminUsers />} />
         <Route path="/subscriptions" element={<SuperAdminSubscriptions />} />
         <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
