@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
-import { getPatientInfoOptions, createPatientInfoOption, updatePatientInfoOption, deletePatientInfoOption, getOperationalOptions, createOperationalOption, updateOperationalOption, deleteOperationalOption, getCachedClinicId } from '@/lib/api';
+import { getPatientInfoOptions, createPatientInfoOption, updatePatientInfoOption, deletePatientInfoOption, getOperationalOptions, createOperationalOption, updateOperationalOption, deleteOperationalOption, getCachedClinicId, getBankAccountsWithBalance } from '@/lib/api';
 import { Palette, Wallet } from 'lucide-react';
 import DesignStyleManager from '@/components/owner/DesignStyleManager';
 import ServiceRateManager from '@/components/owner/ServiceRateManager';
@@ -383,14 +383,17 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
   
   // Selection State
   const [selectedOption, setSelectedOption] = useState(null);
-  const [formData, setFormData] = useState({ 
+  const [formData, setFormData] = useState({
     label: '',
     session_count: '',
-    validity_days: ''
+    validity_days: '',
+    bank_account_id: ''
   });
   const [pasteContent, setPasteContent] = useState("");
+  const [bankAccounts, setBankAccounts] = useState([]);
 
   const isPackageType = category === 'tipe_paket';
+  const isPaymentMethodType = category === 'payment_method';
 
   useEffect(() => {
     fetchOptions();
@@ -399,7 +402,15 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
   if (category === 'diagnosa') {
     fetchParentServices();
   }
+  if (category === 'payment_method') {
+    fetchBankAccounts();
+  }
 }, [category]);
+
+  const fetchBankAccounts = async () => {
+    const result = await getBankAccountsWithBalance();
+    if (result.data) setBankAccounts(result.data);
+  };
 
   const fetchOptions = async () => {
     setLoading(true);
@@ -432,16 +443,17 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
 };
 
   const openAddDialog = () => {
-    setFormData({ label: '', session_count: '', validity_days: '' });
+    setFormData({ label: '', session_count: '', validity_days: '', bank_account_id: '' });
     setIsAddOpen(true);
   };
 
   const openEditDialog = (option) => {
     setSelectedOption(option);
-    setFormData({ 
+    setFormData({
       label: option.label,
       session_count: option.session_count || '',
-      validity_days: option.validity_days || ''
+      validity_days: option.validity_days || '',
+      bank_account_id: option.bank_account_id || ''
     });
     setIsEditOpen(true);
   };
@@ -480,6 +492,10 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
 
       ...(category === 'diagnosa' && {
         parent_id: formData.parent_id || null
+      }),
+
+      ...(isPaymentMethodType && {
+        bank_account_id: formData.bank_account_id || null
       })
     };
 
@@ -695,6 +711,15 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
             {opt.session_count} Sesi &bull; {opt.validity_days} Hari Aktif
           </span>
         )}
+        {isPaymentMethodType && (
+          <span className="text-xs text-slate-500 ml-2 mt-1 flex items-center gap-2">
+            <Building className="w-3 h-3" />
+            {(() => {
+              const acc = bankAccounts.find((b) => b.id === opt.bank_account_id);
+              return acc ? `${acc.bank_name} • ${acc.account_number}` : 'Belum ditautkan ke akun bank';
+            })()}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
         <Button
@@ -764,6 +789,30 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Akun Bank - HANYA UNTUK METODE PEMBAYARAN */}
+      {isPaymentMethodType && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">
+            Akun Bank Tujuan
+          </label>
+          <select
+            value={formData.bank_account_id || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, bank_account_id: e.target.value })
+            }
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tidak ditautkan</option>
+            {bankAccounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.bank_name} • {acc.account_number}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">Pembayaran dengan metode ini akan tercatat masuk ke akun bank yang dipilih.</p>
         </div>
       )}
 
@@ -866,6 +915,30 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Akun Bank - HANYA UNTUK METODE PEMBAYARAN */}
+      {isPaymentMethodType && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">
+            Akun Bank Tujuan
+          </label>
+          <select
+            value={formData.bank_account_id || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, bank_account_id: e.target.value })
+            }
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tidak ditautkan</option>
+            {bankAccounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.bank_name} • {acc.account_number}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">Pembayaran dengan metode ini akan tercatat masuk ke akun bank yang dipilih.</p>
         </div>
       )}
 
