@@ -20,6 +20,7 @@ export const FEATURE_CATALOG = [
   { key: 'medical_records', label: 'Medical Records', roles: ['owner', 'admin'], match: (label) => label.includes('medical records') },
   { key: 'physiotherapist_management', label: 'Physiotherapist Management', roles: ['owner', 'admin'], match: (label) => label.includes('physiotherapist management') },
   { key: 'admin_management', label: 'Admin Management', roles: ['owner'], match: (label) => label.includes('admin management') },
+  { key: 'owner_management', label: 'Owner Management', roles: ['owner'], match: (label) => label.includes('owner management') },
   { key: 'follow_up_management', label: 'Follow Up Management', roles: ['owner', 'admin'], match: (label) => label.includes('follow up') },
   { key: 'patients_feedback', label: 'Patients Feedback', roles: ['owner', 'admin'], match: (label) => label.includes('feedback') },
   { key: 'clinical_documents', label: 'Clinical Documents', roles: ['owner', 'admin'], match: (label) => label.includes('clinical documents') },

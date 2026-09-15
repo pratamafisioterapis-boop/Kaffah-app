@@ -28,6 +28,7 @@ export const OWNER_NAV_ITEMS = [
     submenu: [
       { label: 'Physiotherapist Management', path: '/owner/physiotherapist-management', icon: 'UserCog' },
       { label: 'Admin Management', path: '/owner/admin-management', icon: 'ShieldCheck' },
+      { label: 'Owner Management', path: '/owner/owner-management', icon: 'Crown' },
       { label: 'Absensi Karyawan', path: '/owner/attendance', icon: 'Clock' },
     ],
   },
