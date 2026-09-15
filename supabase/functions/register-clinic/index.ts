@@ -18,7 +18,7 @@ const DEFAULT_DISABLED_FEATURES_BY_ROLE = {
     "presentation", "modal_awal", "insentif_dokter", "inventory", "attendance",
     "bsi_reconciliation", "notifications", "owner_identity", "wa_api_key",
   ],
-  admin: ["inventory", "attendance"],
+  admin: ["inventory", "attendance", "check_transaksi"],
 };
 const MAX_ATTEMPTS_PER_IP_PER_HOUR = 5;
 const CLINARA_APEX = "clinara.id";
