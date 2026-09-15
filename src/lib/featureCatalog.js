@@ -24,7 +24,6 @@ export const FEATURE_CATALOG = [
   { key: 'patients_feedback', label: 'Patients Feedback', roles: ['owner', 'admin'], match: (label) => label.includes('feedback') },
   { key: 'clinical_documents', label: 'Clinical Documents', roles: ['owner', 'admin'], match: (label) => label.includes('clinical documents') },
   { key: 'attendance', label: 'Absensi Karyawan', roles: ['owner', 'admin'], match: (label) => label.includes('absensi') },
-  { key: 'journal_knowledge_base', label: 'Basis Jurnal AI', roles: ['owner'], match: (label) => label.includes('jurnal ai') },
   { key: 'accounting', label: 'Accounting System', roles: ['owner', 'admin'], match: (label) => label.includes('accounting') },
   { key: 'inventory', label: 'Stok Barang / Ambil Barang Gudang', roles: ['owner', 'admin'], match: (label) => label.includes('barang') || label.includes('inventory') },
   { key: 'check_transaksi', label: 'Check Transaksi', roles: ['admin'], match: (label) => label.includes('check transaksi') },

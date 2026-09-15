@@ -5,6 +5,7 @@ import SuperAdminOverview from '@/pages/SuperAdminOverview';
 import SuperAdminClinics from '@/pages/SuperAdminClinics';
 import SuperAdminUsers from '@/pages/SuperAdminUsers';
 import SuperAdminSubscriptions from '@/pages/SuperAdminSubscriptions';
+import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
 
 const SuperAdminDashboard = () => {
   const navItems = [
@@ -12,6 +13,7 @@ const SuperAdminDashboard = () => {
     { label: 'Manajemen Klinik', path: '/super-admin/clinics', icon: 'Database' },
     { label: 'Manajemen User', path: '/super-admin/users', icon: 'Users' },
     { label: 'Langganan', path: '/super-admin/subscriptions', icon: 'DollarSign' },
+    { label: 'Basis Jurnal AI', path: '/super-admin/journal-knowledge-base', icon: 'BookOpen' },
   ];
 
   return (
@@ -22,6 +24,7 @@ const SuperAdminDashboard = () => {
         <Route path="/clinics" element={<SuperAdminClinics />} />
         <Route path="/users" element={<SuperAdminUsers />} />
         <Route path="/subscriptions" element={<SuperAdminSubscriptions />} />
+        <Route path="/journal-knowledge-base" element={<JournalKnowledgeBaseManager />} />
       </Routes>
     </DashboardLayout>
   );
