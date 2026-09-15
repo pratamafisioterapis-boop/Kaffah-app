@@ -282,7 +282,13 @@ const TherapistCard = ({
                 <div className="w-full py-4 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                    <span className="text-xs text-slate-400 italic">
                       {isSoapLocked && !isFullBooked && 'Terapis terkunci: SOAP belum lengkap'}
-                      {isLeave && !isSoapLocked && !isFullBooked && `Therapist sedang ${leaveStatus.replace(/_/g, ' ')}`}
+                      {isLeave && !isSoapLocked && !isFullBooked && `Terapis sedang ${
+                        isWeeklyOff
+                          ? (leaveReason || 'libur')
+                          : leaveStatus === 'non_active'
+                          ? 'tidak aktif'
+                          : (leaveReason || leaveStatus.replace(/_/g, ' '))
+                      }`}
                       {isFullBooked && 'Semua slot hari ini sudah terbooking'}
                       {!isLeave && !isFullBooked && 'Tidak ada slot kosong'}
                    </span>
