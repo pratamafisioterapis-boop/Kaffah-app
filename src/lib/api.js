@@ -6257,6 +6257,52 @@ export const createTherapistAccount = async (payload, password) => {
 
   }, 'createTherapistAccount', { retry: false });
 };
+// Menggabungkan akun owner & terapis: dipakai saat owner sebuah klinik adalah
+// terapis itu sendiri, supaya tidak perlu akun login terpisah. Insert
+// langsung ke physiotherapists dengan user_id = id akun owner (bukan
+// membuat auth user baru seperti createTherapistAccount) — RLS
+// (owner_admin_manage_physiotherapists) sudah mengizinkan super_admin dan
+// owner/admin klinik yang sama untuk insert baris physiotherapists ini.
+export const linkOwnerAsTherapist = async (payload) => {
+  return safeQuery(async () => {
+    if (!payload?.user_id || !payload?.clinic_id || !payload?.name) {
+      return { error: { message: "Data owner tidak lengkap" } };
+    }
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .insert({
+        clinic_id: payload.clinic_id,
+        user_id: payload.user_id,
+        name: payload.name,
+        email: payload.email || null,
+        phone: payload.phone || null,
+        specialization: payload.specialization || null,
+        is_active: true,
+        remuneration_enabled: true,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) return { error };
+    return { data, error: null };
+  }, 'linkOwnerAsTherapist', { retry: false });
+};
+
+// Aktif/nonaktifkan kembali profil terapis milik owner (soal seperti soft
+// delete terapis biasa) tanpa menghapus baris physiotherapists-nya, supaya
+// riwayat SOAP/appointment/payroll yang sudah terhubung tetap aman.
+export const setOwnerTherapistActive = async (physiotherapistId, isActive) => {
+  return safeQuery(async () => {
+    const { error } = await supabase
+      .from('physiotherapists')
+      .update({ is_active: isActive })
+      .eq('id', physiotherapistId);
+    if (error) return { error };
+    return { data: true, error: null };
+  }, 'setOwnerTherapistActive');
+};
+
 export const deletePhysiotherapist = async (id) => {
   return safeQuery(async () => {
 

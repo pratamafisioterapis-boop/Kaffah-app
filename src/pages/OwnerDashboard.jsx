@@ -45,8 +45,17 @@ import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 import ClinicalDocuments from '@/pages/admin/ClinicalDocuments';
 
+// Therapist-side SOAP components, reused here for clinics where the owner
+// is also the therapist (see linkOwnerAsTherapist in Super Admin > Manajemen
+// Klinik) — one login, but the therapist's own SOAP workflow is surfaced
+// straight in the owner sidebar instead of needing a second account.
+import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
+import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
+import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
+import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
+
 // API
-import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId } from '@/lib/api';
+import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId } from '@/lib/api';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
@@ -522,14 +531,45 @@ setTherapists(enrichedTherapists);
 };
 
 const OwnerDashboard = () => {
-  const navItems = OWNER_NAV_ITEMS;
+  const { user } = useAuth();
+  const [therapistProfile, setTherapistProfile] = useState(null);
+
+  // Klinik yang ownernya juga terapis: physiotherapists.user_id akan
+  // menunjuk ke akun owner ini sendiri (lihat linkOwnerAsTherapist), tanpa
+  // mengubah role owner di public.users. Kalau ketemu (dan masih aktif),
+  // tambahkan menu SOAP terapis ke sidebar owner.
+  useEffect(() => {
+    let isMounted = true;
+    const loadTherapistProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await getPhysiotherapistByUserId(user.id);
+      if (isMounted) setTherapistProfile(data && data.is_active !== false ? data : null);
+    };
+    loadTherapistProfile();
+    return () => { isMounted = false; };
+  }, [user]);
+
+  const navItems = therapistProfile
+    ? [
+        ...OWNER_NAV_ITEMS,
+        {
+          label: 'SOAP Terapis',
+          icon: 'BriefcaseMedical',
+          submenu: [
+            { label: 'Booking Calendar Saya', path: '/owner/therapist-booking', icon: 'Calendar' },
+            { label: 'Riwayat Pasien Saya', path: '/owner/therapist-appointments', icon: 'ClipboardList' },
+            { label: 'Isi SOAP / Evaluasi', path: '/owner/therapist-records', icon: 'Activity' },
+          ],
+        },
+      ]
+    : OWNER_NAV_ITEMS;
 
   return (
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
       <Routes>
         {/* Redirect root /owner to dashboard */}
         <Route path="/" element={<Navigate to="/owner/dashboard" replace />} />
-        
+
         {/* Main Dashboard (Tabbed) */}
         <Route path="/dashboard" element={<OwnerDashboardHome />} />
 
@@ -539,11 +579,23 @@ const OwnerDashboard = () => {
         {/* Pages */}
         <Route path="/appointments" element={<OwnerAppointmentsPage />} />
         <Route path="/database-patients" element={<DatabasePatients />} />
-        
+
         {/* Other Existing Routes */}
         <Route path="/physiotherapist-management" element={<PhysiotherapistManagementPage />} />
         <Route path="/medical-records" element={<MedicalRecordsPage />} />
         <Route path="/follow-up-management" element={<OwnerFollowUpManagementPage />} />
+
+        {/* Owner-as-therapist SOAP routes (only reachable once a linked
+            physiotherapist profile is loaded; nav items above are hidden
+            otherwise, but guard the routes too in case of a direct link) */}
+        {therapistProfile && (
+          <>
+            <Route path="/therapist-booking" element={<TherapistBookingCalendar therapist={therapistProfile} />} />
+            <Route path="/therapist-appointments" element={<TherapistPatientHistory therapist={therapistProfile} />} />
+            <Route path="/therapist-records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
+            <Route path="/therapist-records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
+          </>
+        )}
         
         {/* Functional Pages */}
         <Route path="/accounting" element={<OwnerFinanceDashboardComponent />} />

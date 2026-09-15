@@ -37,6 +37,11 @@ export const FEATURE_CATALOG = [
   { key: 'therapist_appointments', label: 'Riwayat Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat pasien') || label.includes('daftar appointment') },
   { key: 'therapist_evaluation', label: 'Evaluasi Pasien', roles: ['therapist'], match: (label) => label.includes('evaluasi pasien') },
   { key: 'therapist_settings', label: 'Settings', roles: ['therapist'], match: (label) => label === 'settings' },
+  // Muncul di sidebar owner hanya ketika owner sudah "digabung" jadi terapis
+  // juga (lihat linkOwnerAsTherapist di Super Admin > Manajemen Klinik).
+  { key: 'owner_therapist_booking', label: 'SOAP Terapis - Booking Calendar Saya', roles: ['owner'], match: (label) => label.includes('booking calendar saya') },
+  { key: 'owner_therapist_appointments', label: 'SOAP Terapis - Riwayat Pasien Saya', roles: ['owner'], match: (label) => label.includes('riwayat pasien saya') },
+  { key: 'owner_therapist_records', label: 'SOAP Terapis - Isi SOAP / Evaluasi', roles: ['owner'], match: (label) => label.includes('isi soap') },
 ];
 
 // Feature catalog entries relevant to a given role only, in display order.
