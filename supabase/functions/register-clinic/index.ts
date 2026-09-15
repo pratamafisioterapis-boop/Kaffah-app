@@ -7,6 +7,16 @@ const corsHeaders = {
 
 const REFERENCE_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
 const TRIAL_DAYS = 7;
+
+// Menus hidden by default for every clinic that self-registers via the
+// landing page - these are advanced/enterprise features (see
+// FEATURE_CATALOG in src/lib/featureCatalog.js) that a brand-new trial
+// clinic doesn't need on day one. Super Admin can still re-enable any of
+// these per clinic from Manajemen Klinik.
+const DEFAULT_DISABLED_FEATURES_BY_ROLE = {
+  owner: ["presentation", "journal_knowledge_base", "modal_awal", "insentif_dokter", "inventory", "attendance"],
+  admin: ["inventory", "attendance"],
+};
 const MAX_ATTEMPTS_PER_IP_PER_HOUR = 5;
 const CLINARA_APEX = "clinara.id";
 
@@ -167,6 +177,7 @@ Deno.serve(async (req) => {
         subscription_status: "trial",
         trial_ends_at: trialEndsAt,
         owner_full_name,
+        disabled_features_by_role: DEFAULT_DISABLED_FEATURES_BY_ROLE,
       })
       .select()
       .single();

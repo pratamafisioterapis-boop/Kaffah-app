@@ -18,14 +18,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  getAllPhysiotherapists, savePhysiotherapist, createTherapistAccount, deletePhysiotherapist, 
+import {
+  getAllPhysiotherapists, savePhysiotherapist, createTherapistAccount, deletePhysiotherapist,
   uploadTherapistPhoto, getTherapistTimeOff, addTherapistTimeOff, deleteTherapistTimeOff,
-  getCurrentClinic, getBadgesByOwner
+  getCurrentClinic, getBadgesByOwner, linkOwnerAsTherapist, getPhysiotherapistByUserId
 } from '@/lib/api';
 import { cn, formatTherapistPeriodLabel } from "@/lib/utils";
 import { COMPLAINT_TAGS } from "@/lib/complaintTags";
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
@@ -47,10 +48,11 @@ const SectionCard = ({ icon: Icon, iconClass, title, description, children }) =>
 const TherapistManager = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
+  const { user, userDetails } = useAuth();
   const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState(null);
-  
+
   // Edit/Add State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTherapist, setEditingTherapist] = useState(null);
@@ -59,6 +61,12 @@ const TherapistManager = () => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availableBadges, setAvailableBadges] = useState([]);
+
+  // Owner-as-therapist: lets the clinic owner also handle patients as a
+  // therapist, reusing their existing owner login instead of a second
+  // account (same mechanism as Super Admin > Manajemen Klinik's "merge").
+  const [isOwnerAsTherapist, setIsOwnerAsTherapist] = useState(false);
+  const [ownerTherapistProfile, setOwnerTherapistProfile] = useState(null);
 
   // Time Off State
   const [timeOffDialog, setTimeOffDialog] = useState(false);
@@ -82,6 +90,15 @@ const TherapistManager = () => {
     fetchClinicId();
     fetchBadges();
   }, []);
+
+  useEffect(() => {
+    const loadOwnerTherapistProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await getPhysiotherapistByUserId(user.id);
+      setOwnerTherapistProfile(data || null);
+    };
+    loadOwnerTherapistProfile();
+  }, [user]);
 
   const fetchClinicId = async () => {
     const { data } = await getCurrentClinic();
@@ -230,7 +247,21 @@ const TherapistManager = () => {
       setFormData(initialFormState());
       setPassword('');
     }
+    setIsOwnerAsTherapist(false);
     setIsDialogOpen(true);
+  };
+
+  const handleToggleOwnerAsTherapist = (checked) => {
+    setIsOwnerAsTherapist(checked);
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || userDetails?.full_name || '',
+        email: prev.email || userDetails?.email || user?.email || '',
+        phone: prev.phone || userDetails?.phone || '',
+      }));
+      setPassword('');
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -287,8 +318,13 @@ const TherapistManager = () => {
       return;
     }
 
-    if (!editingTherapist && !password) {
+    if (!editingTherapist && !isOwnerAsTherapist && !password) {
       toast({ variant: "destructive", title: "Validasi Gagal", description: "Password wajib diisi untuk akun baru" });
+      return;
+    }
+
+    if (!editingTherapist && isOwnerAsTherapist && ownerTherapistProfile) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Anda sudah terdaftar sebagai terapis di klinik ini." });
       return;
     }
 
@@ -395,7 +431,29 @@ const TherapistManager = () => {
   error = updateError;
   savedData = data;
 
-} else {
+} else if (isOwnerAsTherapist) {
+      // 🔥 OWNER JUGA TERAPIS — pakai login owner yang sudah ada, tidak
+      // membuat akun baru (lihat linkOwnerAsTherapist di lib/api.js).
+      const { data: linked, error: linkError } = await linkOwnerAsTherapist({
+        user_id: user.id,
+        clinic_id: clinicId,
+        name: formData.name,
+        email: formData.email || userDetails?.email || user?.email,
+        phone: formData.phone,
+        specialization: formData.specialization,
+      });
+
+      if (linkError) {
+        toast({ variant: "destructive", title: "Gagal Menjadikan Owner Sebagai Terapis", description: linkError.message });
+        setSaving(false);
+        return;
+      }
+
+      const { data, error: updateError } = await savePhysiotherapist({ ...payload, id: linked.id });
+      error = updateError;
+      savedData = data;
+      if (!error) setOwnerTherapistProfile(data || linked);
+    } else {
       // 🔥 CREATE TERAPIS BARU
       const { data, error: createError } = await createTherapistAccount(payload, password);
       error = createError;
@@ -403,7 +461,14 @@ const TherapistManager = () => {
     }
 
     if (!error) {
-      toast({ title: "Berhasil", description: editingTherapist ? "Data terapis diperbarui." : "Akun terapis baru berhasil dibuat." });
+      toast({
+        title: "Berhasil",
+        description: editingTherapist
+          ? "Data terapis diperbarui."
+          : isOwnerAsTherapist
+            ? "Anda kini juga terdaftar sebagai terapis. Menu Evaluasi Harian akan muncul di Medical Records."
+            : "Akun terapis baru berhasil dibuat."
+      });
       if (editingTherapist) {
         setTherapists(prev => prev.map(t =>
           t.id === editingTherapist.id ? { ...t, ...formData } : t
@@ -674,6 +739,30 @@ const headerColorMap = {
           </DialogHeader>
           
           <div className="grid gap-4 py-2">
+            {!editingTherapist && (
+              <SectionCard
+                icon={Shield}
+                iconClass="bg-blue-50 text-blue-600"
+                title="Owner Sekaligus Terapis?"
+                description="Aktifkan jika akun terapis ini untuk Anda sendiri (owner klinik) — tidak perlu email/password baru, memakai login owner yang sudah ada."
+              >
+                {ownerTherapistProfile ? (
+                  <p className="text-xs text-amber-600">Anda sudah terdaftar sebagai terapis ({ownerTherapistProfile.name}) di klinik ini.</p>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <UserPlus className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span className="text-sm font-medium text-slate-700 truncate">Akun ini untuk saya sendiri (Owner)</span>
+                    </div>
+                    <Switch
+                      checked={isOwnerAsTherapist}
+                      onCheckedChange={handleToggleOwnerAsTherapist}
+                    />
+                  </div>
+                )}
+              </SectionCard>
+            )}
+
             {/* Identitas */}
             <SectionCard icon={User} iconClass="bg-slate-100 text-slate-600" title="Identitas & Kontak">
               <div className="flex flex-col sm:flex-row gap-5">
@@ -997,23 +1086,29 @@ const headerColorMap = {
             </SectionCard>
 
             {/* Akses Akun */}
-            <SectionCard icon={Lock} iconClass="bg-amber-50 text-amber-600" title="Akses Akun">
-              <div className="space-y-1.5 max-w-sm">
-                <label className="text-xs font-medium text-slate-600">
-                  {editingTherapist?.user_id
-                    ? 'Reset Password (biarkan kosong jika tidak diubah)'
-                    : editingTherapist
-                      ? 'Password Login * (terapis ini belum punya akun login)'
-                      : 'Password Login *'}
-                </label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={editingTherapist?.user_id ? "********" : "Minimal 6 karakter"}
-                />
-              </div>
-            </SectionCard>
+            {!editingTherapist && isOwnerAsTherapist ? (
+              <SectionCard icon={Lock} iconClass="bg-amber-50 text-amber-600" title="Akses Akun">
+                <p className="text-xs text-slate-500">Memakai login owner yang sudah ada — tidak perlu email/password baru.</p>
+              </SectionCard>
+            ) : (
+              <SectionCard icon={Lock} iconClass="bg-amber-50 text-amber-600" title="Akses Akun">
+                <div className="space-y-1.5 max-w-sm">
+                  <label className="text-xs font-medium text-slate-600">
+                    {editingTherapist?.user_id
+                      ? 'Reset Password (biarkan kosong jika tidak diubah)'
+                      : editingTherapist
+                        ? 'Password Login * (terapis ini belum punya akun login)'
+                        : 'Password Login *'}
+                  </label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={editingTherapist?.user_id ? "********" : "Minimal 6 karakter"}
+                  />
+                </div>
+              </SectionCard>
+            )}
           </div>
 
           <DialogFooter>
