@@ -79,12 +79,19 @@ useEffect(() => {
   const activeTheme = DESIGN_THEMES[themeKey] || DESIGN_THEMES[DEFAULT_THEME_KEY];
   const navActive = activeTheme.navActive;
   const [clinicInfo, setClinicInfo] = useState(null);
+  // Nav items must stay hidden until we know this clinic's disabled-feature
+  // list, otherwise a menu item hidden for this clinic (e.g. Presentasi
+  // Direksi, Modal Awal) briefly flashes on every refresh before the async
+  // fetch below resolves and filters it out. Roles without a clinic_id
+  // (super_admin) never fetch, so they start "loaded".
+  const [clinicFeaturesLoaded, setClinicFeaturesLoaded] = useState(role === 'super_admin');
 
   useEffect(() => {
     const fetchClinicInfo = async () => {
       if (!userDetails?.clinic_id) return;
       const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role').eq('id', userDetails.clinic_id).single();
       if (data) setClinicInfo(data);
+      setClinicFeaturesLoaded(true);
     };
     fetchClinicInfo();
   }, [userDetails]);
@@ -174,6 +181,9 @@ const isPWA =
      return newItems;
   };
   const finalNavItems = useMemo(() => {
+    // Don't show any nav items (which would include ones this clinic has
+    // disabled) until we actually know its disabled-feature list.
+    if (!clinicFeaturesLoaded) return [];
     const processed = processNavItems(navItems);
     const disabledFeatures = clinicInfo?.disabled_features_by_role?.[role];
     if (!disabledFeatures || disabledFeatures.length === 0) return processed;
@@ -186,7 +196,7 @@ const isPWA =
         return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
       })
       .filter(Boolean);
-  }, [navItems, role, clinicInfo]);
+  }, [navItems, role, clinicInfo, clinicFeaturesLoaded]);
 
   const displayedNavItems = useMemo(() => {
     if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
