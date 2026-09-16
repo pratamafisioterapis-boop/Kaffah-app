@@ -65,14 +65,14 @@ const ClinicalDocuments = () => {
               value="resume-medis"
               className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all flex items-center gap-2"
             >
-              <ClipboardList className="w-4 h-4" />
+              <ClipboardList className="w-4 h-4 shrink-0" />
               Resume Medis
             </TabsTrigger>
             <TabsTrigger 
               value="surat-keterangan"
               className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all flex items-center gap-2"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 shrink-0" />
               Surat Keterangan
             </TabsTrigger>
           </TabsList>
