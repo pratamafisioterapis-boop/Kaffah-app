@@ -43,7 +43,11 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
       ref={ref}
       style={{
         width: '210mm',
-        minHeight: '297mm',
+        // A hair under 297mm on purpose: at exactly 297mm this rounds up to
+        // 1123px (vs. an A4 page's 1122.52px), and that sub-pixel overflow
+        // alone is enough for Chromium to spill a native "Cetak" print onto
+        // a near-blank second page even though the real content fits.
+        minHeight: 'calc(297mm - 2px)',
         boxSizing: 'border-box',
         fontFamily: 'Inter, Arial, sans-serif',
         background: '#fff',
