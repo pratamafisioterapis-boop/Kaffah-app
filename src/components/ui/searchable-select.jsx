@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronsUpDown, Loader2, Plus, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +20,35 @@ const SearchableSelect = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [menuPos, setMenuPos] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateMenuPos = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < 260 && rect.top > spaceBelow;
+    setMenuPos({
+      left: rect.left,
+      width: rect.width,
+      top: openUpward ? undefined : rect.bottom + 6,
+      bottom: openUpward ? window.innerHeight - rect.top + 6 : undefined,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+    window.addEventListener('scroll', updateMenuPos, true);
+    window.addEventListener('resize', updateMenuPos);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPos, true);
+      window.removeEventListener('resize', updateMenuPos);
+    };
+  }, [open, updateMenuPos]);
 
   // Defensive check for options
   const safeOptions = useMemo(() => {
@@ -62,7 +90,9 @@ const SearchableSelect = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      const inContainer = containerRef.current && containerRef.current.contains(event.target);
+      const inMenu = menuRef.current && menuRef.current.contains(event.target);
+      if (!inContainer && !inMenu) {
         setOpen(false);
       }
     };
@@ -211,8 +241,12 @@ const SearchableSelect = ({
         </div>
       </div>
 
-      {open && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100">
+      {open && !disabled && menuPos && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom }}
+          className="bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100"
+        >
           {isLoading ? (
              <div className="p-4 flex items-center justify-center text-slate-500 text-sm">
                <Loader2 className="w-4 h-4 animate-spin mr-2 text-blue-500" />
@@ -267,7 +301,8 @@ const SearchableSelect = ({
                )}
              </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
