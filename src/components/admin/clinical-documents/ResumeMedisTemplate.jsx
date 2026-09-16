@@ -44,6 +44,7 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
       style={{
         width: '210mm',
         minHeight: '297mm',
+        boxSizing: 'border-box',
         fontFamily: 'Inter, Arial, sans-serif',
         background: '#fff',
         color: '#0f172a',
@@ -143,17 +144,21 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
             {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
               const checked = programTerapi.includes(key);
               return (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', lineHeight: '16px' }}>
                   <span style={{
-                    width: '16px', height: '16px', borderRadius: '4px',
+                    width: '14px', height: '14px', borderRadius: '3px', boxSizing: 'border-box',
                     border: `1.5px solid ${checked ? '#4f46e5' : '#cbd5e1'}`,
                     background: checked ? '#4f46e5' : '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontSize: '10px', fontWeight: 900, flexShrink: 0,
+                    flexShrink: 0,
                   }}>
-                    {checked ? '✓' : ''}
+                    {checked && (
+                      <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 3.5L3.2 5.7L8 1" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
                   </span>
-                  <span style={{ color: checked ? '#0f172a' : '#94a3b8', fontWeight: checked ? 600 : 400 }}>{label}</span>
+                  <span style={{ color: checked ? '#0f172a' : '#94a3b8', fontWeight: checked ? 600 : 400, lineHeight: '16px' }}>{label}</span>
                 </div>
               );
             })}
