@@ -148,13 +148,18 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
             {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
               const checked = programTerapi.includes(key);
               return (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', lineHeight: '16px' }}>
+                <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', lineHeight: '16px' }}>
                   <span style={{
                     width: '14px', height: '14px', borderRadius: '3px', boxSizing: 'border-box',
                     border: `1.5px solid ${checked ? '#4f46e5' : '#cbd5e1'}`,
                     background: checked ? '#4f46e5' : '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
+                    // A box centered on the full line-height sits visibly
+                    // above the text's own ink (line-height reserves more
+                    // space above cap-height than below the baseline), so
+                    // nudge it down to align with the label instead.
+                    marginTop: '2px',
                   }}>
                     {checked && (
                       <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
