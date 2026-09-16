@@ -34,6 +34,7 @@ const DAYS = [
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 const GAP_OPTIONS = [0, 5, 10, 15, 30];
+const CAPACITY_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10];
 
 const timeToMinutes = (time) => {
   const [h, m] = time.split(':').map(Number);
@@ -105,6 +106,11 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
   const [shifts, setShifts] = useState([
     { start_time: "09:00", end_time: "10:00" }
   ]);
+
+  // How many patients this therapist can see at once during each slot
+  // created below (e.g. group therapy, multiple beds/rooms). 1 = the
+  // original one-patient-per-slot behavior.
+  const [capacity, setCapacity] = useState(1);
 
   // "auto" lets the owner describe practice hours + duration per patient and
   // has the form slice that into individual bookable slots. "manual" is the
@@ -237,7 +243,8 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
           display_end_time: `${shift.end_time}:00`,
           is_active: true,
           is_display_active: true,
-          clinic_id: therapist.clinic_id
+          clinic_id: therapist.clinic_id,
+          capacity: capacity
         };
 
         // Detailed Validation Logging
@@ -320,6 +327,7 @@ if (results.length === 0) {
       onSuccess();
       setShifts([{ start_time: "09:00", end_time: "10:00" }]);
       setMode('auto');
+      setCapacity(1);
 
     } catch (error) {
       console.error("❌ Form Unexpected Error:", error);
@@ -376,25 +384,44 @@ if (results.length === 0) {
                 <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs leading-relaxed">
                     <Info className="w-4 h-4 shrink-0 mt-0.5" />
                     <p>
-                        <strong>1 slot = 1 pasien.</strong> Jam praktek harus dibagi menjadi beberapa slot
+                        <strong>1 slot = 1 pasien</strong> secara default. Jam praktek harus dibagi menjadi beberapa slot
                         agar bisa diisi lebih dari satu pasien dalam sehari. Gunakan mode <strong>Otomatis</strong> di
                         bawah untuk membagi jam buka-tutup menjadi slot per pasien secara langsung, atau
-                        pakai mode <strong>Manual</strong> jika jam prakteknya tidak beraturan.
+                        pakai mode <strong>Manual</strong> jika jam prakteknya tidak beraturan. Jika klinik bisa menangani
+                        beberapa pasien sekaligus di jam yang sama (mis. terapi kelompok, beberapa bed), naikkan
+                        <strong> Kapasitas per Slot</strong> di bawah.
                     </p>
                 </div>
 
-                <div className="space-y-2">
-                    <Label>Hari Kerja</Label>
-                    <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {DAYS.map(d => (
-                                <SelectItem key={d.value} value={d.value.toString()}>{d.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                        <Label>Hari Kerja</Label>
+                        <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {DAYS.map(d => (
+                                    <SelectItem key={d.value} value={d.value.toString()}>{d.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Kapasitas per Slot</Label>
+                        <Select value={capacity.toString()} onValueChange={(v) => setCapacity(parseInt(v, 10))}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CAPACITY_OPTIONS.map(c => (
+                                    <SelectItem key={c} value={c.toString()}>
+                                        {c} pasien{c > 1 ? ' bersamaan' : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
@@ -468,13 +495,13 @@ if (results.length === 0) {
 
                         <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                             <p className="text-xs font-medium text-slate-500 mb-2">
-                                Pratinjau: {previewSlots.length} slot akan dibuat
+                                Pratinjau: {previewSlots.length} slot akan dibuat{capacity > 1 ? `, masing-masing ${capacity} pasien` : ''}
                             </p>
                             {previewSlots.length > 0 ? (
                                 <div className="flex flex-wrap gap-1.5">
                                     {previewSlots.map((s, i) => (
                                         <span key={i} className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-full px-2.5 py-1">
-                                            {s.start_time} - {s.end_time}
+                                            {s.start_time} - {s.end_time}{capacity > 1 ? ` ×${capacity}` : ''}
                                         </span>
                                     ))}
                                 </div>
@@ -498,7 +525,7 @@ if (results.length === 0) {
                 ) : (
                 <>
                 <div className="space-y-4">
-                    <Label>Slot Pasien (setiap baris = 1 slot untuk 1 pasien)</Label>
+                    <Label>Slot Pasien (setiap baris = 1 slot, kapasitas {capacity} pasien)</Label>
                     {shifts.map((shift, idx) => (
                         <div key={idx} className="flex flex-col sm:flex-row gap-3 items-end p-3 bg-slate-50 rounded-lg border border-slate-200 relative group animate-in slide-in-from-left-2 duration-300">
                             <div className="w-full sm:w-1/2 space-y-1.5">
