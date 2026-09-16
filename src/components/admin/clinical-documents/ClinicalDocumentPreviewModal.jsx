@@ -50,27 +50,46 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
   // letting the fixed A4 width overflow and get cropped/scrolled off-screen.
   useEffect(() => {
     if (!isOpen) return;
-    const wrapperNode = previewWrapperRef.current;
-    const docNode = componentRef.current;
-    if (!wrapperNode || !docNode) return;
 
-    const computeScale = () => {
-      const availableWidth = wrapperNode.clientWidth;
-      if (availableWidth) setPreviewScale(Math.min(1, availableWidth / DOC_BASE_WIDTH));
+    let wrapperObserver;
+    let docObserver;
+    let rafId;
+
+    // Radix's Dialog content mounts a tick after this effect's own component
+    // mounts (it's wrapped in a Presence for its enter animation), so on the
+    // very first run both refs are still null here — bailing out then, like
+    // a one-shot effect would, left the preview permanently stuck at its
+    // initial (unscaled) size since [isOpen, children] never changes again
+    // while the modal stays open. Retry across frames until Radix has
+    // actually attached the nodes.
+    const setUpObservers = () => {
+      const wrapperNode = previewWrapperRef.current;
+      const docNode = componentRef.current;
+      if (!wrapperNode || !docNode) {
+        rafId = requestAnimationFrame(setUpObservers);
+        return;
+      }
+
+      const computeScale = () => {
+        const availableWidth = wrapperNode.clientWidth;
+        if (availableWidth) setPreviewScale(Math.min(1, availableWidth / DOC_BASE_WIDTH));
+      };
+      const computeHeight = () => setDocHeight(docNode.scrollHeight);
+
+      computeScale();
+      computeHeight();
+
+      wrapperObserver = new ResizeObserver(computeScale);
+      wrapperObserver.observe(wrapperNode);
+      docObserver = new ResizeObserver(computeHeight);
+      docObserver.observe(docNode);
     };
-    const computeHeight = () => setDocHeight(docNode.scrollHeight);
-
-    computeScale();
-    computeHeight();
-
-    const wrapperObserver = new ResizeObserver(computeScale);
-    wrapperObserver.observe(wrapperNode);
-    const docObserver = new ResizeObserver(computeHeight);
-    docObserver.observe(docNode);
+    setUpObservers();
 
     return () => {
-      wrapperObserver.disconnect();
-      docObserver.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+      wrapperObserver?.disconnect();
+      docObserver?.disconnect();
     };
   }, [isOpen, children]);
 
