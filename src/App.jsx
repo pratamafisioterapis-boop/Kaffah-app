@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/customSupabaseClient';
 import DashboardLayout from '@/components/DashboardLayout';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
@@ -299,6 +300,7 @@ function App() {
           <Router>
             <DomainGuard />
             <AppSplashGate />
+            <ImpersonationBanner />
             {/* <PWAInstallPrompt /> */}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>

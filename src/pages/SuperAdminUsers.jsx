@@ -1,17 +1,31 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, MonitorSmartphone } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
 const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
 
+const ROLE_HOME_PATH = {
+  super_admin: '/super-admin',
+  owner: '/owner',
+  admin: '/admin',
+  clinic_admin: '/admin',
+  therapist: '/therapist',
+  physiotherapist: '/therapist',
+};
+
 const SuperAdminUsers = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { impersonateUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [remotingId, setRemotingId] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -39,6 +53,26 @@ const SuperAdminUsers = () => {
     const { error } = await supabase.from('users').update({ clinic_id: newClinicId || null }).eq('id', userId);
     if (error) toast({ variant: 'destructive', title: 'Gagal ubah klinik', description: error.message });
     else { toast({ title: 'Klinik user diperbarui' }); fetchData(); }
+  };
+
+  const handleRemoteLogin = async (u) => {
+    if (u.role === 'super_admin') {
+      toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'Tidak bisa remote ke sesama super admin.' });
+      return;
+    }
+    if (!u.is_active) {
+      toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'Akun nonaktif tidak bisa diremote.' });
+      return;
+    }
+    setRemotingId(u.id);
+    const { error, target } = await impersonateUser(u.id);
+    setRemotingId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal remote ke akun', description: error.message });
+      return;
+    }
+    toast({ title: `Berhasil remote sebagai ${u.full_name || u.email}` });
+    navigate(ROLE_HOME_PATH[target?.role || u.role] || '/', { replace: true });
   };
 
   const handleToggleActive = async (user) => {
@@ -93,9 +127,25 @@ const SuperAdminUsers = () => {
                   </Select>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="w-full" onClick={() => handleToggleActive(u)}>
-                {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleToggleActive(u)}>
+                  {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
+                  onClick={() => handleRemoteLogin(u)}
+                >
+                  {remotingId === u.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <MonitorSmartphone className="w-4 h-4 mr-1" />
+                  )}
+                  Remote
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -141,9 +191,26 @@ const SuperAdminUsers = () => {
                     </span>
                   </td>
                   <td className="p-3">
-                    <Button size="sm" variant="outline" onClick={() => handleToggleActive(u)}>
-                      {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleToggleActive(u)}>
+                        {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                        disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
+                        onClick={() => handleRemoteLogin(u)}
+                        title="Login sebagai user ini tanpa password"
+                      >
+                        {remotingId === u.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MonitorSmartphone className="w-4 h-4 mr-1" />
+                        )}
+                        Remote
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

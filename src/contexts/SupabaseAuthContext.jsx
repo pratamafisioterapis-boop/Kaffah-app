@@ -8,6 +8,17 @@ import { useToast } from '@/components/ui/use-toast';
 
 const AuthContext = createContext(undefined);
 
+const IMPERSONATION_ORIGIN_KEY = 'impersonation_origin_session';
+
+const readImpersonationOrigin = () => {
+  try {
+    const raw = sessionStorage.getItem(IMPERSONATION_ORIGIN_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 // Bungkus panggilan Supabase dengan batas waktu supaya `loading` tidak
 // tersangkut selamanya kalau getSession()/query hang tanpa resolve atau reject
 // (mis. IndexedDB terkunci di PWA, service worker basi, atau koneksi lambat).
@@ -33,7 +44,8 @@ export const AuthProvider = ({ children }) => {
   );
 }, []);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
+  const [impersonationOrigin, setImpersonationOrigin] = useState(readImpersonationOrigin);
+
   // Ref to track if we are currently handling a session update to prevent loops
   const isHandlingSession = useRef(false);
   const retryCount = useRef(0);
@@ -354,6 +366,76 @@ export const AuthProvider = ({ children }) => {
     }
   }, [handleSession, signOut, isOnline, toast]);
 
+  // Super-admin "remote login": generates a session for another account
+  // via the impersonate-user edge function (no password ever involved),
+  // stashing the caller's own tokens so they can be restored afterwards.
+  const impersonateUser = useCallback(async (targetUserId) => {
+    if (!isOnline) {
+      return { error: { message: "Tidak ada koneksi internet. Mohon periksa jaringan Anda." } };
+    }
+    try {
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      const originSession = currentSessionData?.session;
+      if (!originSession?.access_token || !originSession?.refresh_token) {
+        throw new Error("Sesi Anda tidak ditemukan. Silakan login ulang.");
+      }
+
+      const { data, error } = await supabase.functions.invoke('impersonate-user', {
+        body: { target_user_id: targetUserId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.token_hash || !data?.email) {
+        throw new Error("Gagal membuat sesi remote.");
+      }
+
+      const originPayload = {
+        access_token: originSession.access_token,
+        refresh_token: originSession.refresh_token,
+        admin_email: originSession.user?.email || null,
+      };
+      sessionStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
+      setImpersonationOrigin(originPayload);
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: 'magiclink',
+      });
+      if (verifyError) {
+        sessionStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
+        setImpersonationOrigin(null);
+        throw verifyError;
+      }
+
+      return { error: null, target: data.target };
+    } catch (error) {
+      console.error("[AuthContext] Impersonate error:", error);
+      return { error };
+    }
+  }, [isOnline]);
+
+  const stopImpersonation = useCallback(async () => {
+    try {
+      const origin = readImpersonationOrigin();
+      if (!origin) {
+        return { error: new Error("Tidak ada sesi super admin tersimpan.") };
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token: origin.access_token,
+        refresh_token: origin.refresh_token,
+      });
+      sessionStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
+      setImpersonationOrigin(null);
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      console.error("[AuthContext] Stop impersonation error:", error);
+      return { error };
+    }
+  }, []);
+
+  const isImpersonating = !!impersonationOrigin;
+
   const role = useMemo(() => {
     return userDetails?.role || user?.user_metadata?.role || 'guest';
   }, [userDetails, user]);
@@ -391,8 +473,12 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
-    refreshSession
-  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession]);
+    refreshSession,
+    impersonateUser,
+    stopImpersonation,
+    isImpersonating,
+    impersonationOrigin,
+  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession, impersonateUser, stopImpersonation, isImpersonating, impersonationOrigin]);
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
