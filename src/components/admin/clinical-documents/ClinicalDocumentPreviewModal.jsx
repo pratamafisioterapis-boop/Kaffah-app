@@ -42,6 +42,11 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
 
     await waitForImages(element);
 
+    // element sits inside a scrollable modal (overflow-y-auto, max-h-[90vh]),
+    // so without an explicit height/windowHeight html2canvas falls back to
+    // the modal's visible viewport and silently crops everything below the
+    // fold (e.g. the REKOMENDASI section and signature block).
+    const fullHeight = element.scrollHeight;
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -50,6 +55,10 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
       backgroundColor: '#ffffff',
       width: 794,
       windowWidth: 794,
+      height: fullHeight,
+      windowHeight: fullHeight,
+      scrollX: 0,
+      scrollY: 0,
     });
 
     const pdfWidth = 210;
@@ -124,9 +133,12 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
           ${styleTags}
           <style>
             @media print {
-              body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+              html, body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; height: auto; }
               @page { size: A4; margin: 0; }
-              #doc-root { width: 210mm; min-height: 297mm; }
+              /* 1px under 297mm: at min-height:297mm exactly, Chromium's
+                 mm-to-px rounding tips the box a hair past one page and
+                 prints a blank second page. */
+              #doc-root { width: 210mm; min-height: calc(297mm - 1px); box-sizing: border-box; }
             }
           </style>
         </head>
