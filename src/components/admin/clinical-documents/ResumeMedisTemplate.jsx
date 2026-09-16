@@ -54,7 +54,7 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
       {/* HEADER */}
       <div style={{
         background: 'linear-gradient(120deg, #0f172a 0%, #312e81 100%)',
-        padding: '28px 40px',
+        padding: '20px 40px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -81,16 +81,16 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
         </div>
       </div>
 
-      <div style={{ padding: '32px 40px' }}>
+      <div style={{ padding: '22px 40px 28px' }}>
         {/* PATIENT INFO */}
         <div style={{
           border: '1px solid #e2e8f0',
           borderRadius: '14px',
-          padding: '20px 24px',
+          padding: '14px 20px',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           columnGap: '32px',
-          rowGap: '10px',
+          rowGap: '6px',
           background: '#f8fafc',
         }}>
           {[
@@ -115,20 +115,20 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
           { key: 'pemeriksaan_fisik', label: 'Pemeriksaan Fisik', color: '#0ea5e9' },
           { key: 'diagnosa', label: 'Diagnosa', color: '#f59e0b' },
         ].map((section) => (
-          <div key={section.key} style={{ marginTop: '18px' }}>
+          <div key={section.key} style={{ marginTop: '12px' }}>
             <div style={{
               borderLeft: `4px solid ${section.color}`,
-              padding: '12px 18px',
+              padding: '10px 16px',
               background: '#fff',
               border: '1px solid #e2e8f0',
               borderLeftWidth: '4px',
               borderLeftColor: section.color,
               borderRadius: '10px',
             }}>
-              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: section.color, margin: '0 0 6px', textTransform: 'uppercase' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: section.color, margin: '0 0 5px', textTransform: 'uppercase' }}>
                 {section.label}
               </p>
-              <p style={{ fontSize: '12.5px', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
+              <p style={{ fontSize: '12px', lineHeight: 1.45, margin: 0, whiteSpace: 'pre-wrap' }}>
                 {data?.[section.key] || '-'}
               </p>
             </div>
@@ -136,11 +136,11 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
         ))}
 
         {/* PROGRAM TERAPI */}
-        <div style={{ marginTop: '18px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#334155', margin: '0 0 10px', textTransform: 'uppercase' }}>
+        <div style={{ marginTop: '12px' }}>
+          <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#334155', margin: '0 0 8px', textTransform: 'uppercase' }}>
             Program Terapi
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '6px' }}>
             {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
               const checked = programTerapi.includes(key);
               return (
@@ -164,49 +164,49 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
             })}
           </div>
           {otherProgram && (
-            <p style={{ fontSize: '12px', marginTop: '10px' }}>
+            <p style={{ fontSize: '12px', marginTop: '8px' }}>
               <span style={{ color: '#64748b', fontWeight: 600 }}>Lainnya: </span>{otherProgram}
             </p>
           )}
         </div>
 
         {/* REKOMENDASI */}
-        <div style={{ marginTop: '18px' }}>
+        <div style={{ marginTop: '12px' }}>
           <div style={{
             background: '#eef2ff',
             border: '1px solid #c7d2fe',
             borderRadius: '10px',
-            padding: '12px 18px',
+            padding: '10px 16px',
           }}>
             <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#4338ca', margin: '0 0 4px', textTransform: 'uppercase' }}>
               Rekomendasi Fisioterapi
             </p>
-            <p style={{ fontSize: '12.5px', margin: 0, fontWeight: 600 }}>{data?.rekomendasi || '-'}</p>
+            <p style={{ fontSize: '12px', margin: 0, fontWeight: 600 }}>{data?.rekomendasi || '-'}</p>
           </div>
         </div>
 
         {/* SIGNATURE */}
-        <div style={{ marginTop: '48px', display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ textAlign: 'center', width: '240px' }}>
+        <div style={{ marginTop: '22px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ textAlign: 'center', width: '260px' }}>
             <p style={{ fontSize: '12px', margin: 0 }}>
               {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
             </p>
             <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
-            <div style={{ position: 'relative', height: '90px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', height: '70px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
               {signatureUrl && (
-                <img src={signatureUrl} style={{ maxHeight: '85px', maxWidth: '180px' }} />
+                <img src={signatureUrl} style={{ maxHeight: '65px', maxWidth: '160px' }} />
               )}
               {clinic?.stamp_url && (
                 <img
                   src={clinic.stamp_url}
-                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '80px', maxWidth: '80px', objectFit: 'contain' }}
+                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '65px', maxWidth: '65px', objectFit: 'contain' }}
                 />
               )}
             </div>
             <div style={{ borderTop: '1px solid #0f172a', width: '180px', margin: '4px auto 0' }} />
-            <p style={{ fontSize: '12.5px', fontWeight: 700, margin: '6px 0 0' }}>{data?.therapist_name || '-'}</p>
+            <p style={{ fontSize: '12.5px', fontWeight: 700, margin: '6px 0 0', whiteSpace: 'nowrap' }}>{data?.therapist_name || '-'}</p>
             {data?.therapist_license && (
-              <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0' }}>SIPF: {data.therapist_license}</p>
+              <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0', whiteSpace: 'nowrap' }}>SIPF: {data.therapist_license}</p>
             )}
           </div>
         </div>

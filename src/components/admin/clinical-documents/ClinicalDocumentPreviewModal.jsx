@@ -71,6 +71,13 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
       // Fits on a single page — draw at its natural (unscaled) height so
       // nothing near the bottom (e.g. the signature block) gets squashed.
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfImgH);
+    } else if (pdfImgH <= pdfHeight * 1.06) {
+      // Only a hair over one page (a few mm) — slicing here would cut a
+      // page break straight through a line of text (e.g. the signature
+      // name), which reads as corrupted/duplicated content. Scale the
+      // whole document down slightly instead so it stays a single page.
+      const scaledWidth = (pdfWidth * pdfHeight) / pdfImgH;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pdfWidth - scaledWidth) / 2, 0, scaledWidth, pdfHeight);
     } else {
       // Content is taller than one A4 page: slice the canvas into
       // page-sized chunks instead of squeezing everything into 297mm,
