@@ -120,7 +120,7 @@ const TherapistScheduleManager = () => {
     // Store simple slot objects
     setCopiedSchedule({
         dayValue,
-        slots: slots.map(s => ({ start_time: s.start_time, end_time: s.end_time }))
+        slots: slots.map(s => ({ start_time: s.start_time, end_time: s.end_time, capacity: s.capacity || 1 }))
     });
     setCopiedDayName(dayName);
     setCopiedSlotCount(slots.length);
@@ -199,6 +199,7 @@ const TherapistScheduleManager = () => {
                     day_of_week: dayVal,
                     start_time: slot.start_time,
                     end_time: slot.end_time,
+                    capacity: slot.capacity || 1,
                     is_active: true
                 };
                 console.log("[TherapistScheduleManager] Pasting schedule:", payload);
@@ -447,6 +448,11 @@ const TherapistScheduleManager = () => {
                                                 >
                                                     <span className="font-semibold text-slate-700 tracking-tight">
                                                         {slot.start_time.slice(0,5)} - {slot.end_time.slice(0,5)}
+                                                        {slot.capacity > 1 && (
+                                                            <span className="ml-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full align-middle">
+                                                                ×{slot.capacity}
+                                                            </span>
+                                                        )}
                                                     </span>
                                                     <Button 
                                                         variant="ghost" 
