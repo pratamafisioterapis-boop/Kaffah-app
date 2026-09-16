@@ -1,10 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Printer, Download, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+
+// Documents are authored at a fixed A4 width (210mm ≈ 794px @96dpi) for
+// print/PDF fidelity, but their height varies with content length.
+const DOC_BASE_WIDTH = 794;
 
 // Waits for every <img> inside the document (signature, stamp, logo) to
 // actually finish loading before html2canvas rasterizes it — a fixed delay
@@ -32,9 +36,43 @@ const waitForImages = (root) => {
 // Generic A4 preview / print / PDF export shell shared by clinical document
 // templates (Resume Medis, Surat Keterangan). Mirrors the InvoiceModal pattern.
 const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, children }) => {
+  // componentRef points at a full-resolution, off-screen clone of the
+  // document — the print/PDF pipeline below (html2canvas, iframe print)
+  // needs the real A4-sized DOM, not the scaled-down preview copy.
   const componentRef = useRef(null);
+  const previewWrapperRef = useRef(null);
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [docHeight, setDocHeight] = useState(0);
+
+  // Scale the visible preview to fit narrow (mobile) screens instead of
+  // letting the fixed A4 width overflow and get cropped/scrolled off-screen.
+  useEffect(() => {
+    if (!isOpen) return;
+    const wrapperNode = previewWrapperRef.current;
+    const docNode = componentRef.current;
+    if (!wrapperNode || !docNode) return;
+
+    const computeScale = () => {
+      const availableWidth = wrapperNode.clientWidth;
+      if (availableWidth) setPreviewScale(Math.min(1, availableWidth / DOC_BASE_WIDTH));
+    };
+    const computeHeight = () => setDocHeight(docNode.scrollHeight);
+
+    computeScale();
+    computeHeight();
+
+    const wrapperObserver = new ResizeObserver(computeScale);
+    wrapperObserver.observe(wrapperNode);
+    const docObserver = new ResizeObserver(computeHeight);
+    docObserver.observe(docNode);
+
+    return () => {
+      wrapperObserver.disconnect();
+      docObserver.disconnect();
+    };
+  }, [isOpen, children]);
 
   const generatePDF = async () => {
     const element = componentRef.current;
@@ -165,17 +203,20 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100">
-        <div className="flex items-center justify-between p-4 border-b bg-white z-10 shrink-0">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <div className="flex gap-2">
+      <DialogContent
+        hideClose
+        className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100"
+      >
+        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b bg-white z-10 shrink-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate min-w-0 flex-1">{title}</h2>
+          <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="w-4 h-4 mr-2" />
-              Cetak
+              <Printer className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Cetak</span>
             </Button>
             <Button size="sm" onClick={handleDownloadPDF} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700">
-              {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-              Download PDF
+              {isGenerating ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" /> : <Download className="w-4 h-4 sm:mr-2" />}
+              <span className="hidden sm:inline">Download PDF</span>
             </Button>
             <DialogClose asChild>
               <Button variant="ghost" size="icon">
@@ -185,8 +226,26 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-slate-200/50">
-          <div className="shadow-2xl print:shadow-none" ref={componentRef}>
+        {/* Scaled preview — shrinks the fixed A4-width document to fit narrow
+            (mobile) screens instead of cropping/scrolling it off-screen. */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-8 flex justify-center bg-slate-200/50">
+          <div ref={previewWrapperRef} className="w-full flex justify-center">
+            <div
+              className="shadow-2xl print:shadow-none overflow-hidden shrink-0"
+              style={{ width: DOC_BASE_WIDTH * previewScale, height: docHeight * previewScale || undefined }}
+            >
+              <div style={{ width: DOC_BASE_WIDTH, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+                {children}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Full-resolution off-screen clone — the actual target for print
+            and PDF export, kept separate so the preview's scale transform
+            above never gets baked into the rasterized output. */}
+        <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} aria-hidden="true">
+          <div ref={componentRef}>
             {children}
           </div>
         </div>
