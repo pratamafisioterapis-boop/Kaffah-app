@@ -17,7 +17,7 @@ const PASTEL_COLUMN_COLORS = [
 // baris per-TPS (pemilih_suara_caleg_tps) untuk satu kelurahan+tahun+partai —
 // dipanggil setiap kali nilai per TPS ditambah/diedit/dihapus di sini,
 // supaya total kelurahan tidak pernah basi dibanding rincian per TPS-nya.
-const syncKelurahanTotals = async (kelurahanId, year, partyName, candidateMasterList) => {
+export const syncKelurahanTotals = async (kelurahanId, year, partyName, candidateMasterList) => {
   // Sebuah kelurahan bisa punya puluhan TPS x banyak caleg — tanpa paginasi
   // eksplisit ini gampang lewat batas 1000 baris PostgREST.
   const { data: allTpsRows, error: fetchError } = await fetchAllRows(() =>

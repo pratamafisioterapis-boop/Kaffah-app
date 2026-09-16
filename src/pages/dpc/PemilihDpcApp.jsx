@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, LogOut, ListChecks, Table2 } from 'lucide-react';
 import PemilihSuaraPksSetup from '../pemilih/PemilihSuaraPksSetup';
 import PemilihTpsInputByParty from '../pemilih/PemilihTpsInputByParty';
+import PemilihManualInputByParty from '../pemilih/PemilihManualInputByParty';
 import { PEMILIH_SHARED_CSS } from '../pemilih/pemilihSharedStyles';
 
 const DEFAULT_PARTY = 'Partai Keadilan Sejahtera';
@@ -213,6 +214,7 @@ const PemilihDpcApp = () => {
               {[
                 { key: 'setup', label: 'Setup Dapil', icon: ListChecks },
                 { key: 'tps', label: 'Input Suara per TPS', icon: Table2 },
+                { key: 'manual', label: 'Input Manual (Grid)', icon: Table2 },
               ].map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.key;
@@ -252,7 +254,7 @@ const PemilihDpcApp = () => {
                 onSelectParty={setSelectedParty}
                 onAddPartyDraft={handleAddPartyDraft}
               />
-            ) : (
+            ) : tab === 'tps' ? (
               <PemilihTpsInputByParty
                 selectedDapil={selectedDapil}
                 kelurahanList={kelurahanList}
@@ -260,6 +262,16 @@ const PemilihDpcApp = () => {
                 knownYears={voteYears}
                 defaultYear={defaultYear}
                 party={selectedParty}
+                toast={toast}
+              />
+            ) : (
+              <PemilihManualInputByParty
+                kelurahanList={kelurahanList}
+                calegMasterRows={calegMasterRows}
+                knownYears={voteYears}
+                defaultYear={defaultYear}
+                party={selectedParty}
+                onSaved={fetchAll}
                 toast={toast}
               />
             )}
