@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Trash2, CheckCircle, Clock, AlertTriangle, Copy, RotateCcw, Bug } from 'lucide-react';
+import { Loader2, Plus, Trash2, CheckCircle, Clock, AlertTriangle, Copy, RotateCcw, Bug, Info, Wand2, ListPlus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -31,6 +31,36 @@ const DAYS = [
   { value: 6, label: 'Sabtu' },
   { value: 0, label: 'Minggu' },
 ];
+
+const DURATION_OPTIONS = [30, 45, 60, 90, 120];
+const GAP_OPTIONS = [0, 5, 10, 15, 30];
+
+const timeToMinutes = (time) => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const minutesToTime = (mins) => {
+  const h = Math.floor(mins / 60).toString().padStart(2, '0');
+  const m = (mins % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+};
+
+// One shift = one bookable slot for one patient. To fit several patients in
+// a practice window, we slice [openTime, closeTime) into duration-minute
+// chunks (separated by an optional gap) instead of asking the owner to add
+// each chunk by hand.
+const generateSlotsFromWindow = (openTime, closeTime, durationMinutes, gapMinutes) => {
+  const open = timeToMinutes(openTime);
+  const close = timeToMinutes(closeTime);
+  const slots = [];
+  let cursor = open;
+  while (cursor + durationMinutes <= close) {
+    slots.push({ start_time: minutesToTime(cursor), end_time: minutesToTime(cursor + durationMinutes) });
+    cursor += durationMinutes + gapMinutes;
+  }
+  return slots;
+};
 
 const getErrorDisplay = (result) => {
   if (!result) {
@@ -73,8 +103,42 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
   
   const [dayOfWeek, setDayOfWeek] = useState("1");
   const [shifts, setShifts] = useState([
-    { start_time: "09:00", end_time: "17:00" }
+    { start_time: "09:00", end_time: "10:00" }
   ]);
+
+  // "auto" lets the owner describe practice hours + duration per patient and
+  // has the form slice that into individual bookable slots. "manual" is the
+  // original one-shift-at-a-time editor for irregular hours.
+  const [mode, setMode] = useState("auto");
+  const [autoConfig, setAutoConfig] = useState({
+    openTime: "09:00",
+    closeTime: "17:00",
+    duration: 60,
+    gap: 0,
+  });
+
+  const previewSlots = mode === 'auto'
+    ? generateSlotsFromWindow(autoConfig.openTime, autoConfig.closeTime, autoConfig.duration, autoConfig.gap)
+    : shifts;
+
+  const handleApplyAutoSlots = () => {
+    const generated = generateSlotsFromWindow(autoConfig.openTime, autoConfig.closeTime, autoConfig.duration, autoConfig.gap);
+    if (generated.length === 0) {
+      toast({
+        title: "Tidak ada slot yang bisa dibuat",
+        description: "Pastikan jam tutup lebih besar dari jam buka + durasi per pasien.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShifts(generated);
+    setMode('manual');
+    toast({
+      title: `${generated.length} slot dibuat`,
+      description: "Periksa daftar slot di bawah, lalu klik Simpan Jadwal.",
+      className: "bg-blue-50 border-blue-200"
+    });
+  };
 
   const [errorState, setErrorState] = useState({
     isOpen: false,
@@ -254,7 +318,8 @@ if (results.length === 0) {
       });
       
       onSuccess();
-      setShifts([{ start_time: "09:00", end_time: "17:00" }]);
+      setShifts([{ start_time: "09:00", end_time: "10:00" }]);
+      setMode('auto');
 
     } catch (error) {
       console.error("❌ Form Unexpected Error:", error);
@@ -293,13 +358,13 @@ if (results.length === 0) {
                     <Clock className="w-5 h-5 text-slate-500" />
                     Atur Jadwal Baru
                 </CardTitle>
-                <CardDescription>Tambahkan shift kerja untuk {therapist?.name}</CardDescription>
-                
+                <CardDescription>Tambahkan jam praktek untuk {therapist?.name}</CardDescription>
+
                 {/* Dev Only: Debug Toggle */}
                 {isDevelopment && (
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
                         onClick={() => setShowDebug(!showDebug)}
                     >
@@ -308,6 +373,16 @@ if (results.length === 0) {
                 )}
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
+                <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs leading-relaxed">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>
+                        <strong>1 slot = 1 pasien.</strong> Jam praktek harus dibagi menjadi beberapa slot
+                        agar bisa diisi lebih dari satu pasien dalam sehari. Gunakan mode <strong>Otomatis</strong> di
+                        bawah untuk membagi jam buka-tutup menjadi slot per pasien secara langsung, atau
+                        pakai mode <strong>Manual</strong> jika jam prakteknya tidak beraturan.
+                    </p>
+                </div>
+
                 <div className="space-y-2">
                     <Label>Hari Kerja</Label>
                     <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
@@ -322,8 +397,108 @@ if (results.length === 0) {
                     </Select>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
+                    <button
+                        type="button"
+                        onClick={() => setMode('auto')}
+                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'auto' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <Wand2 className="w-4 h-4" /> Otomatis
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMode('manual')}
+                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'manual' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <ListPlus className="w-4 h-4" /> Manual
+                    </button>
+                </div>
+
+                {mode === 'auto' ? (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <span className="text-xs font-medium text-slate-500">Jam Buka Praktek</span>
+                                <Input
+                                    type="time"
+                                    value={autoConfig.openTime}
+                                    onChange={(e) => setAutoConfig(prev => ({ ...prev, openTime: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <span className="text-xs font-medium text-slate-500">Jam Tutup Praktek</span>
+                                <Input
+                                    type="time"
+                                    value={autoConfig.closeTime}
+                                    onChange={(e) => setAutoConfig(prev => ({ ...prev, closeTime: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <span className="text-xs font-medium text-slate-500">Durasi per Pasien</span>
+                                <Select
+                                    value={autoConfig.duration.toString()}
+                                    onValueChange={(v) => setAutoConfig(prev => ({ ...prev, duration: parseInt(v, 10) }))}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {DURATION_OPTIONS.map(d => (
+                                            <SelectItem key={d} value={d.toString()}>{d} menit</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <span className="text-xs font-medium text-slate-500">Jeda Antar Pasien</span>
+                                <Select
+                                    value={autoConfig.gap.toString()}
+                                    onValueChange={(v) => setAutoConfig(prev => ({ ...prev, gap: parseInt(v, 10) }))}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {GAP_OPTIONS.map(g => (
+                                            <SelectItem key={g} value={g.toString()}>{g === 0 ? 'Tanpa jeda' : `${g} menit`}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <p className="text-xs font-medium text-slate-500 mb-2">
+                                Pratinjau: {previewSlots.length} slot akan dibuat
+                            </p>
+                            {previewSlots.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {previewSlots.map((s, i) => (
+                                        <span key={i} className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-full px-2.5 py-1">
+                                            {s.start_time} - {s.end_time}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">
+                                    Atur jam buka, jam tutup, dan durasi yang valid untuk melihat pratinjau slot.
+                                </p>
+                            )}
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={handleApplyAutoSlots}
+                            disabled={previewSlots.length === 0}
+                        >
+                            <Wand2 className="w-4 h-4 mr-2" /> Gunakan {previewSlots.length} Slot Ini
+                        </Button>
+                    </div>
+                ) : (
+                <>
                 <div className="space-y-4">
-                    <Label>Shift Kerja</Label>
+                    <Label>Slot Pasien (setiap baris = 1 slot untuk 1 pasien)</Label>
                     {shifts.map((shift, idx) => (
                         <div key={idx} className="flex flex-col sm:flex-row gap-3 items-end p-3 bg-slate-50 rounded-lg border border-slate-200 relative group animate-in slide-in-from-left-2 duration-300">
                             <div className="w-full sm:w-1/2 space-y-1.5">
@@ -360,15 +535,17 @@ if (results.length === 0) {
                     ))}
                 </div>
 
-                <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleAddShift}
                     className="w-full border-dashed text-slate-500 hover:text-blue-600 hover:bg-blue-50"
                 >
-                    <Plus className="w-4 h-4 mr-2" /> Tambah Shift
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Slot
                 </Button>
+                </>
+                )}
             </CardContent>
             
             {/* Debug Panel (Dev Only) */}
