@@ -202,7 +202,16 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
     const fetchNextRM = async () => {
         setFetchingRM(true);
         const nextRM = await generateNextRM();
-        setFormData(prev => ({ ...prev, medical_record_number: nextRM }));
+        if (nextRM) {
+            setFormData(prev => ({ ...prev, medical_record_number: nextRM }));
+        } else {
+            setFormData(prev => ({ ...prev, medical_record_number: '' }));
+            toast({
+                variant: "destructive",
+                title: "Gagal membuat No. Rekam Medis",
+                description: "Silakan coba lagi. Data pasien tidak dapat disimpan tanpa No. RM yang valid."
+            });
+        }
         setFetchingRM(false);
     };
 
@@ -278,6 +287,14 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
         if (!formData.gender) newErrors.gender = "Jenis kelamin wajib dipilih";
         if (!formData.phone.trim()) newErrors.phone = "Nomor HP wajib diisi";
+
+        if (mode === 'add') {
+            if (fetchingRM) {
+                newErrors.medical_record_number = "No. Rekam Medis masih dimuat, mohon tunggu";
+            } else if (!formData.medical_record_number || formData.medical_record_number === 'Loading...') {
+                newErrors.medical_record_number = "No. Rekam Medis gagal dibuat, klik \"Coba lagi\"";
+            }
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -380,11 +397,32 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">No. Rekam Medis</Label>
-                            <Input 
-                                value={formData.medical_record_number} 
-                                disabled 
-                                className="bg-slate-50 font-mono text-slate-600 border-slate-200" 
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    value={fetchingRM ? 'Loading...' : (formData.medical_record_number || 'Gagal dibuat')}
+                                    disabled
+                                    className={cn(
+                                        "bg-slate-50 font-mono text-slate-600 border-slate-200",
+                                        !fetchingRM && mode === 'add' && !formData.medical_record_number && "text-red-500 border-red-200"
+                                    )}
+                                />
+                                {mode === 'add' && !fetchingRM && !formData.medical_record_number && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="shrink-0"
+                                        onClick={fetchNextRM}
+                                    >
+                                        Coba lagi
+                                    </Button>
+                                )}
+                            </div>
+                            {errors.medical_record_number && (
+                                <p className="text-xs text-red-500 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> {errors.medical_record_number}
+                                </p>
+                            )}
                         </div>
                         <div className="space-y-2">
                              <Label className="text-sm font-medium text-slate-700">Status Pasien</Label>

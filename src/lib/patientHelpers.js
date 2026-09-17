@@ -156,6 +156,10 @@ export const normalizePatient = (patient) => {
  * clinic. The RPC locks per clinic so concurrent callers can never be
  * handed the same number.
  * Format: RM + 5 digits (e.g. RM00001)
+ *
+ * Returns null on failure instead of a placeholder string — callers must
+ * treat null as "no RM available yet" and must not persist it, otherwise
+ * a placeholder like "RM-----" ends up saved as a patient's real RM.
  */
 export const generateNextRM = async () => {
     try {
@@ -165,7 +169,7 @@ export const generateNextRM = async () => {
 
         if (!userRow?.clinic_id) {
             console.error("RM Generation: missing clinic_id for current user");
-            return 'RM-----';
+            return null;
         }
 
         const { data, error } = await supabase.rpc('generate_next_medical_record_number', {
@@ -177,7 +181,7 @@ export const generateNextRM = async () => {
         return data;
     } catch (error) {
         console.error("Error generating RM:", error);
-        return 'RM-----'; // Fallback
+        return null;
     }
 };
 
