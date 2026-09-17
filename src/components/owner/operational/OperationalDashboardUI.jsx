@@ -5,6 +5,7 @@ import {
   CheckCircle, XCircle, PlayCircle, UserCheck,
   UserPlus, UserCog
 } from 'lucide-react';
+import SlotUtilizationChart from './SlotUtilizationChart';
 
 const isPWA = (() => {
   try {
@@ -137,6 +138,11 @@ const OperationalDashboardUI = ({
           </motion.div>
         ))}
       </div>
+
+      {/* ── Utilisasi Slot Hari Ini — dipindah ke sini, ukurannya dijaga
+          maksimal seluas gabungan 4 kartu di atas (Terapis Aktif, Slot
+          Kosong, Pasien Baru, Pasien Lama) ── */}
+      <SlotUtilizationChart />
 
     </div>
   );

@@ -116,8 +116,10 @@ const SlotUtilizationChart = () => {
   };
   const utilizationColor = getUtilizationColor(metrics.utilization);
 
-  // SVG donut manual agar lebih besar dan premium
-  const radius = 70;
+  // SVG donut manual — versi ringkas, ukurannya sengaja dijaga tetap kecil
+  // supaya kartu ini tidak melebihi luas gabungan 4 kartu KPI hari ini
+  // (Terapis Aktif, Slot Kosong, Pasien Baru, Pasien Lama) di atasnya.
+  const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const isFull = metrics.utilization >= 100;
   const strokeDash = (metrics.utilization / 100) * circumference;
@@ -125,56 +127,56 @@ const SlotUtilizationChart = () => {
   return (
     <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Header */}
-      <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4 flex items-start justify-between">
+      <div className="px-4 md:px-5 pt-4 md:pt-5 pb-2 flex items-start justify-between">
         <div>
-          <h3 className="text-base font-bold text-slate-800">Utilisasi Slot Hari Ini</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Real-time slot capacity</p>
+          <h3 className="text-sm font-bold text-slate-800">Utilisasi Slot Hari Ini</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Real-time slot capacity</p>
         </div>
         {!loading && !error && (
-          <button onClick={fetchUtilizationData} className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors">
-            <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
+          <button onClick={fetchUtilizationData} className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0">
+            <RefreshCw className="h-3 w-3 text-slate-400" />
           </button>
         )}
       </div>
 
-      <CardContent className="pt-0 pb-6 px-5 md:px-6">
+      <CardContent className="pt-1 pb-4 px-4 md:px-5">
         {loading ? (
-          <div className="h-56 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
+          <div className="h-20 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-200" />
           </div>
         ) : error ? (
-          <div className="h-56 flex flex-col items-center justify-center gap-2 text-rose-500 text-sm">
-            <AlertCircle className="h-5 w-5" /><p>{error}</p>
+          <div className="h-20 flex flex-col items-center justify-center gap-1.5 text-rose-500 text-xs">
+            <AlertCircle className="h-4 w-4" /><p>{error}</p>
           </div>
         ) : total === 0 ? (
-          <div className="h-56 flex items-center justify-center text-slate-400 text-sm">
+          <div className="h-20 flex items-center justify-center text-slate-400 text-xs">
             Tidak ada data jadwal hari ini.
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-5">
-            {/* SVG Donut — lebih besar & premium */}
-            <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
-              <svg width="180" height="180" viewBox="0 0 180 180">
+          <div className="flex items-center gap-4">
+            {/* SVG Donut — ringkas */}
+            <div className="relative flex items-center justify-center shrink-0" style={{ width: 100, height: 100 }}>
+              <svg width="100" height="100" viewBox="0 0 100 100">
                 {/* Track */}
-                <circle cx="90" cy="90" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="16" />
+                <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="10" />
                 {/* Progress — saat 100% gambar lingkaran solid tanpa dasharray sama
                     sekali, supaya tidak bergantung pada perhitungan panjang lingkaran
                     (circumference) milik browser yang bisa sedikit meleset di sebagian
                     WebView/mobile dan menyisakan celah walau nilainya sudah penuh. */}
                 {isFull ? (
                   <circle
-                    cx="90" cy="90" r={radius}
+                    cx="50" cy="50" r={radius}
                     fill="none"
                     stroke={utilizationColor}
-                    strokeWidth="16"
+                    strokeWidth="10"
                     style={{ transition: 'stroke 0.8s ease' }}
                   />
                 ) : (
                   <circle
-                    cx="90" cy="90" r={radius}
+                    cx="50" cy="50" r={radius}
                     fill="none"
                     stroke={utilizationColor}
-                    strokeWidth="16"
+                    strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={`${strokeDash} ${circumference}`}
                     strokeDashoffset={circumference / 4}
@@ -184,38 +186,22 @@ const SlotUtilizationChart = () => {
               </svg>
               {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl md:text-5xl font-black leading-none" style={{ color: utilizationColor }}>
+                <span className="text-xl font-black leading-none" style={{ color: utilizationColor }}>
                   {metrics.utilization}%
                 </span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Utilisasi</span>
               </div>
             </div>
 
-            {/* Stats 3 kolom */}
-            <div className="w-full grid grid-cols-3 gap-3">
-              {[
-                { label: 'Terisi', value: metrics.filled, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-                { label: 'Kosong', value: metrics.empty, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-100' },
-                { label: 'Total', value: total, color: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-100' },
-              ].map(s => (
-                <div key={s.label} className={`text-center ${s.bg} border ${s.border} rounded-2xl py-3.5`}>
-                  <p className={`text-2xl md:text-3xl font-black leading-none ${s.color}`}>{s.value}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-1.5 uppercase tracking-wider">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full">
-              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            {/* Info terisi — Slot Kosong sudah tampil di kartu KPI hari ini,
+                jadi di sini cukup tampilkan jumlah yang terisi & progress bar. */}
+            <div className="flex-1 min-w-0">
+              <p className="text-2xl md:text-3xl font-black leading-none text-indigo-600">{metrics.filled}</p>
+              <p className="text-[11px] text-slate-400 font-medium mt-1">slot terisi dari {total} total</p>
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${metrics.utilization}%`, backgroundColor: utilizationColor }}
                 />
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-400 mt-1.5">
-                <span>{metrics.filled} slot terisi</span>
-                <span>{metrics.empty} slot kosong</span>
               </div>
             </div>
           </div>

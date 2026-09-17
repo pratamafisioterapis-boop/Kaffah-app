@@ -35,7 +35,6 @@ import OperationalDashboardUI from '@/components/owner/operational/OperationalDa
 import SessionTimelinessChart from '@/components/owner/operational/SessionTimelinessChart';
 import TrendSessionChart from '@/components/owner/operational/TrendSessionChart';
 import TherapistStatusCards from '@/components/owner/operational/TherapistStatusCards';
-import SlotUtilizationChart from '@/components/owner/operational/SlotUtilizationChart';
 import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDemandChart';
 import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
@@ -501,9 +500,8 @@ setTherapists(enrichedTherapists);
                  <TrendSessionChart />
                  <CapacityVsDemandChart />
                </div>
-               {/* Row 2: Utilisasi + Ketepatan */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
-                 <SlotUtilizationChart />
+               {/* Row 2: Ketepatan (Utilisasi Slot Hari Ini dipindah ke section KPI operational) */}
+               <div className="grid grid-cols-1 gap-4 md:gap-5">
                  <SessionTimelinessChart dateRange={dateRange} />
                </div>
                {/* Row 3: Target vs Realisasi + Distribusi Layanan SEBELAHAN */}
