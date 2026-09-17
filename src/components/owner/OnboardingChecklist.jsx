@@ -37,8 +37,8 @@ const STEPS = [
   {
     key: 'clinic_stamp',
     label: 'Stempel Klinik',
-    required: true,
-    desc: 'Dipakai otomatis pada invoice dan dokumen resmi klinik.',
+    required: false,
+    desc: 'Opsional — dipakai otomatis pada invoice dan dokumen resmi klinik jika diisi.',
     tab: 'account_clinic',
     icon: Stamp,
   },
