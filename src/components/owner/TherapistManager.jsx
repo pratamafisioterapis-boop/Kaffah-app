@@ -804,7 +804,16 @@ const headerColorMap = {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">Email (Untuk Login) <span className="text-red-500">*</span></label>
-                    <Input type="email" autoComplete="off" name="therapist-login-email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nama@klinik.com" />
+                    <Input
+                      type="email"
+                      autoComplete="off"
+                      name="therapist-login-email"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute('readonly')}
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      placeholder="nama@klinik.com"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">No. Telepon</label>
