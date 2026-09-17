@@ -31,7 +31,43 @@ const SearchableSelect = ({
     const rect = el.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUpward = spaceBelow < 260 && rect.top > spaceBelow;
+
+    // If an ancestor has a CSS transform (e.g. a Radix Dialog/Sheet content panel,
+    // which is centered with translate-x/-y), it becomes the containing block for
+    // position:fixed descendants. Portaling to document.body with position:fixed in
+    // that case renders the menu as a DOM sibling *outside* the dialog, which makes
+    // Radix's dismissable-layer treat clicks on it as "outside the dialog" (closing
+    // the dialog instead of selecting the option) and its scroll-lock block
+    // wheel/touch scrolling on it. Portaling into that ancestor instead (with
+    // position:absolute, offset relative to it) keeps the menu a real descendant of
+    // the dialog so both clicking and scrolling work normally.
+    let ancestor = el.parentElement;
+    let transformedAncestor = null;
+    while (ancestor && ancestor !== document.body) {
+      const style = window.getComputedStyle(ancestor);
+      if (style.transform && style.transform !== 'none') {
+        transformedAncestor = ancestor;
+        break;
+      }
+      ancestor = ancestor.parentElement;
+    }
+
+    if (transformedAncestor) {
+      const anchorRect = transformedAncestor.getBoundingClientRect();
+      setMenuPos({
+        portalTarget: transformedAncestor,
+        position: 'absolute',
+        left: rect.left - anchorRect.left,
+        width: rect.width,
+        top: openUpward ? undefined : rect.bottom - anchorRect.top + 6,
+        bottom: openUpward ? anchorRect.bottom - rect.top + 6 : undefined,
+      });
+      return;
+    }
+
     setMenuPos({
+      portalTarget: document.body,
+      position: 'fixed',
       left: rect.left,
       width: rect.width,
       top: openUpward ? undefined : rect.bottom + 6,
@@ -244,7 +280,7 @@ const SearchableSelect = ({
       {open && !disabled && menuPos && createPortal(
         <div
           ref={menuRef}
-          style={{ position: 'fixed', left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom }}
+          style={{ position: menuPos.position, left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom }}
           className="bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100"
         >
           {isLoading ? (
@@ -302,7 +338,7 @@ const SearchableSelect = ({
              </div>
           )}
         </div>,
-        document.body
+        menuPos.portalTarget
       )}
     </div>
   );
