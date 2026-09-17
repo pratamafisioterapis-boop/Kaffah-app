@@ -54,13 +54,23 @@ const SearchableSelect = ({
 
     if (transformedAncestor) {
       const anchorRect = transformedAncestor.getBoundingClientRect();
+      // If the transformed ancestor is itself the scrolling element (e.g. a
+      // DialogContent with overflow-y-auto directly on it, common on long mobile
+      // forms), position:absolute offsets are measured in its unscrolled content
+      // coordinates, not current viewport coordinates - so its own scrollTop has
+      // to be added back in, or the menu renders as if the panel were unscrolled
+      // (appearing far above the trigger once the panel has been scrolled down).
+      const anchorScrollTop = transformedAncestor.scrollTop;
+      const anchorScrollLeft = transformedAncestor.scrollLeft;
+      const contentRelativeTop = rect.top - anchorRect.top + anchorScrollTop;
+      const contentRelativeBottom = rect.bottom - anchorRect.top + anchorScrollTop;
       setMenuPos({
         portalTarget: transformedAncestor,
         position: 'absolute',
-        left: rect.left - anchorRect.left,
+        left: rect.left - anchorRect.left + anchorScrollLeft,
         width: rect.width,
-        top: openUpward ? undefined : rect.bottom - anchorRect.top + 6,
-        bottom: openUpward ? anchorRect.bottom - rect.top + 6 : undefined,
+        top: openUpward ? undefined : contentRelativeBottom + 6,
+        bottom: openUpward ? transformedAncestor.scrollHeight - contentRelativeTop + 6 : undefined,
       });
       return;
     }
