@@ -44,11 +44,11 @@ const TherapistSchedule = ({ therapist }) => {
     setTimeOff(offData || []);
 
     // 4. Merge Data
-    // We want to display all unique interactions.
-    // Filter out cancelled appointments to keep it clean
+    // We want to display all unique interactions, including cancelled
+    // appointments — they still show up (with a red highlight) instead of
+    // silently disappearing from the therapist's daily list.
     const recaps = (recapData || []).map(r => ({ ...r, type: 'recap', displayTime: r.start_time }));
     const appointments = (appointmentData || [])
-        .filter(a => a.status !== 'cancelled')
         .map(a => ({ ...a, type: 'appointment', displayTime: a.appointment_date }));
 
     // Combined list - inherent filtering: only shows patients attached to THESE records
@@ -122,11 +122,13 @@ const TherapistSchedule = ({ therapist }) => {
         </div>
       ) : (
         <div className="grid gap-4">
-          {items.map((item, idx) => (
-            <Card key={`${item.type}-${item.id}-${idx}`} className={`hover:shadow-md transition-shadow border-l-4 ${item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-blue-500'}`}>
+          {items.map((item, idx) => {
+            const isCancelled = item.type === 'appointment' && item.status === 'cancelled';
+            return (
+            <Card key={`${item.type}-${item.id}-${idx}`} className={`hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-blue-500'}`}>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                   <div className={`px-3 py-2 rounded-lg font-mono font-bold text-lg min-w-[80px] text-center ${item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                   <div className={`px-3 py-2 rounded-lg font-mono font-bold text-lg min-w-[80px] text-center ${isCancelled ? 'bg-red-100 text-red-700' : item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
                       {item.displayTime ? format(new Date(item.displayTime), 'HH:mm') : '--:--'}
                    </div>
                    <div>
@@ -134,9 +136,9 @@ const TherapistSchedule = ({ therapist }) => {
                           {item.patient?.full_name || item.guest_name || 'Pasien Baru'}
                       </h4>
                       <p className="text-sm text-slate-500 flex items-center gap-2">
-                        <User className="w-3 h-3" /> 
+                        <User className="w-3 h-3" />
                         {/* Removed RM Number reference as requested */}
-                        Pasien Terdaftar 
+                        Pasien Terdaftar
                         {item.type === 'recap' && <span className="text-xs bg-emerald-100 text-emerald-800 px-1 rounded ml-1">Selesai</span>}
                       </p>
                    </div>
@@ -146,14 +148,15 @@ const TherapistSchedule = ({ therapist }) => {
                       {item.patient_type || (item.patient ? 'Terdaftar' : 'Pasien Baru')}
                    </div>
                    {item.type === 'appointment' && (
-                       <div className={`text-xs px-2 py-1 rounded-full ${item.status === 'confirmed' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                       <div className={`text-xs px-2 py-1 rounded-full ${isCancelled ? 'bg-red-100 text-red-700' : item.status === 'confirmed' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
                            {item.status}
                        </div>
                    )}
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
