@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CalendarClock, CheckCircle } from 'lucide-react';
+
+const CAPACITY_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10];
 
 const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
   const { toast } = useToast();
@@ -15,6 +18,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
     override_date: '',
     start_time: '09:00',
     end_time: '',
+    capacity: 1,
     note: '',
   });
 
@@ -31,6 +35,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
       override_date: formData.override_date,
       start_time: `${formData.start_time}:00`,
       end_time: formData.end_time ? `${formData.end_time}:00` : null,
+      capacity: formData.capacity,
       note: formData.note || null,
     });
     setLoading(false);
@@ -41,7 +46,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
     }
 
     toast({ title: 'Berhasil', description: 'Jadwal pengganti berhasil disimpan.', className: 'bg-green-50 text-green-800 border-green-200' });
-    setFormData({ override_date: '', start_time: '09:00', end_time: '', note: '' });
+    setFormData({ override_date: '', start_time: '09:00', end_time: '', capacity: 1, note: '' });
     onSuccess?.();
   };
 
@@ -68,6 +73,21 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
             <Label className="text-xs">Jam Pulang (opsional)</Label>
             <Input type="time" value={formData.end_time} onChange={(e) => setFormData({ ...formData, end_time: e.target.value })} />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">Kapasitas Slot</Label>
+          <Select value={String(formData.capacity)} onValueChange={(v) => setFormData({ ...formData, capacity: Number(v) })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CAPACITY_OPTIONS.map((c) => (
+                <SelectItem key={c} value={String(c)}>{c} pasien</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-slate-400">Hanya dipakai bila jam pulang diisi — slot booking di tanggal ini akan memakai jam &amp; kapasitas ini, bukan jadwal mingguan.</p>
         </div>
 
         <div className="space-y-2">

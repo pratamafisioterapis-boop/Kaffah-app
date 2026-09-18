@@ -41,8 +41,8 @@ const TherapistScheduleOverrideManager = () => {
           <div>
             <h2 className="text-xl font-bold text-slate-800">Jadwal Pengganti (Per Tanggal)</h2>
             <p className="text-sm text-slate-500">
-              Untuk perubahan jam kerja sementara di tanggal tertentu (mis. tukar shift) — tidak mengubah jadwal mingguan tetap.
-              Dipakai otomatis oleh fitur Absensi Karyawan untuk menentukan jam masuk yang seharusnya pada tanggal itu.
+              Untuk perubahan jam kerja atau slot booking sementara di tanggal tertentu saja (mis. tukar shift) — tidak mengubah jadwal mingguan tetap.
+              Jika jam pulang diisi, slot booking di tanggal itu otomatis memakai jam &amp; kapasitas ini. Juga dipakai oleh fitur Absensi Karyawan untuk menentukan jam masuk yang seharusnya pada tanggal itu.
             </p>
           </div>
         </div>
