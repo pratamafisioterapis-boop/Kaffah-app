@@ -10,7 +10,7 @@ import BadgeManager from '@/components/owner/BadgeManager';
 import TherapistSoapLockManager from '@/components/owner/TherapistSoapLockManager';
 import RemunerationManager from '@/components/owner/RemunerationManager';
 import TherapistMonthlyReportManager from '@/components/owner/TherapistMonthlyReportManager';
-import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2, ChevronRight } from 'lucide-react';
+import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2, ChevronRight, CalendarRange } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -124,19 +124,33 @@ const PhysiotherapistManagementPage = () => {
         </TabsContent>
 
         {/* ================= JADWAL ================= */}
-        <TabsContent value="schedule" className="space-y-8">
+        <TabsContent value="schedule">
+          <Tabs defaultValue="weekly" className="w-full space-y-6">
+            <TabsList className="grid w-full sm:w-[420px] grid-cols-2 bg-slate-100 p-1 rounded-lg">
+              <TabsTrigger
+                value="weekly"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <CalendarClock className="w-4 h-4" />
+                Jadwal Mingguan
+              </TabsTrigger>
+              <TabsTrigger
+                value="override"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <CalendarRange className="w-4 h-4" />
+                Jadwal Pengganti
+              </TabsTrigger>
+            </TabsList>
 
-         
+            <TabsContent value="weekly">
+              <TherapistScheduleManager />
+            </TabsContent>
 
-          {/* ====== FITUR LAMA TETAP ADA ====== */}
-          <div>
-            <TherapistScheduleManager />
-          </div>
-
-          <div className="border-t border-slate-200 pt-8">
-            <TherapistScheduleOverrideManager />
-          </div>
-
+            <TabsContent value="override">
+              <TherapistScheduleOverrideManager />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* ================= CUTI ================= */}
