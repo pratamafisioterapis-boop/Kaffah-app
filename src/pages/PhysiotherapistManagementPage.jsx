@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TherapistScheduleManager from '@/components/owner/TherapistScheduleManager';
+import TherapistScheduleOverrideManager from '@/components/owner/TherapistScheduleOverrideManager';
 import TherapistManager from '@/components/owner/TherapistManager';
 import TherapistTargetManager from '@/components/owner/TherapistTargetManager';
 import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager';
@@ -130,6 +131,10 @@ const PhysiotherapistManagementPage = () => {
           {/* ====== FITUR LAMA TETAP ADA ====== */}
           <div>
             <TherapistScheduleManager />
+          </div>
+
+          <div className="border-t border-slate-200 pt-8">
+            <TherapistScheduleOverrideManager />
           </div>
 
         </TabsContent>
