@@ -588,14 +588,14 @@ const OwnerBookingCalendar = () => {
           </DialogHeader>
 
           <div className="space-y-3 mt-4">
-            {patientHistory.filter(item => item.status !== 'cancelled').length > 0 ? (
+            {patientHistory.length > 0 ? (
               patientHistory
-                .filter(item => item.status !== 'cancelled')
                 .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
                 .map((item) => {
-                  const isUpcoming = new Date(item.appointment_date) > new Date();
+                  const isCancelled = item.status?.toLowerCase() === 'cancelled';
+                  const isUpcoming = !isCancelled && new Date(item.appointment_date) > new Date();
                   return (
-                    <div key={item.id} className="border rounded-xl p-4 bg-slate-50">
+                    <div key={item.id} className={`border rounded-xl p-4 ${isCancelled ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800">
@@ -607,12 +607,14 @@ const OwnerBookingCalendar = () => {
                         </div>
                         <Badge
                           className={
-                            isUpcoming
+                            isCancelled
+                              ? 'bg-red-100 text-red-700'
+                              : isUpcoming
                               ? 'bg-green-100 text-green-700'
                               : 'bg-slate-200 text-slate-700'
                           }
                         >
-                          {isUpcoming ? 'Upcoming' : item.status || '-'}
+                          {isCancelled ? 'Cancelled' : isUpcoming ? 'Upcoming' : item.status || '-'}
                         </Badge>
                       </div>
                       <div className="mt-2 text-sm text-slate-600">
