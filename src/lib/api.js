@@ -6485,7 +6485,7 @@ export const getTherapistScheduleOverrides = async (therapistId) => {
   }, 'getTherapistScheduleOverrides');
 };
 
-export const upsertTherapistScheduleOverride = async ({ therapist_id, override_date, start_time, end_time, capacity, note }) => {
+export const upsertTherapistScheduleOverride = async ({ therapist_id, override_date, start_time, end_time, capacity, slot_duration_minutes, gap_minutes, note }) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
@@ -6493,7 +6493,17 @@ export const upsertTherapistScheduleOverride = async ({ therapist_id, override_d
     const { data, error } = await supabase
       .from('therapist_schedule_overrides')
       .upsert(
-        { therapist_id, override_date, start_time, end_time: end_time || null, capacity: capacity || 1, note: note || null, created_by: userId || null },
+        {
+          therapist_id,
+          override_date,
+          start_time,
+          end_time: end_time || null,
+          capacity: capacity || 1,
+          slot_duration_minutes: slot_duration_minutes || 60,
+          gap_minutes: gap_minutes ?? 0,
+          note: note || null,
+          created_by: userId || null,
+        },
         { onConflict: 'therapist_id,override_date' }
       )
       .select()

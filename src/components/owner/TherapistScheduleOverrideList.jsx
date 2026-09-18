@@ -76,7 +76,7 @@ const TherapistScheduleOverrideList = ({ therapist, refreshTrigger }) => {
                       </Badge>
                       {item.end_time && (
                         <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50">
-                          Kapasitas {item.capacity ?? 1} pasien
+                          Slot {item.slot_duration_minutes ?? 60} menit &middot; {item.capacity ?? 1} pasien/slot
                         </Badge>
                       )}
                       {!item.end_time && (
