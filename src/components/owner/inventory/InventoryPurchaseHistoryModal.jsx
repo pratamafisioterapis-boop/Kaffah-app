@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getInventoryStockIns } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { getInventoryStockIns, deleteInventoryStockIn } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { format, isValid } from 'date-fns';
-import { Loader2, PackagePlus, ShoppingBag } from 'lucide-react';
+import { Loader2, PackagePlus, ShoppingBag, Pencil, Trash2 } from 'lucide-react';
+import InventoryStockInEditModal from './InventoryStockInEditModal';
 
 const formatDate = (d) => {
   if (!d) return '-';
@@ -11,10 +13,12 @@ const formatDate = (d) => {
   return isValid(date) ? format(date, 'dd MMM yyyy') : '-';
 };
 
-const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item }) => {
+const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
 
   const fetchHistory = useCallback(async () => {
     if (!item) return;
@@ -28,6 +32,22 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item }) => {
   useEffect(() => {
     if (isOpen && item) fetchHistory();
   }, [isOpen, item, fetchHistory]);
+
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Hapus riwayat pembelian tanggal ${formatDate(row.purchase_date)}? Stok dan harga rata-rata akan disesuaikan kembali.`)) return;
+    setDeletingId(row.id);
+    try {
+      const { error } = await deleteInventoryStockIn(row.id);
+      if (error) throw error;
+      toast({ title: 'Riwayat pembelian dihapus' });
+      fetchHistory();
+      if (onItemsChange) onItemsChange();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal menghapus', description: err.message });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -56,7 +76,15 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item }) => {
                 <div key={row.id} className="py-3">
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-sm font-medium text-slate-900">{formatDate(row.purchase_date)}</span>
-                    <span className="text-sm font-bold text-slate-900 shrink-0">Rp {Number(row.total_price).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold text-slate-900">Rp {Number(row.total_price).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => setEditingRow(row)} title="Edit Riwayat">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-1 text-xs text-slate-500">
                     <span>{Number(row.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {row.inventory_items?.unit || item?.unit} × Rp {Number(row.unit_price).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
@@ -68,6 +96,17 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item }) => {
           )}
         </div>
       </DialogContent>
+
+      <InventoryStockInEditModal
+        isOpen={!!editingRow}
+        onClose={() => setEditingRow(null)}
+        row={editingRow}
+        item={item}
+        onSuccess={() => {
+          fetchHistory();
+          if (onItemsChange) onItemsChange();
+        }}
+      />
     </Dialog>
   );
 };
