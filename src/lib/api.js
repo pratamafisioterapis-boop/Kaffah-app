@@ -3142,6 +3142,28 @@ export const getInventoryStockIns = async ({ itemId } = {}) => {
   }, 'getInventoryStockIns');
 };
 
+export const updateInventoryStockIn = async (id, { quantity, total_price, purchase_date, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('update_inventory_stock_in', {
+      p_id: id,
+      p_quantity: Number(quantity),
+      p_total_price: Number(total_price),
+      p_purchase_date: purchase_date || new Date().toISOString().slice(0, 10),
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'updateInventoryStockIn');
+};
+
+export const deleteInventoryStockIn = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.rpc('delete_inventory_stock_in', { p_id: id });
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteInventoryStockIn');
+};
+
 export const getInventoryStockOuts = async ({ startDate, endDate, itemId } = {}) => {
   return safeQuery(async () => {
     let query = supabase

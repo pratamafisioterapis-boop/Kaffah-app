@@ -147,7 +147,7 @@ const InventoryStockPage = () => {
       </div>
 
       <InventoryRestockModal isOpen={!!restockTarget} onClose={() => setRestockTarget(null)} item={restockTarget} onSuccess={fetchItems} />
-      <InventoryPurchaseHistoryModal isOpen={!!historyTarget} onClose={() => setHistoryTarget(null)} item={historyTarget} />
+      <InventoryPurchaseHistoryModal isOpen={!!historyTarget} onClose={() => setHistoryTarget(null)} item={historyTarget} onItemsChange={fetchItems} />
       <InventoryItemEditModal isOpen={!!editTarget} onClose={() => setEditTarget(null)} item={editTarget} onSuccess={fetchItems} />
     </DashboardLayout>
   );
