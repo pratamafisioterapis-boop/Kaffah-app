@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   parseInsentifDokterPdf, generateInsentifDokterExcel, buildInsentifDokterReport,
-  normalizeInsentifDokterReport, dmyToMonthValue,
+  normalizeInsentifDokterReport, dmyToMonthValue, generateTerapiWicaraOkupasiExcel,
 } from '@/utils/insentifDokterParser';
 import {
   saveInsentifDokterHistory, listInsentifDokterHistory,
@@ -482,6 +482,16 @@ const InsentifDokterConverter = () => {
     }
   };
 
+  const handleExportTerapiDetail = () => {
+    if (!results.length) return;
+    try {
+      const fileName = generateTerapiWicaraOkupasiExcel(results, periodeLabel);
+      toast({ title: 'Excel detail berhasil dibuat', description: fileName });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal membuat Excel detail', description: err.message });
+    }
+  };
+
   const liveReport = useMemo(() => (results.length ? buildInsentifDokterReport(results) : null), [results]);
 
   const handleSaveHistory = async () => {
@@ -705,6 +715,14 @@ const InsentifDokterConverter = () => {
                 >
                   {savingHistory ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Simpan ke Riwayat
+                </Button>
+                <Button
+                  onClick={handleExportTerapiDetail}
+                  variant="outline"
+                  className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  Detail Terapi Wicara/Okupasi
                 </Button>
                 <Button onClick={handleExport} className="bg-green-600 hover:bg-green-700 text-white gap-2">
                   <FileSpreadsheet className="w-4 h-4" />

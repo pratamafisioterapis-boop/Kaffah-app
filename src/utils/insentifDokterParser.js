@@ -959,6 +959,107 @@ export async function parseInsentifDokterPdf(file) {
   };
 }
 
+// â”€â”€ Detail pasien Terapi Wicara / Terapi Okupasi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Pasien yang menjalani Terapi Wicara/Okupasi pada hari yang sama biasanya
+// juga punya tindakan lain (mis. Exercise Tanpa Alat/Exercise Alat) yang
+// tercatat sebagai baris terpisah. Fungsi ini mengelompokkan SEMUA baris per
+// pasien+tanggal (dari format A/C, satu-satunya format yang punya kolom
+// Deskripsi), lalu hanya menyimpan kelompok yang mengandung minimal satu
+// baris Terapi Wicara/Okupasi â€” supaya owner bisa lihat tindakan apa saja
+// yang menyertai terapi itu pada hari yang sama.
+const TERAPI_WICARA_RE = /TERAPI\s*WICARA/i;
+const TERAPI_OKUPASI_RE = /TERAPI\s*OKUPASI/i;
+
+function lineValueForRow(format, r) {
+  if (format === 'C') return toNumber(r.tunai);
+  if (format === 'A') {
+    return ['pertamina', 'pertamedika', 'jaminan', 'pribadi'].reduce((s, k) => s + toNumber(r[k]), 0);
+  }
+  return 0;
+}
+
+function toSortableDate(dmy) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy || '');
+  return m ? `${m[3]}${m[2]}${m[1]}` : (dmy || '');
+}
+
+export function buildTerapiWicaraOkupasiDetail(results) {
+  const pool = [];
+  (results || []).forEach((res) => {
+    if (res.format !== 'A' && res.format !== 'C') return;
+    res.rows.forEach((r) => {
+      pool.push({ ...r, __fileName: res.fileName, __format: res.format, __isSwasta: res.isSwasta });
+    });
+  });
+
+  const groups = new Map();
+  pool.forEach((r) => {
+    const key = `${(r.noReg || '').trim().toUpperCase() || (r.namaPasien || '').trim().toUpperCase()}|${(r.tanggal || '').trim()}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+
+  const matchedGroups = [];
+  groups.forEach((rows) => {
+    const hasTarget = rows.some((r) => TERAPI_WICARA_RE.test(r.deskripsi || '') || TERAPI_OKUPASI_RE.test(r.deskripsi || ''));
+    if (hasTarget) matchedGroups.push(rows);
+  });
+
+  matchedGroups.sort((a, b) => {
+    const an = (a[0].namaPasien || '').trim();
+    const bn = (b[0].namaPasien || '').trim();
+    if (an !== bn) return an.localeCompare(bn);
+    return toSortableDate(a[0].tanggal).localeCompare(toSortableDate(b[0].tanggal));
+  });
+
+  return matchedGroups;
+}
+
+// â”€â”€ Generate file Excel TERPISAH berisi detail pasien Terapi Wicara/Okupasi â”€
+export function generateTerapiWicaraOkupasiExcel(results, periodeLabel = '') {
+  const matchedGroups = buildTerapiWicaraOkupasiDetail(results);
+  const workbook = XLSX.utils.book_new();
+  const aoa = [];
+  aoa.push(['DETAIL PASIEN TERAPI WICARA / TERAPI OKUPASI']);
+  if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
+  aoa.push(['Menampilkan semua tindakan pasien pada hari yang sama dengan Biaya Terapi Wicara / Biaya Terapi Okupasi']);
+  aoa.push([]);
+  aoa.push(['No', 'Nama Pasien', 'No Reg', 'Tanggal', 'Deskripsi Tindakan', 'Qty', 'Nilai', 'Kategori', 'File Asal']);
+
+  let no = 1;
+  matchedGroups.forEach((rows) => {
+    rows.forEach((r) => {
+      const kategori = TERAPI_WICARA_RE.test(r.deskripsi || '')
+        ? 'Terapi Wicara'
+        : TERAPI_OKUPASI_RE.test(r.deskripsi || '')
+        ? 'Terapi Okupasi'
+        : '';
+      aoa.push([
+        no++,
+        r.namaPasien,
+        r.noReg,
+        r.tanggal,
+        r.deskripsi,
+        r.qty,
+        lineValueForRow(r.__format, r),
+        kategori,
+        r.__fileName,
+      ]);
+    });
+    aoa.push([]); // pemisah antar kelompok pasien+tanggal
+  });
+
+  if (!matchedGroups.length) {
+    aoa.push(['Tidak ditemukan transaksi Terapi Wicara / Terapi Okupasi pada data ini.']);
+  }
+
+  const sheet = XLSX.utils.aoa_to_sheet(aoa);
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Detail Wicara-Okupasi');
+  const fileName = `Detail_Terapi_Wicara_Okupasi_${periodeLabel ? periodeLabel.replace(/\s+/g, '_') + '_' : ''}${Date.now()}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+  return fileName;
+}
+
 // â”€â”€ Generate file Excel dari hasil parsing (1 atau lebih file) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function generateInsentifDokterExcel(results, periodeLabel = '') {
   const workbook = XLSX.utils.book_new();
