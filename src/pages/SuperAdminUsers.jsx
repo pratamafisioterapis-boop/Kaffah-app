@@ -127,13 +127,28 @@ const SuperAdminUsers = () => {
       toast({ variant: 'destructive', title: 'Nama, email, dan password wajib diisi' });
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ variant: 'destructive', title: 'Format email tidak valid', description: 'Contoh: admin@rumahsakit.com' });
+      return;
+    }
     if (password.length < 6) {
       toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
       return;
     }
     setCreatingKonversi(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Force a fresh token instead of trusting whatever getSession() has
+      // cached — a stale/expired access token here fails silently as a
+      // confusing "Invalid session" from the edge function.
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !session?.access_token) {
+        toast({
+          variant: 'destructive',
+          title: 'Sesi login sudah berakhir',
+          description: 'Silakan refresh halaman dan login ulang sebagai Super Admin, lalu coba lagi.',
+        });
+        return;
+      }
       const res = await fetch('https://dqkejdamagvlhqvxaqej.supabase.co/functions/v1/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
