@@ -18,6 +18,7 @@ const APP_ONLY_PREFIXES = [
   '/pemilih',
   '/pemilih-dpc',
   '/relawan',
+  '/konversi-dokter',
   '/follow-up',
 ];
 
