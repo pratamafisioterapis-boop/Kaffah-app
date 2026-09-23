@@ -379,8 +379,8 @@ const HistoryList = ({ history, loading, selectedId, onSelect, onDelete }) => {
 
 const KonversiDokterConverter = () => {
   const { toast } = useToast();
-  const { clinicName, userDetails, user } = useAuth();
-  const clinicId = userDetails?.clinic_id;
+  const { userDetails, user } = useAuth();
+  const accountLabel = userDetails?.full_name || user?.email || '';
   const fileInputRef = useRef(null);
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -401,17 +401,17 @@ const KonversiDokterConverter = () => {
   const periodeLabel = formatPeriodeLabel(periodeMonth);
 
   const refreshHistory = useCallback(async () => {
-    if (!clinicId) return;
+    if (!user?.id) return;
     setHistoryLoading(true);
     try {
-      const data = await listInsentifDokterHistory(clinicId);
+      const data = await listInsentifDokterHistory(user.id);
       setHistory(data);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal memuat riwayat', description: err.message });
     } finally {
       setHistoryLoading(false);
     }
-  }, [clinicId, toast]);
+  }, [user?.id, toast]);
 
   useEffect(() => { refreshHistory(); }, [refreshHistory]);
 
@@ -499,15 +499,14 @@ const KonversiDokterConverter = () => {
       toast({ variant: 'destructive', title: 'Belum ada data', description: 'Upload PDF terlebih dahulu sebelum menyimpan ke riwayat.' });
       return;
     }
-    if (!clinicId) {
-      toast({ variant: 'destructive', title: 'Clinic tidak ditemukan', description: 'Tidak bisa menyimpan riwayat tanpa data clinic pada akun ini.' });
+    if (!user?.id) {
+      toast({ variant: 'destructive', title: 'Akun tidak ditemukan', description: 'Tidak bisa menyimpan riwayat tanpa sesi login yang valid.' });
       return;
     }
     setSavingHistory(true);
     try {
       const saved = await saveInsentifDokterHistory({
-        clinicId,
-        userId: user?.id,
+        userId: user.id,
         periodeLabel,
         periodeMonth: `${periodeMonth}-01`,
         fileNames: results.map((r) => r.fileName),
@@ -529,7 +528,7 @@ const KonversiDokterConverter = () => {
     }
     setLoadingDetailId(id);
     try {
-      const detail = await getInsentifDokterHistoryDetail(id, clinicId);
+      const detail = await getInsentifDokterHistoryDetail(id, user?.id);
       setHistoryDetails((prev) => ({ ...prev, [id]: detail }));
       setSelectedHistoryId(id);
     } catch (err) {
@@ -541,7 +540,7 @@ const KonversiDokterConverter = () => {
 
   const handleDeleteHistory = async (id) => {
     try {
-      await deleteInsentifDokterHistory(id, clinicId);
+      await deleteInsentifDokterHistory(id, user?.id);
       setHistory((prev) => prev.filter((h) => h.id !== id));
       setHistoryDetails((prev) => {
         const next = { ...prev };
@@ -570,7 +569,7 @@ const KonversiDokterConverter = () => {
             <FileSpreadsheet className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-amber-300`} />
           </div>
           <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{clinicName || ''}</p>
+            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{accountLabel}</p>
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Konversi & Laporan Insentif Dokter</h2>
             <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>
               Upload PDF "Perincian Insentif Dokter" (PWTT/PWT atau BPJS Individu), konversi ke Excel, dan simpan laporannya sebagai riwayat bulanan

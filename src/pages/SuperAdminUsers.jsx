@@ -17,7 +17,7 @@ const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist',
 // / LoginPage's CLINIC_ROLES check).
 const KONVERSI_DOKTER_ROLE = 'konversi_dokter';
 
-const emptyKonversiDokterForm = { full_name: '', email: '', password: '', clinic_id: '' };
+const emptyKonversiDokterForm = { full_name: '', email: '', password: '' };
 
 const ROLE_HOME_PATH = {
   super_admin: '/super-admin',
@@ -108,14 +108,9 @@ const SuperAdminUsers = () => {
       if (error) toast({ variant: 'destructive', title: 'Gagal mencabut akses', description: error.message });
       else { toast({ title: 'Akses Konversi Dokter dicabut' }); fetchData(); }
     } else {
-      if (!user.clinic_id) {
-        toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'User ini belum terhubung ke klinik manapun.' });
-        setTogglingKonversiId(null);
-        return;
-      }
       const { error } = await supabase
         .from('konversi_dokter_admins')
-        .insert({ user_id: user.id, clinic_id: user.clinic_id });
+        .insert({ user_id: user.id });
       if (error) toast({ variant: 'destructive', title: 'Gagal memberi akses', description: error.message });
       else { toast({ title: 'Akses Konversi Dokter diberikan' }); fetchData(); }
     }
@@ -127,9 +122,9 @@ const SuperAdminUsers = () => {
   // (e.g. an existing clinic staff member); this covers the common case of
   // an account that exists for nothing else.
   const handleCreateKonversiDokterAccount = async () => {
-    const { full_name, email, password, clinic_id } = createKonversiForm;
-    if (!full_name || !email || !password || !clinic_id) {
-      toast({ variant: 'destructive', title: 'Nama, email, password, dan klinik wajib diisi' });
+    const { full_name, email, password } = createKonversiForm;
+    if (!full_name || !email || !password) {
+      toast({ variant: 'destructive', title: 'Nama, email, dan password wajib diisi' });
       return;
     }
     if (password.length < 6) {
@@ -147,7 +142,6 @@ const SuperAdminUsers = () => {
           password,
           full_name,
           role: KONVERSI_DOKTER_ROLE,
-          clinic_id,
         }),
       });
       const result = await res.json();
@@ -158,7 +152,7 @@ const SuperAdminUsers = () => {
 
       const { error: grantError } = await supabase
         .from('konversi_dokter_admins')
-        .insert({ user_id: result.user_id, clinic_id });
+        .insert({ user_id: result.user_id });
       if (grantError) {
         toast({
           variant: 'destructive',
@@ -234,18 +228,6 @@ const SuperAdminUsers = () => {
                 onChange={(e) => setCreateKonversiForm((f) => ({ ...f, password: e.target.value }))}
                 placeholder="Minimal 6 karakter"
               />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Klinik (untuk data laporan)</label>
-              <Select
-                value={createKonversiForm.clinic_id}
-                onValueChange={(val) => setCreateKonversiForm((f) => ({ ...f, clinic_id: val }))}
-              >
-                <SelectTrigger className="w-full"><SelectValue placeholder="Pilih klinik" /></SelectTrigger>
-                <SelectContent>
-                  {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
