@@ -377,7 +377,7 @@ const HistoryList = ({ history, loading, selectedId, onSelect, onDelete }) => {
   );
 };
 
-const InsentifDokterConverter = () => {
+const KonversiDokterConverter = () => {
   const { toast } = useToast();
   const { clinicName, userDetails, user } = useAuth();
   const clinicId = userDetails?.clinic_id;
@@ -781,4 +781,4 @@ const InsentifDokterConverter = () => {
   );
 };
 
-export default InsentifDokterConverter;
+export default KonversiDokterConverter;

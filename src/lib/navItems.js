@@ -38,7 +38,6 @@ export const OWNER_NAV_ITEMS = [
     submenu: [
       { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
       { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
-      { label: 'Konversi Insentif Dokter', path: '/owner/insentif-dokter', icon: 'FileSpreadsheet' },
     ],
   },
   { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },

@@ -140,6 +140,19 @@ const LoginPage = () => {
             return;
           }
 
+          console.log("[LoginPage] Checking Konversi Dokter admin status...");
+          const { data: konversiDokterAdminFallback } = await withRoleCheckTimeout(supabase
+            .from('konversi_dokter_admins')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle());
+
+          if (konversiDokterAdminFallback) {
+            console.log("[LoginPage] Konversi Dokter admin detected, redirecting.");
+            navigate('/konversi-dokter', { replace: true });
+            return;
+          }
+
           console.log("[LoginPage] Checking Pemilih relawan status...");
           const { data: relawanFallback } = await withRoleCheckTimeout(supabase
             .from('pemilih_relawan')
@@ -207,6 +220,19 @@ const LoginPage = () => {
         if (pemilihAdmin) {
           console.log("[LoginPage] Pemilih admin detected, redirecting.");
           navigate('/pemilih', { replace: true });
+          return;
+        }
+
+        console.log("[LoginPage] Checking Konversi Dokter admin status...");
+        const { data: konversiDokterAdmin } = await withRoleCheckTimeout(supabase
+          .from('konversi_dokter_admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle());
+
+        if (konversiDokterAdmin) {
+          console.log("[LoginPage] Konversi Dokter admin detected, redirecting.");
+          navigate('/konversi-dokter', { replace: true });
           return;
         }
 

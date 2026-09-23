@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Users, MonitorSmartphone } from 'lucide-react';
+import { Loader2, Users, MonitorSmartphone, FileSpreadsheet } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
@@ -24,18 +24,22 @@ const SuperAdminUsers = () => {
   const { impersonateUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [clinics, setClinics] = useState([]);
+  const [konversiDokterAdminIds, setKonversiDokterAdminIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [remotingId, setRemotingId] = useState(null);
+  const [togglingKonversiId, setTogglingKonversiId] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
-    const [usersRes, clinicsRes] = await Promise.all([
+    const [usersRes, clinicsRes, konversiDokterAdminsRes] = await Promise.all([
       supabase.from('users').select('*').order('created_at', { ascending: false }),
       supabase.from('clinics').select('id, name'),
+      supabase.from('konversi_dokter_admins').select('user_id'),
     ]);
     if (usersRes.error) toast({ variant: 'destructive', title: 'Gagal memuat user', description: usersRes.error.message });
     setUsers(usersRes.data || []);
     setClinics(clinicsRes.data || []);
+    setKonversiDokterAdminIds(new Set((konversiDokterAdminsRes.data || []).map((r) => r.user_id)));
     setLoading(false);
   };
 
@@ -79,6 +83,30 @@ const SuperAdminUsers = () => {
     const { error } = await supabase.from('users').update({ is_active: !user.is_active }).eq('id', user.id);
     if (error) toast({ variant: 'destructive', title: 'Gagal update status', description: error.message });
     else fetchData();
+  };
+
+  // Grants/revokes access to the standalone Konversi Jasa/Tindakan Dokter
+  // app (separate from the clinic system — see konversi_dokter_admins).
+  const handleToggleKonversiDokterAccess = async (user) => {
+    setTogglingKonversiId(user.id);
+    const hasAccess = konversiDokterAdminIds.has(user.id);
+    if (hasAccess) {
+      const { error } = await supabase.from('konversi_dokter_admins').delete().eq('user_id', user.id);
+      if (error) toast({ variant: 'destructive', title: 'Gagal mencabut akses', description: error.message });
+      else { toast({ title: 'Akses Konversi Dokter dicabut' }); fetchData(); }
+    } else {
+      if (!user.clinic_id) {
+        toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'User ini belum terhubung ke klinik manapun.' });
+        setTogglingKonversiId(null);
+        return;
+      }
+      const { error } = await supabase
+        .from('konversi_dokter_admins')
+        .insert({ user_id: user.id, clinic_id: user.clinic_id });
+      if (error) toast({ variant: 'destructive', title: 'Gagal memberi akses', description: error.message });
+      else { toast({ title: 'Akses Konversi Dokter diberikan' }); fetchData(); }
+    }
+    setTogglingKonversiId(null);
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -146,6 +174,20 @@ const SuperAdminUsers = () => {
                   Remote
                 </Button>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className={`w-full ${konversiDokterAdminIds.has(u.id) ? 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' : ''}`}
+                disabled={togglingKonversiId === u.id}
+                onClick={() => handleToggleKonversiDokterAccess(u)}
+              >
+                {togglingKonversiId === u.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4 mr-1" />
+                )}
+                {konversiDokterAdminIds.has(u.id) ? 'Cabut Akses Konversi Dokter' : 'Beri Akses Konversi Dokter'}
+              </Button>
             </div>
           ))}
         </div>
@@ -160,6 +202,7 @@ const SuperAdminUsers = () => {
                 <th className="p-3">Role</th>
                 <th className="p-3">Klinik</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Konversi Dokter</th>
                 <th className="p-3">Aksi</th>
               </tr>
             </thead>
@@ -189,6 +232,23 @@ const SuperAdminUsers = () => {
                     <span className={`text-xs px-2 py-1 rounded-full ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                       {u.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
+                  </td>
+                  <td className="p-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={konversiDokterAdminIds.has(u.id) ? 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' : ''}
+                      disabled={togglingKonversiId === u.id}
+                      onClick={() => handleToggleKonversiDokterAccess(u)}
+                      title="Akses aplikasi Konversi Jasa/Tindakan Dokter (terpisah dari sistem klinik)"
+                    >
+                      {togglingKonversiId === u.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <FileSpreadsheet className="w-4 h-4 mr-1" />
+                      )}
+                      {konversiDokterAdminIds.has(u.id) ? 'Cabut' : 'Beri Akses'}
+                    </Button>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
