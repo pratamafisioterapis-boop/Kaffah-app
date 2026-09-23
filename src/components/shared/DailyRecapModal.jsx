@@ -990,6 +990,10 @@ setFormData({
             newErrors.package_type = "Jenis paket wajib diisi";
         }
 
+        if (formData.discount_type !== 'none' && parseFloat(formData.discount_value) > 0 && !formData.discount_label) {
+            newErrors.discount_label = "Jenis diskon wajib diisi jika nilai diskon diisi";
+        }
+
         if (useSplitPayment) {
             const incompleteRow = paymentSplits.some(row => !row.payment_method || !(parseFloat(row.amount) > 0));
             if (incompleteRow) {
@@ -1316,6 +1320,7 @@ setFormData({
                                             // list during search), don't store the raw id as the label — keep
                                             // whatever label was already selected instead of corrupting it.
                                             const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || '');
+                                            if (errors.discount_label) setErrors(prev => ({ ...prev, discount_label: null }));
                                             setFormData(prev => ({
                                                 ...prev,
                                                 discount_label: selected?.label || (looksLikeUuid ? prev.discount_label : v),
@@ -1323,6 +1328,7 @@ setFormData({
                                                 discount_value: selected?.discount_value != null ? String(selected.discount_value) : prev.discount_value
                                             }));
                                         }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={true}/>
+                                        {errors.discount_label && <p className="text-xs text-red-500">{errors.discount_label}</p>}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
