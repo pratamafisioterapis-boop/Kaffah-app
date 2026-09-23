@@ -47,6 +47,11 @@ const cardItem = {
 // already succeeded — a refresh would then drop straight into the dashboard
 // since the session was already valid. Each lookup now falls through to
 // "not found" after a few seconds instead of hanging indefinitely.
+// Accounts with one of these already have a normal dashboard to land on,
+// so granting them Konversi Dokter access (see below) must never override
+// their usual post-login redirect.
+const CLINIC_ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
+
 const withRoleCheckTimeout = (promise, ms = 8000) =>
   Promise.race([
     promise,
@@ -223,17 +228,24 @@ const LoginPage = () => {
           return;
         }
 
-        console.log("[LoginPage] Checking Konversi Dokter admin status...");
-        const { data: konversiDokterAdmin } = await withRoleCheckTimeout(supabase
-          .from('konversi_dokter_admins')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .maybeSingle());
+        // Only takes priority over the account's normal clinic role when it
+        // doesn't have one — an owner/admin/therapist granted this app too
+        // still lands on their usual dashboard and reaches /konversi-dokter
+        // by navigating there directly, so this never hijacks their login.
+        const clinicRole = userProfile.role?.toLowerCase();
+        if (!CLINIC_ROLES.includes(clinicRole)) {
+          console.log("[LoginPage] Checking Konversi Dokter admin status...");
+          const { data: konversiDokterAdmin } = await withRoleCheckTimeout(supabase
+            .from('konversi_dokter_admins')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle());
 
-        if (konversiDokterAdmin) {
-          console.log("[LoginPage] Konversi Dokter admin detected, redirecting.");
-          navigate('/konversi-dokter', { replace: true });
-          return;
+          if (konversiDokterAdmin) {
+            console.log("[LoginPage] Konversi Dokter admin detected, redirecting.");
+            navigate('/konversi-dokter', { replace: true });
+            return;
+          }
         }
 
         console.log("[LoginPage] Checking Pemilih relawan status...");
