@@ -12,6 +12,7 @@ import ImpersonationBanner from '@/components/ImpersonationBanner';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
 import PemilihProtectedRoute from '@/components/PemilihProtectedRoute';
+import KonversiDokterProtectedRoute from '@/components/KonversiDokterProtectedRoute';
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
@@ -54,6 +55,7 @@ const AdminDashboard = React.lazy(lazyRetry(() => import('@/pages/AdminDashboard
 const TherapistDashboard = React.lazy(lazyRetry(() => import('@/pages/TherapistDashboard'), 'TherapistDashboard'));
 const RotasiApp = React.lazy(lazyRetry(() => import('@/pages/rotasi/RotasiApp'), 'RotasiApp'));
 const PemilihApp = React.lazy(lazyRetry(() => import('@/pages/pemilih/PemilihApp'), 'PemilihApp'));
+const KonversiDokterApp = React.lazy(lazyRetry(() => import('@/pages/konversi-dokter/KonversiDokterApp'), 'KonversiDokterApp'));
 const RelawanUploadKTP = React.lazy(lazyRetry(() => import('@/pages/relawan/RelawanUploadKTP'), 'RelawanUploadKTP'));
 const PemilihDpcApp = React.lazy(lazyRetry(() => import('@/pages/dpc/PemilihDpcApp'), 'PemilihDpcApp'));
 
@@ -444,6 +446,15 @@ function App() {
                     <PemilihProtectedRoute>
                       <PemilihApp />
                     </PemilihProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/konversi-dokter/*"
+                  element={
+                    <KonversiDokterProtectedRoute>
+                      <KonversiDokterApp />
+                    </KonversiDokterProtectedRoute>
                   }
                 />
 
