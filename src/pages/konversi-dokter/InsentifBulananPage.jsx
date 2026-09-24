@@ -229,7 +229,7 @@ const InsentifBulananPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rosterForm, setRosterForm] = useState({ nama: '', persentase: '', is_capped: false, redistribusi_dari_capped_persen: '' });
-  const [tabunganForm, setTabunganForm] = useState({ nominal: '', keterangan: '' });
+  const [tabunganForm, setTabunganForm] = useState({ nominal: '', keterangan: '', rosterId: '' });
 
   const loadAll = useCallback(async () => {
     if (!ownerUserId) return;
@@ -290,13 +290,22 @@ const InsentifBulananPage = () => {
     () => (tindakanResult && ranapResult && tumbangResult) ? hitungBasisFinal(tindakanResult, ranapResult, tumbangResult) : 0,
     [tindakanResult, ranapResult, tumbangResult]
   );
+  const penarikanPerRoster = useMemo(() => {
+    const out = {};
+    for (const t of tabungan) {
+      if (t.laporan_id !== laporan?.id || !t.roster_id) continue;
+      out[t.roster_id] = (out[t.roster_id] || 0) + (Number(t.nominal) || 0);
+    }
+    return out;
+  }, [tabungan, laporan]);
+
   const laporanFinalResult = useMemo(() => {
     if (!laporan || !tindakanResult || !ranapResult || !tumbangResult) return null;
     return hitungLaporanFinal({
       basisFinal, kasTotal: Number(laporan.kas_total) || 0, f5Nominal: Number(laporan.f5_nominal) || 0,
-      roster, tindakanResult, ranapResult, tumbangResult,
+      roster, tindakanResult, ranapResult, tumbangResult, penarikanPerRoster,
     });
-  }, [laporan, roster, basisFinal, tindakanResult, ranapResult, tumbangResult]);
+  }, [laporan, roster, basisFinal, tindakanResult, ranapResult, tumbangResult, penarikanPerRoster]);
 
   // ── Roster CRUD ──
   const handleAddRoster = async () => {
@@ -330,9 +339,12 @@ const InsentifBulananPage = () => {
     const nominal = Number(tabunganForm.nominal);
     if (!nominal) return;
     try {
-      const created = await addTabunganPajakPenarikan(ownerUserId, { laporanId: laporan?.id, nominal, keterangan: tabunganForm.keterangan });
+      const created = await addTabunganPajakPenarikan(ownerUserId, {
+        laporanId: laporan?.id, nominal, keterangan: tabunganForm.keterangan,
+        rosterId: tabunganForm.rosterId || null,
+      });
       setTabungan((prev) => [created, ...prev]);
-      setTabunganForm({ nominal: '', keterangan: '' });
+      setTabunganForm({ nominal: '', keterangan: '', rosterId: '' });
       toast({ title: 'Penarikan dicatat' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal mencatat', description: err.message });
@@ -576,7 +588,7 @@ const InsentifBulananPage = () => {
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-500">
-                    <tr><th className="text-left px-3 py-2">Nama</th><th className="text-right px-3 py-2">Nominal Hitungan</th><th className="text-right px-3 py-2">Nominal Transfer</th><th className="text-right px-3 py-2">Uang Makan</th></tr>
+                    <tr><th className="text-left px-3 py-2">Nama</th><th className="text-right px-3 py-2">Penarikan Operasional</th><th className="text-right px-3 py-2">Nominal Hitungan</th><th className="text-right px-3 py-2">Nominal Transfer</th><th className="text-right px-3 py-2">Uang Makan</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {roster.filter((r) => r.is_active !== false).map((r) => {
@@ -586,6 +598,7 @@ const InsentifBulananPage = () => {
                       return (
                         <tr key={r.id}>
                           <td className="px-3 py-2 font-medium">{r.nama}{result?.isCapped && <span className="ml-1 text-[10px] text-amber-600">(dibatasi)</span>}</td>
+                          <td className="px-3 py-2 text-right tabular-nums text-slate-500">{result?.penarikanOperasional ? formatRupiah(result.penarikanOperasional) : '-'}</td>
                           <td className="px-3 py-2 text-right tabular-nums font-semibold">{formatRupiah(result?.nominalHitungan)}</td>
                           <td className="px-3 py-2 text-right">
                             <Input type="number" className="w-36 text-right ml-auto" value={transfer ?? ''} onChange={(e) => handleFinalTransferChange(r.id, e.target.value)} onBlur={() => handleSaveField('final_transfers')} />
@@ -614,24 +627,38 @@ const InsentifBulananPage = () => {
         <AccordionItem value="tabungan-pajak" className="border border-slate-200 rounded-xl px-4 bg-white">
           <AccordionTrigger className="gap-2"><Wallet className="w-4 h-4" /> Tabungan Pajak — Penarikan Operasional</AccordionTrigger>
           <AccordionContent className="pb-4 space-y-4">
+            <p className="text-xs text-slate-500">
+              Penarikan yang ditandai "diberikan ke" seseorang akan otomatis ditambahkan ke nominal hitungan orang itu di Laporan Final bulan ini.
+            </p>
             <div className="flex flex-wrap items-end gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <div>
                 <label className="text-[11px] font-semibold text-slate-500 block mb-1">Nominal</label>
                 <Input type="number" className="w-40" value={tabunganForm.nominal} onChange={(e) => setTabunganForm((f) => ({ ...f, nominal: e.target.value }))} />
               </div>
-              <div className="flex-1 min-w-[200px]">
+              <div className="flex-1 min-w-[180px]">
                 <label className="text-[11px] font-semibold text-slate-500 block mb-1">Keterangan</label>
                 <Input value={tabunganForm.keterangan} onChange={(e) => setTabunganForm((f) => ({ ...f, keterangan: e.target.value }))} placeholder="Untuk apa" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-500 block mb-1">Diberikan ke</label>
+                <Select value={tabunganForm.rosterId || 'none'} onValueChange={(v) => setTabunganForm((f) => ({ ...f, rosterId: v === 'none' ? '' : v }))}>
+                  <SelectTrigger className="w-44"><SelectValue placeholder="Tidak ada" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tidak ada (murni penarikan)</SelectItem>
+                    {roster.map((r) => <SelectItem key={r.id} value={r.id}>{r.nama}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <Button size="sm" onClick={handleAddTabungan} className="gap-1.5"><Plus className="w-4 h-4" /> Catat</Button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Keterangan</th><th className="text-right px-3 py-2">Nominal</th><th className="w-10"></th></tr></thead>
+                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Keterangan</th><th className="text-left px-3 py-2">Diberikan ke</th><th className="text-right px-3 py-2">Nominal</th><th className="w-10"></th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {tabungan.map((t) => (
                     <tr key={t.id}>
                       <td className="px-3 py-2">{t.keterangan || '-'}</td>
+                      <td className="px-3 py-2 text-slate-500">{roster.find((r) => r.id === t.roster_id)?.nama || '-'}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatRupiah(t.nominal)}</td>
                       <td className="px-2 py-2 text-center"><button onClick={() => handleDeleteTabungan(t.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>

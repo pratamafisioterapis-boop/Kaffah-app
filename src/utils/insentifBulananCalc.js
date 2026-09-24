@@ -178,6 +178,7 @@ export function hitungBasisFinal(tindakanResult, ranapResult, tumbangResult) {
 // anggota lain sesuai redistribusi_dari_capped_persen masing-masing. ──
 export function hitungLaporanFinal({
   basisFinal, kasTotal, f5Nominal, roster, tindakanResult, ranapResult, tumbangResult,
+  penarikanPerRoster = {},
   omPhiusMin = 2_000_000, omPhiusMax = 4_000_000, omPhiusPotonganKas = 250_000,
 }) {
   const basisSetelahKas = basisFinal - kasTotal;
@@ -193,7 +194,11 @@ export function hitungLaporanFinal({
     const setelahF5 = jatahDasar - (f5Nominal || 0);
     const finalCapped = Math.min(omPhiusMax, Math.max(omPhiusMin, setelahF5));
     sisaForfeited = setelahF5 - finalCapped;
-    perOrang[capped.id] = { nama: capped.nama, jatahDasar, setelahF5, nominalHitungan: finalCapped, isCapped: true };
+    const penarikanOperasional = penarikanPerRoster[capped.id] || 0;
+    perOrang[capped.id] = {
+      nama: capped.nama, jatahDasar, setelahF5, penarikanOperasional,
+      nominalHitungan: finalCapped + penarikanOperasional, isCapped: true,
+    };
   }
 
   for (const member of nonCapped) {
@@ -208,12 +213,14 @@ export function hitungLaporanFinal({
     const pendapatanTambahanDokter = isDokter
       ? (tindakanResult.totalKonsulVisiteSetelahPajak + ranapResult.totalDokter + tumbangResult.totalDokter)
       : 0;
+    const penarikanOperasional = penarikanPerRoster[member.id] || 0;
     perOrang[member.id] = {
       nama: member.nama,
       normalShare,
       redistribusi,
       pendapatanTambahanDokter,
-      nominalHitungan: normalShare + redistribusi + pendapatanTambahanDokter,
+      penarikanOperasional,
+      nominalHitungan: normalShare + redistribusi + pendapatanTambahanDokter + penarikanOperasional,
       isCapped: false,
     };
   }
