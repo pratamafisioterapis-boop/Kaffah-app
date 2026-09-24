@@ -25,9 +25,29 @@ const nowMonthValue = () => {
 
 const JENIS_OPTIONS = [{ value: 'pagi', label: 'Pagi' }, { value: 'swasta', label: 'Swasta' }];
 
+// Awal & akhir bulan (YYYY-MM) dalam format YYYY-MM-DD, untuk auto-isi periode.
+const monthToRange = (monthValue) => {
+  if (!monthValue) return { start: '', end: '' };
+  const [y, m] = monthValue.split('-').map(Number);
+  const start = `${monthValue}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${monthValue}-${String(lastDay).padStart(2, '0')}`;
+  return { start, end };
+};
+
+const formatPeriodeLabel = (awal, akhir) => {
+  if (!awal || !akhir) return '-';
+  const fmt = (s) => { const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
+  return `${fmt(awal)} s/d ${fmt(akhir)}`;
+};
+
 // ── Editor generik untuk daftar entri kategori (Tahap 1-4) ─────────────────
-const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withPeriode }) => {
-  const [form, setForm] = useState({ kategori: kategoriList[0], jenis: 'pagi', tanggal_awal: '', tanggal_akhir: '', nominal: '' });
+const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withPeriode, defaultPeriodeMonth }) => {
+  const [form, setForm] = useState({ kategori: kategoriList[0], jenis: 'pagi', periode_bulan: defaultPeriodeMonth || '', nominal: '' });
+
+  useEffect(() => {
+    if (defaultPeriodeMonth) setForm((f) => ({ ...f, periode_bulan: defaultPeriodeMonth }));
+  }, [defaultPeriodeMonth]);
 
   const totals = useMemo(() => {
     const out = {};
@@ -41,9 +61,13 @@ const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withP
     if (!nominal || nominal <= 0) return;
     const entry = { id: crypto.randomUUID(), kategori: form.kategori, nominal };
     if (withJenis) entry.jenis = form.jenis;
-    if (withPeriode) { entry.tanggal_awal = form.tanggal_awal || null; entry.tanggal_akhir = form.tanggal_akhir || null; }
+    if (withPeriode) {
+      const { start, end } = monthToRange(form.periode_bulan);
+      entry.tanggal_awal = start || null;
+      entry.tanggal_akhir = end || null;
+    }
     onChange([...entries, entry]);
-    setForm((f) => ({ ...f, nominal: '', tanggal_awal: '', tanggal_akhir: '' }));
+    setForm((f) => ({ ...f, nominal: '' }));
   };
 
   const handleDelete = (id) => onChange(entries.filter((e) => e.id !== id));
@@ -72,16 +96,15 @@ const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withP
           </div>
         )}
         {withPeriode && (
-          <>
-            <div>
-              <label className="text-[11px] font-semibold text-slate-500 block mb-1">Tanggal Awal</label>
-              <Input type="date" className="w-36" value={form.tanggal_awal} onChange={(e) => setForm((f) => ({ ...f, tanggal_awal: e.target.value }))} />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-slate-500 block mb-1">Tanggal Akhir</label>
-              <Input type="date" className="w-36" value={form.tanggal_akhir} onChange={(e) => setForm((f) => ({ ...f, tanggal_akhir: e.target.value }))} />
-            </div>
-          </>
+          <div>
+            <label className="text-[11px] font-semibold text-slate-500 block mb-1">Periode (Bulan)</label>
+            <input
+              type="month"
+              className="h-9 px-3 rounded-md border border-input bg-white text-sm outline-none w-36"
+              value={form.periode_bulan}
+              onChange={(e) => setForm((f) => ({ ...f, periode_bulan: e.target.value }))}
+            />
+          </div>
         )}
         <div>
           <label className="text-[11px] font-semibold text-slate-500 block mb-1">Nominal</label>
@@ -107,7 +130,7 @@ const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withP
                 <tr key={e.id}>
                   <td className="px-3 py-2 font-medium text-slate-700">{e.kategori}</td>
                   {withJenis && <td className="px-3 py-2 text-slate-500 capitalize">{e.jenis || '-'}</td>}
-                  {withPeriode && <td className="px-3 py-2 text-slate-500 text-xs">{e.tanggal_awal || '-'} s/d {e.tanggal_akhir || '-'}</td>}
+                  {withPeriode && <td className="px-3 py-2 text-slate-500 text-xs">{formatPeriodeLabel(e.tanggal_awal, e.tanggal_akhir)}</td>}
                   <td className="px-3 py-2 text-right tabular-nums">{formatRupiah(e.nominal)}</td>
                   <td className="px-2 py-2 text-center">
                     <button onClick={() => handleDelete(e.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
@@ -393,7 +416,7 @@ const InsentifBulananPage = () => {
               kategoriList={KATEGORI_SEBELUM_SETELAH}
               entries={laporan?.kategori_sebelum_pph || []}
               onChange={(v) => patchLaporan('kategori_sebelum_pph', v)}
-              withJenis withPeriode
+              withJenis withPeriode defaultPeriodeMonth={periodeMonth}
             />
             <div className="flex justify-end mt-3">
               <Button size="sm" onClick={() => handleSaveField('kategori_sebelum_pph')} disabled={saving} className="gap-1.5">
@@ -410,7 +433,7 @@ const InsentifBulananPage = () => {
               kategoriList={KATEGORI_SEBELUM_SETELAH}
               entries={laporan?.kategori_setelah_pph || []}
               onChange={(v) => patchLaporan('kategori_setelah_pph', v)}
-              withPeriode
+              withPeriode defaultPeriodeMonth={periodeMonth}
             />
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
               {KATEGORI_SEBELUM_SETELAH.map((kat) => (
