@@ -85,10 +85,10 @@ export async function listTabunganPajakPenarikan(ownerUserId) {
   return data || [];
 }
 
-export async function addTabunganPajakPenarikan(ownerUserId, { laporanId, nominal, keterangan }) {
+export async function addTabunganPajakPenarikan(ownerUserId, { laporanId, nominal, keterangan, rosterId }) {
   const { data, error } = await supabase
     .from(TABUNGAN_TABLE)
-    .insert({ owner_user_id: ownerUserId, laporan_id: laporanId || null, nominal, keterangan: keterangan || null })
+    .insert({ owner_user_id: ownerUserId, laporan_id: laporanId || null, nominal, keterangan: keterangan || null, roster_id: rosterId || null })
     .select('*')
     .single();
   if (error) throw error;
