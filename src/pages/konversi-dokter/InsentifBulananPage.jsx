@@ -537,25 +537,16 @@ const InsentifBulananPage = () => {
                 <label className="text-[11px] font-semibold text-slate-500 block mb-1">Persentase (%)</label>
                 <Input type="number" step="0.01" className="w-28" value={rosterForm.persentase} onChange={(e) => setRosterForm((f) => ({ ...f, persentase: e.target.value }))} />
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-slate-600 pb-2">
-                <input type="checkbox" checked={rosterForm.is_capped} onChange={(e) => setRosterForm((f) => ({ ...f, is_capped: e.target.checked }))} /> Dibatasi (capped)
-              </label>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-500 block mb-1">Redistribusi dari capped (%)</label>
-                <Input type="number" step="0.01" className="w-32" value={rosterForm.redistribusi_dari_capped_persen} onChange={(e) => setRosterForm((f) => ({ ...f, redistribusi_dari_capped_persen: e.target.value }))} />
-              </div>
               <Button size="sm" onClick={handleAddRoster} className="gap-1.5"><Plus className="w-4 h-4" /> Tambah</Button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Nama</th><th className="text-right px-3 py-2">Persentase</th><th className="text-center px-3 py-2">Capped</th><th className="text-right px-3 py-2">Redistribusi %</th><th className="w-10"></th></tr></thead>
+                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Nama</th><th className="text-right px-3 py-2">Persentase</th><th className="w-10"></th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {roster.map((r) => (
                     <tr key={r.id}>
                       <td className="px-3 py-2 font-medium">{r.nama}</td>
                       <td className="px-3 py-2 text-right">{r.persentase}%</td>
-                      <td className="px-3 py-2 text-center">{r.is_capped ? '✓' : '-'}</td>
-                      <td className="px-3 py-2 text-right">{r.redistribusi_dari_capped_persen ? `${r.redistribusi_dari_capped_persen}%` : '-'}</td>
                       <td className="px-2 py-2 text-center"><button onClick={() => handleDeleteRoster(r.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>
                   ))}
