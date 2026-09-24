@@ -275,7 +275,7 @@ const InsentifBulananPage = () => {
     [laporan]
   );
   const tindakanResult = useMemo(
-    () => laporan ? hitungTindakan(laporan.tindakan_sebelum_pph, laporan.tindakan_setelah_pph, totalPphPerKategori) : null,
+    () => laporan ? hitungTindakan(laporan.tindakan_sebelum_pph, totalPphPerKategori) : null,
     [laporan, totalPphPerKategori]
   );
   const ranapResult = useMemo(
@@ -433,19 +433,19 @@ const InsentifBulananPage = () => {
         </AccordionItem>
 
         <AccordionItem value="tindakan-setelah" className="border border-slate-200 rounded-xl px-4 bg-white">
-          <AccordionTrigger>4. Tindakan Setelah PPH</AccordionTrigger>
+          <AccordionTrigger>4. Tindakan Setelah PPH (otomatis)</AccordionTrigger>
           <AccordionContent className="pb-4">
-            <KategoriEntryEditor
-              kategoriList={KATEGORI_TINDAKAN_SETELAH}
-              entries={laporan?.tindakan_setelah_pph || []}
-              onChange={(v) => patchLaporan('tindakan_setelah_pph', v)}
-            />
+            <p className="text-xs text-slate-500 mb-3">
+              Dihitung otomatis dari Tindakan Sebelum PPH × persentase PPH per eselon (tahap 1→2) — tidak perlu input manual lagi.
+            </p>
             {tindakanResult && (
-              <div className="mt-4">
+              <div>
                 <ResultTable
                   rows={KATEGORI_TINDAKAN_SETELAH.map((kat) => ({ kat, ...tindakanResult.perKategori[kat] }))}
                   columns={[
                     { key: 'kat', label: 'Kategori' },
+                    { key: 'tindakanSetelahPph', label: 'Setelah PPH', align: 'right', render: (r) => formatRupiah(r.tindakanSetelahPph) },
+                    { key: 'pajak', label: 'Pajak 15%', align: 'right', render: (r) => formatRupiah(r.pajak) },
                     { key: 'setelahPajak', label: 'Setelah Pajak 15%', align: 'right', render: (r) => formatRupiah(r.setelahPajak) },
                     { key: 'konsulVisiteSetelahPajak', label: 'Konsul+Visite (Dokter)', align: 'right', render: (r) => formatRupiah(r.konsulVisiteSetelahPajak) },
                   ]}
@@ -454,11 +454,6 @@ const InsentifBulananPage = () => {
                 <p className="text-sm font-bold text-slate-700">Total Konsul+Visite (Dokter): {formatRupiah(tindakanResult.totalKonsulVisiteSetelahPajak)}</p>
               </div>
             )}
-            <div className="flex justify-end mt-3">
-              <Button size="sm" onClick={() => handleSaveField('tindakan_setelah_pph')} disabled={saving} className="gap-1.5">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Simpan
-              </Button>
-            </div>
           </AccordionContent>
         </AccordionItem>
 

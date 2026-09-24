@@ -61,8 +61,10 @@ export function hitungTotalPphPerKategori(kategoriSebelumPph, kategoriSetelahPph
   return result;
 }
 
-// ── Tahap 3 & 4: Tindakan Sebelum/Setelah PPH + Konsul/Visite (hak dokter) ──
-export function hitungTindakan(tindakanSebelumPph, tindakanSetelahPph, totalPphPerKategori) {
+// ── Tahap 3 & 4: Tindakan Sebelum PPH (input manual) -> Tindakan Setelah PPH
+// (OTOMATIS, pakai persen PPH eselon yang sama dari tahap 1/2 — tidak perlu
+// input manual lagi) + Konsul/Visite (hak dokter) ──
+export function hitungTindakan(tindakanSebelumPph, totalPphPerKategori) {
   const sebelumRaw = sumBy(tindakanSebelumPph, (e) => e.kategori);
   // Gabungkan sub-kategori Asuransi (Pertamina/Pertamedika/Jaminan/Pribadi) jadi satu.
   const sebelum = {};
@@ -74,13 +76,12 @@ export function hitungTindakan(tindakanSebelumPph, tindakanSetelahPph, totalPphP
     }
   }
 
-  const setelahRaw = sumBy(tindakanSetelahPph, (e) => e.kategori);
-
   const perKategori = {};
   let totalSetelahPajak = 0;
   let totalPajak = 0;
   for (const kat of KATEGORI_TINDAKAN_SETELAH) {
-    const setelahPph = setelahRaw[kat] || 0;
+    const persenPphKat = totalPphPerKategori[kat]?.persenPph || 0;
+    const setelahPph = sebelum[kat] * persenPphKat;
     const pajak = setelahPph * PAJAK_TAHUNAN_RATE;
     const setelahPajak = setelahPph - pajak;
 
