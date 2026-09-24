@@ -18,6 +18,7 @@ import {
   saveInsentifDokterHistory, listInsentifDokterHistory,
   getInsentifDokterHistoryDetail, deleteInsentifDokterHistory,
 } from '@/utils/insentifDokterHistory';
+import MonthYearSelect, { MONTH_NAMES_ID } from '@/components/MonthYearSelect';
 
 const rupiah = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(n || 0)}`;
 
@@ -30,7 +31,7 @@ const formatPeriodeLabel = (monthValue) => {
   if (!monthValue) return '';
   const [y, m] = monthValue.split('-').map(Number);
   if (!y || !m) return monthValue;
-  return new Date(y, m - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  return `${MONTH_NAMES_ID[m - 1]} ${y}`;
 };
 
 const formatDateTime = (iso) => {
@@ -595,12 +596,7 @@ const KonversiDokterConverter = () => {
                 <label className="text-sm font-medium text-slate-600 whitespace-nowrap">
                   Periode:
                 </label>
-                <input
-                  type="month"
-                  value={periodeMonth}
-                  onChange={(e) => setPeriodeMonth(e.target.value)}
-                  className="h-9 px-3 rounded-md border border-input bg-white text-sm outline-none flex-1 max-w-xs"
-                />
+                <MonthYearSelect value={periodeMonth} onChange={setPeriodeMonth} className="flex-1 max-w-xs" />
               </div>
 
               <div
