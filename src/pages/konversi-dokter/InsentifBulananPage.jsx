@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import MonthYearSelect, { MONTH_NAMES_ID } from '@/components/MonthYearSelect';
 import {
   KATEGORI_SEBELUM_SETELAH, KATEGORI_TINDAKAN_SEBELUM, KATEGORI_TINDAKAN_SETELAH,
   RANAP_SWASTA_ESELON, TUMBANG_ESELON,
@@ -30,7 +31,7 @@ const formatPeriodeMonthLabel = (monthValue) => {
   if (!monthValue) return '';
   const [y, m] = monthValue.split('-').map(Number);
   if (!y || !m) return monthValue;
-  return new Date(y, m - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  return `${MONTH_NAMES_ID[m - 1]} ${y}`;
 };
 
 const JENIS_OPTIONS = [{ value: 'pagi', label: 'Pagi' }, { value: 'swasta', label: 'Swasta' }];
@@ -136,12 +137,7 @@ const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withP
         {withPeriode && (
           <div>
             <label className="text-[11px] font-semibold text-slate-500 block mb-1">Periode (Bulan)</label>
-            <input
-              type="month"
-              className="h-9 px-3 rounded-md border border-input bg-white text-sm outline-none w-36"
-              value={form.periode_bulan}
-              onChange={(e) => setForm((f) => ({ ...f, periode_bulan: e.target.value }))}
-            />
+            <MonthYearSelect className="w-40" value={form.periode_bulan} onChange={(v) => setForm((f) => ({ ...f, periode_bulan: v }))} />
           </div>
         )}
         <div>
@@ -463,14 +459,9 @@ const InsentifBulananPage = () => {
               <p className="text-sm text-slate-400 mt-0.5">Lengkapi tiap tahap secara berurutan untuk periode {periodeLabel}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 backdrop-blur-sm shrink-0">
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl pl-3 pr-1.5 py-1 backdrop-blur-sm shrink-0">
             <CalendarDays className="w-4 h-4 text-amber-300 shrink-0" />
-            <input
-              type="month"
-              value={periodeMonth}
-              onChange={(e) => setPeriodeMonth(e.target.value)}
-              className="h-8 bg-transparent text-sm text-white outline-none [color-scheme:dark]"
-            />
+            <MonthYearSelect value={periodeMonth} onChange={setPeriodeMonth} variant="dark" />
           </div>
         </div>
       </div>
