@@ -782,18 +782,16 @@ const getPremiumPastelBadge = (text) => {
               />
 
               {showStartCalendar && (
-                <div className="absolute z-50 mt-2">
-                  <DatePicker
-                    value={parseDateFromDisplay(dateRangeDisplay.start)}
-                    onChange={(d) => {
-                      setActiveFilter(null);
-                      setDateRange(p => ({ ...p, start: d }));
-                      setDateRangeDisplay(p => ({ ...p, start: displayDateID(d) }));
-                      setShowStartCalendar(false);
-                    }}
-                    onClose={() => setShowStartCalendar(false)}
-                  />
-                </div>
+                <DatePicker
+                  value={parseDateFromDisplay(dateRangeDisplay.start)}
+                  onChange={(d) => {
+                    setActiveFilter(null);
+                    setDateRange(p => ({ ...p, start: d }));
+                    setDateRangeDisplay(p => ({ ...p, start: displayDateID(d) }));
+                    setShowStartCalendar(false);
+                  }}
+                  onClose={() => setShowStartCalendar(false)}
+                />
               )}
             </div>
 
@@ -812,18 +810,16 @@ const getPremiumPastelBadge = (text) => {
               />
 
               {showEndCalendar && (
-                <div className="absolute z-50 mt-2 right-0">
-                  <DatePicker
-                    value={parseDateFromDisplay(dateRangeDisplay.end)}
-                    onChange={(d) => {
-                      setActiveFilter(null);
-                      setDateRange(p => ({ ...p, end: d }));
-                      setDateRangeDisplay(p => ({ ...p, end: displayDateID(d) }));
-                      setShowEndCalendar(false);
-                    }}
-                    onClose={() => setShowEndCalendar(false)}
-                  />
-                </div>
+                <DatePicker
+                  value={parseDateFromDisplay(dateRangeDisplay.end)}
+                  onChange={(d) => {
+                    setActiveFilter(null);
+                    setDateRange(p => ({ ...p, end: d }));
+                    setDateRangeDisplay(p => ({ ...p, end: displayDateID(d) }));
+                    setShowEndCalendar(false);
+                  }}
+                  onClose={() => setShowEndCalendar(false)}
+                />
               )}
             </div>
           </div>
