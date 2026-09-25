@@ -127,6 +127,18 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
     ? generateSlotsFromWindow(autoConfig.openTime, autoConfig.closeTime, autoConfig.duration, autoConfig.gap)
     : shifts;
 
+  // Per-row validation so the owner sees exactly which shift is wrong (and why)
+  // right where they're editing it, instead of only after clicking Simpan.
+  const shiftRangeErrors = shifts.map((shift) => {
+    const startValid = ScheduleValidation.validateTimeFormat(shift.start_time);
+    if (!startValid.valid) return startValid.error;
+    const endValid = ScheduleValidation.validateTimeFormat(shift.end_time);
+    if (!endValid.valid) return endValid.error;
+    const rangeValid = ScheduleValidation.validateTimeRange(shift.start_time, shift.end_time);
+    return rangeValid.valid ? null : rangeValid.error;
+  });
+  const hasInvalidShift = mode === 'manual' && shiftRangeErrors.some(Boolean);
+
   const handleApplyAutoSlots = () => {
     const generated = generateSlotsFromWindow(autoConfig.openTime, autoConfig.closeTime, autoConfig.duration, autoConfig.gap);
     if (generated.length === 0) {
@@ -526,40 +538,51 @@ if (results.length === 0) {
                 <>
                 <div className="space-y-4">
                     <Label>Slot Pasien (setiap baris = 1 slot, kapasitas {capacity} pasien)</Label>
-                    {shifts.map((shift, idx) => (
-                        <div key={idx} className="flex flex-col sm:flex-row gap-3 items-end p-3 bg-slate-50 rounded-lg border border-slate-200 relative group animate-in slide-in-from-left-2 duration-300">
-                            <div className="w-full sm:w-1/2 space-y-1.5">
-                                <span className="text-xs font-medium text-slate-500">Mulai</span>
-                                <Input 
-                                    type="time" 
-                                    value={shift.start_time} 
-                                    onChange={(e) => updateShift(idx, 'start_time', e.target.value)}
-                                    className="bg-white"
-                                />
+                    {shifts.map((shift, idx) => {
+                        const rowError = shiftRangeErrors[idx];
+                        return (
+                        <div key={idx} className="space-y-1.5">
+                            <div className={`flex flex-col sm:flex-row gap-3 items-end p-3 rounded-lg border relative group animate-in slide-in-from-left-2 duration-300 ${rowError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                                <div className="w-full sm:w-1/2 space-y-1.5">
+                                    <span className="text-xs font-medium text-slate-500">Mulai</span>
+                                    <Input
+                                        type="time"
+                                        value={shift.start_time}
+                                        onChange={(e) => updateShift(idx, 'start_time', e.target.value)}
+                                        className={`bg-white ${rowError ? 'border-red-300 focus-visible:ring-red-300' : ''}`}
+                                    />
+                                </div>
+                                <div className="w-full sm:w-1/2 space-y-1.5">
+                                    <span className="text-xs font-medium text-slate-500">Selesai</span>
+                                    <Input
+                                        type="time"
+                                        value={shift.end_time}
+                                        onChange={(e) => updateShift(idx, 'end_time', e.target.value)}
+                                        className={`bg-white ${rowError ? 'border-red-300 focus-visible:ring-red-300' : ''}`}
+                                    />
+                                </div>
+
+                                {shifts.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 sm:mb-0.5"
+                                        onClick={() => handleRemoveShift(idx)}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                )}
                             </div>
-                            <div className="w-full sm:w-1/2 space-y-1.5">
-                                <span className="text-xs font-medium text-slate-500">Selesai</span>
-                                <Input 
-                                    type="time" 
-                                    value={shift.end_time} 
-                                    onChange={(e) => updateShift(idx, 'end_time', e.target.value)}
-                                    className="bg-white"
-                                />
-                            </div>
-                            
-                            {shifts.length > 1 && (
-                                <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 sm:mb-0.5"
-                                    onClick={() => handleRemoveShift(idx)}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                            {rowError && (
+                                <p className="text-xs text-red-600 flex items-center gap-1 pl-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    Slot #{idx + 1}: Jam mulai harus lebih awal dari jam selesai.
+                                </p>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <Button
@@ -623,12 +646,19 @@ if (results.length === 0) {
                 </div>
             )}
 
-            <CardFooter className="bg-slate-50 border-t p-4 flex justify-end gap-3">
-                <Button variant="ghost" onClick={onCancel} disabled={loading}>Batal</Button>
-                <Button onClick={handleSubmit} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
-                    {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Simpan Jadwal
-                </Button>
+            <CardFooter className="bg-slate-50 border-t p-4 flex flex-col items-end gap-2">
+                {hasInvalidShift && (
+                    <p className="text-xs text-red-600 self-stretch text-right">
+                        Perbaiki slot yang ditandai merah di atas sebelum menyimpan.
+                    </p>
+                )}
+                <div className="flex justify-end gap-3">
+                    <Button variant="ghost" onClick={onCancel} disabled={loading}>Batal</Button>
+                    <Button onClick={handleSubmit} disabled={loading || hasInvalidShift} className="bg-blue-600 hover:bg-blue-700">
+                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                        Simpan Jadwal
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
 
