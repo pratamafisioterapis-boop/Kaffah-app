@@ -408,22 +408,26 @@ const getPremiumPastelBadge = (text) => {
           <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>
           <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
             <div className="flex items-center gap-2">
-              <Input 
-                value={dateRangeDisplay.start} 
-                onChange={(e) => setDateRangeDisplay(p => ({...p, start: e.target.value}))} 
-                className="w-32 text-xs" 
-                onClick={() => setShowStartCalendar(true)}
-              />
-              {showStartCalendar && <div className="absolute z-50 mt-10"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(d) => { setDateRange(p=>({...p, start: d})); setDateRangeDisplay(p=>({...p, start: displayDateID(d)})); setShowStartCalendar(false);}} onClose={() => setShowStartCalendar(false)} /></div>}
+              <div className="relative">
+                <Input
+                  value={dateRangeDisplay.start}
+                  onChange={(e) => setDateRangeDisplay(p => ({...p, start: e.target.value}))}
+                  className="w-32 text-xs"
+                  onClick={() => setShowStartCalendar(true)}
+                />
+                {showStartCalendar && <div className="absolute z-50 top-full left-0 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(d) => { setDateRange(p=>({...p, start: d})); setDateRangeDisplay(p=>({...p, start: displayDateID(d)})); setShowStartCalendar(false);}} onClose={() => setShowStartCalendar(false)} /></div>}
+              </div>
               <span>-</span>
-              <Input 
-                value={dateRangeDisplay.end} 
-                onChange={(e) => setDateRangeDisplay(p => ({...p, end: e.target.value}))} 
-                className="w-32 text-xs"
-                onClick={() => setShowEndCalendar(true)}
-              />
-              {showEndCalendar && <div className="absolute z-50 mt-10 ml-36"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(d) => { setDateRange(p=>({...p, end: d})); setDateRangeDisplay(p=>({...p, end: displayDateID(d)})); setShowEndCalendar(false);}} onClose={() => setShowEndCalendar(false)} /></div>}
-              
+              <div className="relative">
+                <Input
+                  value={dateRangeDisplay.end}
+                  onChange={(e) => setDateRangeDisplay(p => ({...p, end: e.target.value}))}
+                  className="w-32 text-xs"
+                  onClick={() => setShowEndCalendar(true)}
+                />
+                {showEndCalendar && <div className="absolute z-50 top-full left-0 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(d) => { setDateRange(p=>({...p, end: d})); setDateRangeDisplay(p=>({...p, end: displayDateID(d)})); setShowEndCalendar(false);}} onClose={() => setShowEndCalendar(false)} /></div>}
+              </div>
+
               <Button variant="outline" size="icon" onClick={fetchRecaps}><RefreshCcw className="w-4 h-4"/></Button>
             </div>
             <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px]" />
