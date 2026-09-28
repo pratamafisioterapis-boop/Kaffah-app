@@ -348,7 +348,18 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   [
     'PIHAK KEDUA bersedia dan sanggup menjalankan tugas sebagai Fisioterapis di tempat kerja PIHAK PERTAMA pada waktu yang disesuaikan dengan aturan dan ketentuan dari PIHAK PERTAMA.',
     'PIHAK KEDUA wajib mentaati waktu & jam kerja yang telah ditentukan oleh PIHAK PERTAMA.',
+    'PIHAK KEDUA wajib hadir dan melakukan absensi paling lambat 20 (dua puluh) menit sebelum jadwal pasien pertama atau jam buka layanan yang ditetapkan PIHAK PERTAMA, untuk persiapan ruangan, alat dan rekam medis. PIHAK KEDUA dianggap terlambat apabila melakukan absensi melewati batas waktu tersebut.',
+    'Apabila PIHAK KEDUA terlambat lebih dari batas toleransi, maka Upah makan dan transport pada hari tersebut tidak dibayarkan.',
+    'Tidak adanya pasien tidak membebaskan PIHAK KEDUA dari kewajiban berada di tempat kerja. Selama tidak ada pasien, PIHAK KEDUA wajib tetap berada di lokasi dan mengerjakan tugas sebagaimana Pasal 1, antara lain pengisian rekam medis, pembuatan konten edukasi, kebersihan ruangan dan stock opname.',
+    'Pelanggaran terhadap pasal ini dikenakan sanksi bertahap:',
   ].forEach((t, i) => numberedItem(i + 1, t));
+  [
+    'a. Teguran lisan untuk pelanggaran pertama;',
+    'b. Surat Peringatan I (SP I) apabila terjadi 3 kali pelanggaran dalam 1 bulan;',
+    'c. SP II apabila terjadi pelanggaran kembali dalam masa berlaku SP I;',
+    'd. SP III apabila terjadi pelanggaran kembali dalam masa berlaku SP II.',
+  ].forEach((t) => subLine(t));
+  subLine('Masing-masing SP berlaku selama 3 (tiga) bulan.');
 
   // ---------- PASAL 4 ----------
   pasalTitle(4, 'KOMPENSASI BAGI PIHAK KEDUA');
@@ -422,6 +433,7 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
     'Dengan sengaja walaupun sudah diperingatkan membiarkan dirinya atau teman sekerjanya dalam keadaan bahaya.',
     'Membongkar rahasia Perusahaan atau pasien PIHAK PERTAMA yang seharusnya dirahasiakan.',
     'Membujuk atau menghasut teman sekerja untuk melakukan perbuatan yang bertentangan dengan peraturan perusahaan, hukum, dan/atau perbuatan asusila.',
+    'Telah menerima SP III dan kembali melakukan pelanggaran selama masa berlakunya.',
   ].forEach((t, i) => numberedItem(i + 1, t));
 
   // ---------- PASAL 10 ----------
