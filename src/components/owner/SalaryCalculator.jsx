@@ -20,7 +20,7 @@ import {
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary,
   calculateTotalSalary, formatCurrency, cn, getTherapistPeriodRange,
-  resolvePatientTypeRate
+  resolvePatientTypeRate, buildPatientTypeRateIndex
 } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -74,13 +74,9 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
     if (therapistRes.data) setTherapists(therapistRes.data);
 
-    // 🔥 mapping rate dari DB
-    const rateMap = {};
-    (ratesRes.data || []).forEach(r => {
-      rateMap[r.service_name] = r.rate;
-    });
-
-    setCustomRates(rateMap);
+    // 🔥 index rate dari DB — dicocokkan lewat ID Tipe Pasien dulu (tidak
+    // pernah salah tangkap lewat teks), fallback ke nama untuk data lama.
+    setCustomRates(buildPatientTypeRateIndex(ratesRes.data || []));
 
   } catch (err) {
     console.error(err);
@@ -213,7 +209,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     const { data: rawRecaps } = await supabase
       .from('daily_recaps')
       .select(`
-        id, recap_date, amount, amount_package, patient_type, package_type, discount_type, discount_value,
+        id, recap_date, amount, amount_package, patient_type, patient_type_ids, package_type, discount_type, discount_value,
         patient:patients!patient_id (id, full_name),
         actual_patient:patients!actual_patient_id (id, full_name),
         package_tracking:package_tracking_id (id, nominal, total_sessions, package_name)
@@ -231,7 +227,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
     const optionsMap = (optionsRes.data || []).reduce((acc, o) => { acc[o.id] = o.label; return acc; }, {});
     const therapistRecaps = rawRecaps || [];
-    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, 'customRates keys:', Object.keys(customRates));
+    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, therapistRecaps[0]?.patient_type_ids, 'customRates byName keys:', Object.keys(customRates?.byName || {}));
 
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
@@ -261,12 +257,12 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
           sessionAmount = Number(r.amount || 0);
         }
       } else {
-        // custom salary: patient_type di DB adalah text label langsung (misal "DUA KELUHAN"
-        // atau gabungan seperti "XTRATIME + DUA KELUHAN"). Kalau tidak ada tarif kustom
-        // persis untuk gabungan tsb, tarif dihitung dari jumlah tiap komponennya.
-        // Fallback: kalau rate tidak ketemu sama sekali, hasilnya 0 (tidak diketahui) —
-        // jangan fallback ke amount karena amount = yang dibayar pasien bukan rate terapis
-        sessionAmount = resolvePatientTypeRate(r.patient_type, customRates);
+        // custom salary: dicocokkan lewat patient_type_ids (ID operational_options)
+        // dulu — tidak pernah salah tangkap lewat teks. Fallback ke teks (exact lalu
+        // pecah-kombinasi) untuk recap lama yang belum punya patient_type_ids.
+        // Kalau rate tidak ketemu sama sekali, hasilnya 0 (tidak diketahui) — jangan
+        // fallback ke amount karena amount = yang dibayar pasien bukan rate terapis.
+        sessionAmount = resolvePatientTypeRate(r.patient_type, customRates, { typeIds: r.patient_type_ids });
       }
 
       commission += sessionAmount;

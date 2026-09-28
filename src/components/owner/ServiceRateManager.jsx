@@ -64,25 +64,37 @@ const ServiceRateManager = () => {
 
   useEffect(() => { fetchRates(); fetchPatientTypes(); }, [clinicId]);
 
-  // Gabungkan Tipe Pasien (dari Setup) dengan tarif yang sudah pernah diisi
+  // Gabungkan Tipe Pasien (dari Setup) dengan tarif yang sudah pernah diisi.
+  // Dicocokkan lewat ID (patient_type_ids) dulu — tidak pernah salah tangkap
+  // gara-gara nama mirip/beririsan — baru fallback ke nama untuk baris lama
+  // yang belum punya patient_type_ids terisi.
   const mergedTypeRates = useMemo(() => {
     return patientTypes.map((pt) => {
-      const match = rates.find(
-        (r) => (r.service_name || '').trim().toLowerCase() === (pt.label || '').trim().toLowerCase()
-      );
+      const match = rates.find((r) => {
+        if (Array.isArray(r.patient_type_ids) && r.patient_type_ids.length > 0) {
+          return r.patient_type_ids.length === 1 && r.patient_type_ids[0] === pt.id;
+        }
+        return (r.service_name || '').trim().toLowerCase() === (pt.label || '').trim().toLowerCase();
+      });
       return { key: pt.id, id: pt.id, label: pt.label, rateRow: match || null };
     });
   }, [patientTypes, rates]);
 
-  // Tarif yang namanya tidak cocok dengan Tipe Pasien manapun (input manual/lama)
+  // Tarif yang bukan tarif satu-Tipe-Pasien tunggal (tarif gabungan, atau nama
+  // lama yang belum cocok ke Tipe Pasien manapun)
   const customRates = useMemo(() => {
-    const typeLabels = patientTypes.map((pt) => (pt.label || '').trim().toLowerCase());
-    return rates.filter((r) => !typeLabels.includes((r.service_name || '').trim().toLowerCase()));
-  }, [rates, patientTypes]);
+    const matchedRateIds = new Set(mergedTypeRates.map((m) => m.rateRow?.id).filter(Boolean));
+    return rates.filter((r) => !matchedRateIds.has(r.id));
+  }, [rates, mergedTypeRates]);
 
   // Opsi Tipe Pasien (dari Setup) untuk dropdown multi-select di modal Tambah/Edit Tarif
   const patientTypeSelectOptions = useMemo(
-    () => patientTypes.map((pt) => ({ value: pt.label, label: pt.label })),
+    () => patientTypes.map((pt) => ({ value: pt.id, label: pt.label })),
+    [patientTypes]
+  );
+
+  const patientTypeLabelById = useMemo(
+    () => patientTypes.reduce((acc, pt) => { acc[pt.id] = pt.label; return acc; }, {}),
     [patientTypes]
   );
 
@@ -94,7 +106,7 @@ const ServiceRateManager = () => {
       if (rateRow) {
         const { data, error } = await supabase
           .from('service_rates')
-          .update({ rate: rateValue })
+          .update({ rate: rateValue, patient_type_ids: [id] })
           .eq('id', rateRow.id)
           .select()
           .single();
@@ -103,7 +115,7 @@ const ServiceRateManager = () => {
       } else {
         const { data, error } = await supabase
           .from('service_rates')
-          .insert({ service_name: label, rate: rateValue, clinic_id: clinicId })
+          .insert({ service_name: label, rate: rateValue, clinic_id: clinicId, patient_type_ids: [id] })
           .select()
           .single();
         if (error) throw error;
@@ -125,11 +137,17 @@ const ServiceRateManager = () => {
 
   const openEdit = (item) => {
     setEditingRate(item);
-    // Pecah nama tarif (mis. "XTRATIME + DUA KELUHAN") jadi tipe pasien penyusunnya,
-    // dicocokkan ke Tipe Pasien dari Setup. Bagian yang tidak cocok tetap dibawa
-    // sebagai pilihan kustom supaya tidak hilang saat diedit.
-    const parts = (item.service_name || '').split('+').map((p) => p.trim()).filter(Boolean);
-    const selectedTypes = parts.length > 0 ? parts : [item.service_name].filter(Boolean);
+    // Utamakan patient_type_ids yang sudah tersimpan (akurat, berbasis ID).
+    // Untuk baris lama yang belum punya patient_type_ids, coba pecah nama
+    // tarif (mis. "XTRATIME + DUA KELUHAN") lalu cocokkan tiap bagian ke
+    // Tipe Pasien dari Setup berdasarkan label.
+    let selectedTypes = Array.isArray(item.patient_type_ids) ? item.patient_type_ids.filter(Boolean) : [];
+    if (selectedTypes.length === 0) {
+      const parts = (item.service_name || '').split('+').map((p) => p.trim().toLowerCase()).filter(Boolean);
+      selectedTypes = patientTypes
+        .filter((pt) => parts.includes((pt.label || '').trim().toLowerCase()))
+        .map((pt) => pt.id);
+    }
     setForm({ selectedTypes, rate: item.rate });
     setIsFormOpen(true);
   };
@@ -140,9 +158,10 @@ const ServiceRateManager = () => {
   };
 
   const handleSave = async () => {
-    const name = form.selectedTypes.map((t) => t.trim()).filter(Boolean).join(' + ');
+    const ids = Array.from(new Set(form.selectedTypes.filter(Boolean)));
+    const name = ids.map((id) => patientTypeLabelById[id]).filter(Boolean).join(' + ');
     const rateValue = parseFloat(form.rate) || 0;
-    if (!name) {
+    if (ids.length === 0 || !name) {
       toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Pilih minimal satu tipe pasien.' });
       return;
     }
@@ -151,7 +170,7 @@ const ServiceRateManager = () => {
       if (editingRate) {
         const { data, error } = await supabase
           .from('service_rates')
-          .update({ service_name: name, rate: rateValue })
+          .update({ service_name: name, rate: rateValue, patient_type_ids: ids })
           .eq('id', editingRate.id)
           .select()
           .single();
@@ -161,7 +180,7 @@ const ServiceRateManager = () => {
       } else {
         const { data, error } = await supabase
           .from('service_rates')
-          .insert({ service_name: name, rate: rateValue, clinic_id: clinicId })
+          .insert({ service_name: name, rate: rateValue, clinic_id: clinicId, patient_type_ids: ids })
           .select()
           .single();
         if (error) throw error;
@@ -312,7 +331,6 @@ const ServiceRateManager = () => {
                 value={form.selectedTypes}
                 onChange={(selectedTypes) => setForm({ ...form, selectedTypes })}
                 placeholder="Pilih satu atau lebih tipe pasien..."
-                creatable
               />
               <p className="text-xs text-slate-400">
                 Pilih lebih dari satu untuk tarif gabungan, mis. XTRATIME + DUA KELUHAN.

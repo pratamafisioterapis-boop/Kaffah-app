@@ -316,18 +316,20 @@ if (data.discount_type === 'percentage') {
 if (data.discount_type === 'nominal') {
   originalAmount = data.amount + (data.discount_value || 0);
 }
-// Tipe pasien tersimpan sebagai label teks (bisa gabungan, mis. "XTRATIME +
-// DUA KELUHAN"). Pecah jadi komponennya lalu cocokkan tiap komponen ke opsi
-// Tipe Pasien (by label, bukan id — kolom DB memang menyimpan label) supaya
-// multi-select terisi dengan benar. Komponen yang tidak ketemu tetap dibawa
-// sebagai nilai teks bebas (allowCreate) supaya tidak hilang saat diedit.
-const patientTypeParts = splitPatientTypeCombo(data.patient_type);
-const patientTypeValues = patientTypeParts.map((part) => {
-  const match = patientTypes.find(
-    (pt) => (pt.label || '').trim().toLowerCase() === part.toLowerCase()
-  );
-  return match ? match.value : part;
-});
+// Utamakan patient_type_ids yang sudah tersimpan (ID operational_options
+// asli, tidak pernah salah tangkap lewat teks). Untuk recap lama yang belum
+// punya patient_type_ids, fallback: pecah label teks (bisa gabungan, mis.
+// "XTRATIME + DUA KELUHAN") jadi komponennya lalu cocokkan tiap komponen ke
+// opsi Tipe Pasien by label. Komponen yang tidak ketemu tetap dibawa sebagai
+// nilai teks bebas (allowCreate) supaya tidak hilang saat diedit.
+const patientTypeValues = Array.isArray(data.patient_type_ids) && data.patient_type_ids.length > 0
+  ? data.patient_type_ids
+  : splitPatientTypeCombo(data.patient_type).map((part) => {
+      const match = patientTypes.find(
+        (pt) => (pt.label || '').trim().toLowerCase() === part.toLowerCase()
+      );
+      return match ? match.value : part;
+    });
 setFormData(prev => ({
 ...prev,
 recap_date: formatDateDisplay(data.date || data.recap_date),
@@ -568,6 +570,9 @@ const selectedPatientTypeLabel = selectedPatientTypeValues
   .map((val) => patientTypes.find(p => p.value === val)?.label || val)
   .filter(Boolean)
   .join(' + ');
+// ID asli (bukan teks bebas dari allowCreate) — dipakai untuk pencocokan
+// tarif yang tidak pernah salah tangkap lewat teks (lihat resolvePatientTypeRate()).
+const selectedPatientTypeIds = selectedPatientTypeValues.filter((val) => isUUID(val));
 const selectedPaymentMethodLabel = paymentMethods.find(p => p.value === formData.payment_method)?.label || formData.payment_method || '';
 
 const selectedPackage = packageTypes.find(
@@ -588,6 +593,7 @@ diagnosis_labels: selectedDiagnosisLabels,
 
 service_type: selectedServiceLabel,
 patient_type: selectedPatientTypeLabel,
+patient_type_ids: selectedPatientTypeIds,
 
 // FIX: jangan hardcode null saat edit — itu memutus link paket yang sudah
 // tersimpan (sesi jadi tidak terhitung & muncul lagi di tanggal yang salah).
