@@ -150,13 +150,17 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   // --- Earnings table ---
   y += cardH + 8;
 
-  const rows = [
-    ['1', 'Gaji Pokok', formatCurrency(record.base_salary)],
-    ['2', 'Uang Transport', formatCurrency(record.transport_per_day)],
-    ['3', 'Jasa Insentif', formatCurrency(record.incentive_amount)],
-    ['4', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
-    ['5', 'Tips (Non-Cash)', formatCurrency(record.tips)],
+  const earningComponents = [
+    { label: 'Gaji Pokok', amount: record.base_salary },
+    { label: 'Uang Transport', amount: record.transport_per_day },
+    { label: 'Jasa Insentif', amount: record.incentive_amount },
+    { label: 'Komisi (Remunerasi)', amount: record.custom_commission },
+    { label: 'Tips (Non-Cash)', amount: record.tips },
+    { label: 'Kekurangan Gaji Bulan Lalu', amount: record.prev_month_shortfall },
   ];
+  const rows = earningComponents
+    .filter((item) => parseFloat(item.amount) > 0)
+    .map((item, index) => [String(index + 1), item.label, formatCurrency(item.amount)]);
 
   autoTable(doc, {
     startY: y,
