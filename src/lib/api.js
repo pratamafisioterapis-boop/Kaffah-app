@@ -7983,7 +7983,7 @@ export const getBepFinancials = async () => {
     ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const therapists = therapistsRes.data || [];
-    const ratesIndex = buildPatientTypeRateIndex(serviceRatesRes.data || []);
+    const serviceRateRows = serviceRatesRes.data || [];
 
     // ── Fase 2: transport & insentif yang sudah terkunci di payroll ──
     // Payroll yang PERIODENYA menyentuh bulan kalender berjalan menggantikan
@@ -8060,7 +8060,7 @@ export const getBepFinancials = async () => {
       const recaps = recapsRes.data || [];
       const therapistIncentive = salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
-        : calculateCustomSalary(recaps, ratesIndex);
+        : calculateCustomSalary(recaps, buildPatientTypeRateIndex(serviceRateRows, t.id));
       incentiveLive += therapistIncentive;
 
       const detail = `Akrual harian ${format(accrualStart, 'd MMM', { locale: idLocale })} – ${format(effectiveEnd, 'd MMM yyyy', { locale: idLocale })}`;

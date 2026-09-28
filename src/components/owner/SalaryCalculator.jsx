@@ -54,8 +54,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
   const [selectedTherapistDetail, setSelectedTherapistDetail] = useState(null); // detail view
   const [selectedPatientType, setSelectedPatientType] = useState(null); // drill-down tipe pasien
   
-  // Custom Rates Input (for manual override or config)
-  const [customRates, setCustomRates] = useState({});
+  // Baris mentah service_rates (tarif umum + override per terapis) — index
+  // per Tipe Pasien dibangun ulang per terapis lewat buildPatientTypeRateIndex
+  // supaya override khusus terapis tsb ikut dipakai.
+  const [serviceRateRows, setServiceRateRows] = useState([]);
 
   // Periode diatur sekali di kartu terapis (Manajemen Terapis) dan dipakai otomatis
   // di sini per terapis. Matikan untuk query manual pakai rentang tanggal bebas.
@@ -74,9 +76,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
     if (therapistRes.data) setTherapists(therapistRes.data);
 
-    // 🔥 index rate dari DB — dicocokkan lewat ID Tipe Pasien dulu (tidak
-    // pernah salah tangkap lewat teks), fallback ke nama untuk data lama.
-    setCustomRates(buildPatientTypeRateIndex(ratesRes.data || []));
+    // Baris mentah disimpan; index-nya dibangun ulang per terapis saat
+    // dipakai (buildPatientTypeRateIndex(serviceRateRows, therapistId)) supaya
+    // tarif custom per terapis tertentu ikut didahulukan atas tarif umum.
+    setServiceRateRows(ratesRes.data || []);
 
   } catch (err) {
     console.error(err);
@@ -140,7 +143,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
            commission = calculateFullSalary(therapistRecaps);
         } else {
            // "Custom Salary" logic: Session Count * Rate
-           commission = calculateCustomSalary(therapistRecaps, customRates);
+           commission = calculateCustomSalary(therapistRecaps, buildPatientTypeRateIndex(serviceRateRows, therapist.id));
 
            // Generate breakdown for custom
            therapistRecaps.forEach(r => {
@@ -227,7 +230,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
     const optionsMap = (optionsRes.data || []).reduce((acc, o) => { acc[o.id] = o.label; return acc; }, {});
     const therapistRecaps = rawRecaps || [];
-    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, therapistRecaps[0]?.patient_type_ids, 'customRates byName keys:', Object.keys(customRates?.byName || {}));
+    const therapistRates = buildPatientTypeRateIndex(serviceRateRows, therapist.id);
+    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, therapistRecaps[0]?.patient_type_ids, 'customRates byName keys:', Object.keys(therapistRates?.byName || {}));
 
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
@@ -262,7 +266,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         // pecah-kombinasi) untuk recap lama yang belum punya patient_type_ids.
         // Kalau rate tidak ketemu sama sekali, hasilnya 0 (tidak diketahui) — jangan
         // fallback ke amount karena amount = yang dibayar pasien bukan rate terapis.
-        sessionAmount = resolvePatientTypeRate(r.patient_type, customRates, { typeIds: r.patient_type_ids });
+        sessionAmount = resolvePatientTypeRate(r.patient_type, therapistRates, { typeIds: r.patient_type_ids });
       }
 
       commission += sessionAmount;

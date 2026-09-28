@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { getPatientTypeOptions } from '@/lib/api';
+import { getPatientTypeOptions, getActivePhysiotherapists } from '@/lib/api';
 import MultiSelect from '@/components/ui/multi-select';
 import {
   Dialog,
@@ -16,6 +16,15 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const GENERAL_SCOPE = '__general__';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -31,6 +40,10 @@ const ServiceRateManager = () => {
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [typeRateInputs, setTypeRateInputs] = useState({});
   const [savingTypeLabel, setSavingTypeLabel] = useState(null);
+  const [therapists, setTherapists] = useState([]);
+  // GENERAL_SCOPE = tarif umum (berlaku utk semua terapis). Kalau diisi ID
+  // terapis, yang ditampilkan/diedit adalah override khusus terapis tsb.
+  const [scopeTherapistId, setScopeTherapistId] = useState(GENERAL_SCOPE);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRate, setEditingRate] = useState(null);
@@ -62,7 +75,34 @@ const ServiceRateManager = () => {
     setLoadingTypes(false);
   };
 
-  useEffect(() => { fetchRates(); fetchPatientTypes(); }, [clinicId]);
+  const fetchTherapists = async () => {
+    const { data } = await getActivePhysiotherapists();
+    setTherapists(data || []);
+  };
+
+  useEffect(() => { fetchRates(); fetchPatientTypes(); fetchTherapists(); }, [clinicId]);
+
+  // Reset input yang belum disimpan tiap ganti scope (Umum <-> terapis
+  // tertentu) supaya tidak ketuker nilai antar scope.
+  useEffect(() => { setTypeRateInputs({}); }, [scopeTherapistId]);
+
+  const isGeneralScope = scopeTherapistId === GENERAL_SCOPE;
+  // Tarif yang relevan untuk scope aktif: Umum (therapist_id null) atau
+  // override milik terapis yang sedang dipilih.
+  const scopedRates = useMemo(
+    () => rates.filter((r) => (isGeneralScope ? !r.therapist_id : r.therapist_id === scopeTherapistId)),
+    [rates, isGeneralScope, scopeTherapistId]
+  );
+  // Tarif umum per Tipe Pasien tunggal — dipakai sebagai referensi "tarif
+  // umum saat ini" yang ditampilkan saat mengatur override terapis tertentu.
+  const generalRateByTypeId = useMemo(() => {
+    const map = {};
+    rates.filter((r) => !r.therapist_id).forEach((r) => {
+      const ids = Array.isArray(r.patient_type_ids) ? r.patient_type_ids : [];
+      if (ids.length === 1) map[ids[0]] = r.rate;
+    });
+    return map;
+  }, [rates]);
 
   // Gabungkan Tipe Pasien (dari Setup) dengan tarif yang sudah pernah diisi.
   // Dicocokkan lewat ID (patient_type_ids) dulu — tidak pernah salah tangkap
@@ -70,7 +110,7 @@ const ServiceRateManager = () => {
   // yang belum punya patient_type_ids terisi.
   const mergedTypeRates = useMemo(() => {
     return patientTypes.map((pt) => {
-      const match = rates.find((r) => {
+      const match = scopedRates.find((r) => {
         if (Array.isArray(r.patient_type_ids) && r.patient_type_ids.length > 0) {
           return r.patient_type_ids.length === 1 && r.patient_type_ids[0] === pt.id;
         }
@@ -78,14 +118,14 @@ const ServiceRateManager = () => {
       });
       return { key: pt.id, id: pt.id, label: pt.label, rateRow: match || null };
     });
-  }, [patientTypes, rates]);
+  }, [patientTypes, scopedRates]);
 
   // Tarif yang bukan tarif satu-Tipe-Pasien tunggal (tarif gabungan, atau nama
   // lama yang belum cocok ke Tipe Pasien manapun)
   const customRates = useMemo(() => {
     const matchedRateIds = new Set(mergedTypeRates.map((m) => m.rateRow?.id).filter(Boolean));
-    return rates.filter((r) => !matchedRateIds.has(r.id));
-  }, [rates, mergedTypeRates]);
+    return scopedRates.filter((r) => !matchedRateIds.has(r.id));
+  }, [scopedRates, mergedTypeRates]);
 
   // Opsi Tipe Pasien (dari Setup) untuk dropdown multi-select di modal Tambah/Edit Tarif
   const patientTypeSelectOptions = useMemo(
@@ -115,7 +155,13 @@ const ServiceRateManager = () => {
       } else {
         const { data, error } = await supabase
           .from('service_rates')
-          .insert({ service_name: label, rate: rateValue, clinic_id: clinicId, patient_type_ids: [id] })
+          .insert({
+            service_name: label,
+            rate: rateValue,
+            clinic_id: clinicId,
+            patient_type_ids: [id],
+            therapist_id: isGeneralScope ? null : scopeTherapistId,
+          })
           .select()
           .single();
         if (error) throw error;
@@ -180,7 +226,13 @@ const ServiceRateManager = () => {
       } else {
         const { data, error } = await supabase
           .from('service_rates')
-          .insert({ service_name: name, rate: rateValue, clinic_id: clinicId, patient_type_ids: ids })
+          .insert({
+            service_name: name,
+            rate: rateValue,
+            clinic_id: clinicId,
+            patient_type_ids: ids,
+            therapist_id: isGeneralScope ? null : scopeTherapistId,
+          })
           .select()
           .single();
         if (error) throw error;
@@ -224,6 +276,26 @@ const ServiceRateManager = () => {
         </Button>
       </div>
 
+      <div className="px-6 pt-6 flex flex-col gap-2">
+        <label className="text-sm font-medium text-slate-700">Berlaku untuk</label>
+        <Select value={scopeTherapistId} onValueChange={setScopeTherapistId}>
+          <SelectTrigger className="w-full sm:w-72">
+            <SelectValue placeholder="Pilih scope tarif" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={GENERAL_SCOPE}>Umum (Semua Terapis)</SelectItem>
+            {therapists.map((t) => (
+              <SelectItem key={t.id} value={t.id}>{t.name} (custom)</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-slate-400">
+          {isGeneralScope
+            ? 'Tarif umum berlaku untuk semua terapis, kecuali terapis tsb punya tarif custom sendiri.'
+            : 'Tarif di bawah ini hanya berlaku untuk terapis yang dipilih dan akan menimpa tarif umum untuk Tipe Pasien yang sama.'}
+        </p>
+      </div>
+
       <div className="p-6 space-y-6">
         {/* Tarif berdasarkan Tipe Pasien (Setup) */}
         <div>
@@ -255,7 +327,11 @@ const ServiceRateManager = () => {
                       <div className="min-w-0 flex-1 sm:flex-initial">
                         <span className="font-medium text-slate-700 truncate block">{label || '(Tanpa nama)'}</span>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          {rateRow ? `${formatCurrency(rateRow.rate)} / sesi` : 'Belum diatur'}
+                          {rateRow
+                            ? `${formatCurrency(rateRow.rate)} / sesi`
+                            : (!isGeneralScope && generalRateByTypeId[id] != null)
+                              ? `Belum di-custom — pakai tarif umum ${formatCurrency(generalRateByTypeId[id])} / sesi`
+                              : 'Belum diatur'}
                         </p>
                       </div>
                     </div>
