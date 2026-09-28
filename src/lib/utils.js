@@ -536,6 +536,20 @@ export const calculateFullSalary = (recaps) => {
 const PATIENT_TYPE_COMBO_SEPARATOR = /\s*\+\s*|\s+dan\s+|\s*&\s*|\s*\/\s*/i;
 
 /**
+ * Memecah label tipe pasien gabungan (mis. "XTRATIME + DUA KELUHAN") jadi
+ * daftar komponen tipe pasien penyusunnya. Kalau bukan gabungan, hasilnya
+ * array berisi label itu sendiri.
+ * @param {string} typeLabel
+ * @returns {string[]}
+ */
+export function splitPatientTypeCombo(typeLabel) {
+  return (typeLabel || '')
+    .split(PATIENT_TYPE_COMBO_SEPARATOR)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+/**
  * Mencari rate untuk satu label tipe pasien tunggal (bukan kombinasi) di dalam
  * peta rates, dengan pencocokan fleksibel (exact atau substring dua arah).
  * @param {string} typeLabel
@@ -573,7 +587,7 @@ export function resolvePatientTypeRate(typeLabel, rates) {
 
   // 2. Kalau tidak ketemu, coba pecah sebagai kombinasi beberapa tipe pasien
   //    dan jumlahkan tarif tiap komponennya.
-  const parts = typeLabel.split(PATIENT_TYPE_COMBO_SEPARATOR).map(p => p.trim()).filter(Boolean);
+  const parts = splitPatientTypeCombo(typeLabel);
   if (parts.length > 1) {
     const total = parts.reduce((sum, part) => sum + findSingleTypeRate(part, rates), 0);
     if (total > 0) return total;
