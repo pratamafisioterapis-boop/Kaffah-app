@@ -4872,6 +4872,7 @@ const PAYROLL_EXPENSE_ITEMS = [
   { field: 'incentive_amount', label: 'Jasa Insentif per Terapis', subcategoryNames: ['jasa/fee fisioterapis (per sesi/insentif)'] },
   { field: 'custom_commission', label: 'Komisi', subcategoryNames: ['komisi'] },
   { field: 'tips', label: 'Tips Non-Cash Pasien', subcategoryNames: ['tips', 'tips non-cash'] },
+  { field: 'prev_month_shortfall', label: 'Kekurangan Gaji Bulan Lalu', subcategoryNames: ['kekurangan gaji bulan lalu'] },
 ];
 
 const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
@@ -4941,6 +4942,7 @@ export const upsertPayrollRecord = async (payload) => {
       incentive_amount: parseFloat(payload.incentive_amount) || 0,
       custom_commission: parseFloat(payload.custom_commission) || 0,
       tips: parseFloat(payload.tips) || 0,
+      prev_month_shortfall: parseFloat(payload.prev_month_shortfall) || 0,
       total_salary: parseFloat(payload.total_salary) || 0,
       status: payload.status || 'paid',
     };
