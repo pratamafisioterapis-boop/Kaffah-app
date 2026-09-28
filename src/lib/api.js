@@ -4875,6 +4875,7 @@ const PAYROLL_EXPENSE_ITEMS = [
   { field: 'custom_commission', label: 'Komisi', subcategoryNames: ['komisi'] },
   { field: 'tips', label: 'Tips Non-Cash Pasien', subcategoryNames: ['tips', 'tips non-cash'] },
   { field: 'prev_month_shortfall', label: 'Kekurangan Gaji Bulan Lalu', subcategoryNames: ['kekurangan gaji bulan lalu'] },
+  { field: 'bonus_amount', label: 'Bonus / Tunjangan Lain', subcategoryNames: ['bonus', 'bonus / tunjangan lain', 'tunjangan'] },
 ];
 
 const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
@@ -4945,6 +4946,7 @@ export const upsertPayrollRecord = async (payload) => {
       custom_commission: parseFloat(payload.custom_commission) || 0,
       tips: parseFloat(payload.tips) || 0,
       prev_month_shortfall: parseFloat(payload.prev_month_shortfall) || 0,
+      bonus_amount: parseFloat(payload.bonus_amount) || 0,
       notes: payload.notes?.trim() || null,
       total_salary: parseFloat(payload.total_salary) || 0,
       status: payload.status || 'paid',

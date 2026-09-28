@@ -31,6 +31,7 @@ const emptyForm = (therapist) => ({
   custom_commission: 0,
   tips: 0,
   prev_month_shortfall: 0,
+  bonus_amount: 0,
   notes: '',
 });
 
@@ -239,7 +240,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       (parseFloat(form.incentive_amount) || 0) +
       (parseFloat(form.custom_commission) || 0) +
       (parseFloat(form.tips) || 0) +
-      (parseFloat(form.prev_month_shortfall) || 0)
+      (parseFloat(form.prev_month_shortfall) || 0) +
+      (parseFloat(form.bonus_amount) || 0)
     );
   }, [form]);
 
@@ -296,6 +298,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       custom_commission: record.custom_commission,
       tips: record.tips,
       prev_month_shortfall: record.prev_month_shortfall,
+      bonus_amount: record.bonus_amount,
       notes: record.notes,
       total_salary: record.total_salary,
       status: 'paid',
@@ -418,6 +421,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <Input type="number" value={form.prev_month_shortfall} onChange={(e) => setForm({ ...form, prev_month_shortfall: e.target.value })} />
               <p className="text-[11px] text-slate-400">
                 Diisi manual bila ada sisa kekurangan pembayaran gaji dari periode sebelumnya yang perlu dilunasi di slip gaji ini.
+              </p>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-medium text-slate-600">
+                Bonus / Tunjangan Lain
+              </label>
+              <Input type="number" value={form.bonus_amount} onChange={(e) => setForm({ ...form, bonus_amount: e.target.value })} />
+              <p className="text-[11px] text-slate-400">
+                Diisi manual untuk bonus/tunjangan tambahan di luar Jasa Insentif &amp; Komisi, misalnya THR atau bonus prestasi.
               </p>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
