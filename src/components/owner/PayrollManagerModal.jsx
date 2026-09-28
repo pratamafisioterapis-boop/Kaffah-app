@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -30,6 +31,7 @@ const emptyForm = (therapist) => ({
   custom_commission: 0,
   tips: 0,
   prev_month_shortfall: 0,
+  notes: '',
 });
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
@@ -294,6 +296,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       custom_commission: record.custom_commission,
       tips: record.tips,
       prev_month_shortfall: record.prev_month_shortfall,
+      notes: record.notes,
       total_salary: record.total_salary,
       status: 'paid',
     });
@@ -416,6 +419,17 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <p className="text-[11px] text-slate-400">
                 Diisi manual bila ada sisa kekurangan pembayaran gaji dari periode sebelumnya yang perlu dilunasi di slip gaji ini.
               </p>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-medium text-slate-600">
+                Catatan / Keterangan
+              </label>
+              <Textarea
+                rows={2}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Catatan tambahan untuk slip gaji ini (opsional)"
+              />
             </div>
           </div>
           {showIncentiveDetail && incentiveBreakdown.length > 0 && (

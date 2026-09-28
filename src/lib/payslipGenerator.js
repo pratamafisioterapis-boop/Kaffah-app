@@ -216,8 +216,25 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
   doc.setFontSize(14);
   doc.text(formatCurrency(record.total_salary), pageWidth - marginX, finalY + totalBoxH / 2 + 2, { align: 'right' });
 
+  // --- Notes (only when filled) ---
+  let notesBottomY = finalY + totalBoxH + 6;
+  if (record.notes && record.notes.trim()) {
+    const notesTop = notesBottomY + 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.2);
+    doc.setTextColor(...BRONZE);
+    doc.text('CATATAN', marginX, notesTop);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...INK);
+    const notesLines = doc.splitTextToSize(record.notes.trim(), pageWidth - marginX * 2);
+    doc.text(notesLines, marginX, notesTop + 5);
+    notesBottomY = notesTop + 5 + notesLines.length * 4;
+  }
+
   // --- Signatures ---
-  const sigY = finalY + totalBoxH + 26;
+  const sigY = notesBottomY + 20;
   const sigWidth = 55;
 
   doc.setFont('helvetica', 'normal');
