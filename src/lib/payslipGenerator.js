@@ -157,6 +157,7 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     { label: 'Komisi (Remunerasi)', amount: record.custom_commission },
     { label: 'Tips (Non-Cash)', amount: record.tips },
     { label: 'Kekurangan Gaji Bulan Lalu', amount: record.prev_month_shortfall },
+    { label: 'Bonus / Tunjangan Lain', amount: record.bonus_amount },
   ];
   const rows = earningComponents
     .filter((item) => parseFloat(item.amount) > 0)
