@@ -549,23 +549,56 @@ export function splitPatientTypeCombo(typeLabel) {
     .filter(Boolean);
 }
 
+function normalizeType(s) {
+  return (s || '').trim().toLowerCase();
+}
+
 /**
- * Mencari rate untuk satu label tipe pasien tunggal (bukan kombinasi) di dalam
- * peta rates, dengan pencocokan fleksibel (exact atau substring dua arah).
+ * Cari tarif yang labelnya cocok PERSIS (exact, case/space-insensitive)
+ * dengan label tipe pasien.
  * @param {string} typeLabel
  * @param {Object} rates - { [serviceName]: rate }
  * @returns {number}
  */
-function findSingleTypeRate(typeLabel, rates) {
-  const type = (typeLabel || '').trim().toLowerCase();
+function findExactTypeRate(typeLabel, rates) {
+  const type = normalizeType(typeLabel);
+  if (!type) return 0;
+  const matchedKey = Object.keys(rates || {}).find((key) => normalizeType(key) === type);
+  return matchedKey ? (parseFloat(rates[matchedKey]) || 0) : 0;
+}
+
+/**
+ * Cari tarif dengan pencocokan fleksibel (substring dua arah). Di antara
+ * beberapa key yang cocok, dipilih yang paling spesifik (label terpanjang)
+ * supaya tipe pendek (mis. "DUA KELUHAN") tidak salah menangkap tarif
+ * gabungan yang memuatnya sebagai substring (mis. "XTRATIME+DUA KELUHAN").
+ * Kalau `preferAtomic` aktif, key yang sendirinya adalah gabungan (>1
+ * komponen) kalah prioritas dari key tunggal — dipakai saat mencari tarif
+ * untuk satu komponen hasil pecahan kombinasi, supaya "XTRATIME" tidak malah
+ * ketemu tarif gabungan "XTRATIME+DUA KELUHAN".
+ * @param {string} typeLabel
+ * @param {Object} rates - { [serviceName]: rate }
+ * @param {{ preferAtomic?: boolean }} [opts]
+ * @returns {number}
+ */
+function findFuzzyTypeRate(typeLabel, rates, { preferAtomic = false } = {}) {
+  const type = normalizeType(typeLabel);
   if (!type) return 0;
 
-  const matchedKey = Object.keys(rates || {}).find((key) => {
-    const k = key.trim().toLowerCase();
-    return k === type || k.includes(type) || type.includes(k);
+  let bestKey = null;
+  let bestIsCombo = true;
+  Object.keys(rates || {}).forEach((key) => {
+    const k = normalizeType(key);
+    if (!k || (k !== type && !k.includes(type) && !type.includes(k))) return;
+
+    const isCombo = preferAtomic && splitPatientTypeCombo(key).length > 1;
+    if (!bestKey || (bestIsCombo && !isCombo) || (bestIsCombo === isCombo && k.length > normalizeType(bestKey).length)) {
+      bestKey = key;
+      bestIsCombo = isCombo;
+    }
   });
 
-  return parseFloat(rates?.[matchedKey]) || 0;
+  return bestKey ? (parseFloat(rates[bestKey]) || 0) : 0;
 }
 
 /**
@@ -580,20 +613,24 @@ function findSingleTypeRate(typeLabel, rates) {
 export function resolvePatientTypeRate(typeLabel, rates) {
   if (!typeLabel) return 0;
 
-  // 1. Coba cocokkan langsung dulu (termasuk kalau memang ada tarif kustom
-  //    untuk gabungan tsb, mis. "XTRATIME + DUA KELUHAN" diinput manual).
-  const directRate = findSingleTypeRate(typeLabel, rates);
-  if (directRate > 0) return directRate;
+  // 1. Exact match dulu ke seluruh label — ini WAJIB dicek duluan (bukan
+  //    fuzzy) supaya tarif gabungan persis (mis. "XTRATIME+DUA KELUHAN" =
+  //    Rp105rb) tidak keduluan ketangkep tarif komponen tunggal yang
+  //    kebetulan jadi substring-nya (mis. "DUA KELUHAN" = Rp50rb).
+  const exactRate = findExactTypeRate(typeLabel, rates);
+  if (exactRate > 0) return exactRate;
 
-  // 2. Kalau tidak ketemu, coba pecah sebagai kombinasi beberapa tipe pasien
-  //    dan jumlahkan tarif tiap komponennya.
+  // 2. Kalau tidak ketemu persis, coba pecah sebagai kombinasi beberapa
+  //    tipe pasien dan jumlahkan tarif tiap komponennya.
   const parts = splitPatientTypeCombo(typeLabel);
   if (parts.length > 1) {
-    const total = parts.reduce((sum, part) => sum + findSingleTypeRate(part, rates), 0);
+    const total = parts.reduce((sum, part) => sum + findFuzzyTypeRate(part, rates, { preferAtomic: true }), 0);
     if (total > 0) return total;
   }
 
-  return 0;
+  // 3. Fallback: fuzzy match ke seluruh label (utk variasi penulisan tipe
+  //    tunggal, mis. tarif "DUA KELUHAN" vs input "2 Keluhan").
+  return findFuzzyTypeRate(typeLabel, rates);
 }
 
 /**
