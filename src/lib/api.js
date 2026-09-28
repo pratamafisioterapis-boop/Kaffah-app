@@ -8,7 +8,8 @@ import {
     calculateAttendanceDays,
     getTherapistPeriodRange,
     calculateFullSalary,
-    calculateCustomSalary
+    calculateCustomSalary,
+    buildPatientTypeRateIndex
 } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import { matchEmployeeNameToTherapist } from '@/utils/therapistNameMatch';
@@ -1372,6 +1373,7 @@ export const getDailyRecaps = async ({
   diagnosis,
   service_type,
   patient_type,
+  patient_type_ids,
   package_type,
   package_tracking_id,
   therapist_id,
@@ -7976,8 +7978,7 @@ export const getBepFinancials = async () => {
     ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const therapists = therapistsRes.data || [];
-    const ratesMap = {};
-    (serviceRatesRes.data || []).forEach(sr => { ratesMap[sr.service_name] = sr.rate; });
+    const ratesIndex = buildPatientTypeRateIndex(serviceRatesRes.data || []);
 
     // ── Fase 2: transport & insentif yang sudah terkunci di payroll ──
     // Payroll yang PERIODENYA menyentuh bulan kalender berjalan menggantikan
@@ -8041,7 +8042,7 @@ export const getBepFinancials = async () => {
         getTherapistSchedules(t.id),
         getTherapistTimeOff(t.id),
         supabase.from('daily_recaps')
-          .select('amount, amount_package, package_tracking_id, patient_type')
+          .select('amount, amount_package, package_tracking_id, patient_type, patient_type_ids')
           .eq('therapist_id', t.id)
           .gte('recap_date', accrualStartStr)
           .lte('recap_date', effectiveEndStr)
@@ -8054,7 +8055,7 @@ export const getBepFinancials = async () => {
       const recaps = recapsRes.data || [];
       const therapistIncentive = salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
-        : calculateCustomSalary(recaps, ratesMap);
+        : calculateCustomSalary(recaps, ratesIndex);
       incentiveLive += therapistIncentive;
 
       const detail = `Akrual harian ${format(accrualStart, 'd MMM', { locale: idLocale })} – ${format(effectiveEnd, 'd MMM yyyy', { locale: idLocale })}`;

@@ -601,36 +601,82 @@ function findFuzzyTypeRate(typeLabel, rates, { preferAtomic = false } = {}) {
   return bestKey ? (parseFloat(rates[bestKey]) || 0) : 0;
 }
 
+function sortedIdKey(ids) {
+  return Array.from(new Set((ids || []).filter(Boolean))).sort().join(',');
+}
+
+/**
+ * Bangun index tarif dari baris service_rates (id, service_name, rate,
+ * patient_type_ids) supaya bisa dicocokkan lewat ID operational_options
+ * (Tipe Pasien) — pencocokan yang tidak pernah salah tangkap gara-gara
+ * nama tipe pasien mirip/beririsan secara teks. `byName` tetap dibangun
+ * sebagai fallback untuk baris lama yang belum punya patient_type_ids.
+ * @param {Array<{service_name?: string, rate: number, patient_type_ids?: string[]}>} rateRows
+ * @returns {{byName: Object, byIdSet: Object, byAtomicId: Object}}
+ */
+export function buildPatientTypeRateIndex(rateRows) {
+  const byName = {};
+  const byIdSet = {};
+  const byAtomicId = {};
+  (rateRows || []).forEach((r) => {
+    if (r.service_name) byName[r.service_name] = r.rate;
+    const ids = Array.isArray(r.patient_type_ids) ? r.patient_type_ids.filter(Boolean) : [];
+    if (ids.length) {
+      byIdSet[sortedIdKey(ids)] = r.rate;
+      if (ids.length === 1) byAtomicId[ids[0]] = r.rate;
+    }
+  });
+  return { byName, byIdSet, byAtomicId };
+}
+
 /**
  * Menghitung tarif jasa untuk sebuah tipe pasien, termasuk tipe gabungan
- * (mis. "XTRATIME + DUA KELUHAN"). Jika tersedia tarif kustom persis untuk
- * gabungan tsb, tarif itu yang dipakai. Jika tidak, tarif dihitung dengan
- * menjumlahkan tarif tiap komponen tipe pasien penyusunnya.
+ * (mis. "XTRATIME + DUA KELUHAN"). Kalau `opts.typeIds` dikasih (ID
+ * operational_options dari daily_recaps.patient_type_ids) dan `rates` adalah
+ * index dari buildPatientTypeRateIndex(), pencocokan lewat ID selalu dicoba
+ * duluan — ini tidak akan pernah salah tangkap gara-gara nama tipe pasien
+ * mirip/beririsan secara teks. Pencocokan lewat teks (exact lalu fuzzy/pecah
+ * kombinasi) tetap jadi fallback untuk data lama yang belum punya ID.
  * @param {string} typeLabel
- * @param {Object} rates - { [serviceName]: rate }
+ * @param {Object} rates - peta { [serviceName]: rate } ATAU index dari buildPatientTypeRateIndex()
+ * @param {{ typeIds?: string[] }} [opts]
  * @returns {number}
  */
-export function resolvePatientTypeRate(typeLabel, rates) {
+export function resolvePatientTypeRate(typeLabel, rates, opts = {}) {
+  const index = rates && rates.byName ? rates : { byName: rates || {}, byIdSet: {}, byAtomicId: {} };
+  const typeIds = (opts.typeIds || []).filter(Boolean);
+
+  // 1. Pencocokan lewat ID — didahulukan kalau tersedia, karena tidak pernah
+  //    salah tangkap gara-gara teks.
+  if (typeIds.length) {
+    const key = sortedIdKey(typeIds);
+    if (index.byIdSet[key] != null) return parseFloat(index.byIdSet[key]) || 0;
+    if (typeIds.every((id) => index.byAtomicId[id] != null)) {
+      return typeIds.reduce((sum, id) => sum + (parseFloat(index.byAtomicId[id]) || 0), 0);
+    }
+  }
+
+  // 2. Fallback teks untuk data lama yang belum punya patient_type_ids.
   if (!typeLabel) return 0;
 
-  // 1. Exact match dulu ke seluruh label — ini WAJIB dicek duluan (bukan
+  // 2a. Exact match dulu ke seluruh label — ini WAJIB dicek duluan (bukan
   //    fuzzy) supaya tarif gabungan persis (mis. "XTRATIME+DUA KELUHAN" =
   //    Rp105rb) tidak keduluan ketangkep tarif komponen tunggal yang
   //    kebetulan jadi substring-nya (mis. "DUA KELUHAN" = Rp50rb).
-  const exactRate = findExactTypeRate(typeLabel, rates);
+  const exactRate = findExactTypeRate(typeLabel, index.byName);
   if (exactRate > 0) return exactRate;
 
-  // 2. Kalau tidak ketemu persis, coba pecah sebagai kombinasi beberapa
+  // 2b. Kalau tidak ketemu persis, coba pecah sebagai kombinasi beberapa
   //    tipe pasien dan jumlahkan tarif tiap komponennya.
   const parts = splitPatientTypeCombo(typeLabel);
   if (parts.length > 1) {
-    const total = parts.reduce((sum, part) => sum + findFuzzyTypeRate(part, rates, { preferAtomic: true }), 0);
+    const total = parts.reduce((sum, part) => sum + findFuzzyTypeRate(part, index.byName, { preferAtomic: true }), 0);
     if (total > 0) return total;
   }
 
-  // 3. Fallback: fuzzy match ke seluruh label (utk variasi penulisan tipe
-  //    tunggal, mis. tarif "DUA KELUHAN" vs input "2 Keluhan").
-  return findFuzzyTypeRate(typeLabel, rates);
+  // 2c. Fallback terakhir: fuzzy match ke seluruh label (utk variasi
+  //    penulisan tipe tunggal, mis. tarif "DUA KELUHAN" vs input "2 Keluhan").
+  return findFuzzyTypeRate(typeLabel, index.byName);
 }
 
 /**
@@ -644,7 +690,7 @@ export function calculateCustomSalary(recaps, rates) {
 
   return recaps.reduce((total, r) => {
     const type = r.patient_type || r.service_type || '';
-    return total + resolvePatientTypeRate(type, rates);
+    return total + resolvePatientTypeRate(type, rates, { typeIds: r.patient_type_ids });
   }, 0);
 }
 

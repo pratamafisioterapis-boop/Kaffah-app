@@ -13,7 +13,7 @@ import {
 } from '@/lib/api';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
-  getTherapistPeriodRange, resolvePatientTypeRate,
+  getTherapistPeriodRange, resolvePatientTypeRate, buildPatientTypeRateIndex,
 } from '@/lib/utils';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
@@ -159,9 +159,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             amount: (r.package_tracking_id && r.amount_package) ? r.amount_package : (r.amount || 0),
           }));
         } else {
-          const rateMap = {};
-          (ratesRes.data || []).forEach((r) => { rateMap[r.service_name] = r.rate; });
-          incentiveAmount = calculateCustomSalary(therapistRecaps, rateMap);
+          const rateIndex = buildPatientTypeRateIndex(ratesRes.data || []);
+          incentiveAmount = calculateCustomSalary(therapistRecaps, rateIndex);
           incentiveItems = therapistRecaps.map((r) => {
             const type = r.patient_type || r.service_type || '';
             return {
@@ -169,7 +168,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               date: r.recap_date,
               name: getPatientName(r),
               type: type || '-',
-              amount: resolvePatientTypeRate(type, rateMap),
+              amount: resolvePatientTypeRate(type, rateIndex, { typeIds: r.patient_type_ids }),
             };
           });
         }
