@@ -163,7 +163,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             amount: (r.package_tracking_id && r.amount_package) ? r.amount_package : (r.amount || 0),
           }));
         } else {
-          const rateIndex = buildPatientTypeRateIndex(ratesRes.data || []);
+          const rateIndex = buildPatientTypeRateIndex(ratesRes.data || [], therapist.id);
           incentiveAmount = calculateCustomSalary(therapistRecaps, rateIndex);
           incentiveItems = therapistRecaps.map((r) => {
             const type = r.patient_type || r.service_type || '';

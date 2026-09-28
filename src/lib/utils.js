@@ -607,18 +607,30 @@ function sortedIdKey(ids) {
 
 /**
  * Bangun index tarif dari baris service_rates (id, service_name, rate,
- * patient_type_ids) supaya bisa dicocokkan lewat ID operational_options
- * (Tipe Pasien) — pencocokan yang tidak pernah salah tangkap gara-gara
- * nama tipe pasien mirip/beririsan secara teks. `byName` tetap dibangun
- * sebagai fallback untuk baris lama yang belum punya patient_type_ids.
- * @param {Array<{service_name?: string, rate: number, patient_type_ids?: string[]}>} rateRows
+ * patient_type_ids, therapist_id) supaya bisa dicocokkan lewat ID
+ * operational_options (Tipe Pasien) — pencocokan yang tidak pernah salah
+ * tangkap gara-gara nama tipe pasien mirip/beririsan secara teks. `byName`
+ * tetap dibangun sebagai fallback untuk baris lama yang belum punya
+ * patient_type_ids.
+ *
+ * Baris dengan `therapist_id` NULL adalah tarif umum (berlaku untuk semua
+ * terapis). Kalau `therapistId` dikasih, baris override milik terapis
+ * tsb (therapist_id === therapistId) ikut disertakan dan DIDAHULUKAN atas
+ * tarif umum untuk Tipe Pasien yang sama — jadi klinik bisa custom insentif
+ * per Tipe Pasien khusus untuk terapis tertentu tanpa mengubah tarif umum.
+ * @param {Array<{service_name?: string, rate: number, patient_type_ids?: string[], therapist_id?: string|null}>} rateRows
+ * @param {string|null} [therapistId] - kalau diisi, override milik terapis ini menang atas tarif umum
  * @returns {{byName: Object, byIdSet: Object, byAtomicId: Object}}
  */
-export function buildPatientTypeRateIndex(rateRows) {
+export function buildPatientTypeRateIndex(rateRows, therapistId = null) {
   const byName = {};
   const byIdSet = {};
   const byAtomicId = {};
-  (rateRows || []).forEach((r) => {
+  const relevant = (rateRows || []).filter((r) => !r.therapist_id || (therapistId && r.therapist_id === therapistId));
+  // Proses tarif umum dulu, baru override terapis — supaya override
+  // menimpa key yang sama di object map (JS mempertahankan urutan insert).
+  const ordered = [...relevant].sort((a, b) => (a.therapist_id ? 1 : 0) - (b.therapist_id ? 1 : 0));
+  ordered.forEach((r) => {
     if (r.service_name) byName[r.service_name] = r.rate;
     const ids = Array.isArray(r.patient_type_ids) ? r.patient_type_ids.filter(Boolean) : [];
     if (ids.length) {
