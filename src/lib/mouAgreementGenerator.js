@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { format } from 'date-fns';
@@ -131,9 +132,12 @@ const terbilang = (value) => {
  * @param {object} mou - therapist_mou_documents row (period_start/end, agreement_date,
  *   agreement_city, first_party, second_party, compensation, period_number)
  * @param {object} clinic - clinics row (name, address, phone, email)
+ * @param {object} [options] - { scanImage: { dataUrl, imageFormat, width, height } } — when
+ *   given, the signature page is replaced with this scanned image instead of the blank
+ *   signature lines (used by replaceLastPageWithScan).
  * @returns {jsPDF}
  */
-export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
+export const generateMouAgreementPDF = (mou = {}, clinic = {}, options = {}) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   let y = MARGIN_TOP;
   let pageNum = 1;
@@ -144,6 +148,14 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   const secondParty = mou.second_party || {};
   const comp = mou.compensation || {};
   const clinicName = clinic.name || 'Klinik Fisioterapi';
+  // Lampiran I (halaman terakhir): daftar Insentif Jasa Keprofesian per tipe
+  // pasien, kalau owner mengisi tarif custom untuk terapis ini (diisi lewat
+  // MouManagerModal, diprefill dari Tarif Jasa klinik lalu bisa disesuaikan
+  // per terapis). Kosong -> tidak ada halaman lampiran, Pasal 4 ayat 3 tetap
+  // memakai teks catatan bebas seperti sebelumnya.
+  const rateRows = Array.isArray(comp.patient_type_rates)
+    ? comp.patient_type_rates.filter((r) => r && String(r.label || '').trim() && Number(r.rate) > 0)
+    : [];
   // Tahun ke-1 (belum genap 1 tahun bergabung) memakai format kontrak yang
   // lebih ringkas: belum ada Remunerasi/Komisi Cuti Tahunan di Pasal 4, dan
   // Pasal 6 masih "Izin Tidak Hadir" (bukan hak Cuti penuh) — sesuai template
@@ -367,7 +379,9 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   subLine(`${fmtMoney(comp.base_salary)},- per bulan`);
   numberedItem(2, 'PIHAK PERTAMA akan memberikan Upah Makan dan Transport dengan besaran:');
   subLine(`${fmtMoney(comp.transport_per_visit)},- per kedatangan, kecuali tanggal merah/libur`);
-  numberedItem(3, `PIHAK PERTAMA akan memberikan "Insentif Jasa Keprofesian" dengan besaran ${comp.professional_incentive_note || 'terlampir'}.`);
+  numberedItem(3, rateRows.length > 0
+    ? 'PIHAK PERTAMA akan memberikan "Insentif Jasa Keprofesian" dengan besaran sebagaimana tercantum dalam Lampiran I (Insentif Jasa Keprofesian per Tipe Pasien) yang merupakan bagian tidak terpisahkan dari perjanjian ini.'
+    : `PIHAK PERTAMA akan memberikan "Insentif Jasa Keprofesian" dengan besaran ${comp.professional_incentive_note || 'terlampir'}.`);
   numberedItem(4, 'PIHAK PERTAMA akan memberikan "Insentif Jasa Lainnya" apabila PIHAK KEDUA melakukan TINDAKAN FISIOTERAPI di luar jam kerja, seperti tanggal merah/hari libur, dengan besaran:');
   subLine(`${fmtMoney(comp.off_hour_incentive_per_patient)},- per pasien`);
   if (!isFirstYear) {
@@ -478,6 +492,86 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
   doc.text(`( ${firstParty.name || '-'} )`, leftX + sigWidth / 2, y, { align: 'center' });
   doc.text(`( ${secondParty.name || '-'} )`, rightX + sigWidth / 2, y, { align: 'center' });
 
+  // Kalau dipanggil dari replaceLastPageWithScan, ganti seluruh halaman tanda
+  // tangan yang baru saja digambar di atas dengan foto/scan halaman itu
+  // setelah ditandatangani di atas materai — persis halaman itu saja, bukan
+  // seluruh dokumen (Pasal 1-11 tetap versi digital aslinya).
+  if (options.scanImage) {
+    const signaturePageNum = doc.internal.getNumberOfPages();
+    const { dataUrl, imageFormat, width, height } = options.scanImage;
+    doc.deletePage(signaturePageNum);
+    doc.addPage();
+    drawRunningHeader();
+    const imgRatio = width / height;
+    const pageRatio = PAGE_W / PAGE_H;
+    const drawW = imgRatio > pageRatio ? PAGE_W : PAGE_H * imgRatio;
+    const drawH = imgRatio > pageRatio ? PAGE_W / imgRatio : PAGE_H;
+    const offsetX = (PAGE_W - drawW) / 2;
+    const offsetY = (PAGE_H - drawH) / 2;
+    doc.addImage(dataUrl, imageFormat, offsetX, offsetY, drawW, drawH);
+  }
+
+  // ---------- LAMPIRAN I: INSENTIF JASA KEPROFESIAN PER TIPE PASIEN ----------
+  // Selalu ditambahkan SETELAH halaman tanda tangan (baik versi digital
+  // maupun versi scan di atas) supaya tetap jadi halaman terakhir dokumen,
+  // dan tidak ikut tertimpa saat halaman tanda tangan diganti scan.
+  if (rateRows.length > 0) {
+    newPage();
+    y += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...NAVY);
+    doc.text('LAMPIRAN I', PAGE_W / 2, y, { align: 'center' });
+    y += 6;
+    doc.setFontSize(10.3);
+    doc.text('INSENTIF JASA KEPROFESIAN PER TIPE PASIEN', PAGE_W / 2, y, { align: 'center' });
+    y += 3;
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(PAGE_W / 2 - 14, y, PAGE_W / 2 + 14, y);
+    y += 8;
+
+    paragraph(
+      `Lampiran ini merupakan bagian tidak terpisahkan dari Perjanjian Kerjasama Kemitraan Fisioterapis antara PIHAK PERTAMA dan PIHAK KEDUA (${secondParty.name || '-'}), sebagaimana dimaksud dalam Pasal 4 ayat (3), yang mengatur besaran "Insentif Jasa Keprofesian" untuk masing-masing tipe pasien sebagai berikut:`,
+      { gapAfter: 4 }
+    );
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGIN_X, right: MARGIN_X },
+      head: [['NO', 'TIPE PASIEN', 'INSENTIF / SESI']],
+      body: rateRows.map((r, i) => [String(i + 1), r.label, fmtMoney(r.rate)]),
+      theme: 'plain',
+      styles: { font: 'helvetica' },
+      headStyles: {
+        textColor: NAVY,
+        fontSize: 9,
+        fontStyle: 'bold',
+        halign: 'left',
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+        lineWidth: { bottom: 0.5 },
+        lineColor: GOLD,
+      },
+      bodyStyles: {
+        fontSize: 9.5,
+        textColor: INK,
+        cellPadding: { top: 2.6, bottom: 2.6, left: 3, right: 3 },
+        lineWidth: { bottom: 0.2 },
+        lineColor: GOLD_SOFT,
+      },
+      columnStyles: {
+        0: { cellWidth: 12 },
+        2: { halign: 'right', cellWidth: 42 },
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 6;
+    paragraph(
+      'Besaran di atas berlaku sejak tanggal perjanjian ini ditandatangani dan dapat berubah sewaktu-waktu sesuai kebijakan PIHAK PERTAMA, dengan pemberitahuan tertulis kepada PIHAK KEDUA.',
+      { size: 8.6, style: 'italic', gapAfter: 0 }
+    );
+  }
+
   // ---------- FOOTER (all pages) ----------
   const totalPages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= totalPages; p += 1) {
@@ -489,12 +583,14 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
 
 /**
  * Builds the final MOU PDF for the therapist-facing "signed" copy: regenerates
- * the full draft (Pasal 1-11 etc., identical to generateMouAgreementPDF), then
- * swaps out only the last page (the one with blank signature lines) for the
- * owner's scanned photo/scan of that same page after it was printed, signed
- * above materai, and scanned. This is what makes "semua halaman lengkap,
- * hanya halaman terakhir yang diganti scan" possible instead of the signed
- * upload replacing the whole document.
+ * the full draft (Pasal 1-11, signature page, and Lampiran I if the therapist
+ * has custom per-patient-type incentive rates — identical to
+ * generateMouAgreementPDF), except the signature page is drawn as the owner's
+ * scanned photo/scan of that page after it was printed, signed above materai,
+ * and scanned, instead of blank signature lines. This is what makes "semua
+ * halaman lengkap, hanya halaman tanda tangan yang diganti scan" possible
+ * instead of the signed upload replacing the whole document — and keeps
+ * Lampiran I as the true last page even when a scan is used.
  *
  * @param {object} mou - same shape as generateMouAgreementPDF's `mou` param
  * @param {object} clinic - same shape as generateMouAgreementPDF's `clinic` param
@@ -502,28 +598,11 @@ export const generateMouAgreementPDF = (mou = {}, clinic = {}) => {
  * @returns {Promise<jsPDF>}
  */
 export const replaceLastPageWithScan = async (mou = {}, clinic = {}, scanDataUrl) => {
-  const doc = generateMouAgreementPDF(mou, clinic);
-  const palette = PALETTES[mou.document_theme] || PALETTES.professional;
-  const clinicName = clinic.name || 'Klinik Fisioterapi';
-
-  const totalPages = doc.internal.getNumberOfPages();
-  doc.deletePage(totalPages);
-  doc.addPage();
-  drawContinuationHeader(doc, clinicName, palette);
-
   const imageFormat = scanDataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
   const { width, height } = await loadImageDimensions(scanDataUrl);
-  const imgRatio = width / height;
-  const pageRatio = PAGE_W / PAGE_H;
-  const drawW = imgRatio > pageRatio ? PAGE_W : PAGE_H * imgRatio;
-  const drawH = imgRatio > pageRatio ? PAGE_W / imgRatio : PAGE_H;
-  const offsetX = (PAGE_W - drawW) / 2;
-  const offsetY = (PAGE_H - drawH) / 2;
-  doc.addImage(scanDataUrl, imageFormat, offsetX, offsetY, drawW, drawH);
-
-  drawFooterOn(doc, totalPages, totalPages, palette);
-
-  return doc;
+  return generateMouAgreementPDF(mou, clinic, {
+    scanImage: { dataUrl: scanDataUrl, imageFormat, width, height },
+  });
 };
 
 /**

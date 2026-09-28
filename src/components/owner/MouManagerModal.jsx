@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   getMouDocumentsForTherapist, upsertMouDocument, deleteMouDocument, getCurrentClinic,
   uploadSignedMouFile, markMouAsSigned, getMouSignedFileUrl,
+  getPatientTypeOptions, getServiceRates,
 } from '@/lib/api';
 import {
   generateMouAgreementPDF, mouAgreementFileName, MOU_DOCUMENT_THEMES,
@@ -43,7 +44,21 @@ const computeNextPeriod = (therapist, records) => {
   };
 };
 
-const emptyForm = (therapist, clinic, records) => {
+// Cocokkan Tarif Jasa klinik (service_rates, per Tipe Pasien tunggal) ke daftar
+// Tipe Pasien dari Setup, sama seperti ServiceRateManager — jadi Lampiran MOU
+// terapis ini terisi otomatis dari tarif klinik saat ini, dan owner tinggal
+// menyesuaikan angkanya kalau terapis ini punya tarif custom per tipe pasien.
+const buildDefaultPatientTypeRates = (patientTypes, serviceRates) => patientTypes.map((pt) => {
+  const match = (serviceRates || []).find((r) => {
+    if (Array.isArray(r.patient_type_ids) && r.patient_type_ids.length > 0) {
+      return r.patient_type_ids.length === 1 && r.patient_type_ids[0] === pt.id;
+    }
+    return (r.service_name || '').trim().toLowerCase() === (pt.label || '').trim().toLowerCase();
+  });
+  return { label: pt.label, rate: match?.rate || 0 };
+});
+
+const emptyForm = (therapist, clinic, records, defaultPatientTypeRates = []) => {
   const next = computeNextPeriod(therapist, records) || { period_number: 1, period_start: '', period_end: '' };
   return {
     id: null,
@@ -77,6 +92,7 @@ const emptyForm = (therapist, clinic, records) => {
       marriage_notice_days: 14,
       maternity_leave_months: 3,
       termination_notice_days: 60,
+      patient_type_rates: defaultPatientTypeRates,
     },
   };
 };
@@ -87,6 +103,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clinic, setClinic] = useState(null);
+  const [defaultPatientTypeRates, setDefaultPatientTypeRates] = useState([]);
   const [form, setForm] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
@@ -102,21 +119,25 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: clinicData }, { data: recordsData, error }] = await Promise.all([
+    const [{ data: clinicData }, { data: recordsData, error }, { data: patientTypes }, { data: serviceRates }] = await Promise.all([
       getCurrentClinic(),
       getMouDocumentsForTherapist(therapist.id),
+      getPatientTypeOptions(),
+      getServiceRates(),
     ]);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal Memuat', description: error.message });
     }
+    const defaultRates = buildDefaultPatientTypeRates(patientTypes || [], serviceRates || []);
     setClinic(clinicData || null);
+    setDefaultPatientTypeRates(defaultRates);
     setRecords(recordsData || []);
-    setForm(emptyForm(therapist, clinicData, recordsData || []));
+    setForm(emptyForm(therapist, clinicData, recordsData || [], defaultRates));
     setLoading(false);
   };
 
   const handleNewPeriod = () => {
-    setForm(emptyForm(therapist, clinic, records));
+    setForm(emptyForm(therapist, clinic, records, defaultPatientTypeRates));
   };
 
   const handleEditRecord = (record) => {
@@ -130,7 +151,12 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
       document_theme: record.document_theme || 'professional',
       first_party: record.first_party || {},
       second_party: record.second_party || {},
-      compensation: record.compensation || {},
+      compensation: {
+        ...(record.compensation || {}),
+        patient_type_rates: Array.isArray(record.compensation?.patient_type_rates) && record.compensation.patient_type_rates.length > 0
+          ? record.compensation.patient_type_rates
+          : defaultPatientTypeRates,
+      },
     });
   };
 
@@ -280,6 +306,11 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   const updateForm = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const updateParty = (key, patch) => setForm((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   const updateComp = (patch) => setForm((prev) => ({ ...prev, compensation: { ...prev.compensation, ...patch } }));
+  const updatePatientTypeRate = (index, rateValue) => setForm((prev) => {
+    const rows = [...(prev.compensation.patient_type_rates || [])];
+    rows[index] = { ...rows[index], rate: rateValue };
+    return { ...prev, compensation: { ...prev.compensation, patient_type_rates: rows } };
+  });
 
   const isFirstYear = (form?.period_number || 1) <= 1;
 
@@ -422,10 +453,38 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 </div>
               )}
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">Keterangan Insentif Jasa Keprofesian</label>
-              <Textarea rows={2} value={form.compensation.professional_incentive_note} onChange={(e) => updateComp({ professional_incentive_note: e.target.value })} placeholder="mis. sesuai lampiran ketentuan insentif jasa keprofesian klinik" />
-            </div>
+            {(form.compensation.patient_type_rates || []).length > 0 ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Lampiran I — Insentif Jasa Keprofesian per Tipe Pasien
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  Diprefill dari Tarif Jasa klinik — sesuaikan kalau terapis ini punya tarif custom per tipe pasien. Baris dengan nilai Rp 0 tidak ditampilkan di Lampiran.
+                </p>
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 rounded-lg border border-slate-200 p-2 bg-white">
+                  {form.compensation.patient_type_rates.map((row, idx) => (
+                    <div key={`${row.label}-${idx}`} className="flex items-center gap-2">
+                      <span className="flex-1 text-xs text-slate-600 truncate">{row.label}</span>
+                      <Input
+                        type="number"
+                        value={row.rate}
+                        onChange={(e) => updatePatientTypeRate(idx, e.target.value)}
+                        placeholder="Rp 0"
+                        className="w-32 h-8 text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">Keterangan Insentif Jasa Keprofesian</label>
+                <Textarea rows={2} value={form.compensation.professional_incentive_note} onChange={(e) => updateComp({ professional_incentive_note: e.target.value })} placeholder="mis. sesuai lampiran ketentuan insentif jasa keprofesian klinik" />
+                <p className="text-[11px] text-slate-400">
+                  Belum ada Tipe Pasien/Tarif Jasa di Setup, jadi Pasal 4 ayat 3 memakai catatan bebas ini. Tambahkan Tarif Jasa per Tipe Pasien di menu Setup untuk otomatis menghasilkan Lampiran I.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {!isFirstYear && (
                 <>
