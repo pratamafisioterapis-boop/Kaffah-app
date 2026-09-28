@@ -19,7 +19,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import DatePicker from '@/components/DatePicker';
 import { Badge } from '@/components/ui/badge';
 import ExtendPackageModal from './ExtendPackageModal';
-import { cn } from '@/lib/utils';
+import { cn, splitPatientTypeCombo } from '@/lib/utils';
 import { createDailyRecap, updateDailyRecap } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -86,7 +86,7 @@ actual_patient_id: '',
 guest_name: '',
 diagnosis: [],
 service_type: '',
-patient_type: '',
+patient_type: [],
 package_type_id: '',
 package_type: '',
 therapist_id: '',
@@ -316,6 +316,18 @@ if (data.discount_type === 'percentage') {
 if (data.discount_type === 'nominal') {
   originalAmount = data.amount + (data.discount_value || 0);
 }
+// Tipe pasien tersimpan sebagai label teks (bisa gabungan, mis. "XTRATIME +
+// DUA KELUHAN"). Pecah jadi komponennya lalu cocokkan tiap komponen ke opsi
+// Tipe Pasien (by label, bukan id — kolom DB memang menyimpan label) supaya
+// multi-select terisi dengan benar. Komponen yang tidak ketemu tetap dibawa
+// sebagai nilai teks bebas (allowCreate) supaya tidak hilang saat diedit.
+const patientTypeParts = splitPatientTypeCombo(data.patient_type);
+const patientTypeValues = patientTypeParts.map((part) => {
+  const match = patientTypes.find(
+    (pt) => (pt.label || '').trim().toLowerCase() === part.toLowerCase()
+  );
+  return match ? match.value : part;
+});
 setFormData(prev => ({
 ...prev,
 recap_date: formatDateDisplay(data.date || data.recap_date),
@@ -324,7 +336,7 @@ actual_patient_id: data.actual_patient_id ?? data.patient_id ?? '',
 guest_name: guestNameFix,
 diagnosis: diag,
 service_type: data.service_type || '',
-patient_type: data.patient_type || '',
+patient_type: patientTypeValues,
 package_type_id: '',
 package_type: '', // Preserve label
 therapist_id: data.therapist_id || '',
@@ -547,7 +559,15 @@ const selectedDiagnosisLabels = diagnoses
 .map(d => d.label);
 
 const selectedServiceLabel = services.find(s => s.value === formData.service_type)?.label || '';
-const selectedPatientTypeLabel = patientTypes.find(p => p.value === formData.patient_type)?.label || '';
+// Tipe pasien bisa lebih dari satu (mis. XTRATIME + DUA KELUHAN) — gabung labelnya
+// dengan " + " supaya cocok dengan pemecahan kombinasi di resolvePatientTypeRate().
+const selectedPatientTypeValues = Array.isArray(formData.patient_type)
+  ? formData.patient_type
+  : (formData.patient_type ? [formData.patient_type] : []);
+const selectedPatientTypeLabel = selectedPatientTypeValues
+  .map((val) => patientTypes.find(p => p.value === val)?.label || val)
+  .filter(Boolean)
+  .join(' + ');
 const selectedPaymentMethodLabel = paymentMethods.find(p => p.value === formData.payment_method)?.label || formData.payment_method || '';
 
 const selectedPackage = packageTypes.find(
@@ -764,11 +784,13 @@ allowCreate={true}
 </div>
 <div className="space-y-2">
 <Label>Tipe Pasien</Label>
-<SearchableSelect 
+<SearchableSelect
 options={patientTypes}
 value={formData.patient_type}
 onChange={(val) => handleChange('patient_type', val)}
 allowCreate={true}
+multiple={true}
+placeholder="Pilih satu atau lebih tipe pasien..."
 />
 </div>
 <div className="space-y-2">
