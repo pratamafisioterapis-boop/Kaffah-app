@@ -157,6 +157,9 @@ export const generatePayslipPDF = (record, therapist = {}, clinic = {}) => {
     ['4', 'Komisi (Remunerasi)', formatCurrency(record.custom_commission)],
     ['5', 'Tips (Non-Cash)', formatCurrency(record.tips)],
   ];
+  if (parseFloat(record.prev_month_shortfall) > 0) {
+    rows.push([String(rows.length + 1), 'Kekurangan Gaji Bulan Lalu', formatCurrency(record.prev_month_shortfall)]);
+  }
 
   autoTable(doc, {
     startY: y,

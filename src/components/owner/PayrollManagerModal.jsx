@@ -29,6 +29,7 @@ const emptyForm = (therapist) => ({
   incentive_amount: 0,
   custom_commission: 0,
   tips: 0,
+  prev_month_shortfall: 0,
 });
 
 const formatCurrency = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
@@ -236,7 +237,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       (parseFloat(form.transport_per_day) || 0) +
       (parseFloat(form.incentive_amount) || 0) +
       (parseFloat(form.custom_commission) || 0) +
-      (parseFloat(form.tips) || 0)
+      (parseFloat(form.tips) || 0) +
+      (parseFloat(form.prev_month_shortfall) || 0)
     );
   }, [form]);
 
@@ -292,6 +294,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       incentive_amount: record.incentive_amount,
       custom_commission: record.custom_commission,
       tips: record.tips,
+      prev_month_shortfall: record.prev_month_shortfall,
       total_salary: record.total_salary,
       status: 'paid',
     });
@@ -404,6 +407,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <Input type="number" value={form.tips} onChange={(e) => setForm({ ...form, tips: e.target.value })} />
               <p className="text-[11px] text-slate-400">
                 Tips dari pasien secara non-tunai (transfer/QRIS) yang masuk ke rekening klinik, diteruskan ke terapis lewat slip gaji ini.
+              </p>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-medium text-slate-600">
+                Kekurangan Gaji Bulan Lalu
+              </label>
+              <Input type="number" value={form.prev_month_shortfall} onChange={(e) => setForm({ ...form, prev_month_shortfall: e.target.value })} />
+              <p className="text-[11px] text-slate-400">
+                Diisi manual bila ada sisa kekurangan pembayaran gaji dari periode sebelumnya yang perlu dilunasi di slip gaji ini.
               </p>
             </div>
           </div>
