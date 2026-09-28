@@ -532,6 +532,56 @@ export const calculateFullSalary = (recaps) => {
   }, 0);
 };
 
+// Pemisah kombinasi tipe pasien, mis. "XTRATIME + DUA KELUHAN" atau "XTRATIME DAN DUA KELUHAN"
+const PATIENT_TYPE_COMBO_SEPARATOR = /\s*\+\s*|\s+dan\s+|\s*&\s*|\s*\/\s*/i;
+
+/**
+ * Mencari rate untuk satu label tipe pasien tunggal (bukan kombinasi) di dalam
+ * peta rates, dengan pencocokan fleksibel (exact atau substring dua arah).
+ * @param {string} typeLabel
+ * @param {Object} rates - { [serviceName]: rate }
+ * @returns {number}
+ */
+function findSingleTypeRate(typeLabel, rates) {
+  const type = (typeLabel || '').trim().toLowerCase();
+  if (!type) return 0;
+
+  const matchedKey = Object.keys(rates || {}).find((key) => {
+    const k = key.trim().toLowerCase();
+    return k === type || k.includes(type) || type.includes(k);
+  });
+
+  return parseFloat(rates?.[matchedKey]) || 0;
+}
+
+/**
+ * Menghitung tarif jasa untuk sebuah tipe pasien, termasuk tipe gabungan
+ * (mis. "XTRATIME + DUA KELUHAN"). Jika tersedia tarif kustom persis untuk
+ * gabungan tsb, tarif itu yang dipakai. Jika tidak, tarif dihitung dengan
+ * menjumlahkan tarif tiap komponen tipe pasien penyusunnya.
+ * @param {string} typeLabel
+ * @param {Object} rates - { [serviceName]: rate }
+ * @returns {number}
+ */
+export function resolvePatientTypeRate(typeLabel, rates) {
+  if (!typeLabel) return 0;
+
+  // 1. Coba cocokkan langsung dulu (termasuk kalau memang ada tarif kustom
+  //    untuk gabungan tsb, mis. "XTRATIME + DUA KELUHAN" diinput manual).
+  const directRate = findSingleTypeRate(typeLabel, rates);
+  if (directRate > 0) return directRate;
+
+  // 2. Kalau tidak ketemu, coba pecah sebagai kombinasi beberapa tipe pasien
+  //    dan jumlahkan tarif tiap komponennya.
+  const parts = typeLabel.split(PATIENT_TYPE_COMBO_SEPARATOR).map(p => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    const total = parts.reduce((sum, part) => sum + findSingleTypeRate(part, rates), 0);
+    if (total > 0) return total;
+  }
+
+  return 0;
+}
+
 /**
  * Calculates custom commission-based salary.
  * @param {number|string} base - Base salary
@@ -543,15 +593,7 @@ export function calculateCustomSalary(recaps, rates) {
 
   return recaps.reduce((total, r) => {
     const type = r.patient_type || r.service_type || '';
-    
-    // cari rate yg mengandung keyword (flexible match)
-    const matchedKey = Object.keys(rates).find(key =>
-      key.toLowerCase().includes(type.toLowerCase())
-    );
-
-    const rate = parseFloat(rates[matchedKey]) || 0;
-
-    return total + rate;
+    return total + resolvePatientTypeRate(type, rates);
   }, 0);
 }
 
