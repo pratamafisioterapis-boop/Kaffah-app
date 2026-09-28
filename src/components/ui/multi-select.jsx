@@ -68,7 +68,7 @@ const MultiSelect = ({
       >
         {value.map((val) => (
           <Badge key={val} variant="secondary" className="gap-1 pr-1 font-normal bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100">
-            {val}
+            {options.find((o) => o.value === val)?.label ?? val}
             <div
               className="ml-1 rounded-full p-0.5 outline-none hover:bg-blue-200 cursor-pointer"
               onClick={(e) => handleRemove(val, e)}
