@@ -19,7 +19,8 @@ import {
 } from '@/lib/api';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary,
-  calculateTotalSalary, formatCurrency, cn, getTherapistPeriodRange
+  calculateTotalSalary, formatCurrency, cn, getTherapistPeriodRange,
+  resolvePatientTypeRate
 } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -260,17 +261,12 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
           sessionAmount = Number(r.amount || 0);
         }
       } else {
-        // custom salary: patient_type di DB adalah text label langsung (misal "DUA KELUHAN")
-        // customRates key bisa berupa label atau UUID, coba exact match dulu lalu fuzzy
-        const ptLabel = (r.patient_type || '').toUpperCase();
-        const matchedKey = Object.keys(customRates).find(k =>
-          k.toUpperCase() === ptLabel ||
-          k.toUpperCase().includes(ptLabel) ||
-          ptLabel.includes(k.toUpperCase())
-        );
-        sessionAmount = parseFloat(customRates[matchedKey] || 0);
-        // Fallback: kalau rate tidak ketemu, set 0 (tidak diketahui)
+        // custom salary: patient_type di DB adalah text label langsung (misal "DUA KELUHAN"
+        // atau gabungan seperti "XTRATIME + DUA KELUHAN"). Kalau tidak ada tarif kustom
+        // persis untuk gabungan tsb, tarif dihitung dari jumlah tiap komponennya.
+        // Fallback: kalau rate tidak ketemu sama sekali, hasilnya 0 (tidak diketahui) —
         // jangan fallback ke amount karena amount = yang dibayar pasien bukan rate terapis
+        sessionAmount = resolvePatientTypeRate(r.patient_type, customRates);
       }
 
       commission += sessionAmount;

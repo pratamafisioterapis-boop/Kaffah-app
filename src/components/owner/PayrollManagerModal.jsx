@@ -13,7 +13,7 @@ import {
 } from '@/lib/api';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
-  getTherapistPeriodRange,
+  getTherapistPeriodRange, resolvePatientTypeRate,
 } from '@/lib/utils';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
@@ -164,13 +164,12 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           incentiveAmount = calculateCustomSalary(therapistRecaps, rateMap);
           incentiveItems = therapistRecaps.map((r) => {
             const type = r.patient_type || r.service_type || '';
-            const matchedKey = Object.keys(rateMap).find((key) => key.toLowerCase().includes(type.toLowerCase()));
             return {
               id: r.id,
               date: r.recap_date,
               name: getPatientName(r),
               type: type || '-',
-              amount: parseFloat(rateMap[matchedKey]) || 0,
+              amount: resolvePatientTypeRate(type, rateMap),
             };
           });
         }
