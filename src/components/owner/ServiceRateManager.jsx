@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPatientTypeOptions } from '@/lib/api';
+import MultiSelect from '@/components/ui/multi-select';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ const ServiceRateManager = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRate, setEditingRate] = useState(null);
-  const [form, setForm] = useState({ service_name: '', rate: '' });
+  const [form, setForm] = useState({ selectedTypes: [], rate: '' });
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingRate, setDeletingRate] = useState(null);
@@ -79,6 +80,12 @@ const ServiceRateManager = () => {
     return rates.filter((r) => !typeLabels.includes((r.service_name || '').trim().toLowerCase()));
   }, [rates, patientTypes]);
 
+  // Opsi Tipe Pasien (dari Setup) untuk dropdown multi-select di modal Tambah/Edit Tarif
+  const patientTypeSelectOptions = useMemo(
+    () => patientTypes.map((pt) => ({ value: pt.label, label: pt.label })),
+    [patientTypes]
+  );
+
   const handleQuickSave = async (id, label, rateRow) => {
     const inputValue = typeRateInputs[id];
     const rateValue = parseFloat(inputValue) || 0;
@@ -112,13 +119,18 @@ const ServiceRateManager = () => {
 
   const openAdd = () => {
     setEditingRate(null);
-    setForm({ service_name: '', rate: '' });
+    setForm({ selectedTypes: [], rate: '' });
     setIsFormOpen(true);
   };
 
   const openEdit = (item) => {
     setEditingRate(item);
-    setForm({ service_name: item.service_name, rate: item.rate });
+    // Pecah nama tarif (mis. "XTRATIME + DUA KELUHAN") jadi tipe pasien penyusunnya,
+    // dicocokkan ke Tipe Pasien dari Setup. Bagian yang tidak cocok tetap dibawa
+    // sebagai pilihan kustom supaya tidak hilang saat diedit.
+    const parts = (item.service_name || '').split('+').map((p) => p.trim()).filter(Boolean);
+    const selectedTypes = parts.length > 0 ? parts : [item.service_name].filter(Boolean);
+    setForm({ selectedTypes, rate: item.rate });
     setIsFormOpen(true);
   };
 
@@ -128,10 +140,10 @@ const ServiceRateManager = () => {
   };
 
   const handleSave = async () => {
-    const name = form.service_name.trim();
+    const name = form.selectedTypes.map((t) => t.trim()).filter(Boolean).join(' + ');
     const rateValue = parseFloat(form.rate) || 0;
     if (!name) {
-      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Nama tipe pasien/layanan wajib diisi.' });
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Pilih minimal satu tipe pasien.' });
       return;
     }
     setIsProcessing(true);
@@ -294,13 +306,17 @@ const ServiceRateManager = () => {
           <DialogHeader><DialogTitle>{editingRate ? 'Edit' : 'Tambah'} Tarif Jasa</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-700">Nama Tipe Pasien/Layanan</label>
-              <Input
-                value={form.service_name}
-                onChange={(e) => setForm({ ...form, service_name: e.target.value })}
-                placeholder="Contoh: DUA KELUHAN"
-                autoFocus
+              <label className="text-sm font-medium text-slate-700">Tipe Pasien</label>
+              <MultiSelect
+                options={patientTypeSelectOptions}
+                value={form.selectedTypes}
+                onChange={(selectedTypes) => setForm({ ...form, selectedTypes })}
+                placeholder="Pilih satu atau lebih tipe pasien..."
+                creatable
               />
+              <p className="text-xs text-slate-400">
+                Pilih lebih dari satu untuk tarif gabungan, mis. XTRATIME + DUA KELUHAN.
+              </p>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">Insentif per Sesi (Rp)</label>
