@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Users, MonitorSmartphone, FileSpreadsheet, Plus } from 'lucide-react';
+import { Loader2, Users, MonitorSmartphone, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,10 @@ const SuperAdminUsers = () => {
   const [createKonversiOpen, setCreateKonversiOpen] = useState(false);
   const [createKonversiForm, setCreateKonversiForm] = useState(emptyKonversiDokterForm);
   const [creatingKonversi, setCreatingKonversi] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -187,6 +191,47 @@ const SuperAdminUsers = () => {
     }
   };
 
+  // Passwords are hashed by Supabase Auth and are never stored or
+  // retrievable in plaintext — Super Admin can only set a new one, not view
+  // the existing one.
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+    if (newPassword.length < 6) {
+      toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !session?.access_token) {
+        toast({
+          variant: 'destructive',
+          title: 'Sesi login sudah berakhir',
+          description: 'Silakan refresh halaman dan login ulang sebagai Super Admin, lalu coba lagi.',
+        });
+        return;
+      }
+      const res = await fetch('https://dqkejdamagvlhqvxaqej.supabase.co/functions/v1/admin-reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ user_id: resetPasswordUser.id, new_password: newPassword }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Gagal mengganti password', description: result.error });
+        return;
+      }
+      toast({ title: 'Password berhasil diganti', description: `Password baru untuk ${resetPasswordUser.email} telah diset.` });
+      setResetPasswordUser(null);
+      setNewPassword('');
+      setShowNewPassword(false);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal mengganti password', description: err.message });
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
 
   return (
@@ -257,6 +302,60 @@ const SuperAdminUsers = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={!!resetPasswordUser}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordUser(null);
+            setNewPassword('');
+            setShowNewPassword(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-blue-600" /> Ganti Password
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500 -mt-2">
+            Set password baru untuk <span className="font-medium">{resetPasswordUser?.full_name || resetPasswordUser?.email}</span>.
+            Password lama tidak bisa dilihat karena disimpan terenkripsi oleh sistem — hanya bisa diganti.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1 block">Password Baru</label>
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimal 6 karakter"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPasswordUser(null)} disabled={resettingPassword}>
+              Batal
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword} className="gap-1.5">
+              {resettingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              Simpan Password Baru
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Mobile / PWA: kartu, tanpa geser horizontal */}
         <div className="sm:hidden divide-y divide-slate-100">
@@ -311,6 +410,14 @@ const SuperAdminUsers = () => {
                   Remote
                 </Button>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-blue-300 text-blue-700 hover:bg-blue-50"
+                onClick={() => setResetPasswordUser(u)}
+              >
+                <KeyRound className="w-4 h-4 mr-1" /> Ganti Password
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -406,6 +513,15 @@ const SuperAdminUsers = () => {
                           <MonitorSmartphone className="w-4 h-4 mr-1" />
                         )}
                         Remote
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => setResetPasswordUser(u)}
+                        title="Ganti password user ini"
+                      >
+                        <KeyRound className="w-4 h-4 mr-1" /> Ganti Password
                       </Button>
                     </div>
                   </td>
