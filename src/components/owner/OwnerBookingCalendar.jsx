@@ -37,6 +37,7 @@ const OwnerBookingCalendar = () => {
   const [date, setDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
+  const [hasWaApiKey, setHasWaApiKey] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [viewMode, setViewMode] = useState('day'); // 'day' | 'week'
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
@@ -63,10 +64,12 @@ const OwnerBookingCalendar = () => {
     if (!userDetails?.clinic_id) return;
     const { data } = await supabase
       .from('wa_settings')
-      .select('id, enabled')
+      .select('id, enabled, api_key')
       .eq('clinic_id', userDetails.clinic_id)
       .maybeSingle();
     if (data) setIsBablastEnabled(data.enabled);
+    // WaAuto hanya relevan bagi klinik yang sudah mengisi API key Watzap.
+    setHasWaApiKey(!!data?.api_key?.trim());
   };
 
 
@@ -361,6 +364,7 @@ const OwnerBookingCalendar = () => {
           ))}
         </div>
 
+        {hasWaApiKey && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -426,6 +430,7 @@ const OwnerBookingCalendar = () => {
           </div>
           <p className="text-xs text-slate-500 leading-snug pl-9">Otomatis kirim notifikasi via WhatsApp</p>
         </div>
+        )}
 
         <div className={`items-center gap-1.5 w-full min-w-0 ${viewMode === 'day' ? 'flex' : 'hidden'}`}>
             <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
