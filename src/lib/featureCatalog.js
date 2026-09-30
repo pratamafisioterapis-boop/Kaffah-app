@@ -36,6 +36,7 @@ export const FEATURE_CATALOG = [
   { key: 'therapist_booking', label: 'Booking Calendar', roles: ['therapist'], match: (label) => label.includes('booking calendar') },
   { key: 'therapist_appointments', label: 'Riwayat Pasien', roles: ['therapist'], match: (label) => label.includes('riwayat pasien') || label.includes('daftar appointment') },
   { key: 'therapist_evaluation', label: 'Evaluasi Pasien', roles: ['therapist'], match: (label) => label.includes('evaluasi pasien') },
+  { key: 'therapist_medical_records', label: 'Rekam Medis', roles: ['therapist'], match: (label) => label === 'rekam medis' },
   { key: 'therapist_settings', label: 'Settings', roles: ['therapist'], match: (label) => label === 'settings' },
 ];
 

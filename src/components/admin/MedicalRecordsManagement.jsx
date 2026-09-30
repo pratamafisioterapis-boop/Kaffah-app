@@ -33,7 +33,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 
-const MedicalRecordsManagement = () => {
+const MedicalRecordsManagement = ({ readOnly = false }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -392,6 +392,7 @@ const handleViewRecord = (record) => {
             />
           </div>
           <div className="flex items-center gap-2">
+            {!readOnly && (<>
             <button onClick={handleOpenCreateModal}
               className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold text-white"
               style={{ background: '#4f46e5' }}>
@@ -402,6 +403,7 @@ const handleViewRecord = (record) => {
               style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
               <Upload className="w-3.5 h-3.5" /> Import
             </button>
+            </>)}
             <button onClick={handleExportCSV}
               className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
               style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>
@@ -410,6 +412,12 @@ const handleViewRecord = (record) => {
           </div>
         </div>
       </div>
+
+      {readOnly && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl text-xs">
+          Di klinik ini rekam medis diisi oleh terapis. Admin hanya dapat melihat data.
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center justify-between shadow-sm animate-in fade-in">
@@ -431,9 +439,11 @@ const handleViewRecord = (record) => {
                 <FileText className="w-5 h-5 text-slate-300" />
               </div>
               <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
+              {!readOnly && (
               <button onClick={handleOpenCreateModal} className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#eef2ff', color: '#4f46e5' }}>
                 Buat sekarang
               </button>
+              )}
             </div>
           ) : (
             sortedRecords.map((record) => {
@@ -478,6 +488,7 @@ const handleViewRecord = (record) => {
                   </div>
 
                   {/* Aksi */}
+                  {!readOnly && (
                   <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                     <button onClick={() => handleOpenEditModal(record)}
                       className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-semibold"
@@ -490,6 +501,7 @@ const handleViewRecord = (record) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  )}
                 </div>
               );
             })
@@ -538,11 +550,13 @@ const handleViewRecord = (record) => {
                         <FileText className="w-5 h-5 text-slate-300" />
                       </div>
                       <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
+                      {!readOnly && (
                       <button onClick={handleOpenCreateModal}
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                         style={{ background: '#eef2ff', color: '#4f46e5' }}>
                         Buat sekarang
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -596,7 +610,7 @@ const handleViewRecord = (record) => {
                         }
                       </td>
                       <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
+                        {!readOnly && (<DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-lg flex items-center justify-center"
                               style={{ background: '#f1f5f9', color: '#64748b' }}>
@@ -611,7 +625,7 @@ const handleViewRecord = (record) => {
                               <Trash2 className="mr-2 h-3.5 w-3.5" /> Hapus Data
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu>)}
                       </td>
                     </tr>
                   );
@@ -637,7 +651,7 @@ const handleViewRecord = (record) => {
   }}
   record={viewRecord}
   diagnoses={diagnoses}
-  onEdit={(record) => {
+  onEdit={readOnly ? undefined : (record) => {
     setIsViewOpen(false);
     setViewRecord(null);
     handleOpenEditModal(record);
