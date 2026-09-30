@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope } from 'lucide-react';
+import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope, Unlink } from 'lucide-react';
 import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
-import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner } from '@/lib/api';
+import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner, separateTherapistFromOwner } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const emptyForm = {
@@ -96,6 +96,12 @@ const SuperAdminClinics = () => {
   const [existingTherapists, setExistingTherapists] = useState([]);
   const [loadingExistingTherapists, setLoadingExistingTherapists] = useState(false);
   const [selectedExistingTherapistId, setSelectedExistingTherapistId] = useState('');
+  const [separateOpen, setSeparateOpen] = useState(false);
+  const [separateTarget, setSeparateTarget] = useState(null); // { owner, clinic, physio }
+  const [therapistLogins, setTherapistLogins] = useState([]);
+  const [loadingTherapistLogins, setLoadingTherapistLogins] = useState(false);
+  const [selectedTherapistLoginId, setSelectedTherapistLoginId] = useState('');
+  const [separating, setSeparating] = useState(false);
 
   const fetchClinics = async () => {
     setLoading(true);
@@ -396,6 +402,51 @@ const SuperAdminClinics = () => {
     setMergeOpen(false);
   };
 
+  const openSeparateTherapist = async (owner, clinic) => {
+    const physio = ownerTherapists[owner.id];
+    if (!physio) return;
+    setSeparateTarget({ owner, clinic, physio });
+    setSelectedTherapistLoginId('');
+    setTherapistLogins([]);
+    setSeparateOpen(true);
+
+    setLoadingTherapistLogins(true);
+    const [{ data: logins }, { data: physios }] = await Promise.all([
+      supabase.from('users').select('id, full_name, email, is_active').eq('clinic_id', clinic.id).eq('role', 'therapist').order('full_name', { ascending: true }),
+      supabase.from('physiotherapists').select('user_id').eq('clinic_id', clinic.id),
+    ]);
+    const taken = new Set((physios || []).map((p) => p.user_id).filter(Boolean));
+    const free = (logins || []).filter((u) => !taken.has(u.id));
+    setTherapistLogins(free);
+    // Pilih otomatis kalau email login sama dengan email profil terapis.
+    const match = free.find((u) => u.email && physio.email && u.email.toLowerCase() === physio.email.toLowerCase());
+    if (match) setSelectedTherapistLoginId(match.id);
+    setLoadingTherapistLogins(false);
+  };
+
+  const handleConfirmSeparate = async () => {
+    if (!separateTarget) return;
+    if (!selectedTherapistLoginId) {
+      toast({ variant: 'destructive', title: 'Pilih dulu login terapis tujuan' });
+      return;
+    }
+    const { owner, physio } = separateTarget;
+    setSeparating(true);
+    const { error } = await separateTherapistFromOwner(physio.id, selectedTherapistLoginId);
+    setSeparating(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal memisahkan profil terapis', description: error.message });
+      return;
+    }
+    toast({ title: 'Berhasil', description: `Profil terapis dipisahkan dari ${owner.full_name} dan dikembalikan ke login terapisnya.` });
+    setOwnerTherapists((prev) => {
+      const next = { ...prev };
+      delete next[owner.id];
+      return next;
+    });
+    setSeparateOpen(false);
+  };
+
   const handleToggleOwnerTherapist = async (owner) => {
     const physio = ownerTherapists[owner.id];
     if (!physio) return;
@@ -487,6 +538,16 @@ const SuperAdminClinics = () => {
                                   title={physio.is_active ? 'Klik untuk nonaktifkan profil terapis owner ini' : 'Klik untuk aktifkan kembali'}
                                 >
                                   <Stethoscope className="w-3 h-3" /> {physio.is_active ? 'Terapis Aktif' : 'Terapis Nonaktif'}
+                                </button>
+                              )}
+                              {physio && (
+                                <button
+                                  type="button"
+                                  onClick={() => openSeparateTherapist(o, clinic)}
+                                  className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600"
+                                  title="Pisahkan profil terapis dari akun owner dan kembalikan ke login terapisnya sendiri"
+                                >
+                                  <Unlink className="w-3 h-3" /> Pisahkan
                                 </button>
                               )}
                             </div>
@@ -789,6 +850,52 @@ const SuperAdminClinics = () => {
             <Button variant="outline" onClick={() => setMergeOpen(false)}>Batal</Button>
             <Button onClick={handleConfirmMerge} disabled={merging} className="bg-blue-600">
               {merging && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Jadikan Terapis
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={separateOpen} onOpenChange={setSeparateOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Pisahkan Terapis dari {separateTarget?.owner?.full_name}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2">
+              Profil terapis <b>{separateTarget?.physio?.name}</b> (beserta riwayat SOAP, appointment, jadwal, dan
+              payroll) dipindah kembali ke login terapis yang dipilih, lalu login itu diaktifkan. Akun owner tetap
+              aktif, tapi menu terapisnya hilang dari sidebar owner.
+            </p>
+            {loadingTherapistLogins ? (
+              <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
+            ) : therapistLogins.length === 0 ? (
+              <p className="text-sm text-slate-400 italic py-2">Tidak ada login terapis yang belum punya profil di klinik ini.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                {therapistLogins.map((u) => (
+                  <label
+                    key={u.id}
+                    className={cn(
+                      "flex items-center gap-2 text-sm border rounded-lg px-2.5 py-2 cursor-pointer",
+                      selectedTherapistLoginId === u.id ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-200"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="therapist-login"
+                      checked={selectedTherapistLoginId === u.id}
+                      onChange={() => setSelectedTherapistLoginId(u.id)}
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-medium text-slate-700 truncate">{u.full_name || '(tanpa nama)'}</span>
+                      <span className="block text-xs text-slate-400 truncate">{u.email} {u.is_active === false ? '· nonaktif' : ''}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSeparateOpen(false)}>Batal</Button>
+            <Button onClick={handleConfirmSeparate} disabled={separating || !selectedTherapistLoginId} className="bg-blue-600">
+              {separating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Pisahkan
             </Button>
           </DialogFooter>
         </DialogContent>
