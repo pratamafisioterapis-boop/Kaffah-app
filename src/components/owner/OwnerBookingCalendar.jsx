@@ -342,7 +342,7 @@ const OwnerBookingCalendar = () => {
 
         <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 sm:inline-grid sm:w-auto">
           {[
-            { key: 'day', label: 'Booking Harian', icon: CalendarIcon },
+            { key: 'day', label: 'Jadwal Harian', icon: CalendarIcon },
             { key: 'week', label: 'Jadwal Mingguan', icon: CalendarRange },
           ].map(({ key, label, icon: Icon }) => (
             <button
