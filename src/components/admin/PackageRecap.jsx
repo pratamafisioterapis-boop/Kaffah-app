@@ -189,7 +189,7 @@ const fetchData = async () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)}>
+          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)} className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] hover:bg-[#E4EFFA]">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>

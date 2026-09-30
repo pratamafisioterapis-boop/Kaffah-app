@@ -157,29 +157,29 @@ const DatabasePatients = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-nowrap items-center justify-center gap-2 sm:gap-3 md:gap-4 !mt-8 sm:!mt-10 md:!mt-12">
+            <div className="flex flex-nowrap items-center justify-center gap-2 !mt-5 sm:!mt-6">
               <Button
                 onClick={handleRefresh}
                 variant="outline"
-                className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 rounded-2xl border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-sm hover:bg-[#E4EFFA] active:scale-[0.97] transition-all duration-200 ease-in-out"
+                className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] hover:bg-[#E4EFFA]"
               >
-                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.1} />
-                <span className="whitespace-nowrap">{isPWA ? 'Refresh' : 'Refresh Data'}</span>
+                <RefreshCw className="w-4 h-4 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Refresh</span><span className="hidden sm:inline">Refresh Data</span></span>
               </Button>
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
-                className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 rounded-2xl border border-[#DCE6EF] bg-white text-[#102F52] font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-sm hover:bg-[#F5F9FC] active:scale-[0.97] transition-all duration-200 ease-in-out"
+                className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]"
               >
-                <Upload className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.1} />
-                <span className="whitespace-nowrap">{isPWA ? 'Import' : 'Import Excel'}</span>
+                <Upload className="w-4 h-4 shrink-0" strokeWidth={2.1} />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Import</span><span className="hidden sm:inline">Import Excel</span></span>
               </Button>
               <Button
                 onClick={handleAddClick}
-                className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 rounded-2xl bg-[#1683F4] hover:bg-[#125fac] text-white font-semibold text-xs sm:text-sm md:text-base gap-1.5 sm:gap-2 shadow-[0_6px_14px_-4px_rgba(22,131,244,0.45)] active:scale-[0.97] transition-all duration-200 ease-in-out"
+                className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200"
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2.2} />
-                <span className="whitespace-nowrap">{isPWA ? 'Tambah' : 'Tambah Pasien'}</span>
+                <Plus className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Tambah</span><span className="hidden sm:inline">Tambah Pasien</span></span>
               </Button>
             </div>
 

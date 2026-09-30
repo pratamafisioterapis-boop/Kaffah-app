@@ -607,14 +607,14 @@ const OwnerPackageRecap = () => {
       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 space-y-4 xl:space-y-0">
         
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-medium" onClick={() => setManualDialogOpen(true)}>
+          <Button className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200" onClick={() => setManualDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> Tambah Manual
           </Button>
-          <Button variant="outline" className="text-slate-600 border-slate-300 hover:bg-slate-50 font-medium" onClick={() => setImportModalOpen(true)}>
-            <Upload className="w-4 h-4 mr-2 text-green-600" /> Import CSV
+          <Button variant="outline" className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]" onClick={() => setImportModalOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Import CSV
           </Button>
-          <Button variant="outline" className="text-slate-600 border-slate-300 hover:bg-slate-50 font-medium" onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2 text-blue-600" /> Export CSV
+          <Button variant="outline" className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]" onClick={handleExport}>
+            <Download className="w-4 h-4 mr-2" /> Export CSV
           </Button>
         </div>
 
