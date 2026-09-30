@@ -1025,31 +1025,44 @@ const getPremiumPastelBadge = (text) => {
             })}
           </div>
           {/* ── TABLE LAYOUT (desktop/wide) ── */}
-          <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-xs text-left table-fixed">
+          <div className="hidden sm:block w-full">
+          <table className="w-full text-xs text-left table-fixed [&_.text-sm]:text-xs xl:[&_.text-sm]:text-sm [&_td]:break-words [&_td]:[overflow-wrap:anywhere]">
+            <colgroup>
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '9%' }} />
+            </colgroup>
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
-                <th className="px-2 py-3 text-center text-slate-700 font-semibold w-[130px]">Tanggal</th>
+                <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Tanggal</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[140px]">Nama Pasien</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Nama Pasien</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[130px]">Diagnosa</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Diagnosa</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[120px]">Layanan</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Layanan</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[120px]">Tipe</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Tipe</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[80px]">Paket</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Paket</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[120px]">Terapis</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Terapis</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[90px]">Nominal</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Nominal</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[80px]">Status</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Status</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[100px]">Sesi</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Sesi</th>
 
-<th className="px-2 py-3 text-center text-slate-700 font-semibold w-[90px]">Invoice</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Invoice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -1073,37 +1086,37 @@ const getPremiumPastelBadge = (text) => {
                     className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-all duration-200 cursor-pointer hover:bg-transparent")}
                     onClick={() => handleRowClick(recap)}
                   >
-                     <td className="px-5 py-4 text-center text-black font-normal whitespace-normal break-words">
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center text-black font-normal whitespace-normal break-words">
   {formatDateIndonesian(recap.date)}
 </td>
-                     <td className="px-5 py-4 text-center">{renderPatientName(recap)}</td>
-                     <td className="px-5 py-4 text-center max-w-[220px] whitespace-normal text-slate-600">{renderDiagnoses(recap.diagnosis)}</td>
-                     <td className="px-5 py-4 text-center text-slate-600">{serviceLabel}</td>
-                     <td className="px-5 py-4 text-center">
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center">{renderPatientName(recap)}</td>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center whitespace-normal text-slate-600">{renderDiagnoses(recap.diagnosis)}</td>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center text-slate-600">{serviceLabel}</td>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center">
                         <div className="max-w-full" onClick={(e) => e.stopPropagation()}>
-                          <Badge className={cn("!inline-block max-w-full text-sm font-medium px-3 py-1 rounded-md border-0 transition-none whitespace-normal break-words [overflow-wrap:anywhere] text-center leading-tight", getPremiumPastelBadge(patientTypeLabel))}>
+                          <Badge className={cn("!inline-block max-w-full text-sm font-medium px-1.5 xl:px-3 py-1 rounded-md border-0 transition-none whitespace-normal break-words [overflow-wrap:anywhere] text-center leading-tight", getPremiumPastelBadge(patientTypeLabel))}>
                             {patientTypeLabel}
                           </Badge>
                         </div>
                      </td>
-                     <td className="px-5 py-4 text-center text-blue-600 font-semibold">{packageLabel}</td>
-                     <td className="px-5 py-4 text-center text-slate-600">{recap.display_therapist_name}</td>
-                     <td className="px-5 py-4 text-center whitespace-nowrap">
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center text-blue-600 font-semibold">{packageLabel}</td>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center text-slate-600">{recap.display_therapist_name}</td>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
                        {recap.payment_method && (
                          <div className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
                      </td>
-                     <td className="px-5 py-4 text-center">
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center">
                        {recap.end_time ? (
-                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-lg">Selesai</Badge>
+                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-1.5 xl:px-3 py-1 rounded-lg whitespace-normal text-center leading-tight">Selesai</Badge>
                        ) : recap.start_time ? (
-                         <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-lg">Berlangsung</Badge>
+                         <Badge className="bg-blue-50 text-blue-700 border-0 px-1.5 xl:px-3 py-1 rounded-lg whitespace-normal text-center leading-tight">Berlangsung</Badge>
                        ) : (
-                         <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-lg">Belum</Badge>
+                         <Badge className="bg-slate-100 text-slate-500 border-0 px-1.5 xl:px-3 py-1 rounded-lg whitespace-normal text-center leading-tight">Belum</Badge>
                        )}
                      </td>
-                     <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                     <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {recap.start_time == null ? (
                                  <Button size="sm" className="h-7 w-full text-sm bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
@@ -1123,13 +1136,13 @@ const getPremiumPastelBadge = (text) => {
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1.5 py-3 lg:px-2 xl:px-3 2xl:px-4 text-center" onClick={(e) => e.stopPropagation()}>
   <div className="flex flex-col items-center gap-1">
     <Button
     size="sm"
     variant="outline"
     disabled={parseFloat(recap.amount || 0) === 0}
-    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+    className="text-blue-600 border-blue-200 hover:bg-blue-50 h-7 px-2 text-xs xl:h-9 xl:px-3 xl:text-sm"
     onClick={() => {
       setSelectedInvoiceData(recap);
       setInvoiceModalOpen(true);
@@ -1146,7 +1159,7 @@ const getPremiumPastelBadge = (text) => {
           ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
           : 'Invoice belum pernah dikirim ke WhatsApp pasien'
       }
-      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-tight text-center ${
         recap.invoice_wa_status === 'gagal'
           ? 'bg-red-50 text-red-600'
           : recap.invoice_wa_status
