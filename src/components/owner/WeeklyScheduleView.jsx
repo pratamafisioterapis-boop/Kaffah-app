@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Plus, Clock, CalendarOff, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Plus, Home, Clock, CalendarOff, Sparkles } from 'lucide-react';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -134,37 +134,37 @@ const WeeklyScheduleView = ({
     };
   }, [fetchWeek]);
 
-  // Baris jam: dari jam paling awal sampai paling akhir yang punya isi.
-  const hours = useMemo(() => {
-    let min = 24;
-    let max = -1;
-    Object.values(slotsByDay).forEach((list) =>
-      list.forEach((s) => {
-        const h = parseInt(hhmm(s.slot_start_time).slice(0, 2), 10);
-        min = Math.min(min, h);
-        max = Math.max(max, h);
-      })
-    );
+  // Baris per 30 menit, dari item paling awal sampai paling akhir yang benar-benar ada.
+  const bucketOf = (t) => {
+    const [h, m] = hhmm(t).split(':').map(Number);
+    return h * 60 + (m >= 30 ? 30 : 0);
+  };
+  const rowsMinutes = useMemo(() => {
+    let min = Infinity;
+    let max = -Infinity;
+    const track = (t) => {
+      const b = bucketOf(t);
+      min = Math.min(min, b);
+      max = Math.max(max, b);
+    };
+    Object.values(slotsByDay).forEach((list) => list.forEach((s) => track(s.slot_start_time)));
     Object.values(appsByDay).forEach((list) =>
-      list.forEach((a) => {
-        const h = parseInt(formatTimeIndonesia(a.appointment_date).slice(0, 2), 10);
-        min = Math.min(min, h);
-        max = Math.max(max, h);
-      })
+      list.forEach((a) => track(formatTimeIndonesia(a.appointment_date)))
     );
     if (max < 0) return [];
-    min = Math.min(min, 8);
-    max = Math.max(max, 17);
-    return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+    return Array.from({ length: (max - min) / 30 + 1 }, (_, i) => min + i * 30);
   }, [slotsByDay, appsByDay]);
+  const hours = rowsMinutes; // alias: tiap baris = 30 menit
+  const rowLabel = (mins) =>
+    `${String(Math.floor(mins / 60)).padStart(2, '0')}:${mins % 60 === 0 ? '00' : '30'}`;
 
-  const itemsFor = (dayKey, hour) => {
-    const inHour = (t) => parseInt(hhmm(t).slice(0, 2), 10) === hour;
+  const itemsFor = (dayKey, rowMin) => {
+    const inRow = (t) => bucketOf(t) === rowMin;
     const apps = (appsByDay[dayKey] || [])
-      .filter((a) => inHour(formatTimeIndonesia(a.appointment_date)))
+      .filter((a) => inRow(formatTimeIndonesia(a.appointment_date)))
       .map((a) => ({ kind: 'app', time: formatTimeIndonesia(a.appointment_date), data: a }));
     const slots = (slotsByDay[dayKey] || [])
-      .filter((s) => inHour(s.slot_start_time))
+      .filter((s) => inRow(s.slot_start_time))
       .map((s) => ({ kind: 'slot', time: hhmm(s.slot_start_time), data: s }));
     return [...apps, ...slots].sort((a, b) => a.time.localeCompare(b.time));
   };
@@ -178,24 +178,33 @@ const WeeklyScheduleView = ({
     if (item.kind === 'app') {
       const a = item.data;
       const name = a.patient?.full_name || a.guest_name || 'Tanpa Nama';
+      const hc = !!a.is_homecare;
       return (
         <button
           key={`a-${a.id}`}
           type="button"
           onClick={() => onAppointmentClick(a)}
           className={cn(
-            'group w-full text-left rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50 to-white',
-            'px-2.5 py-1.5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all',
-            'border-l-4 border-l-indigo-500'
+            'group w-full text-left rounded-xl border px-2.5 py-1.5 shadow-sm hover:shadow-md transition-all border-l-4',
+            hc
+              ? 'border-amber-200 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white hover:border-amber-300'
+              : 'border-indigo-200/70 border-l-indigo-500 bg-gradient-to-br from-indigo-50 to-white hover:border-indigo-300'
           )}
         >
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-mono font-bold text-indigo-600">{item.time}</span>
-            {a.is_new_patient && (
-              <span className="text-[8px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 rounded-full">
-                Baru
-              </span>
-            )}
+            <span className={cn('text-[10px] font-mono font-bold', hc ? 'text-amber-600' : 'text-indigo-600')}>{item.time}</span>
+            <span className="flex items-center gap-1">
+              {hc && (
+                <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 rounded-full">
+                  <Home className="h-2.5 w-2.5" /> Homecare
+                </span>
+              )}
+              {a.is_new_patient && (
+                <span className="text-[8px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 rounded-full">
+                  Baru
+                </span>
+              )}
+            </span>
           </div>
           <p className={cn('font-semibold text-slate-800 leading-tight truncate', compact ? 'text-sm' : 'text-xs')}>
             {name}
@@ -273,7 +282,7 @@ const WeeklyScheduleView = ({
                 className={cn(
                   'snap-start shrink-0 flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full border text-sm font-medium transition-all',
                   active
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                    ? 'bg-clinara-navy text-white border-clinara-navy shadow-md'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 )}
               >
@@ -302,8 +311,8 @@ const WeeklyScheduleView = ({
         <>
           {/* ===== Desktop / tablet landscape: grid 7 hari ===== */}
           <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-slate-900 to-slate-800 text-white">
-              <div className="flex items-center justify-center text-slate-400">
+            <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
+              <div className="flex items-center justify-center text-sky-200/70">
                 <Clock className="h-4 w-4" />
               </div>
               {days.map((d) => {
@@ -317,16 +326,16 @@ const WeeklyScheduleView = ({
                     className="py-3 px-2 text-center border-l border-white/10 hover:bg-white/5 transition-colors"
                     title="Buka tampilan harian"
                   >
-                    <p className="text-[10px] uppercase tracking-widest text-slate-400">
+                    <p className="text-[10px] uppercase tracking-widest text-sky-200/70">
                       {format(d, 'EEE', { locale: idLocale })}
                     </p>
                     <p className={cn(
                       'mx-auto mt-0.5 h-8 w-8 rounded-full flex items-center justify-center text-base font-bold',
-                      isToday ? 'bg-emerald-400 text-slate-900' : ''
+                      isToday ? 'bg-clinara-teal text-clinara-navy' : ''
                     )}>
                       {format(d, 'd')}
                     </p>
-                    <p className="text-[10px] mt-0.5 text-slate-400">
+                    <p className="text-[10px] mt-0.5 text-sky-200/70">
                       {offDays[k] ? offDays[k] : `${freeCount(k)} kosong · ${bookedCount(k)} isi`}
                     </p>
                   </button>
@@ -341,7 +350,7 @@ const WeeklyScheduleView = ({
                 {hours.map((h) => (
                   <div key={h} className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-t border-slate-100">
                     <div className="py-2 text-center text-xs font-mono font-semibold text-slate-400 bg-slate-50/60">
-                      {String(h).padStart(2, '0')}:00
+                      {rowLabel(h)}
                     </div>
                     {days.map((d) => {
                       const k = toKey(d);
@@ -350,7 +359,7 @@ const WeeklyScheduleView = ({
                         <div
                           key={k}
                           className={cn(
-                            'min-h-[56px] p-1.5 border-l border-slate-100 space-y-1.5',
+                            'min-h-[52px] p-1.5 border-l border-slate-100 space-y-1.5',
                             isSameDay(d, today) && 'bg-emerald-50/30',
                             offDays[k] && 'bg-slate-50 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(148,163,184,0.12)_6px,rgba(148,163,184,0.12)_12px)]'
                           )}
@@ -381,7 +390,7 @@ const WeeklyScheduleView = ({
                     className={cn(
                       'flex flex-col items-center py-2 rounded-2xl border transition-all',
                       active
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-[1.03]'
+                        ? 'bg-clinara-navy text-white border-clinara-navy shadow-lg scale-[1.03]'
                         : 'bg-white border-slate-200 text-slate-600'
                     )}
                   >
@@ -412,10 +421,10 @@ const WeeklyScheduleView = ({
                 .filter((r) => r.items.length > 0);
               return (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+                  <div className="px-4 py-3 bg-gradient-to-r from-clinara-navy to-clinara-blue text-white flex items-center justify-between">
                     <div>
                       <p className="font-bold text-sm">{format(dayDate, 'EEEE, d MMMM yyyy', { locale: idLocale })}</p>
-                      <p className="text-[11px] text-slate-400">{freeCount(k)} slot kosong · {bookedCount(k)} terjadwal</p>
+                      <p className="text-[11px] text-sky-200/70">{freeCount(k)} slot kosong · {bookedCount(k)} terjadwal</p>
                     </div>
                     <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => onOpenDay(dayDate)}>
                       Harian
@@ -436,7 +445,7 @@ const WeeklyScheduleView = ({
                       {rows.map(({ h, items }) => (
                         <div key={h} className="flex gap-3 p-3">
                           <span className="w-11 shrink-0 pt-2 text-xs font-mono font-semibold text-slate-400">
-                            {String(h).padStart(2, '0')}:00
+                            {rowLabel(h)}
                           </span>
                           <div className="flex-1 space-y-2">
                             {items.map((it) => renderItem(it, k, dayDate, true))}
