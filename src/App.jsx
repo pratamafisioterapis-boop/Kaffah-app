@@ -16,6 +16,7 @@ import KonversiDokterProtectedRoute from '@/components/KonversiDokterProtectedRo
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
+import { isStaleChunkError, reloadForStaleChunk, hardRefresh } from '@/lib/staleChunk';
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
 import ClinicTenantSitePage from '@/pages/clinic/ClinicTenantSitePage';
 const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
@@ -131,17 +132,7 @@ class AuthErrorBoundary extends React.Component {
     // it's what a mismatched mix of old/new hashed chunks looks like when
     // the browser serves some modules from a previous deploy alongside
     // freshly built ones.
-    const isStaleChunkError = /dynamically imported module|loading chunk .* failed|failed to fetch dynamically|cannot access '.*' before initialization/i.test(error?.message || '');
-    if (isStaleChunkError && !sessionStorage.getItem('stale-chunk-reloaded')) {
-      sessionStorage.setItem('stale-chunk-reloaded', '1');
-      sessionStorage.setItem('last-auto-reload-reason', JSON.stringify({
-        type: 'stale-chunk-auth-boundary',
-        message: error?.message || '',
-        at: new Date().toISOString(),
-        path: window.location.pathname,
-      }));
-      window.location.reload();
-    }
+    if (isStaleChunkError(error)) reloadForStaleChunk('stale-chunk-auth-boundary');
   }
 
   render() {
@@ -169,9 +160,9 @@ class AuthErrorBoundary extends React.Component {
                  Refresh Application
                </button>
                <button 
-                 onClick={() => {
+                 onClick={async () => {
                     localStorage.clear();
-                    window.location.href = '/login';
+                    await hardRefresh();
                  }}
                  className="w-full px-4 py-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors text-sm"
                >
