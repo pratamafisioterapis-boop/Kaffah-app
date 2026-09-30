@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  ChevronLeft, ChevronRight, ChevronDown, Loader2, Plus, Home, Clock, CalendarOff, Sparkles, Check, Users,
+  ChevronLeft, ChevronRight, ChevronDown, Loader2, Plus, Home, CalendarOff, Sparkles, Check, Users,
 } from 'lucide-react';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const toKey = (d) => format(d, 'yyyy-MM-dd');
-const hhmm = (t) => (t || '00:00').slice(0, 5);
+const hhmm = (t) => (t || '00:00').replace('.', ':').slice(0, 5);
 const initials = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const shortName = (name = '') => name.split(',')[0].trim();
@@ -158,7 +158,7 @@ const WeeklyScheduleView = ({
       if (!out[k]) return;
       out[k].push({
         kind: 'app',
-        time: formatTimeIndonesia(a.appointment_date),
+        time: hhmm(formatTimeIndonesia(a.appointment_date).replace('.', ':')),
         therapistId: a.therapist_id,
         data: { ...a, is_new_patient: !a.patient_id },
       });
@@ -183,13 +183,6 @@ const WeeklyScheduleView = ({
     });
     return off;
   }, [rawOff, selectedIds, days]);
-
-  // Baris = jam mulai unik yang ada (tanpa baris kosong / "jarak").
-  const timeRows = useMemo(() => {
-    const set = new Set();
-    Object.values(itemsByDay).forEach((list) => list.forEach((i) => set.add(i.time)));
-    return [...set].sort();
-  }, [itemsByDay]);
 
   const cellItems = (dayKey, time) => (itemsByDay[dayKey] || []).filter((i) => i.time === time);
   const freeCount = (k) => (itemsByDay[k] || []).filter((i) => i.kind === 'slot').length;
@@ -405,8 +398,7 @@ const WeeklyScheduleView = ({
         <>
           {/* Desktop / tablet landscape */}
           <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
-              <div className="flex items-center justify-center text-sky-200/70"><Clock className="h-4 w-4" /></div>
+            <div className="grid grid-cols-7 bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
               {days.map((d) => {
                 const k = toKey(d);
                 return (
@@ -414,7 +406,7 @@ const WeeklyScheduleView = ({
                     key={k}
                     type="button"
                     onClick={() => onOpenDay(d)}
-                    className="py-3 px-2 text-center border-l border-white/10 hover:bg-white/5 transition-colors"
+                    className="py-3 px-2 text-center border-l first:border-l-0 border-white/10 hover:bg-white/5 transition-colors"
                     title="Buka tampilan harian"
                   >
                     <p className="text-[10px] uppercase tracking-widest text-sky-200/70">{format(d, 'EEE', { locale: idLocale })}</p>
@@ -429,30 +421,30 @@ const WeeklyScheduleView = ({
               })}
             </div>
 
-            {timeRows.length === 0 ? (
+            {totalFree + totalBooked === 0 ? (
               <div className="py-16 text-center text-slate-400 text-sm">Tidak ada jadwal minggu ini</div>
             ) : (
-              <div className="max-h-[70vh] overflow-y-auto">
-                {timeRows.map((time) => (
-                  <div key={time} className="grid grid-cols-[72px_repeat(7,minmax(0,1fr))] border-t border-slate-100">
-                    <div className="py-2.5 text-center text-xs font-mono font-semibold text-slate-500 bg-slate-50/60">{time}</div>
-                    {days.map((d) => {
-                      const k = toKey(d);
-                      return (
-                        <div
-                          key={k}
-                          className={cn(
-                            'p-1.5 border-l border-slate-100 space-y-1.5',
-                            isSameDay(d, today) && 'bg-emerald-50/30',
-                            offDays[k] && 'bg-slate-50 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(148,163,184,0.12)_6px,rgba(148,163,184,0.12)_12px)]'
-                          )}
-                        >
-                          {cellItems(k, time).map((it) => renderItem(it, d))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+              <div className="grid grid-cols-7 max-h-[70vh] overflow-y-auto items-start">
+                {days.map((d) => {
+                  const k = toKey(d);
+                  const list = itemsByDay[k] || [];
+                  return (
+                    <div
+                      key={k}
+                      className={cn(
+                        'min-h-[160px] self-stretch p-1.5 border-l first:border-l-0 border-slate-100 space-y-1.5',
+                        isSameDay(d, today) && 'bg-emerald-50/30',
+                        offDays[k] && 'bg-slate-50 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(148,163,184,0.12)_6px,rgba(148,163,184,0.12)_12px)]'
+                      )}
+                    >
+                      {list.length === 0 ? (
+                        <p className="pt-6 text-center text-[11px] text-slate-300">{offDays[k] || '—'}</p>
+                      ) : (
+                        list.map((it) => renderItem(it, d))
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
