@@ -1,5 +1,7 @@
 
 // === TIDAK ADA IMPORT YANG DIHAPUS ===
+import { TABLE_FIT } from '@/lib/tableStyles';
+import { TableCols } from '@/components/ui/table-cols';
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Table, 
@@ -274,8 +276,9 @@ const fetchData = async () => {
 
       {/* TABLE LAYOUT (desktop/wide) */}
       <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-slate-50 text-base">
+        <Table className={TABLE_FIT}>
+          <TableCols widths={[20, 20, 10, 8, 12, 10, 12, 8]} />
+          <TableHeader className="bg-slate-100">
             <TableRow>
               <TableHead className="px-6 py-4 text-base font-semibold">Nama Pasien</TableHead>
               <TableHead className="px-6 py-4 text-base font-semibold">Paket</TableHead>

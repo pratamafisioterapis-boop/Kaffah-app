@@ -1,3 +1,5 @@
+import { TABLE_FIT } from '@/lib/tableStyles';
+import { TableCols } from '@/components/ui/table-cols';
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -205,10 +207,11 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
       </div>
 
       <div className="hidden sm:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
-          <Table>
-              <TableHeader className="bg-slate-50 border-b-2 border-slate-200">
+          <Table className={TABLE_FIT}>
+              <TableCols widths={[10, 22, 6, 12, 8, 13, 12, 9, 8]} />
+              <TableHeader className="bg-slate-100 border-b border-slate-300">
                   <TableRow>
-                      <TableHead className="w-[100px] cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('medical_record_number')}>
+                      <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('medical_record_number')}>
                           No. RM {sortBy === 'medical_record_number' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                       </TableHead>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('full_name')}>
@@ -219,7 +222,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900">Tgl Lahir</TableHead>
                       <TableHead className="font-semibold text-slate-900">Gender</TableHead>
-                      <TableHead className="hidden lg:table-cell font-semibold text-slate-900">No. HP</TableHead>
+                      <TableHead className="font-semibold text-slate-900">No. HP</TableHead>
                       <TableHead className="font-semibold text-slate-900">Kelengkapan</TableHead>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('status')}>
                           Status {sortBy === 'status' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
@@ -271,7 +274,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                               <TableCell className="text-slate-700">{patient.formattedAge}</TableCell>
                               <TableCell className="text-sm font-mono text-slate-600">{patient.formattedBirthDate}</TableCell>
                               <TableCell className="text-slate-700">{patient.genderLabel}</TableCell>
-                              <TableCell className="hidden lg:table-cell text-sm text-slate-600">
+                              <TableCell className="text-sm text-slate-600">
                                   {patient.formattedPhone}
                               </TableCell>
                               <TableCell>
