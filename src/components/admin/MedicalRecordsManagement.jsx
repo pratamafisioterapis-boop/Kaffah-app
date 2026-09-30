@@ -396,19 +396,16 @@ const handleViewRecord = (record) => {
           <div className="flex items-center gap-2">
             {!readOnly && (<>
             <button onClick={handleOpenCreateModal}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold text-white"
-              style={{ background: '#4f46e5' }}>
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200">
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
             <button onClick={() => setImportDialogOpen(true)}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
-              style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]">
               <Upload className="w-3.5 h-3.5" /> Import
             </button>
             </>)}
             <button onClick={handleExportCSV}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold"
-              style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]">
               <Download className="w-3.5 h-3.5" /> Export
             </button>
           </div>
