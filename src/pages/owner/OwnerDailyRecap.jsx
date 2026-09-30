@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3, CreditCard
+  Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3, CreditCard, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -367,46 +367,63 @@ const OwnerDailyRecap = () => {
           </div>
         </div>
       </div>
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan harian klinik</p></div>
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-             <div className="flex gap-1 bg-slate-100 p-1 rounded-full border border-slate-200">
-                <Button variant="ghost" size="sm" className={`rounded-full px-4 transition-all ${activeFilter === 'today' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`} onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }}>Hari Ini</Button>
-                <Button variant="ghost" size="sm" className={`rounded-full px-4 transition-all ${activeFilter === 'week' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`} onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Minggu Ini</Button>
-                <Button variant="ghost" size="sm" className={`rounded-full px-4 transition-all ${activeFilter === 'month' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`} onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Bulan Ini</Button>
-                <Button variant="ghost" size="sm" className={`rounded-full px-4 transition-all ${activeFilter === 'period' ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`} onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }}>Periode Ini</Button>
-             </div>
-             <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                <div className="flex items-center px-2 text-xs font-medium text-slate-500"><Calendar className="w-3.5 h-3.5 mr-1.5" />Periode:</div>
-                <div className="relative">
-                    <Input value={dateRangeDisplay.start} onChange={(e) => setDateRangeDisplay(p=>({...p, start: e.target.value}))} onClick={() => setShowStartCalendar(true)} className="w-32 text-xs h-8 bg-white border-slate-200" placeholder="dd/MM/yyyy" />
-                    {showStartCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(val) => { setDateRange(p => ({...p, start: val})); setDateRangeDisplay(p => ({...p, start: displayDateID(val)})); setShowStartCalendar(false); }} onClose={() => setShowStartCalendar(false)} /></div>)}
-                </div>
-                <span className="text-slate-400">-</span>
-                <div className="relative">
-                    <Input value={dateRangeDisplay.end} onChange={(e) => setDateRangeDisplay(p=>({...p, end: e.target.value}))} onClick={() => setShowEndCalendar(true)} className="w-32 text-xs h-8 bg-white border-slate-200" placeholder="dd/MM/yyyy" />
-                    {showEndCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(val) => { setDateRange(p => ({...p, end: val})); setDateRangeDisplay(p => ({...p, end: displayDateID(val)})); setShowEndCalendar(false); }} onClose={() => setShowEndCalendar(false)} /></div>)}
-                </div>
-                <Button variant="outline" size="sm" onClick={() => fetchRecaps()} className="h-8"><RefreshCcw className="w-3.5 h-3.5" /></Button>
-                <div className="flex items-center px-3 h-8 rounded-md bg-emerald-50 border border-emerald-200">
-                    <span className="text-xs font-bold text-emerald-700">Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
-                </div>
-            </div>
-            <div className="relative">
-                <CreditCard className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
-                <select
-                    value={selectedPaymentMethod}
-                    onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                    className={`h-9 rounded-md pl-9 pr-8 text-xs appearance-none cursor-pointer border ${selectedPaymentMethod ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'}`}
-                >
-                    <option value="">Semua Metode Pembayaran</option>
-                    {paymentMethodOptions.map((pm) => (
-                        <option key={pm.id} value={pm.label}>{pm.label}</option>
-                    ))}
-                </select>
-            </div>
-            <div className="relative"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px] h-9 pl-9 text-xs" /></div>
-            <Button onClick={handleAddClick} className="gap-2 bg-blue-600 hover:bg-blue-700 h-9"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>
+      <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
+        <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1></div>
+        <div className="grid grid-cols-4 gap-1.5">
+            <button type="button" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'today' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Hari Ini</span>
+            </button>
+            <button type="button" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'week' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Minggu Ini</span>
+            </button>
+            <button type="button" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'month' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Bulan Ini</span>
+            </button>
+            <button type="button" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'period' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Periode Ini</span>
+            </button>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1 min-w-0">
+            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Input value={dateRangeDisplay.start} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, start: e.target.value})); }} onClick={() => setShowStartCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
+            {showStartCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, start: val})); setDateRangeDisplay(p => ({...p, start: displayDateID(val)})); setShowStartCalendar(false); }} onClose={() => setShowStartCalendar(false)} /></div>)}
+          </div>
+          <span className="text-slate-400 font-medium shrink-0 -mx-0.5">-</span>
+          <div className="relative flex-1 min-w-0">
+            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Input value={dateRangeDisplay.end} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, end: e.target.value})); }} onClick={() => setShowEndCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
+            {showEndCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, end: val})); setDateRangeDisplay(p => ({...p, end: displayDateID(val)})); setShowEndCalendar(false); }} onClose={() => setShowEndCalendar(false)} /></div>)}
+          </div>
+          <Button variant="outline" size="icon" onClick={() => fetchRecaps()} className="h-9 sm:h-10 w-9 sm:w-10 shrink-0 rounded-xl"><RefreshCcw className="w-3.5 h-3.5" /></Button>
+        </div>
+        <div className="flex gap-2">
+          <div className="relative flex-1 min-w-0">
+            <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+            <select
+              value={selectedPaymentMethod}
+              onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
+              className="w-full h-9 sm:h-10 rounded-xl pl-9 pr-8 text-sm appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+            >
+              <option value="">Semua Metode</option>
+              {paymentMethodOptions.map((pm) => (
+                <option key={pm.id} value={pm.label}>{pm.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          </div>
+          <div className="relative flex-1 min-w-0"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-9 sm:h-10 pl-9 text-sm rounded-xl border border-[#D8E2EB]" /></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-1.5 px-3 h-8 rounded-xl bg-emerald-50 border border-emerald-100">
+            <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span></span>
+          </div>
+          <Button onClick={handleAddClick} className="gap-1.5 bg-blue-600 hover:bg-blue-700 h-8 rounded-xl text-xs"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>
         </div>
       </div>
 
