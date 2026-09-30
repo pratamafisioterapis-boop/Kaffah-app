@@ -5,10 +5,14 @@ import DailyEvaluationReadOnly from '@/components/admin/DailyEvaluationReadOnly'
 import { FileText, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId } from '@/lib/api';
+import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
 
 const MedicalRecordsPage = () => {
   const { user, role, clinicName } = useAuth();
   const [therapistProfile, setTherapistProfile] = useState(null);
+  const { filledBy } = useMedicalRecordsFilledBy();
+  // Klinik dengan mode 'therapist': admin hanya melihat, terapis yang mengisi.
+  const readOnly = role === 'admin' && filledBy === 'therapist';
 
   // Klinik yang ownernya (atau, secara umum, akun manapun yang membuka
   // halaman ini) juga terdaftar sebagai terapis lewat fitur "Jadikan
@@ -74,7 +78,7 @@ const MedicalRecordsPage = () => {
         </TabsList>
 
         <TabsContent value="records" className="mt-0 outline-none">
-          <MedicalRecordsManagement />
+          <MedicalRecordsManagement readOnly={readOnly} />
         </TabsContent>
 
         <TabsContent value="evaluasi-harian" className="mt-0 outline-none">

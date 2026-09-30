@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import TherapistPatients from '@/components/therapist/TherapistPatients';
 import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
 import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
+import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagement';
+import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
 import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
@@ -26,6 +28,8 @@ const TherapistDashboard = () => {
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('profil');
+  const { filledBy: medicalRecordsFilledBy } = useMedicalRecordsFilledBy();
+  const therapistFillsMedicalRecords = medicalRecordsFilledBy === 'therapist';
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('settings');
@@ -100,6 +104,7 @@ const TherapistDashboard = () => {
     { label: 'Booking Calendar', path: '/therapist/booking', icon: 'Calendar' }, 
     { label: 'Riwayat Pasien', path: '/therapist/appointments', icon: 'ClipboardList' },
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
+    ...(therapistFillsMedicalRecords ? [{ label: 'Rekam Medis', path: '/therapist/medical-records', icon: 'FileText' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
@@ -144,6 +149,7 @@ const TherapistDashboard = () => {
           <Route path="/appointments" element={<TherapistPatientHistory therapist={therapistProfile} />} />
           <Route path="/records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
+          {therapistFillsMedicalRecords && <Route path="/medical-records" element={<MedicalRecordsManagement />} />}
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
