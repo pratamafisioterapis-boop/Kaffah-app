@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { isStaleChunkError, reloadForStaleChunk } from '@/lib/staleChunk';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -21,16 +22,7 @@ class ErrorBoundary extends React.Component {
     // references old hashed filenames that no longer exist on the server.
     // Reload once (sessionStorage guard prevents a reload loop) instead of
     // showing the error screen.
-    const isStaleChunkError = /dynamically imported module|loading chunk .* failed|failed to fetch dynamically/i.test(error?.message || '');
-    if (isStaleChunkError && !sessionStorage.getItem('stale-chunk-reloaded')) {
-      sessionStorage.setItem('stale-chunk-reloaded', '1');
-      sessionStorage.setItem('last-auto-reload-reason', JSON.stringify({
-        type: 'stale-chunk',
-        message: error?.message || '',
-        at: new Date().toISOString(),
-        path: window.location.pathname,
-      }));
-      window.location.reload();
+    if (isStaleChunkError(error) && reloadForStaleChunk('stale-chunk')) {
       return;
     }
 

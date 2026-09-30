@@ -3,6 +3,18 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { AppointmentStateProvider } from '@/contexts/AppointmentStateContext';
+import { isStaleChunkError, reloadForStaleChunk } from '@/lib/staleChunk';
+
+// Jaring pengaman terakhir untuk chunk usang pasca-deploy (lihat lib/staleChunk.js):
+// Vite memicu 'vite:preloadError' saat preload chunk gagal; error import dinamis
+// yang lolos dari React muncul sebagai unhandled rejection.
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  reloadForStaleChunk('vite-preload-error');
+});
+window.addEventListener('unhandledrejection', (event) => {
+  if (isStaleChunkError(event.reason)) reloadForStaleChunk('stale-chunk-rejection');
+});
 // Global Error Handler for non-React errors (e.g., syntax errors, script failures)
 window.onerror = function(message, source, lineno, colno, error) {
   console.error("GLOBAL ERROR CAUGHT:", message, source, lineno, colno, error);
