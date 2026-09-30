@@ -1,3 +1,5 @@
+import { TABLE_FIT } from '@/lib/tableStyles';
+import { TableCols } from '@/components/ui/table-cols';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, FileText, Search, Upload, FileDown, CheckCircle, 
@@ -511,34 +513,35 @@ const handleViewRecord = (record) => {
       {/* Desktop: tabel */}
       <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left" style={{ fontSize: '12px' }}>
+          <table className={TABLE_FIT}>
+            <TableCols widths={[12, 30, 14, 14, 24, 6]} />
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th className="px-5 py-3 cursor-pointer whitespace-nowrap"
-                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+              <tr className="bg-slate-100" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                <th className="py-3 cursor-pointer"
+                  
                   onClick={() => handleSort('rm_number')}>
                   <div className="flex items-center gap-1">No RM {renderSortIcon('rm_number')}</div>
                 </th>
-                <th className="px-5 py-3 cursor-pointer whitespace-nowrap"
-                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+                <th className="py-3 cursor-pointer"
+                  
                   onClick={() => handleSort('full_name')}>
                   <div className="flex items-center gap-1">Nama Pasien {renderSortIcon('full_name')}</div>
                 </th>
-                <th className="px-5 py-3 cursor-pointer whitespace-nowrap"
-                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+                <th className="py-3 cursor-pointer"
+                  
                   onClick={() => handleSort('record_date')}>
                   <div className="flex items-center gap-1">Tanggal {renderSortIcon('record_date')}</div>
                 </th>
-                <th className="px-5 py-3 cursor-pointer whitespace-nowrap"
-                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+                <th className="py-3 cursor-pointer"
+                  
                   onClick={() => handleSort('status')}>
                   <div className="flex items-center gap-1">Status {renderSortIcon('status')}</div>
                 </th>
-                <th className="px-5 py-3 whitespace-nowrap"
-                  style={{ color: '#94a3b8', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <th className="py-3"
+                  >
                   Fisioterapis
                 </th>
-                <th className="px-5 py-3 w-10" />
+                <th className="w-10" />
               </tr>
             </thead>
             <tbody>
@@ -571,10 +574,10 @@ const handleViewRecord = (record) => {
                       onMouseEnter={e => e.currentTarget.style.background = '#eef2ff'}
                       onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : '#fafafa'}
                       onClick={() => handleViewRecord(record)}>
-                      <td className="px-5 py-3 font-mono font-semibold whitespace-nowrap" style={{ color: '#4f46e5', fontSize: '11px' }}>
+                      <td className="py-3 font-mono font-semibold" style={{ color: '#4f46e5' }}>
                         {record.patient?.medical_record_number || '-'}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
                             style={{ background: '#eef2ff', color: '#4f46e5' }}>
@@ -583,10 +586,10 @@ const handleViewRecord = (record) => {
                           <span className="font-semibold text-slate-700">{record.patient?.full_name || 'Unknown Patient'}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">
+                      <td className="py-3 text-slate-500">
                         {format(new Date(record.record_date), 'dd MMM yyyy')}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="py-3">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{
                           background: isCompleted ? '#f0fdf4' : '#fffbeb',
                           color: isCompleted ? '#059669' : '#d97706',
@@ -595,21 +598,21 @@ const handleViewRecord = (record) => {
                           {statusLabel}
                         </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="py-3">
                         {record.therapist_name
                           ? <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold"
                                 style={{ background: '#f0fdf4', color: '#059669' }}>
                                 {record.therapist_name.charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-xs text-slate-600 truncate max-w-[120px]">
+                              <span className="text-xs text-slate-600 break-words">
                                 {record.therapist_name.split(',')[0]}
                               </span>
                             </div>
                           : <span style={{ color: '#cbd5e1', fontSize: '11px' }}>—</span>
                         }
                       </td>
-                      <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
+                      <td className="py-3" onClick={e => e.stopPropagation()}>
                         {!readOnly && (<DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-lg flex items-center justify-center"

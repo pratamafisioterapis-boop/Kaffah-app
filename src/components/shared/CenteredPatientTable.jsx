@@ -1,3 +1,5 @@
+import { TABLE_FIT } from '@/lib/tableStyles';
+import { TableCols } from '@/components/ui/table-cols';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { 
@@ -199,14 +201,15 @@ const formatTanggal = (date) => {
 
             {/* Desktop: tabel */}
             <div className="hidden sm:block relative overflow-x-auto">
-                <Table>
-                    <TableHeader className="bg-slate-50">
+                <Table className={TABLE_FIT}>
+                    <TableCols widths={[8, 17, 6, 6, 12, 12, 11, 8, 12, 8]} />
+                    <TableHeader className="bg-slate-100">
                         <TableRow>
                             <TableHead className="w-[100px] text-center font-semibold text-slate-700">No RM</TableHead>
-                            <TableHead className="text-left font-semibold text-slate-700 min-w-[200px]">Nama Pasien</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700 w-[60px]">Gender</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700 w-[80px]">Usia</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700 min-w-[150px]">Tgl Lahir</TableHead>
+                            <TableHead className="text-left font-semibold text-slate-700">Nama Pasien</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Gender</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Usia</TableHead>
+                            <TableHead className="text-center font-semibold text-slate-700">Tgl Lahir</TableHead>
                             <TableHead className="text-center font-semibold text-slate-700">Nomor HP</TableHead>
                             <TableHead className="text-center font-semibold text-slate-700">Info Tambahan</TableHead>
                             <TableHead className="text-center font-semibold text-slate-700">Status</TableHead>

@@ -1,3 +1,5 @@
+import { TABLE_FIT } from '@/lib/tableStyles';
+import { TableCols } from '@/components/ui/table-cols';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Trash2, Download, Upload, CheckCircle, Loader2,
@@ -766,17 +768,18 @@ const OwnerPackageRecap = () => {
           </div>
 
           <div className="hidden sm:block overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
+            <Table className={TABLE_FIT}>
+              <TableCols widths={[18, 15, 12, 12, 9, 10, 12, 12]} />
+              <TableHeader className="bg-slate-100">
                 <TableRow>
-                  <ThSortable column="patient_name" label="PASIEN" className="pl-6 py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <ThSortable column="package_name" label="JENIS PAKET" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <ThSortable column="start_date" label="TANGGAL BELI" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <ThSortable column="end_date" label="TANGGAL SELESAI" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <ThSortable column="sessions_used" label="TERPAKAI" className="text-center py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <TableHead className="font-semibold text-slate-900 text-center py-4 sticky top-0 bg-slate-50 border-b-2 border-slate-200">SISA HARI</TableHead>
-                  <ThSortable column="status" label="STATUS" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
-                  <TableHead className="font-semibold text-slate-900 text-right pr-6 py-4 sticky top-0 bg-slate-50 border-b-2 border-slate-200">ACTION</TableHead>
+                  <ThSortable column="patient_name" label="Pasien" className="pl-6 py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <ThSortable column="package_name" label="Jenis Paket" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <ThSortable column="start_date" label="Tanggal Beli" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <ThSortable column="end_date" label="Tanggal Selesai" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <ThSortable column="sessions_used" label="Terpakai" className="text-center py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <TableHead className="font-semibold text-slate-900 text-center py-4 sticky top-0 bg-slate-50 border-b-2 border-slate-200">Sisa Hari</TableHead>
+                  <ThSortable column="status" label="Status" className="py-4 font-semibold text-slate-900 sticky top-0 bg-slate-50 border-b-2 border-slate-200" />
+                  <TableHead className="font-semibold text-slate-900 text-right pr-6 py-4 sticky top-0 bg-slate-50 border-b-2 border-slate-200">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -848,7 +851,7 @@ const OwnerPackageRecap = () => {
 
                               <TableCell className="py-4">{getStatusBadge(pkg.computed_status)}</TableCell>
                               <TableCell className="text-right pr-6 py-4">
-                                <div className="flex justify-end gap-1">
+                                <div className="flex flex-wrap justify-end gap-1">
                                     <Button
                                         variant="ghost"
                                         size="sm"
