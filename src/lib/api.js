@@ -6379,6 +6379,45 @@ export const reassignTherapistToOwner = async (physiotherapistId, ownerUserId) =
   }, 'reassignTherapistToOwner', { retry: false });
 };
 
+// Kebalikan reassignTherapistToOwner: pisahkan profil terapis dari akun owner
+// dan kembalikan ke akun login terapis (role 'therapist') yang dipilih.
+// Profil (beserta riwayat SOAP/appointment/payroll) dipindah, profil diaktifkan,
+// dan login terapisnya diaktifkan kembali. Akun owner tetap utuh tanpa profil terapis.
+export const separateTherapistFromOwner = async (physiotherapistId, therapistUserId) => {
+  return safeQuery(async () => {
+    const { data: target, error: targetError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', therapistUserId)
+      .single();
+    if (targetError) return { error: targetError };
+    if (target.role?.toLowerCase() !== 'therapist') {
+      return { error: { message: 'Akun tujuan harus berperan terapis.' } };
+    }
+
+    const { data, error } = await supabase
+      .from('physiotherapists')
+      .update({ user_id: therapistUserId, is_active: true })
+      .eq('id', physiotherapistId)
+      .select()
+      .single();
+    if (error) return { error };
+
+    const { error: activateError } = await supabase
+      .from('users')
+      .update({ is_active: true })
+      .eq('id', therapistUserId);
+    if (activateError) {
+      return {
+        data,
+        error: { message: `Profil terapis berhasil dipisahkan, tapi gagal mengaktifkan login terapis: ${activateError.message}` },
+      };
+    }
+
+    return { data, error: null };
+  }, 'separateTherapistFromOwner', { retry: false });
+};
+
 // Aktif/nonaktifkan kembali profil terapis milik owner (soal seperti soft
 // delete terapis biasa) tanpa menghapus baris physiotherapists-nya, supaya
 // riwayat SOAP/appointment/payroll yang sudah terhubung tetap aman.
