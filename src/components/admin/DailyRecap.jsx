@@ -558,16 +558,16 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-2.5 bg-white p-3 sm:p-4 rounded-[22px] border border-slate-100 shadow-sm">
+        <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
 
           {/* Filter Tombol Periode */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             <div
               className={cn(
-                'relative flex items-center justify-center h-[68px] sm:h-[76px] rounded-2xl border transition-all',
+                'relative flex items-center justify-center h-[46px] sm:h-[52px] rounded-xl border transition-all',
                 activeFilter === 'today'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
@@ -608,9 +608,9 @@ const getPremiumPastelBadge = (text) => {
                     end: displayDateID(today)
                   });
                 }}
-                className="flex flex-col items-center justify-center gap-1 h-full px-1 sm:px-5 min-w-0"
+                className="flex flex-col items-center justify-center gap-0.5 h-full px-1 sm:px-5 min-w-0"
               >
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" strokeWidth={2} />
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" strokeWidth={2} />
                 <span
                   className={cn(
                     'font-semibold leading-tight text-center whitespace-nowrap',
@@ -681,14 +681,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
                 activeFilter === 'week'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Minggu Ini</span>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Minggu Ini</span>
             </button>
 
             <button
@@ -720,14 +720,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
                 activeFilter === 'month'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Bulan Ini</span>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Bulan Ini</span>
             </button>
 
             <button
@@ -756,14 +756,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 h-[68px] sm:h-[76px] rounded-2xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
                 activeFilter === 'period'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200'
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-              <span className="text-[11px] sm:text-sm font-semibold leading-tight text-center">Periode Ini</span>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Periode Ini</span>
             </button>
           </div>
 
@@ -777,7 +777,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowStartCalendar(true)}
               />
 
@@ -805,7 +805,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
                 }}
-                className="h-11 sm:h-12 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
                 onClick={() => setShowEndCalendar(true)}
               />
 
@@ -825,7 +825,7 @@ const getPremiumPastelBadge = (text) => {
           </div>
 
           {/* Terapis + Cari Pasien (satu baris di tablet/desktop), atau Terapis + Metode Pembayaran (satu baris di semua ukuran) */}
-          <div className={cn('flex gap-2.5', showPaymentFilter ? 'flex-row' : 'flex-col sm:flex-row')}>
+          <div className={cn('flex gap-2', showPaymentFilter ? 'flex-row' : 'flex-col sm:flex-row')}>
             <div className={cn('relative', showPaymentFilter ? 'flex-1 min-w-0' : 'sm:flex-1')}>
               <Users className={cn('w-4 h-4 absolute top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10', showPaymentFilter ? 'left-2 sm:left-3' : 'left-3')} />
               <select
@@ -834,7 +834,7 @@ const getPremiumPastelBadge = (text) => {
                   setSelectedTherapist(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={cn('w-full h-11 sm:h-12 rounded-xl transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
+                className={cn('w-full h-9 sm:h-10 rounded-xl transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
               >
                 <option value="">Semua Terapis</option>
 
@@ -855,7 +855,7 @@ const getPremiumPastelBadge = (text) => {
                   placeholder="Cari Pasien..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+                  className="h-9 sm:h-10 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
                 />
               </div>
             )}
@@ -866,7 +866,7 @@ const getPremiumPastelBadge = (text) => {
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                  className="w-full h-11 sm:h-12 rounded-xl pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                  className="w-full h-9 sm:h-10 rounded-xl pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
                 >
                   <option value="">Semua Metode</option>
                   {paymentMethodOptions.map((pm) => (
@@ -881,7 +881,7 @@ const getPremiumPastelBadge = (text) => {
           {showPaymentFilter && (
             <>
               {/* Total Revenue */}
-              <div className="w-full flex items-center gap-1.5 px-3 h-10 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="w-full flex items-center gap-1.5 px-3 h-8 rounded-xl bg-emerald-50 border border-emerald-100">
                 <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
                   Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
@@ -897,7 +897,7 @@ const getPremiumPastelBadge = (text) => {
                 placeholder="Cari Pasien..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-11 sm:h-12 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
               />
             </div>
           )}
