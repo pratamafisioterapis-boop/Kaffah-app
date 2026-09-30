@@ -17,6 +17,16 @@ const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist',
 // / LoginPage's CLINIC_ROLES check).
 const KONVERSI_DOKTER_ROLE = 'konversi_dokter';
 
+const CATEGORIES = [
+  { key: 'owner', label: 'Owner', color: 'bg-purple-100 text-purple-700' },
+  { key: 'terapis', label: 'Terapis', color: 'bg-emerald-100 text-emerald-700' },
+  { key: 'admin', label: 'Admin', color: 'bg-blue-100 text-blue-700' },
+  { key: 'pemilih', label: 'Akun Pemilih', color: 'bg-orange-100 text-orange-700' },
+  { key: 'non_klinik', label: 'Non Klinik', color: 'bg-indigo-100 text-indigo-700' },
+  { key: 'super_admin', label: 'Super Admin', color: 'bg-rose-100 text-rose-700' },
+];
+const categoryMeta = (key) => CATEGORIES.find((c) => c.key === key);
+
 const emptyKonversiDokterForm = { full_name: '', email: '', password: '' };
 
 const ROLE_HOME_PATH = {
@@ -35,6 +45,9 @@ const SuperAdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [konversiDokterAdminIds, setKonversiDokterAdminIds] = useState(new Set());
+  const [pemilihUserIds, setPemilihUserIds] = useState(new Set());
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [clinicFilter, setClinicFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [remotingId, setRemotingId] = useState(null);
   const [togglingKonversiId, setTogglingKonversiId] = useState(null);
@@ -48,19 +61,46 @@ const SuperAdminUsers = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [usersRes, clinicsRes, konversiDokterAdminsRes] = await Promise.all([
+    const [usersRes, clinicsRes, konversiDokterAdminsRes, pemilihAdminsRes, pemilihDpcRes] = await Promise.all([
       supabase.from('users').select('*').order('created_at', { ascending: false }),
       supabase.from('clinics').select('id, name'),
       supabase.from('konversi_dokter_admins').select('user_id'),
+      supabase.from('pemilih_admins').select('user_id'),
+      supabase.from('pemilih_dpc').select('user_id'),
     ]);
     if (usersRes.error) toast({ variant: 'destructive', title: 'Gagal memuat user', description: usersRes.error.message });
     setUsers(usersRes.data || []);
     setClinics(clinicsRes.data || []);
     setKonversiDokterAdminIds(new Set((konversiDokterAdminsRes.data || []).map((r) => r.user_id)));
+    setPemilihUserIds(new Set([
+      ...(pemilihAdminsRes.data || []).map((r) => r.user_id),
+      ...(pemilihDpcRes.data || []).map((r) => r.user_id),
+    ]));
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Akun modul Pemilih & akun khusus Konversi Dokter (mis. RSPB) bukan staf
+  // klinik, jadi dicek sebelum role klinik.
+  const categoryOf = (u) => {
+    if (u.role === 'super_admin') return 'super_admin';
+    if (pemilihUserIds.has(u.id)) return 'pemilih';
+    if (u.role === 'owner') return 'owner';
+    if (u.role === 'therapist' || u.role === 'physiotherapist') return 'terapis';
+    if (u.role === 'admin' || u.role === 'clinic_admin') return 'admin';
+    return 'non_klinik';
+  };
+
+  const clinicFiltered = users.filter((u) => (
+    clinicFilter === 'all' || (clinicFilter === 'none' ? !u.clinic_id : u.clinic_id === clinicFilter)
+  ));
+  const categoryCounts = clinicFiltered.reduce((acc, u) => {
+    const k = categoryOf(u);
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+  const filteredUsers = clinicFiltered.filter((u) => categoryFilter === 'all' || categoryOf(u) === categoryFilter);
 
   const clinicName = (id) => clinics.find(c => c.id === id)?.name || '-';
 
@@ -356,15 +396,51 @@ const SuperAdminUsers = () => {
         </DialogContent>
       </Dialog>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setCategoryFilter('all')}
+          className={`text-xs px-3 py-1.5 rounded-full border ${categoryFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'}`}
+        >
+          Semua ({clinicFiltered.length})
+        </button>
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            onClick={() => setCategoryFilter(c.key)}
+            className={`text-xs px-3 py-1.5 rounded-full border ${categoryFilter === c.key ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'}`}
+          >
+            {c.label} ({categoryCounts[c.key] || 0})
+          </button>
+        ))}
+        <div className="w-full sm:w-56 sm:ml-auto">
+          <Select value={clinicFilter} onValueChange={setClinicFilter}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="Semua klinik" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua klinik</SelectItem>
+              <SelectItem value="none">Tanpa klinik</SelectItem>
+              {clinics.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {filteredUsers.length === 0 && (
+          <p className="p-6 text-center text-sm text-slate-400">Tidak ada user pada filter ini.</p>
+        )}
         {/* Mobile / PWA: kartu, tanpa geser horizontal */}
         <div className="sm:hidden divide-y divide-slate-100">
-          {users.map((u) => (
+          {filteredUsers.map((u) => (
             <div key={u.id} className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium text-slate-800 truncate">{u.full_name || '-'}</p>
                   <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                  <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${categoryMeta(categoryOf(u)).color}`}>
+                    {categoryMeta(categoryOf(u)).label}
+                  </span>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                   {u.is_active ? 'Aktif' : 'Nonaktif'}
@@ -443,6 +519,7 @@ const SuperAdminUsers = () => {
               <tr>
                 <th className="p-3">Nama</th>
                 <th className="p-3">Email</th>
+                <th className="p-3">Kategori</th>
                 <th className="p-3">Role</th>
                 <th className="p-3">Klinik</th>
                 <th className="p-3">Status</th>
@@ -451,10 +528,15 @@ const SuperAdminUsers = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <tr key={u.id}>
                   <td className="p-3 font-medium text-slate-800">{u.full_name || '-'}</td>
                   <td className="p-3 text-slate-500">{u.email}</td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${categoryMeta(categoryOf(u)).color}`}>
+                      {categoryMeta(categoryOf(u)).label}
+                    </span>
+                  </td>
                   <td className="p-3">
                     <Select value={u.role} onValueChange={(val) => handleChangeRole(u.id, val)}>
                       <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
