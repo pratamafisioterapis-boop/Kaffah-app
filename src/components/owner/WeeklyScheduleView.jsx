@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  ChevronLeft, ChevronRight, ChevronDown, Loader2, Plus, Home, CalendarOff, Sparkles, Check, Users,
+  ChevronLeft, ChevronRight, ChevronDown, Loader2, Plus, Home, Clock, CalendarOff, Sparkles, Check, Users,
 } from 'lucide-react';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -12,6 +12,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 const toKey = (d) => format(d, 'yyyy-MM-dd');
 const hhmm = (t) => (t || '00:00').replace('.', ':').slice(0, 5);
+const toMin = (t) => {
+  const [h, m] = hhmm(t).split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+const fmtMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const ROW_H = 76; // tinggi satu baris jam (px) pada tampilan desktop
 const initials = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const shortName = (name = '') => name.split(',')[0].trim();
@@ -139,6 +145,7 @@ const WeeklyScheduleView = ({
         out[k].push({
           kind: 'slot',
           time: hhmm(s.slot_start),
+          end: hhmm(s.slot_end) !== '00:00' ? hhmm(s.slot_end) : fmtMin(toMin(s.slot_start) + (s.duration_minutes || 60)),
           therapistId: s.therapist_id,
           data: {
             id: s.id,
@@ -159,6 +166,7 @@ const WeeklyScheduleView = ({
       out[k].push({
         kind: 'app',
         time: hhmm(formatTimeIndonesia(a.appointment_date).replace('.', ':')),
+        end: fmtMin(toMin(formatTimeIndonesia(a.appointment_date).replace('.', ':')) + (a.duration_minutes || 60)),
         therapistId: a.therapist_id,
         data: { ...a, is_new_patient: !a.patient_id },
       });
@@ -184,6 +192,33 @@ const WeeklyScheduleView = ({
     return off;
   }, [rawOff, selectedIds, days]);
 
+  // Baris = jam mulai yang benar-benar ada (tanpa duplikat, tanpa jam yang tidak punya slot).
+  // Tiap kartu membentang dari baris jam mulainya sampai sebelum jam selesainya.
+  const timeRows = useMemo(() => {
+    const set = new Set();
+    Object.values(itemsByDay).forEach((list) => list.forEach((i) => set.add(i.time)));
+    return [...set].sort();
+  }, [itemsByDay]);
+
+  const layoutByDay = useMemo(() => {
+    const out = {};
+    Object.entries(itemsByDay).forEach(([k, list]) => {
+      const laneEnds = [];
+      const placed = list.map((it) => {
+        const start = toMin(it.time);
+        const end = Math.max(toMin(it.end), start + 1);
+        const startIdx = timeRows.indexOf(it.time);
+        let span = timeRows.filter((t) => toMin(t) >= start && toMin(t) < end).length;
+        span = Math.max(span, 1);
+        let lane = laneEnds.findIndex((e) => e <= start);
+        if (lane === -1) { lane = laneEnds.length; laneEnds.push(end); } else { laneEnds[lane] = end; }
+        return { it, startIdx, span, lane };
+      });
+      out[k] = { placed, lanes: Math.max(laneEnds.length, 1) };
+    });
+    return out;
+  }, [itemsByDay, timeRows]);
+
   const cellItems = (dayKey, time) => (itemsByDay[dayKey] || []).filter((i) => i.time === time);
   const freeCount = (k) => (itemsByDay[k] || []).filter((i) => i.kind === 'slot').length;
   const bookedCount = (k) => (itemsByDay[k] || []).filter((i) => i.kind === 'app').length;
@@ -195,7 +230,7 @@ const WeeklyScheduleView = ({
       prev.includes(id) ? (prev.length > 1 ? prev.filter((x) => x !== id) : prev) : [...prev, id]
     );
 
-  const renderItem = (item, dayDate, compact = false) => {
+  const renderItem = (item, dayDate, compact = false, fill = false) => {
     const { color, t } = meta[item.therapistId];
     const tag = multi && (
       <span className={cn('inline-flex items-center gap-1 max-w-full text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate', color.tag)}>
@@ -214,11 +249,12 @@ const WeeklyScheduleView = ({
           onClick={() => onAppointmentClick(a)}
           className={cn(
             'w-full text-left rounded-xl border border-l-4 px-2.5 py-1.5 shadow-sm hover:shadow-md transition-all bg-gradient-to-br to-white',
+            fill && 'h-full overflow-hidden',
             color.card, color.border
           )}
         >
           <div className="flex items-center justify-between gap-1">
-            <span className={cn('text-[10px] font-mono font-bold', color.text)}>{item.time}</span>
+            <span className={cn('text-[10px] font-mono font-bold', color.text)}>{item.time}<span className="font-normal opacity-70"> – {item.end}</span></span>
             <span className="flex items-center gap-1">
               {a.is_homecare && (
                 <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 rounded-full">
@@ -244,6 +280,7 @@ const WeeklyScheduleView = ({
         onClick={() => onSlotClick(s, t, dayDate)}
         className={cn(
           'group w-full rounded-xl px-2.5 py-1.5 text-left',
+          fill && 'h-full overflow-hidden',
           'border border-dashed border-emerald-300 bg-emerald-50/60 text-emerald-700',
           'hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25',
           'active:scale-[0.98] transition-all duration-200'
@@ -398,7 +435,8 @@ const WeeklyScheduleView = ({
         <>
           {/* Desktop / tablet landscape */}
           <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-7 bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
+            <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
+              <div className="flex items-center justify-center text-sky-200/70"><Clock className="h-4 w-4" /></div>
               {days.map((d) => {
                 const k = toKey(d);
                 return (
@@ -424,24 +462,45 @@ const WeeklyScheduleView = ({
             {totalFree + totalBooked === 0 ? (
               <div className="py-16 text-center text-slate-400 text-sm">Tidak ada jadwal minggu ini</div>
             ) : (
-              <div className="grid grid-cols-7 max-h-[70vh] overflow-y-auto items-start">
+              <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] max-h-[70vh] overflow-y-auto">
+                <div className="bg-slate-50/60">
+                  {timeRows.map((t) => (
+                    <div
+                      key={t}
+                      style={{ height: ROW_H }}
+                      className="pt-2 text-center text-xs font-mono font-semibold text-slate-500 border-b border-slate-100"
+                    >
+                      {t}
+                    </div>
+                  ))}
+                </div>
                 {days.map((d) => {
                   const k = toKey(d);
-                  const list = itemsByDay[k] || [];
+                  const { placed = [], lanes = 1 } = layoutByDay[k] || {};
                   return (
                     <div
                       key={k}
+                      style={{
+                        display: 'grid',
+                        gridTemplateRows: `repeat(${timeRows.length}, ${ROW_H}px)`,
+                        gridTemplateColumns: `repeat(${lanes}, minmax(0, 1fr))`,
+                        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, #f1f5f9 ${ROW_H - 1}px, #f1f5f9 ${ROW_H}px)`,
+                      }}
                       className={cn(
-                        'min-h-[160px] self-stretch p-1.5 border-l first:border-l-0 border-slate-100 space-y-1.5',
+                        'p-0 border-l border-slate-100 gap-x-1 px-1',
                         isSameDay(d, today) && 'bg-emerald-50/30',
                         offDays[k] && 'bg-slate-50 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(148,163,184,0.12)_6px,rgba(148,163,184,0.12)_12px)]'
                       )}
                     >
-                      {list.length === 0 ? (
-                        <p className="pt-6 text-center text-[11px] text-slate-300">{offDays[k] || '—'}</p>
-                      ) : (
-                        list.map((it) => renderItem(it, d))
-                      )}
+                      {placed.map(({ it, startIdx, span, lane }) => (
+                        <div
+                          key={`${it.kind}-${it.data.id || it.time}-${it.therapistId}`}
+                          style={{ gridRow: `${startIdx + 1} / span ${span}`, gridColumn: lane + 1 }}
+                          className="py-1 min-w-0"
+                        >
+                          {renderItem(it, d, false, true)}
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
