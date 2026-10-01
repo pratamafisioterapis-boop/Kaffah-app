@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions } from '@/lib/api';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
@@ -33,6 +33,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [patients, setPatients] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [onsetInfo, setOnsetInfo] = useState(null);
+  const [diagnosisOptions, setDiagnosisOptions] = useState([]);
+  const [diagnosis, setDiagnosis] = useState([]);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -74,6 +76,31 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       setOnsetInfo(null);
     }
   }, [formData.patient_id]);
+
+  // Diagnosa disimpan di daily_recaps (satu sumber) sehingga otomatis tampil
+  // di Daily Recaps admin/owner, dan sebaliknya yang diisi admin tampil di sini.
+  const linkedRecapId = formData.daily_recap_id || dailyRecapId;
+
+  useEffect(() => {
+    getDiagnosisOptions().then(({ data }) => setDiagnosisOptions(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (!linkedRecapId || !isValidUUID(linkedRecapId)) return;
+    supabase
+      .from('daily_recaps')
+      .select('diagnosis')
+      .eq('id', linkedRecapId)
+      .maybeSingle()
+      .then(({ data }) => {
+        let diag = data?.diagnosis || [];
+        if (typeof diag === 'string') {
+          try { diag = JSON.parse(diag); } catch { diag = [diag]; }
+        }
+        if (!Array.isArray(diag)) diag = diag ? [diag] : [];
+        setDiagnosis(diag);
+      });
+  }, [linkedRecapId]);
 
   const loadExistingRecord = async (id) => {
   setInitialLoading(true);
@@ -180,6 +207,11 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
         return;
     }
     
+    if (linkedRecapId && isValidUUID(linkedRecapId) && diagnosis.length === 0) {
+      toast({ variant: "destructive", title: "Diagnosa wajib diisi", description: "Pilih minimal satu diagnosa." });
+      return;
+    }
+
     setLoading(true);
     try {
        const cleanData = { ...formData };
@@ -211,6 +243,8 @@ if (isCreate) {
          wasLocked = !!lockStatus?.locked;
        }
 
+       if (!isCreate && !payload.daily_recap_id) delete payload.daily_recap_id;
+
        let result;
        if (recordId && isValidUUID(recordId)) {
          result = await updateMedicalRecord(recordId, payload);
@@ -219,6 +253,17 @@ if (isCreate) {
        }
 
        if (result.error) throw result.error;
+
+       // Tautkan diagnosa ke daily recap (terlihat oleh admin & owner)
+       if (linkedRecapId && isValidUUID(linkedRecapId)) {
+         const { error: diagError } = await supabase
+           .from('daily_recaps')
+           .update({ diagnosis, updated_at: new Date().toISOString() })
+           .eq('id', linkedRecapId);
+         if (diagError) {
+           toast({ variant: "destructive", title: "SOAP tersimpan, diagnosa gagal", description: diagError.message });
+         }
+       }
 
        window.dispatchEvent(new CustomEvent('medical-record-updated', {
          detail: { patientId: formData.patient_id }
@@ -363,6 +408,22 @@ if (isCreate) {
                   </div>
                 );
               })()}
+            </div>
+
+            {/* Diagnosa */}
+            <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
+                Diagnosa <span className="text-red-500">*</span>
+              </label>
+              <SearchableSelect
+                options={diagnosisOptions}
+                value={diagnosis}
+                onChange={setDiagnosis}
+                multiple={true}
+                allowCreate={true}
+                placeholder="Pilih diagnosa..."
+              />
+              <p className="text-[11px] text-slate-400 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
             </div>
 
             {/* SOAP Fields */}
