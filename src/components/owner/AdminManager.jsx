@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, Lock, Trash2, Edit2, 
-  Plus, Save, Loader2, ShieldAlert
+  Plus, Save, Loader2, ShieldAlert, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,12 @@ const AdminManager = () => {
   });
   const [password, setPassword] = useState('');
   const [editingId, setEditingId] = useState(null);
+
+  // Password reset state
+  const [resetAdmin, setResetAdmin] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -95,6 +101,44 @@ const AdminManager = () => {
       toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
     }
     setSaving(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetAdmin) return;
+    if (newPassword.length < 6) {
+      toast({ variant: "destructive", title: "Password Lemah", description: "Password minimal 6 karakter." });
+      return;
+    }
+    setResetting(true);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !session?.access_token) {
+        toast({ variant: "destructive", title: "Sesi login sudah berakhir", description: "Silakan login ulang lalu coba lagi." });
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { user_id: resetAdmin.id, new_password: newPassword },
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      if (error || data?.error) {
+        let message = data?.error || error?.message;
+        try { message = (await error?.context?.json?.())?.error || message; } catch { /* ignore */ }
+        toast({ variant: "destructive", title: "Gagal Mengganti Password", description: message });
+        return;
+      }
+      toast({ title: "Password Diganti", description: `Password baru untuk ${resetAdmin.email} telah diset.` });
+      closeResetDialog();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Gagal Mengganti Password", description: err.message });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const closeResetDialog = () => {
+    setResetAdmin(null);
+    setNewPassword('');
+    setShowNewPassword(false);
   };
 
   const handleSave = async () => {
@@ -198,6 +242,9 @@ const AdminManager = () => {
                    <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(admin)} className="text-blue-600 hover:bg-blue-50 hover:text-blue-700">
                       <Edit2 className="w-4 h-4 mr-2" /> Edit
                    </Button>
+                   <Button variant="ghost" size="sm" onClick={() => setResetAdmin(admin)} className="text-amber-600 hover:bg-amber-50 hover:text-amber-700">
+                      <KeyRound className="w-4 h-4 mr-2" /> Password
+                   </Button>
                    <Button variant="ghost" size="sm" onClick={() => handleDelete(admin.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
                       <Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun
                    </Button>
@@ -259,6 +306,43 @@ const AdminManager = () => {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-blue-600">
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} {editingId ? 'Simpan Perubahan' : 'Buat Akun'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetAdmin} onOpenChange={(open) => { if (!open) closeResetDialog(); }}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Ganti Password Admin</DialogTitle>
+            <DialogDescription>
+              Set password baru untuk {resetAdmin?.full_name} ({resetAdmin?.email}). Password lama tidak bisa dilihat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">Password Baru</label>
+            <div className="relative">
+              <Input
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimal 6 karakter"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeResetDialog}>Batal</Button>
+            <Button onClick={handleResetPassword} disabled={resetting} className="bg-blue-600">
+              {resetting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
             </Button>
           </DialogFooter>
         </DialogContent>
