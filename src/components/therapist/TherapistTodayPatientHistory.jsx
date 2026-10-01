@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
-import { getDailyRecaps, getPatientClinicalHistory } from '@/lib/api';
+import { getDailyRecaps, getPatientClinicalHistory, setDailyRecapStartTime, setDailyRecapEndTime } from '@/lib/api';
+import { formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import { Stethoscope, Loader2, History, ChevronRight, CalendarCheck, Clock } from 'lucide-react';
+import { Stethoscope, Loader2, History, ChevronRight, CalendarCheck, Clock, Play, Square } from 'lucide-react';
 import PatientClinicalHistoryDrawer from './PatientClinicalHistoryDrawer';
 
 const TYPE_COLOR_PALETTE = [
@@ -66,6 +67,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   // patientId -> { lastVisitDate, fallbackDiagnosis }
   const [enrichment, setEnrichment] = useState({});
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const todayISO = getTodayISO();
 
@@ -91,6 +93,36 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
       setRecaps(data || []);
     }
     setLoading(false);
+  };
+
+  // Mulai / Akhiri Sesi — same API calls as the admin Daily Recap, with the
+  // local row patched optimistically so the button flips immediately.
+  const handleSession = async (e, recapId, kind) => {
+    e.stopPropagation();
+    if (!recapId) return;
+    setActionLoadingId(recapId);
+    try {
+      const { error } = kind === 'start'
+        ? await setDailyRecapStartTime(recapId)
+        : await setDailyRecapEndTime(recapId);
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: kind === 'start' ? 'Gagal Memulai Sesi' : 'Gagal Mengakhiri Sesi',
+          description: error.message || 'Terjadi kesalahan.',
+        });
+      } else {
+        const nowISO = new Date().toISOString();
+        toast({ title: kind === 'start' ? 'Sesi Dimulai' : 'Sesi Selesai' });
+        setRecaps((prev) => prev.map((r) => (r.id === recapId
+          ? { ...r, ...(kind === 'start' ? { start_time: nowISO } : { end_time: nowISO }) }
+          : r)));
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   // Dedupe visits into one row per patient treated today.
@@ -140,7 +172,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
           <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
             <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
           </div>
-          <h3 className="text-sm font-bold text-slate-700 truncate">Riwayat Diagnosa Pasien</h3>
+          <h3 className="text-sm font-bold text-slate-700 truncate">Pasien Hari Ini</h3>
         </div>
         <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
           {todaysPatients.length} pasien hari ini
@@ -167,14 +199,18 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
             const patientEnrichment = p.patientId ? enrichment[p.patientId] : null;
             const usingFallback = todaysDiagnosis.length === 0 && (patientEnrichment?.fallbackDiagnosis?.length > 0);
             const diagnosisList = usingFallback ? patientEnrichment.fallbackDiagnosis : todaysDiagnosis;
+            // Active session = first visit not yet finished, else the latest one.
+            const sessionRecap = p.visits.find((v) => !v.end_time) || p.visits[0];
             const gapLabel = formatLastVisitGap(patientEnrichment?.lastVisitDate, todayISO);
 
             return (
-              <button
-                key={p.key}
-                type="button"
-                disabled={!p.patientId}
+              <div key={p.key} className="py-1">
+              <div
+                role="button"
+                tabIndex={p.patientId ? 0 : -1}
+                aria-disabled={!p.patientId}
                 onClick={() => p.patientId && setSelectedPatient({ id: p.patientId, name: p.name, rm: p.rm })}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && p.patientId) { e.preventDefault(); setSelectedPatient({ id: p.patientId, name: p.name, rm: p.rm }); } }}
                 className={cn(
                   'w-full flex items-center gap-3 px-2 py-3 rounded-xl text-left transition-colors',
                   p.patientId ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-60 cursor-not-allowed'
@@ -217,7 +253,41 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
                 ) : (
                   <span className="text-[9px] text-slate-400 shrink-0">Pasien Baru</span>
                 )}
-              </button>
+              </div>
+              {sessionRecap && (
+                <div className="px-2 pb-2">
+                  {!sessionRecap.start_time ? (
+                    <button
+                      type="button"
+                      onClick={(e) => handleSession(e, sessionRecap.id, 'start')}
+                      disabled={actionLoadingId === sessionRecap.id}
+                      className="h-8 w-full text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg inline-flex items-center justify-center disabled:opacity-60"
+                    >
+                      {actionLoadingId === sessionRecap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3 mr-1.5" />Mulai Sesi</>}
+                    </button>
+                  ) : !sessionRecap.end_time ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 shrink-0">{formatTime(new Date(sessionRecap.start_time))}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleSession(e, sessionRecap.id, 'end')}
+                        disabled={actionLoadingId === sessionRecap.id}
+                        className="h-8 flex-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg inline-flex items-center justify-center disabled:opacity-60"
+                      >
+                        {actionLoadingId === sessionRecap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Square className="w-3 h-3 mr-1.5" />Akhiri Sesi</>}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                      <span>{formatTime(new Date(sessionRecap.start_time))}</span>
+                      <span className="text-slate-300">→</span>
+                      <span>{formatTime(new Date(sessionRecap.end_time))}</span>
+                      <span className="font-sans text-emerald-600 font-semibold ml-1">Selesai</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              </div>
             );
           })}
         </div>
