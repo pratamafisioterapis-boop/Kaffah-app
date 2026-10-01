@@ -76,24 +76,12 @@ export const getTherapistVisits = async (therapistId, startDate = null, endDate 
   if (!therapistId) return { data: [], error: null };
 
   try {
-    // UPDATED: Filter by therapist_id, removed ilike name search
+    // Tanpa embed/join: nama FK di DB berbeda-beda (mis. daily_recap_patient_id_fkey vs
+    // daily_recaps_actual_patient_id_fkey) dan join yang salah nama membuat SELURUH query
+    // gagal. Pasien diambil terpisah berdasarkan id supaya tidak bergantung pada nama FK.
     let query = supabase
       .from('daily_recaps')
-      .select(`
-        *,
-        patient:patients!daily_recaps_actual_patient_id_fkey (
-          id,
-          full_name,
-          medical_record_number,
-          gender
-        ),
-        owner_patient:patients!daily_recaps_patient_id_fkey (
-          id,
-          full_name,
-          medical_record_number,
-          gender
-        )
-      `)
+      .select('*')
       .eq('therapist_id', therapistId);
 
     if (startDate) query = query.gte('recap_date', startDate);
@@ -107,11 +95,30 @@ export const getTherapistVisits = async (therapistId, startDate = null, endDate 
     }
 
     // actual_patient_id bisa NULL (pasien aktual = pemilik paket / data lama),
-    // sehingga join actual patient kosong. Fallback ke patient_id supaya kunjungan
-    // tetap muncul di Evaluasi dan SOAP-nya bisa diisi (konsisten dgn halaman lain).
-    const visits = (recaps || []).map(({ owner_patient, ...recap }) => ({
+    // jadi fallback ke patient_id supaya kunjungan tetap muncul di Evaluasi
+    // dan SOAP-nya bisa diisi (konsisten dgn halaman lain).
+    const patientIds = [
+      ...new Set((recaps || []).map(r => r.actual_patient_id || r.patient_id).filter(Boolean)),
+    ];
+
+    const patientsById = new Map();
+    const chunkSize = 200;
+    for (let i = 0; i < patientIds.length; i += chunkSize) {
+      const { data: patients, error: patientsError } = await supabase
+        .from('patients')
+        .select('id, full_name, medical_record_number, gender')
+        .in('id', patientIds.slice(i, i + chunkSize));
+
+      if (patientsError) {
+        console.error("Error fetching patients for therapist visits:", patientsError);
+        return { data: [], error: patientsError };
+      }
+      (patients || []).forEach(p => patientsById.set(p.id, p));
+    }
+
+    const visits = (recaps || []).map(recap => ({
       ...recap,
-      patient: recap.patient || owner_patient || null,
+      patient: patientsById.get(recap.actual_patient_id || recap.patient_id) || null,
     }));
 
     return { data: visits, error: null };
