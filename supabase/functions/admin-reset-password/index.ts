@@ -40,12 +40,13 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerProfile, error: profileErr } = await adminClient
       .from("users")
-      .select("role")
+      .select("role, clinic_id")
       .eq("id", callerData.user.id)
       .single();
 
-    if (profileErr || !callerProfile || callerProfile.role !== "super_admin") {
-      return new Response(JSON.stringify({ error: "Forbidden: hanya Super Admin yang bisa mengganti password user lain" }), {
+    const callerRole = callerProfile?.role;
+    if (profileErr || !callerProfile || (callerRole !== "super_admin" && callerRole !== "owner")) {
+      return new Response(JSON.stringify({ error: "Forbidden: hanya Super Admin atau Owner yang bisa mengganti password user lain" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -66,6 +67,27 @@ Deno.serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Owner hanya boleh mengganti password Clinic Admin di klinik yang sama.
+    if (callerRole === "owner") {
+      const { data: target, error: targetErr } = await adminClient
+        .from("users")
+        .select("role, clinic_id")
+        .eq("id", user_id)
+        .single();
+
+      if (
+        targetErr || !target ||
+        target.role !== "clinic_admin" ||
+        !callerProfile.clinic_id ||
+        target.clinic_id !== callerProfile.clinic_id
+      ) {
+        return new Response(JSON.stringify({ error: "Forbidden: Owner hanya bisa mengganti password Admin Klinik di kliniknya sendiri" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { error: updateErr } = await adminClient.auth.admin.updateUserById(user_id, {
