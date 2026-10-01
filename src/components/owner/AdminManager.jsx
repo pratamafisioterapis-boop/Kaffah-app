@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, Lock, Trash2, Edit2, 
-  Plus, Save, Loader2, ShieldAlert, KeyRound, Eye, EyeOff
+  Plus, Save, Loader2, ShieldAlert, KeyRound, Eye, EyeOff, Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import {
   getAdmins, createAdminAccount, getCurrentClinic 
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
+import { prepareImageForUpload } from '@/lib/imageUpload';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
@@ -31,6 +32,8 @@ const AdminManager = () => {
   });
   const [password, setPassword] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   // Password reset state
   const [resetAdmin, setResetAdmin] = useState(null);
@@ -57,8 +60,35 @@ const AdminManager = () => {
     setLoading(false);
   };
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: "destructive", title: "File tidak valid", description: "Pilih file gambar (JPG/PNG/WebP)." });
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  // Uploads the chosen photo and stores it as users.avatar_url, which the
+  // splash screen reads for the logged-in account.
+  const uploadAvatar = async (userId) => {
+    const uploadFile = await prepareImageForUpload(avatarFile);
+    const ext = uploadFile.name.split('.').pop();
+    const path = `user-avatars/${userId}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
+    const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', userId);
+    if (updateError) throw updateError;
+  };
+
   const handleOpenDialog = () => {
     setEditingId(null);
+    setAvatarFile(null);
+    setAvatarPreview('');
     setFormData({
       full_name: '',
       email: '',
@@ -71,6 +101,8 @@ const AdminManager = () => {
 
   const handleOpenEdit = (admin) => {
     setEditingId(admin.id);
+    setAvatarFile(null);
+    setAvatarPreview(admin.avatar_url || '');
     setFormData({
       full_name: admin.full_name || '',
       email: admin.email || '',
@@ -94,6 +126,16 @@ const AdminManager = () => {
       .eq('id', editingId);
 
     if (!error) {
+      if (avatarFile) {
+        try {
+          await uploadAvatar(editingId);
+        } catch (err) {
+          toast({ variant: "destructive", title: "Foto Gagal Diupload", description: err.message });
+          fetchAdmins();
+          setSaving(false);
+          return;
+        }
+      }
       toast({ title: "Admin Diperbarui", description: "Data admin berhasil disimpan." });
       fetchAdmins();
       setIsDialogOpen(false);
@@ -157,10 +199,19 @@ const AdminManager = () => {
     
     // Owner hanya boleh membuat Admin Klinik, bukan Super Admin.
     const payload = { ...formData, role: 'clinic_admin', clinic_id: clinicId };
-    const { error } = await createAdminAccount(payload, password);
+    const { data: created, error } = await createAdminAccount(payload, password);
 
     if (!error) {
-      toast({ title: "Admin Berhasil Dibuat", description: `Akun untuk ${formData.email} telah aktif.` });
+      let photoFailed = false;
+      if (avatarFile && created?.user_id) {
+        try {
+          await uploadAvatar(created.user_id);
+        } catch (err) {
+          photoFailed = true;
+          toast({ variant: "destructive", title: "Akun dibuat, foto gagal diupload", description: `${err.message}. Anda bisa menambahkan foto lewat tombol Edit.` });
+        }
+      }
+      if (!photoFailed) toast({ title: "Admin Berhasil Dibuat", description: `Akun untuk ${formData.email} telah aktif.` });
       fetchAdmins();
       setIsDialogOpen(false);
     } else {
@@ -220,8 +271,10 @@ const AdminManager = () => {
               <div className="p-6 flex-1 flex flex-col gap-3">
                 <div className="-mt-12 mb-2 flex justify-center">
                     <div className="w-16 h-16 rounded-full bg-white p-1 shadow-lg">
-                        <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center">
-                            <User className="w-8 h-8 text-slate-400" />
+                        <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                            {admin.avatar_url
+                              ? <img src={admin.avatar_url} alt={admin.full_name} className="w-full h-full object-cover" />
+                              : <User className="w-8 h-8 text-slate-400" />}
                         </div>
                     </div>
                 </div>
@@ -265,6 +318,19 @@ const AdminManager = () => {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center gap-2">
+               <label className="relative w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-blue-400">
+                  {avatarPreview
+                    ? <img src={avatarPreview} alt="Foto profil" className="w-full h-full object-cover" />
+                    : <User className="w-10 h-10 text-slate-400" />}
+                  <span className="absolute bottom-0 inset-x-0 bg-black/50 text-white flex justify-center py-1">
+                    <Camera className="w-4 h-4" />
+                  </span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+               </label>
+               <p className="text-xs text-slate-500">Foto profil (tampil di splash screen akun ini)</p>
+            </div>
+
             <div className="space-y-2">
                <label className="text-sm font-medium">Nama Lengkap</label>
                <Input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} placeholder="Nama Staff" />
