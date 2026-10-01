@@ -21,6 +21,35 @@ const AdminAccountSettings = () => {
   const [avatarUrl, setAvatarUrl] = useState(userDetails?.avatar_url || '');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  const [signatureUrl, setSignatureUrl] = useState(userDetails?.signature_url || '');
+  const [uploadingSignature, setUploadingSignature] = useState(false);
+
+  const handleUploadSignature = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 2MB.' });
+      return;
+    }
+    setUploadingSignature(true);
+    try {
+      const uploadFile = await prepareImageForUpload(file);
+      const ext = uploadFile.name.split('.').pop();
+      const path = `signatures/admin_${user.id}_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
+      const { error: updateError } = await supabase.from('users').update({ signature_url: pub.publicUrl }).eq('id', user.id);
+      if (updateError) throw updateError;
+      setSignatureUrl(pub.publicUrl);
+      toast({ title: 'Tanda tangan diperbarui' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal upload tanda tangan', description: err.message });
+    } finally {
+      setUploadingSignature(false);
+    }
+  };
+
   useEffect(() => {
     if (user?.email) setEmail(user.email);
   }, [user]);
@@ -110,6 +139,22 @@ const AdminAccountSettings = () => {
                 {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
               </span>
               <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} disabled={uploadingAvatar} />
+            </label>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Upload className="w-4 h-4" /> Tanda Tangan Admin</h3>
+          <p className="text-sm text-slate-500">Dipakai di invoice pasien jika klinik diatur dengan penanda tangan admin. Invoice yang Anda buat akan memuat nama dan tanda tangan ini.</p>
+          <div className="flex items-center gap-4">
+            <div className="w-32 h-16 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center border">
+              {signatureUrl ? <img src={signatureUrl} alt="Tanda Tangan" className="w-full h-full object-contain" /> : <span className="text-xs text-slate-400">Belum ada</span>}
+            </div>
+            <label className="cursor-pointer">
+              <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+                {uploadingSignature ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {signatureUrl ? 'Ganti' : 'Upload'}
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleUploadSignature} disabled={uploadingSignature} />
             </label>
           </div>
         </div>

@@ -43,6 +43,7 @@ const therapistName = data?.therapist_name ?? '-';
   const adminSigner = data?.clinic?.invoice_signer === 'admin';
   const showPatientSignature = data?.clinic?.invoice_show_patient_signature !== false;
   const adminName = data?.admin_signer_name || data?.clinic?.invoice_admin_name || '';
+  const adminSignatureUrl = data?.admin_signer_signature_url || data?.clinic?.invoice_admin_signature_url || '';
 
 const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod : payment === val) ? '☑' : '☐';
   return (
@@ -299,9 +300,9 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     alignItems: 'flex-start',
     justifyContent: 'center'
   }}>
-    {(adminSigner ? data?.clinic?.invoice_admin_signature_url : data?.therapist?.signature_url) && (
+    {(adminSigner ? adminSignatureUrl : data?.therapist?.signature_url) && (
       <img
-        src={adminSigner ? data.clinic.invoice_admin_signature_url : data.therapist.signature_url}
+        src={adminSigner ? adminSignatureUrl : data.therapist.signature_url}
         style={{ maxWidth: '110px', maxHeight: '78px', width: 'auto', height: 'auto' }}
       />
     )}

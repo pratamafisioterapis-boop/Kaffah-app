@@ -68,8 +68,6 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const templateData = {
     ...detailData,
     ...data,
-    // Nama penanda tangan = admin yang sedang membuat/mencetak invoice
-    admin_signer_name: userDetails?.full_name || null,
     therapist: data?.therapist
       ? { ...data.therapist, signature_url: processedSignatureUrl || data.therapist.signature_url }
       : data?.therapist,
@@ -134,6 +132,20 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       return;
     }
 
+    // Admin pembuat invoice: dicatat sekali (created_by). Recap lama yang belum
+    // punya pencatat diklaim oleh admin yang pertama kali membukanya.
+    let creatorId = recap.created_by || null;
+    if (!creatorId && userDetails?.id && ['admin', 'clinic_admin', 'owner'].includes(userDetails.role)) {
+      const { error: claimErr } = await supabase
+        .from('daily_recaps').update({ created_by: userDetails.id }).eq('id', recap.id).is('created_by', null);
+      if (!claimErr) creatorId = userDetails.id;
+    }
+    let creator = null;
+    if (creatorId) {
+      const { data: c } = await supabase.from('users').select('full_name, signature_url').eq('id', creatorId).maybeSingle();
+      creator = c;
+    }
+
     let physioData = null;
     let clinicData = null;
     if (recap.therapist_id) {
@@ -161,6 +173,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       signature_url:  physioData?.signature_url || null,
       stamp_url:      physioData?.stamp_url     || null,
       clinic: clinicData,
+      admin_signer_name: creator?.full_name || null,
+      admin_signer_signature_url: creator?.signature_url || null,
     });
   };
 
