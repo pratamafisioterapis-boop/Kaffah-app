@@ -292,7 +292,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     flexDirection: 'column',
     justifyContent: 'flex-end',
   }}>
-    <p>{adminSigner ? 'Admin' : 'Physiotherapist'}</p>
+    <p>{adminSigner ? 'Cashier' : 'Physiotherapist'}</p>
   {/* SIGNATURE CONTAINER */}
   <div style={{
     height: '80px',
@@ -324,7 +324,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     justifyContent: 'center'
   }}>
     {adminSigner ? (
-  <p style={{ fontSize: '12px', fontWeight: '600', marginTop: '10px' }}>{adminName || 'Admin'}</p>
+  <p style={{ fontSize: '12px', fontWeight: '600', marginTop: '10px' }}>{adminName || 'Cashier'}</p>
 ) : data?.therapist?.stamp_url ? (
   <img
     src={data.therapist.stamp_url}
