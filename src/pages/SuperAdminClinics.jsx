@@ -304,6 +304,39 @@ const SuperAdminClinics = () => {
     }
   };
 
+  const updateInvoiceSetting = async (clinic, patch) => {
+    const previous = {};
+    Object.keys(patch).forEach((k) => { previous[k] = clinic[k]; });
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, ...patch } : c)));
+    const { error } = await supabase.from('clinics').update(patch).eq('id', clinic.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah pengaturan invoice', description: error.message });
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, ...previous } : c)));
+      return false;
+    }
+    return true;
+  };
+
+  const handleUploadAdminSignature = async (clinic, file) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'File terlalu besar', description: 'Maksimal 2MB.' });
+      return;
+    }
+    try {
+      const ext = file.name.split('.').pop();
+      const filename = `signatures/clinic_${clinic.id}_admin_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('therapist-photos').upload(filename, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('therapist-photos').getPublicUrl(filename);
+      if (await updateInvoiceSetting(clinic, { invoice_admin_signature_url: urlData.publicUrl })) {
+        toast({ title: 'Tanda tangan admin diunggah' });
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Upload gagal', description: err.message });
+    }
+  };
+
   const handleCreateOwner = async () => {
     if (!ownerForm.full_name || !ownerForm.email || !ownerForm.password) {
       toast({ variant: 'destructive', title: 'Nama, email, dan password wajib diisi' });
@@ -600,6 +633,76 @@ const SuperAdminClinics = () => {
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   Jika "Terapis": menu Rekam Medis muncul di dashboard terapis, admin hanya bisa melihat.
                 </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Invoice Pasien
+                </p>
+                <p className="text-[11px] text-slate-500 mb-1">Penanda tangan</p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: 'therapist', label: 'Terapis (default)' },
+                    { value: 'admin', label: 'Admin klinik' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateInvoiceSetting(clinic, { invoice_signer: opt.value })}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.invoice_signer || 'therapist') === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {clinic.invoice_signer === 'admin' && (
+                  <div className="mt-2 space-y-2">
+                    <Input
+                      key={`${clinic.id}-${clinic.invoice_admin_name || ''}`}
+                      placeholder="Nama admin penanda tangan"
+                      defaultValue={clinic.invoice_admin_name || ''}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v !== (clinic.invoice_admin_name || '')) updateInvoiceSetting(clinic, { invoice_admin_name: v || null });
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      {clinic.invoice_admin_signature_url && (
+                        <img src={clinic.invoice_admin_signature_url} alt="TTD admin" className="h-10 border rounded bg-white object-contain" />
+                      )}
+                      <label className="text-xs text-blue-600 cursor-pointer">
+                        {clinic.invoice_admin_signature_url ? 'Ganti tanda tangan admin' : 'Upload tanda tangan admin'}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadAdminSignature(clinic, e.target.files?.[0])} />
+                      </label>
+                    </div>
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500 mt-2 mb-1">Tanda tangan pasien</p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: true, label: 'Tampilkan' },
+                    { value: false, label: 'Tanpa TTD pasien' },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => updateInvoiceSetting(clinic, { invoice_show_patient_signature: opt.value })}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.invoice_show_patient_signature !== false) === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-100">

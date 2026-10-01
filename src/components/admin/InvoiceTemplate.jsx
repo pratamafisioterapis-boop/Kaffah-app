@@ -40,6 +40,10 @@ const therapistName = data?.therapist_name ?? '-';
     [24, '8px'], [32, '7px'], [Infinity, '6.5px'],
   ]);
 
+  const adminSigner = data?.clinic?.invoice_signer === 'admin';
+  const showPatientSignature = data?.clinic?.invoice_show_patient_signature !== false;
+  const adminName = data?.clinic?.invoice_admin_name || '';
+
 const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod : payment === val) ? '☑' : '☐';
   return (
     <div
@@ -287,7 +291,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     flexDirection: 'column',
     justifyContent: 'flex-end',
   }}>
-    <p>Physiotherapist</p>
+    <p>{adminSigner ? 'Admin' : 'Physiotherapist'}</p>
   {/* SIGNATURE CONTAINER */}
   <div style={{
     height: '80px',
@@ -295,9 +299,9 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     alignItems: 'flex-start',
     justifyContent: 'center'
   }}>
-    {data?.therapist?.signature_url && (
+    {(adminSigner ? data?.clinic?.invoice_admin_signature_url : data?.therapist?.signature_url) && (
       <img
-        src={data.therapist.signature_url}
+        src={adminSigner ? data.clinic.invoice_admin_signature_url : data.therapist.signature_url}
         style={{ maxWidth: '110px', maxHeight: '78px', width: 'auto', height: 'auto' }}
       />
     )}
@@ -318,7 +322,9 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     alignItems: 'flex-start',
     justifyContent: 'center'
   }}>
-    {data?.therapist?.stamp_url ? (
+    {adminSigner ? (
+  <p style={{ fontSize: '12px', fontWeight: '600', marginTop: '10px' }}>{adminName || 'Admin'}</p>
+) : data?.therapist?.stamp_url ? (
   <img
     src={data.therapist.stamp_url}
     style={{ width: '120px', marginTop: '5px' }}
@@ -374,6 +380,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     }}
   />
 </div>
+  {showPatientSignature ? (
   <div style={{ 
     textAlign: 'center',
     width: '33%',
@@ -410,6 +417,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     {data?.patients?.full_name || data?.patient_name || '-'}
   </p>
 </div>
+  ) : <div style={{ width: '33%' }} />}
 
 </div>
 </div>
