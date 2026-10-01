@@ -30,6 +30,7 @@ const AdminManager = () => {
     role: 'clinic_admin'
   });
   const [password, setPassword] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const AdminManager = () => {
   };
 
   const handleOpenDialog = () => {
+    setEditingId(null);
     setFormData({
       full_name: '',
       email: '',
@@ -61,7 +63,42 @@ const AdminManager = () => {
     setIsDialogOpen(true);
   };
 
+  const handleOpenEdit = (admin) => {
+    setEditingId(admin.id);
+    setFormData({
+      full_name: admin.full_name || '',
+      email: admin.email || '',
+      phone: admin.phone || '',
+      role: admin.role
+    });
+    setPassword('');
+    setIsDialogOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!formData.full_name.trim()) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama wajib diisi." });
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from('users')
+      .update({ full_name: formData.full_name.trim(), phone: formData.phone.trim() || null })
+      .eq('id', editingId);
+
+    if (!error) {
+      toast({ title: "Admin Diperbarui", description: "Data admin berhasil disimpan." });
+      fetchAdmins();
+      setIsDialogOpen(false);
+    } else {
+      toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message });
+    }
+    setSaving(false);
+  };
+
   const handleSave = async () => {
+    if (editingId) return handleUpdate();
     if (!formData.full_name || !formData.email || !password) {
       toast({ variant: "destructive", title: "Validasi Gagal", description: "Nama, Email dan Password wajib diisi." });
       return;
@@ -157,7 +194,10 @@ const AdminManager = () => {
                   )}
                 </div>
                 
-                <div className="mt-auto pt-4 border-t border-slate-100 flex justify-center">
+                <div className="mt-auto pt-4 border-t border-slate-100 flex justify-center gap-2">
+                   <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(admin)} className="text-blue-600 hover:bg-blue-50 hover:text-blue-700">
+                      <Edit2 className="w-4 h-4 mr-2" /> Edit
+                   </Button>
                    <Button variant="ghost" size="sm" onClick={() => handleDelete(admin.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
                       <Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun
                    </Button>
@@ -171,7 +211,7 @@ const AdminManager = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Buat Akun Admin Baru</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Akun Admin' : 'Buat Akun Admin Baru'}</DialogTitle>
             <DialogDescription>
               User ini akan memiliki akses penuh ke Dashboard Admin.
             </DialogDescription>
@@ -196,9 +236,10 @@ const AdminManager = () => {
 
             <div className="space-y-2">
                <label className="text-sm font-medium">Email Login</label>
-               <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@klinik.com" />
+               <Input type="email" disabled={!!editingId} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@klinik.com" />
             </div>
 
+            {!editingId && (
             <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg space-y-2">
                 <h4 className="font-semibold text-yellow-800 flex items-center gap-2 text-sm">
                    <Lock className="w-3 h-3" /> Set Password
@@ -211,12 +252,13 @@ const AdminManager = () => {
                    className="bg-white"
                 />
             </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-blue-600">
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Akun
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} {editingId ? 'Simpan Perubahan' : 'Buat Akun'}
             </Button>
           </DialogFooter>
         </DialogContent>
