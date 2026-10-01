@@ -86,6 +86,12 @@ export const getTherapistVisits = async (therapistId, startDate = null, endDate 
           full_name,
           medical_record_number,
           gender
+        ),
+        owner_patient:patients!daily_recaps_patient_id_fkey (
+          id,
+          full_name,
+          medical_record_number,
+          gender
         )
       `)
       .eq('therapist_id', therapistId);
@@ -100,7 +106,15 @@ export const getTherapistVisits = async (therapistId, startDate = null, endDate 
       return { data: [], error };
     }
 
-    return { data: recaps || [], error: null };
+    // actual_patient_id bisa NULL (pasien aktual = pemilik paket / data lama),
+    // sehingga join actual patient kosong. Fallback ke patient_id supaya kunjungan
+    // tetap muncul di Evaluasi dan SOAP-nya bisa diisi (konsisten dgn halaman lain).
+    const visits = (recaps || []).map(({ owner_patient, ...recap }) => ({
+      ...recap,
+      patient: recap.patient || owner_patient || null,
+    }));
+
+    return { data: visits, error: null };
   } catch (err) {
     console.error("Unexpected error in getTherapistVisits:", err);
     return { data: [], error: err };
