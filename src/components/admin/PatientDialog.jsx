@@ -17,13 +17,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from '@/lib/customSupabaseClient';
 import PackageSessionDisplay from '@/components/admin/PackageSessionDisplay';
-import { getAdditionalInfoOptions, generateNickname } from '@/lib/api';
+import { getAdditionalInfoOptions, generateNickname, getCachedClinicId } from '@/lib/api';
 import { validateBirthDate, validateGender, validateUUIDFormatted, getSafePatientData } from '@/lib/utils';
 import { normalizePatient } from '@/lib/patientHelpers';
-import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCircle, RotateCcw, ChevronsUpDown, Gift, X } from 'lucide-react';
+import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCircle, RotateCcw, ChevronsUpDown, Gift, X, Upload } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+
+const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
+const MAX_KTP_SIZE = 5 * 1024 * 1024;
 
 const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) => {
   const { toast } = useToast();
@@ -51,9 +54,47 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
     birth_date: '',
     address: '',
     nik: '',
+    occupation: '',
+    religion: '',
     additional_info_option_id: null,
     referred_by_patient_id: null
   });
+
+  // KTP: file baru, path tersimpan (asli dari DB), path saat ini di form, dan URL preview
+  const [ktpFile, setKtpFile] = useState(null);
+  const [ktpPath, setKtpPath] = useState(null);
+  const [originalKtpPath, setOriginalKtpPath] = useState(null);
+  const [ktpPreview, setKtpPreview] = useState(null);
+  // Untuk edit: kolom tambahan dibaca ulang dari DB; bila gagal dimuat, jangan ditimpa saat simpan
+  const [extrasLoaded, setExtrasLoaded] = useState(true);
+
+  useEffect(() => {
+    if (ktpFile) {
+      const url = URL.createObjectURL(ktpFile);
+      setKtpPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (!ktpPath) { setKtpPreview(null); return; }
+    let cancelled = false;
+    supabase.storage.from('patient-ktp').createSignedUrl(ktpPath, 3600)
+      .then(({ data }) => { if (!cancelled) setKtpPreview(data?.signedUrl || null); });
+    return () => { cancelled = true; };
+  }, [ktpFile, ktpPath]);
+
+  const handleKtpChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: "destructive", title: "File tidak valid", description: "KTP harus berupa gambar (JPG/PNG)." });
+      return;
+    }
+    if (file.size > MAX_KTP_SIZE) {
+      toast({ variant: "destructive", title: "File terlalu besar", description: "Ukuran maksimal 5 MB." });
+      return;
+    }
+    setKtpFile(file);
+  };
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,6 +184,8 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: safeDate(normalizedData.birth_date),
         address: normalizedData.address === '-' ? '' : normalizedData.address || '',
         nik: normalizedData.nik || '',
+        occupation: normalizedData.occupation || '',
+        religion: normalizedData.religion || '',
         additional_info_option_id: normalizedData.additional_info_option_id || normalizedData.additional_info?.id || null,
         referred_by_patient_id: normalizedData.referred_by_patient_id || null
       });
@@ -158,8 +201,29 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
           setSelectedReferrer(null);
       }
 
+      setKtpFile(null);
+      setKtpPath(normalizedData.ktp_photo_path || null);
+      setOriginalKtpPath(normalizedData.ktp_photo_path || null);
+
       if (initialData.id) {
           fetchPatientPackages(initialData.id);
+
+          // Baca ulang kolom tambahan dari DB agar data tersimpan selalu tampil
+          setExtrasLoaded(false);
+          let stale = false;
+          supabase
+            .from('patients')
+            .select('occupation, religion, ktp_photo_path')
+            .eq('id', initialData.id)
+            .maybeSingle()
+            .then(({ data, error }) => {
+              if (stale || error || !data) return;
+              setFormData(prev => ({ ...prev, occupation: data.occupation || '', religion: data.religion || '' }));
+              setKtpPath(data.ktp_photo_path || null);
+              setOriginalKtpPath(data.ktp_photo_path || null);
+              setExtrasLoaded(true);
+            });
+          return () => { stale = true; };
       }
     } else if (open) {
       setFormData({
@@ -172,9 +236,15 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: '',
         address: '',
         nik: '',
+        occupation: '',
+        religion: '',
         additional_info_option_id: null,
         referred_by_patient_id: null
       });
+      setKtpFile(null);
+      setKtpPath(null);
+      setOriginalKtpPath(null);
+      setExtrasLoaded(true);
       setPackages([]);
       setDailyRecaps([]);
       setErrors({});
@@ -341,7 +411,32 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
     }
     
     setIsSubmitting(true);
+    let uploadedPath = null;
     try {
+      finalData.occupation = (finalData.occupation || '').trim() || null;
+      finalData.religion = finalData.religion || null;
+
+      if (ktpFile) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const clinicId = await getCachedClinicId(sessionData?.session?.user?.id);
+        const ext = (ktpFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const path = `${clinicId}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('patient-ktp')
+          .upload(path, ktpFile, { contentType: ktpFile.type });
+        if (uploadError) throw new Error(`Gagal upload KTP: ${uploadError.message}`);
+        uploadedPath = path;
+      }
+
+      const finalKtpPath = ktpFile ? uploadedPath : ktpPath;
+      if (initialData && !extrasLoaded) {
+        // Data tambahan belum berhasil dimuat: jangan timpa nilai yang tersimpan
+        delete finalData.occupation;
+        delete finalData.religion;
+      } else if (!initialData || finalKtpPath !== originalKtpPath) {
+        finalData.ktp_photo_path = finalKtpPath;
+      }
+
       const result = await onSubmit(finalData);
       
       if (result && result.error) {
@@ -351,10 +446,15 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
               title: "Gagal Menyimpan", 
               description: result.error.message || "Terjadi kesalahan saat menyimpan.",
           });
+          if (uploadedPath) await supabase.storage.from('patient-ktp').remove([uploadedPath]);
+      } else if (extrasLoaded && originalKtpPath && originalKtpPath !== (ktpFile ? uploadedPath : ktpPath)) {
+          // Hapus file KTP lama yang sudah diganti/dihapus
+          await supabase.storage.from('patient-ktp').remove([originalKtpPath]);
       }
 
     } catch (error) {
       console.error(`[PatientDialog] Unexpected error:`, error);
+      if (uploadedPath) await supabase.storage.from('patient-ktp').remove([uploadedPath]);
       toast({ 
           variant: "destructive", 
           title: "Error Sistem", 
@@ -635,6 +735,36 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                     </p>
                   </div>
 
+                  {/* Pekerjaan & Agama */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="occupation">Pekerjaan</Label>
+                      <Input
+                        id="occupation"
+                        value={formData.occupation}
+                        onChange={(e) => handleInputChange('occupation', e.target.value)}
+                        className="bg-white"
+                        placeholder="Contoh: Karyawan swasta (Opsional)"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Agama</Label>
+                      <Select
+                        value={formData.religion || ''}
+                        onValueChange={(val) => handleInputChange('religion', val)}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Pilih Agama (Opsional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RELIGION_OPTIONS.map(r => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   {/* Address */}
                   <div className="space-y-1">
                     <Label htmlFor="address" className="flex items-center gap-1">
@@ -648,6 +778,42 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                       placeholder="Jalan, Kota..."
                     />
                     {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+                  </div>
+
+                  {/* Foto KTP */}
+                  <div className="space-y-1">
+                    <Label htmlFor="ktp">Foto KTP</Label>
+                    {(ktpFile || ktpPath) ? (
+                      <div className="flex items-start gap-3">
+                        <div className="relative w-full max-w-xs">
+                          {ktpPreview ? (
+                            <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" />
+                          ) : (
+                            <div className="flex items-center justify-center h-24 rounded-md border text-slate-400">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => { setKtpFile(null); setKtpPath(null); }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <label htmlFor="ktp" className="text-xs text-blue-600 cursor-pointer hover:underline pt-1">Ganti</label>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="ktp"
+                        className="flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm text-slate-500 cursor-pointer hover:bg-slate-50"
+                      >
+                        <Upload className="h-4 w-4" /> Pilih gambar KTP (maks. 5 MB, Opsional)
+                      </label>
+                    )}
+                    <input id="ktp" type="file" accept="image/*" className="hidden" onChange={handleKtpChange} />
                   </div>
 
                   <DialogFooter className="pt-4 flex justify-between items-center w-full">
