@@ -1,6 +1,86 @@
 {
   "rewrites": [
     {
+      "source": "/favicon.ico",
+      "has": [
+        {
+          "type": "host",
+          "value": "clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon.png"
+    },
+    {
+      "source": "/favicon-48.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon.png"
+    },
+    {
+      "source": "/logo192.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon-app.png"
+    },
+    {
+      "source": "/logo512.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon-app.png"
+    },
+    {
+      "source": "/favicon.ico",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon.png"
+    },
+    {
+      "source": "/favicon-48.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon.png"
+    },
+    {
+      "source": "/logo192.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon-app.png"
+    },
+    {
+      "source": "/logo512.png",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.clinara.id"
+        }
+      ],
+      "destination": "/clinara-icon-app.png"
+    },
+    {
       "source": "/((?!assets/).*)",
       "has": [
         {
