@@ -14,9 +14,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 
 const AdminManager = () => {
   const { toast } = useToast();
@@ -77,7 +74,8 @@ const AdminManager = () => {
 
     setSaving(true);
     
-    const payload = { ...formData, clinic_id: clinicId };
+    // Owner hanya boleh membuat Admin Klinik, bukan Super Admin.
+    const payload = { ...formData, role: 'clinic_admin', clinic_id: clinicId };
     const { error } = await createAdminAccount(payload, password);
 
     if (!error) {
@@ -188,15 +186,7 @@ const AdminManager = () => {
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                    <label className="text-sm font-medium">Role Access</label>
-                   <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
-                      <SelectTrigger>
-                         <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                         <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
-                         <SelectItem value="admin">Super Admin</SelectItem>
-                      </SelectContent>
-                   </Select>
+                   <Input value="Clinic Admin" disabled readOnly />
                 </div>
                 <div className="space-y-2">
                    <label className="text-sm font-medium">No. Telepon</label>
