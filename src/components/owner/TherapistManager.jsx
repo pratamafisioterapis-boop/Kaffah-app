@@ -345,6 +345,7 @@ const TherapistManager = () => {
     
     const payload = {
       ...formData,
+      avatar_url: formData.avatar_url || null,
       clinic_id: clinicId,
       base_salary: parseFloat(formData.base_salary) || 0,
       transport_per_day: formData.salary_scheme === 'probation' ? 0 : (parseFloat(formData.transport_per_day) || 0),
@@ -778,6 +779,18 @@ const headerColorMap = {
                     </div>
                     <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
                   </div>
+                  {formData.avatar_url && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" /> Hapus Foto
+                    </Button>
+                  )}
                   <div className="space-y-1 w-full">
                     <label className="text-[10px] font-medium text-slate-500">Tanda Tangan</label>
                     {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-9 mx-auto object-contain border rounded bg-slate-50 mb-1" />}
