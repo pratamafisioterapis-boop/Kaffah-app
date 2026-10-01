@@ -81,8 +81,9 @@ const AdminManager = () => {
     const { error: uploadError } = await supabase.storage.from('images').upload(path, uploadFile, { upsert: true });
     if (uploadError) throw uploadError;
     const { data: pub } = supabase.storage.from('images').getPublicUrl(path);
-    const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', userId);
+    const { data: updated, error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', userId).select('id');
     if (updateError) throw updateError;
+    if (!updated?.length) throw new Error('Tidak punya izin menyimpan foto untuk akun ini.');
   };
 
   const handleOpenDialog = () => {
