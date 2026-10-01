@@ -145,7 +145,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (physio.clinic_id) {
           const { data: clinic } = await supabase
             .from('clinics')
-            .select('name, address, phone, email, logo_url')
+            .select('name, address, phone, email, logo_url, invoice_signer, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature')
             .eq('id', physio.clinic_id)
             .single();
           if (clinic) clinicData = clinic;
