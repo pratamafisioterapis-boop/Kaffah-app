@@ -57,21 +57,46 @@ supabase.auth.onAuthStateChange((event) => {
   }
 });
 
+// Looks up clinic_id with retries. A failed lookup (network blip, token
+// refresh in flight) must NEVER resolve to null: callers feed the result into
+// `.eq('clinic_id', ...)`, and null turns into `uuid: "null"` errors that make
+// the clinic's data look empty. Only a successful lookup of a user whose
+// clinic_id is genuinely null (e.g. super admin) returns null.
+const fetchClinicIdWithRetry = async (userId) => {
+  const MAX_ATTEMPTS = 4;
+  let lastError = null;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 300 * attempt));
+    const { data, error } = await supabase
+      .from('users')
+      .select('clinic_id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!error && data) return data.clinic_id ?? null;
+    lastError = error || new Error('User profile not found');
+  }
+  throw new Error(`Gagal menentukan klinik pengguna: ${lastError?.message || 'unknown error'}`);
+};
+
 export const getCachedClinicId = async (userId) => {
   if (!userId) return null;
   if (clinicIdCache.userId === userId && (clinicIdCache.clinicId || clinicIdCache.promise)) {
     return clinicIdCache.promise ? clinicIdCache.promise : clinicIdCache.clinicId;
   }
 
-  const promise = supabase
-    .from('users')
-    .select('clinic_id')
-    .eq('id', userId)
-    .single()
-    .then(({ data }) => {
-      clinicIdCache = { userId, clinicId: data?.clinic_id ?? null, promise: null };
-      return clinicIdCache.clinicId;
-    });
+  const promise = fetchClinicIdWithRetry(userId).then(
+    (clinicId) => {
+      clinicIdCache = { userId, clinicId, promise: null };
+      return clinicId;
+    },
+    (err) => {
+      // Do not cache failures; the next call retries from scratch.
+      if (clinicIdCache.promise === promise) {
+        clinicIdCache = { userId: null, clinicId: null, promise: null };
+      }
+      throw err;
+    }
+  );
 
   clinicIdCache = { userId, clinicId: null, promise };
   return promise;
