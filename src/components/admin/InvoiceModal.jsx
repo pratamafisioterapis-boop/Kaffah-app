@@ -68,6 +68,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const templateData = {
     ...detailData,
     ...data,
+    // Nama penanda tangan = admin yang sedang membuat/mencetak invoice
+    admin_signer_name: userDetails?.full_name || null,
     therapist: data?.therapist
       ? { ...data.therapist, signature_url: processedSignatureUrl || data.therapist.signature_url }
       : data?.therapist,
