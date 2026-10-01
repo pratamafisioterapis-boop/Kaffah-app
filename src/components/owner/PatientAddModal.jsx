@@ -11,7 +11,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
     generateMedicalRecordNumber,
@@ -22,6 +22,9 @@ import {
     isValidDateFormat
 } from '@/lib/patientFormHelpers';
 import { getCachedClinicId } from '@/lib/api';
+
+const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
+const MAX_KTP_SIZE = 5 * 1024 * 1024;
 
 const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
     const { toast } = useToast();
@@ -38,12 +41,38 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
         phone: '',
         nik: '',
         address: '',
+        occupation: '',
+        religion: '',
         additional_info_option_id: '',
         status: 'aktif'
     });
 
     const [nicknameManuallyEdited, setNicknameManuallyEdited] = useState(false);
     const [errors, setErrors] = useState({});
+    const [ktpFile, setKtpFile] = useState(null);
+    const [ktpPreview, setKtpPreview] = useState(null);
+
+    useEffect(() => {
+        if (!ktpFile) { setKtpPreview(null); return; }
+        const url = URL.createObjectURL(ktpFile);
+        setKtpPreview(url);
+        return () => URL.revokeObjectURL(url);
+    }, [ktpFile]);
+
+    const handleKtpChange = (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast({ variant: "destructive", title: "File tidak valid", description: "KTP harus berupa gambar (JPG/PNG)." });
+            return;
+        }
+        if (file.size > MAX_KTP_SIZE) {
+            toast({ variant: "destructive", title: "File terlalu besar", description: "Ukuran maksimal 5 MB." });
+            return;
+        }
+        setKtpFile(file);
+    };
 
     // Fetch Info Options on mount
     useEffect(() => {
@@ -83,10 +112,13 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                 phone: '',
                 nik: '',
                 address: '',
+                occupation: '',
+                religion: '',
                 additional_info_option_id: 'none',
                 status: 'aktif'
             });
             setErrors({});
+            setKtpFile(null);
             setNicknameManuallyEdited(false);
             fetchRm();
         }
@@ -176,6 +208,19 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
         setLoading(true);
 
         try {
+            // Upload KTP (bucket privat, folder per klinik)
+            let ktpPath = null;
+            if (ktpFile) {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const clinicId = await getCachedClinicId(sessionData?.session?.user?.id);
+                const ext = (ktpFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+                ktpPath = `${clinicId}/${crypto.randomUUID()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('patient-ktp')
+                    .upload(ktpPath, ktpFile, { contentType: ktpFile.type });
+                if (uploadError) throw new Error(`Gagal upload KTP: ${uploadError.message}`);
+            }
+
             // 2. Prepare Payload
             const payload = {
                 medical_record_number: formData.medical_record_number,
@@ -187,6 +232,9 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                 phone: normalizePhone(formData.phone),
                 nik: formData.nik || null,
                 address: formData.address || null,
+                occupation: formData.occupation.trim() || null,
+                religion: formData.religion || null,
+                ktp_photo_path: ktpPath,
                 additional_info_option_id: formData.additional_info_option_id === 'none' ? null : formData.additional_info_option_id,
                 status: formData.status,
                 created_at: new Date().toISOString()
@@ -364,6 +412,36 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                         </div>
                     </div>
 
+                    {/* Row 4b: Pekerjaan & Agama */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="occupation">Pekerjaan (Opsional)</Label>
+                            <Input
+                                id="occupation"
+                                name="occupation"
+                                placeholder="Contoh: Karyawan swasta"
+                                value={formData.occupation}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="religion">Agama (Opsional)</Label>
+                            <Select
+                                value={formData.religion}
+                                onValueChange={(val) => handleSelectChange('religion', val)}
+                            >
+                                <SelectTrigger id="religion">
+                                    <SelectValue placeholder="Pilih Agama" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {RELIGION_OPTIONS.map(r => (
+                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     {/* Row 5: Address */}
                     <div className="grid gap-2">
                         <Label htmlFor="address">Alamat (Opsional)</Label>
@@ -375,6 +453,33 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                             value={formData.address}
                             onChange={handleChange}
                         />
+                    </div>
+
+                    {/* Upload KTP */}
+                    <div className="grid gap-2">
+                        <Label htmlFor="ktp">Foto KTP (Opsional)</Label>
+                        {ktpPreview ? (
+                            <div className="relative w-full max-w-xs">
+                                <img src={ktpPreview} alt="Preview KTP" className="rounded-md border max-h-48 object-contain" />
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-1 right-1 h-6 w-6"
+                                    onClick={() => setKtpFile(null)}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <label
+                                htmlFor="ktp"
+                                className="flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm text-slate-500 cursor-pointer hover:bg-slate-50"
+                            >
+                                <Upload className="h-4 w-4" /> Pilih gambar KTP (maks. 5 MB)
+                            </label>
+                        )}
+                        <input id="ktp" type="file" accept="image/*" className="hidden" onChange={handleKtpChange} />
                     </div>
 
                     {/* Row 6: Status */}
