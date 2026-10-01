@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Loader2, Calendar as CalendarIcon, AlertCircle, Trash2, ChevronsUpDown, Gift, X } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, AlertCircle, Trash2, ChevronsUpDown, Gift, X, Upload } from 'lucide-react';
 import DatePicker from '@/components/DatePicker';
 import {
     generateNextRM,
@@ -25,7 +25,8 @@ import {
     getAdditionalInfoOptions,
     createPatient,
     updatePatient,
-    deletePatient
+    deletePatient,
+    getCachedClinicId
 } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -33,6 +34,9 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
+
+const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
+const MAX_KTP_SIZE = 5 * 1024 * 1024;
 
 const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess }) => {
     const { toast } = useToast();
@@ -53,10 +57,45 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
         phone: '',
         nik: '',
         address: '',
+        occupation: '',
+        religion: '',
         additional_info_option_id: '',
         status: 'aktif',
         referred_by_patient_id: null
     });
+
+    // KTP: file baru yang dipilih, path KTP tersimpan, dan URL preview-nya
+    const [ktpFile, setKtpFile] = useState(null);
+    const [ktpPath, setKtpPath] = useState(null);
+    const [ktpPreview, setKtpPreview] = useState(null);
+
+    useEffect(() => {
+        if (ktpFile) {
+            const url = URL.createObjectURL(ktpFile);
+            setKtpPreview(url);
+            return () => URL.revokeObjectURL(url);
+        }
+        if (!ktpPath) { setKtpPreview(null); return; }
+        let cancelled = false;
+        supabase.storage.from('patient-ktp').createSignedUrl(ktpPath, 3600)
+            .then(({ data }) => { if (!cancelled) setKtpPreview(data?.signedUrl || null); });
+        return () => { cancelled = true; };
+    }, [ktpFile, ktpPath]);
+
+    const handleKtpChange = (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast({ variant: "destructive", title: "File tidak valid", description: "KTP harus berupa gambar (JPG/PNG)." });
+            return;
+        }
+        if (file.size > MAX_KTP_SIZE) {
+            toast({ variant: "destructive", title: "File terlalu besar", description: "Ukuran maksimal 5 MB." });
+            return;
+        }
+        setKtpFile(file);
+    };
 
     // Validation Errors
     const [errors, setErrors] = useState({});
@@ -115,6 +154,8 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
             setErrors({});
             setShowDeleteConfirm(false);
             setNicknameManuallyEdited(false);
+            setKtpFile(null);
+            setKtpPath(mode === 'edit' && patient ? (patient.ktp_photo_path || null) : null);
             fetchOptions();
 
             if (mode === 'edit' && patient) {
@@ -130,6 +171,8 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     phone: patient.phone || '',
                     nik: patient.nik || '',
                     address: patient.address || '',
+                    occupation: patient.occupation || '',
+                    religion: patient.religion || '',
                     additional_info_option_id: patient.additional_info_option_id || '',
                     status: patient.status || 'aktif',
                     referred_by_patient_id: patient.referred_by_patient_id || null
@@ -157,6 +200,8 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                     phone: '',
                     nik: '',
                     address: '',
+                    occupation: '',
+                    religion: '',
                     additional_info_option_id: '',
                     status: 'aktif',
                     referred_by_patient_id: null
@@ -311,7 +356,23 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
         }
 
         setLoading(true);
+        let uploadedPath = null;
         try {
+            // Upload KTP baru (bucket privat, folder per klinik)
+            if (ktpFile) {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const clinicId = await getCachedClinicId(sessionData?.session?.user?.id);
+                const ext = (ktpFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+                uploadedPath = `${clinicId}/${crypto.randomUUID()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('patient-ktp')
+                    .upload(uploadedPath, ktpFile, { contentType: ktpFile.type });
+                if (uploadError) {
+                    uploadedPath = null;
+                    throw new Error(`Gagal upload KTP: ${uploadError.message}`);
+                }
+            }
+
             const payload = {
                 medical_record_number: formData.medical_record_number,
                 full_name: formData.full_name,
@@ -321,11 +382,20 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                 phone: formData.phone,
                 nik: formData.nik,
                 address: formData.address,
+                occupation: formData.occupation.trim() || null,
+                religion: formData.religion || null,
                 additional_info_option_id: formData.additional_info_option_id || null,
                 status: formData.status,
                 nickname_custom: true,
                 referred_by_patient_id: formData.referred_by_patient_id || null
             };
+
+            // Kolom KTP hanya dikirim bila berubah, supaya data lama tidak tertimpa
+            const originalKtpPath = mode === 'edit' ? (patient?.ktp_photo_path || null) : null;
+            const finalKtpPath = ktpFile ? uploadedPath : ktpPath;
+            if (mode === 'add' || finalKtpPath !== originalKtpPath) {
+                payload.ktp_photo_path = finalKtpPath;
+            }
 
             if (mode === 'add') {
                 const { error } = await createPatient(payload);
@@ -336,10 +406,17 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                 if (error) throw error;
                 toast({ title: "Berhasil", description: "Data pasien berhasil diperbarui." });
             }
+            // Hapus file KTP lama yang sudah diganti/dihapus
+            if (originalKtpPath && originalKtpPath !== finalKtpPath) {
+                await supabase.storage.from('patient-ktp').remove([originalKtpPath]);
+            }
             onSuccess();
             onClose();
         } catch (error) {
             console.error("Save error:", error);
+            if (uploadedPath) {
+                await supabase.storage.from('patient-ktp').remove([uploadedPath]);
+            }
             toast({
                 variant: "destructive",
                 title: "Gagal Menyimpan",
@@ -658,6 +735,36 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                         </p>
                     </div>
 
+                    {/* Pekerjaan & Agama */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="occupation" className="text-sm font-medium text-slate-700">Pekerjaan (Opsional)</Label>
+                            <Input
+                                id="occupation"
+                                name="occupation"
+                                value={formData.occupation}
+                                onChange={handleInputChange}
+                                placeholder="Contoh: Karyawan swasta"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-slate-700">Agama (Opsional)</Label>
+                            <Select
+                                value={formData.religion}
+                                onValueChange={(val) => handleValueChange('religion', val)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Agama" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {RELIGION_OPTIONS.map(r => (
+                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     {/* Row 6: Address */}
                     <div className="space-y-2">
                         <Label htmlFor="address" className="text-sm font-medium text-slate-700">Alamat Lengkap</Label>
@@ -669,6 +776,42 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                             placeholder="Jalan, No Rumah, RT/RW, Kelurahan, Kecamatan..."
                             className="h-20 border-slate-300 focus:ring-2 focus:ring-blue-500 rounded-lg resize-none"
                         />
+                    </div>
+
+                    {/* Foto KTP */}
+                    <div className="space-y-2">
+                        <Label htmlFor="ktp" className="text-sm font-medium text-slate-700">Foto KTP (Opsional)</Label>
+                        {(ktpFile || ktpPath) ? (
+                            <div className="flex items-start gap-3">
+                                <div className="relative w-full max-w-xs">
+                                    {ktpPreview ? (
+                                        <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-24 rounded-md border text-slate-400">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        </div>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="destructive"
+                                        className="absolute top-1 right-1 h-6 w-6"
+                                        onClick={() => { setKtpFile(null); setKtpPath(null); }}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                                <label htmlFor="ktp" className="text-xs text-blue-600 cursor-pointer hover:underline pt-1">Ganti</label>
+                            </div>
+                        ) : (
+                            <label
+                                htmlFor="ktp"
+                                className="flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm text-slate-500 cursor-pointer hover:bg-slate-50"
+                            >
+                                <Upload className="h-4 w-4" /> Pilih gambar KTP (maks. 5 MB)
+                            </label>
+                        )}
+                        <input id="ktp" type="file" accept="image/*" className="hidden" onChange={handleKtpChange} />
                     </div>
                 </div>
 
