@@ -662,15 +662,9 @@ const SuperAdminClinics = () => {
                 </div>
                 {clinic.invoice_signer === 'admin' && (
                   <div className="mt-2 space-y-2">
-                    <Input
-                      key={`${clinic.id}-${clinic.invoice_admin_name || ''}`}
-                      placeholder="Nama admin penanda tangan"
-                      defaultValue={clinic.invoice_admin_name || ''}
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v !== (clinic.invoice_admin_name || '')) updateInvoiceSetting(clinic, { invoice_admin_name: v || null });
-                      }}
-                    />
+                    <p className="text-[10px] text-slate-400">
+                      Nama di invoice otomatis sesuai akun admin yang membuat invoice.
+                    </p>
                     <div className="flex items-center gap-2">
                       {clinic.invoice_admin_signature_url && (
                         <img src={clinic.invoice_admin_signature_url} alt="TTD admin" className="h-10 border rounded bg-white object-contain" />

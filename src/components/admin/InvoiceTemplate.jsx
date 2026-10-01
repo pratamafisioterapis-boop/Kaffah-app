@@ -42,7 +42,7 @@ const therapistName = data?.therapist_name ?? '-';
 
   const adminSigner = data?.clinic?.invoice_signer === 'admin';
   const showPatientSignature = data?.clinic?.invoice_show_patient_signature !== false;
-  const adminName = data?.clinic?.invoice_admin_name || '';
+  const adminName = data?.admin_signer_name || data?.clinic?.invoice_admin_name || '';
 
 const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod : payment === val) ? '☑' : '☐';
   return (
