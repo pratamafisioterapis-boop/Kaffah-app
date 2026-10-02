@@ -269,6 +269,9 @@ const renderToken = (tok, key, values, setValue, openForm) => {
 
 // ───────────── Komponen utama ─────────────
 
+const VITAL_RE = /^vital/i;
+const VITAL_LINE_RE = /(^|\n)Vital Sign:/i;
+
 /**
  * Template Subjective klik-pilih.
  *
@@ -291,8 +294,33 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   }, [templates, activeKey]);
 
   const active = templates.find((t) => t.key === activeKey) || templates[0];
-  const parsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
+  const fullParsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
   const values = valuesByKey[active?.key] || {};
+
+  // Vital sign milik pasien, bukan diagnosa: satu isian dipakai bersama semua tab diagnosa.
+  const sharedVital = useMemo(() => {
+    if (!isObjective) return null;
+    for (const t of templates) {
+      const sec = parseTemplate(t.template, variables)?.sections.find((s) => VITAL_RE.test(s.title));
+      if (sec) return sec;
+    }
+    return null;
+  }, [isObjective, templates, variables]);
+  const [vitalValues, setVitalValues] = useState({});
+  const setVitalValue = (id, v) =>
+    setVitalValues((prev) => {
+      const cur = { ...prev };
+      if (v === undefined) delete cur[id];
+      else cur[id] = v;
+      return cur;
+    });
+
+  const parsed = useMemo(() => {
+    if (!fullParsed || !sharedVital) return fullParsed;
+    const sections = fullParsed.sections.filter((s) => !VITAL_RE.test(s.title));
+    return sections.length ? { ...fullParsed, sections } : null;
+  }, [fullParsed, sharedVital]);
+  const vitalParsed = useMemo(() => (sharedVital ? { sections: [sharedVital] } : null), [sharedVital]);
 
   const setValue = (id, v) =>
     setValuesByKey((prev) => {
@@ -302,14 +330,29 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       return { ...prev, [active.key]: cur };
     });
 
-  const output = useMemo(() => renderTemplate(parsed, values, { inline: isObjective }), [parsed, values, isObjective]);
-  const { filled, total } = useMemo(() => countProgress(parsed, values), [parsed, values]);
-
-  if (!active || !parsed) return null;
-
   const existing = (currentText || '').trim();
   const willReplace = !existing || existing === lastApplied.trim();
-  const reset = () => setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
+
+  const output = useMemo(() => {
+    const body = renderTemplate(parsed, values, { inline: isObjective });
+    // Saat menambahkan diagnosa lain ke teks yang sudah memuat Vital Sign, jangan tulis ulang.
+    const vital = vitalParsed && (willReplace || !VITAL_LINE_RE.test(existing))
+      ? renderTemplate(vitalParsed, vitalValues, { inline: true })
+      : '';
+    return [vital, body].filter(Boolean).join('\n');
+  }, [parsed, values, isObjective, vitalParsed, vitalValues, willReplace, existing]);
+  const { filled, total } = useMemo(() => {
+    const a = countProgress(parsed, values);
+    const b = countProgress(vitalParsed, vitalValues);
+    return { filled: a.filled + b.filled, total: a.total + b.total };
+  }, [parsed, values, vitalParsed, vitalValues]);
+
+  if (!active || (!parsed && !vitalParsed)) return null;
+
+  const reset = () => {
+    setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
+    setVitalValues({});
+  };
 
   const apply = () => {
     if (!output) return;
@@ -383,13 +426,16 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           </div>
 
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-            {parsed.sections.map((section, sIdx) => (
+            {[...(vitalParsed ? [{ section: sharedVital, shared: true }] : []), ...(parsed?.sections || []).map((section) => ({ section, shared: false }))].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">{section.title}</div>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+                  {section.title}
+                  {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
+                </div>
                 <div className="text-sm leading-[2.5rem] text-slate-700">
                   {section.sentences.map((sentence, si) => (
                     <React.Fragment key={si}>
-                      {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, values, setValue, (id, f) => setFormDialog({ id, form: f })))}{' '}
+                      {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, shared ? vitalValues : values, shared ? setVitalValue : setValue, (id, f) => setFormDialog({ id, form: f })))}{' '}
                     </React.Fragment>
                   ))}
                 </div>
