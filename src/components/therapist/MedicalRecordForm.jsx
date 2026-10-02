@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
+import { generateIcfAssessment } from '@/lib/icfAssessment';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
@@ -39,6 +40,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
   const [templateVariables, setTemplateVariables] = useState({});
+  // Assessment disusun otomatis (format ICF) begitu S & O terisi, selama belum diedit manual.
+  const [assessmentAuto, setAssessmentAuto] = useState(true);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -139,6 +142,38 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     .map((d) => (templateCache[d]?.objective ? { key: d, label: templateCache[d].label, template: templateCache[d].objective } : null))
     .filter(Boolean);
 
+  const diagnosisLabels = useMemo(() => diagnosis
+    .map((d) => {
+      const opt = diagnosisOptions.find((o) => o.id === d || o.value === d);
+      if (opt) return opt.label;
+      return isValidUUID(d) ? null : d;
+    })
+    .filter(Boolean), [diagnosis, diagnosisOptions]);
+
+  useEffect(() => {
+    if (!assessmentAuto) return undefined;
+    const timer = setTimeout(() => {
+      const text = generateIcfAssessment({
+        subjective: formData.subjective,
+        objective: formData.objective,
+        diagnoses: diagnosisLabels,
+      });
+      setFormData((prev) => (prev.assessment === text ? prev : { ...prev, assessment: text }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [assessmentAuto, formData.subjective, formData.objective, diagnosisLabels]);
+
+  const canAutoAssess = !!(formData.subjective.trim() && formData.objective.trim());
+
+  const regenerateAssessment = () => {
+    setAssessmentAuto(true);
+    toast({
+      title: 'Assessment ICF disusun ulang',
+      description: 'Dibuat dari Subjective & Objective terbaru. Silakan cek dan sesuaikan.',
+      className: 'bg-blue-50 border-blue-200 text-blue-800',
+    });
+  };
+
   const handleApplyTemplate = (field) => (text, { replace }) => {
     setFormData((prev) => {
       const existing = (prev[field] || '').trim();
@@ -168,6 +203,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       .single();
 
     if (error) throw error;
+
+    // Assessment yang sudah ada dianggap hasil edit terapis: jangan ditimpa otomatis.
+    setAssessmentAuto(!(data.assessment || '').trim());
 
     // Isi form SOAP
     setFormData({
@@ -345,6 +383,7 @@ if (isCreate) {
 
   const handleCopySOAP = (record) => {
     if (!record) return;
+    setAssessmentAuto(false);
     setFormData(prev => ({
       ...prev,
       subjective: record.subjective || '',
@@ -375,7 +414,7 @@ if (isCreate) {
   const soapFields = [
     { key: 'subjective',  label: 'Subjective',  short: 'S', placeholder: 'Keluhan pasien, riwayat penyakit...', accent: 'border-l-blue-400',    badge: 'bg-blue-500',    labelColor: 'text-blue-700'   },
     { key: 'objective',   label: 'Objective',   short: 'O', placeholder: 'Hasil observasi, pemeriksaan fisik, vital signs...', accent: 'border-l-teal-400',    badge: 'bg-teal-500',    labelColor: 'text-teal-700'   },
-    { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: 'Analisis, diagnosis fisioterapi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
+    { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: 'Terisi otomatis (format ICF) setelah Subjective & Objective diisi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
     { key: 'plan',        label: 'Plan',        short: 'P', placeholder: 'Rencana terapi, edukasi, home program...', accent: 'border-l-rose-400',    badge: 'bg-rose-500',    labelColor: 'text-rose-700'   },
   ];
 
@@ -488,6 +527,23 @@ if (isCreate) {
                       {field.short}
                     </span>
                     <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
+                    {field.key === 'assessment' && (
+                      <span className="ml-auto flex items-center gap-1.5">
+                        {assessmentAuto ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                            <Sparkles className="h-3 w-3" /> Otomatis ICF
+                          </span>
+                        ) : canAutoAssess && (
+                          <button
+                            type="button"
+                            onClick={regenerateAssessment}
+                            className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-violet-700 hover:bg-violet-50"
+                          >
+                            <RefreshCw className="h-3 w-3" /> Susun ulang dari S & O
+                          </button>
+                        )}
+                      </span>
+                    )}
                     {(field.key === 'subjective' ? subjectiveTemplates : field.key === 'objective' ? objectiveTemplates : []).length > 0 && (
                       <button
                         type="button"
@@ -503,10 +559,15 @@ if (isCreate) {
                   <Textarea
                     placeholder={field.placeholder}
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${
-                      isPWA ? 'min-h-[100px] text-base' : 'min-h-[130px]'
+                      field.key === 'assessment'
+                        ? (isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]')
+                        : (isPWA ? 'min-h-[100px] text-base' : 'min-h-[130px]')
                     }`}
                     value={formData[field.key]}
-                    onChange={e => setFormData({...formData, [field.key]: e.target.value})}
+                    onChange={e => {
+                      if (field.key === 'assessment') setAssessmentAuto(false);
+                      setFormData({...formData, [field.key]: e.target.value});
+                    }}
                     required
                   />
                 </div>
