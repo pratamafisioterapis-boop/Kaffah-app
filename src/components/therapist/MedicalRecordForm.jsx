@@ -13,8 +13,6 @@ import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
-import ClinicalAdviceAssistant from '@/components/therapist/ClinicalAdviceAssistant';
-import AssessmentAdviceAssistant from '@/components/therapist/AssessmentAdviceAssistant';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
@@ -514,10 +512,6 @@ if (isCreate) {
                 </div>
               ))}
             </div>
-
-            <AssessmentAdviceAssistant formData={formData} />
-
-            <ClinicalAdviceAssistant formData={formData} />
 
             {/* Submit */}
             <div className={`flex justify-end gap-3 bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
