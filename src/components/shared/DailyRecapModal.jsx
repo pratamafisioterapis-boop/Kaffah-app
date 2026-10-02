@@ -11,6 +11,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PackageInfoCard from './PackageInfoCard';
+import RecapInvoiceItems, { itemsNetTotal } from './RecapInvoiceItems';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ExtendPackageModal from './ExtendPackageModal';
 import { supabase } from '@/lib/customSupabaseClient';
 import { 
@@ -49,7 +51,40 @@ const useDebounce = (value, delay) => {
 
 const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSuccess }) => {
     const { toast } = useToast();
-    
+    const { userDetails } = useAuth();
+
+    // Klinik dengan template invoice "kwitansi": item invoice dipilih dari katalog
+    // harga langsung di recap, field "Tipe Layanan" & diskon recap tidak dipakai.
+    const [isKwitansi, setIsKwitansi] = useState(false);
+    const [invoiceItems, setInvoiceItems] = useState([]);
+
+    useEffect(() => {
+        if (!isOpen || !userDetails?.clinic_id) { setIsKwitansi(false); return; }
+        let cancelled = false;
+        supabase.from('clinics').select('invoice_template').eq('id', userDetails.clinic_id).maybeSingle()
+            .then(({ data }) => { if (!cancelled) setIsKwitansi(data?.invoice_template === 'kwitansi'); });
+        return () => { cancelled = true; };
+    }, [isOpen, userDetails?.clinic_id]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); return; }
+        let cancelled = false;
+        supabase.from('daily_recaps').select('invoice_items').eq('id', initialData.id).maybeSingle()
+            .then(({ data }) => {
+                if (cancelled) return;
+                setInvoiceItems(Array.isArray(data?.invoice_items) ? data.invoice_items : []);
+            });
+        return () => { cancelled = true; };
+    }, [isOpen, mode, initialData?.id]);
+
+    // Nominal recap = total bersih item invoice (kecuali sesi paket Rp 0 yang terkunci).
+    useEffect(() => {
+        if (!isKwitansi || isPackageSessionLocked || invoiceItems.length === 0) return;
+        const total = Math.round(itemsNetTotal(invoiceItems));
+        setFormData(prev => (Number(prev.amount) === total ? prev : { ...prev, amount: total }));
+    }, [isKwitansi, invoiceItems]);
+
     // 🔥 CREATE DIAGNOSA (FLOW BARU DENGAN POPUP SERVICE)
     const handleCreateDiagnosis = async (label) => {
       // simpan label sementara
@@ -1073,6 +1108,16 @@ setFormData({
                     ? (initialData?.package_tracking_id ?? null)
                     : (selectedPackage?.id ?? null)
             };
+            // Diskon recap tidak dipakai di kwitansi (diskon per item); invoice_items
+            // disimpan terpisah setelah recap tersimpan.
+            if (isKwitansi) {
+                if (invoiceItems.length > 0 && !isPackageSessionLocked) {
+                    payload.amount = Math.round(itemsNetTotal(invoiceItems));
+                }
+                payload.discount_type = null;
+                payload.discount_value = 0;
+                payload.discount_label = null;
+            }
 
             let result;
             if (mode === 'add') {
@@ -1082,6 +1127,17 @@ setFormData({
             }
 
             if (result.error) throw result.error;
+
+            if (isKwitansi) {
+                const recapId = mode === 'add' ? result.data?.recap_id : initialData.id;
+                if (recapId) {
+                    const { error: itemsError } = await supabase
+                        .from('daily_recaps')
+                        .update({ invoice_items: invoiceItems.length > 0 ? invoiceItems : null })
+                        .eq('id', recapId);
+                    if (itemsError) throw itemsError;
+                }
+            }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
             if (onSuccess) onSuccess();
             onClose();
@@ -1092,23 +1148,8 @@ setFormData({
         }
     };
     
-    if(!isOpen) return null;
-
-    return (
+    const fDate = (
         <>
-            <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onClose()}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-0">
-                    <div className="px-6 py-6 border-b border-slate-100">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900">{mode === 'add' ? 'Tambah Recap Harian' : 'Edit Recap Harian'}</DialogTitle>
-                            <DialogDescription className="text-slate-500">Lengkapi data kunjungan pasien berikut.</DialogDescription>
-                        </DialogHeader>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* LEFT COLUMN */}
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Tanggal & Pasien</h3>
                                 <div className="space-y-1 relative">
                                     <Label>Tanggal Sesi <span className="text-red-500">*</span></Label>
                                     <div className="flex gap-2">
@@ -1118,6 +1159,11 @@ setFormData({
                                     {errors.recap_date && <p className="text-xs text-red-500">{errors.recap_date}</p>}
                                     {showDatePicker && <div className="absolute z-50 mt-1"><DatePicker value={parseDateFromDisplay(formData.recap_date)} onChange={handleDateSelect} onClose={() => setShowDatePicker(false)} /></div>}
                                 </div>
+        </>
+    );
+
+    const fOwner = (
+        <>
                                 <div className="space-y-1">
                                     <Label>Pemilik Paket / Akun <span className="text-red-500">*</span></Label>
                                     <SearchableSelect 
@@ -1130,7 +1176,11 @@ setFormData({
                                     />
                                     {errors.patient_id && <p className="text-xs text-red-500">{errors.patient_id}</p>}
                                 </div>
-                                
+        </>
+    );
+
+    const fGuestPkg = (
+        <>
                                 {formData.guest_name?.trim() && !formData.patient_id && (
                                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                         <p className="text-sm font-semibold text-amber-800">
@@ -1151,6 +1201,11 @@ setFormData({
                                     />
                                 )}
 
+        </>
+    );
+
+    const fActual = (
+        <>
                                 {/* Actual Patient - Unconditionally rendered, always enabled */}
                                 <div className="space-y-1">
                                     <Label>Pasien Aktual</Label>
@@ -1163,13 +1218,11 @@ setFormData({
                                         isLoading={loadingPatients} 
                                     />
                                 </div>
-                            </div>
+        </>
+    );
 
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">
-                                  Diagnosa & Layanan
-                                </h3>
-
+    const fDiagnosis = (
+        <>
                                 {/* 🔥 DIAGNOSA DULU */}
                                 <div className="space-y-1">
                                   <Label>Diagnosa</Label>
@@ -1185,7 +1238,11 @@ setFormData({
                                     onCreateOption={handleCreateDiagnosis}
                                   />
                                 </div>
+        </>
+    );
 
+    const fService = (
+        <>
                                 {/* 🔥 LAYANAN KEDUA */}
                                 <div className="space-y-1">
                                   <Label>Tipe Layanan</Label>
@@ -1198,17 +1255,20 @@ setFormData({
                                     isLoading={loadingServices} 
                                   />
                                 </div>
-                            </div>
-                        </div>
-                        
-                        {/* RIGHT COLUMN */}
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Kategori & Terapis</h3>
+        </>
+    );
+
+    const fPatientType = (
+        <>
                                 <div className="space-y-1">
                                     <Label>Tipe Pasien</Label>
                                     <SearchableSelect options={patientTypeOptions} value={formData.patient_type} onChange={v => handleChange('patient_type', v)} onSearch={setPatientTypeSearch} placeholder="Cari tipe pasien..." isLoading={loadingPatientTypes} />
                                 </div>
+        </>
+    );
+
+    const fPackageType = (
+        <>
                                 <div className="space-y-1">
                                     <Label>Jenis Paket <span className="text-red-500">*</span></Label>
                                     <SearchableSelect
@@ -1233,18 +1293,25 @@ setFormData({
                                         <p className="text-xs text-slate-500 mt-1">Saat ini: {formData.package_type}</p>
                                     )}
                                 </div>
+        </>
+    );
+
+    const fTherapist = (
+        <>
                                 <div className="space-y-1">
                                     <Label>Fisioterapis <span className="text-red-500">*</span></Label>
                                     <SearchableSelect options={therapists} value={formData.therapist_id} onChange={v => handleChange('therapist_id', v)} placeholder="Pilih Terapis..." isLoading={isLoadingCoreData} />
                                     {errors.therapist_id && <p className="text-xs text-red-500">{errors.therapist_id}</p>}
                                 </div>
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
+        </>
+    );
+
+    const fPayment = (
+        <>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label>Nominal (Rp)</Label>
-                                        <Input type="number" value={formData.amount ?? ''} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={isPackageSessionLocked}/>
+                                        <Input type="number" value={formData.amount ?? ''} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                     </div>
                                     <div className="space-y-1">
                                         <Label>Metode Pembayaran</Label>
@@ -1309,6 +1376,11 @@ setFormData({
                                         {errors.payment_splits && <p className="text-xs text-red-500">{errors.payment_splits}</p>}
                                     </div>
                                 )}
+        </>
+    );
+
+    const fDiscount = (
+        <>
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
                                     <div className="space-y-1">
@@ -1347,9 +1419,84 @@ setFormData({
                                         </div>
                                     </div>
                                 </div>
+        </>
+    );
+
+    if(!isOpen) return null;
+
+    return (
+        <>
+            <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onClose()}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-0">
+                    <div className="px-6 py-6 border-b border-slate-100">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-slate-900">{mode === 'add' ? 'Tambah Recap Harian' : 'Edit Recap Harian'}</DialogTitle>
+                            <DialogDescription className="text-slate-500">Lengkapi data kunjungan pasien berikut.</DialogDescription>
+                        </DialogHeader>
+                    </div>
+                    {isKwitansi ? (
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Layout kwitansi: urutan mengikuti kwitansi - data pasien, diagnosa, item, pembayaran */}
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Data Pasien & Kunjungan</h3>
+                                {fDate}
+                                {fOwner}
+                                {fGuestPkg}
+                                {fActual}
+                                {fTherapist}
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Diagnosa & Kategori</h3>
+                                {fDiagnosis}
+                                {fPatientType}
+                                {fPackageType}
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Item Invoice (Katalog Harga)</h3>
+                                <RecapInvoiceItems clinicId={userDetails?.clinic_id} items={invoiceItems} onChange={setInvoiceItems} />
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
+                                {fPayment}
                             </div>
                         </div>
                     </div>
+                    ) : (
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* LEFT COLUMN */}
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Tanggal & Pasien</h3>
+                                {fDate}
+                                {fOwner}
+                                {fGuestPkg}
+                                {fActual}
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Diagnosa & Layanan</h3>
+                                {fDiagnosis}
+                                {fService}
+                            </div>
+                        </div>
+                        {/* RIGHT COLUMN */}
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Kategori & Terapis</h3>
+                                {fPatientType}
+                                {fPackageType}
+                                {fTherapist}
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
+                                {fPayment}
+                                {fDiscount}
+                            </div>
+                        </div>
+                    </div>
+                    )}
 
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
                         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>

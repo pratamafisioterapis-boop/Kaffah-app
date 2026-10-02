@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
-import InvoiceItemsEditor from './InvoiceItemsEditor';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -667,15 +666,6 @@ const handleSendManualWA = async () => {
             </DialogClose>
           </div>
         </div>
-
-        {useKwitansi && data?.id && (
-          <InvoiceItemsEditor
-            recapId={data.id}
-            clinicId={userDetails?.clinic_id}
-            recapData={templateData}
-            onSaved={(v) => setDetailData((d) => ({ ...(d || {}), invoice_items: v }))}
-          />
-        )}
 
         {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
