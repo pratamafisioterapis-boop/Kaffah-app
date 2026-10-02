@@ -262,6 +262,21 @@ const tidyLine = (line) => line
   .replace('(normal/deviasi: (.....))', '(normal/deviasi) [(.....)]')
   .replace(/^(.*?)\s*\(([^():]+) : (\(\.{3,}\))\)$/, '$1 : $2 $3');
 
+// Baris alat ukur ("Berg Balance : (.....)/56") otomatis dapat tombol formulir fungsional.
+const FORM_WORDS = {
+  barthel: 'barthel', berg: 'berg', ndi: 'ndi', odi: 'odi', oswestry: 'odi', lefs: 'lefs', spadi: 'spadi',
+  fesi: 'fesi', koos: 'koos', womac: 'womac', hoos: 'hoos', dash: 'dash', quickdash: 'quickdash',
+  prwe: 'prwe', tinetti: 'tinetti', ikdc: 'ikdc', psfs: 'psfs', nihss: 'nihss', sppb: 'sppb', minibest: 'minibest',
+};
+const formsForLabel = (label) => {
+  const found = [];
+  (label.toLowerCase().match(/[a-z]+/g) || []).forEach((w) => {
+    const id = FORM_WORDS[w];
+    if (id && !found.includes(id)) found.push(id);
+  });
+  return found;
+};
+
 const parseListTemplate = (text, variables) => {
   let counter = 0;
   const nextId = () => `v${counter++}`;
@@ -326,6 +341,16 @@ const parseListTemplate = (text, variables) => {
     }
 
     const [labelPart, valuePart] = kv;
+    const forms = formsForLabel(labelPart);
+    if (forms.length) {
+      const labelText = labelPart.replace(/\s*\(\.{3,}\)%?/g, '').replace(/\s*sesuai lokasi/, '').replace(/[()]/g, '').trim();
+      push('kv', [
+        { t: 'text', v: labelText, label: true },
+        { t: 'text', v: ' : ' },
+        { t: 'form', id: nextId(), forms },
+      ]);
+      return;
+    }
     const labelTokens = tokenizeBody(flattenNested(labelPart), nextId, variables).map((t) => (t.t === 'text' ? { ...t, label: true } : t));
     let valueTokens = tokenizeBody(flattenNested(valuePart), nextId, variables);
     const slots = valueTokens.filter((t) => t.t !== 'text' && t.t !== 'gopen' && t.t !== 'gclose');
