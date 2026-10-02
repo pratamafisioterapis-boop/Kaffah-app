@@ -59,3 +59,51 @@ export const classifyOnsetPhase = (onsetDate, referenceDate = new Date()) => {
   if (totalDays <= 90) return { label: 'Subakut', color: 'blue' };
   return { label: 'Kronis', color: 'rose' };
 };
+
+const UNIT_DAYS = { hari: 1, minggu: 7, bulan: 30, tahun: 365 };
+const SINCE_RE = /\b(sejak)\s+(\d{1,3})\s+(hari|minggu|bulan|tahun)(\s+yang\s+lalu)?/gi;
+
+const toIsoDate = (d) => {
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+/**
+ * Perkirakan tanggal onset dari teks Subjective, mis. "sejak 2 minggu yang lalu"
+ * yang ditulis pada tanggal catatan tersebut. Dipakai bila onset belum pernah diisi
+ * di form rekam medis lengkap.
+ * @returns {string|null} tanggal ISO (yyyy-mm-dd)
+ */
+export const deriveOnsetFromSubjective = (subjective, recordDate) => {
+  if (!subjective || !recordDate) return null;
+  const ref = new Date(recordDate);
+  if (isNaN(ref.getTime())) return null;
+  const m = new RegExp(SINCE_RE.source, 'i').exec(subjective);
+  if (!m) return null;
+  ref.setDate(ref.getDate() - Number(m[2]) * UNIT_DAYS[m[3].toLowerCase()]);
+  return toIsoDate(ref);
+};
+
+// Durasi satu satuan untuk kalimat Subjective: "sejak 3 minggu yang lalu".
+const toSinglePhrase = (onsetDate, referenceDate) => {
+  const start = new Date(onsetDate);
+  const end = new Date(referenceDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  const days = Math.floor((end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0)) / 86400000);
+  if (days < 0) return null;
+  if (days < 14) return `${Math.max(days, 1)} hari`;
+  if (days < 60) return `${Math.round(days / 7)} minggu`;
+  if (days < 730) return `${Math.round(days / 30)} bulan`;
+  return `${Math.round(days / 365)} tahun`;
+};
+
+/**
+ * Perbarui durasi onset di teks Subjective hasil salinan ("sejak 2 minggu yang lalu")
+ * agar sesuai dengan hari ini.
+ */
+export const refreshOnsetInSubjective = (subjective, onsetDate, referenceDate = new Date()) => {
+  if (!subjective || !onsetDate) return subjective;
+  const phrase = toSinglePhrase(onsetDate, referenceDate);
+  if (!phrase) return subjective;
+  return subjective.replace(SINCE_RE, (_, word, __, ___, ago) => `${word} ${phrase}${ago || ''}`);
+};
