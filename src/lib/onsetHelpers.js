@@ -80,7 +80,7 @@ export const deriveOnsetFromSubjective = (subjective, recordDate) => {
   if (isNaN(ref.getTime())) return null;
   const m = new RegExp(SINCE_RE.source, 'i').exec(subjective);
   if (!m) return null;
-  ref.setDate(ref.getDate() - Number(m[1]) * UNIT_DAYS[m[2].toLowerCase()]);
+  ref.setDate(ref.getDate() - Number(m[2]) * UNIT_DAYS[m[3].toLowerCase()]);
   return toIsoDate(ref);
 };
 
