@@ -54,9 +54,13 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const handleCreateDiagnosis = async (label) => {
       // simpan label sementara
       setPendingDiagnosisLabel(label);
+      setSelectedParentService('');
       // buka popup pilih service
       setShowServicePicker(true);
-      return false; // penting supaya input tidak reset
+      // true = tutup dropdown diagnosa. Dropdown di-portal dengan z-[9999] sehingga
+      // kalau dibiarkan terbuka ia menutupi popup pilih layanan dan diagnosa baru
+      // tidak bisa disimpan.
+      return true;
     };
 
     // 🔥 KONFIRMASI SIMPAN DIAGNOSA SETELAH PILIH SERVICE
@@ -1392,7 +1396,7 @@ setFormData({
                         Batal
                     </Button>
 
-                    <Button onClick={handleConfirmCreateDiagnosis}>
+                    <Button onClick={handleConfirmCreateDiagnosis} disabled={!selectedParentService}>
                         Simpan
                     </Button>
                     </div>
