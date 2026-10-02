@@ -17,9 +17,11 @@
 //   4. Hasil berupa teks biasa yang bisa diedit terapis (Assessment tetap
 //      keputusan klinis terapis; ini hanya draf berstruktur).
 //
-// Kode yang dipakai mengacu pada ICF 2001 (tingkat 2-5). Struktur tubuh
-// dipilih pada tingkat wilayah (mis. s76002 vertebra lumbal) karena S/O teks
-// bebas tidak memuat detail pencitraan.
+// Kode mengacu pada katalog resmi ICF WHO (tabel icf_codes di database, 1424
+// kode). Hasil sengaja ringkas: hanya kode spesifik (tingkat 3-4) yang punya
+// bukti langsung di teks S/O, maksimal 6 fungsi tubuh, 3 struktur, 5 aktivitas
+// dan 2 faktor lingkungan. Judul kode memakai judul resmi dari database
+// (parameter `titles`); bila belum termuat dipakai label bawaan di bawah.
 
 // ───────────────────────── Kualifier ─────────────────────────
 
@@ -44,7 +46,7 @@ const ashworthQualifier = (v) => Math.max(0, Math.min(4, v));
 // painCode: kode b2801x. structs: [kode, nama] struktur tubuh (s).
 
 const REGIONS = [
-  { id: 'neck', label: 'leher', re: /\b(leher|servikal|cervical|tengkuk|nuchal)\b/i, pain: 'b28010', structs: [['s710', 'Regio kepala & leher'], ['s76000', 'Kolumna vertebralis servikal']] },
+  { id: 'neck', label: 'leher', re: /\b(leher|servikal|cervical|tengkuk|nuchal)\b/i, pain: 'b28010', structs: [['s76000', 'Kolumna vertebralis servikal']] },
   { id: 'head', label: 'kepala', re: /\b(kepala|sefalgia|cephalgia|migrain|migraine|pelipis|dahi)\b/i, pain: 'b28010', structs: [['s710', 'Regio kepala & leher']] },
   { id: 'jaw', label: 'rahang/TMJ', re: /\b(rahang|tmj|temporomandibular)\b/i, pain: 'b28010', structs: [['s7103', 'Sendi regio kepala & leher']] },
   { id: 'shoulder', label: 'bahu', re: /\b(bahu|shoulder|skapula|scapula|rotator cuff|klavikula|supraspinatus)\b/i, pain: 'b28014', structs: [['s720', 'Regio bahu']] },
@@ -87,28 +89,29 @@ const regionsIn = (text) => REGIONS.filter((r) => r.re.test(text));
 
 const RULES = [
   // Fungsi mental & sensorik
-  { id: 'sleep', code: 'b134', label: 'Fungsi tidur', re: /\b(gangguan tidur|susah tidur|sulit tidur|tidur terganggu|terbangun(?: malam)?|insomnia|kurang tidur|tidur tidak nyenyak)\b/i, source: 'S' },
+  { id: 'sleep', code: 'b134', label: 'Sleep functions', re: /\b(gangguan tidur|susah tidur|sulit tidur|tidur terganggu|terbangun(?: malam)?|insomnia|kurang tidur|tidur tidak nyenyak)\b/i, source: 'S' },
   { id: 'emotion', code: 'b152', label: 'Fungsi emosi (cemas/stres/mood)', re: /\b(cemas|ansietas|anxiety|stres|stress|depresi|mood|takut bergerak|kinesiofobia|khawatir|panik)\b/i, source: 'S' },
-  { id: 'energy', code: 'b130', label: 'Fungsi energi & dorongan (kelelahan)', re: /\b(lelah|kelelahan|fatigue|lemas|letih|capek)\b/i, source: 'SO' },
+  { id: 'energy', code: 'b4552', label: 'Fatiguability (mudah lelah)', re: /\b(lelah|kelelahan|fatigue|lemas|letih|capek)\b/i, source: 'SO' },
   { id: 'dizzy', code: 'b2401', label: 'Sensasi pusing/vertigo', re: /\b(pusing|vertigo|berputar|melayang|dizziness)\b/i, source: 'SO' },
   { id: 'tinnitus', code: 'b2400', label: 'Tinitus (berdenging di telinga)', re: /\b(tinitus|tinnitus|berdenging)\b/i, source: 'SO' },
-  { id: 'balance', code: 'b235', label: 'Fungsi vestibular (keseimbangan)', re: /\b(keseimbangan|balance|romberg|tandem|berg|limit of stability|mini-?bestest|tinetti|sering jatuh|riwayat jatuh|risiko jatuh)\b/i, source: 'SO', normalNeg: true },
+  { id: 'balance', code: 'b2351', label: 'Vestibular function of balance', re: /\b(keseimbangan|balance|romberg|tandem|berg|limit of stability|mini-?bestest|tinetti|sering jatuh|riwayat jatuh|risiko jatuh)\b/i, source: 'SO', normalNeg: true },
   { id: 'postural', code: 'b755', label: 'Reaksi gerak involunter (reaksi postural/protektif)', re: /\b(reaksi (?:perlindungan|postural|keseimbangan)|righting|reaksi protektif)\b/i, source: 'O', normalNeg: true },
   { id: 'proprio', code: 'b260', label: 'Fungsi propriosepsi', re: /\b(propriosepsi|proprioception|joint position sense|rasa posisi sendi)\b/i, source: 'O', normalNeg: true },
   { id: 'tingling', code: 'b840', label: 'Sensasi terkait kulit (kesemutan)', re: /\b(kesemutan|tingling|parestesia|paresthesia|rasa terbakar|burning)\b/i, source: 'SO' },
   { id: 'numb', code: 'b265', label: 'Fungsi sentuh/raba (baal/hipestesia)', re: /\b(baal|mati rasa|kebas|hipestesia|hipoestesia|hypoesthesia|sensasi raba menurun|gangguan sensorik|sensorik terganggu)\b/i, source: 'SO' },
 
   // Respirasi & kardiovaskular
-  { id: 'resp', code: 'b440', label: 'Fungsi pernapasan', re: /\b(sesak|napas pendek|nafas pendek|dispnea|dyspnea|takipnea|mengi|pursed-?lip|wheezing)\b/i, source: 'SO' },
-  { id: 'respmuscle', code: 'b445', label: 'Fungsi otot pernapasan', re: /\b(otot bantu napas|otot bantu nafas|ekspansi dada)\b/i, source: 'O' },
+  { id: 'dyspnea', code: 'b460', label: 'Sensasi sesak napas', re: /\b(sesak|napas pendek|nafas pendek|dispnea|dyspnea)\b/i, source: 'SO' },
+  { id: 'resp', code: 'b440', label: 'Fungsi pernapasan', re: /\b(takipnea|mengi|pursed-?lip|wheezing)\b/i, source: 'SO' },
+  { id: 'respmuscle', code: 'b4452', label: 'Functions of accessory respiratory muscles', re: /\b(otot bantu napas|otot bantu nafas)\b/i, source: 'O' },
   { id: 'cough', code: 'b450', label: 'Fungsi pernapasan tambahan (batuk/dahak)', re: /\b(batuk|sputum|dahak)\b/i, source: 'SO' },
   { id: 'exercisetol', code: 'b455', label: 'Toleransi latihan/aktivitas', re: /\b(toleransi (?:aktivitas|latihan)|6mwt|borg|mmrc|desaturasi|kapasitas fungsional|jarak jalan sebelum sesak)\b/i, source: 'SO' },
-  { id: 'swallow', code: 'b5105', label: 'Fungsi menelan', re: /\b(disfagia|sulit menelan|tersedak|menelan terganggu)\b/i, source: 'SO' },
+  { id: 'swallow', code: 'b5105', label: 'Swallowing', re: /\b(disfagia|sulit menelan|tersedak|menelan terganggu)\b/i, source: 'SO' },
   { id: 'speech', code: 'b320', label: 'Fungsi artikulasi (bicara)', re: /\b(disartria|dysarthria|bicara pelo|pelo)\b/i, source: 'SO' },
   { id: 'language', code: 'b167', label: 'Fungsi mental bahasa', re: /\b(afasia|aphasia)\b/i, source: 'SO' },
-  { id: 'bladder', code: 'b620', label: 'Fungsi berkemih', re: /\b(inkontinensia urin|inkontinensia|ngompol|retensi urin|anyang-?anyangan|sulit berkemih)\b/i, source: 'SO' },
-  { id: 'bowel', code: 'b525', label: 'Fungsi defekasi', re: /\b(sembelit|konstipasi|inkontinensia alvi|sulit bab)\b/i, source: 'SO' },
-  { id: 'edema', code: 'b4352', label: 'Fungsi pembuluh limfe (edema/bengkak)', re: /\b(edema|oedema|bengkak|pembengkakan|swelling|efusi)\b/i, source: 'SO', normalNeg: true },
+  { id: 'bladder', code: 'b6202', label: 'Urinary continence', re: /\b(inkontinensia urin|inkontinensia|ngompol)\b/i, source: 'SO' },
+  { id: 'bowel', code: 'b5253', label: 'Faecal continence', re: /\b(inkontinensia alvi|tidak bisa menahan bab)\b/i, source: 'SO' },
+  { id: 'edema', code: 'b4352', label: 'Functions of lymphatic vessels (edema)', re: /\b(edema|oedema|bengkak|pembengkakan|swelling|efusi)\b/i, source: 'SO', normalNeg: true },
   { id: 'wound', code: 'b820', label: 'Fungsi perbaikan kulit (luka/jaringan parut)', re: /\b(luka|ulkus|ulcer|dekubitus|jaringan parut|bekas luka|scar|keloid)\b/i, source: 'SO' },
   { id: 'skin', code: 'b810', label: 'Fungsi proteksi kulit', re: /\b(ruam|kemerahan kulit|eritema|kulit kering|lecet)\b/i, source: 'SO' },
 
@@ -117,8 +120,8 @@ const RULES = [
   { id: 'tone', code: 'b735', label: 'Fungsi tonus otot', re: /\b(tonus|spastisitas|spastik|rigiditas|rigid|hipertonus|hipertoni|hipotonus|hipotoni|flaksid|flaccid|ashworth)\b/i, source: 'SO', normalNeg: true },
   { id: 'stiffness', code: 'b7800', label: 'Sensasi kekakuan otot/sendi', re: /\b(kaku|kekakuan|stiffness|kaku pagi)\b/i, source: 'SO', normalNeg: true, skipIf: /\b(kaku sendi)\b/i },
   { id: 'spasm', code: 'b7801', label: 'Sensasi spasme/ketegangan otot', re: /\b(spasme|spasm|taut band|trigger point|kram|keram|tegang|muscle guarding|guarding|otot menegang)\b/i, source: 'SO' },
-  { id: 'coordination', code: 'b760', label: 'Kontrol gerak volunter (koordinasi)', re: /\b(koordinasi|ataksia|ataxia|dismetria|disdiadokokinesia|kontrol motorik|kontrol postur|kontrol gerak)\b/i, source: 'SO', normalNeg: true },
-  { id: 'involuntary', code: 'b765', label: 'Gerakan involunter (tremor/distonia)', re: /\b(tremor|distonia|dystonia|koreo|chorea|mioklonus)\b/i, source: 'SO' },
+  { id: 'coordination', code: 'b7602', label: 'Coordination of voluntary movements', re: /\b(koordinasi|ataksia|ataxia|dismetria|disdiadokokinesia|kontrol motorik|kontrol postur|kontrol gerak)\b/i, source: 'SO', normalNeg: true },
+  { id: 'involuntary', code: 'b7651', label: 'Tremor', re: /\b(tremor)\b/i, source: 'SO' },
   { id: 'gait', code: 'b770', label: 'Pola berjalan', re: /\b(pincang|limping|drop foot|trendelenburg|waddling|menyeret kaki|(?:gaya jalan|gait|jalan)\s+(?:antalgik|abnormal|terganggu|tidak normal|asimetris|lambat|ataksik|spastik|hati-hati))\b/i, source: 'O', normalNeg: true },
   { id: 'endurance', code: 'b740', label: 'Fungsi daya tahan otot', re: /\b(daya tahan otot|endurans|endurance|sit-?to-?stand|1-?min sts|heel raise|plank)\b/i, source: 'O' },
 ];
@@ -135,9 +138,9 @@ const ACTIVITY_RULES = [
   { id: 'sit', code: 'd4153', label: 'Mempertahankan posisi duduk', re: /\b(duduk lama|lama duduk|tidak tahan duduk|duduk terlalu lama|sulit duduk)\b/i },
   { id: 'stand', code: 'd4154', label: 'Mempertahankan posisi berdiri', re: /\b(berdiri lama|lama berdiri|tidak tahan berdiri|berdiri terlalu lama|sulit berdiri)\b/i },
   { id: 'transfer', code: 'd420', label: 'Berpindah (transfer)', re: /\b(transfer|berpindah|pindah dari)\b/i },
-  { id: 'lift', code: 'd430', label: 'Mengangkat & membawa benda', re: /\b(mengangkat|angkat beban|membawa beban|menjinjing|mengangkut|membawa barang)\b/i },
-  { id: 'hand', code: 'd440', label: 'Penggunaan tangan halus', re: /\b(menggenggam|genggam|menulis|mengancing|kancing|memegang|memungut|menjepit|membuka botol|membuka tutup)\b/i },
-  { id: 'reach', code: 'd445', label: 'Penggunaan tangan & lengan (menjangkau, mendorong, menarik)', re: /\b(menjangkau|mengangkat tangan|mengangkat lengan|di atas kepala|menyisir|keramas|menggapai|mendorong|menarik)\b/i },
+  { id: 'lift', code: 'd4300', label: 'Lifting', re: /\b(mengangkat|angkat beban|membawa beban|menjinjing|mengangkut|membawa barang)\b/i },
+  { id: 'hand', code: 'd4401', label: 'Grasping', re: /\b(menggenggam|genggam|menulis|mengancing|kancing|memegang|memungut|menjepit|membuka botol|membuka tutup)\b/i },
+  { id: 'reach', code: 'd4452', label: 'Reaching', re: /\b(menjangkau|mengangkat tangan|mengangkat lengan|di atas kepala|menyisir|keramas|menggapai|mendorong|menarik)\b/i },
   { id: 'wash', code: 'd510', label: 'Mencuci diri (mandi)', re: /\b(mandi|memandikan)\b/i },
   { id: 'toilet', code: 'd530', label: 'Buang air (toileting)', re: /\b(ke toilet|toileting|jongkok di toilet|buang air)\b/i },
   { id: 'dress', code: 'd540', label: 'Berpakaian', re: /\b(berpakaian|memakai baju|memakai celana|pakai baju|pakai celana|kaus kaki|memakai sepatu|pakai sepatu)\b/i },
@@ -145,7 +148,7 @@ const ACTIVITY_RULES = [
   { id: 'meal', code: 'd630', label: 'Menyiapkan makanan', re: /\b(memasak|menyiapkan makanan)\b/i },
   { id: 'house', code: 'd640', label: 'Pekerjaan rumah tangga', re: /\b(menyapu|mengepel|mencuci pakaian|mencuci baju|menyetrika|pekerjaan rumah|mengurus rumah|membersihkan rumah)\b/i },
   { id: 'adl', code: 'd230', label: 'Melakukan rutinitas harian', re: /\b(aktivitas sehari-?hari|aktivitas harian|adl)\b/i },
-  { id: 'drive', code: 'd475', label: 'Mengemudi', re: /\b(mengemudi|menyetir|berkendara|naik motor|mengendarai)\b/i },
+  { id: 'drive', code: 'd4751', label: 'Driving motorized vehicles', re: /\b(mengemudi|menyetir|berkendara|naik motor|mengendarai)\b/i },
   { id: 'work', code: 'd850', label: 'Pekerjaan/mencari nafkah', re: /\b(bekerja|pekerjaan|kerja|kantor|mengetik|komputer|mengajar|berdagang)\b/i },
   { id: 'sport', code: 'd9201', label: 'Olahraga', re: /\b(olahraga|futsal|sepak bola|bulu tangkis|badminton|basket|voli|gym|renang|bersepeda|senam|fitness|jogging)\b/i },
   { id: 'worship', code: 'd930', label: 'Agama & spiritualitas (ibadah)', re: /\b(sholat|shalat|salat|sujud|rukuk|ruku|duduk tahiyat|duduk tasyahud|ibadah)\b/i },
@@ -285,28 +288,6 @@ const collectFunctional = (text) => {
   }).filter(Boolean);
 };
 
-const vitalFindings = (oText) => {
-  const t = clean(oText);
-  const out = [];
-  const bp = t.match(/\b(?:td|tekanan darah)\s*[:=]?\s*(\d{2,3})\s*\/\s*(\d{2,3})/i);
-  if (bp) {
-    const [sys, dia] = [Number(bp[1]), Number(bp[2])];
-    if (sys >= 140 || dia >= 90 || sys < 90) out.push({ code: 'b420', label: 'Fungsi tekanan darah', detail: `TD ${sys}/${dia} mmHg` });
-  }
-  const hr = t.match(/\bnadi\s*[:=]?\s*(\d{2,3})/i);
-  if (hr) {
-    const v = Number(hr[1]);
-    if (v > 100 || v < 60) out.push({ code: 'b410', label: 'Fungsi jantung (denyut nadi)', detail: `nadi ${v} x/mnt` });
-  }
-  const rr = t.match(/\brr\s*[:=]?\s*(\d{1,2})\s*x/i);
-  if (rr && Number(rr[1]) > 20) out.push({ code: 'b440', label: 'Fungsi pernapasan', detail: `RR ${rr[1]} x/mnt` });
-  const spo2 = t.match(/\bspo2\s*[:=]?\s*(\d{2,3})/i);
-  if (spo2 && Number(spo2[1]) < 95) out.push({ code: 'b440', label: 'Fungsi pernapasan', detail: `SpO2 ${spo2[1]}%` });
-  const temp = t.match(/\bsuhu\s*[:=]?\s*(\d{2}(?:[.,]\d)?)/i);
-  if (temp && NUM(temp[1]) >= 37.5) out.push({ code: 'b550', label: 'Fungsi termoregulasi', detail: `suhu ${temp[1]} C` });
-  return out;
-};
-
 // ───────────────────────── Penyusunan ─────────────────────────
 
 const fmt = (code, q) => (q == null ? code : `${code}.${q}`);
@@ -320,7 +301,7 @@ const uniq = (arr) => [...new Set(arr.filter(Boolean))];
 
 /**
  * Susun hasil ICF terstruktur dari S, O, dan label diagnosa.
- * @returns {{ b: Array, s: Array, d: Array, e: Array, personal: string[], functional: Array, hasData: boolean }}
+ * @returns {{ b: Array, s: Array, d: Array, e: Array, functional: Array, hasData: boolean }}
  */
 export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } = {}) => {
   const sSections = toSections(subjective);
@@ -392,8 +373,11 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
       e.q = painQ;
     }
     if (radiating) {
-      b.forEach((it) => { if (it.code.startsWith('b2801') || it.code === 'b2802') it.details.push('menjalar'); });
-      structCodes.set('s1201', 'Saraf spinal');
+      const dermatomal = /\b(radikulopati|radiculopathy|dermatom|hnp|hernia nukleus|lasegue|spurling|saraf terjepit|saraf kejepit|skiatika|sciatica|ischialgia)\b/i;
+      const hit = dermatomal.test(`${all.map((sec) => sec.clauses.join(' ')).join(' ')} ${diagText}`);
+      const e = hit ? addTo(b, 'b2803', 'Radiating pain in a dermatome') : addTo(b, 'b2804', 'Radiating pain in a segment or region');
+      e.q = painQ;
+      structCodes.set('s1201', 'Spinal nerves');
     }
   }
 
@@ -411,9 +395,9 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
       const full = /\b(penuh|normal|full|baik|dalam batas normal)\b/i.test(c) && !/\bterbatas\b/i.test(c);
       const negated = /\b(?:tidak|tanpa)\s+(?:ada\s+)?(?:keterbatasan|terbatas)\b/i.test(c);
       if (limited && !full && !negated) {
-        const e = addTo(b, 'b710', 'Fungsi mobilitas sendi');
         const labs = regionLabels(c);
         const where = labs.length ? labs : fallbackLabels();
+        const e = addTo(b, where.length > 1 ? 'b7101' : 'b7100', where.length > 1 ? 'Mobility of several joints' : 'Mobility of a single joint');
         e.details.push(...where.map((w) => `ROM ${w} terbatas`));
         if (!where.length) e.details.push('ROM terbatas');
       }
@@ -423,18 +407,18 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
       const weakAffirmed = firstAffirmed(c, /\b(kelemahan|lemah|parese|paresis|plegia|hemiparese|hemiparesis|hemiplegia|monoparese)\b/i, false);
       const mmts = collectMmt([{ clauses: [c] }]).filter((v) => v <= 4);
       if (!normal && (weakAffirmed || mmts.length)) {
-        const e = addTo(b, 'b730', 'Fungsi kekuatan otot');
+        const e = addTo(b, 'b7300', 'Power of isolated muscles and muscle groups');
         const labs = regionLabels(c);
         if (labs.length) e.details.push(`otot ${labs.join(', ')}`);
       }
     }
   }));
-  if (b.has('b730')) {
+  if (b.has('b7300')) {
     const vals = collectMmt(all).filter((v) => v <= 4);
     if (vals.length) {
       const worst = Math.min(...vals);
-      b.get('b730').q = mmtQualifier(worst);
-      b.get('b730').details.push(`MMT terendah ${worst}/5`);
+      b.get('b7300').q = mmtQualifier(worst);
+      b.get('b7300').details.push(`MMT terendah ${worst}/5`);
     }
   }
   if (b.has('b735')) {
@@ -461,12 +445,6 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
         }
       });
     });
-  });
-
-  // Tanda vital abnormal
-  vitalFindings(objective).forEach((v) => {
-    const e = addTo(b, v.code, v.label);
-    e.details.push(v.detail);
   });
 
   // Struktur tubuh
@@ -525,75 +503,63 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
     item.details = ['hambatan'];
   }
 
-  // Faktor personal (tidak dikodekan dalam ICF)
-  const personal = [];
-  const allText = all.map((sec) => sec.clauses.join('. ')).join('. ');
-  if (/\bmerokok\b[^.]{0,20}\b(ya|aktif|perokok|\d+\s*(?:batang|bungkus))/i.test(allText) || /\bperokok\b/i.test(allText)) personal.push('Merokok');
-  const imt = allText.match(/\b(?:imt|bmi)\s*[:=]?\s*(\d{2}(?:[.,]\d+)?)/i);
-  if (imt && NUM(imt[1]) >= 25) personal.push(`IMT ${imt[1]} (berat badan berlebih)`);
-  const comorbid = uniq((allText.match(/\b(diabetes(?: melitus)?|dm tipe ?2?|hipertensi|osteoporosis|penyakit jantung|asma|kolesterol tinggi|asam urat|obesitas)\b/gi) || []).map((x) => x.toLowerCase()));
-  if (comorbid.length) personal.push(`Komorbid: ${comorbid.join(', ')}`);
-  if (/\b(pekerjaan duduk|banyak duduk|mengangkat beban berat|pekerjaan berat|posisi kerja)\b/i.test(allText)) personal.push('Faktor pekerjaan/postur kerja berisiko');
-  if (/\b(cemas|stres|stress|depresi|takut bergerak)\b/i.test(allText) && !b.has('b152')) personal.push('Faktor psikososial');
-
   const toList = (map) => [...map.values()];
+  // Urutan: nyeri dulu, lalu fungsi gerak (b7xx), lalu sisanya; kode lebih spesifik lebih dulu.
+  const rank = (it) => (it.code.startsWith('b280') ? 0 : it.code.startsWith('b7') ? 1 : 2);
   const sortKey = (code) => `${code[0]}${code.slice(1).padEnd(5, '0')}`;
-  const order = (arr) => arr.sort((x, y) => sortKey(x.code).localeCompare(sortKey(y.code)));
-  const bList = order(toList(b));
-  const dList = order(toList(d));
-  const eList = order(toList(e));
-  const sList = order(s);
+  const pick = (arr, max) => {
+    // buang kode induk bila kode turunannya sudah terpilih (mis. s710 bila s7102 ada)
+    const specific = arr.filter((x) => !arr.some((y) => y !== x && y.code.startsWith(x.code)));
+    return specific
+      .sort((x, y) => rank(x) - rank(y) || y.code.length - x.code.length || x.code.localeCompare(y.code))
+      .slice(0, max)
+      .sort((x, y) => sortKey(x.code).localeCompare(sortKey(y.code)));
+  };
+  const bList = pick(toList(b), 6);
+  const dList = pick(toList(d), 5);
+  const eList = pick(toList(e), 2);
+  const sList = pick(s, 3);
 
   return {
     b: bList,
     s: sList,
     d: dList,
     e: eList,
-    personal,
     functional,
     hasData: !!(bList.length || sList.length || dList.length),
   };
 };
 
-const lineOf = (it) => {
+/** Semua kode ICF pada hasil analisis (untuk mengambil judul resminya dari database). */
+export const icfCodesOf = (result) => [...result.b, ...result.s, ...result.d, ...result.e].map((x) => x.code);
+
+const lineOf = (titles) => (it) => {
   const det = uniq(it.details);
-  return `- ${fmt(it.code, it.q)} ${it.label}${det.length ? ` (${det.join('; ')})` : ''}`;
+  return `- ${fmt(it.code, it.q)} ${titles[it.code] || it.label}${det.length ? ` (${det.join('; ')})` : ''}`;
 };
 
 /**
  * Teks Assessment ICF siap tempel di kolom Assessment.
+ * titles: { kode: judul resmi } dari tabel icf_codes (opsional).
  * Mengembalikan '' bila S atau O kosong atau tidak ada temuan yang bisa dikodekan.
  */
-export const generateIcfAssessment = ({ subjective = '', objective = '', diagnoses = [] } = {}) => {
+export const generateIcfAssessment = ({ subjective = '', objective = '', diagnoses = [], titles = {} } = {}) => {
   if (!String(subjective).trim() || !String(objective).trim()) return '';
   const r = analyzeIcf({ subjective, objective, diagnoses });
+  if (!r.hasData) return '';
   const dx = uniq(diagnoses.map((x) => String(x).trim()));
-  if (!r.hasData && !dx.length) return '';
 
-  const lines = ['Assessment Fisioterapi (ICF)'];
+  const lines = ['Assessment (ICF)'];
   if (dx.length) lines.push(`Kondisi kesehatan: ${dx.join('; ')}`);
-
-  const section = (title, items, mapper = lineOf) => {
-    if (!items.length) return;
-    lines.push('', title, ...items.map(mapper));
+  const section = (title, items) => {
+    if (items.length) lines.push(title, ...items.map(lineOf(titles)));
   };
-  section('Impairment - Fungsi Tubuh (b)', r.b);
-  section('Impairment - Struktur Tubuh (s)', r.s);
-  section('Limitasi Aktivitas & Restriksi Partisipasi (d)', r.d);
-  section('Faktor Lingkungan (e)', r.e);
-  if (r.personal.length) lines.push('', 'Faktor Personal (tidak dikodekan ICF)', ...r.personal.map((p) => `- ${p}`));
-
+  section('Body Functions (b)', r.b);
+  section('Body Structures (s)', r.s);
+  section('Activities & Participation (d)', r.d);
+  section('Environmental Factors (e)', r.e);
   if (r.functional.length) {
-    lines.push('', 'Skor fungsional', ...r.functional.map((f) => `- ${f.raw} -> disabilitas ${Math.round(f.pct)}% = kualifier ${f.q} (${QUALIFIER_WORDS[f.q]})`));
+    lines.push(`Kualifier d dari ${r.functional.map((f) => `${f.name} ${Math.round(f.pct)}%`).join(', ')}.`);
   }
-
-  const main = [
-    r.b.length ? `gangguan fungsi tubuh (${r.b.map((x) => fmt(x.code, x.q)).join(', ')})` : '',
-    r.s.length ? `struktur tubuh terkait (${r.s.map((x) => x.code).join(', ')})` : '',
-    r.d.length ? `keterbatasan aktivitas/partisipasi (${r.d.map((x) => fmt(x.code, x.q)).join(', ')})` : '',
-  ].filter(Boolean);
-  if (main.length) lines.push('', `Ringkasan: Pasien mengalami ${main.join('; ')}.`);
-
-  lines.push('', 'Kualifier ICF (WHO): 0 tidak ada (0-4%), 1 ringan (5-24%), 2 sedang (25-49%), 3 berat (50-95%), 4 lengkap (96-100%). Kode tanpa angka belum memiliki data kualifier.');
   return lines.join('\n');
 };

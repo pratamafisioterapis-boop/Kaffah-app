@@ -1239,6 +1239,14 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
+// Judul resmi kode ICF (WHO) dari tabel icf_codes -> { kode: judul }.
+export const getIcfTitles = async (codes = []) => {
+  const list = [...new Set(codes)].filter(Boolean);
+  if (list.length === 0) return { data: {}, error: null };
+  const { data, error } = await supabase.from('icf_codes').select('code, title').in('code', list);
+  if (error) return { data: {}, error };
+  return { data: Object.fromEntries((data || []).map((r) => [r.code, r.title])), error: null };
+};
 // Variabel kustom template Subjective (dikelola owner di Setup).
 export const getSubjectiveVariables = async () => {
   const { data, error } = await supabase
