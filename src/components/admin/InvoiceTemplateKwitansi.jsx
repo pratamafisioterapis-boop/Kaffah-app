@@ -74,18 +74,26 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
   const paid = splits.reduce((s, p) => s + p.amount, 0);
   const payDate = fmtDate(data?.recap_date);
 
-  const th = { border: '1px solid #000', padding: '4px 6px', fontWeight: 700, textAlign: 'center' };
-  const tdBase = { padding: '4px 6px', borderLeft: '1px solid #000', borderRight: '1px solid #000', verticalAlign: 'top' };
-  const right = { ...tdBase, textAlign: 'right' };
-  const center = { ...tdBase, textAlign: 'center' };
-  const sumLabel = { textAlign: 'right', fontWeight: 700, padding: '4px 6px' };
-  const sumVal = { textAlign: 'right', padding: '4px 6px' };
+  const INK = '#0f172a';
+  const MUTED = '#64748b';
+  const LINE = '#e2e8f0';
+  const ACCENT = '#0f3d3e';
+
+  const th = {
+    padding: '9px 8px', fontWeight: 600, fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase',
+    color: MUTED, borderBottom: `1px solid ${INK}`, textAlign: 'left',
+  };
+  const td = { padding: '8px 8px', borderBottom: `1px solid ${LINE}`, verticalAlign: 'top' };
+  const tdR = { ...td, textAlign: 'right' };
+  const tdC = { ...td, textAlign: 'center' };
+  const sumLabel = { textAlign: 'right', color: MUTED, padding: '5px 8px', fontSize: '10.5px' };
+  const sumVal = { textAlign: 'right', padding: '5px 8px' };
 
   const infoRow = (label, value, labelW) => (
-    <div style={{ display: 'flex', marginBottom: '5px' }}>
-      <span style={{ width: labelW, fontWeight: 700 }}>{label}</span>
-      <span style={{ width: '12px', fontWeight: 700 }}>:</span>
-      <span>{value}</span>
+    <div style={{ display: 'flex', marginBottom: '7px', lineHeight: 1.4 }}>
+      <span style={{ width: labelW, color: MUTED, flexShrink: 0 }}>{label}</span>
+      <span style={{ width: '12px', color: MUTED, flexShrink: 0 }}>:</span>
+      <span style={{ fontWeight: 600, color: INK }}>{value}</span>
     </div>
   );
 
@@ -95,123 +103,128 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
       ref={ref}
       style={{
         width: '210mm', height: '297mm', boxSizing: 'border-box', background: '#fff',
-        fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '11px', color: '#000',
-        padding: '28px 40px', position: 'relative',
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '11px', color: INK,
+        padding: '0 44px', position: 'relative', overflow: 'hidden',
       }}
     >
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ height: '6px', background: ACCENT, margin: '0 -44px' }} />
+
+      <div style={{ textAlign: 'center', paddingTop: '30px' }}>
         {clinic.logo_url
           ? <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ height: '56px', maxWidth: '240px', objectFit: 'contain' }} />
-          : <p style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>{(clinic.name || '').toUpperCase()}</p>}
-        <p style={{ margin: '22px 0 0', fontSize: '10.5px' }}>{clinic.address || ''}</p>
-        <p style={{ margin: '24px 0 22px', fontSize: '18px', fontWeight: 700 }}>KWITANSI</p>
+          : <p style={{ fontSize: '20px', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>{(clinic.name || '').toUpperCase()}</p>}
+        <p style={{ margin: '14px auto 0', fontSize: '9.5px', color: MUTED, maxWidth: '440px', lineHeight: 1.5 }}>{clinic.address || ''}</p>
+        <div style={{ width: '32px', height: '2px', background: ACCENT, margin: '22px auto 14px' }} />
+        <p style={{ margin: '0 0 28px', fontSize: '17px', fontWeight: 600, letterSpacing: '0.32em', paddingLeft: '0.32em' }}>KWITANSI</p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '26px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '26px', padding: '16px 18px', background: '#f8fafc', borderRadius: '6px' }}>
         <div>
           {infoRow('Admission No / MR', admission, '112px')}
           {infoRow('Name', patientName, '112px')}
           {infoRow('Phone', phone, '112px')}
           {infoRow('Physiotherapist', therapist, '112px')}
         </div>
-        <div style={{ marginRight: '40px' }}>
+        <div>
           {infoRow('Invoice No', invoiceNo, '100px')}
           {infoRow('Invoice Date', fmtDateTime(data?.created_at || data?.recap_date), '100px')}
           {infoRow('Registration Date', fmtDate(data?.recap_date), '100px')}
         </div>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontSize: '11px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
         <thead>
           <tr>
-            <th style={{ ...th, width: '28px' }}>No</th>
+            <th style={{ ...th, width: '28px', textAlign: 'center' }}>No</th>
             <th style={th}>Name</th>
-            <th style={{ ...th, width: '34px' }}>Qty</th>
-            <th style={{ ...th, width: '52px' }}>UOM</th>
-            <th style={{ ...th, width: '66px' }}>Amount</th>
-            <th style={{ ...th, width: '66px' }}>Disc</th>
-            <th style={{ ...th, width: '74px' }}>Total</th>
+            <th style={{ ...th, width: '34px', textAlign: 'center' }}>Qty</th>
+            <th style={{ ...th, width: '52px', textAlign: 'center' }}>UOM</th>
+            <th style={{ ...th, width: '66px', textAlign: 'right' }}>Amount</th>
+            <th style={{ ...th, width: '66px', textAlign: 'right' }}>Disc</th>
+            <th style={{ ...th, width: '74px', textAlign: 'right' }}>Total</th>
           </tr>
         </thead>
         <tbody>
-          {groups.map((g, gi) => (
+          {groups.map((g) => (
             <React.Fragment key={g.value}>
               <tr>
-                <td style={tdBase}></td>
-                <td style={{ ...tdBase, fontWeight: 700 }}>{g.label}</td>
-                <td style={tdBase}></td><td style={tdBase}></td><td style={tdBase}></td><td style={tdBase}></td><td style={tdBase}></td>
+                <td style={{ ...td, borderBottom: 'none', paddingBottom: '2px' }}></td>
+                <td colSpan={6} style={{ ...td, borderBottom: 'none', paddingBottom: '2px', fontWeight: 700, fontSize: '9.5px', letterSpacing: '0.06em', textTransform: 'uppercase', color: ACCENT }}>{g.label}</td>
               </tr>
               {g.rows.map((it, i) => {
                 rowNo += 1;
                 return (
                   <tr key={`${g.value}-${i}`}>
-                    <td style={center}>{rowNo}</td>
-                    <td style={tdBase}>{it.name}</td>
-                    <td style={center}>{it.qty}</td>
-                    <td style={tdBase}></td>
-                    <td style={right}>{idr(it.price)}</td>
-                    <td style={right}>{idr(it.discount)}</td>
-                    <td style={right}>{idr(lineTotal(it))}</td>
+                    <td style={{ ...tdC, color: MUTED }}>{rowNo}</td>
+                    <td style={td}>{it.name}</td>
+                    <td style={tdC}>{it.qty}</td>
+                    <td style={td}></td>
+                    <td style={tdR}>{idr(it.price)}</td>
+                    <td style={tdR}>{idr(it.discount)}</td>
+                    <td style={{ ...tdR, fontWeight: 600 }}>{idr(lineTotal(it))}</td>
                   </tr>
                 );
               })}
-              {gi < groups.length - 1 && (
-                <tr><td style={{ ...tdBase, height: '18px' }} colSpan={7}></td></tr>
-              )}
             </React.Fragment>
           ))}
           <tr>
-            <td colSpan={4} style={{ ...sumLabel, borderTop: '1px solid #000' }}>Sub Total :</td>
-            <td style={{ ...sumVal, borderTop: '1px solid #000' }}>{idr(subAmount)}</td>
-            <td style={{ ...sumVal, borderTop: '1px solid #000' }}>{idr(subDisc)}</td>
-            <td style={{ ...sumVal, borderTop: '1px solid #000' }}>{idr(total)}</td>
+            <td colSpan={4} style={{ ...sumLabel, paddingTop: '12px' }}>Sub Total :</td>
+            <td style={{ ...sumVal, paddingTop: '12px' }}>{idr(subAmount)}</td>
+            <td style={{ ...sumVal, paddingTop: '12px' }}>{idr(subDisc)}</td>
+            <td style={{ ...sumVal, paddingTop: '12px' }}>{idr(total)}</td>
           </tr>
           <tr><td colSpan={4} style={sumLabel}>Charge Fee :</td><td style={sumVal}></td><td style={sumVal}></td><td style={sumVal}>0</td></tr>
           <tr><td colSpan={4} style={sumLabel}>Total :</td><td style={sumVal}></td><td style={sumVal}></td><td style={sumVal}>{idr(total)}</td></tr>
-          <tr><td colSpan={4} style={sumLabel}>Payment :</td><td style={sumVal}></td><td style={sumVal}></td><td style={sumVal}>{idr(paid)}</td></tr>
+          <tr>
+            <td colSpan={4} style={{ ...sumLabel, color: INK, fontWeight: 700, borderTop: `1px solid ${INK}`, padding: '9px 8px' }}>Payment :</td>
+            <td style={{ ...sumVal, borderTop: `1px solid ${INK}` }}></td>
+            <td style={{ ...sumVal, borderTop: `1px solid ${INK}` }}></td>
+            <td style={{ ...sumVal, borderTop: `1px solid ${INK}`, fontWeight: 700, fontSize: '12.5px', color: ACCENT, padding: '9px 8px' }}>{idr(paid)}</td>
+          </tr>
         </tbody>
       </table>
 
-      <p style={{ margin: '34px 0 22px' }}>
-        <b>IN WORD PATIENT :</b> {terbilangRupiah(paid)}
+      <p style={{ margin: '24px 0 30px', padding: '10px 14px', borderLeft: `3px solid ${ACCENT}`, background: '#f8fafc' }}>
+        <span style={{ fontWeight: 700, fontSize: '9px', letterSpacing: '0.08em', color: MUTED }}>IN WORD PATIENT :</span>{' '}
+        <span style={{ fontStyle: 'italic', fontWeight: 600 }}>{terbilangRupiah(paid)}</span>
       </p>
 
-      <p style={{ fontWeight: 700, margin: '0 0 6px' }}>PATIENT RECEIPT :</p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontSize: '11px' }}>
+      <p style={{ fontWeight: 700, fontSize: '9px', letterSpacing: '0.08em', color: MUTED, margin: '0 0 6px' }}>PATIENT RECEIPT :</p>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
         <thead>
           <tr>
             {['Type', 'Date', 'Payment Mode', 'Account No', 'Description', 'Cashier', 'Amount'].map((h) => (
-              <th key={h} style={th}>{h}</th>
+              <th key={h} style={{ ...th, textAlign: h === 'Amount' ? 'right' : 'left' }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {splits.map((p, i) => (
             <tr key={i}>
-              <td style={{ ...tdBase, border: '1px solid #000' }}>Payment</td>
-              <td style={{ ...tdBase, border: '1px solid #000' }}>{payDate}</td>
-              <td style={{ ...tdBase, border: '1px solid #000', textTransform: 'uppercase' }}>{p.mode}</td>
-              <td style={{ ...tdBase, border: '1px solid #000' }}>-</td>
-              <td style={{ ...tdBase, border: '1px solid #000' }}>-</td>
-              <td style={{ ...tdBase, border: '1px solid #000' }}>{cashier}</td>
-              <td style={{ ...tdBase, border: '1px solid #000', textAlign: 'right' }}>{idr(p.amount)}</td>
+              <td style={td}>Payment</td>
+              <td style={td}>{payDate}</td>
+              <td style={{ ...td, textTransform: 'uppercase' }}>{p.mode}</td>
+              <td style={td}>-</td>
+              <td style={td}>-</td>
+              <td style={td}>{cashier}</td>
+              <td style={tdR}>{idr(p.amount)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 6px 0', fontSize: '11px' }}>
-        <b style={{ marginRight: '10px' }}>Total :</b><span style={{ width: '64px', textAlign: 'right' }}>{idr(paid)}</span>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 8px 0', fontSize: '11px' }}>
+        <b style={{ marginRight: '10px' }}>Total :</b><b style={{ width: '64px', textAlign: 'right' }}>{idr(paid)}</b>
       </div>
 
-      <div style={{ marginTop: '36px', marginLeft: '62%', textAlign: 'center', width: '150px' }}>
-        <p style={{ fontWeight: 700, margin: 0 }}>Cashier</p>
+      <div style={{ marginTop: '34px', marginLeft: 'auto', textAlign: 'center', width: '170px' }}>
+        <p style={{ fontWeight: 600, margin: 0, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: MUTED }}>Cashier</p>
         <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {signatureUrl && <img src={signatureUrl} alt="" crossOrigin="anonymous" style={{ maxHeight: '66px', maxWidth: '130px' }} />}
         </div>
-        <p style={{ fontWeight: 700, margin: 0 }}>{cashier}</p>
+        <p style={{ fontWeight: 700, margin: 0, paddingTop: '6px', borderTop: `1px solid ${INK}` }}>{cashier}</p>
       </div>
 
-      <div style={{ position: 'absolute', left: '40px', right: '40px', bottom: '30px', borderTop: '1px solid #eee', paddingTop: '6px', fontSize: '9.5px' }}>
+      <div style={{ position: 'absolute', left: '44px', right: '44px', bottom: '30px', borderTop: `1px solid ${LINE}`, paddingTop: '8px', fontSize: '9px', color: MUTED }}>
         <p style={{ margin: 0 }}>Invoice ini merupakan bukti pembayaran yang sah</p>
         <p style={{ margin: 0 }}>Printed on: {printedStr}{cashier ? ` by ${cashier}` : ''}</p>
       </div>
