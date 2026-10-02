@@ -4,6 +4,9 @@ import { Check, ChevronsUpDown, Loader2, Plus, X, ChevronDown } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuidLike = (v) => typeof v === 'string' && UUID_RE.test(v);
+
 const SearchableSelect = ({ 
   options = [], 
   value, 
@@ -113,7 +116,9 @@ const SearchableSelect = ({
   const getLabel = (val) => {
     if (val === null || val === undefined) return "";
     const opt = safeOptions.find(o => o.value === val);
-    return opt ? opt.label : val;
+    if (opt) return opt.label;
+    // Opsi belum termuat: jangan tampilkan UUID mentah
+    return isUuidLike(val) ? "Memuat..." : val;
   };
 
   const selectedLabels = useMemo(() => {
@@ -121,7 +126,8 @@ const SearchableSelect = ({
       return selectedValues.map(getLabel).filter(Boolean).join(", ");
     }
     const opt = safeOptions.find(o => o.value === value);
-    return opt ? opt.label : (value ? String(value) : "");
+    if (opt) return opt.label;
+    return value && !isUuidLike(value) ? String(value) : "";
   }, [selectedValues, value, safeOptions, multiple]);
 
   // Sync search term with selected value when dropdown closes
