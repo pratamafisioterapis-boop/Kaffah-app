@@ -40,8 +40,8 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
       return;
     }
     setLoading(true);
-    // Therapist name/email come from the physiotherapists table (the same
-    // source as the Physiotherapist Management cards) so both always match;
+    // Therapist name comes from the physiotherapists table (the same
+    // source as the Physiotherapist Management cards); the email stays the real login email from users.
     // users.* can be stale after a profile edit.
     Promise.all([
       supabase
@@ -52,7 +52,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
         .order('full_name'),
       supabase
         .from('physiotherapists')
-        .select('user_id, name, email')
+        .select('user_id, name')
         .eq('clinic_id', clinicId)
         .not('user_id', 'is', null),
     ]).then(([{ data }, { data: physios }]) => {
@@ -62,7 +62,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
         .filter((a) => a.is_active !== false)
         .map((a) => {
           const p = THERAPIST_ROLES.includes(a.role) ? profileByUser.get(a.id) : null;
-          return p ? { ...a, full_name: p.name || a.full_name, email: p.email || a.email } : a;
+          return p ? { ...a, full_name: p.name || a.full_name } : a;
         })
         .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
       if (!isImpersonating) {
