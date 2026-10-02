@@ -19,7 +19,7 @@
 //
 // Kode mengacu pada katalog resmi ICF WHO (tabel icf_codes di database, 1424
 // kode). Hasil sengaja ringkas: hanya kode spesifik (tingkat 3-4) yang punya
-// bukti langsung di teks S/O, maksimal 6 fungsi tubuh, 3 struktur, 5 aktivitas
+// bukti langsung di teks S/O, maksimal 4 fungsi tubuh, 3 struktur, 3 aktivitas
 // dan 2 faktor lingkungan. Judul kode memakai judul resmi dari database
 // (parameter `titles`); bila belum termuat dipakai label bawaan di bawah.
 
@@ -515,8 +515,8 @@ export const analyzeIcf = ({ subjective = '', objective = '', diagnoses = [] } =
       .slice(0, max)
       .sort((x, y) => sortKey(x.code).localeCompare(sortKey(y.code)));
   };
-  const bList = pick(toList(b), 6);
-  const dList = pick(toList(d), 5);
+  const bList = pick(toList(b), 4);
+  const dList = pick(toList(d), 3);
   const eList = pick(toList(e), 2);
   const sList = pick(s, 3);
 
