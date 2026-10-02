@@ -6,6 +6,7 @@ import {
   Package as PackageIcon, FileText as FileTextIcon, Award, Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import OwnerAccountSwitcher from '@/components/owner/OwnerAccountSwitcher';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -220,6 +221,8 @@ async function loadDetailData(type, id) {
 
 const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
   const navigate = useNavigate();
+  const { impersonationOrigin } = useAuth();
+  const ownerOrigin = impersonationOrigin?.origin_role === 'owner' ? impersonationOrigin : null;
   const searchRef = useRef(null);
   const bellRef = useRef(null);
   const inputRef = useRef(null);
@@ -692,7 +695,9 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           )}
         </div>
 
-        {role === 'owner' && <OwnerAccountSwitcher clinicId={clinicId} />}
+        {(role === 'owner' || ownerOrigin) && (
+          <OwnerAccountSwitcher clinicId={ownerOrigin?.origin_clinic_id || clinicId} />
+        )}
 
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button

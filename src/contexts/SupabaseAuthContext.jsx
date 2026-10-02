@@ -374,6 +374,16 @@ export const AuthProvider = ({ children }) => {
       return { error: { message: "Tidak ada koneksi internet. Mohon periksa jaringan Anda." } };
     }
     try {
+      // Already impersonating as an owner: restore the owner's own session
+      // first so they can hop straight to another account.
+      const existingOrigin = readImpersonationOrigin();
+      if (existingOrigin?.origin_role === 'owner') {
+        const { error: restoreError } = await supabase.auth.setSession({
+          access_token: existingOrigin.access_token,
+          refresh_token: existingOrigin.refresh_token,
+        });
+        if (restoreError) throw restoreError;
+      }
       const { data: currentSessionData } = await supabase.auth.getSession();
       const originSession = currentSessionData?.session;
       if (!originSession?.access_token || !originSession?.refresh_token) {
@@ -393,7 +403,8 @@ export const AuthProvider = ({ children }) => {
         access_token: originSession.access_token,
         refresh_token: originSession.refresh_token,
         admin_email: originSession.user?.email || null,
-        origin_role: userDetails?.role || null,
+        origin_role: existingOrigin?.origin_role || userDetails?.role || null,
+        origin_clinic_id: existingOrigin?.origin_clinic_id || userDetails?.clinic_id || null,
       };
       sessionStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
       setImpersonationOrigin(originPayload);
@@ -413,7 +424,7 @@ export const AuthProvider = ({ children }) => {
       console.error("[AuthContext] Impersonate error:", error);
       return { error };
     }
-  }, [isOnline, userDetails?.role]);
+  }, [isOnline, userDetails?.role, userDetails?.clinic_id]);
 
   const stopImpersonation = useCallback(async () => {
     try {

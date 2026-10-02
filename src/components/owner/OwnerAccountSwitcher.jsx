@@ -8,11 +8,16 @@ import { cn } from '@/lib/utils';
 
 const ADMIN_ROLES = ['admin', 'clinic_admin'];
 const THERAPIST_ROLES = ['therapist', 'physiotherapist'];
+const CACHE_KEY = 'owner_switcher_accounts';
+
+const readCache = () => {
+  try { return JSON.parse(sessionStorage.getItem(CACHE_KEY)) || null; } catch { return null; }
+};
 
 // Lets an owner jump into any admin/therapist account of their own clinic;
 // the dashboard then renders exactly as that account sees it.
 const OwnerAccountSwitcher = ({ clinicId }) => {
-  const { impersonateUser, user } = useAuth();
+  const { impersonateUser, user, isImpersonating } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const ref = useRef(null);
@@ -24,6 +29,13 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
   useEffect(() => {
     if (!open || !clinicId) return;
     let active = true;
+    // While impersonating, RLS may hide the clinic's users, so use the list
+    // the owner's own session cached.
+    const cached = isImpersonating ? readCache() : null;
+    if (cached) {
+      setAccounts(cached.filter((a) => a.id !== user?.id));
+      return;
+    }
     setLoading(true);
     supabase
       .from('users')
@@ -33,11 +45,15 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
       .order('full_name')
       .then(({ data }) => {
         if (!active) return;
-        setAccounts((data || []).filter((a) => a.is_active !== false && a.id !== user?.id));
+        const list = (data || []).filter((a) => a.is_active !== false);
+        if (!isImpersonating) {
+          try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+        }
+        setAccounts(list.filter((a) => a.id !== user?.id));
         setLoading(false);
       });
     return () => { active = false; };
-  }, [open, clinicId, user?.id]);
+  }, [open, clinicId, user?.id, isImpersonating]);
 
   useEffect(() => {
     if (!open) return;
