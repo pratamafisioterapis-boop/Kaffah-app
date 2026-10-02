@@ -277,8 +277,6 @@ const renderToken = (tok, key, values, setValue, openForm) => {
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const ALL_KEY = '__all__';
-
 const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false }) => {
   const [activeKey, setActiveKey] = useState(templates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
@@ -289,14 +287,13 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   const isObjective = mode === 'objective';
   const noun = isObjective ? 'Objective' : 'Subjective';
 
-  const canMerge = templates.length > 1;
+  // Beberapa diagnosa: hasil otomatis digabung dari semua template yang terisi.
+  const merged = templates.length > 1;
 
   useEffect(() => {
-    if (activeKey === ALL_KEY && canMerge) return;
     if (!templates.some((t) => t.key === activeKey)) setActiveKey(templates[0]?.key);
-  }, [templates, activeKey, canMerge]);
+  }, [templates, activeKey]);
 
-  const merged = canMerge && activeKey === ALL_KEY;
   const active = templates.find((t) => t.key === activeKey) || templates[0];
   const parsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
   const values = valuesByKey[active?.key] || {};
@@ -324,14 +321,13 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   const singleOutput = useMemo(() => renderTemplate(parsed, values, { inline: isObjective }), [parsed, values, isObjective]);
   const output = merged ? mergedOutput : singleOutput;
   const progress = useMemo(() => countProgress(parsed, values), [parsed, values]);
-  const filled = merged ? progressAll.reduce((n, p) => n + p.filled, 0) : progress.filled;
-  const total = merged ? progressAll.reduce((n, p) => n + p.total, 0) : progress.total;
+  const { filled, total } = progress;
 
   if (!active || !parsed) return null;
 
   const existing = (currentText || '').trim();
   const willReplace = !existing || existing === lastApplied.trim();
-  const reset = () => setValuesByKey((prev) => (merged ? {} : { ...prev, [active.key]: {} }));
+  const reset = () => setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
 
   const apply = () => {
     if (!output) return;
@@ -375,7 +371,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   onClick={() => setActiveKey(t.key)}
                   className={cn(
                     'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                    !merged && t.key === active.key
+                    t.key === active.key
                       ? 'border-blue-600 bg-blue-600 text-white'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
                   )}
@@ -386,18 +382,6 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   )}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => setActiveKey(ALL_KEY)}
-                className={cn(
-                  'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
-                  merged
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                    : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-500'
-                )}
-              >
-                Gabungkan semua ({templates.length})
-              </button>
             </div>
           )}
 
@@ -419,28 +403,6 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             </button>
           </div>
 
-          {merged && (
-            <div className="space-y-1.5 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 text-sm text-slate-700">
-              <p className="text-xs text-slate-500">
-                Semua diagnosa disatukan menjadi satu {noun}. Isi tiap diagnosa dulu (klik chip-nya), lalu hasilnya otomatis digabung per bagian.
-              </p>
-              {progressAll.map((p) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => setActiveKey(p.key)}
-                  className="flex w-full items-center justify-between rounded-xl bg-white px-3 py-2 text-left hover:bg-blue-50"
-                >
-                  <span className="font-medium">{p.label}</span>
-                  <span className={cn('text-xs tabular-nums', p.filled ? 'text-emerald-600' : 'text-slate-400')}>
-                    {p.filled}/{p.total} terisi
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!merged && (
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
             {parsed.sections.map((section, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
@@ -455,11 +417,10 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               </div>
             ))}
           </div>
-          )}
 
           <div>
             <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <Sparkles className="h-3 w-3" /> Hasil
+              <Sparkles className="h-3 w-3" /> {merged ? 'Hasil gabungan semua diagnosa' : 'Hasil'}
             </div>
             <div
               className={cn(
