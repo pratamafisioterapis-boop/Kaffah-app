@@ -27,6 +27,7 @@ import ModalAwalManagement from '@/components/owner/ModalAwalManagement';
 import AdminManagementPage from '@/components/owner/AdminManagementPage';
 import OwnerManagementPage from '@/components/owner/OwnerManagementPage';
 import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
+import TargetFillReminder from '@/components/owner/TargetFillReminder';
 
 
 
@@ -518,6 +519,7 @@ setTherapists(enrichedTherapists);
 };
 
 const OwnerDashboard = () => {
+  const location = useLocation();
   const { user } = useAuth();
   const [therapistProfile, setTherapistProfile] = useState(null);
 
@@ -542,6 +544,7 @@ const OwnerDashboard = () => {
   return (
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
       <OnboardingChecklist />
+      {location.pathname === '/owner/dashboard' && <TargetFillReminder />}
       <Routes>
         {/* Redirect root /owner to dashboard */}
         <Route path="/" element={<Navigate to="/owner/dashboard" replace />} />
