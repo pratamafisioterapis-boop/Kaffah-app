@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   getAllPhysiotherapists, savePhysiotherapist, createTherapistAccount, deletePhysiotherapist,
-  uploadTherapistPhoto, getTherapistTimeOff, addTherapistTimeOff, deleteTherapistTimeOff,
+  uploadTherapistPhoto, getTherapistTimeOff, addTherapistTimeOff, deleteTherapistTimeOff, updateTherapistTimeOff,
   getCurrentClinic, getBadgesByOwner, linkOwnerAsTherapist, getPhysiotherapistByUserId
 } from '@/lib/api';
 import { cn, formatTherapistPeriodLabel } from "@/lib/utils";
@@ -44,6 +44,19 @@ const SectionCard = ({ icon: Icon, iconClass, title, description, children }) =>
     {children}
   </div>
 );
+
+const TIME_OFF_REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const TIME_OFF_LEAVE_TYPE = {
+  'Cuti': 'annual', 'Sakit': 'sick', 'Libur': 'weekly_off',
+  'Training': 'training', 'Izin Pribadi': 'personal', 'Lainnya': 'other'
+};
+// reason disimpan sebagai "Jenis - catatan"
+const parseTimeOffReason = (reason) => {
+  const raw = reason || '';
+  const idx = raw.indexOf(' - ');
+  if (idx === -1) return { label: raw.trim(), note: '' };
+  return { label: raw.slice(0, idx).trim(), note: raw.slice(idx + 3).trim() };
+};
 
 const TherapistManager = () => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -74,6 +87,8 @@ const TherapistManager = () => {
   const [timeOffs, setTimeOffs] = useState([]);
   const [newTimeOff, setNewTimeOff] = useState({ start_date: '', end_date: '', reason: '' });
   const [loadingTimeOff, setLoadingTimeOff] = useState(false);
+  const [editingTimeOffId, setEditingTimeOffId] = useState(null);
+  const [editTimeOff, setEditTimeOff] = useState({ reason: 'Libur', notes: '' });
 
   // Payroll State
   const [payrollDialogOpen, setPayrollDialogOpen] = useState(false);
@@ -533,6 +548,29 @@ const TherapistManager = () => {
       fetchTimeOffs(selectedTherapistForTimeOff.id);
     }
   };
+  const startEditTimeOff = (off) => {
+    const { label, note } = parseTimeOffReason(off.reason);
+    setEditTimeOff({ reason: TIME_OFF_REASONS.includes(label) ? label : 'Lainnya', notes: note });
+    setEditingTimeOffId(off.id);
+  };
+
+  const handleSaveTimeOff = async () => {
+    const notes = editTimeOff.notes.trim();
+    setLoadingTimeOff(true);
+    const { error } = await updateTherapistTimeOff(editingTimeOffId, {
+      reason: notes ? `${editTimeOff.reason} - ${notes}` : editTimeOff.reason,
+      leave_type: TIME_OFF_LEAVE_TYPE[editTimeOff.reason] || 'other'
+    });
+    setLoadingTimeOff(false);
+    if (!error) {
+      setEditingTimeOffId(null);
+      fetchTimeOffs(selectedTherapistForTimeOff.id);
+      toast({ title: "Cuti Diperbarui" });
+    } else {
+      toast({ variant: "destructive", title: "Gagal Memperbarui", description: error.message });
+    }
+  };
+
 const headerColorMap = {
   blue: "from-blue-500 to-blue-600",
   green: "from-green-500 to-green-600",
@@ -1168,16 +1206,45 @@ const headerColorMap = {
                  <p className="text-sm text-slate-400 italic text-center py-2">Tidak ada jadwal cuti aktif.</p>
                ) : (
                  timeOffs.map((off) => (
-                   <div key={off.id} className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100 text-sm">
+                   <div key={off.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-sm">
+                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium text-slate-700">
                           {format(new Date(off.start_date), 'dd MMM yyyy')} - {format(new Date(off.end_date), 'dd MMM yyyy')}
                         </div>
                         {off.reason && <div className="text-xs text-slate-500">{off.reason}</div>}
                       </div>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={() => handleDeleteTimeOff(off.id)}>
-                        <X className="w-3 h-3" />
-                      </Button>
+                      <div className="flex items-center">
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-blue-500" onClick={() => startEditTimeOff(off)}>
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={() => handleDeleteTimeOff(off.id)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                     </div>
+                     {editingTimeOffId === off.id && (
+                       <div className="mt-2 space-y-2 border-t pt-2">
+                         <Select value={editTimeOff.reason} onValueChange={(v) => setEditTimeOff({ ...editTimeOff, reason: v })}>
+                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                           <SelectContent>
+                             {TIME_OFF_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                           </SelectContent>
+                         </Select>
+                         <Input
+                           value={editTimeOff.notes}
+                           onChange={(e) => setEditTimeOff({ ...editTimeOff, notes: e.target.value })}
+                           placeholder="Catatan (opsional)"
+                           className="h-8 text-xs"
+                         />
+                         <div className="flex gap-2 justify-end">
+                           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingTimeOffId(null)}>Batal</Button>
+                           <Button size="sm" className="h-7 text-xs" onClick={handleSaveTimeOff} disabled={loadingTimeOff}>
+                             {loadingTimeOff && <Loader2 className="w-3 h-3 animate-spin mr-1" />} Simpan
+                           </Button>
+                         </div>
+                       </div>
+                     )}
                    </div>
                  ))
                )}
