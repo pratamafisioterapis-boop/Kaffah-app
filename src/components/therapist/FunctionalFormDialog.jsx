@@ -110,25 +110,27 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
             );
           })}
 
-          <div className="rounded-xl border border-dashed border-slate-300 p-3">
-            <div className="mb-1.5 text-xs font-semibold text-slate-500">Sudah punya skor dari lembar resmi?</div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                inputMode="decimal"
-                min={form.manual.min}
-                max={form.manual.max}
-                value={manual}
-                placeholder={form.manual.label}
-                onChange={(e) => setManual(e.target.value === '' ? '' : String(Math.min(form.manual.max, Math.max(form.manual.min, Number(e.target.value)))))}
-                className="h-9"
-              />
-              {manualMode && (
-                <button type="button" onClick={() => setManual('')} className="shrink-0 text-xs text-slate-500 hover:text-rose-600">Hapus</button>
-              )}
+          {form.manual && (
+            <div className="rounded-xl border border-dashed border-slate-300 p-3">
+              <div className="mb-1.5 text-xs font-semibold text-slate-500">Sudah punya skor dari lembar resmi?</div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={form.manual.min}
+                  max={form.manual.max}
+                  value={manual}
+                  placeholder={form.manual.label}
+                  onChange={(e) => setManual(e.target.value === '' ? '' : String(Math.min(form.manual.max, Math.max(form.manual.min, Number(e.target.value)))))}
+                  className="h-9"
+                />
+                {manualMode && (
+                  <button type="button" onClick={() => setManual('')} className="shrink-0 text-xs text-slate-500 hover:text-rose-600">Hapus</button>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-slate-400">Jika diisi, skor ini dipakai menggantikan jawaban per item.</p>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">Jika diisi, skor ini dipakai menggantikan jawaban per item.</p>
-          </div>
+          )}
         </div>
 
         <div className="space-y-2 border-t bg-white px-5 py-3">
