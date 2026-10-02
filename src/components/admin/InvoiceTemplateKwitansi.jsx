@@ -59,6 +59,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
 
   const patientName = data?.patients?.full_name || data?.patient?.full_name || data?.patient_name || data?.guest_name || '-';
   const mr = data?.patients?.medical_record_number || data?.patient?.medical_record_number || '-';
+  const admission = data?.admission_number ? `${data.admission_number} / ${mr}` : mr;
   const phone = data?.patients?.phone || data?.patient?.phone || data?.guest_phone || '-';
   const therapist = data?.therapist?.name || data?.therapist_name || '-';
   const invoiceNo = data?.receipt_number || data?.invoice_number || '-';
@@ -108,7 +109,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '26px' }}>
         <div>
-          {infoRow('Admission No / MR', mr, '112px')}
+          {infoRow('Admission No / MR', admission, '112px')}
           {infoRow('Name', patientName, '112px')}
           {infoRow('Phone', phone, '112px')}
           {infoRow('Physiotherapist', therapist, '112px')}
