@@ -14,6 +14,7 @@ import { getPatientInfoOptions, createPatientInfoOption, updatePatientInfoOption
 import { Palette, Wallet } from 'lucide-react';
 import DesignStyleManager from '@/components/owner/DesignStyleManager';
 import ServiceRateManager from '@/components/owner/ServiceRateManager';
+import PriceCatalogManager from '@/components/owner/PriceCatalogManager';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -1068,6 +1069,7 @@ const SETTINGS_TAB_GROUPS = [
       { value: 'bank_accounts', icon: Building, label: 'Akun Bank' },
       { value: 'accounting_cats', icon: BookOpen, label: 'Akunting' },
       { value: 'service_rates', icon: Wallet, label: 'Tarif Jasa' },
+      { value: 'price_catalog', icon: Tag, label: 'Katalog Harga' },
       { value: 'payment', icon: null, label: 'Pembayaran' },
       { value: 'discount', icon: Tag, label: 'Jenis Diskon' },
     ],
@@ -1282,6 +1284,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="service_rates">
             <ServiceRateManager />
+          </TabsContent>
+          <TabsContent value="price_catalog">
+            <PriceCatalogManager />
           </TabsContent>
         </div>
       </Tabs>
