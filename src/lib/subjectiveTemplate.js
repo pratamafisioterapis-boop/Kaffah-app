@@ -1,4 +1,4 @@
-// Template Subjective (SOAP) interaktif.
+// Template Subjective & Objective (SOAP) interaktif.
 //
 // Template disimpan di DB sebagai teks biasa, mis.:
 //   **Keluhan Utama:** Nyeri leher sisi (kanan/kiri) sejak (.....) hari/minggu/bulan yang lalu.
@@ -14,6 +14,7 @@ const PREFIXED_FREE_RE = /^\((bagian|lokasi|grade) \.{3,}\)/;
 const CHOICE_RE = /^\(([^()]+\/[^()]+)\)(?!\s*:)/;
 const DURATION_UNIT_RE = /^\s+(hari\/minggu\/bulan|hari\/minggu|minggu\/bulan|hari)(\s+yang lalu)?/;
 const NUMERIC_UNIT_RE = /^(%|\/\d+|\s+(?:kali(?:\/\w+)?|jam(?:\/hari)?|menit(?:\/jam)?|detik|hari(?:\/minggu)?|minggu|bulan|tahun|meter|cm|derajat|jari|bungkus-tahun)(?![\p{L}]))/u;
+const SIDE_RE = /(?:^|\s)(?:kanan|kiri)\s*$/i;
 const CONNECTOR_RE = /(?:^|\s)(?:sejak|pada|di|dari|ke|saat|sisi|setelah|dengan|tanggal|usia|selama|sebesar|hingga)\s*$/i;
 
 export const DURATION_UNITS = ['hari', 'minggu', 'bulan', 'tahun'];
@@ -40,6 +41,9 @@ const variableToken = (key, def, nextId) => {
 
 // Pecah teks bertanda kurung menjadi token: text | free | date | duration | choice.
 const VAR_RE = /^\{\{([a-z0-9_]+)\}\}/;
+const FORM_RE = /^\{\{form:([a-z0-9_|]+)\}\}/;
+const SCALE_AFTER_RE = /^\/(\d{1,2})(?!\d)/;
+const PLUS_MINUS = ['+', '-'];
 
 const tokenizeBody = (body, nextId, variables = {}) => {
   const tokens = [];
@@ -51,6 +55,19 @@ const tokenizeBody = (body, nextId, variables = {}) => {
   let i = 0;
   let m;
   while (i < body.length) {
+    if (body[i] === '{' && (m = body.slice(i).match(FORM_RE))) {
+      flush();
+      tokens.push({ t: 'form', id: nextId(), forms: m[1].split('|') });
+      i += m[0].length;
+      continue;
+    }
+    if (body[i] === '[' || body[i] === ']') {
+      // [ ... ] = kelompok opsional: hilang seluruhnya bila isinya tak terisi
+      flush();
+      tokens.push({ t: body[i] === '[' ? 'gopen' : 'gclose' });
+      i += 1;
+      continue;
+    }
     if (body[i] === '{' && (m = body.slice(i).match(VAR_RE))) {
       flush();
       tokens.push(variableToken(m[1], variables[m[1]], nextId));
@@ -74,7 +91,12 @@ const tokenizeBody = (body, nextId, variables = {}) => {
         tokens.push({ t: 'duration', id: nextId(), suffix: dur[2] ? ' yang lalu' : '' });
         i += m[0].length + dur[0].length;
       } else {
-        tokens.push({ t: 'free', id: nextId(), numeric: NUMERIC_UNIT_RE.test(after) });
+        const sc = after.match(SCALE_AFTER_RE);
+        if (sc && Number(sc[1]) <= 12) {
+          tokens.push({ t: 'scale', id: nextId(), min: 0, max: Number(sc[1]), numeric: true });
+        } else {
+          tokens.push({ t: 'free', id: nextId(), numeric: NUMERIC_UNIT_RE.test(after) });
+        }
         i += m[0].length;
       }
     } else if ((m = rest.match(CHOICE_RE))) {
@@ -83,12 +105,14 @@ const tokenizeBody = (body, nextId, variables = {}) => {
       const colon = m[1].indexOf(':');
       const prefix = colon >= 0 ? `${m[1].slice(0, colon).trim()}: ` : '';
       const options = (colon >= 0 ? m[1].slice(colon + 1) : m[1]).split('/').map((o) => o.trim()).filter(Boolean);
+      const plusMinus = options.length === 2 && options.every((o, k) => o === PLUS_MINUS[k]);
       tokens.push({
         t: 'choice',
         id: nextId(),
         options,
         flag: !prefix && isFlag(options),
-        single: !!prefix || isFlag(options),
+        single: !!prefix || isFlag(options) || plusMinus,
+        wrap: plusMinus,
         prefix,
       });
       i += m[0].length;
@@ -108,6 +132,7 @@ const annotate = (tokens) => {
       before += tok.v;
       return;
     }
+    if (tok.t === 'gopen' || tok.t === 'gclose') return;
     if (tok.t === 'free' && !tok.prefix) {
       const keepLabel = tok.label;
       tok.labelType = before.trim() === '' || /:\s*$/.test(before) || /\.\s*$/.test(before);
@@ -143,6 +168,18 @@ const splitSentences = (tokens) => {
   return sentences;
 };
 
+// Isian di bagian "Kekuatan (0-5)" / "MMT" / "Tonus (Modified Ashworth)" otomatis
+// menjadi deretan angka yang tinggal diklik.
+const applySectionKind = (tokens, title, nextId) => tokens.map((tok) => {
+  if (tok.t !== 'free' || tok.prefix || tok.varKey) return tok;
+  if (/\b0-5\b|MMT|Oxford/i.test(title)) return { ...tok, t: 'scale', min: 0, max: 5, numeric: false };
+  if (/Ashworth/i.test(title)) {
+    return { t: 'choice', id: tok.id, options: ['0', '1', '1+', '2', '3', '4'], flag: false, single: true, prefix: '', hint: tok.label };
+  }
+  void nextId;
+  return tok;
+});
+
 const parseCache = new Map();
 
 export const parseTemplate = (text, variables = {}) => {
@@ -155,7 +192,7 @@ export const parseTemplate = (text, variables = {}) => {
   text.split('\n').forEach((line) => {
     const m = line.match(/^\*\*(.+?):\*\*\s*(.*)$/);
     if (!m) return;
-    const tokens = annotate(tokenizeBody(m[2], nextId, variables));
+    const tokens = applySectionKind(annotate(tokenizeBody(m[2], nextId, variables)), m[1], nextId);
     sections.push({ title: m[1].trim(), sentences: splitSentences(tokens).map((tk) => ({ tokens: tk })) });
   });
   // Kalimat tanpa isian (selain kalimat keluhan pertama) berisi klaim klinis yang
@@ -178,6 +215,7 @@ export const isFilled = (tok, value) => {
   if (tok.t === 'choice') return tok.flag ? !!value : Array.isArray(value) && value.length > 0;
   if (tok.t === 'duration') return !!value && Number(value.n) > 0;
   if (tok.t === 'toggle') return value === true;
+  if (tok.t === 'form') return !!value && !!value.text;
   return typeof value === 'string' && value.trim() !== '';
 };
 
@@ -192,7 +230,9 @@ const joinList = (items) => (items.length <= 1 ? items[0] || '' : `${items.slice
 
 const valueText = (tok, value) => {
   switch (tok.t) {
+    case 'form': return value.text;
     case 'choice':
+      if (tok.wrap) return `(${value[0]})`;
       if (tok.flag) return value;
       return tok.prefix ? `(${tok.prefix}${joinList(value)})` : joinList(value);
     case 'duration': return `${value.n} ${value.unit || 'hari'}${tok.suffix}`;
@@ -203,15 +243,45 @@ const valueText = (tok, value) => {
 
 // ───────────────────────── Render ─────────────────────────
 
-const renderSentence = (tokens, values) => {
+const isSlot = (t) => t.t !== 'text' && t.t !== 'gopen' && t.t !== 'gclose';
+
+// Selesaikan kelompok [ ... ]: dibuang bila tak ada isian di dalamnya yang terisi.
+const resolveGroups = (tokens, values) => {
+  if (!tokens.some((t) => t.t === 'gopen')) return tokens;
+  const root = [];
+  const stack = [root];
+  tokens.forEach((t) => {
+    if (t.t === 'gopen') {
+      const g = { group: [] };
+      stack[stack.length - 1].push(g);
+      stack.push(g.group);
+    } else if (t.t === 'gclose' && stack.length > 1) {
+      stack.pop();
+    } else {
+      stack[stack.length - 1].push(t);
+    }
+  });
+  const flatten = (items) => items.flatMap((it) => {
+    if (!it.group) return [it];
+    const inner = flatten(it.group);
+    return inner.some((x) => isSlot(x) && isFilled(x, values[x.id])) ? inner : [];
+  });
+  return flatten(root);
+};
+
+const renderSentence = (rawTokens, values) => {
+  const tokens = resolveGroups(rawTokens, values);
+  // Kalimat yang seluruh isiannya berada di kelompok yang gugur ikut dibuang.
+  if (rawTokens.some(isSlot) && !tokens.some(isSlot)) return null;
   if (tokens.length === 1 && tokens[0].t === 'toggle') return values[tokens[0].id] === true ? tokens[0].text : null;
-  const slots = tokens.filter((t) => t.t !== 'text');
+  const slots = tokens.filter(isSlot);
   if (slots.length === 0) return tokens.map((t) => t.v).join('').trim();
   if (!slots.some((t) => isFilled(t, values[t.id]))) return null;
 
   const clauses = [{ str: '', sep: '', drop: false, hasSlot: false, filled: 0 }];
   const cur = () => clauses[clauses.length - 1];
   let skipUnit = false;
+  let skipSlash = false;
 
   tokens.forEach((tok) => {
     if (tok.t === 'text') {
@@ -220,9 +290,14 @@ const renderSentence = (tokens, values) => {
         v = v.replace(NUMERIC_UNIT_RE, '');
         skipUnit = false;
       }
-      v.split(/([,;]\s+)/).forEach((piece, idx) => {
+      if (skipSlash) {
+        v = v.replace(/^\//, '');
+        skipSlash = false;
+      }
+      v.split(/(\s*\|\s*|[,;]\s+)/).forEach((piece, idx) => {
         if (idx % 2 === 1) {
-          if (!cur().hasSlot) {
+          const bar = piece.includes('|');
+          if (!bar && !cur().hasSlot) {
             // daftar tanpa isian ("Mengi, nyeri dada (ada/tidak)") tetap satu klausa
             cur().str += piece.trim().startsWith(';') ? '; ' : ', ';
             return;
@@ -249,32 +324,34 @@ const renderSentence = (tokens, values) => {
       cur().drop = true;
       return;
     }
-    cur().str = cur().str.replace(CONNECTOR_RE, '');
-    if (tok.t === 'free' && tok.numeric) skipUnit = true;
+    cur().str = cur().str.replace(CONNECTOR_RE, '').replace(/\/\s*$/, '');
+    if (tok.t === 'free' || tok.t === 'scale') cur().str = cur().str.replace(SIDE_RE, ' ');
+    if ((tok.t === 'free' || tok.t === 'scale') && tok.numeric) skipUnit = true;
+    skipSlash = true;
   });
 
   // Klausa yang punya isian tapi tak satu pun terisi (mis. "perjalanan") ikut dibuang.
   const kept = clauses.filter((c) => !c.drop && c.str.trim() && (!c.hasSlot || c.filled > 0));
   if (!kept.length) return null;
-  let out = kept.map((c, i) => c.str.trim() + (i < kept.length - 1 ? c.sep : '')).join(' ');
+  let out = kept.map((c, i) => c.str.trim() + (i < kept.length - 1 ? (c.sep === '|' ? ' |' : c.sep) : '')).join(' ');
   out = out
     .replace(/\s+([.,;:%])/g, '$1')
     .replace(/\s{2,}/g, ' ')
-    .replace(/[,;]\s*$/, '')
+    .replace(/[,;|]\s*$/, '')
     .trim();
   if (!out) return null;
   out = out.charAt(0).toUpperCase() + out.slice(1);
   return /[.!?]$/.test(out) ? out : `${out}.`;
 };
 
-export const renderTemplate = (parsed, values) => {
+export const renderTemplate = (parsed, values, { inline = false } = {}) => {
   if (!parsed) return '';
   const lines = [];
   parsed.sections.forEach((section, idx) => {
     const sentences = section.sentences.map((s) => renderSentence(s.tokens, values)).filter(Boolean);
     if (!sentences.length) return;
     const body = sentences.join(' ');
-    lines.push(idx === 0 ? `${section.title}:\n${body}` : `${section.title}: ${body}`);
+    lines.push(idx === 0 && !inline ? `${section.title}:\n${body}` : `${section.title}: ${body}`);
   });
   return lines.join('\n');
 };
@@ -284,7 +361,7 @@ export const countProgress = (parsed, values) => {
   let filled = 0;
   let total = 0;
   parsed?.sections.forEach((s) => s.sentences.forEach((sn) => sn.tokens.forEach((tok) => {
-    if (tok.t === 'text') return;
+    if (!isSlot(tok)) return;
     total += 1;
     if (isFilled(tok, values[tok.id])) filled += 1;
   })));

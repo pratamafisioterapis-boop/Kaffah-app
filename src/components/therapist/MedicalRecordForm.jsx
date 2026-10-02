@@ -126,23 +126,26 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       setTemplateCache((prev) => {
         const next = { ...prev };
         missing.forEach((id) => { next[id] = null; });
-        (data || []).forEach((row) => { next[row.id] = { label: row.label, template: row.subjective_template }; });
+        (data || []).forEach((row) => { next[row.id] = { label: row.label, template: row.subjective_template, objective: row.objective_template }; });
         return next;
       });
     });
   }, [diagnosis, templateCache]);
 
   const subjectiveTemplates = diagnosis
-    .map((d) => (templateCache[d] ? { key: d, label: templateCache[d].label, template: templateCache[d].template } : null))
+    .map((d) => (templateCache[d]?.template ? { key: d, label: templateCache[d].label, template: templateCache[d].template } : null))
+    .filter(Boolean);
+  const objectiveTemplates = diagnosis
+    .map((d) => (templateCache[d]?.objective ? { key: d, label: templateCache[d].label, template: templateCache[d].objective } : null))
     .filter(Boolean);
 
-  const handleApplyTemplate = (text, { replace }) => {
+  const handleApplyTemplate = (field) => (text, { replace }) => {
     setFormData((prev) => {
-      const existing = (prev.subjective || '').trim();
-      return { ...prev, subjective: replace || !existing ? text : `${existing}\n\n${text}` };
+      const existing = (prev[field] || '').trim();
+      return { ...prev, [field]: replace || !existing ? text : `${existing}\n\n${text}` };
     });
     toast({
-      title: replace ? 'Subjective terisi' : 'Template ditambahkan',
+      title: replace ? `${field === 'objective' ? 'Objective' : 'Subjective'} terisi` : 'Template ditambahkan',
       description: 'Silakan cek dan lengkapi bila perlu.',
       className: 'bg-blue-50 border-blue-200 text-blue-800',
     });
@@ -479,8 +482,19 @@ if (isCreate) {
                 templates={subjectiveTemplates}
                 variables={templateVariables}
                 currentText={formData.subjective}
-                onApply={handleApplyTemplate}
+                onApply={handleApplyTemplate('subjective')}
                 compact={isPWA}
+              />
+            )}
+            {objectiveTemplates.length > 0 && (
+              <SubjectiveTemplateBuilder
+                templates={objectiveTemplates}
+                variables={templateVariables}
+                currentText={formData.objective}
+                onApply={handleApplyTemplate('objective')}
+                compact={isPWA}
+                mode="objective"
+                defaultOpen={false}
               />
             )}
 

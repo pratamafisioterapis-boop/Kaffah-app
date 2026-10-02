@@ -1233,9 +1233,9 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (validIds.length === 0) return { data: [], error: null };
   const { data, error } = await supabase
     .from('operational_options')
-    .select('id, label, subjective_template')
+    .select('id, label, subjective_template, objective_template')
     .in('id', validIds)
-    .not('subjective_template', 'is', null);
+    .or('subjective_template.not.is.null,objective_template.not.is.null');
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
@@ -1270,10 +1270,11 @@ export const deleteSubjectiveVariable = async (id) => {
 };
 
 // Simpan teks template Subjective sebuah diagnosa (null = hapus template).
-export const updateDiagnosisSubjectiveTemplate = async (id, template) => {
+export const updateDiagnosisSubjectiveTemplate = async (id, template, field = 'subjective_template') => {
+  const column = field === 'objective_template' ? 'objective_template' : 'subjective_template';
   const { error } = await supabase
     .from('operational_options')
-    .update({ subjective_template: template && template.trim() ? template : null })
+    .update({ [column]: template && template.trim() ? template : null })
     .eq('id', id);
   return { error };
 };

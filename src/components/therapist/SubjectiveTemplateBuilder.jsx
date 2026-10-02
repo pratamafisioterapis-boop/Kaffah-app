@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronDown, Minus, Plus, RotateCcw, Sparkles, Wand2 } from 'lucide-react';
+import { Check, ChevronDown, ClipboardCheck, Minus, Pencil, Plus, RotateCcw, Sparkles, Stethoscope, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import FunctionalFormDialog from '@/components/therapist/FunctionalFormDialog';
+import { FUNCTIONAL_FORMS } from '@/data/functionalForms';
 import { cn } from '@/lib/utils';
 import {
   DURATION_UNITS,
@@ -199,7 +201,58 @@ const ToggleSentence = ({ tok, value, onChange }) => (
   </button>
 );
 
-const renderToken = (tok, key, values, setValue) => {
+const ScaleChips = ({ tok, value, onChange }) => {
+  const nums = Array.from({ length: tok.max - tok.min + 1 }, (_, i) => String(tok.min + i));
+  const tone = (n) => {
+    if (tok.max !== 10) return 'bg-blue-600 border-blue-600 text-white';
+    return n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white';
+  };
+  return (
+    <span className="mx-1 inline-flex flex-wrap items-center gap-1 align-middle">
+      {tok.label && <span className="text-xs text-slate-500">{tok.label}:</span>}
+      {nums.map((n) => (
+        <button
+          key={n}
+          type="button"
+          aria-pressed={value === n}
+          onClick={() => onChange(value === n ? undefined : n)}
+          className={cn(
+            'h-8 min-w-[32px] rounded-full border px-2 text-[13px] transition-all active:scale-95',
+            value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+          )}
+        >
+          {n}
+        </button>
+      ))}
+    </span>
+  );
+};
+
+const FormButtons = ({ tok, value, onOpen, onClear }) => (
+  <span className="mx-1 inline-flex flex-wrap items-center gap-1.5 align-middle">
+    {value?.text ? (
+      <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-300 bg-blue-50 py-1 pl-3 pr-1.5 text-[13px] font-medium text-blue-800">
+        {value.text}
+        <button type="button" aria-label="Ubah" onClick={() => onOpen(value.form)} className="rounded-lg p-1 text-blue-600 hover:bg-blue-100"><Pencil className="h-3.5 w-3.5" /></button>
+        <button type="button" aria-label="Hapus" onClick={onClear} className="rounded-lg px-1.5 py-1 text-xs text-slate-500 hover:bg-rose-50 hover:text-rose-600">✕</button>
+      </span>
+    ) : (
+      tok.forms.map((f) => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => onOpen(f)}
+          className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl border border-dashed border-blue-400 bg-blue-50/60 px-3 py-1 text-[13px] font-medium text-blue-700 hover:bg-blue-100 active:scale-95"
+        >
+          <ClipboardCheck className="h-4 w-4" /> Isi {FUNCTIONAL_FORMS[f]?.name || f}
+        </button>
+      ))
+    )}
+  </span>
+);
+
+const renderToken = (tok, key, values, setValue, openForm) => {
+  if (tok.t === 'gopen' || tok.t === 'gclose') return null;
   if (tok.t === 'text') return <span key={key}>{tok.v}</span>;
   const value = values[tok.id];
   const onChange = (v) => setValue(tok.id, v);
@@ -208,6 +261,8 @@ const renderToken = (tok, key, values, setValue) => {
     case 'duration': return <DurationInput key={key} value={value} onChange={onChange} />;
     case 'date': return <DateInput key={key} value={value} onChange={onChange} />;
     case 'toggle': return <ToggleSentence key={key} tok={tok} value={value} onChange={onChange} />;
+    case 'scale': return <ScaleChips key={key} tok={tok} value={value} onChange={onChange} />;
+    case 'form': return <FormButtons key={key} tok={tok} value={value} onOpen={(f) => openForm(tok.id, f)} onClear={() => onChange(undefined)} />;
     default: return <FreeInput key={key} tok={tok} value={value} onChange={onChange} />;
   }
 };
@@ -221,11 +276,14 @@ const renderToken = (tok, key, values, setValue) => {
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true }) => {
+const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective' }) => {
   const [activeKey, setActiveKey] = useState(templates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
   const [open, setOpen] = useState(defaultOpen);
   const [lastApplied, setLastApplied] = useState('');
+  const [formDialog, setFormDialog] = useState(null);
+  const isObjective = mode === 'objective';
+  const noun = isObjective ? 'Objective' : 'Subjective';
 
   useEffect(() => {
     if (!templates.some((t) => t.key === activeKey)) setActiveKey(templates[0]?.key);
@@ -243,7 +301,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       return { ...prev, [active.key]: cur };
     });
 
-  const output = useMemo(() => renderTemplate(parsed, values), [parsed, values]);
+  const output = useMemo(() => renderTemplate(parsed, values, { inline: isObjective }), [parsed, values, isObjective]);
   const { filled, total } = useMemo(() => countProgress(parsed, values), [parsed, values]);
 
   if (!active || !parsed) return null;
@@ -269,10 +327,10 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       >
         <span className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-            <Wand2 className="h-4 w-4" />
+            {isObjective ? <Stethoscope className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-slate-800">Isi Subjective Cepat</span>
+            <span className="block text-sm font-semibold text-slate-800">Isi {noun} Cepat</span>
             <span className="block truncate text-xs text-slate-500">
               {open ? 'Klik pilihan & isi titik-titik, bagian kosong tidak ikut tampil' : `Template ${active.label}`}
             </span>
@@ -328,7 +386,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                 <div className="text-sm leading-[2.5rem] text-slate-700">
                   {section.sentences.map((sentence, si) => (
                     <React.Fragment key={si}>
-                      {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, values, setValue))}{' '}
+                      {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, values, setValue, (id, f) => setFormDialog({ id, form: f })))}{' '}
                     </React.Fragment>
                   ))}
                 </div>
@@ -358,11 +416,19 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             className="h-11 w-full gap-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-700"
           >
             <Check className="h-4 w-4" />
-            {willReplace ? 'Masukkan ke Subjective' : 'Tambahkan ke Subjective'}
+            {willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}
           </Button>
           )}
         </div>
       )}
+
+      <FunctionalFormDialog
+        formId={formDialog?.form}
+        open={!!formDialog}
+        initial={formDialog && values[formDialog.id]?.form === formDialog.form ? values[formDialog.id] : null}
+        onClose={() => setFormDialog(null)}
+        onApply={(result) => setValue(formDialog.id, result)}
+      />
     </div>
   );
 };
