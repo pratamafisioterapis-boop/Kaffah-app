@@ -6720,6 +6720,21 @@ export const addTherapistTimeOff = async (payload) => {
   }, 'addTherapistTimeOff');
 };
 
+export const updateTherapistTimeOff = async (id, { reason, leave_type }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('therapist_time_off')
+      .update({ reason: reason || null, leave_type: leave_type || 'other' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return { error };
+
+    return { data, error: null };
+  }, 'updateTherapistTimeOff');
+};
+
 export const deleteTherapistTimeOff = async (id) => {
   return safeQuery(async () => {
 
