@@ -62,7 +62,7 @@ const ExerciseRow = ({ id, ex, checked, onToggle }) => {
  * Checklist Plan SOAP: modalitas elektrofisis, manual therapy, dan exercise
  * per diagnosa (sumber: Plan_Exercise_Kaffah_329_Diagnosa.xlsx).
  * value: { epa, manual, exercises: {id: true}, notes } | null
- * onChange(data, text): text = ringkasan untuk kolom `plan`.
+ * onChange(data, text, exerciseNames): text = ringkasan untuk kolom `plan`; exerciseNames = latihan yang dicentang.
  */
 const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
   // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
@@ -100,7 +100,12 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
     [catalog, diagnosisLabels]
   );
 
-  const emit = (next) => onChange(next, buildPlanText(next, merged.phases, catalog.exercises));
+  const emit = (next) => {
+    const names = [...new Set(merged.phases.flat())]
+      .filter((id) => next.exercises?.[id] && catalog.exercises[id])
+      .map((id) => catalog.exercises[id].n);
+    onChange(next, buildPlanText(next, merged.phases, catalog.exercises), names);
+  };
   const toggleList = (key) => (opt) => {
     const list = data[key].includes(opt) ? data[key].filter((x) => x !== opt) : [...data[key], opt];
     emit({ ...data, [key]: list });

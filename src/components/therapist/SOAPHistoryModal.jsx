@@ -213,6 +213,12 @@ const formatDateOnly = (dateString) => {
                           <span className="font-bold text-blue-600 block mb-1">Plan (P)</span>
                           <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.plan || '-'}</p>
                         </div>
+                        {record.education && (
+                          <div>
+                            <span className="font-bold text-emerald-600 block mb-1">Edukasi</span>
+                            <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.education}</p>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
