@@ -21,6 +21,8 @@ const ImpersonationBanner = () => {
   if (!isImpersonating) return null;
 
   const isOwnerOrigin = impersonationOrigin?.origin_role === 'owner';
+  // Owners switch accounts via the topbar switcher, so no banner for them.
+  if (isOwnerOrigin) return null;
   const originLabel = isOwnerOrigin ? 'Owner' : 'Super Admin';
 
   const targetLabel = userDetails?.full_name || userDetails?.email || user?.email || 'akun ini';
