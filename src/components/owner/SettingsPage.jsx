@@ -5,7 +5,7 @@ import {
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
   FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
-  ChevronRight, Globe, LayoutTemplate, Bell, MapPin
+  ChevronRight, Globe, LayoutTemplate, Bell, MapPin, Wand2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -34,6 +34,7 @@ import MediaAssetManager from '@/components/owner/MediaAssetManager';
 import MediaAssetGallery from '@/components/owner/MediaAssetGallery';
 import WhatsAppSettings from '@/components/owner/WhatsAppSettings';
 import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager';
+import SubjectiveTemplateManager from '@/components/owner/SubjectiveTemplateManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
 import DomainSettingsManager from '@/components/owner/DomainSettingsManager';
 import LandingPageManager from '@/components/owner/LandingPageManager';
@@ -1087,6 +1088,7 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Data Master',
     items: [
       { value: 'diagnosis_service', icon: FolderTree, label: 'Diagnosa & Layanan' },
+      { value: 'subjective_template', icon: Wand2, label: 'Template Subjective' },
       { value: 'source', icon: null, label: 'Referensi' },
       { value: 'type', icon: null, label: 'Tipe Pasien' },
       { value: 'package', icon: null, label: 'Tipe Paket' },
@@ -1263,6 +1265,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="diagnosis_service">
             <DiagnosisServiceManager />
+          </TabsContent>
+          <TabsContent value="subjective_template">
+            <SubjectiveTemplateManager />
           </TabsContent>
           <TabsContent value="source">
             <OptionManager title="Referensi Pasien" description="Opsi Informasi Tambahan" isLegacy={true} />

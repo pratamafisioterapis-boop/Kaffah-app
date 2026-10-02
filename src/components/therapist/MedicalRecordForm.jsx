@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
+import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import ClinicalAdviceAssistant from '@/components/therapist/ClinicalAdviceAssistant';
 import AssessmentAdviceAssistant from '@/components/therapist/AssessmentAdviceAssistant';
@@ -36,6 +37,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [onsetInfo, setOnsetInfo] = useState(null);
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
+  const [templateCache, setTemplateCache] = useState({});
+  const [templateVariables, setTemplateVariables] = useState({});
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -102,6 +105,48 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
         setDiagnosis(diag);
       });
   }, [linkedRecapId]);
+
+  useEffect(() => {
+    getSubjectiveVariables().then(({ data }) => {
+      setTemplateVariables(Object.fromEntries((data || []).map((v) => [v.key, v])));
+    });
+  }, []);
+
+  useEffect(() => {
+    getSubjectiveVariables().then(({ data }) => {
+      setTemplateVariables(Object.fromEntries((data || []).map((v) => [v.key, v])));
+    });
+  }, []);
+
+  // Template Subjective untuk diagnosa terpilih (hanya yang belum pernah dimuat).
+  useEffect(() => {
+    const missing = diagnosis.filter((d) => isValidUUID(d) && !(d in templateCache));
+    if (missing.length === 0) return;
+    getDiagnosisSubjectiveTemplates(missing).then(({ data }) => {
+      setTemplateCache((prev) => {
+        const next = { ...prev };
+        missing.forEach((id) => { next[id] = null; });
+        (data || []).forEach((row) => { next[row.id] = { label: row.label, template: row.subjective_template }; });
+        return next;
+      });
+    });
+  }, [diagnosis, templateCache]);
+
+  const subjectiveTemplates = diagnosis
+    .map((d) => (templateCache[d] ? { key: d, label: templateCache[d].label, template: templateCache[d].template } : null))
+    .filter(Boolean);
+
+  const handleApplyTemplate = (text, { replace }) => {
+    setFormData((prev) => {
+      const existing = (prev.subjective || '').trim();
+      return { ...prev, subjective: replace || !existing ? text : `${existing}\n\n${text}` };
+    });
+    toast({
+      title: replace ? 'Subjective terisi' : 'Template ditambahkan',
+      description: 'Silakan cek dan lengkapi bila perlu.',
+      className: 'bg-blue-50 border-blue-200 text-blue-800',
+    });
+  };
 
   const loadExistingRecord = async (id) => {
   setInitialLoading(true);
@@ -427,6 +472,17 @@ if (isCreate) {
               />
               <p className="text-[11px] text-slate-400 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
             </div>
+
+            {/* Template Subjective klik-pilih untuk diagnosa terpilih */}
+            {subjectiveTemplates.length > 0 && (
+              <SubjectiveTemplateBuilder
+                templates={subjectiveTemplates}
+                variables={templateVariables}
+                currentText={formData.subjective}
+                onApply={handleApplyTemplate}
+                compact={isPWA}
+              />
+            )}
 
             {/* SOAP Fields */}
             <div className={isPWA ? 'divide-y divide-slate-100' : 'grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100'}>
