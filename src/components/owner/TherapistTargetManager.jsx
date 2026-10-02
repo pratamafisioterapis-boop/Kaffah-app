@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus, Edit2, Trash2, Save, Target,
   Loader2, CheckCircle, CalendarDays, ArrowRightCircle
@@ -37,6 +37,7 @@ const TherapistTargetManager = () => {
   const [editingTarget, setEditingTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
+  const carryingOver = useRef(false);
 
   const [formData, setFormData] = useState({
     therapist_id: '',
@@ -49,6 +50,58 @@ const TherapistTargetManager = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Target periode sebelumnya yang belum tercapai otomatis dibuat ulang untuk
+  // periode berjalan dengan jumlah target yang sama (bila periode berjalan
+  // belum punya target untuk terapis tsb).
+  const carryOverUnmetTargets = async (allTargets, therapistList) => {
+    if (carryingOver.current) return 0;
+    carryingOver.current = true;
+    let created = 0;
+    try {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const byTherapist = new Map();
+      allTargets.forEach(t => {
+        if (!byTherapist.has(t.therapist_id)) byTherapist.set(t.therapist_id, []);
+        byTherapist.get(t.therapist_id).push(t);
+      });
+
+      for (const [therapistId, list] of byTherapist) {
+        const therapist = therapistList.find(t => t.id === therapistId);
+        if (!therapist) continue; // terapis tidak aktif
+        const { startDate, endDate } = getTherapistPeriodRange(therapist);
+        const curStart = format(startDate, 'yyyy-MM-dd');
+        const curEnd = format(endDate, 'yyyy-MM-dd');
+
+        const hasCurrent = list.some(t => t.start_date <= curEnd && t.end_date >= curStart);
+        if (hasCurrent) continue;
+
+        const previous = list
+          .filter(t => t.end_date && t.end_date < curStart && t.end_date < todayStr)
+          .sort((a, b) => (a.end_date < b.end_date ? 1 : -1))[0];
+        if (!previous || previous.actual_visits === undefined) continue;
+
+        const prevTarget = previous.target_visits || 0;
+        if (prevTarget <= 0 || (previous.actual_visits || 0) >= prevTarget) continue;
+
+        const { error } = await createTherapistTarget({
+          therapist_id: therapistId,
+          start_date: curStart,
+          end_date: curEnd,
+          target_visits: prevTarget,
+          excluded_patient_types: previous.excluded_patient_types || [],
+          clinic_id: null,
+        });
+        if (error) console.error('Gagal membuat target otomatis', therapistId, error);
+        else created += 1;
+      }
+    } catch (err) {
+      console.error('Carry-over target gagal', err);
+    } finally {
+      carryingOver.current = false;
+    }
+    return created;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +130,26 @@ const TherapistTargetManager = () => {
 
       setTargets(enrichedTargets);
       if (therapistsRes.data) setTherapists(therapistsRes.data);
+
+      const created = await carryOverUnmetTargets(enrichedTargets, therapistsRes.data || []);
+      if (created > 0) {
+        const { data: refreshed } = await getAllTherapistTargets();
+        if (refreshed) {
+          setTargets(await Promise.all(refreshed.map(async (target) => {
+            try {
+              const { data: progress } = await getTherapistTargetProgress(target.therapist_id, target.start_date, target.end_date);
+              if (progress) return { ...target, ...progress };
+            } catch (err) {
+              console.error("Failed to fetch progress for target", target.id, err);
+            }
+            return target;
+          })));
+        }
+        toast({
+          title: 'Target Dilanjutkan Otomatis',
+          description: `${created} target periode ini dibuat otomatis dari target periode sebelumnya yang belum tercapai.`,
+        });
+      }
       if (typesRes.data) setPatientTypes(typesRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
