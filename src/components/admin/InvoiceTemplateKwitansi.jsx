@@ -74,8 +74,8 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
   const paid = splits.reduce((s, p) => s + p.amount, 0);
   const payDate = fmtDate(data?.recap_date);
 
-  const INK = '#0f172a';
-  const MUTED = '#64748b';
+  const INK = '#000';
+  const MUTED = '#000';
   const LINE = '#e2e8f0';
   const ACCENT = '#0f3d3e';
 
@@ -113,7 +113,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
         {clinic.logo_url
           ? (
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ display: 'block', height: '84px', width: 'auto', maxWidth: '320px', objectFit: 'contain' }} />
+              <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ display: 'block', height: '104px', width: 'auto', maxWidth: '380px', objectFit: 'contain' }} />
             </div>
           )
           : <p style={{ fontSize: '22px', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>{(clinic.name || '').toUpperCase()}</p>}
@@ -153,7 +153,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
             <React.Fragment key={g.value}>
               <tr>
                 <td style={{ ...td, borderBottom: 'none', paddingBottom: '2px' }}></td>
-                <td colSpan={6} style={{ ...td, borderBottom: 'none', paddingBottom: '2px', fontWeight: 700, fontSize: '9.5px', letterSpacing: '0.06em', textTransform: 'uppercase', color: ACCENT }}>{g.label}</td>
+                <td colSpan={6} style={{ ...td, borderBottom: 'none', paddingBottom: '2px', fontWeight: 700, fontSize: '9.5px', letterSpacing: '0.06em', textTransform: 'uppercase', color: INK }}>{g.label}</td>
               </tr>
               {g.rows.map((it, i) => {
                 rowNo += 1;
@@ -183,7 +183,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
             <td colSpan={4} style={{ ...sumLabel, color: INK, fontWeight: 700, borderTop: `1px solid ${INK}`, padding: '9px 8px' }}>Payment :</td>
             <td style={{ ...sumVal, borderTop: `1px solid ${INK}` }}></td>
             <td style={{ ...sumVal, borderTop: `1px solid ${INK}` }}></td>
-            <td style={{ ...sumVal, borderTop: `1px solid ${INK}`, fontWeight: 700, fontSize: '12.5px', color: ACCENT, padding: '9px 8px' }}>{idr(paid)}</td>
+            <td style={{ ...sumVal, borderTop: `1px solid ${INK}`, fontWeight: 700, fontSize: '12.5px', color: INK, padding: '9px 8px' }}>{idr(paid)}</td>
           </tr>
         </tbody>
       </table>
