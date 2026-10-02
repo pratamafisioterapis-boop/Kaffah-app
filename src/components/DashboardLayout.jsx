@@ -260,7 +260,7 @@ const isPWA =
           />
           <div className="absolute inset-0 bg-white/70" />
         </div>
-        <div className="relative z-10 flex items-center gap-4 px-6 py-10">
+        <div className="relative z-10 flex items-center gap-3 px-5 py-8">
         {role === 'super_admin' ? (
           <>
             <div className="relative">
@@ -290,8 +290,8 @@ const isPWA =
                </div>
                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-[#102F52] tracking-tight leading-tight break-words">
                 {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-[#EAF4FF] align-middle" />}
               </h2>
               <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">CLINIC MANAGEMENT</p>

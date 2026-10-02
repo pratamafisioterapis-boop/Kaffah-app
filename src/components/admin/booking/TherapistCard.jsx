@@ -151,7 +151,7 @@ const TherapistCard = ({
     shouldGrayScale && "opacity-50 grayscale"
   )}
 >
-      <AvatarImage src={therapist.avatar_url || ''} />
+      <AvatarImage src={therapist.avatar_url || ''} className="object-cover object-top" />
       <AvatarFallback className="bg-slate-900 text-white text-base font-bold">
         {therapist.name ? therapist.name.charAt(0) : 'T'}
       </AvatarFallback>
