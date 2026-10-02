@@ -233,6 +233,7 @@ Deno.serve(async (req) => {
         session_count: d.session_count,
         validity_days: d.validity_days,
         subjective_template: d.subjective_template ?? null,
+        objective_template: d.objective_template ?? null,
         parent_id: d.parent_id ? (idMap[d.parent_id] || null) : null,
         clinic_id: clinic.id,
       }));

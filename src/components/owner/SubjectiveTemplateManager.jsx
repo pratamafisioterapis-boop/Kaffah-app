@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
+import { FORM_LIST } from '@/data/functionalForms';
 import {
   deleteSubjectiveVariable, getOperationalOptions, getSubjectiveVariables,
   saveSubjectiveVariable, updateDiagnosisSubjectiveTemplate,
@@ -40,6 +41,13 @@ const SNIPPETS = [
   { label: 'Durasi', text: 'sejak (.....) hari/minggu/bulan yang lalu' },
   { label: 'Tanggal', text: 'tanggal (.....)' },
   { label: 'Bagian baru', text: '\n**Judul Bagian:** ', select: [3, 15] },
+];
+const OBJECTIVE_SNIPPETS = [
+  { label: 'Positif / Negatif', text: '(+/-)' },
+  { label: 'Skala 0-10', text: '(.....)/10' },
+  { label: 'Terbatas / Penuh / Nyeri', text: '(terbatas/penuh/nyeri)' },
+  { label: 'Kelompok opsional', text: '[teks (.....)]', select: [1, 5] },
+  { label: 'Pemisah item', text: ' | ' },
 ];
 
 // ───────────── Dialog variabel ─────────────
@@ -164,6 +172,7 @@ const SubjectiveTemplateManager = () => {
   const [variables, setVariables] = useState([]);
   const [query, setQuery] = useState('');
   const [onlyEmpty, setOnlyEmpty] = useState(false);
+  const [field, setField] = useState('subjective_template');
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
@@ -181,21 +190,31 @@ const SubjectiveTemplateManager = () => {
   useEffect(() => { load(); }, [load]);
 
   const selected = diagnoses.find((d) => d.id === selectedId) || null;
-  const dirty = selected ? draft !== (selected.subjective_template || '') : false;
+  const isObjective = field === 'objective_template';
+  const current = selected ? selected[field] || '' : '';
+  const dirty = selected ? draft !== current : false;
 
   const select = (d) => {
     if (dirty && !window.confirm('Perubahan belum disimpan. Pindah diagnosa?')) return;
     setSelectedId(d.id);
-    setDraft(d.subjective_template || '');
+    setDraft(d[field] || '');
+  };
+
+  const switchField = (f) => {
+    if (f === field) return;
+    if (dirty && !window.confirm('Perubahan belum disimpan. Pindah ke template lain?')) return;
+    setField(f);
+    setDraft(selected ? selected[f] || '' : '');
+    setOnlyEmpty(false);
   };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return diagnoses.filter((d) => (!q || d.label.toLowerCase().includes(q)) && (!onlyEmpty || !d.subjective_template));
-  }, [diagnoses, query, onlyEmpty]);
+    return diagnoses.filter((d) => (!q || d.label.toLowerCase().includes(q)) && (!onlyEmpty || !d[field]));
+  }, [diagnoses, query, onlyEmpty, field]);
 
   const variableMap = useMemo(() => Object.fromEntries(variables.map((v) => [v.key, v])), [variables]);
-  const withTemplate = diagnoses.filter((d) => d.subjective_template).length;
+  const withTemplate = diagnoses.filter((d) => d[field]).length;
 
   const insert = (text, select) => {
     const el = textareaRef.current;
@@ -214,14 +233,14 @@ const SubjectiveTemplateManager = () => {
   const save = async () => {
     if (!selected) return;
     setSaving(true);
-    const { error } = await updateDiagnosisSubjectiveTemplate(selected.id, draft);
+    const { error } = await updateDiagnosisSubjectiveTemplate(selected.id, draft, field);
     setSaving(false);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
       return;
     }
     const value = draft.trim() ? draft : null;
-    setDiagnoses((list) => list.map((d) => (d.id === selected.id ? { ...d, subjective_template: value } : d)));
+    setDiagnoses((list) => list.map((d) => (d.id === selected.id ? { ...d, [field]: value } : d)));
     setDraft(value || '');
     toast({ title: 'Template tersimpan', description: selected.label });
   };
@@ -244,11 +263,24 @@ const SubjectiveTemplateManager = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template Subjective</h3>
+        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template Subjective & Objective</h3>
         <p className="text-sm text-slate-500">
-          Atur template Subjective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.
+          Atur template Subjective dan Objective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.
           <span className="ml-1 text-slate-400">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
         </p>
+      </div>
+
+      <div className="inline-flex rounded-xl bg-slate-100 p-1">
+        {[['subjective_template', 'Subjective'], ['objective_template', 'Objective']].map(([f, label]) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => switchField(f)}
+            className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors', field === f ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Variabel */}
@@ -318,7 +350,7 @@ const SubjectiveTemplateManager = () => {
                 )}
               >
                 <span className="truncate">{d.label}</span>
-                {d.subjective_template
+                {d[field]
                   ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                   : <Badge variant="outline" className="shrink-0 text-[10px] text-slate-400">kosong</Badge>}
               </button>
@@ -341,12 +373,12 @@ const SubjectiveTemplateManager = () => {
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-900">{selected.label}</div>
-                    <div className="text-xs text-slate-400">Template Subjective</div>
+                    <div className="text-xs text-slate-400">Template {isObjective ? 'Objective' : 'Subjective'}</div>
                   </div>
                 </div>
 
                 <div className="mb-2 flex flex-wrap gap-1.5">
-                  {SNIPPETS.map((sn) => (
+                  {[...SNIPPETS.filter((sn) => !isObjective || ['Isian teks', 'Pilihan', 'Ada / Tidak', 'Kanan / Kiri', 'Bagian baru'].includes(sn.label)), ...(isObjective ? OBJECTIVE_SNIPPETS : [])].map((sn) => (
                     <button
                       key={sn.label}
                       type="button"
@@ -357,6 +389,21 @@ const SubjectiveTemplateManager = () => {
                     </button>
                   ))}
                 </div>
+                {isObjective && (
+                  <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Formulir</span>
+                    {FORM_LIST.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => insert(`{{form:${f.id}}}`)}
+                        className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700 hover:bg-emerald-100"
+                      >
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {variables.length > 0 && (
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Variabel</span>
@@ -384,6 +431,7 @@ const SubjectiveTemplateManager = () => {
                 />
                 <ul className="mt-2 space-y-0.5 text-[11px] text-slate-400">
                   <li>Satu bagian per baris, diawali <code className="rounded bg-slate-100 px-1">**Judul:**</code></li>
+                  {isObjective && <li><code className="rounded bg-slate-100 px-1">(+/-)</code> positif/negatif · <code className="rounded bg-slate-100 px-1">(.....)/10</code> skala klik · <code className="rounded bg-slate-100 px-1">[ ... ]</code> kelompok opsional · <code className="rounded bg-slate-100 px-1">{'{{form:barthel}}'}</code> pop-up formulir · <code className="rounded bg-slate-100 px-1">|</code> pemisah item</li>}
                   <li><code className="rounded bg-slate-100 px-1">(.....)</code> isian teks · <code className="rounded bg-slate-100 px-1">(a/b/c)</code> pilihan · <code className="rounded bg-slate-100 px-1">(ada/tidak)</code> ya/tidak · <code className="rounded bg-slate-100 px-1">hari/minggu/bulan</code> durasi · <code className="rounded bg-slate-100 px-1">{'{{kode}}'}</code> variabel</li>
                 </ul>
                 {draft.trim() && !hasSections && (
@@ -396,7 +444,7 @@ const SubjectiveTemplateManager = () => {
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-                  <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" disabled={!dirty} onClick={() => setDraft(selected.subjective_template || '')}>
+                  <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" disabled={!dirty} onClick={() => setDraft(current)}>
                     <Undo2 className="h-4 w-4" /> Batalkan
                   </Button>
                   <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" disabled={!dirty || saving} onClick={save}>
@@ -409,7 +457,8 @@ const SubjectiveTemplateManager = () => {
                 <div className="border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Pratinjau (tampilan terapis)</div>
                 {draft.trim() ? (
                   <SubjectiveTemplateBuilder
-                    key={selected.id}
+                    key={`${selected.id}-${field}`}
+                    mode={isObjective ? 'objective' : 'subjective'}
                     templates={[{ key: selected.id, label: selected.label, template: draft }]}
                     variables={variableMap}
                     currentText=""
