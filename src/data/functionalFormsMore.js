@@ -93,36 +93,58 @@ const HAQ_CATS = [
   ['Menggenggam', ['Membuka pintu mobil', 'Membuka toples yang sudah pernah dibuka', 'Memutar keran']],
   ['Aktivitas', ['Berbelanja / urusan di luar', 'Naik / turun mobil', 'Pekerjaan rumah (menyapu, berkebun)']],
 ];
-const HAQ_ITEMS = [];
-const HAQ_SLICES = [];
-HAQ_CATS.forEach(([cat, labels]) => {
-  const start = HAQ_ITEMS.length;
-  labels.forEach((label) => HAQ_ITEMS.push({ label, ...O(HAQ_OPTS), group: cat }));
-  HAQ_ITEMS.push({ label: `Alat bantu / bantuan orang untuk ${cat.toLowerCase()}`, ...O(HAQ_AID), group: cat });
-  HAQ_SLICES.push({ cat, start, aid: start + labels.length });
-});
-const haqScore = (a) => {
-  const scores = HAQ_SLICES.map(({ start, aid }) => {
-    const v = range(start, aid - 1).map((i) => a[i]).filter((x) => x !== undefined);
-    if (!v.length) return null;
-    return Math.max(Math.max(...v), a[aid] && Math.max(...v) < 2 ? a[aid] : 0);
-  }).filter((x) => x !== null);
-  return scores.length ? { scores, mean: round(scores.reduce((s, x) => s + x, 0) / scores.length) } : null;
-};
 const haqBand = (v) => (v <= 1 ? 'disabilitas ringan-sedang' : v <= 2 ? 'disabilitas sedang-berat' : 'disabilitas berat-sangat berat');
-const HAQDI = {
-  id: 'haqdi',
-  name: 'HAQ-DI',
-  items: HAQ_ITEMS,
-  minAnswered: 20,
-  manual: { label: 'Skor (0-3)', min: 0, max: 3 },
-  compute: (a) => {
-    const r = haqScore(a);
-    return r ? { value: r.mean, summary: `${r.mean}/3`, interpretation: haqBand(r.mean) } : null;
-  },
-  fromManual: (v) => ({ value: v, summary: `${v}/3`, interpretation: haqBand(v) }),
-  text: (r) => `HAQ-DI ${r.summary} (${r.interpretation})`,
+// HAQ-DI dan CHAQ: skor kategori = jawaban tertinggi; alat bantu / bantuan orang
+// menaikkan skor kategori menjadi minimal 2; indeks = rerata kategori yang terisi.
+const haqLike = ({ id, name, cats, pain }) => {
+  const items = [];
+  const slices = [];
+  cats.forEach(([cat, labels]) => {
+    const start = items.length;
+    labels.forEach((label) => items.push({ label, ...O(HAQ_OPTS), group: cat }));
+    items.push({ label: `Alat bantu / bantuan orang untuk ${cat.toLowerCase()}`, ...O(HAQ_AID), group: cat });
+    slices.push({ start, aid: start + labels.length });
+  });
+  const painIdx = pain ? items.length : -1;
+  if (pain) items.push({ label: 'Nyeri akibat artritis (minggu terakhir)', group: 'Nyeri', scale: numScale('0 = tidak nyeri · 3 = nyeri sangat berat (dari garis 15 cm: cm × 0,2)', range(0, 6).map((i) => i / 2)) });
+  const score = (a) => {
+    const scores = slices.map(({ start, aid }) => {
+      const v = range(start, aid - 1).map((i) => a[i]).filter((x) => x !== undefined);
+      if (!v.length) return null;
+      const top = Math.max(...v);
+      return a[aid] && top < 2 ? a[aid] : top;
+    }).filter((x) => x !== null);
+    return scores.length ? round(scores.reduce((t, x) => t + x, 0) / scores.length) : null;
+  };
+  const fin = (mean, painV) => {
+    const parts = [];
+    if (mean !== null) parts.push(`${mean}/3`);
+    if (painV !== undefined && painV !== null) parts.push(`nyeri ${painV}/3`);
+    return parts.length ? { value: mean, summary: parts.join(', '), interpretation: mean === null ? '' : haqBand(mean) } : null;
+  };
+  return {
+    id, name, items,
+    minAnswered: cats.length * 2,
+    manual: { label: 'Skor (0-3)', min: 0, max: 3 },
+    compute: (a) => fin(score(a), pain ? a[painIdx] : undefined),
+    fromManual: (v) => fin(v),
+    text: (r) => `${name} ${r.summary}${r.interpretation ? ` (${r.interpretation})` : ''}`,
+  };
 };
+const HAQDI = haqLike({ id: 'haqdi', name: 'HAQ-DI', cats: HAQ_CATS });
+const CHAQ = haqLike({
+  id: 'chaq', name: 'CHAQ', pain: true,
+  cats: [
+    ['Berpakaian & berdandan', ['Berpakaian sendiri, termasuk mengikat tali sepatu dan mengancing baju', 'Mencuci rambut', 'Melepas kaus kaki', 'Memotong kuku jari']],
+    ['Bangkit', ['Berdiri dari kursi rendah / lantai', 'Naik / turun tempat tidur']],
+    ['Makan', ['Memotong makanan', 'Mengangkat cangkir / gelas penuh ke mulut', 'Membuka kotak sereal / susu baru']],
+    ['Berjalan', ['Berjalan di luar rumah pada permukaan datar', 'Menaiki 5 anak tangga']],
+    ['Kebersihan', ['Mencuci dan mengeringkan seluruh badan', 'Mandi berendam', 'Duduk dan berdiri dari toilet', 'Menyikat gigi', 'Menyisir / menyikat rambut']],
+    ['Menjangkau', ['Meraih benda berat (mis. mainan) di atas kepala', 'Membungkuk mengambil pakaian dari lantai']],
+    ['Menggenggam', ['Membuka pintu mobil', 'Membuka toples yang sudah pernah dibuka', 'Memutar keran']],
+    ['Aktivitas', ['Berbelanja / urusan di luar', 'Naik / turun mobil atau bus sekolah', 'Bersepeda / mengendarai sepeda roda tiga', 'Pekerjaan rumah (membereskan mainan, membantu)', 'Bermain di luar']],
+  ],
+});
 
 // ───────── Fugl-Meyer (motorik) ─────────
 const FM_OPTS = [[2, 'Penuh'], [1, 'Sebagian'], [0, 'Tidak bisa']];
@@ -265,4 +287,4 @@ const PRTEE = {
   text: (r) => `PRTEE ${r.summary} (${r.interpretation}; skor lebih tinggi = lebih berat)`,
 };
 
-export const MORE_FORMS = { ikdc: IKDC, visap: VISA_P, visaa: VISA_A, cait: CAIT, haqdi: HAQDI, fugl: FUGL, scim: SCIM, csi: CSI, tinetti: TINETTI, prtee: PRTEE };
+export const MORE_FORMS = { ikdc: IKDC, visap: VISA_P, visaa: VISA_A, cait: CAIT, haqdi: HAQDI, chaq: CHAQ, fugl: FUGL, scim: SCIM, csi: CSI, tinetti: TINETTI, prtee: PRTEE };
