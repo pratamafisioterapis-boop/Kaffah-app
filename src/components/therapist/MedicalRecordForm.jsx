@@ -14,6 +14,7 @@ import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, ref
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
+import PlanChecklist from '@/components/therapist/PlanChecklist';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
@@ -51,6 +52,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     objective: '',
     assessment: '',
     plan: '',
+    plan_data: null,
     record_type: 'DAILY_EVALUATION'
   });
 
@@ -236,6 +238,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       objective: data.objective || '',
       assessment: data.assessment || '',
       plan: data.plan || '',
+      // Record lama (teks saja) tampil sebagai catatan tambahan di checklist.
+      plan_data: data.plan_data || (data.plan ? { notes: data.plan } : null),
       record_type: data.record_type || 'SOAP'
     });
 
@@ -317,6 +321,11 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     
     if (linkedRecapId && isValidUUID(linkedRecapId) && diagnosis.length === 0) {
       toast({ variant: "destructive", title: "Diagnosa wajib diisi", description: "Pilih minimal satu diagnosa." });
+      return;
+    }
+
+    if (!formData.plan.trim()) {
+      toast({ variant: "destructive", title: "Plan belum diisi", description: "Centang minimal satu tindakan atau tulis catatan Plan." });
       return;
     }
 
@@ -414,6 +423,7 @@ if (isCreate) {
       objective: record.objective || '',
       assessment: record.assessment || '',
       plan: record.plan || '',
+      plan_data: record.plan_data || (record.plan ? { notes: record.plan } : null),
     }));
     toast({
       title: "Data Disalin!",
@@ -546,7 +556,7 @@ if (isCreate) {
               {soapFields.map((field) => (
                 <div
                   key={field.key}
-                  className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}
+                  className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
                     <span className={`w-6 h-6 rounded-lg ${field.badge} text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}>
@@ -591,6 +601,13 @@ if (isCreate) {
                       </button>
                     )}
                   </div>
+                  {field.key === 'plan' ? (
+                    <PlanChecklist
+                      diagnosisLabels={diagnosisLabels}
+                      value={formData.plan_data}
+                      onChange={(plan_data, plan) => setFormData((prev) => ({ ...prev, plan_data, plan }))}
+                    />
+                  ) : (
                   <Textarea
                     placeholder={field.placeholder}
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${
@@ -605,6 +622,7 @@ if (isCreate) {
                     }}
                     required
                   />
+                  )}
                 </div>
               ))}
             </div>
