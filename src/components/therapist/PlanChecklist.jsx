@@ -3,6 +3,7 @@ import { ChevronDown, Info, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { getPlanForDiagnoses } from '@/lib/api';
 import { EPA_OPTIONS, MANUAL_OPTIONS, PHASE_TITLES, mergePlanPhases, buildPlanText } from '@/data/planModalities';
 
 const EMPTY = { epa: [], manual: [], exercises: {}, notes: '' };
@@ -64,22 +65,35 @@ const ExerciseRow = ({ id, ex, checked, onToggle }) => {
  * onChange(data, text): text = ringkasan untuk kolom `plan`.
  */
 const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
-  const [catalog, setCatalog] = useState(null);
+  // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
+  const [catalog, setCatalog] = useState({ byDiagnosis: {}, exercises: {}, fetched: [] });
+  const [loading, setLoading] = useState(false);
   const [openPhase, setOpenPhase] = useState(0);
   const data = { ...EMPTY, ...(value || {}) };
 
   useEffect(() => {
+    const missing = diagnosisLabels.filter((l) => !catalog.fetched.includes(String(l).trim().toLowerCase()));
+    if (missing.length === 0) return undefined;
     let alive = true;
-    import('@/data/planExercises').then((m) => alive && setCatalog(m));
+    setLoading(true);
+    getPlanForDiagnoses(missing).then(({ data }) => {
+      if (!alive) return;
+      setCatalog((prev) => ({
+        byDiagnosis: { ...prev.byDiagnosis, ...data.byDiagnosis },
+        exercises: { ...prev.exercises, ...data.exercises },
+        fetched: [...new Set([...prev.fetched, ...missing.map((l) => String(l).trim().toLowerCase())])],
+      }));
+      setLoading(false);
+    });
     return () => { alive = false; };
-  }, []);
+  }, [diagnosisLabels, catalog.fetched]);
 
   const merged = useMemo(
-    () => (catalog ? mergePlanPhases(diagnosisLabels, catalog.PLAN_BY_DIAGNOSIS) : { phases: [[], [], []], cautions: [], unknown: [] }),
+    () => mergePlanPhases(diagnosisLabels, catalog.byDiagnosis),
     [catalog, diagnosisLabels]
   );
 
-  const emit = (next) => onChange(next, buildPlanText(next, merged.phases, catalog?.PLAN_EXERCISES || {}));
+  const emit = (next) => onChange(next, buildPlanText(next, merged.phases, catalog.exercises));
   const toggleList = (key) => (opt) => {
     const list = data[key].includes(opt) ? data[key].filter((x) => x !== opt) : [...data[key], opt];
     emit({ ...data, [key]: list });
@@ -99,14 +113,14 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Exercise</p>
-        {!catalog && <div className="flex items-center gap-2 text-xs text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat daftar latihan...</div>}
-        {catalog && diagnosisLabels.length === 0 && (
+        {loading && <div className="flex items-center gap-2 text-xs text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat daftar latihan...</div>}
+        {diagnosisLabels.length === 0 && (
           <p className="text-xs text-slate-400">Pilih diagnosa di atas untuk menampilkan daftar latihan.</p>
         )}
-        {catalog && diagnosisLabels.length > 0 && totalExercises === 0 && (
+        {!loading && diagnosisLabels.length > 0 && totalExercises === 0 && (
           <p className="text-xs text-slate-400">Belum ada daftar latihan untuk diagnosa ini. Tulis di catatan di bawah.</p>
         )}
-        {catalog && totalExercises > 0 && (
+        {totalExercises > 0 && (
           <div className="space-y-2">
             {merged.phases.map((ids, i) => {
               if (!ids.length) return null;
@@ -122,8 +136,8 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
                   </button>
                   {openPhase === i && (
                     <ul className="space-y-1.5 px-2 pb-2">
-                      {ids.map((id) => catalog.PLAN_EXERCISES[id] && (
-                        <ExerciseRow key={id} id={id} ex={catalog.PLAN_EXERCISES[id]} checked={!!data.exercises[id]} onToggle={toggleExercise} />
+                      {ids.map((id) => catalog.exercises[id] && (
+                        <ExerciseRow key={id} id={id} ex={catalog.exercises[id]} checked={!!data.exercises[id]} onToggle={toggleExercise} />
                       ))}
                     </ul>
                   )}

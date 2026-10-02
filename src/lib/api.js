@@ -1239,6 +1239,29 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
+// Daftar exercise Plan SOAP untuk diagnosa terpilih (tabel diagnosis_exercise_plans + plan_exercises).
+// Hasil: { byDiagnosis: { kunci: { n, f: [[id fase1],[id fase2],[id fase3]], c } }, exercises: { id: { n, g, h, d, p, c } } }
+export const getPlanForDiagnoses = async (labels = []) => {
+  const keys = [...new Set(labels.map((l) => String(l).trim().toLowerCase()).filter(Boolean))];
+  if (keys.length === 0) return { data: { byDiagnosis: {}, exercises: {} }, error: null };
+  const { data: plans, error } = await supabase
+    .from('diagnosis_exercise_plans')
+    .select('diagnosis_key, display_name, phase1, phase2, phase3, caution')
+    .in('diagnosis_key', keys);
+  if (error) return { data: { byDiagnosis: {}, exercises: {} }, error };
+  const byDiagnosis = Object.fromEntries((plans || []).map((p) => [p.diagnosis_key, { n: p.display_name, f: [p.phase1, p.phase2, p.phase3], c: p.caution }]));
+  const ids = [...new Set((plans || []).flatMap((p) => [...p.phase1, ...p.phase2, ...p.phase3]))];
+  let exercises = {};
+  if (ids.length) {
+    const { data: rows, error: exError } = await supabase
+      .from('plan_exercises')
+      .select('id, name, grp, how_to, dose, progression, caution')
+      .in('id', ids);
+    if (exError) return { data: { byDiagnosis, exercises }, error: exError };
+    exercises = Object.fromEntries((rows || []).map((r) => [r.id, { n: r.name, g: r.grp, h: r.how_to, d: r.dose, p: r.progression, c: r.caution }]));
+  }
+  return { data: { byDiagnosis, exercises }, error: null };
+};
 // Judul resmi kode ICF (WHO) dari tabel icf_codes -> { kode: judul }.
 export const getIcfTitles = async (codes = []) => {
   const list = [...new Set(codes)].filter(Boolean);
