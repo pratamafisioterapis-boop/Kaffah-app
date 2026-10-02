@@ -28,11 +28,19 @@ import {
   getOperationalOptions, 
   createOperationalOption, 
   updateOperationalOption, 
-  deleteOperationalOption 
+  deleteOperationalOption,
+  purgeInactiveDiagnoses
 } from '@/lib/api';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+
+// Fitur pembersihan duplikat hanya untuk owner klinik Kaffah Physiotherapy
+const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
 
 const DiagnosisServiceManager = () => {
   const { toast } = useToast();
+  const { role, userDetails } = useAuth();
+  const canPurgeDuplicates = role === 'owner' && userDetails?.clinic_id === KAFFAH_CLINIC_ID;
+  const [isPurgeOpen, setIsPurgeOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
@@ -249,6 +257,34 @@ setExpandedServices({});
     }
   };
 
+  // --- Purge Duplicates (diagnosa nonaktif) ---
+
+  const inactiveDiagnosisCount = diagnoses.filter(d => d.is_active === false).length;
+
+  const handlePurgeDuplicates = async () => {
+    if (!canPurgeDuplicates) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await purgeInactiveDiagnoses();
+      if (result.error) throw result.error;
+
+      const { deleted = 0, skipped = 0 } = result.data || {};
+      toast({
+        title: "Duplikat dihapus",
+        description: skipped > 0
+          ? `${deleted} diagnosa dihapus, ${skipped} dilewati karena masih dipakai rekap pasien.`
+          : `${deleted} diagnosa duplikat berhasil dihapus.`
+      });
+      setIsPurgeOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Gagal menghapus duplikat", description: error.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // --- Rendering Helpers ---
 
   const filteredServices = services.filter(service => 
@@ -276,6 +312,17 @@ setExpandedServices({});
               className="pl-9 bg-white"
             />
           </div>
+          {canPurgeDuplicates && (
+            <Button
+              variant="outline"
+              onClick={() => setIsPurgeOpen(true)}
+              disabled={inactiveDiagnosisCount === 0}
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 whitespace-nowrap"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Hapus Duplikat ({inactiveDiagnosisCount})
+            </Button>
+          )}
           <Button onClick={() => handleOpenServiceModal()} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" />
             Layanan Baru
@@ -386,6 +433,9 @@ setExpandedServices({});
                                     <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all">
                                        <span className="text-sm text-slate-700 font-medium truncate pr-2" title={diagnosis.label}>
                                           {diagnosis.label}
+                                          {diagnosis.is_active === false && (
+                                            <Badge variant="outline" className="ml-2 text-[10px] text-slate-400 border-slate-200">Nonaktif</Badge>
+                                          )}
                                        </span>
                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button 
@@ -507,6 +557,31 @@ setExpandedServices({});
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Purge Duplicates Confirmation (owner Kaffah only) */}
+      {canPurgeDuplicates && (
+        <Dialog open={isPurgeOpen} onOpenChange={setIsPurgeOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                Hapus Semua Diagnosa Duplikat
+              </DialogTitle>
+              <DialogDescription>
+                {inactiveDiagnosisCount} diagnosa nonaktif (hasil penggabungan duplikat) akan dihapus permanen.
+                Diagnosa yang masih dipakai rekap pasien otomatis dilewati. Tindakan ini tidak bisa dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPurgeOpen(false)}>Batal</Button>
+              <Button onClick={handlePurgeDuplicates} disabled={isProcessing} className="bg-red-600 hover:bg-red-700">
+                {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Hapus Permanen
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

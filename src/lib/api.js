@@ -5804,6 +5804,65 @@ export const deleteOperationalOption = async (id) => {
     return { success: true, error: null };
   }, 'deleteOperationalOption');
 };
+
+// Hapus permanen semua diagnosa NONAKTIF (hasil penggabungan duplikat) milik klinik
+// pengguna. Diagnosa nonaktif yang masih dipakai rekap pasien (via ID) dilewati agar
+// tidak ada tautan yang putus.
+export const purgeInactiveDiagnoses = async () => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const clinicId = await getCachedClinicId(userId);
+    if (!clinicId) return { error: new Error('Klinik tidak ditemukan') };
+
+    const { data: inactive, error: listError } = await supabase
+      .from('operational_options')
+      .select('id')
+      .eq('category', 'diagnosa')
+      .eq('clinic_id', clinicId)
+      .eq('is_active', false);
+    if (listError) return { error: listError };
+
+    const inactiveIds = (inactive || []).map(r => r.id);
+    if (inactiveIds.length === 0) return { data: { deleted: 0, skipped: 0 }, error: null };
+
+    const chunk = (arr, size) =>
+      Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
+
+    // Cari ID nonaktif yang masih direferensikan oleh rekap harian
+    const referenced = new Set();
+    for (const ids of chunk(inactiveIds, 20)) {
+      const { data: recaps, error: recapError } = await supabase
+        .from('daily_recaps')
+        .select('diagnosis')
+        .eq('clinic_id', clinicId)
+        .or(ids.map(id => `diagnosis.cs.["${id}"]`).join(','));
+      if (recapError) return { error: recapError };
+      (recaps || []).forEach(r => {
+        (Array.isArray(r.diagnosis) ? r.diagnosis : []).forEach(v => {
+          if (ids.includes(v)) referenced.add(v);
+        });
+      });
+    }
+
+    const deletable = inactiveIds.filter(id => !referenced.has(id));
+    let deleted = 0;
+    for (const ids of chunk(deletable, 10)) {
+      const { data: removed, error: delError } = await supabase
+        .from('operational_options')
+        .delete()
+        .in('id', ids)
+        .eq('category', 'diagnosa')
+        .eq('clinic_id', clinicId)
+        .eq('is_active', false)
+        .select('id');
+      if (delError) return { error: delError };
+      deleted += (removed || []).length;
+    }
+
+    return { data: { deleted, skipped: referenced.size }, error: null };
+  }, 'purgeInactiveDiagnoses');
+};
 export const getCurrentClinic = async () => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
