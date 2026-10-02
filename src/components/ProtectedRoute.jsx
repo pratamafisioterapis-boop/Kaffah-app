@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Loader2, ShieldAlert } from 'lucide-react';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading, userDetails } = useAuth();
+  const { user, loading, userDetails, isSwitching } = useAuth();
   const location = useLocation();
 
   // Show loading state while auth is being determined
-  if (loading) {
+  if (loading || isSwitching) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
