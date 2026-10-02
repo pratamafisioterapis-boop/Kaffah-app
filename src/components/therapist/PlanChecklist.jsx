@@ -3,8 +3,8 @@ import { ChevronDown, Info, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { getPlanForDiagnoses } from '@/lib/api';
-import { EPA_OPTIONS, MANUAL_OPTIONS, PHASE_TITLES, mergePlanPhases, buildPlanText } from '@/data/planModalities';
+import { getPlanForDiagnoses, getPlanOptions } from '@/lib/api';
+import { PHASE_TITLES, mergePlanPhases, buildPlanText } from '@/data/planModalities';
 
 const EMPTY = { epa: [], manual: [], exercises: {}, notes: '' };
 
@@ -68,8 +68,15 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
   // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
   const [catalog, setCatalog] = useState({ byDiagnosis: {}, exercises: {}, fetched: [] });
   const [loading, setLoading] = useState(false);
+  const [options, setOptions] = useState({ epa: [], manual: [] });
   const [openPhase, setOpenPhase] = useState(0);
   const data = { ...EMPTY, ...(value || {}) };
+
+  useEffect(() => {
+    let alive = true;
+    getPlanOptions().then(({ data: opts }) => alive && setOptions(opts));
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const missing = diagnosisLabels.filter((l) => !catalog.fetched.includes(String(l).trim().toLowerCase()));
@@ -108,8 +115,8 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
 
   return (
     <div className="space-y-5">
-      <ChipGroup title="Modalitas elektrofisis" options={EPA_OPTIONS} selected={data.epa} onToggle={toggleList('epa')} />
-      <ChipGroup title="Manual therapy" options={MANUAL_OPTIONS} selected={data.manual} onToggle={toggleList('manual')} />
+      <ChipGroup title="Modalitas elektrofisis" options={options.epa} selected={data.epa} onToggle={toggleList('epa')} />
+      <ChipGroup title="Manual therapy" options={options.manual} selected={data.manual} onToggle={toggleList('manual')} />
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Exercise</p>
