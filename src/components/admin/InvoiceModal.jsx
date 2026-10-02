@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
+import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
+import InvoiceItemsEditor from './InvoiceItemsEditor';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -72,6 +74,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       ? { ...data.therapist, signature_url: processedSignatureUrl || data.therapist.signature_url }
       : data?.therapist,
   };
+  // Template kwitansi memakai nomor invoice yang sama dengan yang disimpan saat
+  // download/kirim, supaya tampil sebelum record tersimpan.
+  if (!templateData.receipt_number && !templateData.invoice_number) {
+    const rm = data?.patients?.medical_record_number || data?.patient?.medical_record_number || data?.medical_record_number || 'RM00000';
+    templateData.invoice_number = `INV/KFF/${data?.recap_date || new Date().toISOString().split('T')[0]}/${rm}`;
+  }
+  const useKwitansi = templateData.clinic?.invoice_template === 'kwitansi';
+  const TemplateComponent = useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate;
 
   // ── Skala preview agar invoice A4 tetap utuh terlihat di layar sempit (PWA/mobile) ──
   useEffect(() => {
@@ -159,7 +169,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (physio.clinic_id) {
           const { data: clinic } = await supabase
             .from('clinics')
-            .select('name, address, phone, email, logo_url, invoice_signer, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature')
+            .select('name, address, phone, email, logo_url, invoice_signer, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
             .eq('id', physio.clinic_id)
             .single();
           if (clinic) clinicData = clinic;
@@ -658,6 +668,15 @@ const handleSendManualWA = async () => {
           </div>
         </div>
 
+        {useKwitansi && data?.id && (
+          <InvoiceItemsEditor
+            recapId={data.id}
+            clinicId={userDetails?.clinic_id}
+            recapData={templateData}
+            onSaved={(v) => setDetailData((d) => ({ ...(d || {}), invoice_items: v }))}
+          />
+        )}
+
         {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
           <div ref={previewWrapperRef} className="w-full flex justify-center">
@@ -674,7 +693,7 @@ const handleSendManualWA = async () => {
                 style={{ width: INVOICE_BASE_WIDTH * previewScale, height: INVOICE_BASE_HEIGHT * previewScale }}
               >
                 <div style={{ width: INVOICE_BASE_WIDTH, height: INVOICE_BASE_HEIGHT, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
-                  <InvoiceTemplate
+                  <TemplateComponent
                     data={templateData}
                     logoUrl={logoUrl}
                     invoiceTitle={invoiceSettings.invoiceTitle}
@@ -691,7 +710,7 @@ const handleSendManualWA = async () => {
             terekam saat rasterisasi. */}
         {!loadingSettings && (
           <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} aria-hidden="true">
-            <InvoiceTemplate
+            <TemplateComponent
               ref={componentRef}
               data={templateData}
               logoUrl={logoUrl}
