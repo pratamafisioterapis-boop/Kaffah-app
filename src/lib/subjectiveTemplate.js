@@ -20,6 +20,12 @@ const CONNECTOR_RE = /(?:^|\s)(?:sejak|pada|di|dari|ke|saat|sisi|setelah|dengan|
 export const DURATION_UNITS = ['hari', 'minggu', 'bulan', 'tahun'];
 
 const FLAG_SETS = [['ada', 'tidak'], ['ya', 'tidak']];
+// Pasangan "Terdapat/Tidak terdapat", "mengalami/tidak mengalami": hanya boleh satu.
+const isNegPair = (options) => {
+  if (options.length !== 2) return false;
+  const [a, b] = options.map((o) => o.trim().toLowerCase());
+  return b === `tidak ${a}` || a === `tidak ${b}` || b === `belum ${a}` || a === `belum ${b}`;
+};
 const isFlag = (options) => {
   const lower = options.map((o) => o.trim().toLowerCase());
   return FLAG_SETS.some((set) => set.length === lower.length && set.every((s) => lower.includes(s)));
@@ -111,7 +117,7 @@ const tokenizeBody = (body, nextId, variables = {}) => {
         id: nextId(),
         options,
         flag: !prefix && isFlag(options),
-        single: !!prefix || isFlag(options) || plusMinus,
+        single: !!prefix || isFlag(options) || plusMinus || isNegPair(options),
         wrap: plusMinus,
         prefix,
       });
@@ -189,11 +195,18 @@ export const parseTemplate = (text, variables = {}) => {
   let counter = 0;
   const nextId = () => `v${counter++}`;
   const sections = [];
+  let plain = 0;
   text.split('\n').forEach((line) => {
     const m = line.match(/^\*\*(.+?):\*\*\s*(.*)$/);
-    if (!m) return;
-    const tokens = applySectionKind(annotate(tokenizeBody(m[2], nextId, variables)), m[1], nextId);
-    sections.push({ title: m[1].trim(), sentences: splitSentences(tokens).map((tk) => ({ tokens: tk })) });
+    // Template narasi: paragraf tanpa judul bagian ditampilkan sebagai paragraf biasa.
+    if (!m && !line.trim()) return;
+    const title = m ? m[1].trim() : '';
+    const tokens = applySectionKind(annotate(tokenizeBody(m ? m[2] : line.trim(), nextId, variables)), title, nextId);
+    sections.push({
+      title,
+      key: m ? title.toLowerCase() : `\u0000p${plain++}`,
+      sentences: splitSentences(tokens).map((tok) => ({ tokens: tok })),
+    });
   });
   // Kalimat tanpa isian (selain kalimat keluhan pertama) berisi klaim klinis yang
   // belum tentu berlaku untuk pasien ini, jadi dijadikan pilihan centang (default mati).
@@ -349,6 +362,7 @@ const renderSections = (parsed, values) => {
   return parsed.sections
     .map((section) => ({
       title: section.title,
+      key: section.key,
       sentences: section.sentences.map((s) => renderSentence(s.tokens, values)).filter(Boolean),
     }))
     .filter((s) => s.sentences.length);
@@ -357,9 +371,13 @@ const renderSections = (parsed, values) => {
 const joinSections = (sections, inline) => sections
   .map((s, idx) => {
     const body = s.sentences.join(' ');
+    if (!s.title) return body;
     return idx === 0 && !inline ? `${s.title}:\n${body}` : `${s.title}: ${body}`;
   })
-  .join('\n');
+  .reduce((acc, part, idx) => {
+    if (idx === 0) return part;
+    return `${acc}${!sections[idx].title && !sections[idx - 1].title ? '\n\n' : '\n'}${part}`;
+  }, '');
 
 export const renderTemplate = (parsed, values, { inline = false } = {}) =>
   joinSections(renderSections(parsed, values), inline);
@@ -372,7 +390,7 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
   const byTitle = new Map();
   entries.forEach(({ parsed, values }) => {
     renderSections(parsed, values).forEach((section) => {
-      const key = section.title.toLowerCase();
+      const key = section.key || section.title.toLowerCase();
       if (!byTitle.has(key)) {
         byTitle.set(key, { title: section.title, sentences: [] });
         order.push(key);
