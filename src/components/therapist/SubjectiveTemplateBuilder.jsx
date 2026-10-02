@@ -30,8 +30,8 @@ const ChoiceChips = ({ tok, value, onChange }) => {
   };
 
   return (
-    <span className="mx-1 inline-flex flex-wrap items-center gap-1 align-middle">
-      {(tok.prefix || tok.hint) && <span className="text-xs text-slate-500">{tok.prefix || `${tok.hint}:`}</span>}
+    <span className="contents">
+      {(tok.prefix || tok.hint) && <span className="mx-1 text-xs text-slate-500">{tok.prefix || `${tok.hint}:`}</span>}
       {tok.options.map((opt) => {
         const active = selected.includes(opt);
         return (
@@ -41,7 +41,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
             aria-pressed={active}
             onClick={() => toggle(opt)}
             className={cn(
-              'min-h-[32px] rounded-full border px-3 py-1 text-[13px] leading-tight transition-all active:scale-95',
+              'mx-0.5 my-0.5 inline-flex min-h-[32px] items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 align-middle text-[13px] leading-none transition-all active:scale-95',
               active
                 ? cn(tone(opt), 'font-medium shadow-sm')
                 : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
@@ -208,8 +208,8 @@ const ScaleChips = ({ tok, value, onChange }) => {
     return n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white';
   };
   return (
-    <span className="mx-1 inline-flex flex-wrap items-center gap-1 align-middle">
-      {tok.label && <span className="text-xs text-slate-500">{tok.label}:</span>}
+    <span className="contents">
+      {tok.label && <span className="mx-1 text-xs text-slate-500">{tok.label}:</span>}
       {nums.map((n) => (
         <button
           key={n}
@@ -217,7 +217,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
           aria-pressed={value === n}
           onClick={() => onChange(value === n ? undefined : n)}
           className={cn(
-            'h-8 min-w-[32px] rounded-full border px-2 text-[13px] transition-all active:scale-95',
+            'mx-0.5 my-0.5 inline-flex h-8 min-w-[32px] items-center justify-center rounded-full border px-2 align-middle text-[13px] leading-none transition-all active:scale-95',
             value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
           )}
         >
