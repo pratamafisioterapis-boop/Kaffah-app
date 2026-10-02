@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   getTherapistTimeOff, 
-  deleteTherapistTimeOff 
+  deleteTherapistTimeOff,
+  updateTherapistTimeOff
 } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -10,15 +11,39 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, CalendarDays, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, CalendarDays, Clock, Pencil, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+
+const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+
+const REASON_TO_LEAVE_TYPE = {
+  'Cuti': 'annual',
+  'Sakit': 'sick',
+  'Libur': 'weekly_off',
+  'Training': 'training',
+  'Izin Pribadi': 'personal',
+  'Lainnya': 'other'
+};
+
+// reason disimpan sebagai "Jenis - catatan"
+const parseReason = (reason) => {
+  const raw = reason || '';
+  const idx = raw.indexOf(' - ');
+  if (idx === -1) return { label: raw.trim(), note: '' };
+  return { label: raw.slice(0, idx).trim(), note: raw.slice(idx + 3).trim() };
+};
 
 const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [editForm, setEditForm] = useState({ reason: 'Libur', notes: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     if (therapist) {
@@ -43,6 +68,29 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
        toast({ variant: "destructive", title: "Gagal Menghapus" });
     }
     setDeleteId(null);
+  };
+
+  const openEdit = (item) => {
+    const { label, note } = parseReason(item.reason);
+    setEditForm({ reason: REASONS.includes(label) ? label : 'Lainnya', notes: note });
+    setEditItem(item);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editItem) return;
+    setSavingEdit(true);
+    const { error } = await updateTherapistTimeOff(editItem.id, {
+      reason: editForm.notes.trim() ? `${editForm.reason} - ${editForm.notes.trim()}` : editForm.reason,
+      leave_type: REASON_TO_LEAVE_TYPE[editForm.reason] || 'other'
+    });
+    setSavingEdit(false);
+    if (!error) {
+      toast({ title: "Data Cuti Diperbarui" });
+      setEditItem(null);
+      loadData();
+    } else {
+      toast({ variant: "destructive", title: "Gagal Memperbarui", description: error.message });
+    }
   };
 
   if (!therapist) return null;
@@ -83,7 +131,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                               </div>
                               <div className="text-sm text-slate-500 mt-1 flex flex-wrap gap-2 items-center">
                                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal">
-                                    {item.reason?.split('-')[0].trim()}
+                                    {parseReason(item.reason).label}
                                  </Badge>
                                  {isPartial && (
                                     <Badge variant="outline" className="text-xs flex items-center gap-1 border-orange-200 text-orange-700 bg-orange-50">
@@ -92,14 +140,23 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                                     </Badge>
                                  )}
                               </div>
-                              {item.reason?.includes('-') && (
+                              {parseReason(item.reason).note && (
                                  <p className="text-xs text-slate-400 mt-1 italic">
-                                    "{item.reason.split('-')[1].trim()}"
+                                    "{parseReason(item.reason).note}"
                                  </p>
                               )}
                            </div>
                         </div>
                         
+                        <div className="flex items-center">
+                        <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+                           onClick={() => openEdit(item)}
+                        >
+                           <Pencil className="w-4 h-4" />
+                        </Button>
                         <Button 
                            variant="ghost" 
                            size="icon" 
@@ -108,12 +165,49 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                         >
                            <Trash2 className="w-4 h-4" />
                         </Button>
+                        </div>
                      </CardContent>
                   </Card>
                );
             })}
          </div>
       )}
+
+      <Dialog open={!!editItem} onOpenChange={(open) => !open && setEditItem(null)}>
+        <DialogContent>
+           <DialogHeader>
+              <DialogTitle>Edit Cuti / Izin</DialogTitle>
+              <DialogDescription>Ubah jenis izin dan catatan.</DialogDescription>
+           </DialogHeader>
+           <div className="space-y-4">
+              <div className="space-y-2">
+                 <label className="text-sm font-medium">Jenis Izin</label>
+                 <Select value={editForm.reason} onValueChange={(v) => setEditForm({ ...editForm, reason: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                       {REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
+              </div>
+              <div className="space-y-2">
+                 <label className="text-sm font-medium">Catatan (Opsional)</label>
+                 <Textarea
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                    placeholder="Keterangan lebih lanjut..."
+                    className="resize-none h-20"
+                 />
+              </div>
+           </div>
+           <DialogFooter>
+              <Button variant="ghost" onClick={() => setEditItem(null)} disabled={savingEdit}>Batal</Button>
+              <Button onClick={handleSaveEdit} disabled={savingEdit}>
+                 {savingEdit && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                 Simpan
+              </Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
