@@ -8,6 +8,7 @@ import {
   DURATION_UNITS,
   countProgress,
   parseTemplate,
+  renderMergedTemplates,
   renderTemplate,
 } from '@/lib/subjectiveTemplate';
 
@@ -289,6 +290,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   const isObjective = mode === 'objective';
   const noun = isObjective ? 'Objective' : 'Subjective';
 
+  // Beberapa diagnosa: hasil otomatis digabung dari semua template yang terisi.
+  const merged = templates.length > 1;
+
   useEffect(() => {
     if (!templates.some((t) => t.key === activeKey)) setActiveKey(templates[0]?.key);
   }, [templates, activeKey]);
@@ -330,17 +334,36 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       return { ...prev, [active.key]: cur };
     });
 
+  const parsedAll = useMemo(
+    () => templates.map((t) => {
+      const full = parseTemplate(t.template, variables);
+      const p = full && sharedVital
+        ? (() => {
+            const sections = full.sections.filter((sec) => !VITAL_RE.test(sec.title));
+            return sections.length ? { ...full, sections } : null;
+          })()
+        : full;
+      return { key: t.key, label: t.label, parsed: p };
+    }),
+    [templates, variables, sharedVital]
+  );
+  const progressAll = useMemo(
+    () => parsedAll.map((p) => ({ ...p, ...countProgress(p.parsed, valuesByKey[p.key] || {}) })),
+    [parsedAll, valuesByKey]
+  );
   const existing = (currentText || '').trim();
   const willReplace = !existing || existing === lastApplied.trim();
 
   const output = useMemo(() => {
-    const body = renderTemplate(parsed, values, { inline: isObjective });
+    const body = merged
+      ? renderMergedTemplates(parsedAll.map((p) => ({ parsed: p.parsed, values: valuesByKey[p.key] || {} })), { inline: isObjective })
+      : renderTemplate(parsed, values, { inline: isObjective });
     // Saat menambahkan diagnosa lain ke teks yang sudah memuat Vital Sign, jangan tulis ulang.
     const vital = vitalParsed && (willReplace || !VITAL_LINE_RE.test(existing))
       ? renderTemplate(vitalParsed, vitalValues, { inline: true })
       : '';
     return [vital, body].filter(Boolean).join('\n');
-  }, [parsed, values, isObjective, vitalParsed, vitalValues, willReplace, existing]);
+  }, [parsed, values, merged, parsedAll, valuesByKey, isObjective, vitalParsed, vitalValues, willReplace, existing]);
   const { filled, total } = useMemo(() => {
     const a = countProgress(parsed, values);
     const b = countProgress(vitalParsed, vitalValues);
@@ -402,6 +425,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   )}
                 >
                   {t.label}
+                  {progressAll.find((p) => p.key === t.key)?.filled > 0 && (
+                    <span className="ml-1.5 opacity-80">✓</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -445,7 +471,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
 
           <div>
             <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <Sparkles className="h-3 w-3" /> Hasil
+              <Sparkles className="h-3 w-3" /> {merged ? 'Hasil gabungan semua diagnosa' : 'Hasil'}
             </div>
             <div
               className={cn(
