@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles, getEducationForDiagnoses } from '@/lib/api';
 import { generateIcfAssessment, analyzeIcf, icfCodesOf } from '@/lib/icfAssessment';
+import { buildEducationText } from '@/lib/educationMerge';
 import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, refreshOnsetInSubjective } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
@@ -45,6 +46,10 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [templateVariables, setTemplateVariables] = useState({});
   // Assessment disusun otomatis (format ICF) begitu S & O terisi, selama belum diedit manual.
   const [assessmentAuto, setAssessmentAuto] = useState(true);
+  // Edukasi pasien: disusun dari template semua diagnosa terpilih, selama belum diedit manual.
+  const [educationAuto, setEducationAuto] = useState(true);
+  const [eduEntries, setEduEntries] = useState({});
+  const [homeExercises, setHomeExercises] = useState([]);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -53,6 +58,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     assessment: '',
     plan: '',
     plan_data: null,
+    education: '',
     record_type: 'DAILY_EVALUATION'
   });
 
@@ -186,6 +192,22 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     return () => clearTimeout(timer);
   }, [assessmentAuto, formData.subjective, formData.objective, diagnosisLabels, icfTitles]);
 
+  useEffect(() => {
+    const keys = diagnosisLabels.map((l) => String(l).trim().toLowerCase());
+    const missing = [...new Set(keys.filter((k) => !(k in eduEntries)))];
+    if (missing.length === 0) return;
+    getEducationForDiagnoses(missing).then(({ data }) => {
+      setEduEntries((prev) => ({ ...prev, ...Object.fromEntries(missing.map((k) => [k, null])), ...data }));
+    });
+  }, [diagnosisLabels, eduEntries]);
+
+  useEffect(() => {
+    if (!educationAuto) return;
+    const entries = diagnosisLabels.map((l) => eduEntries[String(l).trim().toLowerCase()]).filter(Boolean);
+    const text = buildEducationText(entries, homeExercises);
+    setFormData((prev) => (prev.education === text ? prev : { ...prev, education: text }));
+  }, [educationAuto, diagnosisLabels, eduEntries, homeExercises]);
+
   const canAutoAssess = !!(formData.subjective.trim() && formData.objective.trim());
 
   const regenerateAssessment = () => {
@@ -229,6 +251,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
 
     // Assessment yang sudah ada dianggap hasil edit terapis: jangan ditimpa otomatis.
     setAssessmentAuto(!(data.assessment || '').trim());
+    setEducationAuto(!(data.education || '').trim());
 
     // Isi form SOAP
     setFormData({
@@ -240,6 +263,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       plan: data.plan || '',
       // Record lama (teks saja) tampil sebagai catatan tambahan di checklist.
       plan_data: data.plan_data || (data.plan ? { notes: data.plan } : null),
+      education: data.education || '',
       record_type: data.record_type || 'SOAP'
     });
 
@@ -605,7 +629,10 @@ if (isCreate) {
                     <PlanChecklist
                       diagnosisLabels={diagnosisLabels}
                       value={formData.plan_data}
-                      onChange={(plan_data, plan) => setFormData((prev) => ({ ...prev, plan_data, plan }))}
+                      onChange={(plan_data, plan, names) => {
+                        setFormData((prev) => ({ ...prev, plan_data, plan }));
+                        setHomeExercises(names || []);
+                      }}
                     />
                   ) : (
                   <Textarea
@@ -625,6 +652,38 @@ if (isCreate) {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Edukasi Pasien */}
+            <div className={`bg-white border-t border-l-4 border-l-emerald-400 ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">E</span>
+                <label className="text-sm font-semibold text-emerald-700">Edukasi Pasien</label>
+                <span className="ml-auto flex items-center gap-1.5">
+                  {educationAuto ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      <Sparkles className="h-3 w-3" /> Dari template diagnosa
+                    </span>
+                  ) : diagnosisLabels.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEducationAuto(true)}
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50"
+                    >
+                      <RefreshCw className="h-3 w-3" /> Susun ulang dari diagnosa
+                    </button>
+                  )}
+                </span>
+              </div>
+              <Textarea
+                placeholder="Terisi otomatis dari template edukasi setelah diagnosa dipilih. Bisa diedit."
+                className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]'}`}
+                value={formData.education}
+                onChange={(e) => {
+                  setEducationAuto(false);
+                  setFormData({ ...formData, education: e.target.value });
+                }}
+              />
             </div>
 
             {/* Submit */}

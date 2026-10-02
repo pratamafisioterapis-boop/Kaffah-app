@@ -1239,6 +1239,36 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
+// Template edukasi pasien untuk diagnosa terpilih (tabel diagnosis_education + education_lists).
+// Hasil: { kunci: { name, what, cause, recovery, do: [], avoid: [], red: [] } }
+export const getEducationForDiagnoses = async (labels = []) => {
+  const keys = [...new Set(labels.map((l) => String(l).trim().toLowerCase()).filter(Boolean))];
+  if (keys.length === 0) return { data: {}, error: null };
+  const { data: rows, error } = await supabase
+    .from('diagnosis_education')
+    .select('diagnosis_key, display_name, what, cause, recovery, do_list, avoid_list, red_list')
+    .in('diagnosis_key', keys);
+  if (error) return { data: {}, error };
+  const ids = [...new Set((rows || []).flatMap((r) => [r.do_list, r.avoid_list, r.red_list]).filter(Boolean))];
+  let lists = {};
+  if (ids.length) {
+    const { data: listRows, error: listError } = await supabase.from('education_lists').select('id, items').in('id', ids);
+    if (listError) return { data: {}, error: listError };
+    lists = Object.fromEntries((listRows || []).map((l) => [l.id, l.items]));
+  }
+  return {
+    data: Object.fromEntries((rows || []).map((r) => [r.diagnosis_key, {
+      name: r.display_name,
+      what: r.what,
+      cause: r.cause,
+      recovery: r.recovery,
+      do: lists[r.do_list] || [],
+      avoid: lists[r.avoid_list] || [],
+      red: lists[r.red_list] || [],
+    }])),
+    error: null,
+  };
+};
 // Pilihan checklist Plan: { epa: [nama], manual: [nama] } dari tabel plan_options.
 export const getPlanOptions = async () => {
   const { data, error } = await supabase.from('plan_options').select('category, name, sort_order').order('sort_order', { ascending: true });
