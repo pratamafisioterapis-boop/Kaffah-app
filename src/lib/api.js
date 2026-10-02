@@ -1226,6 +1226,19 @@ export const getDiagnosisOptions = async () => {
     })),
   };
 };
+// Template Subjective (SOAP) untuk diagnosa yang dipilih. Hanya diagnosa dari
+// daftar klinik (berupa UUID) yang punya template; diagnosa ketikan bebas tidak.
+export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
+  const validIds = ids.filter(isValidUUID);
+  if (validIds.length === 0) return { data: [], error: null };
+  const { data, error } = await supabase
+    .from('operational_options')
+    .select('id, label, subjective_template')
+    .in('id', validIds)
+    .not('subjective_template', 'is', null);
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);
