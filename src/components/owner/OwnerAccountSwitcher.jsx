@@ -23,7 +23,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
   const { toast } = useToast();
   const ref = useRef(null);
   const panelRef = useRef(null);
-  const [pos, setPos] = useState({ top: 0, right: 8 });
+  const [pos, setPos] = useState({ top: 0, left: 8, width: 300 });
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +79,11 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
     const place = () => {
       const r = ref.current?.getBoundingClientRect();
       if (!r) return;
-      setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) });
+      // Clamp inside the visible viewport so the card never slips off-screen.
+      const vw = document.documentElement.clientWidth || window.innerWidth;
+      const width = Math.min(300, vw - 16);
+      const left = Math.min(Math.max(8, r.right - width), vw - width - 8);
+      setPos({ top: r.bottom + 8, left, width });
     };
     place();
     window.addEventListener('resize', place);
@@ -133,8 +137,8 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
       {open && createPortal(
         <div
           ref={panelRef}
-          style={{ top: pos.top, right: pos.right }}
-          className="fixed w-[300px] max-w-[calc(100vw-16px)] bg-white border border-[#DCE8F2] rounded-xl shadow-lg z-[100] overflow-hidden"
+          style={{ top: pos.top, left: pos.left, width: pos.width }}
+          className="fixed bg-white border border-[#DCE8F2] rounded-xl shadow-lg z-[100] overflow-hidden"
         >
           <div className="px-4 pt-3 pb-2 border-b border-[#DCE8F2]">
             <p className="text-sm font-bold text-[#102F52]">Pindah Akun</p>
