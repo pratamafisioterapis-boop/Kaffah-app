@@ -272,6 +272,11 @@ const renderToken = (tok, key, values, setValue, openForm) => {
 
 const VITAL_RE = /^vital/i;
 const VITAL_LINE_RE = /(^|\n)Vital Sign:/i;
+// Bagian yang khas per diagnosa tidak digabung; sisanya (Inspeksi, Palpasi, Gerak, Kekuatan, ...)
+// cukup diisi satu kali bila muncul di lebih dari satu diagnosa.
+const NOT_SHARED_RE = /^(tes khusus|pengukuran luaran)/i;
+
+const tokenSignature = (tokens) => JSON.stringify(tokens.map(({ id, ...rest }) => rest));
 
 /**
  * Template Subjective klik-pilih.
@@ -319,11 +324,51 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       return cur;
     });
 
-  const parsed = useMemo(() => {
-    if (!fullParsed || !sharedVital) return fullParsed;
-    const sections = fullParsed.sections.filter((s) => !VITAL_RE.test(s.title));
-    return sections.length ? { ...fullParsed, sections } : null;
-  }, [fullParsed, sharedVital]);
+  // Bagian bernama sama di lebih dari satu diagnosa (mis. Inspeksi, Palpasi, Kekuatan) disatukan:
+  // kalimat kembar dibuang, sisanya diisi satu kali untuk semua diagnosa.
+  const sharedSections = useMemo(() => {
+    if (!isObjective || templates.length < 2) return [];
+    const byTitle = new Map();
+    templates.forEach((t) => {
+      const seen = new Set();
+      (parseTemplate(t.template, variables)?.sections || []).forEach((sec) => {
+        const k = sec.title.toLowerCase();
+        if (VITAL_RE.test(sec.title) || NOT_SHARED_RE.test(sec.title) || seen.has(k)) return;
+        seen.add(k);
+        if (!byTitle.has(k)) byTitle.set(k, { title: sec.title, count: 0, sentences: [], sigs: new Set() });
+        const entry = byTitle.get(k);
+        entry.count += 1;
+        sec.sentences.forEach((sentence) => {
+          const sig = tokenSignature(sentence.tokens);
+          if (entry.sigs.has(sig)) return;
+          entry.sigs.add(sig);
+          const n = entry.sentences.length;
+          entry.sentences.push({
+            tokens: sentence.tokens.map((tok) => (tok.id ? { ...tok, id: `sh${byTitle.size}_${n}_${tok.id}` } : tok)),
+          });
+        });
+      });
+    });
+    return [...byTitle.values()].filter((e) => e.count > 1).map(({ title, sentences }) => ({ title, sentences }));
+  }, [isObjective, templates, variables]);
+  const sharedTitles = useMemo(() => new Set(sharedSections.map((sec) => sec.title.toLowerCase())), [sharedSections]);
+  const sharedParsed = useMemo(() => (sharedSections.length ? { sections: sharedSections } : null), [sharedSections]);
+  const [sharedValues, setSharedValues] = useState({});
+  const setSharedValue = (id, v) =>
+    setSharedValues((prev) => {
+      const cur = { ...prev };
+      if (v === undefined) delete cur[id];
+      else cur[id] = v;
+      return cur;
+    });
+
+  const stripShared = (full) => {
+    if (!full) return full;
+    const sections = full.sections.filter((sec) => !(sharedVital && VITAL_RE.test(sec.title)) && !sharedTitles.has(sec.title.toLowerCase()));
+    return sections.length ? { ...full, sections } : null;
+  };
+
+  const parsed = useMemo(() => stripShared(fullParsed), [fullParsed, sharedVital, sharedTitles]); // eslint-disable-line react-hooks/exhaustive-deps
   const vitalParsed = useMemo(() => (sharedVital ? { sections: [sharedVital] } : null), [sharedVital]);
 
   const setValue = (id, v) =>
@@ -335,17 +380,8 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
     });
 
   const parsedAll = useMemo(
-    () => templates.map((t) => {
-      const full = parseTemplate(t.template, variables);
-      const p = full && sharedVital
-        ? (() => {
-            const sections = full.sections.filter((sec) => !VITAL_RE.test(sec.title));
-            return sections.length ? { ...full, sections } : null;
-          })()
-        : full;
-      return { key: t.key, label: t.label, parsed: p };
-    }),
-    [templates, variables, sharedVital]
+    () => templates.map((t) => ({ key: t.key, label: t.label, parsed: stripShared(parseTemplate(t.template, variables)) })),
+    [templates, variables, sharedVital, sharedTitles] // eslint-disable-line react-hooks/exhaustive-deps
   );
   const progressAll = useMemo(
     () => parsedAll.map((p) => ({ ...p, ...countProgress(p.parsed, valuesByKey[p.key] || {}) })),
@@ -356,14 +392,20 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
 
   const output = useMemo(() => {
     const body = merged
-      ? renderMergedTemplates(parsedAll.map((p) => ({ parsed: p.parsed, values: valuesByKey[p.key] || {} })), { inline: isObjective })
+      ? renderMergedTemplates(
+        [
+          ...(sharedParsed ? [{ parsed: sharedParsed, values: sharedValues }] : []),
+          ...parsedAll.map((p) => ({ parsed: p.parsed, values: valuesByKey[p.key] || {} })),
+        ],
+        { inline: isObjective }
+      )
       : renderTemplate(parsed, values, { inline: isObjective });
     // Saat menambahkan diagnosa lain ke teks yang sudah memuat Vital Sign, jangan tulis ulang.
     const vital = vitalParsed && (willReplace || !VITAL_LINE_RE.test(existing))
       ? renderTemplate(vitalParsed, vitalValues, { inline: true })
       : '';
     return [vital, body].filter(Boolean).join('\n');
-  }, [parsed, values, merged, parsedAll, valuesByKey, isObjective, vitalParsed, vitalValues, willReplace, existing]);
+  }, [parsed, values, merged, parsedAll, valuesByKey, isObjective, vitalParsed, vitalValues, willReplace, existing, sharedParsed, sharedValues]);
   // Hasil bisa diedit bebas (free text); perubahan pilihan/isian membangun ulang teks dari template.
   const [edited, setEdited] = useState(null);
   useEffect(() => { setEdited(null); }, [output]);
@@ -371,14 +413,16 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   const { filled, total } = useMemo(() => {
     const a = countProgress(parsed, values);
     const b = countProgress(vitalParsed, vitalValues);
-    return { filled: a.filled + b.filled, total: a.total + b.total };
-  }, [parsed, values, vitalParsed, vitalValues]);
+    const c = countProgress(sharedParsed, sharedValues);
+    return { filled: a.filled + b.filled + c.filled, total: a.total + b.total + c.total };
+  }, [parsed, values, vitalParsed, vitalValues, sharedParsed, sharedValues]);
 
-  if (!active || (!parsed && !vitalParsed)) return null;
+  if (!active || (!parsed && !vitalParsed && !sharedParsed)) return null;
 
   const reset = () => {
     setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
     setVitalValues({});
+    setSharedValues({});
   };
 
   const apply = () => {
@@ -456,7 +500,11 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           </div>
 
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-            {[...(vitalParsed ? [{ section: sharedVital, shared: true }] : []), ...(parsed?.sections || []).map((section) => ({ section, shared: false }))].map(({ section, shared }, sIdx) => (
+            {[
+              ...(vitalParsed ? [{ section: sharedVital, shared: 'vital' }] : []),
+              ...sharedSections.map((section) => ({ section, shared: 'common' })),
+              ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
+            ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
                   {section.title}
@@ -465,7 +513,13 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                 <div className="text-sm leading-[2.5rem] text-slate-700">
                   {section.sentences.map((sentence, si) => (
                     <React.Fragment key={si}>
-                      {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, shared ? vitalValues : values, shared ? setVitalValue : setValue, (id, f) => setFormDialog({ id, form: f })))}{' '}
+                      {sentence.tokens.map((tok, ti) => renderToken(
+                        tok,
+                        `${si}-${ti}`,
+                        shared === 'vital' ? vitalValues : shared === 'common' ? sharedValues : values,
+                        shared === 'vital' ? setVitalValue : shared === 'common' ? setSharedValue : setValue,
+                        (id, f) => setFormDialog({ id, form: f, shared })
+                      ))}{' '}
                     </React.Fragment>
                   ))}
                 </div>
@@ -506,9 +560,13 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       <FunctionalFormDialog
         formId={formDialog?.form}
         open={!!formDialog}
-        initial={formDialog && values[formDialog.id]?.form === formDialog.form ? values[formDialog.id] : null}
+        initial={(() => {
+          if (!formDialog) return null;
+          const store = formDialog.shared === 'vital' ? vitalValues : formDialog.shared === 'common' ? sharedValues : values;
+          return store[formDialog.id]?.form === formDialog.form ? store[formDialog.id] : null;
+        })()}
         onClose={() => setFormDialog(null)}
-        onApply={(result) => setValue(formDialog.id, result)}
+        onApply={(result) => (formDialog.shared === 'vital' ? setVitalValue : formDialog.shared === 'common' ? setSharedValue : setValue)(formDialog.id, result)}
       />
     </div>
   );
