@@ -16,11 +16,13 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
 import PlanChecklist from '@/components/therapist/PlanChecklist';
+import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { id } from 'date-fns/locale';
 
 const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
@@ -32,6 +34,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userDetails } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
@@ -58,6 +61,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     assessment: '',
     plan: '',
     plan_data: null,
+    lab_radiology_data: null,
     education: '',
     record_type: 'DAILY_EVALUATION'
   });
@@ -264,6 +268,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       // Record lama (teks saja) tampil sebagai catatan tambahan di checklist.
       plan_data: data.plan_data || (data.plan ? { notes: data.plan } : null),
       education: data.education || '',
+      lab_radiology_data: data.lab_radiology_data || null,
       record_type: data.record_type || 'SOAP'
     });
 
@@ -652,6 +657,16 @@ if (isCreate) {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Laboratory & Radiology */}
+            <div className={`bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
+              <label className="mb-3 block text-sm font-semibold text-slate-700">Laboratory &amp; Radiology</label>
+              <LabRadiologyUpload
+                clinicId={userDetails?.clinic_id || therapist?.clinic_id}
+                value={formData.lab_radiology_data}
+                onChange={(lab_radiology_data) => setFormData((prev) => ({ ...prev, lab_radiology_data }))}
+              />
             </div>
 
             {/* Edukasi Pasien */}
