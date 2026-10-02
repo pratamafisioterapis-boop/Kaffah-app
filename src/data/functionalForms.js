@@ -7,6 +7,7 @@
 // sudah diisi di lembar resmi.
 
 import { EXTRA_FORMS } from './functionalFormsExtra';
+import { MORE_FORMS } from './functionalFormsMore';
 
 const SCALE_NDI = {
   note: '0 = tidak ada gangguan · 5 = gangguan terberat / tidak mampu sama sekali',
@@ -255,6 +256,7 @@ export const FUNCTIONAL_FORMS = {
     text: (r) => `FES-I ${r.summary} (${r.interpretation})`,
   },
   ...EXTRA_FORMS,
+  ...MORE_FORMS,
 };
 
 // Opsi tiap item: skala bersama (scale) atau daftar khusus (options).

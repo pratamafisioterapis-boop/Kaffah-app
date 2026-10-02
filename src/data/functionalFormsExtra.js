@@ -354,3 +354,5 @@ export const EXTRA_FORMS = {
   vss: VSS,
   dn4: DN4,
 };
+
+export const formHelpers = { opts, range, numScale, round, sumOf, countOf, totalForm, band, itemsOf };
