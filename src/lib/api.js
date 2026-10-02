@@ -1239,6 +1239,45 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
+// Variabel kustom template Subjective (dikelola owner di Setup).
+export const getSubjectiveVariables = async () => {
+  const { data, error } = await supabase
+    .from('subjective_variables')
+    .select('id, key, label, kind, options, multi')
+    .order('label', { ascending: true });
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
+
+export const saveSubjectiveVariable = async (variable) => {
+  const payload = {
+    key: variable.key,
+    label: variable.label,
+    kind: variable.kind,
+    options: variable.kind === 'choice' ? variable.options : [],
+    multi: variable.multi !== false,
+  };
+  const query = variable.id
+    ? supabase.from('subjective_variables').update(payload).eq('id', variable.id)
+    : supabase.from('subjective_variables').insert(payload);
+  const { data, error } = await query.select().single();
+  return { data, error };
+};
+
+export const deleteSubjectiveVariable = async (id) => {
+  const { error } = await supabase.from('subjective_variables').delete().eq('id', id);
+  return { error };
+};
+
+// Simpan teks template Subjective sebuah diagnosa (null = hapus template).
+export const updateDiagnosisSubjectiveTemplate = async (id, template) => {
+  const { error } = await supabase
+    .from('operational_options')
+    .update({ subjective_template: template && template.trim() ? template : null })
+    .eq('id', id);
+  return { error };
+};
+
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);

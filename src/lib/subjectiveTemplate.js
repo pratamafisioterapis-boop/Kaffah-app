@@ -26,8 +26,22 @@ const isFlag = (options) => {
 
 // ───────────────────────── Parsing ─────────────────────────
 
+// Variabel kustom owner: {{key}} -> token sesuai jenis variabelnya.
+const variableToken = (key, def, nextId) => {
+  const base = { id: nextId(), varKey: key, hint: def?.label || key };
+  switch (def?.kind) {
+    case 'choice': return { ...base, t: 'choice', options: def.options || [], flag: false, single: def.multi === false, prefix: '' };
+    case 'date': return { ...base, t: 'date' };
+    case 'duration': return { ...base, t: 'duration', suffix: '' };
+    case 'number': return { ...base, t: 'free', numeric: true, label: def.label };
+    default: return { ...base, t: 'free', label: def?.label || key };
+  }
+};
+
 // Pecah teks bertanda kurung menjadi token: text | free | date | duration | choice.
-const tokenizeBody = (body, nextId) => {
+const VAR_RE = /^\{\{([a-z0-9_]+)\}\}/;
+
+const tokenizeBody = (body, nextId, variables = {}) => {
   const tokens = [];
   let buf = '';
   const flush = () => {
@@ -35,13 +49,19 @@ const tokenizeBody = (body, nextId) => {
     buf = '';
   };
   let i = 0;
+  let m;
   while (i < body.length) {
+    if (body[i] === '{' && (m = body.slice(i).match(VAR_RE))) {
+      flush();
+      tokens.push(variableToken(m[1], variables[m[1]], nextId));
+      i += m[0].length;
+      continue;
+    }
     if (body[i] !== '(') {
       buf += body[i++];
       continue;
     }
     const rest = body.slice(i);
-    let m;
     if ((m = rest.match(PREFIXED_FREE_RE))) {
       flush();
       tokens.push({ t: 'free', id: nextId(), prefix: `${m[1]} `, optional: true, label: m[1] });
@@ -89,10 +109,11 @@ const annotate = (tokens) => {
       return;
     }
     if (tok.t === 'free' && !tok.prefix) {
+      const keepLabel = tok.label;
       tok.labelType = before.trim() === '' || /:\s*$/.test(before) || /\.\s*$/.test(before);
       const labelMatch = before.match(/([^.:]*?)\s*:\s*$/);
-      tok.label = labelMatch ? labelMatch[1].trim() : '';
-      if (/tanggal[^:.]*:?\s*$/i.test(before)) tok.t = 'date';
+      tok.label = keepLabel || (labelMatch ? labelMatch[1].trim() : '');
+      if (!tok.varKey && /tanggal[^:.]*:?\s*$/i.test(before)) tok.t = 'date';
     }
     before += '\u0000';
   });
@@ -124,16 +145,17 @@ const splitSentences = (tokens) => {
 
 const parseCache = new Map();
 
-export const parseTemplate = (text) => {
+export const parseTemplate = (text, variables = {}) => {
   if (!text) return null;
-  if (parseCache.has(text)) return parseCache.get(text);
+  const cacheKey = /\{\{/.test(text) ? `${text}\u0000${JSON.stringify(variables)}` : text;
+  if (parseCache.has(cacheKey)) return parseCache.get(cacheKey);
   let counter = 0;
   const nextId = () => `v${counter++}`;
   const sections = [];
   text.split('\n').forEach((line) => {
     const m = line.match(/^\*\*(.+?):\*\*\s*(.*)$/);
     if (!m) return;
-    const tokens = annotate(tokenizeBody(m[2], nextId));
+    const tokens = annotate(tokenizeBody(m[2], nextId, variables));
     sections.push({ title: m[1].trim(), sentences: splitSentences(tokens).map((tk) => ({ tokens: tk })) });
   });
   // Kalimat tanpa isian (selain kalimat keluhan pertama) berisi klaim klinis yang
@@ -146,7 +168,7 @@ export const parseTemplate = (text) => {
     });
   });
   const parsed = sections.length ? { sections, slotCount: counter } : null;
-  parseCache.set(text, parsed);
+  parseCache.set(cacheKey, parsed);
   return parsed;
 };
 
@@ -187,7 +209,7 @@ const renderSentence = (tokens, values) => {
   if (slots.length === 0) return tokens.map((t) => t.v).join('').trim();
   if (!slots.some((t) => isFilled(t, values[t.id]))) return null;
 
-  const clauses = [{ str: '', sep: '', drop: false }];
+  const clauses = [{ str: '', sep: '', drop: false, hasSlot: false, filled: 0 }];
   const cur = () => clauses[clauses.length - 1];
   let skipUnit = false;
 
@@ -200,16 +222,23 @@ const renderSentence = (tokens, values) => {
       }
       v.split(/([,;]\s+)/).forEach((piece, idx) => {
         if (idx % 2 === 1) {
+          if (!cur().hasSlot) {
+            // daftar tanpa isian ("Mengi, nyeri dada (ada/tidak)") tetap satu klausa
+            cur().str += piece.trim().startsWith(';') ? '; ' : ', ';
+            return;
+          }
           cur().sep = piece.trim();
-          clauses.push({ str: '', sep: '', drop: false });
+          clauses.push({ str: '', sep: '', drop: false, hasSlot: false, filled: 0 });
         } else {
           cur().str += piece;
         }
       });
       return;
     }
+    cur().hasSlot = true;
     const value = values[tok.id];
     if (isFilled(tok, value)) {
+      cur().filled += 1;
       cur().str += valueText(tok, value);
       return;
     }
@@ -224,7 +253,8 @@ const renderSentence = (tokens, values) => {
     if (tok.t === 'free' && tok.numeric) skipUnit = true;
   });
 
-  const kept = clauses.filter((c) => !c.drop && c.str.trim());
+  // Klausa yang punya isian tapi tak satu pun terisi (mis. "perjalanan") ikut dibuang.
+  const kept = clauses.filter((c) => !c.drop && c.str.trim() && (!c.hasSlot || c.filled > 0));
   if (!kept.length) return null;
   let out = kept.map((c, i) => c.str.trim() + (i < kept.length - 1 ? c.sep : '')).join(' ');
   out = out

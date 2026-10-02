@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates } from '@/lib/api';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
@@ -38,6 +38,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
   const [templateCache, setTemplateCache] = useState({});
+  const [templateVariables, setTemplateVariables] = useState({});
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -104,6 +105,18 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
         setDiagnosis(diag);
       });
   }, [linkedRecapId]);
+
+  useEffect(() => {
+    getSubjectiveVariables().then(({ data }) => {
+      setTemplateVariables(Object.fromEntries((data || []).map((v) => [v.key, v])));
+    });
+  }, []);
+
+  useEffect(() => {
+    getSubjectiveVariables().then(({ data }) => {
+      setTemplateVariables(Object.fromEntries((data || []).map((v) => [v.key, v])));
+    });
+  }, []);
 
   // Template Subjective untuk diagnosa terpilih (hanya yang belum pernah dimuat).
   useEffect(() => {
@@ -464,6 +477,7 @@ if (isCreate) {
             {subjectiveTemplates.length > 0 && (
               <SubjectiveTemplateBuilder
                 templates={subjectiveTemplates}
+                variables={templateVariables}
                 currentText={formData.subjective}
                 onApply={handleApplyTemplate}
                 compact={isPWA}

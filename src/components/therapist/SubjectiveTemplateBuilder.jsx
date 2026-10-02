@@ -29,7 +29,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
 
   return (
     <span className="mx-1 inline-flex flex-wrap items-center gap-1 align-middle">
-      {tok.prefix && <span className="text-xs text-slate-500">{tok.prefix}</span>}
+      {(tok.prefix || tok.hint) && <span className="text-xs text-slate-500">{tok.prefix || `${tok.hint}:`}</span>}
       {tok.options.map((opt) => {
         const active = selected.includes(opt);
         return (
@@ -221,10 +221,10 @@ const renderToken = (tok, key, values, setValue) => {
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false }) => {
+const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true }) => {
   const [activeKey, setActiveKey] = useState(templates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
   const [lastApplied, setLastApplied] = useState('');
 
   useEffect(() => {
@@ -232,7 +232,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   }, [templates, activeKey]);
 
   const active = templates.find((t) => t.key === activeKey) || templates[0];
-  const parsed = useMemo(() => parseTemplate(active?.template), [active?.template]);
+  const parsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
   const values = valuesByKey[active?.key] || {};
 
   const setValue = (id, v) =>
@@ -322,8 +322,8 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           </div>
 
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-            {parsed.sections.map((section) => (
-              <div key={section.title}>
+            {parsed.sections.map((section, sIdx) => (
+              <div key={`${sIdx}-${section.title}`}>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">{section.title}</div>
                 <div className="text-sm leading-[2.5rem] text-slate-700">
                   {section.sentences.map((sentence, si) => (
@@ -350,6 +350,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             </div>
           </div>
 
+          {!previewOnly && (
           <Button
             type="button"
             onClick={apply}
@@ -359,6 +360,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             <Check className="h-4 w-4" />
             {willReplace ? 'Masukkan ke Subjective' : 'Tambahkan ke Subjective'}
           </Button>
+          )}
         </div>
       )}
     </div>
