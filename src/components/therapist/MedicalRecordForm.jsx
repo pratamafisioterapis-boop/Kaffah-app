@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
@@ -13,6 +13,7 @@ import { generateIcfAssessment } from '@/lib/icfAssessment';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
+import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
@@ -37,6 +38,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [onsetInfo, setOnsetInfo] = useState(null);
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
+  const [progressDialog, setProgressDialog] = useState(false);
   const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
   const [templateVariables, setTemplateVariables] = useState({});
@@ -396,6 +398,8 @@ if (isCreate) {
       description: "Data SOAP dari riwayat sebelumnya berhasil disalin ke form ini.",
       className: "bg-blue-50 border-blue-200 text-blue-800"
     });
+    // Terapi lanjutan: langsung tawarkan update kondisi klinis lewat klik.
+    if ((record.objective || '').trim()) setProgressDialog(true);
   };
 
   const patientOptions = patients.map(p => ({
@@ -544,6 +548,15 @@ if (isCreate) {
                         )}
                       </span>
                     )}
+                    {field.key === 'objective' && formData.objective.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setProgressDialog(true)}
+                        className="ml-auto inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700 hover:bg-teal-100"
+                      >
+                        <TrendingUp className="h-3.5 w-3.5" /> Update kondisi
+                      </button>
+                    )}
                     {(field.key === 'subjective' ? subjectiveTemplates : field.key === 'objective' ? objectiveTemplates : []).length > 0 && (
                       <button
                         type="button"
@@ -615,6 +628,23 @@ if (isCreate) {
           </Dialog>
         );
       })}
+
+      <Dialog open={progressDialog} onOpenChange={setProgressDialog}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Update Kondisi Klinis</DialogTitle>
+            <DialogDescription>Cukup klik perubahan dibanding terapi sebelumnya</DialogDescription>
+          </DialogHeader>
+          <ObjectiveProgressUpdate
+            currentText={formData.objective}
+            onApply={(text) => {
+              setFormData((prev) => ({ ...prev, objective: text }));
+              setProgressDialog(false);
+              toast({ title: 'Kondisi diperbarui', description: 'Baris "Update Kondisi" ditambahkan ke Objective.', className: 'bg-blue-50 border-blue-200 text-blue-800' });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <SOAPHistoryModal
         isOpen={isHistoryOpen}
