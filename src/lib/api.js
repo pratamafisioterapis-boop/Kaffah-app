@@ -6241,11 +6241,12 @@ export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate 
 
     const { data, error } = await supabase
       .from('therapist_time_off')
-      .select('start_date, end_date, start_time, end_time')
+      .select('id, start_date, end_date, start_time, end_time, reason')
       .eq('therapist_id', therapistId)
       .eq('leave_type', 'annual')
       .lte('start_date', periodEndISO)
-      .gte('end_date', periodStartISO);
+      .gte('end_date', periodStartISO)
+      .order('start_date', { ascending: true });
 
     if (error) return { error };
 
@@ -6262,7 +6263,7 @@ export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate 
     const remaining = Math.max(quota - usedDays, 0);
 
     return {
-      data: { quota, used: usedDays, remaining, periodStart: periodStartISO, periodEnd: periodEndISO },
+      data: { quota, used: usedDays, remaining, periodStart: periodStartISO, periodEnd: periodEndISO, entries: data || [] },
       error: null
     };
   }, 'getTherapistAnnualLeaveBalance');
