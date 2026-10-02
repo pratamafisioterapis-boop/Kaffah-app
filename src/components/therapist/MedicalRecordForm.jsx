@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
@@ -37,6 +38,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const [onsetInfo, setOnsetInfo] = useState(null);
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
+  const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
   const [templateVariables, setTemplateVariables] = useState({});
   const [formData, setFormData] = useState({
@@ -476,28 +478,6 @@ if (isCreate) {
               <p className="text-[11px] text-slate-400 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
             </div>
 
-            {/* Template Subjective klik-pilih untuk diagnosa terpilih */}
-            {subjectiveTemplates.length > 0 && (
-              <SubjectiveTemplateBuilder
-                templates={subjectiveTemplates}
-                variables={templateVariables}
-                currentText={formData.subjective}
-                onApply={handleApplyTemplate('subjective')}
-                compact={isPWA}
-              />
-            )}
-            {objectiveTemplates.length > 0 && (
-              <SubjectiveTemplateBuilder
-                templates={objectiveTemplates}
-                variables={templateVariables}
-                currentText={formData.objective}
-                onApply={handleApplyTemplate('objective')}
-                compact={isPWA}
-                mode="objective"
-                defaultOpen={false}
-              />
-            )}
-
             {/* SOAP Fields */}
             <div className={isPWA ? 'divide-y divide-slate-100' : 'grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100'}>
               {soapFields.map((field) => (
@@ -510,6 +490,17 @@ if (isCreate) {
                       {field.short}
                     </span>
                     <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
+                    {(field.key === 'subjective' ? subjectiveTemplates : field.key === 'objective' ? objectiveTemplates : []).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setTemplateDialog(field.key)}
+                        title={`Template ${field.label}`}
+                        aria-label={`Buka template ${field.label}`}
+                        className="ml-auto flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                      >
+                        {field.key === 'objective' ? <Stethoscope className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
+                      </button>
+                    )}
                   </div>
                   <Textarea
                     placeholder={field.placeholder}
@@ -545,6 +536,30 @@ if (isCreate) {
           </form>
         </CardContent>
       </Card>
+
+      {['subjective', 'objective'].map((key) => {
+        const tpls = key === 'subjective' ? subjectiveTemplates : objectiveTemplates;
+        return (
+          <Dialog key={key} open={templateDialog === key} onOpenChange={(o) => !o && setTemplateDialog(null)}>
+            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Isi {key === 'objective' ? 'Objective' : 'Subjective'} Cepat</DialogTitle>
+                <DialogDescription>Klik pilihan & isi titik-titik, bagian kosong tidak ikut tampil</DialogDescription>
+              </DialogHeader>
+              {tpls.length > 0 && (
+                <SubjectiveTemplateBuilder
+                  embedded
+                  templates={tpls}
+                  variables={templateVariables}
+                  currentText={formData[key]}
+                  onApply={(text, opts) => { handleApplyTemplate(key)(text, opts); setTemplateDialog(null); }}
+                  mode={key}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        );
+      })}
 
       <SOAPHistoryModal
         isOpen={isHistoryOpen}

@@ -276,10 +276,11 @@ const renderToken = (tok, key, values, setValue, openForm) => {
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective' }) => {
+const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false }) => {
   const [activeKey, setActiveKey] = useState(templates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpenState] = useState(defaultOpen);
+  const setOpen = embedded ? () => {} : setOpenState;
   const [lastApplied, setLastApplied] = useState('');
   const [formDialog, setFormDialog] = useState(null);
   const isObjective = mode === 'objective';
@@ -318,7 +319,8 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   };
 
   return (
-    <div className="border-b bg-gradient-to-b from-blue-50/70 to-white">
+    <div className={embedded ? '' : 'border-b bg-gradient-to-b from-blue-50/70 to-white'}>
+      {!embedded && (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -338,9 +340,10 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
         </span>
         <ChevronDown className={cn('h-5 w-5 shrink-0 text-slate-400 transition-transform', open && 'rotate-180')} />
       </button>
+      )}
 
-      {open && (
-        <div className={cn('space-y-4 pb-4', compact ? 'px-4' : 'px-6')}>
+      {(open || embedded) && (
+        <div className={cn('space-y-4 pb-4', embedded ? '' : compact ? 'px-4' : 'px-6')}>
           {templates.length > 1 && (
             <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
               {templates.map((t) => (
