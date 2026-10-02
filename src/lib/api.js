@@ -1239,6 +1239,13 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   if (error) return { data: [], error };
   return { data: data || [], error: null };
 };
+// Pilihan checklist Plan: { epa: [nama], manual: [nama] } dari tabel plan_options.
+export const getPlanOptions = async () => {
+  const { data, error } = await supabase.from('plan_options').select('category, name, sort_order').order('sort_order', { ascending: true });
+  if (error) return { data: { epa: [], manual: [] }, error };
+  const pick = (cat) => (data || []).filter((r) => r.category === cat).map((r) => r.name);
+  return { data: { epa: pick('epa'), manual: pick('manual') }, error: null };
+};
 // Daftar exercise Plan SOAP untuk diagnosa terpilih (tabel diagnosis_exercise_plans + plan_exercises).
 // Hasil: { byDiagnosis: { kunci: { n, f: [[id fase1],[id fase2],[id fase3]], c } }, exercises: { id: { n, g, h, d, p, c } } }
 export const getPlanForDiagnoses = async (labels = []) => {

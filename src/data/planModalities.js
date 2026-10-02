@@ -1,40 +1,5 @@
-// Pilihan checklist Plan SOAP untuk modalitas elektrofisis dan manual therapy.
-// (Exercise per diagnosa diambil dari database: tabel diagnosis_exercise_plans dan plan_exercises.)
-
-export const EPA_OPTIONS = [
-  'Hot pack',
-  'Cold pack / cryotherapy',
-  'Infrared (IR)',
-  'TENS',
-  'Ultrasound (US)',
-  'Interferential current (IFC)',
-  'Shortwave diathermy (SWD)',
-  'Microwave diathermy (MWD)',
-  'Low level laser (LLLT)',
-  'Shockwave (ESWT)',
-  'Electrical stimulation otot (NMES)',
-  'Functional electrical stimulation (FES)',
-  'Traksi mekanik',
-  'Paraffin bath',
-  'Magnetic therapy',
-];
-
-export const MANUAL_OPTIONS = [
-  'Soft tissue mobilization / massage',
-  'Myofascial release',
-  'Trigger point release',
-  'Muscle energy technique (MET)',
-  'Joint mobilization (Maitland)',
-  'Mulligan (MWM / SNAGs)',
-  'Traksi manual',
-  'Neural mobilization',
-  'Stretching pasif / PNF',
-  'Kinesio taping',
-  'IASTM',
-  'Manipulasi (HVLA)',
-  'Drainase limfatik manual',
-  'Postural drainage, perkusi & vibrasi',
-];
+// Pembantu checklist Plan SOAP. Pilihan modalitas/manual therapy (tabel plan_options)
+// dan exercise per diagnosa (diagnosis_exercise_plans, plan_exercises) diambil dari database.
 
 export const PHASE_TITLES = ['Fase 1 - Awal', 'Fase 2 - Menengah', 'Fase 3 - Lanjut'];
 
