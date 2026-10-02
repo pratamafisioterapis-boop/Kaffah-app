@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
-import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
-import { generateIcfAssessment } from '@/lib/icfAssessment';
+import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles } from '@/lib/api';
+import { generateIcfAssessment, analyzeIcf, icfCodesOf } from '@/lib/icfAssessment';
 import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, refreshOnsetInSubjective } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
@@ -167,18 +167,22 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     })
     .filter(Boolean), [diagnosis, diagnosisOptions]);
 
+  // Judul resmi kode ICF dimuat dari database sesuai kode yang terdeteksi.
+  const [icfTitles, setIcfTitles] = useState({});
+
   useEffect(() => {
     if (!assessmentAuto) return undefined;
     const timer = setTimeout(() => {
-      const text = generateIcfAssessment({
-        subjective: formData.subjective,
-        objective: formData.objective,
-        diagnoses: diagnosisLabels,
-      });
+      const input = { subjective: formData.subjective, objective: formData.objective, diagnoses: diagnosisLabels };
+      const missing = icfCodesOf(analyzeIcf(input)).filter((c) => !(c in icfTitles));
+      if (missing.length) {
+        getIcfTitles(missing).then(({ data }) => setIcfTitles((prev) => ({ ...prev, ...Object.fromEntries(missing.map((c) => [c, null])), ...data })));
+      }
+      const text = generateIcfAssessment({ ...input, titles: icfTitles });
       setFormData((prev) => (prev.assessment === text ? prev : { ...prev, assessment: text }));
     }, 500);
     return () => clearTimeout(timer);
-  }, [assessmentAuto, formData.subjective, formData.objective, diagnosisLabels]);
+  }, [assessmentAuto, formData.subjective, formData.objective, diagnosisLabels, icfTitles]);
 
   const canAutoAssess = !!(formData.subjective.trim() && formData.objective.trim());
 
