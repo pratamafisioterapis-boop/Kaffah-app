@@ -185,9 +185,10 @@ class AuthErrorBoundary extends React.Component {
 // immediately on cold launch with a restored session, or right after a
 // fresh sign-in — never while the login form itself is showing.
 const AppSplashGate = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isImpersonating } = useAuth();
   const [showSplash, setShowSplash] = useState(false);
   const prevUserIdRef = useRef(undefined);
+  const wasImpersonatingRef = useRef(false);
 
   const isPWA = useMemo(() => {
     try {
@@ -207,11 +208,15 @@ const AppSplashGate = () => {
     if (!isPWA || authLoading) return;
 
     const currentUserId = user?.id || null;
-    if (currentUserId && prevUserIdRef.current !== currentUserId) {
+    // Hopping between accounts (owner switcher / remote login) is not a
+    // fresh launch, so skip the splash for it.
+    const isAccountHop = isImpersonating || wasImpersonatingRef.current;
+    if (currentUserId && prevUserIdRef.current !== currentUserId && !isAccountHop) {
       setShowSplash(true);
     }
     prevUserIdRef.current = currentUserId;
-  }, [isPWA, authLoading, user]);
+    wasImpersonatingRef.current = isImpersonating;
+  }, [isPWA, authLoading, user, isImpersonating]);
 
   if (!showSplash) return null;
   return <SplashScreen onDone={() => setShowSplash(false)} />;

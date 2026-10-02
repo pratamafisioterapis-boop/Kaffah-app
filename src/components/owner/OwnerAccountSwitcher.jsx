@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Loader2, Shield, Stethoscope } from 'lucide-react';
+import { Users, Loader2, Shield, Stethoscope, Crown } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,7 +17,7 @@ const readCache = () => {
 // Lets an owner jump into any admin/therapist account of their own clinic;
 // the dashboard then renders exactly as that account sees it.
 const OwnerAccountSwitcher = ({ clinicId }) => {
-  const { impersonateUser, user, isImpersonating } = useAuth();
+  const { impersonateUser, stopImpersonation, user, isImpersonating, impersonationOrigin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const ref = useRef(null);
@@ -75,6 +75,18 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
     navigate(ADMIN_ROLES.includes(acc.role) ? '/admin' : '/therapist', { replace: true });
   };
 
+  const handleBackToOwner = async () => {
+    setSwitchingId('owner');
+    const { error } = await stopImpersonation();
+    setSwitchingId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal kembali ke Owner', description: error.message });
+      return;
+    }
+    setOpen(false);
+    navigate('/owner', { replace: true });
+  };
+
   const groups = [
     ['Admin', Shield, accounts.filter((a) => ADMIN_ROLES.includes(a.role))],
     ['Terapis', Stethoscope, accounts.filter((a) => THERAPIST_ROLES.includes(a.role))],
@@ -97,6 +109,24 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
             <p className="text-xs text-[#5B6B7D]">Lihat tampilan sebagai admin / terapis klinik Anda</p>
           </div>
           <div className="max-h-[360px] overflow-y-auto p-2">
+            {isImpersonating && (
+              <div className="mb-1">
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#5B6B7D]">Owner</p>
+                <button
+                  onClick={handleBackToOwner}
+                  disabled={switchingId !== null}
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left disabled:opacity-60"
+                >
+                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                    {switchingId === 'owner' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-[#102F52] truncate">Akun Owner</span>
+                    <span className="block text-xs text-[#5B6B7D] truncate">{impersonationOrigin?.admin_email}</span>
+                  </span>
+                </button>
+              </div>
+            )}
             {loading ? (
               <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-[#1677D2]" /></div>
             ) : accounts.length === 0 ? (
