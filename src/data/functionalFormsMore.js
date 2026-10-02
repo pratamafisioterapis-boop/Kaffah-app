@@ -287,4 +287,140 @@ const PRTEE = {
   text: (r) => `PRTEE ${r.summary} (${r.interpretation}; skor lebih tinggi = lebih berat)`,
 };
 
-export const MORE_FORMS = { ikdc: IKDC, visap: VISA_P, visaa: VISA_A, cait: CAIT, haqdi: HAQDI, chaq: CHAQ, fugl: FUGL, scim: SCIM, csi: CSI, tinetti: TINETTI, prtee: PRTEE };
+// ───────── Elderly Mobility Scale (AGILE) ─────────
+const EMS = totalForm({
+  id: 'ems', name: 'Elderly Mobility Scale', max: 20,
+  items: [
+    ['Berbaring ke duduk', [[2, 'Mandiri'], [1, 'Butuh bantuan 1 orang'], [0, 'Butuh bantuan ≥ 2 orang']]],
+    ['Duduk ke berbaring', [[2, 'Mandiri'], [1, 'Butuh bantuan 1 orang'], [0, 'Butuh bantuan ≥ 2 orang']]],
+    ['Duduk ke berdiri', [[3, 'Mandiri, < 3 detik'], [2, 'Mandiri, > 3 detik'], [1, 'Butuh bantuan 1 orang'], [0, 'Butuh bantuan ≥ 2 orang']]],
+    ['Berdiri', [[3, 'Berdiri tanpa dukungan dan mampu menjangkau'], [2, 'Berdiri tanpa dukungan, perlu dukungan untuk menjangkau'], [1, 'Berdiri tetapi perlu dukungan'], [0, 'Berdiri hanya dengan dukungan fisik orang lain']]],
+    ['Gaya jalan', [[3, 'Mandiri (± tongkat)'], [2, 'Mandiri dengan frame'], [1, 'Berjalan dengan alat bantu tetapi tidak stabil / tidak aman'], [0, 'Perlu bantuan fisik / pengawasan terus-menerus']]],
+    ['Jalan berwaktu (6 meter)', [[3, '< 15 detik'], [2, '16-30 detik'], [1, '> 30 detik'], [0, 'Tidak mampu menempuh 6 m']]],
+    ['Functional reach', [[4, '> 20 cm'], [2, '10-20 cm'], [0, '< 10 cm']]],
+  ].map(([label, o]) => ({ label, ...O(o) })),
+  bands: (t) => (t < 10 ? 'bergantung pada bantuan untuk mobilitas dan ADL dasar' : t < 15 ? 'batas aman, perlu sedikit bantuan' : 'mandiri untuk mobilitas dan ADL dasar'),
+});
+
+// ───────── PRWE (Patient-Rated Wrist Evaluation) ─────────
+const PRWE_PAIN = ['Nyeri saat istirahat', 'Nyeri saat gerakan pergelangan tangan berulang', 'Nyeri saat mengangkat benda berat', 'Nyeri saat paling berat', 'Seberapa sering nyeri'];
+const PRWE_FUNC = ['Memutar gagang pintu', 'Memotong daging dengan pisau', 'Mengancing baju', 'Mendorong tubuh dari kursi dengan tangan', 'Membawa benda 4,5 kg (10 lb)', 'Membersihkan diri di toilet', 'Perawatan diri (berpakaian, mencuci)', 'Pekerjaan rumah (membersihkan, perawatan)', 'Pekerjaan (pekerjaan harian)', 'Aktivitas rekreasi'];
+const PRWE_SCALE = numScale('0 = tidak nyeri / tidak sulit · 10 = nyeri terberat / tidak mampu', range(0, 10));
+const PRWE = {
+  id: 'prwe',
+  name: 'PRWE',
+  items: [
+    ...PRWE_PAIN.map((label) => ({ label, scale: PRWE_SCALE, group: 'Nyeri' })),
+    ...PRWE_FUNC.map((label, i) => ({ label, scale: PRWE_SCALE, group: i < 6 ? 'Fungsi · aktivitas spesifik' : 'Fungsi · aktivitas sehari-hari' })),
+  ],
+  minAnswered: 12,
+  manual: { label: 'Skor total (0-100)', min: 0, max: 100 },
+  compute: (a) => {
+    if (!range(0, 14).some((i) => a[i] !== undefined)) return null;
+    const pain = sumRange(a, 0, 5);
+    const func = round(sumRange(a, 5, 15) / 2);
+    const total = round(pain + func);
+    return { value: total, summary: `${total}/100`, interpretation: `nyeri ${pain}/50, fungsi ${func}/50` };
+  },
+  fromManual: (v) => ({ value: v, summary: `${v}/100`, interpretation: '' }),
+  text: (r) => `PRWE ${r.summary}${r.interpretation ? ` (${r.interpretation}; skor lebih tinggi = lebih berat)` : ''}`,
+};
+
+// ───────── Boston Carpal Tunnel Questionnaire ─────────
+const BCT_SSS = [
+  ['Nyeri tangan / pergelangan di malam hari', [[1, 'Normal'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Terbangun karena nyeri dalam 2 minggu terakhir', [[1, 'Normal'], [2, 'Sekali'], [3, '2-3 kali'], [4, '4-5 kali'], [5, '> 5 kali']]],
+  ['Nyeri tangan / pergelangan di siang hari', [[1, 'Tidak nyeri'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Seberapa sering nyeri di siang hari', [[1, 'Normal'], [2, '1-2 kali / hari'], [3, '3-5 kali / hari'], [4, '> 5 kali / hari'], [5, 'Terus-menerus']]],
+  ['Lama satu episode nyeri di siang hari', [[1, 'Normal'], [2, '< 10 menit'], [3, '10-60 menit'], [4, '> 60 menit'], [5, 'Terus-menerus']]],
+  ['Mati rasa tangan / pergelangan', [[1, 'Normal'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Kelemahan tangan / pergelangan', [[1, 'Normal'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Sensasi kesemutan di tangan', [[1, 'Normal'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Mati rasa atau kesemutan di malam hari', [[1, 'Normal'], [2, 'Ringan'], [3, 'Sedang'], [4, 'Berat'], [5, 'Sangat berat']]],
+  ['Terbangun karena mati rasa / kesemutan dalam 2 minggu terakhir', [[1, 'Normal'], [2, 'Sekali'], [3, '2-3 kali'], [4, '3-5 kali'], [5, '> 5 kali']]],
+  ['Sulit menggenggam dan memakai benda kecil (kunci, pulpen)', [[1, 'Tanpa kesulitan'], [2, 'Sedikit sulit'], [3, 'Cukup sulit'], [4, 'Sangat sulit'], [5, 'Sangat sulit sekali']]],
+];
+const BCT_FSS = ['Menulis', 'Mengancing baju', 'Memegang buku saat membaca', 'Menggenggam gagang telepon', 'Membuka toples', 'Pekerjaan rumah', 'Membawa keranjang belanja', 'Mandi dan berpakaian'];
+const BCT_FSS_OPTS = [[1, 'Tidak sulit'], [2, 'Sedikit sulit'], [3, 'Cukup sulit'], [4, 'Sangat sulit'], [5, 'Tidak mampu sama sekali karena gejala']];
+const BCT = {
+  id: 'bctsq',
+  name: 'Boston CTS Questionnaire',
+  items: [
+    ...BCT_SSS.map(([label, o]) => ({ label, ...O(o), group: 'Beratnya gejala (SSS)' })),
+    ...BCT_FSS.map((label) => ({ label, ...O(BCT_FSS_OPTS), group: 'Status fungsional (FSS)' })),
+  ],
+  minAnswered: 15,
+  manual: null,
+  compute: (a) => {
+    const sssN = range(0, 10).filter((i) => a[i] !== undefined).length;
+    const fssN = range(11, 18).filter((i) => a[i] !== undefined).length;
+    if (!sssN && !fssN) return null;
+    const parts = [];
+    if (sssN) parts.push(`SSS ${sumRange(a, 0, 11)}/55 (rerata ${round(sumRange(a, 0, 11) / sssN)})`);
+    if (fssN) parts.push(`FSS ${sumRange(a, 11, 19)}/40 (rerata ${round(sumRange(a, 11, 19) / fssN)})`);
+    return { value: parts, summary: parts.join(', '), interpretation: 'skor lebih tinggi = gejala dan disabilitas lebih berat' };
+  },
+  fromManual: () => null,
+  text: (r) => `Boston CTS Questionnaire: ${r.summary} (${r.interpretation})`,
+};
+
+// ───────── HOOS ─────────
+const H_FREQ = [[0, 'Tidak pernah'], [1, 'Jarang'], [2, 'Kadang'], [3, 'Sering'], [4, 'Selalu']];
+const H_FREQ_P = [[0, 'Tidak pernah'], [1, 'Bulanan'], [2, 'Mingguan'], [3, 'Harian'], [4, 'Selalu']];
+const H_SEV = [[0, 'Tidak ada'], [1, 'Ringan'], [2, 'Sedang'], [3, 'Berat'], [4, 'Sangat berat']];
+const HOOS_SECTIONS = [
+  ['Gejala', 20, [['Merasakan gesekan / bunyi klik dari pinggul', H_FREQ], ['Sulit membuka kaki lebar', H_SEV], ['Sulit melangkah lebar saat berjalan', H_SEV], ['Kaku pinggul setelah bangun pagi', H_SEV], ['Kaku pinggul setelah duduk / berbaring / istirahat', H_SEV]]],
+  ['Nyeri', 40, [['Seberapa sering pinggul nyeri', H_FREQ_P], ...['Meluruskan pinggul penuh', 'Menekuk pinggul penuh', 'Berjalan di permukaan datar', 'Naik / turun tangga', 'Malam hari di tempat tidur', 'Duduk atau berbaring', 'Berdiri tegak', 'Berjalan di permukaan keras', 'Berjalan di permukaan tidak rata'].map((l) => [`Nyeri: ${l}`, H_SEV])]],
+  ['Aktivitas sehari-hari', 68, ['Menuruni tangga', 'Menaiki tangga', 'Bangun dari duduk', 'Berdiri', 'Membungkuk ke lantai / mengambil benda', 'Berjalan di permukaan datar', 'Naik / turun mobil', 'Berbelanja', 'Memakai kaus kaki / stoking', 'Bangun dari tempat tidur', 'Melepas kaus kaki / stoking', 'Berbaring di tempat tidur (berguling, menjaga posisi pinggul)', 'Masuk / keluar bak mandi', 'Duduk', 'Naik / turun toilet', 'Pekerjaan rumah berat', 'Pekerjaan rumah ringan'].map((l) => [l, H_SEV])],
+  ['Olahraga & rekreasi', 16, ['Jongkok', 'Berlari', 'Memutar / berpivot pada tungkai yang menumpu', 'Berjalan di permukaan tidak rata'].map((l) => [l, H_SEV])],
+  ['Kualitas hidup', 16, [['Seberapa sering menyadari masalah pinggul', H_FREQ_P.slice(0, 4).concat([[4, 'Terus-menerus']])], ['Mengubah gaya hidup untuk menghindari aktivitas yang merusak pinggul', [[0, 'Tidak sama sekali'], [1, 'Sedikit'], [2, 'Cukup'], [3, 'Banyak'], [4, 'Sepenuhnya']]], ['Kurang percaya diri pada pinggul', [[0, 'Tidak sama sekali'], [1, 'Sedikit'], [2, 'Cukup'], [3, 'Banyak'], [4, 'Sangat']]], ['Kesulitan umum akibat pinggul', H_SEV]]],
+];
+const HOOS_ITEMS = [];
+const HOOS_SLICES = [];
+HOOS_SECTIONS.forEach(([name, max, items]) => {
+  const start = HOOS_ITEMS.length;
+  items.forEach(([label, o]) => HOOS_ITEMS.push({ label, ...O(o), group: name }));
+  HOOS_SLICES.push({ name, max, start, end: HOOS_ITEMS.length });
+});
+const HOOS = {
+  id: 'hoos',
+  name: 'HOOS',
+  items: HOOS_ITEMS,
+  minAnswered: 5,
+  manual: null,
+  compute: (a) => {
+    const scores = HOOS_SLICES.map(({ name, max, start, end }) => {
+      const n = range(start, end - 1).filter((i) => a[i] !== undefined).length;
+      if (!n) return null;
+      const per = max / (end - start);
+      return { name, score: round(100 - (sumRange(a, start, end) * 100) / (n * per)) };
+    }).filter(Boolean);
+    return scores.length ? { value: scores, summary: scores.map((s) => `${s.name} ${s.score}`).join(', '), interpretation: '100 = tanpa keluhan, 0 = keluhan terberat' } : null;
+  },
+  fromManual: () => null,
+  text: (r) => `HOOS: ${r.summary} (${r.interpretation})`,
+};
+
+// ───────── PSFS ─────────
+const PSFS_SCALE = numScale('0 = tidak mampu melakukan · 10 = seperti sebelum cedera', range(0, 10));
+const PSFS = {
+  id: 'psfs',
+  name: 'PSFS',
+  items: [
+    ...[1, 2, 3].map((n) => ({ label: `Aktivitas ${n} (tulis nama aktivitas di catatan)`, scale: PSFS_SCALE, group: 'Aktivitas pilihan pasien' })),
+    { label: 'Nyeri rata-rata saat melakukan aktivitas (24 jam terakhir)', scale: numScale('0 = tidak nyeri · 10 = nyeri terburuk', range(0, 10)), group: 'Nyeri (opsional)' },
+  ],
+  minAnswered: 1,
+  manual: { label: 'Skor rerata (0-10)', min: 0, max: 10 },
+  compute: (a) => {
+    const n = range(0, 2).filter((i) => a[i] !== undefined).length;
+    if (!n) return null;
+    const mean = round(sumRange(a, 0, 3) / n);
+    const pain = a[3] !== undefined ? `, nyeri ${a[3]}/10` : '';
+    return { value: mean, summary: `${mean}/10 (rerata ${n} aktivitas)${pain}`, interpretation: '10 = fungsi seperti sebelum cedera' };
+  },
+  fromManual: (v) => ({ value: v, summary: `${v}/10`, interpretation: '10 = fungsi seperti sebelum cedera' }),
+  text: (r) => `PSFS ${r.summary}`,
+};
+
+export const MORE_FORMS = { ikdc: IKDC, visap: VISA_P, visaa: VISA_A, cait: CAIT, haqdi: HAQDI, chaq: CHAQ, fugl: FUGL, scim: SCIM, csi: CSI, tinetti: TINETTI, prtee: PRTEE, ems: EMS, prwe: PRWE, bctsq: BCT, hoos: HOOS, psfs: PSFS };
