@@ -1299,6 +1299,29 @@ export const getPlanForDiagnoses = async (labels = []) => {
   }
   return { data: { byDiagnosis, exercises }, error: null };
 };
+// Cari exercise di seluruh katalog (nama atau kelompok), untuk menambah latihan di luar daftar diagnosa.
+export const searchPlanExercises = async (query = '') => {
+  const q = String(query).trim().replace(/[%,()]/g, ' ');
+  if (!q) return { data: {}, error: null };
+  const { data: rows, error } = await supabase
+    .from('plan_exercises')
+    .select('id, name, grp, how_to, dose, progression, caution')
+    .or(`name.ilike.%${q}%,grp.ilike.%${q}%`)
+    .order('name', { ascending: true })
+    .limit(20);
+  if (error) return { data: {}, error };
+  return { data: Object.fromEntries((rows || []).map((r) => [r.id, { n: r.name, g: r.grp, h: r.how_to, d: r.dose, p: r.progression, c: r.caution }])), error: null };
+};
+// Ambil exercise berdasarkan id (untuk latihan tambahan yang tersimpan di rekam medis).
+export const getPlanExercisesByIds = async (ids = []) => {
+  if (!ids.length) return { data: {}, error: null };
+  const { data: rows, error } = await supabase
+    .from('plan_exercises')
+    .select('id, name, grp, how_to, dose, progression, caution')
+    .in('id', ids);
+  if (error) return { data: {}, error };
+  return { data: Object.fromEntries((rows || []).map((r) => [r.id, { n: r.name, g: r.grp, h: r.how_to, d: r.dose, p: r.progression, c: r.caution }])), error: null };
+};
 // Judul resmi kode ICF (WHO) dari tabel icf_codes -> { kode: judul }.
 export const getIcfTitles = async (codes = []) => {
   const list = [...new Set(codes)].filter(Boolean);
