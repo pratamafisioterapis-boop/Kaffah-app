@@ -36,6 +36,12 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  // True while hopping between accounts (impersonation in/out), until the
+  // new account's profile is loaded — keeps route guards from judging the
+  // new session by the previous account's role.
+  const [isSwitching, setIsSwitching] = useState(false);
+  const switchFromIdRef = useRef(null);
+  const userIdRef = useRef(null);
   const [clinicName, setClinicName] = useState(null);
   const isPWA = useMemo(() => {
   return (
@@ -332,6 +338,8 @@ export const AuthProvider = ({ children }) => {
     if (!isOnline) {
         return { data: null, error: { message: "Tidak ada koneksi internet." } };
     }
+    switchFromIdRef.current = userIdRef.current;
+    setIsSwitching(true);
     try {
       const { data: currentSessionData } = await supabase.auth.getSession();
       
@@ -422,14 +430,18 @@ export const AuthProvider = ({ children }) => {
       return { error: null, target: data.target };
     } catch (error) {
       console.error("[AuthContext] Impersonate error:", error);
+      setIsSwitching(false);
       return { error };
     }
   }, [isOnline, userDetails?.role, userDetails?.clinic_id]);
 
   const stopImpersonation = useCallback(async () => {
+    switchFromIdRef.current = userIdRef.current;
+    setIsSwitching(true);
     try {
       const origin = readImpersonationOrigin();
       if (!origin) {
+        setIsSwitching(false);
         return { error: new Error("Tidak ada sesi super admin tersimpan.") };
       }
       const { error } = await supabase.auth.setSession({
@@ -442,11 +454,25 @@ export const AuthProvider = ({ children }) => {
       return { error: null };
     } catch (error) {
       console.error("[AuthContext] Stop impersonation error:", error);
+      setIsSwitching(false);
       return { error };
     }
   }, []);
 
   const isImpersonating = !!impersonationOrigin;
+
+  useEffect(() => { userIdRef.current = user?.id || null; }, [user?.id]);
+
+  useEffect(() => {
+    if (!isSwitching) return;
+    if (user?.id && user.id !== switchFromIdRef.current && userDetails?.id === user.id) {
+      setIsSwitching(false);
+      return;
+    }
+    // Safety net so a failed profile fetch can never leave the UI stuck.
+    const t = setTimeout(() => setIsSwitching(false), 8000);
+    return () => clearTimeout(t);
+  }, [isSwitching, user?.id, userDetails?.id]);
 
   const role = useMemo(() => {
     return userDetails?.role || user?.user_metadata?.role || 'guest';
@@ -493,8 +519,9 @@ export const AuthProvider = ({ children }) => {
     impersonateUser,
     stopImpersonation,
     isImpersonating,
+    isSwitching,
     impersonationOrigin,
-  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession, impersonateUser, stopImpersonation, isImpersonating, impersonationOrigin]);
+  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession, impersonateUser, stopImpersonation, isImpersonating, isSwitching, impersonationOrigin]);
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
