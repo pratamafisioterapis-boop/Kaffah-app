@@ -38,11 +38,15 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     invoiceSubtitle: 'Layanan Fisioterapi',
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
+  // Data klinik (termasuk pilihan template invoice) diambil terpisah dari pengaturan.
+  // Pratinjau ditahan sampai keduanya siap supaya tidak sempat tampil template lama.
+  const [loadingDetail, setLoadingDetail] = useState(true);
   const [waAutoAvailable, setWaAutoAvailable] = useState(false);
   const [processedSignatureUrl, setProcessedSignatureUrl] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
+      setLoadingDetail(true);
       fetchSettings();
       fetchDetailData();
       fetchWaAvailability();
@@ -79,6 +83,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const rm = data?.patients?.medical_record_number || data?.patient?.medical_record_number || data?.medical_record_number || 'RM00000';
     templateData.invoice_number = `INV/KFF/${data?.recap_date || new Date().toISOString().split('T')[0]}/${rm}`;
   }
+  const isPreviewLoading = loadingSettings || loadingDetail;
   const useKwitansi = templateData.clinic?.invoice_template === 'kwitansi';
   const TemplateComponent = useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate;
 
@@ -98,7 +103,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const observer = new ResizeObserver(computeScale);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [isOpen, loadingSettings]);
+  }, [isOpen, isPreviewLoading]);
 
   // ── Cek apakah klinik ini sudah punya API Key WA (untuk kirim otomatis) ───
   const fetchWaAvailability = async () => {
@@ -128,6 +133,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   // ── Fetch Detail Data ─────────────────────────────────────────────────────
   // FIX: destructure error dengan benar (sebelumnya error tidak terdefinisi)
   const fetchDetailData = async () => {
+    try {
+      await loadDetailData();
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const loadDetailData = async () => {
     if (!data?.id) return;
 
     const { data: recap, error } = await supabase
@@ -621,7 +634,7 @@ const handleSendManualWA = async () => {
             <Button
               size="sm"
               onClick={handleDownloadPDF}
-              disabled={isGenerating || loadingSettings}
+              disabled={isGenerating || isPreviewLoading}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isGenerating
@@ -635,7 +648,7 @@ const handleSendManualWA = async () => {
               <Button
                 size="sm"
                 onClick={handleSendWA}
-                disabled={isSendingWA || loadingSettings}
+                disabled={isSendingWA || isPreviewLoading}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {isSendingWA
@@ -649,7 +662,7 @@ const handleSendManualWA = async () => {
 <Button
   size="sm"
   onClick={handleSendManualWA}
-  disabled={isSendingManualWA || loadingSettings}
+  disabled={isSendingManualWA || isPreviewLoading}
   className="bg-emerald-500 hover:bg-emerald-600 text-white"
 >
   {isSendingManualWA
@@ -670,7 +683,7 @@ const handleSendManualWA = async () => {
         {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
           <div ref={previewWrapperRef} className="w-full flex justify-center">
-            {loadingSettings ? (
+            {isPreviewLoading ? (
               <div
                 className="flex items-center justify-center bg-white shadow-2xl shrink-0"
                 style={{ width: INVOICE_BASE_WIDTH * previewScale, height: INVOICE_BASE_HEIGHT * previewScale }}
@@ -698,7 +711,7 @@ const handleSendManualWA = async () => {
         {/* Klon tersembunyi beresolusi penuh — target html2canvas untuk PDF/print,
             dipisah dari elemen preview supaya transform skala di atas tidak ikut
             terekam saat rasterisasi. */}
-        {!loadingSettings && (
+        {!isPreviewLoading && (
           <div style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} aria-hidden="true">
             <TemplateComponent
               ref={componentRef}
