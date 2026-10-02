@@ -270,13 +270,13 @@ const renderToken = (tok, key, values, setValue, openForm) => {
 
 // ───────────── Komponen utama ─────────────
 
-const VITAL_RE = /^vital/i;
-const VITAL_LINE_RE = /(^|\n)Vital Sign:/i;
+const VITAL_RE = /vital/i;
+const VITAL_LINE_RE = /(^|\n)(Vital Sign:|Tanda Vital)/i;
 // Bagian yang khas per diagnosa tidak digabung; sisanya (Inspeksi, Palpasi, Gerak, Kekuatan, ...)
 // cukup diisi satu kali bila muncul di lebih dari satu diagnosa.
-const NOT_SHARED_RE = /^(tes khusus|pengukuran luaran)/i;
+const NOT_SHARED_RE = /^(tes khusus|tes spesifik|pengukuran)/i;
 
-const tokenSignature = (tokens) => JSON.stringify(tokens.map(({ id, ...rest }) => rest));
+const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tokens.map(({ id, ...rest }) => rest)]);
 
 /**
  * Template Subjective klik-pilih.
@@ -335,21 +335,22 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
         const k = sec.title.toLowerCase();
         if (VITAL_RE.test(sec.title) || NOT_SHARED_RE.test(sec.title) || seen.has(k)) return;
         seen.add(k);
-        if (!byTitle.has(k)) byTitle.set(k, { title: sec.title, count: 0, sentences: [], sigs: new Set() });
+        if (!byTitle.has(k)) byTitle.set(k, { title: sec.title, layout: sec.layout, count: 0, sentences: [], sigs: new Set() });
         const entry = byTitle.get(k);
         entry.count += 1;
         sec.sentences.forEach((sentence) => {
-          const sig = tokenSignature(sentence.tokens);
+          const sig = tokenSignature(sentence);
           if (entry.sigs.has(sig)) return;
           entry.sigs.add(sig);
           const n = entry.sentences.length;
           entry.sentences.push({
+            ...sentence,
             tokens: sentence.tokens.map((tok) => (tok.id ? { ...tok, id: `sh${byTitle.size}_${n}_${tok.id}` } : tok)),
           });
         });
       });
     });
-    return [...byTitle.values()].filter((e) => e.count > 1).map(({ title, sentences }) => ({ title, sentences }));
+    return [...byTitle.values()].filter((e) => e.count > 1).map(({ title, layout, sentences }) => ({ title, layout, sentences }));
   }, [isObjective, templates, variables]);
   const sharedTitles = useMemo(() => new Set(sharedSections.map((sec) => sec.title.toLowerCase())), [sharedSections]);
   const sharedParsed = useMemo(() => (sharedSections.length ? { sections: sharedSections } : null), [sharedSections]);
@@ -510,19 +511,46 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   {section.title}
                   {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
                 </div>}
-                <div className="text-sm leading-[2.5rem] text-slate-700">
-                  {section.sentences.map((sentence, si) => (
-                    <React.Fragment key={si}>
-                      {sentence.tokens.map((tok, ti) => renderToken(
-                        tok,
-                        `${si}-${ti}`,
-                        shared === 'vital' ? vitalValues : shared === 'common' ? sharedValues : values,
-                        shared === 'vital' ? setVitalValue : shared === 'common' ? setSharedValue : setValue,
-                        (id, f) => setFormDialog({ id, form: f, shared })
-                      ))}{' '}
-                    </React.Fragment>
-                  ))}
-                </div>
+                {(() => {
+                  const store = shared === 'vital' ? vitalValues : shared === 'common' ? sharedValues : values;
+                  const setter = shared === 'vital' ? setVitalValue : shared === 'common' ? setSharedValue : setValue;
+                  const openForm = (id, f) => setFormDialog({ id, form: f, shared });
+                  if (section.layout !== 'lines') {
+                    return (
+                      <div className="text-sm leading-[2.5rem] text-slate-700">
+                        {section.sentences.map((sentence, si) => (
+                          <React.Fragment key={si}>
+                            {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}{' '}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    );
+                  }
+                  // Format daftar: satu baris per pemeriksaan, label di kiri, pilihan/isian di kanan.
+                  return (
+                    <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
+                      {section.sentences.map((sentence, si) => {
+                        const sepIdx = sentence.kind === 'kv' ? sentence.tokens.findIndex((t) => t.t === 'text' && t.v === ' : ') : -1;
+                        const labelToks = sepIdx > 0 ? sentence.tokens.slice(0, sepIdx) : [];
+                        const bodyToks = sepIdx > 0 ? sentence.tokens.slice(sepIdx + 1) : sentence.tokens;
+                        return (
+                          <div key={si} className="flex flex-col gap-0.5 px-3 py-1.5 sm:flex-row sm:items-start sm:gap-3">
+                            {sepIdx > 0 ? (
+                              <div className="shrink-0 pt-0.5 text-[13px] font-medium leading-9 text-slate-600 sm:w-44">
+                                {labelToks.map((tok, ti) => renderToken(tok, `l${si}-${ti}`, store, setter, openForm))}
+                              </div>
+                            ) : (
+                              <span className="hidden pt-0.5 text-slate-300 sm:block sm:leading-9">•</span>
+                            )}
+                            <div className="min-w-0 flex-1 text-sm leading-9 text-slate-700">
+                              {bodyToks.map((tok, ti) => renderToken(tok, `b${si}-${ti}`, store, setter, openForm))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
