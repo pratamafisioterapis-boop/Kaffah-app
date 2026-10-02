@@ -1088,7 +1088,7 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Data Master',
     items: [
       { value: 'diagnosis_service', icon: FolderTree, label: 'Diagnosa & Layanan' },
-      { value: 'subjective_template', icon: Wand2, label: 'Template Subjective' },
+      { value: 'subjective_template', icon: Wand2, label: 'Template SOAP' },
       { value: 'source', icon: null, label: 'Referensi' },
       { value: 'type', icon: null, label: 'Tipe Pasien' },
       { value: 'package', icon: null, label: 'Tipe Paket' },

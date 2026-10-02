@@ -263,7 +263,7 @@ const SubjectiveTemplateManager = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template Subjective & Objective</h3>
+        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template SOAP</h3>
         <p className="text-sm text-slate-500">
           Atur template Subjective dan Objective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.
           <span className="ml-1 text-slate-400">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
