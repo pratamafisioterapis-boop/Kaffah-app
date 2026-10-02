@@ -506,10 +506,10 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
             ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+                {(section.title || shared) && <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
                   {section.title}
                   {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
-                </div>
+                </div>}
                 <div className="text-sm leading-[2.5rem] text-slate-700">
                   {section.sentences.map((sentence, si) => (
                     <React.Fragment key={si}>
