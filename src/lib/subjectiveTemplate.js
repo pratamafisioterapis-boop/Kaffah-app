@@ -13,7 +13,7 @@ const FREE_RE = /^\(\.{3,}\)/;
 const PREFIXED_FREE_RE = /^\((bagian|lokasi|grade) \.{3,}\)/;
 const CHOICE_RE = /^\(([^()]+\/[^()]+)\)(?!\s*:)/;
 const DURATION_UNIT_RE = /^\s+(hari\/minggu\/bulan|hari\/minggu|minggu\/bulan|hari)(\s+yang lalu)?/;
-const NUMERIC_UNIT_RE = /^(%|\/\d+|\s+(?:kali(?:\/\w+)?|jam(?:\/hari)?|menit(?:\/jam)?|detik|hari(?:\/minggu)?|minggu|bulan|tahun|meter|cm|derajat|jari|bungkus-tahun)(?![\p{L}]))/u;
+const NUMERIC_UNIT_RE = /^(%|\/\d+|\/\(\.{3,}\)|\s+(?:kali(?:\/\w+)?|jam(?:\/hari)?|menit(?:\/jam)?|detik|hari(?:\/minggu)?|minggu|bulan|tahun|meter|cm|mm|kg|ml|derajat|jari|repetisi|mmHg|x\/menit|L\/menit|m\/detik|m|C|bungkus-tahun)(?![\p{L}]))/u;
 const SIDE_RE = /(?:^|\s)(?:kanan|kiri)\s*$/i;
 const CONNECTOR_RE = /(?:^|\s)(?:sejak|pada|di|dari|ke|saat|sisi|setelah|dengan|tanggal|usia|selama|sebesar|hingga)\s*$/i;
 
@@ -25,6 +25,17 @@ const isNegPair = (options) => {
   if (options.length !== 2) return false;
   const [a, b] = options.map((o) => o.trim().toLowerCase());
   return b === `tidak ${a}` || a === `tidak ${b}` || b === `belum ${a}` || a === `belum ${b}`;
+};
+// Pilihan yang saling meniadakan (Positif/Negatif, normal/menurun/hilang, 0/1/2/3/4, ...).
+const EXCLUSIVE_WORDS = new Set([
+  'normal', 'positif', 'negatif', 'ada', 'tidak', 'ya', 'ditemukan', 'terdapat', 'simetris', 'asimetris',
+  'kuat', 'baik', 'kurang', 'menurun', 'meningkat', 'hilang', 'mudah', 'sulit', 'mampu', 'mandiri',
+]);
+const isExclusive = (options) => {
+  const lower = options.map((o) => o.trim().toLowerCase());
+  if (lower.some((o) => o === 'kanan' || o === 'kiri')) return false;
+  if (lower.every((o) => /^\d/.test(o))) return true;
+  return lower.some((o) => EXCLUSIVE_WORDS.has(o) || /^(tidak|belum|bukan) /.test(o));
 };
 const isFlag = (options) => {
   const lower = options.map((o) => o.trim().toLowerCase());
@@ -117,7 +128,7 @@ const tokenizeBody = (body, nextId, variables = {}) => {
         id: nextId(),
         options,
         flag: !prefix && isFlag(options),
-        single: !!prefix || isFlag(options) || plusMinus || isNegPair(options),
+        single: !!prefix || isFlag(options) || plusMinus || isNegPair(options) || isExclusive(options),
         wrap: plusMinus,
         prefix,
       });
@@ -186,12 +197,164 @@ const applySectionKind = (tokens, title, nextId) => tokens.map((tok) => {
   return tok;
 });
 
+
+// ───────────── Format daftar (Objective) ─────────────
+//
+//   Inspeksi
+//   - (Ditemukan/Tidak ditemukan) atrofi otot.
+//   Nadi : (.....) x/menit
+//
+// Baris tanpa "- " dan tanpa " : " adalah judul bagian; "- ..." poin kalimat;
+// "Nama : nilai" satu pengukuran/tes per baris.
+
+const LIST_HEAD_CHOICE_RE = /^(.*?)\s*\(([^()]+\/[^()]+)\)\s*$/;
+const ZERO_FIVE_RE = /\b0-5\b|MMT|Oxford/i;
+const ASHWORTH = ['0', '1', '1+', '2', '3', '4'];
+
+const isListFormat = (text) => !/^\*\*.+?:\*\*/m.test(text) && text.split('\n').some((l) => /^- /.test(l) || / : /.test(l));
+
+// Tanda kurung bersarang "(udara ruangan/O2 (.....) L/menit)" dijadikan pilihan + kelompok opsional.
+const flattenNested = (body) => {
+  const pre = body.replace('(udara ruangan/O2 (.....) L/menit)', '(udara ruangan/O2) [(.....) L/menit]');
+  let out = '';
+  let i = 0;
+  while (i < pre.length) {
+    if (pre[i] !== '(') {
+      out += pre[i++];
+      continue;
+    }
+    let depth = 0;
+    let j = i;
+    for (; j < pre.length; j += 1) {
+      if (pre[j] === '(') depth += 1;
+      else if (pre[j] === ')') {
+        depth -= 1;
+        if (!depth) break;
+      }
+    }
+    const inner = pre.slice(i + 1, j);
+    out += j < pre.length && inner.includes('(') ? `[${inner}]` : pre.slice(i, j + 1);
+    i = j + 1;
+  }
+  return out;
+};
+
+// Pisahkan "Label : nilai" pada titik dua di luar tanda kurung.
+const splitKV = (line) => {
+  let depth = 0;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+    else if (ch === ':' && depth === 0) {
+      const rest = line.slice(i + 1);
+      if (/^\s/.test(rest) && (/^\s*\S/.test(rest)) && (line[i - 1] === ' ' || /^\s*\(\.{3,}\)/.test(rest))) {
+        return [line.slice(0, i).trim(), rest.trim()];
+      }
+    }
+  }
+  return null;
+};
+
+// "Label (rincian : (.....))" -> "Label : rincian (.....)"; beberapa pola bersarang dirapikan.
+const tidyLine = (line) => line
+  .replace('(ukuran : (.....) cm, lunak/keras)', ': ukuran (.....) cm, (lunak/keras)')
+  .replace('(normal/deviasi: (.....))', '(normal/deviasi) [(.....)]')
+  .replace(/^(.*?)\s*\(([^():]+) : (\(\.{3,}\))\)$/, '$1 : $2 $3');
+
+const parseListTemplate = (text, variables) => {
+  let counter = 0;
+  const nextId = () => `v${counter++}`;
+  const sections = [];
+  let cur = null;
+  const openSection = (title, valueOptions = null) => {
+    cur = { title, layout: 'lines', key: title.toLowerCase(), valueOptions, sentences: [] };
+    sections.push(cur);
+    return cur;
+  };
+  const push = (kind, rawTokens) => {
+    // Label sudah tampil di baris, jadi placeholder isian cukup "isi...".
+    const tokens = rawTokens.map((t) => (t.t === 'free' && t.label ? { ...t, label: '' } : t));
+    const hasSlot = tokens.some((t) => t.t !== 'text' && t.t !== 'gopen' && t.t !== 'gclose');
+    if (hasSlot) {
+      cur.sentences.push({ kind, tokens });
+      return;
+    }
+    const line = tokens.map((t) => t.v).join('').trim();
+    if (line) cur.sentences.push({ kind: 'bullet', tokens: [{ t: 'toggle', id: nextId(), text: line }] });
+  };
+
+  text.split('\n').map((l) => tidyLine(l.trimEnd())).filter((l) => l.trim()).forEach((line) => {
+    const bullet = line.startsWith('- ');
+    const kv = bullet ? null : splitKV(line);
+
+    // Baris tanpa titik dua tetapi punya isian bukan judul bagian.
+    if (!bullet && !kv && /\(\.{3,}\)/.test(line)) {
+      push('kv', annotate(tokenizeBody(flattenNested(line), nextId, variables)));
+      return;
+    }
+
+    if (!bullet && !kv) {
+      let title = line.trim();
+      let valueOptions = null;
+      let side = null;
+      const hm = !/\.{3,}/.test(title) && title.match(LIST_HEAD_CHOICE_RE);
+      if (hm) {
+        const opts = hm[2].split('/').map((o) => o.trim()).filter(Boolean);
+        title = hm[1].trim();
+        if (opts.some((o) => /^(kanan|kiri)$/i.test(o))) side = opts;
+        else valueOptions = opts;
+      }
+      openSection(title, valueOptions);
+      if (side) {
+        cur.sentences.push({
+          kind: 'kv',
+          tokens: [
+            { t: 'text', v: 'Sisi', label: true },
+            { t: 'text', v: ' : ' },
+            { t: 'choice', id: nextId(), options: side, flag: false, single: false, prefix: '' },
+          ],
+        });
+      }
+      return;
+    }
+    if (!cur) openSection('');
+
+    if (bullet) {
+      push('bullet', annotate(tokenizeBody(flattenNested(line.slice(2)), nextId, variables)));
+      return;
+    }
+
+    const [labelPart, valuePart] = kv;
+    const labelTokens = tokenizeBody(flattenNested(labelPart), nextId, variables).map((t) => (t.t === 'text' ? { ...t, label: true } : t));
+    let valueTokens = tokenizeBody(flattenNested(valuePart), nextId, variables);
+    const slots = valueTokens.filter((t) => t.t !== 'text' && t.t !== 'gopen' && t.t !== 'gclose');
+    const zeroFive = ZERO_FIVE_RE.test(labelPart) || ZERO_FIVE_RE.test(cur.title);
+    valueTokens = valueTokens.map((t) => {
+      if (t.t !== 'free' || t.prefix || t.varKey) return t;
+      if (zeroFive) return { ...t, t: 'scale', min: 0, max: 5, numeric: false };
+      if (/Ashworth/i.test(cur.title)) return { t: 'choice', id: t.id, options: ASHWORTH, flag: false, single: true, prefix: '' };
+      if (cur.valueOptions && slots.length === 1) return { t: 'choice', id: t.id, options: cur.valueOptions, flag: false, single: true, prefix: '' };
+      return t;
+    });
+    push('kv', annotate([...labelTokens, { t: 'text', v: ' : ' }, ...valueTokens]));
+  });
+
+  const kept = sections.filter((sec) => sec.sentences.length);
+  return kept.length ? { sections: kept, slotCount: counter } : null;
+};
+
 const parseCache = new Map();
 
 export const parseTemplate = (text, variables = {}) => {
   if (!text) return null;
   const cacheKey = /\{\{/.test(text) ? `${text}\u0000${JSON.stringify(variables)}` : text;
   if (parseCache.has(cacheKey)) return parseCache.get(cacheKey);
+  if (isListFormat(text)) {
+    const listParsed = parseListTemplate(text, variables);
+    parseCache.set(cacheKey, listParsed);
+    return listParsed;
+  }
   let counter = 0;
   const nextId = () => `v${counter++}`;
   const sections = [];
@@ -282,7 +445,7 @@ const resolveGroups = (tokens, values) => {
   return flatten(root);
 };
 
-const renderSentence = (rawTokens, values) => {
+const renderSentence = (rawTokens, values, { plain = false } = {}) => {
   const tokens = resolveGroups(rawTokens, values);
   // Kalimat yang seluruh isiannya berada di kelompok yang gugur ikut dibuang.
   if (rawTokens.some(isSlot) && !tokens.some(isSlot)) return null;
@@ -348,11 +511,15 @@ const renderSentence = (rawTokens, values) => {
   if (!kept.length) return null;
   let out = kept.map((c, i) => c.str.trim() + (i < kept.length - 1 ? (c.sep === '|' ? ' |' : c.sep) : '')).join(' ');
   out = out
-    .replace(/\s+([.,;:%])/g, '$1')
+    .replace(plain ? /\s+([.,;%])/g : /\s+([.,;:%])/g, '$1')
     .replace(/\s{2,}/g, ' ')
     .replace(/[,;|]\s*$/, '')
     .trim();
   if (!out) return null;
+  if (plain) {
+    const last = rawTokens[rawTokens.length - 1];
+    return last?.t === 'text' && /\.\s*$/.test(last.v) && !/[.!?]$/.test(out) ? `${out}.` : out;
+  }
   out = out.charAt(0).toUpperCase() + out.slice(1);
   return /[.!?]$/.test(out) ? out : `${out}.`;
 };
@@ -363,13 +530,20 @@ const renderSections = (parsed, values) => {
     .map((section) => ({
       title: section.title,
       key: section.key,
-      sentences: section.sentences.map((s) => renderSentence(s.tokens, values)).filter(Boolean),
+      layout: section.layout,
+      sentences: section.sentences
+        .map((s) => {
+          const text = renderSentence(s.tokens, values, { plain: section.layout === 'lines' });
+          return text && s.kind === 'bullet' ? `- ${text}` : text;
+        })
+        .filter(Boolean),
     }))
     .filter((s) => s.sentences.length);
 };
 
 const joinSections = (sections, inline) => sections
   .map((s, idx) => {
+    if (s.layout === 'lines') return s.title ? `${s.title}\n${s.sentences.join('\n')}` : s.sentences.join('\n');
     const body = s.sentences.join(' ');
     if (!s.title) return body;
     return idx === 0 && !inline ? `${s.title}:\n${body}` : `${s.title}: ${body}`;
@@ -392,7 +566,7 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
     renderSections(parsed, values).forEach((section) => {
       const key = section.key || section.title.toLowerCase();
       if (!byTitle.has(key)) {
-        byTitle.set(key, { title: section.title, sentences: [] });
+        byTitle.set(key, { title: section.title, layout: section.layout, sentences: [] });
         order.push(key);
       }
       const target = byTitle.get(key);
