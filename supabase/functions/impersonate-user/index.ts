@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerProfile, error: profileErr } = await adminClient
       .from("users")
-      .select("id, email, role, is_active")
+      .select("id, email, role, is_active, clinic_id")
       .eq("id", callerData.user.id)
       .single();
 
@@ -51,8 +51,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (callerProfile.role !== "super_admin" || callerProfile.is_active === false) {
-      return new Response(JSON.stringify({ error: "Forbidden: hanya super admin yang bisa remote ke akun lain" }), {
+    const isSuperAdmin = callerProfile.role === "super_admin";
+    const isOwner = callerProfile.role === "owner";
+    if ((!isSuperAdmin && !isOwner) || callerProfile.is_active === false) {
+      return new Response(JSON.stringify({ error: "Forbidden: hanya super admin atau owner yang bisa pindah ke akun lain" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -86,6 +88,21 @@ Deno.serve(async (req: Request) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Owners may only switch to admin/therapist accounts in their own clinic.
+    if (isOwner) {
+      const allowedRoles = ["admin", "clinic_admin", "therapist", "physiotherapist"];
+      if (
+        !callerProfile.clinic_id ||
+        targetProfile.clinic_id !== callerProfile.clinic_id ||
+        !allowedRoles.includes(targetProfile.role)
+      ) {
+        return new Response(JSON.stringify({ error: "Owner hanya bisa pindah ke admin/terapis di kliniknya sendiri" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     if (targetProfile.role === "super_admin") {

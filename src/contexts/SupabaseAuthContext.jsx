@@ -393,6 +393,7 @@ export const AuthProvider = ({ children }) => {
         access_token: originSession.access_token,
         refresh_token: originSession.refresh_token,
         admin_email: originSession.user?.email || null,
+        origin_role: userDetails?.role || null,
       };
       sessionStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
       setImpersonationOrigin(originPayload);
@@ -412,7 +413,7 @@ export const AuthProvider = ({ children }) => {
       console.error("[AuthContext] Impersonate error:", error);
       return { error };
     }
-  }, [isOnline]);
+  }, [isOnline, userDetails?.role]);
 
   const stopImpersonation = useCallback(async () => {
     try {
