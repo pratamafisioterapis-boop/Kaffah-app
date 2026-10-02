@@ -109,13 +109,17 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
     >
       <div style={{ height: '6px', background: ACCENT, margin: '0 -44px' }} />
 
-      <div style={{ textAlign: 'center', paddingTop: '30px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: '34px' }}>
         {clinic.logo_url
-          ? <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ height: '56px', maxWidth: '240px', objectFit: 'contain' }} />
-          : <p style={{ fontSize: '20px', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>{(clinic.name || '').toUpperCase()}</p>}
-        <p style={{ margin: '14px auto 0', fontSize: '9.5px', color: MUTED, maxWidth: '440px', lineHeight: 1.5 }}>{clinic.address || ''}</p>
-        <div style={{ width: '32px', height: '2px', background: ACCENT, margin: '22px auto 14px' }} />
-        <p style={{ margin: '0 0 28px', fontSize: '17px', fontWeight: 600, letterSpacing: '0.32em', paddingLeft: '0.32em' }}>KWITANSI</p>
+          ? (
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ display: 'block', height: '84px', width: 'auto', maxWidth: '320px', objectFit: 'contain' }} />
+            </div>
+          )
+          : <p style={{ fontSize: '22px', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>{(clinic.name || '').toUpperCase()}</p>}
+        <p style={{ margin: '16px 0 0', fontSize: '10.5px', color: MUTED, width: '420px', lineHeight: 1.6 }}>{clinic.address || ''}</p>
+        <div style={{ width: '36px', height: '2px', background: ACCENT, margin: '24px 0 18px' }} />
+        <p style={{ margin: '0 0 30px', fontSize: '17px', fontWeight: 600, letterSpacing: '0.32em', paddingLeft: '0.32em' }}>KWITANSI</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '26px', padding: '16px 18px', background: '#f8fafc', borderRadius: '6px' }}>
