@@ -145,7 +145,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     // Admin pembuat invoice: dicatat sekali (created_by). Recap lama yang belum
     // punya pencatat diklaim oleh admin yang pertama kali membukanya.
     let creatorId = recap.created_by || null;
-    if (!creatorId && userDetails?.id && ['admin', 'clinic_admin', 'owner'].includes(userDetails.role)) {
+    if (!creatorId && userDetails?.id && ['admin', 'clinic_admin'].includes(userDetails.role)) {
       const { error: claimErr } = await supabase
         .from('daily_recaps').update({ created_by: userDetails.id }).eq('id', recap.id).is('created_by', null);
       if (!claimErr) creatorId = userDetails.id;
