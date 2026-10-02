@@ -16,7 +16,9 @@ const SearchableSelect = ({
   allowCreate = false,
   notFoundText = "Tidak ditemukan.",
   isLoading = false,
-  multiple = false
+  multiple = false,
+  // Opsional: (options, term) => options yang sudah diurutkan/disaring (mis. pencarian fuzzy)
+  rankOptions
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -149,6 +151,11 @@ const SearchableSelect = ({
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
     const lowerTerm = searchTerm ? searchTerm.toLowerCase().trim() : '';
+
+    if (rankOptions) {
+      const showAll = !lowerTerm || (searchTerm === selectedLabels && !multiple);
+      return rankOptions(safeOptions, showAll ? '' : searchTerm);
+    }
     
     if (!lowerTerm || (searchTerm === selectedLabels && !multiple)) {
       // Tanpa search: tampilkan max 50 opsi saja agar tidak berat
@@ -161,7 +168,7 @@ const SearchableSelect = ({
       const valueMatch = String(opt.value || '').toLowerCase().includes(lowerTerm);
       return labelMatch || valueMatch;
     });
-  }, [safeOptions, searchTerm, selectedLabels, multiple]);
+  }, [safeOptions, searchTerm, selectedLabels, multiple, rankOptions]);
 
   const handleSelect = (optionValue) => {
     if (multiple) {

@@ -1163,7 +1163,69 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
     }
   }, `getOperationalOptionsByCategory:${category}`, { retry: true });
 }
-export const getDiagnosisOptions = async (term) => getOperationalOptionsByCategory('diagnosa', term);
+// Frekuensi pemakaian diagnosa dari rekap harian terbaru klinik (di-cache 10 menit),
+// dipakai untuk mengurutkan pilihan diagnosa dari yang paling sering dipakai.
+let diagnosisUsageCache = { clinicId: null, at: 0, ids: {}, labels: {} };
+const DIAGNOSIS_USAGE_TTL_MS = 10 * 60 * 1000;
+const DIAGNOSIS_USAGE_PAGE = 1000;
+
+const getDiagnosisUsage = async () => {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const clinicId = await getCachedClinicId(userId);
+    if (!clinicId) return { ids: {}, labels: {} };
+
+    if (diagnosisUsageCache.clinicId === clinicId && Date.now() - diagnosisUsageCache.at < DIAGNOSIS_USAGE_TTL_MS) {
+      return diagnosisUsageCache;
+    }
+
+    const pages = await Promise.all([0, 1].map(page =>
+      supabase
+        .from('daily_recaps')
+        .select('diagnosis')
+        .eq('clinic_id', clinicId)
+        .order('created_at', { ascending: false })
+        .range(page * DIAGNOSIS_USAGE_PAGE, (page + 1) * DIAGNOSIS_USAGE_PAGE - 1)
+    ));
+
+    const ids = {};
+    const labels = {};
+    pages.forEach(({ data }) => {
+      (data || []).forEach(row => {
+        (Array.isArray(row.diagnosis) ? row.diagnosis : []).forEach(v => {
+          if (typeof v !== 'string' || !v.trim()) return;
+          ids[v] = (ids[v] || 0) + 1;
+          const key = v.trim().toLowerCase();
+          labels[key] = (labels[key] || 0) + 1;
+        });
+      });
+    });
+
+    diagnosisUsageCache = { clinicId, at: Date.now(), ids, labels };
+    return diagnosisUsageCache;
+  } catch (err) {
+    console.error('getDiagnosisUsage error:', err);
+    return { ids: {}, labels: {} };
+  }
+};
+
+// Pilihan diagnosa selalu dimuat lengkap (bukan difilter server) agar pencarian
+// fuzzy di sisi klien bisa menangani salah ketik; tiap opsi membawa `usage`.
+export const getDiagnosisOptions = async () => {
+  const [result, usage] = await Promise.all([
+    getOperationalOptionsByCategory('diagnosa'),
+    getDiagnosisUsage(),
+  ]);
+  if (!result || result.error || !Array.isArray(result.data)) return result;
+  return {
+    ...result,
+    data: result.data.map(o => ({
+      ...o,
+      usage: (usage.ids[o.id] || 0) + (usage.labels[String(o.label || '').trim().toLowerCase()] || 0),
+    })),
+  };
+};
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);
