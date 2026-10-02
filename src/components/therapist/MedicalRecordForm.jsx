@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables } from '@/lib/api';
 import { generateIcfAssessment } from '@/lib/icfAssessment';
-import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
+import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, refreshOnsetInSubjective } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
@@ -78,11 +78,26 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
 
   useEffect(() => {
     if (formData.patient_id && isValidUUID(formData.patient_id)) {
-      getPatientOnsetInfo(formData.patient_id).then(({ data }) => {
-        setOnsetInfo(data || null);
+      const pid = formData.patient_id;
+      let cancelled = false;
+      getPatientOnsetInfo(pid).then(async ({ data }) => {
+        if (cancelled) return;
+        if (data?.complaint_onset_date) { setOnsetInfo(data); return; }
+        // Onset belum pernah diisi di rekam medis lengkap: perkirakan dari SOAP sebelumnya
+        // ("sejak 2 minggu yang lalu" pada tanggal catatan itu).
+        const { data: records } = await getMedicalRecords({ patientId: pid, limit: 20 });
+        if (cancelled) return;
+        const sorted = [...(records || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        for (const r of sorted) {
+          const onset = deriveOnsetFromSubjective(r.subjective, r.created_at);
+          if (onset) { setOnsetInfo({ complaint_onset_date: onset, derived: true }); return; }
+        }
+        setOnsetInfo(null);
       });
+      return () => { cancelled = true; };
     } else {
       setOnsetInfo(null);
+      return undefined;
     }
   }, [formData.patient_id]);
 
@@ -388,14 +403,17 @@ if (isCreate) {
     setAssessmentAuto(false);
     setFormData(prev => ({
       ...prev,
-      subjective: record.subjective || '',
+      subjective: refreshOnsetInSubjective(
+        record.subjective || '',
+        onsetInfo?.complaint_onset_date || deriveOnsetFromSubjective(record.subjective, record.created_at)
+      ),
       objective: record.objective || '',
       assessment: record.assessment || '',
       plan: record.plan || '',
     }));
     toast({
       title: "Data Disalin!",
-      description: "Data SOAP dari riwayat sebelumnya berhasil disalin ke form ini.",
+      description: "Data SOAP berhasil disalin; durasi onset di Subjective sudah disesuaikan sampai hari ini.",
       className: "bg-blue-50 border-blue-200 text-blue-800"
     });
     // Terapi lanjutan: langsung tawarkan update kondisi klinis lewat klik.
@@ -495,7 +513,7 @@ if (isCreate) {
                     <Clock className="w-4 h-4 mt-0.5 shrink-0" />
                     <p className="text-xs leading-relaxed">
                       <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
-                      {phase && <> (<strong>{phase.label}</strong>)</>}, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: id })}.
+                      {phase && <> (<strong>{phase.label}</strong>)</>}, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: id })}{onsetInfo.derived && <> (perkiraan dari SOAP sebelumnya)</>}.
                     </p>
                   </div>
                 );
