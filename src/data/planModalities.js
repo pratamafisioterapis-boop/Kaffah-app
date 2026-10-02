@@ -1,5 +1,5 @@
 // Pilihan checklist Plan SOAP untuk modalitas elektrofisis dan manual therapy.
-// (Exercise per diagnosa ada di planExercises.js.)
+// (Exercise per diagnosa diambil dari database: tabel diagnosis_exercise_plans dan plan_exercises.)
 
 export const EPA_OPTIONS = [
   'Hot pack',
