@@ -344,16 +344,46 @@ const renderSentence = (rawTokens, values) => {
   return /[.!?]$/.test(out) ? out : `${out}.`;
 };
 
-export const renderTemplate = (parsed, values, { inline = false } = {}) => {
-  if (!parsed) return '';
-  const lines = [];
-  parsed.sections.forEach((section, idx) => {
-    const sentences = section.sentences.map((s) => renderSentence(s.tokens, values)).filter(Boolean);
-    if (!sentences.length) return;
-    const body = sentences.join(' ');
-    lines.push(idx === 0 && !inline ? `${section.title}:\n${body}` : `${section.title}: ${body}`);
+const renderSections = (parsed, values) => {
+  if (!parsed) return [];
+  return parsed.sections
+    .map((section) => ({
+      title: section.title,
+      sentences: section.sentences.map((s) => renderSentence(s.tokens, values)).filter(Boolean),
+    }))
+    .filter((s) => s.sentences.length);
+};
+
+const joinSections = (sections, inline) => sections
+  .map((s, idx) => {
+    const body = s.sentences.join(' ');
+    return idx === 0 && !inline ? `${s.title}:\n${body}` : `${s.title}: ${body}`;
+  })
+  .join('\n');
+
+export const renderTemplate = (parsed, values, { inline = false } = {}) =>
+  joinSections(renderSections(parsed, values), inline);
+
+// Gabungkan beberapa diagnosa menjadi satu rangkaian: bagian bernama sama
+// (mis. "Keluhan Utama") disatukan, kalimat kembar dibuang.
+// entries: [{ parsed, values }]
+export const renderMergedTemplates = (entries, { inline = false } = {}) => {
+  const order = [];
+  const byTitle = new Map();
+  entries.forEach(({ parsed, values }) => {
+    renderSections(parsed, values).forEach((section) => {
+      const key = section.title.toLowerCase();
+      if (!byTitle.has(key)) {
+        byTitle.set(key, { title: section.title, sentences: [] });
+        order.push(key);
+      }
+      const target = byTitle.get(key);
+      section.sentences.forEach((sentence) => {
+        if (!target.sentences.includes(sentence)) target.sentences.push(sentence);
+      });
+    });
   });
-  return lines.join('\n');
+  return joinSections(order.map((k) => byTitle.get(k)), inline);
 };
 
 // Jumlah isian yang sudah terisi / total (indikator progres).
