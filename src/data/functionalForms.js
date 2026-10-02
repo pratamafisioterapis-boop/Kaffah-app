@@ -6,6 +6,9 @@
 // Skor total selalu bisa diisi langsung lewat kolom "skor total" bila alat ukur
 // sudah diisi di lembar resmi.
 
+import { EXTRA_FORMS } from './functionalFormsExtra';
+import { MORE_FORMS } from './functionalFormsMore';
+
 const SCALE_NDI = {
   note: '0 = tidak ada gangguan · 5 = gangguan terberat / tidak mampu sama sekali',
   options: [0, 1, 2, 3, 4, 5].map((v) => ({ value: v, label: String(v) })),
@@ -252,6 +255,8 @@ export const FUNCTIONAL_FORMS = {
     fromManual: (v) => ({ value: v, summary: `${v}/64`, interpretation: `kekhawatiran jatuh ${v <= 19 ? 'rendah' : v <= 27 ? 'sedang' : 'tinggi'}` }),
     text: (r) => `FES-I ${r.summary} (${r.interpretation})`,
   },
+  ...EXTRA_FORMS,
+  ...MORE_FORMS,
 };
 
 // Opsi tiap item: skala bersama (scale) atau daftar khusus (options).
