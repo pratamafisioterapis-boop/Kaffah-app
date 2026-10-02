@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
@@ -35,8 +36,10 @@ const TherapistMetrics = ({ therapist, userId }) => {
     excludedTypes: [],
     targetStatus: null,
     annualLeaveRemaining: 0,
-    annualLeaveQuota: 0
+    annualLeaveQuota: 0,
+    annualLeaveEntries: []
   });
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
@@ -148,7 +151,8 @@ const rawMonthlyRecaps = recapsRes.data || [];
         excludedTypes: targetInfo.excluded,
         targetStatus: targetInfo.status,
         annualLeaveRemaining: leaveBalanceRes?.data?.remaining ?? 0,
-        annualLeaveQuota: leaveBalanceRes?.data?.quota ?? 0
+        annualLeaveQuota: leaveBalanceRes?.data?.quota ?? 0,
+        annualLeaveEntries: leaveBalanceRes?.data?.entries ?? []
       });
 
     } catch (error) {
@@ -290,7 +294,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
         </div>
 
         {/* Card: Sisa Cuti Tahunan */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setLeaveDialogOpen(true)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setLeaveDialogOpen(true); }}
+          className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cuti Tahunan</span>
             <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
@@ -310,6 +320,44 @@ const rawMonthlyRecaps = recapsRes.data || [];
         </div>
 
       </div>
+
+      {/* Dialog: daftar tanggal cuti tahunan */}
+      <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Riwayat Cuti Tahunan</DialogTitle>
+            <DialogDescription>
+              Terpakai {metrics.annualLeaveQuota - metrics.annualLeaveRemaining} dari {metrics.annualLeaveQuota} hari · sisa {metrics.annualLeaveRemaining} hari
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {metrics.annualLeaveEntries.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-6">Belum ada cuti tahunan yang diambil.</p>
+            ) : (
+              metrics.annualLeaveEntries.map((entry) => {
+                const sameDay = entry.start_date === entry.end_date;
+                const fmt = (d) => format(new Date(`${d}T00:00:00`), 'dd MMM yyyy', { locale: idLocale });
+                return (
+                  <div key={entry.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5 text-teal-600" />
+                      {sameDay ? fmt(entry.start_date) : `${fmt(entry.start_date)} – ${fmt(entry.end_date)}`}
+                    </p>
+                    {entry.start_time && entry.end_time && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Pukul {entry.start_time.slice(0, 5)} – {entry.end_time.slice(0, 5)}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 mt-1">
+                      Keterangan: {entry.reason || '-'}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
