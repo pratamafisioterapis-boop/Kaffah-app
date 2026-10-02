@@ -6,6 +6,7 @@ import {
   Package as PackageIcon, FileText as FileTextIcon, Award, Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import OwnerAccountSwitcher from '@/components/owner/OwnerAccountSwitcher';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -690,6 +691,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
             </div>
           )}
         </div>
+
+        {role === 'owner' && <OwnerAccountSwitcher clinicId={clinicId} />}
 
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button
