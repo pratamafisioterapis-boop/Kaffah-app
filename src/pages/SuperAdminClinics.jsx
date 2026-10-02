@@ -639,6 +639,27 @@ const SuperAdminClinics = () => {
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Invoice Pasien
                 </p>
+                <p className="text-[11px] text-slate-500 mb-1">Template invoice</p>
+                <div className="flex gap-1.5 mb-3">
+                  {[
+                    { value: 'classic', label: 'Lama (default)' },
+                    { value: 'kwitansi', label: 'Kwitansi (tabel katalog)' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateInvoiceSetting(clinic, { invoice_template: opt.value })}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.invoice_template || 'classic') === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
                 <p className="text-[11px] text-slate-500 mb-1">Penanda tangan</p>
                 <div className="flex gap-1.5">
                   {[
