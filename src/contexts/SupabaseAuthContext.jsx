@@ -472,8 +472,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user?.id) return;
+    // While viewing as another account, keep this device's push token bound
+    // to the real signed-in user (the owner); registering it for the viewed
+    // account would delete the owner's token and stop their notifications.
+    if (isImpersonating) return;
     registerPushNotifications(user.id);
-  }, [user?.id]);
+  }, [user?.id, isImpersonating]);
   const value = useMemo(() => ({
     user,
     session,
