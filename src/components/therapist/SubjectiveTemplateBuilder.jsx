@@ -364,6 +364,10 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
       : '';
     return [vital, body].filter(Boolean).join('\n');
   }, [parsed, values, merged, parsedAll, valuesByKey, isObjective, vitalParsed, vitalValues, willReplace, existing]);
+  // Hasil bisa diedit bebas (free text); perubahan pilihan/isian membangun ulang teks dari template.
+  const [edited, setEdited] = useState(null);
+  useEffect(() => { setEdited(null); }, [output]);
+  const finalText = edited ?? output;
   const { filled, total } = useMemo(() => {
     const a = countProgress(parsed, values);
     const b = countProgress(vitalParsed, vitalValues);
@@ -378,9 +382,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   };
 
   const apply = () => {
-    if (!output) return;
-    onApply(output, { replace: willReplace });
-    setLastApplied(willReplace ? output : `${existing}\n\n${output}`);
+    if (!finalText.trim()) return;
+    onApply(finalText, { replace: willReplace });
+    setLastApplied(willReplace ? finalText : `${existing}\n\n${finalText}`);
     setOpen(false);
   };
 
@@ -473,21 +477,23 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <Sparkles className="h-3 w-3" /> {merged ? 'Hasil gabungan semua diagnosa' : 'Hasil'}
             </div>
-            <div
+            <textarea
+              value={finalText}
+              onChange={(e) => setEdited(e.target.value)}
+              placeholder="Teks akan muncul di sini setelah Anda memilih atau mengisi. Bisa diedit langsung."
+              rows={Math.min(14, Math.max(4, finalText.split('\n').length + 1))}
               className={cn(
-                'min-h-[64px] whitespace-pre-wrap rounded-xl border px-3 py-2.5 text-sm leading-relaxed',
-                output ? 'border-blue-100 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
+                'block w-full resize-y rounded-xl border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-blue-200',
+                finalText ? 'border-blue-100 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
               )}
-            >
-              {output || 'Teks akan muncul di sini setelah Anda memilih atau mengisi.'}
-            </div>
+            />
           </div>
 
           {!previewOnly && (
           <Button
             type="button"
             onClick={apply}
-            disabled={!output}
+            disabled={!finalText.trim()}
             className="h-11 w-full gap-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-700"
           >
             <Check className="h-4 w-4" />
