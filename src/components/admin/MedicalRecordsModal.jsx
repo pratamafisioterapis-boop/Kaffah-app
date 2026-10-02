@@ -15,6 +15,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import SearchableSelect from '@/components/ui/searchable-select';
+import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   getPatients, 
@@ -164,7 +165,8 @@ const diagnosesList = diagnosesRes?.data || [];
       // SearchableSelect needs label/value
       const diagnosisOptions = diagnosesList.map(d => ({
   value: d.id,
-  label: d.label  
+  label: d.label,
+  usage: d.usage
 }));
 console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
       setDiagnoses([...diagnosisOptions]);
@@ -378,6 +380,7 @@ onClose();
                         options={diagnoses}
                         value={formData.medical_diagnosis}
                         onChange={(val) => handleSelectChange('medical_diagnosis', val)}
+                        rankOptions={rankDiagnosisOptions}
                         placeholder="Pilih atau cari diagnosis..."
                         multiple={true}
                       />

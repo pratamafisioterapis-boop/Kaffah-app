@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import DatePicker from '@/components/DatePicker';
 import { useToast } from '@/components/ui/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1172,7 +1173,7 @@ setFormData({
                                     options={diagnosisOptions} 
                                     value={formData.diagnosis} 
                                     onChange={v => handleChange('diagnosis', v)} 
-                                    onSearch={setDiagnosisSearch} 
+                                    rankOptions={rankDiagnosisOptions}
                                     placeholder="Cari atau tambah diagnosa..." 
                                     isLoading={loadingDiagnoses} 
                                     multiple={true} 

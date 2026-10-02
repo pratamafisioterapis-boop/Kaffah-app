@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock } from 'lucide-react';
+import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions } from '@/lib/api';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 import SearchableSelect from '@/components/ui/searchable-select';
@@ -419,6 +420,7 @@ if (isCreate) {
                 options={diagnosisOptions}
                 value={diagnosis}
                 onChange={setDiagnosis}
+                rankOptions={rankDiagnosisOptions}
                 multiple={true}
                 allowCreate={true}
                 placeholder="Pilih diagnosa..."

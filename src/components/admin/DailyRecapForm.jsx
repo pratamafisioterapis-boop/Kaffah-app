@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { Calendar as CalendarIcon, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { 
 fetchPhysiotherapists, 
@@ -762,6 +763,7 @@ Beli Baru
 options={diagnoses}
 value={formData.diagnosis}
 onChange={(val) => handleChange('diagnosis', val)}
+rankOptions={rankDiagnosisOptions}
 multiple={true}
 allowCreate={true}
 />

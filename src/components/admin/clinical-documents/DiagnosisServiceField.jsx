@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -77,6 +78,7 @@ const DiagnosisServiceField = ({ diagnosaId, onChange, multiple = false }) => {
           options={diagnoses}
           value={diagnosaId}
           multiple={multiple}
+          rankOptions={rankDiagnosisOptions}
           onChange={(val) => {
             if (multiple) {
               const ids = Array.isArray(val) ? val : [];
