@@ -12,7 +12,7 @@ import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMed
 import { generateIcfAssessment, analyzeIcf, icfCodesOf } from '@/lib/icfAssessment';
 import { buildEducationText } from '@/lib/educationMerge';
 import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, refreshOnsetInSubjective } from '@/lib/onsetHelpers';
-import { KAFFAH_CLINIC_ID, renderSkeletonTemplates } from '@/lib/subjectiveTemplate';
+import { KAFFAH_CLINIC_ID } from '@/lib/subjectiveTemplate';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
@@ -56,8 +56,6 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [assessmentAuto, setAssessmentAuto] = useState(true);
   // Edukasi pasien: disusun dari template semua diagnosa terpilih, selama belum diedit manual.
   const [educationAuto, setEducationAuto] = useState(true);
-  // Klinik Kaffah: S & O terisi otomatis dari template diagnosa, selama belum diedit manual.
-  const [soAuto, setSoAuto] = useState({ subjective: true, objective: true });
   const [eduEntries, setEduEntries] = useState({});
   const [homeExercises, setHomeExercises] = useState([]);
   const [formData, setFormData] = useState({
@@ -179,24 +177,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     .filter(Boolean);
 
   const isKaffahClinic = (userDetails?.clinic_id || therapist?.clinic_id) === KAFFAH_CLINIC_ID;
-  const subjectiveSkeleton = useMemo(
-    () => (isKaffahClinic ? renderSkeletonTemplates(subjectiveTemplates.map((t) => t.template), templateVariables) : ''),
-    [isKaffahClinic, subjectiveTemplates, templateVariables]
-  );
-  const objectiveSkeleton = useMemo(
-    () => (isKaffahClinic ? renderSkeletonTemplates(objectiveTemplates.map((t) => t.template), templateVariables, { inline: true }) : ''),
-    [isKaffahClinic, objectiveTemplates, templateVariables]
-  );
-
-  useEffect(() => {
-    if (!isKaffahClinic) return;
-    setFormData((prev) => {
-      const next = { ...prev };
-      if (soAuto.subjective && diagnosis.length > 0 && subjectiveSkeleton) next.subjective = subjectiveSkeleton;
-      if (soAuto.objective && diagnosis.length > 0 && objectiveSkeleton) next.objective = objectiveSkeleton;
-      return next.subjective === prev.subjective && next.objective === prev.objective ? prev : next;
-    });
-  }, [isKaffahClinic, soAuto, diagnosis.length, subjectiveSkeleton, objectiveSkeleton]);
+  const templatesOf = (key) => (key === 'subjective' ? subjectiveTemplates : key === 'objective' ? objectiveTemplates : []);
+  // Kaffah: S & O diisi lewat template (pilih variabel); ketikan bebas baru terbuka setelah terisi.
+  const isTemplateLocked = (key) => isKaffahClinic && templatesOf(key).length > 0 && !formData[key].trim();
 
   const diagnosisLabels = useMemo(() => diagnosis
     .map((d) => {
@@ -257,7 +240,6 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   };
 
   const handleApplyTemplate = (field) => (text, { replace }) => {
-    setSoAuto((prev) => ({ ...prev, [field]: false }));
     setFormData((prev) => {
       const existing = (prev[field] || '').trim();
       return { ...prev, [field]: replace || !existing ? text : `${existing}\n\n${text}` };
@@ -290,7 +272,6 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     // Assessment yang sudah ada dianggap hasil edit terapis: jangan ditimpa otomatis.
     setAssessmentAuto(!(data.assessment || '').trim());
     setEducationAuto(!(data.education || '').trim());
-    setSoAuto({ subjective: !(data.subjective || '').trim(), objective: !(data.objective || '').trim() });
 
     // Isi form SOAP
     setFormData({
@@ -706,8 +687,22 @@ if (isCreate) {
                       }}
                     />
                   ) : (
+                  <>
+                  {isKaffahClinic && (field.key === 'subjective' || field.key === 'objective') && templatesOf(field.key).length > 0 && (
+                    <div className="mb-3 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/30 p-3">
+                      <SubjectiveTemplateBuilder
+                        embedded
+                        templates={templatesOf(field.key)}
+                        variables={templateVariables}
+                        currentText={formData[field.key]}
+                        onApply={handleApplyTemplate(field.key)}
+                        mode={field.key}
+                      />
+                    </div>
+                  )}
                   <Textarea
-                    placeholder={field.placeholder}
+                    readOnly={isTemplateLocked(field.key)}
+                    placeholder={isTemplateLocked(field.key) ? `Pilih & isi template di atas, lalu klik "Masukkan ke ${field.label}". Setelah itu teks bisa diedit.` : field.placeholder}
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${
                       field.key === 'assessment'
                         ? (isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]')
@@ -716,11 +711,11 @@ if (isCreate) {
                     value={formData[field.key]}
                     onChange={e => {
                       if (field.key === 'assessment') setAssessmentAuto(false);
-                      if (field.key === 'subjective' || field.key === 'objective') setSoAuto((prev) => ({ ...prev, [field.key]: false }));
                       setFormData({...formData, [field.key]: e.target.value});
                     }}
                     required
                   />
+                  </>
                   )}
                 </div>
               ))}

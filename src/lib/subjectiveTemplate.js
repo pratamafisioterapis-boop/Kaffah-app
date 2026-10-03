@@ -614,46 +614,6 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
 // ID klinik Kaffah: S & O terisi otomatis dari template begitu diagnosa dipilih.
 export const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
 
-// Kerangka template apa adanya (belum diisi): setiap isian tampil sebagai penanda
-// "..." atau "(pilihan/pilihan)" supaya terapis tinggal melengkapi & mengedit.
-const skeletonToken = (tok) => {
-  switch (tok.t) {
-    case 'text': return tok.v;
-    case 'gopen': case 'gclose': case 'form': return '';
-    case 'toggle': return tok.text;
-    case 'choice': return tok.wrap ? '(+/-)' : `(${tok.prefix || ''}${tok.options.join('/')})`;
-    case 'duration': return '... hari';
-    case 'scale': case 'date': return '...';
-    default: return `${tok.prefix || ''}...`;
-  }
-};
-
-const skeletonSentence = (tokens, plain) => {
-  const out = tokens.map(skeletonToken).join('').replace(/\s{2,}/g, ' ').trim();
-  return out && plain ? `- ${out}` : out;
-};
-
-// Gabungan kerangka semua diagnosa mengikuti struktur template (bagian bernama sama disatukan, baris kembar dibuang).
-export const renderSkeletonTemplates = (templates, variables = {}, { inline = false } = {}) => {
-  const order = [];
-  const byTitle = new Map();
-  templates.forEach((tpl) => {
-    parseTemplate(tpl, variables)?.sections.forEach((section) => {
-      const key = section.key || section.title.toLowerCase();
-      if (!byTitle.has(key)) {
-        byTitle.set(key, { title: section.title, layout: section.layout, sentences: [] });
-        order.push(key);
-      }
-      const target = byTitle.get(key);
-      section.sentences.forEach((sentence) => {
-        const text = skeletonSentence(sentence.tokens, section.layout === 'lines');
-        if (text && !target.sentences.includes(text)) target.sentences.push(text);
-      });
-    });
-  });
-  return joinSections(order.map((k) => byTitle.get(k)).filter((s) => s.sentences.length), inline);
-};
-
 // Jumlah isian yang sudah terisi / total (indikator progres).
 export const countProgress = (parsed, values) => {
   let filled = 0;
