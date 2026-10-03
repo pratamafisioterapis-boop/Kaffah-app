@@ -590,6 +590,43 @@ export const renderTemplate = (parsed, values, { inline = false } = {}) =>
   joinSections(renderSections(parsed, values), inline);
 
 const LEAD_RE = /^Pasien datang dengan keluhan (.+?)\.?$/;
+const stripEnd = (t) => t.replace(/[.\s]+$/, '');
+const lowerFirst = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+const stemOf = (t) => t.toLowerCase().replace(/^tidak /, '').split(/\s+/).slice(0, 2).join(' ');
+
+// Satukan kalimat sejenis antar diagnosa ("Keluhan timbul secara ...", "Nyeri terasa ...") menjadi satu kalimat.
+const mergeSimilar = (texts) => {
+  const words = texts.map((t) => stripEnd(t).split(/\s+/));
+  let n = 0;
+  while (words.every((w) => w[n] && w[n].toLowerCase() === words[0][n].toLowerCase())) n += 1;
+  const prefix = words[0].slice(0, n).join(' ');
+  const tails = words.map((w) => w.slice(n).join(' ')).map((t) => t.replace(/^dan /, ''));
+  const simple = tails.every((t) => t && !t.includes(',') && !/\bdan (terutama|sejak|bertambah|berkurang)\b/.test(t));
+  if (n >= 3 && simple) {
+    const items = [...new Set(tails.flatMap((t) => t.split(/,\s*|\s+dan\s+/)))];
+    return `${prefix} ${joinList(items)}.`;
+  }
+  // Selain itu: kalimat pertama utuh, kalimat berikutnya menyusul; klausa awal yang sama dibuang.
+  const lead = (t) => stripEnd(t).split(', ')[0].toLowerCase();
+  const rest = texts.slice(1).map((t) => {
+    const clauses = stripEnd(t).split(', ');
+    const body = lead(t) === lead(texts[0]) && clauses.length > 1 ? clauses.slice(1).join(', ') : stripEnd(t);
+    return lowerFirst(body.replace(/^dan /, ''));
+  }).filter((t) => t !== lowerFirst(stripEnd(texts[0])));
+  const head = stripEnd(texts[0]);
+  return rest.length ? `${head}, sedangkan pada keluhan lainnya ${rest.join(', serta ')}.` : `${head}.`;
+};
+
+const mergeNarrative = (sentences) => {
+  const groups = new Map();
+  sentences.forEach((sentence) => {
+    const key = stemOf(sentence);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(sentence);
+  });
+  return [...groups.values()].map((g) => (g.length === 1 ? g[0] : mergeSimilar(g)));
+};
+
 const joinLeads = (leads) => (leads.length <= 1 ? leads[0] : `${leads.slice(0, -1).join(', ')} dan ${leads[leads.length - 1]}`);
 
 // Gabungkan beberapa diagnosa menjadi satu rangkaian: bagian bernama sama
@@ -620,6 +657,7 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
   });
   const sections = order.map((k) => {
     const sec = byTitle.get(k);
+    if (!sec.title) sec.sentences = mergeNarrative(sec.sentences);
     if (sec.leads.length) sec.sentences.unshift(`Pasien datang dengan keluhan ${joinLeads(sec.leads)}.`);
     return sec;
   });
