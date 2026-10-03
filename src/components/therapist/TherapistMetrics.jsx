@@ -19,7 +19,7 @@ import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, getTherapistPeriodRange } from '@/lib/utils';
 
 
 const TherapistMetrics = ({ therapist, userId }) => {
@@ -73,16 +73,7 @@ const endMonth = format(
 );
 
 
-let startPeriod;
-let endPeriod;
-
-if (now.getDate() >= 28) {
-  startPeriod = new Date(now.getFullYear(), now.getMonth(), 28);
-  endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 27);
-} else {
-  startPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 28);
-  endPeriod = new Date(now.getFullYear(), now.getMonth(), 27);
-}
+const { startDate: startPeriod, endDate: endPeriod } = getTherapistPeriodRange(therapist, now);
 
 const startCustom = format(startPeriod, 'yyyy-MM-dd');
 const endCustom = format(endPeriod, 'yyyy-MM-dd');
