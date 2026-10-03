@@ -1240,13 +1240,13 @@ export const getDiagnosisSubjectiveTemplates = async (ids = []) => {
   return { data: data || [], error: null };
 };
 // Template edukasi pasien untuk diagnosa terpilih (tabel diagnosis_education + education_lists).
-// Hasil: { kunci: { name, what, cause, recovery, do: [], avoid: [], red: [] } }
+// Hasil: { kunci: { name, advice, what, cause, recovery, do: [], avoid: [], red: [] } }
 export const getEducationForDiagnoses = async (labels = []) => {
   const keys = [...new Set(labels.map((l) => String(l).trim().toLowerCase()).filter(Boolean))];
   if (keys.length === 0) return { data: {}, error: null };
   const { data: rows, error } = await supabase
     .from('diagnosis_education')
-    .select('diagnosis_key, display_name, what, cause, recovery, do_list, avoid_list, red_list')
+    .select('diagnosis_key, display_name, what, cause, recovery, advice, do_list, avoid_list, red_list')
     .in('diagnosis_key', keys);
   if (error) return { data: {}, error };
   const ids = [...new Set((rows || []).flatMap((r) => [r.do_list, r.avoid_list, r.red_list]).filter(Boolean))];
@@ -1259,6 +1259,7 @@ export const getEducationForDiagnoses = async (labels = []) => {
   return {
     data: Object.fromEntries((rows || []).map((r) => [r.diagnosis_key, {
       name: r.display_name,
+      advice: r.advice,
       what: r.what,
       cause: r.cause,
       recovery: r.recovery,
