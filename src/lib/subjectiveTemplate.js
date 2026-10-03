@@ -346,7 +346,7 @@ const parseListTemplate = (text, variables) => {
       const labelText = labelPart.replace(/\s*\(\.{3,}\)%?/g, '').replace(/\s*sesuai lokasi/, '').replace(/[()]/g, '').trim();
       push('kv', [
         { t: 'text', v: labelText, label: true },
-        { t: 'text', v: ' : ' },
+        { t: 'text', v: ' : ', sep: true },
         { t: 'form', id: nextId(), forms },
       ]);
       return;
@@ -362,7 +362,7 @@ const parseListTemplate = (text, variables) => {
       if (cur.valueOptions && slots.length === 1) return { t: 'choice', id: t.id, options: cur.valueOptions, flag: false, single: true, prefix: '' };
       return t;
     });
-    push('kv', annotate([...labelTokens, { t: 'text', v: ' : ' }, ...valueTokens]));
+    push('kv', annotate([...labelTokens, { t: 'text', v: ' : ', sep: true }, ...valueTokens]));
   });
 
   const kept = sections.filter((sec) => sec.sentences.length);
@@ -471,6 +471,14 @@ const resolveGroups = (tokens, values) => {
 };
 
 const renderSentence = (rawTokens, values, { plain = false } = {}) => {
+  // Baris "Nama : isian": nama tes/gerakan selalu ikut tampil selama ada bagian isian yang terisi,
+  // meski bagian lain (mis. derajat) kosong -> "Dorsofleksi : nyeri Ada".
+  const sepIdx = rawTokens.findIndex((t) => t.sep);
+  if (plain && sepIdx > 0 && !rawTokens.slice(0, sepIdx).some(isSlot)) {
+    const tail = renderSentence(rawTokens.slice(sepIdx + 1), values, { plain });
+    if (!tail) return null;
+    return `${rawTokens.slice(0, sepIdx).map((t) => t.v).join('').trim()} : ${tail}`;
+  }
   const tokens = resolveGroups(rawTokens, values);
   // Kalimat yang seluruh isiannya berada di kelompok yang gugur ikut dibuang.
   if (rawTokens.some(isSlot) && !tokens.some(isSlot)) return null;
