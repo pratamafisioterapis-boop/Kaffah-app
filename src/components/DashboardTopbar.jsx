@@ -222,6 +222,9 @@ async function loadDetailData(type, id) {
 
 const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
   const topbarLocation = useLocation();
+  // Admin accounts (incl. an owner viewing as admin) may only hop into a
+  // therapist's SOAP page — never to the owner or another admin account.
+  const isAdminSwitcherContext = role === 'admin' || topbarLocation.pathname.startsWith('/admin/as-therapist');
   const navigate = useNavigate();
   const { impersonationOrigin } = useAuth();
   const ownerOrigin = impersonationOrigin?.origin_role === 'owner' ? impersonationOrigin : null;
@@ -697,11 +700,11 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           )}
         </div>
 
-        {(role === 'owner' || ownerOrigin) && (
+        {(role === 'owner' || ownerOrigin) && !isAdminSwitcherContext && (
           <OwnerAccountSwitcher clinicId={ownerOrigin?.origin_clinic_id || clinicId} />
         )}
 
-        {!ownerOrigin && (role === 'admin' || topbarLocation.pathname.startsWith('/admin/as-therapist')) && (
+        {isAdminSwitcherContext && (
           <AdminTherapistSwitcher clinicId={clinicId} />
         )}
 
