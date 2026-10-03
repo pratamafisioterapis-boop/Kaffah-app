@@ -592,10 +592,10 @@ export const renderTemplate = (parsed, values, { inline = false } = {}) =>
 const LEAD_RE = /^Pasien datang dengan keluhan (.+?)\.?$/;
 const stripEnd = (t) => t.replace(/[.\s]+$/, '');
 const lowerFirst = (t) => t.charAt(0).toLowerCase() + t.slice(1);
-const stemOf = (t) => t.toLowerCase().replace(/^tidak /, '').split(/\s+/).slice(0, 2).join(' ');
+const stemOf = (t, words) => t.toLowerCase().replace(/^tidak /, '').split(/\s+/).slice(0, words).join(' ');
 
 // Satukan kalimat sejenis antar diagnosa ("Keluhan timbul secara ...", "Nyeri terasa ...") menjadi satu kalimat.
-const mergeSimilar = (texts) => {
+const mergeSimilar = (texts, { end = '.', other = 'keluhan lainnya' } = {}) => {
   const words = texts.map((t) => stripEnd(t).split(/\s+/));
   let n = 0;
   while (words.every((w) => w[n] && w[n].toLowerCase() === words[0][n].toLowerCase())) n += 1;
@@ -604,7 +604,7 @@ const mergeSimilar = (texts) => {
   const simple = tails.every((t) => t && !t.includes(',') && !/\bdan (terutama|sejak|bertambah|berkurang)\b/.test(t));
   if (n >= 3 && simple) {
     const items = [...new Set(tails.flatMap((t) => t.split(/,\s*|\s+dan\s+/)))];
-    return `${prefix} ${joinList(items)}.`;
+    return `${prefix} ${joinList(items)}${end}`;
   }
   // Selain itu: kalimat pertama utuh, kalimat berikutnya menyusul; klausa awal yang sama dibuang.
   const lead = (t) => stripEnd(t).split(', ')[0].toLowerCase();
@@ -614,17 +614,17 @@ const mergeSimilar = (texts) => {
     return lowerFirst(body.replace(/^dan /, ''));
   }).filter((t) => t !== lowerFirst(stripEnd(texts[0])));
   const head = stripEnd(texts[0]);
-  return rest.length ? `${head}, sedangkan pada keluhan lainnya ${rest.join(', serta ')}.` : `${head}.`;
+  return rest.length ? `${head}, sedangkan pada ${other} ${rest.join(', serta ')}${end}` : `${head}${end}`;
 };
 
-const mergeNarrative = (sentences) => {
+const mergeNarrative = (sentences, opts = {}) => {
   const groups = new Map();
   sentences.forEach((sentence) => {
-    const key = stemOf(sentence);
+    const key = stemOf(sentence, opts.words || 2);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(sentence);
   });
-  return [...groups.values()].map((g) => (g.length === 1 ? g[0] : mergeSimilar(g)));
+  return [...groups.values()].map((g) => (g.length === 1 ? g[0] : mergeSimilar(g, opts)));
 };
 
 const joinLeads = (leads) => (leads.length <= 1 ? leads[0] : `${leads.slice(0, -1).join(', ')} dan ${leads[leads.length - 1]}`);
@@ -657,7 +657,12 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
   });
   const sections = order.map((k) => {
     const sec = byTitle.get(k);
-    if (!sec.title) sec.sentences = mergeNarrative(sec.sentences);
+    if (sec.layout === 'lines') {
+      // Daftar pemeriksaan: awalan "- " dilepas saat digabung lalu dipasang kembali.
+      sec.sentences = mergeNarrative(sec.sentences.map((t) => t.replace(/^- /, '')), { end: '', words: 1, other: 'diagnosa lainnya' }).map((t) => `- ${t}`);
+    } else {
+      sec.sentences = mergeNarrative(sec.sentences, sec.title ? { words: 1, other: 'diagnosa lainnya' } : {});
+    }
     if (sec.leads.length) sec.sentences.unshift(`Pasien datang dengan keluhan ${joinLeads(sec.leads)}.`);
     return sec;
   });
