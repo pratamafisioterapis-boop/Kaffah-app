@@ -589,6 +589,9 @@ const joinSections = (sections, inline) => sections
 export const renderTemplate = (parsed, values, { inline = false } = {}) =>
   joinSections(renderSections(parsed, values), inline);
 
+const LEAD_RE = /^Pasien datang dengan keluhan (.+?)\.?$/;
+const joinLeads = (leads) => (leads.length <= 1 ? leads[0] : `${leads.slice(0, -1).join(', ')} dan ${leads[leads.length - 1]}`);
+
 // Gabungkan beberapa diagnosa menjadi satu rangkaian: bagian bernama sama
 // (mis. "Keluhan Utama") disatukan, kalimat kembar dibuang.
 // entries: [{ parsed, values }]
@@ -599,16 +602,28 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
     renderSections(parsed, values).forEach((section) => {
       const key = section.key || section.title.toLowerCase();
       if (!byTitle.has(key)) {
-        byTitle.set(key, { title: section.title, layout: section.layout, sentences: [] });
+        byTitle.set(key, { title: section.title, layout: section.layout, sentences: [], leads: [] });
         order.push(key);
       }
       const target = byTitle.get(key);
-      section.sentences.forEach((sentence) => {
+      section.sentences.forEach((sentence, idx) => {
+        // Paragraf narasi: kalimat pembuka tiap diagnosa ("Pasien datang dengan keluhan ...")
+        // disatukan menjadi satu kalimat, bukan diulang.
+        const lead = !section.title && idx === 0 ? sentence.match(LEAD_RE) : null;
+        if (lead) {
+          if (!target.leads.includes(lead[1])) target.leads.push(lead[1]);
+          return;
+        }
         if (!target.sentences.includes(sentence)) target.sentences.push(sentence);
       });
     });
   });
-  return joinSections(order.map((k) => byTitle.get(k)), inline);
+  const sections = order.map((k) => {
+    const sec = byTitle.get(k);
+    if (sec.leads.length) sec.sentences.unshift(`Pasien datang dengan keluhan ${joinLeads(sec.leads)}.`);
+    return sec;
+  });
+  return joinSections(sections, inline);
 };
 
 // ID klinik Kaffah: S & O terisi otomatis dari template begitu diagnosa dipilih.
