@@ -26,7 +26,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { id } from 'date-fns/locale';
 
-const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
+const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledByAdmin = false }) => {
   const { patientId: paramPatientId } = useParams();
   const [searchParams] = useSearchParams();
   const dailyRecapId = searchParams.get('dailyRecapId');
@@ -35,7 +35,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userDetails } = useAuth();
+  const { userDetails, user: authUser } = useAuth();
   const { mode: assessmentMode } = useAssessmentMode();
   const isDiagnosisMode = assessmentMode === 'diagnosis';
   
@@ -379,6 +379,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   assessment: cleanData.assessment || '',
   plan: cleanData.plan || '',
   created_by: therapist.user_id,
+  ...(filledByAdmin ? { filled_by_admin_id: authUser?.id } : {}),
 };
 
 // 🔥 HANYA CREATE MODE
@@ -539,6 +540,11 @@ if (isCreate) {
       <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-2xl'}`}>
         <CardContent className="p-0">
           <form onSubmit={handleSubmit}>
+            {filledByAdmin && (
+              <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
+                Diisi melalui akun admin atas nama <strong>{therapist?.name}</strong>. Data tercatat sebagai SOAP terapis tersebut dan ditandai "Diisi via Admin".
+              </div>
+            )}
 
             {/* Nama Pasien */}
             <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>

@@ -53,6 +53,7 @@ const FeedbackManagementAdmin = React.lazy(lazyRetry(() => import('@/pages/admin
 const OwnerDashboard = React.lazy(lazyRetry(() => import('@/pages/OwnerDashboard'), 'OwnerDashboard'));
 const SuperAdminDashboard = React.lazy(lazyRetry(() => import('@/pages/SuperAdminDashboard'), 'SuperAdminDashboard'));
 const AdminDashboard = React.lazy(lazyRetry(() => import('@/pages/AdminDashboard'), 'AdminDashboard'));
+const AdminAsTherapist = React.lazy(lazyRetry(() => import('@/pages/admin/AdminAsTherapist'), 'AdminAsTherapist'));
 const TherapistDashboard = React.lazy(lazyRetry(() => import('@/pages/TherapistDashboard'), 'TherapistDashboard'));
 const RotasiApp = React.lazy(lazyRetry(() => import('@/pages/rotasi/RotasiApp'), 'RotasiApp'));
 const PemilihApp = React.lazy(lazyRetry(() => import('@/pages/pemilih/PemilihApp'), 'PemilihApp'));
@@ -418,6 +419,15 @@ function App() {
                   }
                 />
                 
+                <Route
+                  path="/admin/as-therapist/*"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                      <AdminAsTherapist />
+                    </ProtectedRoute>
+                  }
+                />
+
                 <Route
                   path="/therapist/*"
                   element={

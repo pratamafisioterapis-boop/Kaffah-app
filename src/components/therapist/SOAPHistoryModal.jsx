@@ -148,6 +148,11 @@ const formatDateOnly = (dateString) => {
       <span className="font-medium">
         {formatDate(record.created_at)}
       </span>
+      {record.filled_by_admin_id && (
+        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-semibold">
+          Diisi via Admin
+        </span>
+      )}
     </div>
 
     {record.updated_at && (
