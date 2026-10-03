@@ -6,7 +6,8 @@ import {
   Loader2,
   AlertTriangle,
   ClipboardList,
-  Phone
+  Phone,
+  CalendarRange
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,7 @@ import SlotBookingForm from './booking/SlotBookingForm';
 import ManualBookingForm from './booking/ManualBookingForm';
 import BookedSlotDetailModal from './booking/BookedSlotDetailModal';
 import ScheduleTemplateModal from './booking/ScheduleTemplateModal';
+import WeeklyScheduleView from '@/components/owner/WeeklyScheduleView';
 
 const AdminAppointmentBooking = () => {
   const { user, userDetails } = useAuth();
@@ -62,6 +64,8 @@ const AdminAppointmentBooking = () => {
 const [patientHistory, setPatientHistory] = useState([]);
   const [isBablastEnabled, setIsBablastEnabled] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [viewMode, setViewMode] = useState('day'); // 'day' | 'week'
+  const [weekRefreshKey, setWeekRefreshKey] = useState(0);
 const formattedDateFull = date
   ? format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })
   : '';
@@ -281,6 +285,7 @@ const formattedDateFull = date
 
   const handleSuccess = () => {
     setTimeout(() => fetchDayData(date), 200);
+    setWeekRefreshKey((k) => k + 1);
   };
 const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
@@ -339,6 +344,8 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 };
   const getModalLeaveStatus = () => {
     if (!activeModal?.data?.therapist?.id) return 'aktif';
+    // Slot dari tampilan mingguan sudah difilter hanya yang aktif (bukan cuti/terkunci).
+    if (activeModal.date) return 'aktif';
     return therapistLeaveStatus[activeModal.data.therapist.id] || 'aktif';
   };
 
@@ -356,6 +363,28 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <p className="text-slate-500 text-sm">
       Kelola jadwal dan booking pasien secara real-time
     </p>
+  </div>
+
+  {/* View Mode Toggle */}
+  <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 sm:inline-grid sm:w-auto">
+    {[
+      { key: 'day', label: 'Jadwal Harian', icon: CalendarIcon },
+      { key: 'week', label: 'Jadwal Mingguan', icon: CalendarRange },
+    ].map(({ key, label, icon: Icon }) => (
+      <button
+        key={key}
+        type="button"
+        onClick={() => setViewMode(key)}
+        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+          viewMode === key
+            ? 'bg-white text-slate-900 shadow-sm'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+      >
+        <Icon className="h-4 w-4" />
+        {label}
+      </button>
+    ))}
   </div>
 
   {/* Bablast Toggle */}
@@ -448,7 +477,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* Controls Row */}
-  <div className="flex items-center gap-1.5 w-full min-w-0">
+  <div className={`items-center gap-1.5 w-full min-w-0 ${viewMode === 'day' ? 'flex' : 'hidden'}`}>
 
     {/* Date Controller */}
     <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
@@ -522,7 +551,21 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       )}
 
       {/* CONTENT */}
-      {loading ? (
+      {viewMode === 'week' ? (
+        !loading && (
+          <WeeklyScheduleView
+            therapists={therapists}
+            date={date}
+            onDateChange={setDate}
+            onOpenDay={(d) => { setDate(d); setViewMode('day'); }}
+            refreshKey={weekRefreshKey}
+            onSlotClick={(slot, t, slotDate) =>
+              setActiveModal({ type: 'slot', data: { slot, therapist: t }, date: slotDate })
+            }
+            onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
+          />
+        )
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center h-64 gap-4 bg-white rounded-2xl border shadow-sm">
           <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
           <p className="text-slate-400">Memuat jadwal...</p>
@@ -621,7 +664,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
             <SlotBookingForm
               slot={activeModal.data.slot}
               therapist={activeModal.data.therapist}
-              date={date}
+              date={activeModal.date || date}
               leaveStatus={getModalLeaveStatus()}
               onClose={closeModal}
               onSuccess={handleSuccess}
