@@ -539,12 +539,6 @@ if (isCreate) {
       <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-2xl'}`}>
         <CardContent className="p-0">
           <form onSubmit={handleSubmit}>
-            {filledByAdmin && (
-              <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
-                Diisi melalui akun admin atas nama <strong>{therapist?.name}</strong>. Data tercatat sebagai SOAP terapis tersebut dan ditandai "Diisi via Admin".
-              </div>
-            )}
-
             {/* Nama Pasien */}
             <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Nama Pasien</label>
