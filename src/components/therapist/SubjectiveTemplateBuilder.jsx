@@ -273,9 +273,9 @@ const renderToken = (tok, key, values, setValue, openForm) => {
 
 const VITAL_RE = /vital/i;
 const VITAL_LINE_RE = /(^|\n)(Vital Sign:|Tanda Vital)/i;
-// Bagian yang khas per diagnosa tidak digabung; sisanya (Inspeksi, Palpasi, Gerak, Kekuatan, ...)
+// Pengukuran khas per diagnosa tidak digabung; sisanya (Inspeksi, Palpasi, Gerak, Kekuatan, Tes Khusus, ...)
 // cukup diisi satu kali bila muncul di lebih dari satu diagnosa.
-const NOT_SHARED_RE = /^(tes khusus|tes spesifik|pengukuran)/i;
+const NOT_SHARED_RE = /^pengukuran/i;
 
 const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tokens.map(({ id, ...rest }) => rest)]);
 
