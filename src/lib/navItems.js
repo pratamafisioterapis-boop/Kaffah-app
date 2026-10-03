@@ -59,5 +59,6 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
   { label: 'Absensi Karyawan', path: '/admin/attendance', icon: 'Clock' },
   { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
+  { label: 'Masuk sebagai Terapis', path: '/admin/as-therapist', icon: 'UserCog' },
   { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },
 ];
