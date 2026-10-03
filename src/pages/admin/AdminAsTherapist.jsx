@@ -77,7 +77,6 @@ const TherapistSession = () => {
 const AdminAsTherapist = () => {
   const navItems = [
     { label: 'Evaluasi Pasien', path: '/admin/as-therapist', icon: 'BriefcaseMedical' },
-    { label: 'Kembali ke Admin', path: '/admin', icon: 'Home' },
   ];
   return (
     <>
