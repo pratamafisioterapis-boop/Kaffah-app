@@ -188,9 +188,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   useEffect(() => {
     if (!assessmentAuto) return undefined;
     if (isDiagnosisMode) {
-      const text = diagnosisLabels.length
-        ? `Diagnosis Fisioterapi:\n${diagnosisLabels.map((d, i) => `${i + 1}. ${d}`).join('\n')}`
-        : '';
+      // Satu diagnosa ditulis langsung; lebih dari satu dipisah per baris tanpa nomor.
+      const text = diagnosisLabels.join('\n');
       setFormData((prev) => (prev.assessment === text ? prev : { ...prev, assessment: text }));
       return undefined;
     }
