@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, Copy, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles, getEducationForDiagnoses } from '@/lib/api';
@@ -43,6 +43,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [initialLoading, setInitialLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [latestRecord, setLatestRecord] = useState(null);
   const [onsetInfo, setOnsetInfo] = useState(null);
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
@@ -450,6 +451,26 @@ if (isCreate) {
     }
   };
 
+  // Kunjungan sebelumnya (terbaru) untuk pasien ini; tombol Riwayat/Salin hanya muncul bila ada.
+  useEffect(() => {
+    let cancelled = false;
+    setLatestRecord(null);
+    if (!formData.patient_id || !isValidUUID(formData.patient_id)) return;
+    (async () => {
+      try {
+        const { data } = await getMedicalRecords({ patientId: formData.patient_id });
+        if (cancelled || !data) return;
+        const prev = data
+          .filter(r => r.id !== recordId)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        setLatestRecord(prev || null);
+      } catch (err) {
+        console.error('Error fetching previous SOAP', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [formData.patient_id, recordId]);
+
   const handleCopySOAP = (record) => {
     if (!record) return;
     setAssessmentAuto(false);
@@ -522,16 +543,27 @@ if (isCreate) {
             )}
           </div>
         </div>
-        {formData.patient_id && isValidUUID(formData.patient_id) && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0 gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl text-xs"
-            onClick={() => setIsHistoryOpen(true)}
-          >
-            <History className="w-3.5 h-3.5" />
-            {isPWA ? 'Riwayat' : 'Lihat SOAP Sebelumnya'}
-          </Button>
+        {formData.patient_id && isValidUUID(formData.patient_id) && latestRecord && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-xl text-xs"
+              onClick={() => handleCopySOAP(latestRecord)}
+            >
+              <Copy className="w-3.5 h-3.5" />
+              {isPWA ? 'Salin' : 'Salin SOAP Terakhir'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl text-xs"
+              onClick={() => setIsHistoryOpen(true)}
+            >
+              <History className="w-3.5 h-3.5" />
+              {isPWA ? 'Riwayat' : 'Lihat SOAP Sebelumnya'}
+            </Button>
+          </div>
         )}
       </div>
 
