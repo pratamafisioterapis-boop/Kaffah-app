@@ -4,6 +4,7 @@ import { getTherapistRecaps, getTherapistFilledRecapIds } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { getTherapistPeriodRange } from '@/lib/utils';
 
 const TherapistPatientTypeDistribution = ({ therapist }) => {
   const [patientTypeStats, setPatientTypeStats] = useState({});
@@ -22,15 +23,8 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
     try {
       const now = new Date();
 
-      // Periode 28-27, sama seperti TherapistMetrics
-      let startPeriod, endPeriod;
-      if (now.getDate() >= 28) {
-        startPeriod = new Date(now.getFullYear(), now.getMonth(), 28);
-        endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 27);
-      } else {
-        startPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 28);
-        endPeriod = new Date(now.getFullYear(), now.getMonth(), 27);
-      }
+      // Periode sesuai pengaturan terapis, sama seperti TherapistMetrics
+      const { startDate: startPeriod, endDate: endPeriod } = getTherapistPeriodRange(therapist, now);
       const startCustom = format(startPeriod, 'yyyy-MM-dd');
       const endCustom = format(endPeriod, 'yyyy-MM-dd');
 
