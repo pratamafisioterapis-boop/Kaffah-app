@@ -304,6 +304,19 @@ const SuperAdminClinics = () => {
     }
   };
 
+  const setAssessmentMode = async (clinic, value) => {
+    const previous = clinic.assessment_mode || 'icf';
+    if (previous === value) return;
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, assessment_mode: value } : c)));
+    const { error } = await supabase.from('clinics').update({ assessment_mode: value }).eq('id', clinic.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah format Assessment', description: error.message });
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, assessment_mode: previous } : c)));
+    } else {
+      toast({ title: 'Format Assessment diperbarui' });
+    }
+  };
+
   const updateInvoiceSetting = async (clinic, patch) => {
     const previous = {};
     Object.keys(patch).forEach((k) => { previous[k] = clinic[k]; });
@@ -632,6 +645,35 @@ const SuperAdminClinics = () => {
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   Jika "Terapis": menu Rekam Medis muncul di dashboard terapis, admin hanya bisa melihat.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Format Assessment (SOAP)
+                </p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: 'icf', label: 'ICF (default)' },
+                    { value: 'diagnosis', label: 'Diagnosis' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setAssessmentMode(clinic, opt.value)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.assessment_mode || 'icf') === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  "ICF": Assessment disusun otomatis format ICF. "Diagnosis": Assessment berisi diagnosa fisioterapi yang dipilih.
                 </p>
               </div>
 

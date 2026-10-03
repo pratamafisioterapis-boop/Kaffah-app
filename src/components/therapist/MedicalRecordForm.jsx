@@ -23,6 +23,7 @@ import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHel
 import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { id } from 'date-fns/locale';
 
 const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
@@ -35,6 +36,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userDetails } = useAuth();
+  const { mode: assessmentMode } = useAssessmentMode();
+  const isDiagnosisMode = assessmentMode === 'diagnosis';
   
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
@@ -184,6 +187,13 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
 
   useEffect(() => {
     if (!assessmentAuto) return undefined;
+    if (isDiagnosisMode) {
+      const text = diagnosisLabels.length
+        ? `Diagnosis Fisioterapi:\n${diagnosisLabels.map((d, i) => `${i + 1}. ${d}`).join('\n')}`
+        : '';
+      setFormData((prev) => (prev.assessment === text ? prev : { ...prev, assessment: text }));
+      return undefined;
+    }
     const timer = setTimeout(() => {
       const input = { subjective: formData.subjective, objective: formData.objective, diagnoses: diagnosisLabels };
       const missing = icfCodesOf(analyzeIcf(input)).filter((c) => !(c in icfTitles));
@@ -194,7 +204,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
       setFormData((prev) => (prev.assessment === text ? prev : { ...prev, assessment: text }));
     }, 500);
     return () => clearTimeout(timer);
-  }, [assessmentAuto, formData.subjective, formData.objective, diagnosisLabels, icfTitles]);
+  }, [assessmentAuto, isDiagnosisMode, formData.subjective, formData.objective, diagnosisLabels, icfTitles]);
 
   useEffect(() => {
     const keys = diagnosisLabels.map((l) => String(l).trim().toLowerCase());
@@ -212,13 +222,13 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records' }) => {
     setFormData((prev) => (prev.education === text ? prev : { ...prev, education: text }));
   }, [educationAuto, diagnosisLabels, eduEntries, homeExercises]);
 
-  const canAutoAssess = !!(formData.subjective.trim() && formData.objective.trim());
+  const canAutoAssess = isDiagnosisMode ? diagnosisLabels.length > 0 : !!(formData.subjective.trim() && formData.objective.trim());
 
   const regenerateAssessment = () => {
     setAssessmentAuto(true);
     toast({
-      title: 'Assessment ICF disusun ulang',
-      description: 'Dibuat dari Subjective & Objective terbaru. Silakan cek dan sesuaikan.',
+      title: isDiagnosisMode ? 'Assessment diisi ulang' : 'Assessment ICF disusun ulang',
+      description: isDiagnosisMode ? 'Dibuat dari diagnosa terpilih. Silakan cek dan sesuaikan.' : 'Dibuat dari Subjective & Objective terbaru. Silakan cek dan sesuaikan.',
       className: 'bg-blue-50 border-blue-200 text-blue-800',
     });
   };
@@ -479,7 +489,7 @@ if (isCreate) {
   const soapFields = [
     { key: 'subjective',  label: 'Subjective',  short: 'S', placeholder: 'Keluhan pasien, riwayat penyakit...', accent: 'border-l-blue-400',    badge: 'bg-blue-500',    labelColor: 'text-blue-700'   },
     { key: 'objective',   label: 'Objective',   short: 'O', placeholder: 'Hasil observasi, pemeriksaan fisik, vital signs...', accent: 'border-l-teal-400',    badge: 'bg-teal-500',    labelColor: 'text-teal-700'   },
-    { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: 'Terisi otomatis (format ICF) setelah Subjective & Objective diisi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
+    { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: isDiagnosisMode ? 'Terisi otomatis dari diagnosa yang dipilih...' : 'Terisi otomatis (format ICF) setelah Subjective & Objective diisi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
     { key: 'plan',        label: 'Plan',        short: 'P', placeholder: 'Rencana terapi, edukasi, home program...', accent: 'border-l-rose-400',    badge: 'bg-rose-500',    labelColor: 'text-rose-700'   },
   ];
 
@@ -596,7 +606,7 @@ if (isCreate) {
                       <span className="ml-auto flex items-center gap-1.5">
                         {assessmentAuto ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
-                            <Sparkles className="h-3 w-3" /> Otomatis ICF
+                            <Sparkles className="h-3 w-3" /> {isDiagnosisMode ? 'Otomatis Diagnosis' : 'Otomatis ICF'}
                           </span>
                         ) : canAutoAssess && (
                           <button
@@ -604,7 +614,7 @@ if (isCreate) {
                             onClick={regenerateAssessment}
                             className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-violet-700 hover:bg-violet-50"
                           >
-                            <RefreshCw className="h-3 w-3" /> Susun ulang dari S & O
+                            <RefreshCw className="h-3 w-3" /> {isDiagnosisMode ? 'Isi ulang dari diagnosa' : 'Susun ulang dari S & O'}
                           </button>
                         )}
                       </span>
