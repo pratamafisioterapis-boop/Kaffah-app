@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   DURATION_UNITS,
   countProgress,
+  mergeVitalSections,
   parseTemplate,
   renderMergedTemplates,
   renderTemplate,
@@ -309,11 +310,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   // Vital sign milik pasien, bukan diagnosa: satu isian dipakai bersama semua tab diagnosa.
   const sharedVital = useMemo(() => {
     if (!isObjective) return null;
-    for (const t of templates) {
-      const sec = parseTemplate(t.template, variables)?.sections.find((s) => VITAL_RE.test(s.title));
-      if (sec) return sec;
-    }
-    return null;
+    return mergeVitalSections(
+      templates.map((t) => parseTemplate(t.template, variables)?.sections.find((s) => VITAL_RE.test(s.title)))
+    );
   }, [isObjective, templates, variables]);
   const [vitalValues, setVitalValues] = useState({});
   const setVitalValue = (id, v) =>
