@@ -567,7 +567,7 @@ const renderSections = (parsed, values) => {
       sentences: section.sentences
         .map((s) => {
           const text = renderSentence(s.tokens, values, { plain: section.layout === 'lines' });
-          return text && s.kind === 'bullet' ? `- ${text}` : text;
+          return text && section.layout === 'lines' ? `- ${text}` : text;
         })
         .filter(Boolean),
     }))
