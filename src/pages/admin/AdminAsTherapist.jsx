@@ -19,7 +19,7 @@ const TherapistSession = () => {
   }, [therapistId]);
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-blue-600" /></div>;
-  if (!therapist) return <p className="text-red-600">Terapis tidak ditemukan.</p>;
+  if (!therapist || !therapist.admin_soap_enabled) return <p className="text-red-600">Terapis tidak tersedia untuk mode admin.</p>;
 
   const basePath = `/admin/as-therapist/${therapistId}/records`;
   return (

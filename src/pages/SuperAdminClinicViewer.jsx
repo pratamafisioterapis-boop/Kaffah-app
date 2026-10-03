@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Eye, Building2, Users, Stethoscope, CalendarClock, Wallet, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 const TABS = [
   { key: 'ringkasan', label: 'Ringkasan' },
@@ -46,6 +47,15 @@ const SuperAdminClinicViewer = () => {
   const [stats, setStats] = useState(null);
   const [patients, setPatients] = useState([]);
   const [therapists, setTherapists] = useState([]);
+
+  const toggleAdminSoap = async (therapist, enabled) => {
+    setTherapists((prev) => prev.map((t) => (t.id === therapist.id ? { ...t, admin_soap_enabled: enabled } : t)));
+    const { error } = await supabase.from('physiotherapists').update({ admin_soap_enabled: enabled }).eq('id', therapist.id);
+    if (error) {
+      setTherapists((prev) => prev.map((t) => (t.id === therapist.id ? { ...t, admin_soap_enabled: !enabled } : t)));
+      toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message });
+    }
+  };
   const [todayAppointments, setTodayAppointments] = useState([]);
   const [recentRecaps, setRecentRecaps] = useState([]);
 
@@ -89,7 +99,7 @@ const SuperAdminClinicViewer = () => {
         supabase.from('patients').select('id', { count: 'exact', head: true }).eq('clinic_id', selectedClinicId),
         supabase
           .from('physiotherapists')
-          .select('id, name, phone, specialization, is_active')
+          .select('id, name, phone, specialization, is_active, user_id, admin_soap_enabled')
           .eq('clinic_id', selectedClinicId)
           .order('name', { ascending: true }),
         supabase
@@ -283,11 +293,12 @@ const SuperAdminClinicViewer = () => {
                         <th className="text-left px-4 py-2">Spesialisasi</th>
                         <th className="text-left px-4 py-2">Telepon</th>
                         <th className="text-left px-4 py-2">Status</th>
+                        <th className="text-left px-4 py-2">Isi SOAP via Admin</th>
                       </tr>
                     </thead>
                     <tbody>
                       {therapists.length === 0 ? (
-                        <tr><td colSpan={4} className="text-center py-8 text-slate-400">Belum ada terapis.</td></tr>
+                        <tr><td colSpan={5} className="text-center py-8 text-slate-400">Belum ada terapis.</td></tr>
                       ) : therapists.map((t) => (
                         <tr key={t.id} className="border-t border-slate-100">
                           <td className="px-4 py-2 font-medium text-slate-700">{t.name}</td>
@@ -297,6 +308,14 @@ const SuperAdminClinicViewer = () => {
                             <span className={cn('text-xs px-2 py-0.5 rounded-full', t.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500')}>
                               {t.is_active ? 'Aktif' : 'Nonaktif'}
                             </span>
+                          </td>
+                          <td className="px-4 py-2">
+                            <Switch
+                              checked={!!t.admin_soap_enabled}
+                              disabled={!t.user_id}
+                              onCheckedChange={(v) => toggleAdminSoap(t, v)}
+                              aria-label={`Izinkan admin mengisi SOAP untuk ${t.name}`}
+                            />
                           </td>
                         </tr>
                       ))}

@@ -28,6 +28,7 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
       .select('id, name, email')
       .eq('clinic_id', clinicId)
       .eq('is_active', true)
+      .eq('admin_soap_enabled', true)
       .not('user_id', 'is', null)
       .order('name')
       .then(({ data }) => {
@@ -112,7 +113,7 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
             {loading ? (
               <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-[#1677D2]" /></div>
             ) : therapists.length === 0 ? (
-              <p className="text-xs text-[#5B6B7D] text-center py-6">Tidak ada terapis.</p>
+              <p className="text-xs text-[#5B6B7D] text-center py-6">Belum ada terapis yang diaktifkan oleh Super Admin.</p>
             ) : (
               <div>
                 <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#5B6B7D]">Terapis</p>
