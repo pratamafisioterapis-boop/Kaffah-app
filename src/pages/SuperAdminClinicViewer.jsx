@@ -117,7 +117,7 @@ const SuperAdminClinicViewer = () => {
           .order('appointment_date', { ascending: true }),
         supabase
           .from('daily_recaps')
-          .select('id, recap_date, amount, patient:patients(full_name), therapist:physiotherapists(name)')
+          .select('id, recap_date, amount, patient:patients!patient_id(full_name), therapist:physiotherapists(name)')
           .eq('clinic_id', selectedClinicId)
           .order('recap_date', { ascending: false })
           .limit(50),
