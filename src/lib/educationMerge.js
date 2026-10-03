@@ -79,6 +79,21 @@ const sentenceBlock = (entries, field) => {
 
 const bullets = (items) => items.map((i) => `• ${i}`);
 
+// Template "Saran dan Rekomendasi": poin-poin "- ..." per diagnosa. Poin yang sama atau mirip
+// antar diagnosa hanya tampil sekali; kalimat penutup (hubungi terapis/dokter) dipindah ke akhir.
+const CLOSING_RE = /^(informasikan|apabila|segera|bila|jika|hubungi)\b|hubungi|segera/i;
+
+export const buildAdviceText = (entries) => {
+  const lines = (entries || [])
+    .flatMap((e) => String(e.advice || '').split('\n'))
+    .map((l) => l.replace(/^-\s*/, '').trim())
+    .filter(Boolean);
+  const merged = mergeLists([lines]);
+  const body = merged.filter((l) => !CLOSING_RE.test(l));
+  const closing = merged.filter((l) => CLOSING_RE.test(l));
+  return [...body, ...closing].map((l) => `- ${l}`).join('\n');
+};
+
 /**
  * entries: [{ name, what, cause, recovery, do: [], avoid: [], red: [] }]
  * homeExercises: ["Nama latihan (dosis)", ...] yang dicentang pada Plan (opsional)
@@ -86,6 +101,8 @@ const bullets = (items) => items.map((i) => `• ${i}`);
 export const buildEducationText = (entries, homeExercises = []) => {
   const list = (entries || []).filter(Boolean);
   if (!list.length) return '';
+  // Template baru (saran dan rekomendasi) dipakai bila tersedia; format lama sebagai cadangan.
+  if (list.some((e) => String(e.advice || '').trim())) return buildAdviceText(list.filter((e) => e.advice));
   const names = list.map((e) => e.name);
   const lines = [list.length === 1 ? `EDUKASI PASIEN - ${names[0]}` : 'EDUKASI PASIEN'];
   if (list.length > 1) lines.push('', `Kondisi yang Anda alami: ${names.join('; ')}.`);
