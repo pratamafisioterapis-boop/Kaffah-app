@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getServiceOptions, getDiagnosisOptions, createOperationalOption } from '@/lib/api';
 
 // Diagnosa picker backed by the operational_options 'diagnosa' catalog. Every
@@ -17,6 +18,8 @@ import { getServiceOptions, getDiagnosisOptions, createOperationalOption } from 
 // Layanan field on the main form.
 const DiagnosisServiceField = ({ diagnosaId, onChange, multiple = false }) => {
   const { toast } = useToast();
+  const { role } = useAuth();
+  const canCreate = role === 'owner'; // diagnosa baru hanya boleh ditambah owner
   const [services, setServices] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
   const [pendingLabel, setPendingLabel] = useState(null);
@@ -32,6 +35,7 @@ const DiagnosisServiceField = ({ diagnosaId, onChange, multiple = false }) => {
   }, []);
 
   const handleRequestCreate = async (label) => {
+    if (!canCreate) return false;
     setPendingLabel(label);
     setPendingServiceId('');
     return true; // close the select's own dropdown; the dialog takes over
@@ -89,9 +93,9 @@ const DiagnosisServiceField = ({ diagnosaId, onChange, multiple = false }) => {
               onChange({ diagnosaId: val, diagnosaLabel: opt?.label || '' });
             }
           }}
-          allowCreate
+          allowCreate={canCreate}
           onCreateOption={handleRequestCreate}
-          placeholder="Cari atau tambah diagnosa..."
+          placeholder={canCreate ? 'Cari atau tambah diagnosa...' : 'Cari diagnosa...'}
         />
       </div>
 

@@ -621,7 +621,8 @@ if (isCreate) {
                 onChange={setDiagnosis}
                 rankOptions={rankDiagnosisOptions}
                 multiple={true}
-                allowCreate={true}
+                allowCreate={false}
+                notFoundText="Diagnosa tidak ditemukan. Hubungi owner untuk menambahkan."
                 placeholder="Pilih diagnosa..."
               />
               <p className="text-[11px] text-slate-400 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
