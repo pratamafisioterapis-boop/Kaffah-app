@@ -617,6 +617,40 @@ const mergeSimilar = (texts, { end = '.', other = 'keluhan lainnya' } = {}) => {
   return rest.length ? `${head}, sedangkan pada ${other} ${rest.join(', serta ')}${end}` : `${head}${end}`;
 };
 
+// Pengukuran luaran: "NPRS 7/10 | WOMAC 20" dari tiap diagnosa dipecah per alat ukur lalu disatukan;
+// alat ukur yang sama hanya ditulis sekali (nilai berbeda digabung dengan "dan").
+const measureName = (item) => {
+  const kv = item.indexOf(' : ');
+  if (kv > 0) return { name: item.slice(0, kv), value: item.slice(kv + 3) };
+  const words = item.split(/\s+/);
+  let i = 1;
+  while (i < words.length && !/[\d(:]/.test(words[i])) i += 1;
+  return { name: words.slice(0, i).join(' '), value: words.slice(i).join(' ') };
+};
+
+const mergeMeasures = (sentences) => {
+  const order = [];
+  const byName = new Map();
+  let period = false;
+  sentences.forEach((sentence) => {
+    const text = sentence.replace(/^- /, '');
+    if (/\.$/.test(text)) period = true;
+    stripEnd(text).split(/\s*\|\s*/).filter(Boolean).forEach((item) => {
+      const { name, value } = measureName(item);
+      const key = name.toLowerCase();
+      if (!byName.has(key)) { byName.set(key, { name, values: [], raw: item }); order.push(key); }
+      const entry = byName.get(key);
+      if (value && !entry.values.includes(value)) entry.values.push(value);
+    });
+  });
+  const items = order.map((k) => {
+    const e = byName.get(k);
+    if (!e.values.length) return e.raw;
+    return `${e.name}${e.raw.includes(' : ') ? ' : ' : ' '}${joinList(e.values)}`;
+  });
+  return [`${items.join(' | ')}${period ? '.' : ''}`];
+};
+
 const mergeNarrative = (sentences, opts = {}) => {
   const groups = new Map();
   sentences.forEach((sentence) => {
@@ -657,7 +691,9 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
   });
   const sections = order.map((k) => {
     const sec = byTitle.get(k);
-    if (sec.layout === 'lines') {
+    if (/^pengukuran/i.test(sec.title)) {
+      sec.sentences = mergeMeasures(sec.sentences).map((t) => (sec.layout === 'lines' ? `- ${t}` : t));
+    } else if (sec.layout === 'lines') {
       // Daftar pemeriksaan: awalan "- " dilepas saat digabung lalu dipasang kembali.
       sec.sentences = mergeNarrative(sec.sentences.map((t) => t.replace(/^- /, '')), { end: '', words: 1, other: 'diagnosa lainnya' }).map((t) => `- ${t}`);
     } else {
