@@ -708,6 +708,42 @@ export const renderMergedTemplates = (entries, { inline = false } = {}) => {
 // ID klinik Kaffah: S & O terisi otomatis dari template begitu diagnosa dipilih.
 export const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
 
+// Vital sign milik pasien, bukan diagnosa: gabungkan bagian Vital Sign dari semua template menjadi satu.
+// Item (TD, Nadi, RR, SpO2, Suhu, ...) dipecah per "|"; item bernama sama hanya muncul sekali.
+export const mergeVitalSections = (sections) => {
+  const list = sections.filter(Boolean);
+  if (list.length <= 1) return list[0] || null;
+  const items = new Map();
+  list.forEach((section, si) => {
+    section.sentences.forEach((sentence) => {
+      let cur = [];
+      const flush = () => {
+        const lead = cur.filter((t) => t.t === 'text').map((t) => t.v).join('').trim();
+        const key = (lead.match(/[A-Za-z0-9]+/) || [`item${items.size}`])[0].toLowerCase();
+        if (cur.length && !items.has(key)) {
+          items.set(key, cur.map((t) => (t.id ? { ...t, id: si === 0 ? t.id : `vm${si}_${t.id}` } : t)));
+        }
+        cur = [];
+      };
+      sentence.tokens.forEach((tok) => {
+        if (tok.t !== 'text' || !tok.v.includes('|')) { cur.push(tok); return; }
+        const parts = tok.v.split('|');
+        parts.forEach((part, i) => {
+          if (i > 0) flush();
+          if (part) cur.push({ ...tok, v: part });
+        });
+      });
+      flush();
+    });
+  });
+  const base = list[0];
+  if (base.layout === 'lines') {
+    return { ...base, sentences: [...items.values()].map((tokens) => ({ kind: 'kv', tokens })) };
+  }
+  const tokens = [...items.values()].flatMap((it, i) => (i === 0 ? it : [{ t: 'text', v: ' | ' }, ...it]));
+  return { ...base, sentences: [{ tokens }] };
+};
+
 // Jumlah isian yang sudah terisi / total (indikator progres).
 export const countProgress = (parsed, values) => {
   let filled = 0;
