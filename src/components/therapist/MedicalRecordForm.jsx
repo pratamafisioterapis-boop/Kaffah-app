@@ -12,6 +12,7 @@ import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMed
 import { generateIcfAssessment, analyzeIcf, icfCodesOf } from '@/lib/icfAssessment';
 import { buildEducationText } from '@/lib/educationMerge';
 import { formatOnsetDuration, classifyOnsetPhase, deriveOnsetFromSubjective, refreshOnsetInSubjective } from '@/lib/onsetHelpers';
+import { KAFFAH_CLINIC_ID, renderSkeletonTemplates } from '@/lib/subjectiveTemplate';
 import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
@@ -55,6 +56,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [assessmentAuto, setAssessmentAuto] = useState(true);
   // Edukasi pasien: disusun dari template semua diagnosa terpilih, selama belum diedit manual.
   const [educationAuto, setEducationAuto] = useState(true);
+  // Klinik Kaffah: S & O terisi otomatis dari template diagnosa, selama belum diedit manual.
+  const [soAuto, setSoAuto] = useState({ subjective: true, objective: true });
   const [eduEntries, setEduEntries] = useState({});
   const [homeExercises, setHomeExercises] = useState([]);
   const [formData, setFormData] = useState({
@@ -175,6 +178,26 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     .map((d) => (templateCache[d]?.objective ? { key: d, label: templateCache[d].label, template: templateCache[d].objective } : null))
     .filter(Boolean);
 
+  const isKaffahClinic = (userDetails?.clinic_id || therapist?.clinic_id) === KAFFAH_CLINIC_ID;
+  const subjectiveSkeleton = useMemo(
+    () => (isKaffahClinic ? renderSkeletonTemplates(subjectiveTemplates.map((t) => t.template), templateVariables) : ''),
+    [isKaffahClinic, subjectiveTemplates, templateVariables]
+  );
+  const objectiveSkeleton = useMemo(
+    () => (isKaffahClinic ? renderSkeletonTemplates(objectiveTemplates.map((t) => t.template), templateVariables, { inline: true }) : ''),
+    [isKaffahClinic, objectiveTemplates, templateVariables]
+  );
+
+  useEffect(() => {
+    if (!isKaffahClinic) return;
+    setFormData((prev) => {
+      const next = { ...prev };
+      if (soAuto.subjective && diagnosis.length > 0 && subjectiveSkeleton) next.subjective = subjectiveSkeleton;
+      if (soAuto.objective && diagnosis.length > 0 && objectiveSkeleton) next.objective = objectiveSkeleton;
+      return next.subjective === prev.subjective && next.objective === prev.objective ? prev : next;
+    });
+  }, [isKaffahClinic, soAuto, diagnosis.length, subjectiveSkeleton, objectiveSkeleton]);
+
   const diagnosisLabels = useMemo(() => diagnosis
     .map((d) => {
       const opt = diagnosisOptions.find((o) => o.id === d || o.value === d);
@@ -234,6 +257,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   };
 
   const handleApplyTemplate = (field) => (text, { replace }) => {
+    setSoAuto((prev) => ({ ...prev, [field]: false }));
     setFormData((prev) => {
       const existing = (prev[field] || '').trim();
       return { ...prev, [field]: replace || !existing ? text : `${existing}\n\n${text}` };
@@ -266,6 +290,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     // Assessment yang sudah ada dianggap hasil edit terapis: jangan ditimpa otomatis.
     setAssessmentAuto(!(data.assessment || '').trim());
     setEducationAuto(!(data.education || '').trim());
+    setSoAuto({ subjective: !(data.subjective || '').trim(), objective: !(data.objective || '').trim() });
 
     // Isi form SOAP
     setFormData({
@@ -691,6 +716,7 @@ if (isCreate) {
                     value={formData[field.key]}
                     onChange={e => {
                       if (field.key === 'assessment') setAssessmentAuto(false);
+                      if (field.key === 'subjective' || field.key === 'objective') setSoAuto((prev) => ({ ...prev, [field.key]: false }));
                       setFormData({...formData, [field.key]: e.target.value});
                     }}
                     required
