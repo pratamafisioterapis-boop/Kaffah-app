@@ -22,6 +22,9 @@ const STALE_CHUNK_RE = new RegExp(
     'not a valid javascript mime type',
     'expected a javascript.*module script',
     "cannot access '.*' before initialization",
+    // React.lazy menerima modul kosong saat chunk lama/baru tidak cocok
+    // setelah deploy beruntun: "Cannot read properties of undefined (reading 'default')".
+    "undefined \\(reading 'default'\\)",
   ].join('|'),
   'i'
 );
