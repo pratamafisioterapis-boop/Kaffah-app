@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Bell, X, User as UserIcon,
   Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon,
@@ -8,6 +8,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import OwnerAccountSwitcher from '@/components/owner/OwnerAccountSwitcher';
+import AdminTherapistSwitcher from '@/components/admin/AdminTherapistSwitcher';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -220,6 +221,7 @@ async function loadDetailData(type, id) {
 }
 
 const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
+  const topbarLocation = useLocation();
   const navigate = useNavigate();
   const { impersonationOrigin } = useAuth();
   const ownerOrigin = impersonationOrigin?.origin_role === 'owner' ? impersonationOrigin : null;
@@ -697,6 +699,10 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
         {(role === 'owner' || ownerOrigin) && (
           <OwnerAccountSwitcher clinicId={ownerOrigin?.origin_clinic_id || clinicId} />
+        )}
+
+        {!ownerOrigin && (role === 'admin' || topbarLocation.pathname.startsWith('/admin/as-therapist')) && (
+          <AdminTherapistSwitcher clinicId={clinicId} />
         )}
 
         <div className="relative flex-shrink-0" ref={bellRef}>
