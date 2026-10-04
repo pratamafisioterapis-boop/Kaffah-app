@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -59,6 +59,7 @@ const AdminAppointmentBooking = () => {
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
+  const fetchSeqRef = useRef(0);
   const [activeModal, setActiveModal] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 const [patientHistory, setPatientHistory] = useState([]);
@@ -174,6 +175,11 @@ const formattedDateFull = date
 
     setError(null);
 
+    // Realtime event, polling, dan handleSuccess bisa memicu beberapa fetch
+    // bersamaan. Hanya hasil fetch terbaru yang boleh dipakai, kalau tidak
+    // booking baru bisa tampil sementara slot kosongnya masih data lama.
+    const seq = ++fetchSeqRef.current;
+
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
@@ -186,10 +192,10 @@ const formattedDateFull = date
 
       // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
       // Pasien lama = sudah punya patient_id.
-      setAppointments(rawApps.map(a => ({
+      const mappedApps = rawApps.map(a => ({
         ...a,
         is_new_patient: !a.patient_id
-      })));
+      }));
 
       const { data: slots } = await getAvailableSlots(dateStr);
 
@@ -265,6 +271,9 @@ const formattedDateFull = date
         reasonMap[row.therapist_id] = label;
       });
 
+      if (seq !== fetchSeqRef.current) return;
+
+      setAppointments(mappedApps);
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
