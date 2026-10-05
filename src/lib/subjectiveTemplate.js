@@ -744,6 +744,41 @@ export const mergeVitalSections = (sections) => {
   return { ...base, sentences: [{ tokens }] };
 };
 
+// Nilai normal dewasa untuk tombol "Normal" di Vital Sign. TD berulang (mis. duduk/berdiri) diputar ulang.
+const NORMAL_VITALS = [
+  { re: /\b(td|tekanan darah)\b/i, values: ['120', '80'], cycle: true },
+  { re: /\b(nadi|hr)\b/i, values: ['80'] },
+  { re: /\brr\b/i, values: ['20'] },
+  { re: /spo2/i, values: ['98'] },
+  { re: /suhu/i, values: ['36.5'] },
+];
+
+// Isian normal untuk semua slot vital yang dikenali; slot lain (BB/TB, persentil, dll) dibiarkan kosong.
+export const normalVitalValues = (section) => {
+  const out = {};
+  let rule = null;
+  let idx = 0;
+  section?.sentences.forEach((sentence) => {
+    rule = null;
+    sentence.tokens.forEach((tok) => {
+      if (tok.t === 'text') {
+        const hit = NORMAL_VITALS.find((r) => r.re.test(tok.v));
+        if (hit && hit !== rule) { rule = hit; idx = 0; }
+        return;
+      }
+      if (!rule) return;
+      if (tok.t === 'free') {
+        const v = rule.cycle ? rule.values[idx % rule.values.length] : rule.values[idx];
+        idx += 1;
+        if (v !== undefined) out[tok.id] = v;
+      } else if (tok.t === 'choice' && tok.options.includes('udara ruangan')) {
+        out[tok.id] = ['udara ruangan'];
+      }
+    });
+  });
+  return out;
+};
+
 // Jumlah isian yang sudah terisi / total (indikator progres).
 export const countProgress = (parsed, values) => {
   let filled = 0;

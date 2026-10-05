@@ -8,6 +8,7 @@ import {
   DURATION_UNITS,
   countProgress,
   mergeVitalSections,
+  normalVitalValues,
   parseTemplate,
   renderMergedTemplates,
   renderTemplate,
@@ -506,9 +507,20 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
             ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                {(section.title || shared) && <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
-                  {section.title}
-                  {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
+                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+                  <span>
+                    {section.title}
+                    {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
+                  </span>
+                  {shared === 'vital' && (
+                    <button
+                      type="button"
+                      onClick={() => setVitalValues((prev) => ({ ...prev, ...normalVitalValues(sharedVital) }))}
+                      className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Normal
+                    </button>
+                  )}
                 </div>}
                 {(() => {
                   const store = shared === 'vital' ? vitalValues : shared === 'common' ? sharedValues : values;
