@@ -1095,8 +1095,11 @@ setFormData({
     }).filter(Boolean)
   : undefined,
                 amount: parseFloat(formData.amount) || 0,
-                discount_value: parseFloat(formData.discount_value) || 0,
+                // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
+                // supaya diskon lama benar-benar terhapus di DB dan invoice.
+                discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
                 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
+                discount_label: formData.discount_type === 'none' ? null : (formData.discount_label || null),
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
                 // FIX: saat edit, pertahankan package_tracking_id ASLI recap ini
@@ -1386,6 +1389,11 @@ setFormData({
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
                                         <SearchableSelect options={discountTypeOptions} value={formData.discount_label} onChange={v => {
+                                            // Dihapus (tombol X): reset seluruh diskon
+                                            if (!v) {
+                                                setFormData(prev => ({ ...prev, discount_label: '', discount_type: 'none', discount_value: 0 }));
+                                                return;
+                                            }
                                             const selected = discountTypeOptions.find(d => d.value === v);
                                             // `v` is either an existing option's id (uuid) or, when created via
                                             // "Buat ..." (allowCreate), the freshly typed label text. If it looks
@@ -1404,7 +1412,10 @@ setFormData({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
-                                            <Select value={formData.discount_type} onValueChange={v => handleChange('discount_type', v)}>
+                                            <Select value={formData.discount_type} onValueChange={v => {
+                                                if (v === 'none') setFormData(prev => ({ ...prev, discount_type: 'none', discount_value: 0, discount_label: '' }));
+                                                else handleChange('discount_type', v);
+                                            }}>
                                                 <SelectTrigger className="h-9 text-xs bg-white"><SelectValue/></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="none">Tidak ada</SelectItem>
