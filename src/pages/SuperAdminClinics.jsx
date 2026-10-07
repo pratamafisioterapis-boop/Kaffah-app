@@ -317,6 +317,19 @@ const SuperAdminClinics = () => {
     }
   };
 
+  const setTherapistSoapTemplateEdit = async (clinic, value) => {
+    const previous = clinic.therapist_soap_template_edit_enabled === true;
+    if (previous === value) return;
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, therapist_soap_template_edit_enabled: value } : c)));
+    const { error } = await supabase.from('clinics').update({ therapist_soap_template_edit_enabled: value }).eq('id', clinic.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah fitur edit template SOAP', description: error.message });
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, therapist_soap_template_edit_enabled: previous } : c)));
+    } else {
+      toast({ title: value ? 'Edit template SOAP oleh terapis diaktifkan' : 'Edit template SOAP oleh terapis dinonaktifkan' });
+    }
+  };
+
   const updateInvoiceSetting = async (clinic, patch) => {
     const previous = {};
     Object.keys(patch).forEach((k) => { previous[k] = clinic[k]; });
@@ -674,6 +687,35 @@ const SuperAdminClinics = () => {
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   "ICF": Assessment disusun otomatis format ICF. "Diagnosis": Assessment berisi diagnosa fisioterapi yang dipilih.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Edit Template SOAP oleh Terapis
+                </p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: false, label: 'Nonaktif (default)' },
+                    { value: true, label: 'Aktif' },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => setTherapistSoapTemplateEdit(clinic, opt.value)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.therapist_soap_template_edit_enabled === true) === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  Jika "Aktif": terapis klinik ini punya menu Template SOAP untuk mengajukan perubahan template. Perubahan baru berlaku setelah disetujui owner.
                 </p>
               </div>
 
