@@ -130,3 +130,55 @@ $$;
 
 REVOKE ALL ON FUNCTION public.review_soap_template_request(uuid, boolean, text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.review_soap_template_request(uuid, boolean, text) TO authenticated;
+
+-- Push notifikasi ke owner klinik saat ada pengajuan baru (atau pengajuan
+-- pending yang direvisi terapis). Memakai edge function send-push-notification
+-- seperti notifikasi SOAP owner lainnya; gagal kirim tidak membatalkan pengajuan.
+CREATE OR REPLACE FUNCTION public.notify_owner_soap_template_request()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_owner RECORD;
+  v_diagnosis text;
+  v_requester text;
+BEGIN
+  IF NEW.status <> 'pending' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT label INTO v_diagnosis FROM public.operational_options WHERE id = NEW.diagnosis_id;
+  v_requester := COALESCE(NULLIF(NEW.requested_by_name, ''), 'Terapis');
+
+  FOR v_owner IN
+    SELECT u.id FROM public.users u
+    WHERE u.role = 'owner' AND u.clinic_id = NEW.clinic_id
+  LOOP
+    BEGIN
+      PERFORM net.http_post(
+        url := 'https://dqkejdamagvlhqvxaqej.supabase.co/functions/v1/send-push-notification',
+        headers := '{"Content-Type": "application/json"}'::jsonb,
+        body := jsonb_build_object(
+          'user_id', v_owner.id,
+          'title', '📝 Pengajuan Template SOAP',
+          'body', v_requester || ' mengajukan perubahan template '
+            || CASE WHEN NEW.field = 'objective_template' THEN 'Objective' ELSE 'Subjective' END
+            || ' untuk ' || COALESCE(v_diagnosis, 'diagnosa') || '. Menunggu persetujuan Anda.',
+          'url', '/owner/settings'
+        )
+      );
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_owner_soap_template_request ON public.soap_template_change_requests;
+CREATE TRIGGER trg_notify_owner_soap_template_request
+  AFTER INSERT OR UPDATE OF proposed_template ON public.soap_template_change_requests
+  FOR EACH ROW EXECUTE FUNCTION public.notify_owner_soap_template_request();
