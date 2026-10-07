@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
-  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle, FolderClock
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle, FolderClock, Crown
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
 import MouManagerModal from '@/components/owner/MouManagerModal';
@@ -196,6 +196,31 @@ const TherapistManager = () => {
       toast({
         title: newValue ? "Remunerasi Diaktifkan" : "Remunerasi Dinonaktifkan",
         description: `Status remunerasi ${therapist.name} telah diperbarui.`
+      });
+    }
+  };
+
+  const toggleHeadTherapist = async (therapist) => {
+    const newValue = !therapist.is_head_therapist;
+
+    setTherapists(prev => prev.map(t =>
+      t.id === therapist.id ? { ...t, is_head_therapist: newValue } : t
+    ));
+
+    const { error } = await supabase
+      .from('physiotherapists')
+      .update({ is_head_therapist: newValue })
+      .eq('id', therapist.id);
+
+    if (error) {
+      setTherapists(prev => prev.map(t =>
+        t.id === therapist.id ? { ...t, is_head_therapist: !newValue } : t
+      ));
+      toast({ variant: "destructive", title: "Gagal Update Terapis Kepala", description: error.message });
+    } else {
+      toast({
+        title: newValue ? "Dijadikan Terapis Kepala" : "Terapis Kepala Dicabut",
+        description: `${therapist.name} ${newValue ? 'sekarang menjadi terapis kepala.' : 'bukan lagi terapis kepala.'}`
       });
     }
   };
@@ -700,6 +725,19 @@ const headerColorMap = {
                     )}
                   >
                     <Award className="w-2.5 h-2.5" /> {therapist.remuneration_enabled ? 'Remunerasi Aktif' : 'Remunerasi Nonaktif'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleHeadTherapist(therapist)}
+                    title="Klik untuk menjadikan/mencabut status terapis kepala"
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                      therapist.is_head_therapist
+                        ? "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                        : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                    )}
+                  >
+                    <Crown className="w-2.5 h-2.5" /> {therapist.is_head_therapist ? 'Terapis Kepala' : 'Jadikan Terapis Kepala'}
                   </button>
                 </div>
 
