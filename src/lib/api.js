@@ -1432,6 +1432,50 @@ export const reviewSoapTemplateRequest = async (id, approve, note = null) => {
   return { error };
 };
 
+// ── Pengajuan izin terapis (disetujui owner / terapis kepala) ──
+const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at';
+
+// RLS yang membatasi baris: terapis hanya melihat miliknya, owner / terapis kepala
+// melihat seluruh pengajuan klinik.
+export const getLeaveRequests = async ({ status } = {}) => {
+  let query = supabase
+    .from('therapist_leave_requests')
+    .select(LEAVE_REQUEST_COLUMNS)
+    .order('leave_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
+
+export const submitLeaveRequest = async ({ therapistId, therapistName, leaveDate, isPartial, startTime, endTime, leaveType, notes, replacementShifts }) => {
+  const { error } = await supabase.from('therapist_leave_requests').insert({
+    therapist_id: therapistId,
+    therapist_name: therapistName || null,
+    leave_date: leaveDate,
+    is_partial: !!isPartial,
+    start_time: isPartial ? startTime : null,
+    end_time: isPartial ? endTime : null,
+    leave_type: leaveType || 'personal',
+    notes: notes && notes.trim() ? notes.trim() : null,
+    replacement_shifts: replacementShifts,
+  });
+  return { error };
+};
+
+export const cancelLeaveRequest = async (id) => {
+  const { error } = await supabase.from('therapist_leave_requests').delete().eq('id', id).eq('status', 'pending');
+  return { error };
+};
+
+export const reviewLeaveRequest = async (id, approve, note = null) => {
+  const { error } = await supabase.rpc('review_therapist_leave_request', {
+    p_request_id: id, p_approve: approve, p_note: note,
+  });
+  return { error };
+};
+
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);
