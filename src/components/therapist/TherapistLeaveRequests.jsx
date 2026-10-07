@@ -52,7 +52,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
     const counts = {};
     schedules.forEach((s) => {
       const m = timeToMinutes(s.end_time) - timeToMinutes(s.start_time);
-      if (m >= 5 && m <= 480) counts[m] = (counts[m] || 0) + 1;
+      if (m >= 5 && m <= 180) counts[m] = (counts[m] || 0) + 1;
     });
     const best = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
     return best ? Number(best[0]) : 60;

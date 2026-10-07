@@ -55,6 +55,7 @@ $$;
 -- Durasi slot "kebiasaan" klinik: satu baris therapist_schedules = satu slot, jadi
 -- ambil durasi yang paling sering dipakai pada jadwal mingguan terapis itu;
 -- jika terapis belum punya jadwal, pakai kebiasaan klinik; terakhir 60 menit.
+-- Hanya baris <= 180 menit yang dianggap slot (baris 6-8 jam adalah shift panjang).
 CREATE OR REPLACE FUNCTION public.habitual_slot_minutes(p_therapist_id uuid)
 RETURNS integer
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
@@ -65,14 +66,14 @@ AS $$
        FROM therapist_schedules ts
        WHERE ts.therapist_id = p_therapist_id AND ts.is_active
          AND ts.end_time > ts.start_time) x
-     WHERE m BETWEEN 5 AND 480),
+     WHERE m BETWEEN 5 AND 180),
     (SELECT mode() WITHIN GROUP (ORDER BY m) FROM (
        SELECT (extract(epoch from (ts.end_time - ts.start_time)) / 60)::int AS m
        FROM therapist_schedules ts
        JOIN physiotherapists p ON p.id = ts.therapist_id
        WHERE p.clinic_id = (SELECT clinic_id FROM physiotherapists WHERE id = p_therapist_id)
          AND ts.is_active AND ts.end_time > ts.start_time) y
-     WHERE m BETWEEN 5 AND 480),
+     WHERE m BETWEEN 5 AND 180),
     60
   );
 $$;
@@ -82,6 +83,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.generate_extra_shift_slots(p_date date, p_therapist_id uuid)
 RETURNS void
 LANGUAGE plpgsql
+SET search_path = public
 AS $function$
 DECLARE
   v_shift record;
@@ -465,5 +467,14 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) TO authenticated;
+
+-- 9) Hak akses: fungsi SECURITY DEFINER baru tidak boleh dipanggil anon lewat API.
+REVOKE EXECUTE ON FUNCTION public.time_off_blocks_slot(uuid, date, time, time) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.habitual_slot_minutes(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.time_off_blocks_slot(uuid, date, time, time) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.habitual_slot_minutes(uuid) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.handle_extra_shift_change() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_time_off_change() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_leave_request() FROM PUBLIC, anon, authenticated;

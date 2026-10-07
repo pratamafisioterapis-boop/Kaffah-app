@@ -6,8 +6,8 @@
 --    otomatis aktif untuk klinik bernama "Kaffah"). Super Admin dapat mengubahnya.
 -- 2) therapist_leave_requests: antrean pengajuan. Baris therapist_time_off baru
 --    dibuat setelah disetujui lewat RPC review_therapist_leave_request.
---    Jadwal pengganti disimpan di replacement_shifts dan dipantau oleh reviewer;
---    jadwal mingguan / override tidak diubah otomatis.
+--    Jadwal pengganti disimpan di replacement_shifts; slot booking diubah saat
+--    persetujuan oleh migrasi 20261008110000 (versi akhir RPC ada di sana).
 
 ALTER TABLE public.clinics
   ADD COLUMN IF NOT EXISTS therapist_leave_request_enabled boolean NOT NULL DEFAULT false;
@@ -65,7 +65,7 @@ AS $$
       AND p.clinic_id = p_clinic_id
   );
 $$;
-REVOKE ALL ON FUNCTION public.is_my_clinic_head_therapist(uuid) FROM public, anon;
+REVOKE ALL ON FUNCTION public.is_my_clinic_head_therapist(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_my_clinic_head_therapist(uuid) TO authenticated;
 
 DROP POLICY IF EXISTS "leave_requests_select" ON public.therapist_leave_requests;
@@ -173,7 +173,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.review_therapist_leave_request(uuid, boolean, text) TO authenticated;
 
 -- Jika izin yang sudah disetujui dibatalkan lewat penghapusan time_off oleh
