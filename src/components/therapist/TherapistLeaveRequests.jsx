@@ -47,6 +47,17 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
     return map;
   }, [schedules]);
 
+  // Sama dengan habitual_slot_minutes di database: durasi baris jadwal mingguan yang paling sering.
+  const slotMinutes = useMemo(() => {
+    const counts = {};
+    schedules.forEach((s) => {
+      const m = timeToMinutes(s.end_time) - timeToMinutes(s.start_time);
+      if (m >= 5 && m <= 480) counts[m] = (counts[m] || 0) + 1;
+    });
+    const best = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+    return best ? Number(best[0]) : 60;
+  }, [schedules]);
+
   const scheduleOn = useCallback((dateStr) => schedulesByDow[parseISO(dateStr).getDay()] || [], [schedulesByDow]);
   const scheduleLabel = (list) => (list.length
     ? list.map((s) => `${hhmm(s.start_time)}–${hhmm(s.end_time)}`).join(', ')
@@ -106,6 +117,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
     if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
+    if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
     return null;
   })();
 
@@ -296,7 +308,18 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
                     <Input type="time" aria-label="Jam selesai pengganti" value={shift.end_time} onChange={(e) => updateShift(shift.date, { end_time: e.target.value })} />
                   </div>
                   {err && <p className="text-xs text-red-600 mt-2 flex items-start gap-1"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{err}</p>}
-                  {!err && <p className="text-[11px] text-blue-700 mt-1.5">Durasi {formatDuration(shiftMinutes(shift))}</p>}
+                  {!err && (() => {
+                    const total = shiftMinutes(shift);
+                    const count = Math.floor(total / slotMinutes);
+                    const leftover = total - count * slotMinutes;
+                    return (
+                      <p className={cn('text-[11px] mt-1.5', count === 0 || leftover ? 'text-amber-700' : 'text-blue-700')}>
+                        Durasi {formatDuration(total)} → {count} slot booking @ {slotMinutes} menit
+                        {count === 0 && ' — terlalu pendek untuk satu slot'}
+                        {count > 0 && leftover > 0 && ` (sisa ${formatDuration(leftover)} tidak jadi slot)`}
+                      </p>
+                    );
+                  })()}
                 </div>
               );
             })}

@@ -52,7 +52,32 @@ AS $$
   );
 $$;
 
--- Slot tambahan hari itu (dipotong per slot_duration_minutes), dilewati bila
+-- Durasi slot "kebiasaan" klinik: satu baris therapist_schedules = satu slot, jadi
+-- ambil durasi yang paling sering dipakai pada jadwal mingguan terapis itu;
+-- jika terapis belum punya jadwal, pakai kebiasaan klinik; terakhir 60 menit.
+CREATE OR REPLACE FUNCTION public.habitual_slot_minutes(p_therapist_id uuid)
+RETURNS integer
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT mode() WITHIN GROUP (ORDER BY m) FROM (
+       SELECT (extract(epoch from (ts.end_time - ts.start_time)) / 60)::int AS m
+       FROM therapist_schedules ts
+       WHERE ts.therapist_id = p_therapist_id AND ts.is_active
+         AND ts.end_time > ts.start_time) x
+     WHERE m BETWEEN 5 AND 480),
+    (SELECT mode() WITHIN GROUP (ORDER BY m) FROM (
+       SELECT (extract(epoch from (ts.end_time - ts.start_time)) / 60)::int AS m
+       FROM therapist_schedules ts
+       JOIN physiotherapists p ON p.id = ts.therapist_id
+       WHERE p.clinic_id = (SELECT clinic_id FROM physiotherapists WHERE id = p_therapist_id)
+         AND ts.is_active AND ts.end_time > ts.start_time) y
+     WHERE m BETWEEN 5 AND 480),
+    60
+  );
+$$;
+
+-- Slot tambahan hari itu (dipotong per slot_duration_minutes (default dari kebiasaan jadwal terapis)), dilewati bila
 -- beririsan dengan slot yang sudah ada atau tertutup izin.
 CREATE OR REPLACE FUNCTION public.generate_extra_shift_slots(p_date date, p_therapist_id uuid)
 RETURNS void
@@ -369,6 +394,7 @@ DECLARE
   v_label text;
   v_shift jsonb;
   v_capacity integer;
+  v_slot_minutes integer;
 BEGIN
   SELECT * INTO v_req FROM public.therapist_leave_requests WHERE id = p_request_id FOR UPDATE;
   IF NOT FOUND THEN
@@ -408,13 +434,15 @@ BEGIN
     SELECT COALESCE(MAX(capacity), 1) INTO v_capacity
       FROM public.therapist_schedules WHERE therapist_id = v_req.therapist_id AND is_active;
 
+    v_slot_minutes := public.habitual_slot_minutes(v_req.therapist_id);
+
     FOR v_shift IN SELECT * FROM jsonb_array_elements(v_req.replacement_shifts) LOOP
       CONTINUE WHEN (v_shift->>'date')::date < current_date;
       INSERT INTO public.therapist_extra_shifts
-        (therapist_id, shift_date, start_time, end_time, capacity, leave_request_id)
+        (therapist_id, shift_date, start_time, end_time, capacity, slot_duration_minutes, leave_request_id)
       VALUES
         (v_req.therapist_id, (v_shift->>'date')::date, (v_shift->>'start_time')::time,
-         (v_shift->>'end_time')::time, v_capacity, v_req.id);
+         (v_shift->>'end_time')::time, v_capacity, v_slot_minutes, v_req.id);
     END LOOP;
 
     INSERT INTO public.therapist_time_off
