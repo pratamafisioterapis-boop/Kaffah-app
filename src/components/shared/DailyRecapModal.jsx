@@ -255,6 +255,11 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         try {
             setSelectedPackage(null);
             setIsPackageExpired(false);
+            // Modal tetap ter-mount antar pasien: reset kode reward supaya tidak terbawa dari recap sebelumnya
+            setRewardInfo(null);
+            setRewardCode('');
+            setRewardError('');
+            setActiveRewards([]);
             
             if (mode === 'edit' && initialData) {
                 console.log("DailyRecapModal initializing form with edit data");
