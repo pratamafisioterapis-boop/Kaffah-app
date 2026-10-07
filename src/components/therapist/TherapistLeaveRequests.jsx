@@ -238,7 +238,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
             Ganti jam kerjanya kapan?
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Wajib diisi. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah hari Anda biasanya tidak masuk.
+            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah hari Anda biasanya tidak masuk.
           </p>
         </div>
 

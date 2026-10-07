@@ -47,7 +47,7 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
     toast({
       title: approve ? 'Izin disetujui' : 'Izin ditolak',
       description: approve
-        ? `${request.therapist_name || 'Terapis'} sudah tercatat izin pada tanggal tersebut.`
+        ? `${request.therapist_name || 'Terapis'} sudah tercatat izin, slot booking tanggal izin ditutup dan jadwal pengganti dibuka.`
         : `${request.therapist_name || 'Terapis'} akan diberi tahu.`,
     });
     await load();
