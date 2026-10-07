@@ -262,7 +262,9 @@ const CATEGORIES = [
       'nama',
       'nama_pasien_baru',
       'waktu',
-      'masa_berlaku'
+      'masa_berlaku',
+      'kode_reward',
+      'nilai_reward'
     ]
   },
 ];
@@ -302,6 +304,8 @@ const SAMPLE_DATA = {
     jam_lama: '10:00',
     hari_lama: 'Rabu',
     nama_pasien_baru: 'Rina Wulandari',
+    kode_reward: 'REF-7QX4M',
+    nilai_reward: 'Rp100.000',
     waktu: getWaktuGreeting()
 };
 
@@ -469,6 +473,18 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                                  <div className="space-y-1">
                                     <div className="font-medium text-slate-700">[nama_pasien_baru]</div>
                                     <div className="text-slate-500">Nama pasien baru yang direferensikan</div>
+                                 </div>
+                             )}
+                             {availablePlaceholders.includes('kode_reward') && (
+                                 <div className="space-y-1">
+                                    <div className="font-medium text-slate-700">[kode_reward]</div>
+                                    <div className="text-slate-500">Kode unik reward (dimasukkan admin saat klaim di Daily Recap)</div>
+                                 </div>
+                             )}
+                             {availablePlaceholders.includes('nilai_reward') && (
+                                 <div className="space-y-1">
+                                    <div className="font-medium text-slate-700">[nilai_reward]</div>
+                                    <div className="text-slate-500">Nominal/persen diskon dari Jenis Diskon reward referral</div>
                                  </div>
                              )}
                              {availablePlaceholders.includes('waktu') && (

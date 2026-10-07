@@ -181,7 +181,8 @@ setPatientTypes(Array.isArray(pTypes) ? pTypes : []);
 const loadedPackageTypes = Array.isArray(pkgTypes) ? pkgTypes : [];
 setPackageTypes(loadedPackageTypes);
 setPaymentMethods(Array.isArray(payMethods) ? payMethods : []);
-setDiscountOptions(Array.isArray(discountOpts) ? discountOpts : []);
+// Diskon reward referral hanya bisa dipakai lewat Kode Reward (form rekap baru).
+setDiscountOptions(Array.isArray(discountOpts) ? discountOpts.filter(o => !o.is_referral_reward) : []);
 setBankAccounts((bankRes?.data || []).map(acc => ({
   label: `${acc.bank_name}${acc.account_number ? ' - ' + acc.account_number : ''}`,
   value: acc.id

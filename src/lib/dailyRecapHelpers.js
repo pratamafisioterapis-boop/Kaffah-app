@@ -22,7 +22,7 @@ export const fetchOperationalOptions = async (category) => {
   try {
     let query = supabase
       .from('operational_options')
-      .select('id, label, value, session_count, validity_days, discount_value_type, discount_value')
+      .select('id, label, value, session_count, validity_days, discount_value_type, discount_value, is_referral_reward')
       .eq('is_active', true)
       .order('label');
 
@@ -46,7 +46,8 @@ export const fetchOperationalOptions = async (category) => {
                 session_count: item.session_count,
                 validity_days: item.validity_days,
                 discount_value_type: item.discount_value_type,
-                discount_value: item.discount_value
+                discount_value: item.discount_value,
+                is_referral_reward: !!item.is_referral_reward
             });
         }
     });
