@@ -9,6 +9,8 @@ import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagemen
 import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
 import { useTherapistSoapTemplateEdit } from '@/hooks/useTherapistSoapTemplateEdit';
 import SubjectiveTemplateManager from '@/components/owner/SubjectiveTemplateManager';
+import TherapistLeaveRequests from '@/components/therapist/TherapistLeaveRequests';
+import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
 import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
@@ -33,6 +35,7 @@ const TherapistDashboard = () => {
   const { filledBy: medicalRecordsFilledBy } = useMedicalRecordsFilledBy();
   const therapistFillsMedicalRecords = medicalRecordsFilledBy === 'therapist';
   const { enabled: canRequestSoapTemplates } = useTherapistSoapTemplateEdit();
+  const { enabled: canRequestLeave } = useTherapistLeaveRequestEnabled();
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('settings');
@@ -109,6 +112,7 @@ const TherapistDashboard = () => {
     { label: 'Evaluasi Pasien', path: '/therapist/records', icon: 'BriefcaseMedical' },
     ...(therapistFillsMedicalRecords ? [{ label: 'Rekam Medis', path: '/therapist/medical-records', icon: 'FileText' }] : []),
     ...(canRequestSoapTemplates ? [{ label: 'Template SOAP', path: '/therapist/soap-templates', icon: 'FileText' }] : []),
+    ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
@@ -154,6 +158,7 @@ const TherapistDashboard = () => {
           <Route path="/records" element={<TherapistMedicalRecords therapist={therapistProfile} />} />
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
           {therapistFillsMedicalRecords && <Route path="/medical-records" element={<MedicalRecordsManagement />} />}
+          {canRequestLeave && <Route path="/leave" element={<TherapistLeaveRequests therapist={therapistProfile} />} />}
           {canRequestSoapTemplates && <Route path="/soap-templates" element={<SubjectiveTemplateManager requestMode requesterName={therapistProfile.name} />} />}
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />

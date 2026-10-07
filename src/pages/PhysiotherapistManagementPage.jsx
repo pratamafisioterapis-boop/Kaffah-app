@@ -11,6 +11,8 @@ import TherapistSoapLockManager from '@/components/owner/TherapistSoapLockManage
 import RemunerationManager from '@/components/owner/RemunerationManager';
 import TherapistMonthlyReportManager from '@/components/owner/TherapistMonthlyReportManager';
 import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2, ChevronRight, CalendarRange } from 'lucide-react';
+import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
+import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -31,6 +33,7 @@ const MENU_ITEMS = [
 
 const PhysiotherapistManagementPage = () => {
 
+  const { count: pendingLeaveCount, refresh: refreshPendingLeave } = usePendingLeaveRequestCount();
   const [allSchedules, setAllSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
 
@@ -105,6 +108,11 @@ const PhysiotherapistManagementPage = () => {
                 'data-[state=active]:bg-[#EEF5FC] data-[state=active]:border-[#1683F4]/40 data-[state=active]:shadow-[0_2px_10px_rgba(22,131,244,0.12)]'
               )}
             >
+              {value === 'timeoff' && pendingLeaveCount > 0 && (
+                <span className="absolute top-1 left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {pendingLeaveCount}
+                </span>
+              )}
               <ChevronRight className="absolute top-1.5 right-1.5 w-3 h-3 shrink-0 text-[#8FA8BD] group-data-[state=active]:text-[#1683F4]" strokeWidth={2} />
               <span className={cn('flex items-center justify-center w-7 h-7 shrink-0 rounded-[9px]', iconBg)}>
                 <Icon className={cn('w-3.5 h-3.5', iconColor)} strokeWidth={2} />
@@ -154,7 +162,8 @@ const PhysiotherapistManagementPage = () => {
         </TabsContent>
 
         {/* ================= CUTI ================= */}
-        <TabsContent value="timeoff">
+        <TabsContent value="timeoff" className="space-y-8">
+          <LeaveRequestReview onChanged={refreshPendingLeave} />
           <TherapistTimeOffManager />
         </TabsContent>
 
