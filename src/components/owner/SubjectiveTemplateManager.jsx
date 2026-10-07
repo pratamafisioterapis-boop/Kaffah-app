@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Braces, CalendarDays, CheckCircle2, ChevronLeft, Clock, Edit2, FileText, ListChecks,
-  Loader2, Plus, Save, Search, Trash2, Type, Undo2, Wand2,
+  Loader2, Plus, Save, Search, Send, Trash2, Type, Undo2, Wand2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,9 @@ import {
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import { FORM_LIST } from '@/data/functionalForms';
 import {
-  deleteSubjectiveVariable, getOperationalOptions, getSubjectiveVariables,
-  saveSubjectiveVariable, updateDiagnosisSubjectiveTemplate,
+  cancelSoapTemplateRequest, deleteSubjectiveVariable, getOperationalOptions, getSoapTemplateRequests,
+  getSubjectiveVariables, reviewSoapTemplateRequest, saveSubjectiveVariable, submitSoapTemplateRequest,
+  updateDiagnosisSubjectiveTemplate,
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -163,9 +164,89 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
   );
 };
 
+// ───────────── Pengajuan perubahan dari terapis (owner) ─────────────
+
+const FIELD_LABEL = { subjective_template: 'Subjective', objective_template: 'Objective' };
+
+const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
+  const { toast } = useToast();
+  const [busyId, setBusyId] = useState(null);
+  const [notes, setNotes] = useState({});
+  const pending = requests.filter((r) => r.status === 'pending');
+  if (pending.length === 0) return null;
+
+  const review = async (r, approve) => {
+    setBusyId(r.id);
+    const { error } = await reviewSoapTemplateRequest(r.id, approve, notes[r.id] || null);
+    setBusyId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal memproses pengajuan', description: error.message });
+      return;
+    }
+    toast({ title: approve ? 'Pengajuan disetujui, template diperbarui' : 'Pengajuan ditolak' });
+    onReviewed();
+  };
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+      <div>
+        <div className="text-sm font-semibold text-amber-900">Pengajuan dari Terapis ({pending.length})</div>
+        <div className="text-xs text-amber-800/80">Template baru berlaku untuk semua terapis setelah Anda setujui.</div>
+      </div>
+      {pending.map((r) => {
+        const diagnosis = diagnoses.find((d) => d.id === r.diagnosis_id);
+        const before = diagnosis ? diagnosis[r.field] : r.previous_template;
+        return (
+          <div key={r.id} className="space-y-2 rounded-xl border border-amber-200 bg-white p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-900">{diagnosis?.label || 'Diagnosa'}</span>
+              <Badge variant="outline" className="text-[10px]">{FIELD_LABEL[r.field]}</Badge>
+              <span className="text-xs text-slate-400">
+                oleh {r.requested_by_name || 'Terapis'} · {new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Saat ini</div>
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-xs text-slate-600">{before || '(kosong)'}</pre>
+              </div>
+              <div>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Usulan</div>
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-50 p-2 text-xs text-slate-700">{r.proposed_template || '(dihapus / kosong)'}</pre>
+              </div>
+            </div>
+            <Input
+              value={notes[r.id] || ''}
+              onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+              placeholder="Catatan untuk terapis (opsional)"
+              className="text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 rounded-xl text-rose-600" disabled={busyId === r.id} onClick={() => review(r, false)}>
+                <X className="h-4 w-4" /> Tolak
+              </Button>
+              <Button size="sm" className="gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700" disabled={busyId === r.id} onClick={() => review(r, true)}>
+                {busyId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Setujui
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const STATUS_META = {
+  pending: { label: 'Menunggu persetujuan owner', className: 'border-amber-300 bg-amber-50 text-amber-700' },
+  approved: { label: 'Disetujui', className: 'border-emerald-300 bg-emerald-50 text-emerald-700' },
+  rejected: { label: 'Ditolak', className: 'border-rose-300 bg-rose-50 text-rose-700' },
+};
+
 // ───────────── Halaman utama ─────────────
 
-const SubjectiveTemplateManager = () => {
+// requestMode = tampilan terapis: perubahan tidak langsung disimpan, tetapi
+// diajukan ke owner (butuh fitur diaktifkan Super Admin untuk kliniknya).
+const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [diagnoses, setDiagnoses] = useState([]);
@@ -177,10 +258,12 @@ const SubjectiveTemplateManager = () => {
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [varDialog, setVarDialog] = useState({ open: false, variable: null });
+  const [requests, setRequests] = useState([]);
   const textareaRef = useRef(null);
 
   const load = useCallback(async () => {
-    const [d, v] = await Promise.all([getOperationalOptions('diagnosa'), getSubjectiveVariables()]);
+    const [d, v, r] = await Promise.all([getOperationalOptions('diagnosa'), getSubjectiveVariables(), getSoapTemplateRequests()]);
+    setRequests(r.data || []);
     if (d.error) toast({ variant: 'destructive', title: 'Gagal memuat diagnosa', description: d.error.message });
     setDiagnoses((d.data || []).filter((x) => x.is_active !== false).sort((a, b) => a.label.localeCompare(b.label, 'id', { sensitivity: 'base' })));
     setVariables(v.data || []);
@@ -191,20 +274,29 @@ const SubjectiveTemplateManager = () => {
 
   const selected = diagnoses.find((d) => d.id === selectedId) || null;
   const isObjective = field === 'objective_template';
-  const current = selected ? selected[field] || '' : '';
+  const pendingFor = (d, f) => (requestMode && d
+    ? requests.find((r) => r.status === 'pending' && r.diagnosis_id === d.id && r.field === f) || null
+    : null);
+  // Draft awal: di mode terapis, pengajuan pending sendiri didahulukan.
+  const initialDraft = (d, f) => {
+    const pendingRequest = pendingFor(d, f);
+    return pendingRequest ? pendingRequest.proposed_template || '' : d[f] || '';
+  };
+  const pendingRequest = pendingFor(selected, field);
+  const current = selected ? initialDraft(selected, field) : '';
   const dirty = selected ? draft !== current : false;
 
   const select = (d) => {
     if (dirty && !window.confirm('Perubahan belum disimpan. Pindah diagnosa?')) return;
     setSelectedId(d.id);
-    setDraft(d[field] || '');
+    setDraft(initialDraft(d, field));
   };
 
   const switchField = (f) => {
     if (f === field) return;
     if (dirty && !window.confirm('Perubahan belum disimpan. Pindah ke template lain?')) return;
     setField(f);
-    setDraft(selected ? selected[f] || '' : '');
+    setDraft(selected ? initialDraft(selected, f) : '');
     setOnlyEmpty(false);
   };
 
@@ -230,8 +322,37 @@ const SubjectiveTemplateManager = () => {
     });
   };
 
+  const submitRequest = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const { error } = await submitSoapTemplateRequest({
+      diagnosisId: selected.id, field, proposed: draft, previous: selected[field], requesterName,
+    });
+    setSaving(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengajukan perubahan', description: error.message });
+      return;
+    }
+    toast({ title: 'Pengajuan terkirim', description: 'Menunggu persetujuan owner.' });
+    const r = await getSoapTemplateRequests();
+    setRequests(r.data || []);
+  };
+
+  const cancelRequest = async () => {
+    if (!pendingRequest || !window.confirm('Batalkan pengajuan ini?')) return;
+    const { error } = await cancelSoapTemplateRequest(pendingRequest.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal membatalkan', description: error.message });
+      return;
+    }
+    const r = await getSoapTemplateRequests();
+    setRequests(r.data || []);
+    setDraft(selected[field] || '');
+  };
+
   const save = async () => {
     if (!selected) return;
+    if (requestMode) { await submitRequest(); return; }
     setSaving(true);
     const { error } = await updateDiagnosisSubjectiveTemplate(selected.id, draft, field);
     setSaving(false);
@@ -265,10 +386,36 @@ const SubjectiveTemplateManager = () => {
       <div>
         <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template SOAP</h3>
         <p className="text-sm text-slate-500">
-          Atur template Subjective dan Objective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.
+          {requestMode
+            ? 'Usulkan perubahan template Subjective dan Objective. Perubahan baru berlaku setelah disetujui owner.'
+            : 'Atur template Subjective dan Objective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.'}
           <span className="ml-1 text-slate-400">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
         </p>
       </div>
+
+      {!requestMode && (
+        <RequestsReviewPanel requests={requests} diagnoses={diagnoses} onReviewed={load} />
+      )}
+
+      {requestMode && requests.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-2 text-sm font-semibold text-slate-800">Pengajuan Saya</div>
+          <div className="max-h-48 divide-y overflow-y-auto">
+            {requests.slice(0, 20).map((r) => {
+              const meta = STATUS_META[r.status] || STATUS_META.pending;
+              const diagnosis = diagnoses.find((d) => d.id === r.diagnosis_id);
+              return (
+                <div key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                  <span className="font-medium text-slate-800">{diagnosis?.label || 'Diagnosa'}</span>
+                  <Badge variant="outline" className="text-[10px]">{FIELD_LABEL[r.field]}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px]', meta.className)}>{meta.label}</Badge>
+                  {r.review_note && <span className="text-xs text-slate-500">&ldquo;{r.review_note}&rdquo;</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="inline-flex rounded-xl bg-slate-100 p-1">
         {[['subjective_template', 'Subjective'], ['objective_template', 'Objective']].map(([f, label]) => (
@@ -290,13 +437,15 @@ const SubjectiveTemplateManager = () => {
             <div className="text-sm font-semibold text-slate-800">Variabel</div>
             <div className="text-xs text-slate-500">Isian yang bisa dipakai ulang di banyak template.</div>
           </div>
-          <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" onClick={() => setVarDialog({ open: true, variable: null })}>
-            <Plus className="h-4 w-4" /> Variabel
-          </Button>
+          {!requestMode && (
+            <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" onClick={() => setVarDialog({ open: true, variable: null })}>
+              <Plus className="h-4 w-4" /> Variabel
+            </Button>
+          )}
         </div>
         {variables.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
-            Belum ada variabel. Contoh: &quot;Sifat nyeri&quot; dengan pilihan tajam / tumpul / terbakar.
+            {requestMode ? 'Belum ada variabel.' : <>Belum ada variabel. Contoh: &quot;Sifat nyeri&quot; dengan pilihan tajam / tumpul / terbakar.</>}
           </p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -311,12 +460,16 @@ const SubjectiveTemplateManager = () => {
                       <code>{`{{${v.key}}}`}</code>{v.kind === 'choice' && ` · ${(v.options || []).join(', ')}`}
                     </div>
                   </div>
-                  <button type="button" aria-label="Edit" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-600" onClick={() => setVarDialog({ open: true, variable: v })}>
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button type="button" aria-label="Hapus" className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {!requestMode && (
+                    <>
+                      <button type="button" aria-label="Edit" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-600" onClick={() => setVarDialog({ open: true, variable: v })}>
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button type="button" aria-label="Hapus" className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -377,6 +530,11 @@ const SubjectiveTemplateManager = () => {
                   </div>
                 </div>
 
+                {requestMode && pendingRequest && (
+                  <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    Pengajuan Anda untuk template ini sedang menunggu persetujuan owner. Mengirim ulang akan memperbarui pengajuan tersebut.
+                  </p>
+                )}
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {[...SNIPPETS.filter((sn) => !isObjective || ['Isian teks', 'Pilihan', 'Ada / Tidak', 'Kanan / Kiri', 'Bagian baru'].includes(sn.label)), ...(isObjective ? OBJECTIVE_SNIPPETS : [])].map((sn) => (
                     <button
@@ -444,11 +602,17 @@ const SubjectiveTemplateManager = () => {
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                  {requestMode && pendingRequest && (
+                    <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-rose-600" onClick={cancelRequest}>
+                      <X className="h-4 w-4" /> Batalkan Pengajuan
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" disabled={!dirty} onClick={() => setDraft(current)}>
                     <Undo2 className="h-4 w-4" /> Batalkan
                   </Button>
                   <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" disabled={!dirty || saving} onClick={save}>
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : requestMode ? <Send className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                    {requestMode ? 'Ajukan Perubahan' : 'Simpan'}
                   </Button>
                 </div>
               </div>

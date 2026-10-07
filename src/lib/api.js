@@ -1372,6 +1372,66 @@ export const updateDiagnosisSubjectiveTemplate = async (id, template, field = 's
   return { error };
 };
 
+// ── Pengajuan perubahan template SOAP oleh terapis (disetujui owner) ──
+const REQUEST_COLUMNS = 'id, diagnosis_id, field, proposed_template, previous_template, status, requested_by, requested_by_name, review_note, created_at, reviewed_at';
+
+// Pengajuan milik terapis yang login (semua status) atau, untuk owner,
+// seluruh pengajuan klinik. RLS yang membatasi barisnya.
+export const getSoapTemplateRequests = async ({ status } = {}) => {
+  let query = supabase
+    .from('soap_template_change_requests')
+    .select(REQUEST_COLUMNS)
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
+
+// Terapis mengajukan template baru. Jika sudah ada pengajuan pending untuk
+// diagnosa+bagian yang sama, isinya diperbarui (bukan dobel).
+export const submitSoapTemplateRequest = async ({ diagnosisId, field, proposed, previous, requesterName }) => {
+  const column = field === 'objective_template' ? 'objective_template' : 'subjective_template';
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: existing, error: findError } = await supabase
+    .from('soap_template_change_requests')
+    .select('id')
+    .eq('requested_by', user?.id)
+    .eq('diagnosis_id', diagnosisId)
+    .eq('field', column)
+    .eq('status', 'pending')
+    .maybeSingle();
+  if (findError) return { error: findError };
+  const proposedValue = proposed && proposed.trim() ? proposed : null;
+  if (existing) {
+    const { error } = await supabase
+      .from('soap_template_change_requests')
+      .update({ proposed_template: proposedValue, requested_by_name: requesterName || null })
+      .eq('id', existing.id);
+    return { error };
+  }
+  const { error } = await supabase.from('soap_template_change_requests').insert({
+    diagnosis_id: diagnosisId,
+    field: column,
+    proposed_template: proposedValue,
+    previous_template: previous && previous.trim() ? previous : null,
+    requested_by_name: requesterName || null,
+  });
+  return { error };
+};
+
+export const cancelSoapTemplateRequest = async (id) => {
+  const { error } = await supabase.from('soap_template_change_requests').delete().eq('id', id).eq('status', 'pending');
+  return { error };
+};
+
+export const reviewSoapTemplateRequest = async (id, approve, note = null) => {
+  const { error } = await supabase.rpc('review_soap_template_request', {
+    p_request_id: id, p_approve: approve, p_note: note,
+  });
+  return { error };
+};
+
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);
