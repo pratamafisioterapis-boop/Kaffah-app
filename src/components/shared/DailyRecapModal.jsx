@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,9 @@ import {
     getPackageOptions,
     getPaymentMethodOptions,
     getDiscountTypeOptions,
+    lookupReferralReward,
+    getActiveReferralRewards,
+    getReferralRewardById,
     getPatientActivePackage,
     extendPackage
 } from '@/lib/api';
@@ -190,6 +193,12 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const [packageSearch, setPackageSearch] = useState('');
     const [paymentMethodSearch, setPaymentMethodSearch] = useState('');
     const [discountTypeSearch, setDiscountTypeSearch] = useState('');
+    // Kode reward referral: reward yang sedang dipakai di rekap ini + daftar reward aktif pasien
+    const [rewardCode, setRewardCode] = useState('');
+    const [rewardInfo, setRewardInfo] = useState(null);
+    const [rewardError, setRewardError] = useState('');
+    const [rewardChecking, setRewardChecking] = useState(false);
+    const [activeRewards, setActiveRewards] = useState([]);
 
     // Loading states for each dropdown
     const [loadingPatients, setLoadingPatients] = useState(false);
@@ -280,7 +289,8 @@ setFormData({
     payment_method: initialData.payment_method || '',
     discount_type: initialData.discount_type || 'none',
     discount_value: initialData.discount_value || 0,
-    discount_label: initialData.discount_label || ''
+    discount_label: initialData.discount_label || '',
+    referral_reward_id: initialData.referral_reward_id || ''
 });
 
                 const existingSplits = Array.isArray(initialData.payment_splits) ? initialData.payment_splits : [];
@@ -313,8 +323,11 @@ setFormData({
                     payment_method: '',
                     discount_type: 'none',
                     discount_value: 0,
-                    discount_label: ''
+                    discount_label: '',
+                    referral_reward_id: ''
                 });
+                setRewardInfo(null);
+                setRewardCode('');
                 setUseSplitPayment(false);
                 setPaymentSplits([{ payment_method: '', amount: '' }]);
             }
@@ -840,6 +853,75 @@ setFormData({
 
     }, [initialData, mode]);
 
+    // Reward aktif milik pasien terpilih (petunjuk kode di form diskon)
+    useEffect(() => {
+        let cancelled = false;
+        if (!isOpen || !formData.patient_id) { setActiveRewards([]); return; }
+        getActiveReferralRewards(formData.patient_id).then(({ data }) => {
+            if (!cancelled) setActiveRewards(data || []);
+        });
+        return () => { cancelled = true; };
+    }, [isOpen, formData.patient_id]);
+
+    // Edit: tampilkan kode reward yang sudah terpasang di rekap ini
+    useEffect(() => {
+        if (!isOpen || mode !== 'edit' || !initialData?.referral_reward_id) return;
+        getReferralRewardById(initialData.referral_reward_id).then(({ data }) => {
+            if (!data) return;
+            setRewardInfo(data);
+            setRewardCode(data.code);
+        });
+    }, [isOpen, mode, initialData?.referral_reward_id]);
+
+    // Ganti pasien (rekap baru): kode reward milik pasien sebelumnya dilepas
+    const rewardPatientRef = useRef(formData.patient_id);
+    useEffect(() => {
+        if (rewardPatientRef.current !== formData.patient_id) {
+            rewardPatientRef.current = formData.patient_id;
+            if (mode === 'add' && formData.referral_reward_id) clearReferralReward();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.patient_id]);
+
+    const clearReferralReward = () => {
+        setRewardInfo(null);
+        setRewardCode('');
+        setRewardError('');
+        setFormData(prev => ({ ...prev, referral_reward_id: '', discount_type: 'none', discount_value: 0, discount_label: '' }));
+    };
+
+    const applyReferralReward = async () => {
+        const code = rewardCode.trim();
+        if (!code) return;
+        if (!formData.patient_id) {
+            setRewardError('Pilih pasien terlebih dahulu.');
+            return;
+        }
+        setRewardChecking(true);
+        setRewardError('');
+        try {
+            const { data, error } = await lookupReferralReward(code, formData.patient_id, mode === 'edit' ? initialData?.id : null);
+            if (error) throw error;
+            if (!data?.valid) {
+                setRewardError(data?.reason || 'Kode reward tidak valid.');
+                return;
+            }
+            setRewardInfo(data);
+            setRewardCode(data.code);
+            setFormData(prev => ({
+                ...prev,
+                referral_reward_id: data.id,
+                discount_type: data.discount_value_type,
+                discount_value: String(data.discount_value),
+                discount_label: data.discount_label
+            }));
+        } catch (err) {
+            setRewardError(err.message || 'Gagal memeriksa kode reward.');
+        } finally {
+            setRewardChecking(false);
+        }
+    };
+
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
@@ -1100,6 +1182,7 @@ setFormData({
                 discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
                 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
                 discount_label: formData.discount_type === 'none' ? null : (formData.discount_label || null),
+                referral_reward_id: formData.referral_reward_id || null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
                 // FIX: saat edit, pertahankan package_tracking_id ASLI recap ini
@@ -1120,6 +1203,7 @@ setFormData({
                 payload.discount_type = null;
                 payload.discount_value = 0;
                 payload.discount_label = null;
+                payload.referral_reward_id = null;
             }
 
             let result;
@@ -1386,9 +1470,49 @@ setFormData({
         <>
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
+                                    {/* Kode Reward Referral */}
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Kode Reward Referral</Label>
+                                        {formData.referral_reward_id && rewardInfo ? (
+                                            <div className="flex items-center justify-between gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                                                <span>
+                                                    <span className="font-semibold">{rewardInfo.code}</span>
+                                                    {' · '}{rewardInfo.discount_label || 'Referral Reward'}{' '}
+                                                    ({rewardInfo.discount_value_type === 'percentage'
+                                                        ? `${Number(rewardInfo.discount_value)}%`
+                                                        : `Rp ${Number(rewardInfo.discount_value).toLocaleString('id-ID')}`})
+                                                </span>
+                                                <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-red-600" onClick={clearReferralReward}>Lepas</Button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        value={rewardCode}
+                                                        onChange={e => { setRewardCode(e.target.value.toUpperCase()); setRewardError(''); }}
+                                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyReferralReward(); } }}
+                                                        placeholder="Contoh: REF-7QX4M"
+                                                        className="h-9 text-xs bg-white"
+                                                    />
+                                                    <Button type="button" size="sm" className="h-9" onClick={applyReferralReward} disabled={rewardChecking || !rewardCode.trim()}>
+                                                        {rewardChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Terapkan'}
+                                                    </Button>
+                                                </div>
+                                                {rewardError && <p className="text-xs text-red-500">{rewardError}</p>}
+                                                {activeRewards.length > 0 && (
+                                                    <p className="text-xs text-emerald-700">
+                                                        Pasien punya reward aktif:{' '}
+                                                        {activeRewards.map(r => (
+                                                            <button key={r.id} type="button" className="mr-2 font-semibold underline" onClick={() => setRewardCode(r.code)}>{r.code}</button>
+                                                        ))}
+                                                    </p>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
-                                        <SearchableSelect options={discountTypeOptions} value={formData.discount_label} onChange={v => {
+                                        <SearchableSelect disabled={!!formData.referral_reward_id} options={discountTypeOptions.filter(o => !o.is_referral_reward)} value={formData.discount_label} onChange={v => {
                                             // Dihapus (tombol X): reset seluruh diskon
                                             if (!v) {
                                                 setFormData(prev => ({ ...prev, discount_label: '', discount_type: 'none', discount_value: 0 }));
@@ -1412,7 +1536,7 @@ setFormData({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
-                                            <Select value={formData.discount_type} onValueChange={v => {
+                                            <Select disabled={!!formData.referral_reward_id} value={formData.discount_type} onValueChange={v => {
                                                 if (v === 'none') setFormData(prev => ({ ...prev, discount_type: 'none', discount_value: 0, discount_label: '' }));
                                                 else handleChange('discount_type', v);
                                             }}>
@@ -1426,7 +1550,7 @@ setFormData({
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Nilai</Label>
-                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={formData.discount_type === 'none' || !formData.discount_label}/>
+                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={!!formData.referral_reward_id || formData.discount_type === 'none' || !formData.discount_label}/>
                                         </div>
                                     </div>
                                 </div>

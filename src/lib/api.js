@@ -1132,7 +1132,7 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
 
       let query = supabase
         .from('operational_options')
-        .select('id, label, category, parent_id, discount_value_type, discount_value')
+        .select('id, label, category, parent_id, discount_value_type, discount_value, is_referral_reward')
         .eq('category', category)
         .eq('clinic_id', userRow?.clinic_id)
         .eq('is_active', true);
@@ -1152,7 +1152,8 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
           label: i.label,
           parent_id: i.parent_id || null,
           discount_value_type: i.discount_value_type,
-          discount_value: i.discount_value
+          discount_value: i.discount_value,
+          is_referral_reward: !!i.is_referral_reward
         })),
         error: null
       };
@@ -1510,6 +1511,42 @@ const saveDailyRecapPaymentSplits = async (recapId, splits) => {
   if (insertError) throw insertError;
 };
 
+// --- Referral reward codes ---
+// Validasi kode reward untuk pasien tertentu (RPC memberi alasan jika tidak bisa dipakai).
+export const lookupReferralReward = async (code, patientId, recapId = null) => {
+  const { data, error } = await supabase.rpc('lookup_referral_reward', {
+    p_code: code,
+    p_patient_id: patientId,
+    p_recap_id: recapId
+  });
+  if (error) return { data: null, error };
+  return { data, error: null };
+};
+
+// Reward aktif (belum dipakai & belum kedaluwarsa) milik pasien, untuk petunjuk di form rekap.
+export const getActiveReferralRewards = async (patientId) => {
+  if (!patientId) return { data: [], error: null };
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+  const { data, error } = await supabase
+    .from('referral_rewards')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label')
+    .eq('referrer_patient_id', patientId)
+    .eq('status', 'active')
+    .gte('expires_at', today)
+    .order('expires_at');
+  return { data: data || [], error };
+};
+
+export const getReferralRewardById = async (id) => {
+  if (!id) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from('referral_rewards')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, status')
+    .eq('id', id)
+    .maybeSingle();
+  return { data, error };
+};
+
 export const createDailyRecap = async (payload) => {
   return safeQuery(async () => {
     const paymentSplits = payload.payment_splits;
@@ -1615,6 +1652,7 @@ export const getDailyRecaps = async ({
   discount_type,
   discount_value,
   discount_label,
+  referral_reward_id,
   created_at,
   payment_splits:daily_recap_payment_splits(id, payment_method, amount),
   start_time,
