@@ -78,13 +78,27 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     (dateStr) => (offDates.has(dateStr) ? [] : schedulesByDow[parseISO(dateStr).getDay()] || []),
     [schedulesByDow, offDates],
   );
+  // Jam kerja shift terapis (mis. Pagi 09:00–17:00). Terpisah dari slot booking; kalau belum
+  // diatur, pakai baris jadwal mingguan seperti sebelumnya.
+  const workShift = therapist.work_start_time && therapist.work_end_time
+    ? { name: therapist.work_shift_name, start_time: hhmm(therapist.work_start_time), end_time: hhmm(therapist.work_end_time) }
+    : null;
+  const hoursOn = useCallback(
+    (dateStr) => {
+      const sched = scheduleOn(dateStr);
+      if (sched.length === 0 || !workShift) return sched;
+      return [{ start_time: workShift.start_time, end_time: workShift.end_time }];
+    },
+    [scheduleOn, workShift?.start_time, workShift?.end_time], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const scheduleLabel = (list) => (list.length
     ? list.map((s) => `${hhmm(s.start_time)}–${hhmm(s.end_time)}`).join(', ')
     : '');
 
   const normalMinutes = form.leaveDate
-    ? scheduleOn(form.leaveDate).reduce((sum, s) => sum + (timeToMinutes(s.end_time) - timeToMinutes(s.start_time)), 0)
+    ? hoursOn(form.leaveDate).reduce((sum, s) => sum + (timeToMinutes(s.end_time) - timeToMinutes(s.start_time)), 0)
     : 0;
+  const leaveDayHours = form.leaveDate ? hoursOn(form.leaveDate) : [];
   const missedMinutes = form.partial
     ? Math.max(0, timeToMinutes(form.endTime) - timeToMinutes(form.startTime))
     : normalMinutes;
@@ -94,9 +108,25 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     const today = new Date();
     return Array.from({ length: CANDIDATE_DAYS }, (_, i) => addDays(today, i)).map((d) => {
       const key = format(d, DAY_KEY);
-      return { date: d, key, sched: scheduleOn(key) };
+      return { date: d, key, sched: hoursOn(key) };
     });
-  }, [scheduleOn]);
+  }, [hoursOn]);
+
+  // Pilih tanggal izin: jam izin sebagian diisi otomatis dari jam kerja shift hari itu
+  // (3 jam pertama), supaya terapis tinggal menyesuaikan.
+  const handleLeaveDateChange = (value) => {
+    setForm((f) => {
+      const next = { ...f, leaveDate: value, shifts: f.shifts.filter((s) => s.date !== value) };
+      const hours = value ? hoursOn(value) : [];
+      if (hours.length) {
+        const start = Math.min(...hours.map((s) => timeToMinutes(s.start_time)));
+        const end = Math.max(...hours.map((s) => timeToMinutes(s.end_time)));
+        next.startTime = minutesToTime(start);
+        next.endTime = minutesToTime(Math.min(start + 3 * 60, end));
+      }
+      return next;
+    });
+  };
 
   const toggleShift = (day) => {
     setForm((f) => {
@@ -119,7 +149,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
 
   const shiftError = (shift) => {
     if (timeToMinutes(shift.end_time) <= timeToMinutes(shift.start_time)) return 'Jam selesai harus setelah jam mulai.';
-    const overlap = scheduleOn(shift.date).find((s) =>
+    const overlap = hoursOn(shift.date).find((s) =>
       timeToMinutes(shift.start_time) < timeToMinutes(s.end_time) && timeToMinutes(shift.end_time) > timeToMinutes(s.start_time));
     if (overlap) return `Bentrok dengan jam kerja normal (${hhmm(overlap.start_time)}–${hhmm(overlap.end_time)}). Pilih jam di luar itu.`;
     return null;
@@ -135,6 +165,13 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
     if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
+    if (form.partial && leaveDayHours.length) {
+      const dayStart = Math.min(...leaveDayHours.map((s) => timeToMinutes(s.start_time)));
+      const dayEnd = Math.max(...leaveDayHours.map((s) => timeToMinutes(s.end_time)));
+      if (timeToMinutes(form.startTime) < dayStart || timeToMinutes(form.endTime) > dayEnd) {
+        return `Jam izin harus di dalam jam kerja ${scheduleLabel(leaveDayHours)}.`;
+      }
+    }
     if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
     if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
@@ -169,7 +206,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     onSubmitted();
   };
 
-  const normalLabel = form.leaveDate ? scheduleLabel(scheduleOn(form.leaveDate)) : '';
+  const normalLabel = form.leaveDate ? scheduleLabel(hoursOn(form.leaveDate)) : '';
 
   return (
     <div className="space-y-5">
@@ -187,7 +224,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             type="date"
             min={todayStr}
             value={form.leaveDate}
-            onChange={(e) => setForm((f) => ({ ...f, leaveDate: e.target.value, shifts: f.shifts.filter((s) => s.date !== e.target.value) }))}
+            onChange={(e) => handleLeaveDateChange(e.target.value)}
           />
           {form.leaveDate && (
             <p className="text-xs text-slate-500">
@@ -217,6 +254,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             </button>
           ))}
         </div>
+
+        {!form.partial && leaveDayHours.length > 0 && (
+          <p className="text-xs rounded-lg bg-orange-50 text-orange-800 px-3 py-2">
+            Izin seharian = {workShift?.name ? `${workShift.name} ` : ''}jam kerja <b>{scheduleLabel(leaveDayHours)}</b> ({formatDuration(normalMinutes)}) — terisi otomatis.
+          </p>
+        )}
 
         {form.partial && (
           <div className="grid grid-cols-2 gap-3">
@@ -319,7 +362,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           <div className="space-y-2">
             {sortedShifts.map((shift) => {
               const err = shiftError(shift);
-              const normal = scheduleLabel(scheduleOn(shift.date));
+              const normal = scheduleLabel(hoursOn(shift.date));
               return (
                 <div key={shift.date} className={cn('rounded-lg border p-3', err ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/40')}>
                   <div className="flex items-center justify-between gap-2 mb-2">

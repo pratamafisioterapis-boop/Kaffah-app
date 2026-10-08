@@ -1464,7 +1464,7 @@ export const reviewSoapTemplateRequest = async (id, approve, note = null) => {
 };
 
 // ── Pengajuan izin terapis (disetujui owner / terapis kepala) ──
-const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at';
+const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, physiotherapists(work_shift_name, work_start_time, work_end_time)';
 
 // RLS yang membatasi baris: terapis hanya melihat miliknya, owner / terapis kepala
 // melihat seluruh pengajuan klinik.

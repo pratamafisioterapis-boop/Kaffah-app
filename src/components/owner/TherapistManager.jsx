@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Upload, Trash2, Edit2,
   Plus, X, Loader2, Lock, UserPlus,
   Monitor, Smartphone, Shield, CalendarRange, CalendarDays,
-  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle, FolderClock, Crown
+  Wallet, Check, Megaphone, Stethoscope, Award, Receipt, ScrollText, AlertTriangle, FolderClock, Crown, Clock3
 } from 'lucide-react';
 import PayrollManagerModal from '@/components/owner/PayrollManagerModal';
 import MouManagerModal from '@/components/owner/MouManagerModal';
@@ -31,6 +31,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
+import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
+
+// Preset jam kerja shift (khusus klinik dengan fitur izin terapis, mis. Kaffah). Bisa diubah manual.
+const WORK_SHIFT_PRESETS = [
+  { name: 'Shift Pagi', start: '09:00', end: '17:00' },
+  { name: 'Shift Siang', start: '13:00', end: '21:00' },
+];
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
@@ -98,6 +105,9 @@ const TherapistManager = () => {
   const [mouDialogOpen, setMouDialogOpen] = useState(false);
   const [selectedTherapistForMou, setSelectedTherapistForMou] = useState(null);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const { enabled: workShiftEnabled } = useTherapistLeaveRequestEnabled();
+  const [shiftTarget, setShiftTarget] = useState(null);
+  const [shiftForm, setShiftForm] = useState({ name: '', start: '', end: '' });
   const [selectedTherapistForWarning, setSelectedTherapistForWarning] = useState(null);
 
   useEffect(() => {
@@ -198,6 +208,35 @@ const TherapistManager = () => {
         description: `Status remunerasi ${therapist.name} telah diperbarui.`
       });
     }
+  };
+
+  const openWorkShift = (therapist) => {
+    setShiftTarget(therapist);
+    setShiftForm({
+      name: therapist.work_shift_name || '',
+      start: (therapist.work_start_time || '').slice(0, 5),
+      end: (therapist.work_end_time || '').slice(0, 5),
+    });
+  };
+
+  const saveWorkShift = async (clear = false) => {
+    if (!shiftTarget) return;
+    const hasTimes = !clear && shiftForm.start && shiftForm.end;
+    if (!clear && (!hasTimes || shiftForm.end <= shiftForm.start)) {
+      toast({ variant: 'destructive', title: 'Jam shift tidak valid', description: 'Jam selesai harus setelah jam mulai.' });
+      return;
+    }
+    const patch = clear
+      ? { work_shift_name: null, work_start_time: null, work_end_time: null }
+      : { work_shift_name: shiftForm.name.trim() || null, work_start_time: shiftForm.start, work_end_time: shiftForm.end };
+    const { error } = await supabase.from('physiotherapists').update(patch).eq('id', shiftTarget.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan jam kerja', description: error.message });
+      return;
+    }
+    setTherapists(prev => prev.map(t => (t.id === shiftTarget.id ? { ...t, ...patch } : t)));
+    toast({ title: clear ? 'Jam kerja dihapus' : 'Jam kerja disimpan', description: shiftTarget.name });
+    setShiftTarget(null);
   };
 
   const toggleHeadTherapist = async (therapist) => {
@@ -739,6 +778,24 @@ const headerColorMap = {
                   >
                     <Crown className="w-2.5 h-2.5" /> {therapist.is_head_therapist ? 'Terapis Kepala' : 'Jadikan Terapis Kepala'}
                   </button>
+                  {workShiftEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => openWorkShift(therapist)}
+                      title="Atur jam kerja (shift) terapis; dipakai untuk pengajuan izin"
+                      className={cn(
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                        therapist.work_start_time
+                          ? "bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100"
+                          : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                      )}
+                    >
+                      <Clock3 className="w-2.5 h-2.5" />
+                      {therapist.work_start_time
+                        ? `${therapist.work_shift_name ? therapist.work_shift_name + ' ' : ''}${therapist.work_start_time.slice(0, 5)}–${therapist.work_end_time.slice(0, 5)}`
+                        : 'Atur Jam Kerja'}
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-3 min-w-0">
@@ -1308,6 +1365,41 @@ const headerColorMap = {
         onClose={() => setWarningDialogOpen(false)}
         therapist={selectedTherapistForWarning}
       />
+
+      <Dialog open={!!shiftTarget} onOpenChange={(o) => { if (!o) setShiftTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Jam Kerja — {shiftTarget?.name}</DialogTitle>
+            <DialogDescription>
+              Jam kerja shift tetap terapis, terpisah dari pengaturan slot pasien. Dipakai otomatis saat terapis mengajukan izin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {WORK_SHIFT_PRESETS.map((p) => (
+                <Button key={p.name} type="button" variant="outline" size="sm"
+                  onClick={() => setShiftForm({ name: p.name, start: p.start, end: p.end })}>
+                  {p.name} {p.start}–{p.end}
+                </Button>
+              ))}
+            </div>
+            <Input placeholder="Nama shift (opsional)" value={shiftForm.name}
+              onChange={(e) => setShiftForm((f) => ({ ...f, name: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="time" aria-label="Jam mulai" value={shiftForm.start}
+                onChange={(e) => setShiftForm((f) => ({ ...f, start: e.target.value }))} />
+              <Input type="time" aria-label="Jam selesai" value={shiftForm.end}
+                onChange={(e) => setShiftForm((f) => ({ ...f, end: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            {shiftTarget?.work_start_time && (
+              <Button variant="outline" onClick={() => saveWorkShift(true)}>Hapus</Button>
+            )}
+            <Button onClick={() => saveWorkShift(false)}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

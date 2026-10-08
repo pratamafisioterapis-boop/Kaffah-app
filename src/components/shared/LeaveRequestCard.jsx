@@ -9,6 +9,10 @@ import {
 // Ringkasan satu pengajuan izin + jadwal penggantinya. `footer` untuk tombol aksi.
 const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => {
   const status = STATUS_META[request.status] || STATUS_META.pending;
+  const work = request.physiotherapists;
+  const workShift = work?.work_start_time && work?.work_end_time
+    ? `${work.work_shift_name ? `${work.work_shift_name} ` : ''}${hhmm(work.work_start_time)}–${hhmm(work.work_end_time)}`
+    : null;
   const shifts = [...(request.replacement_shifts || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
   return (
@@ -27,6 +31,11 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
               <Clock className="w-3.5 h-3.5" />
               {leaveScopeLabel(request)} · {leaveTypeLabel(request.leave_type)}
             </p>
+            {workShift && (
+              <p className="text-xs text-sky-700 mt-0.5">
+                Jam kerja: {workShift}{!request.is_partial && ' (izin seharian)'}
+              </p>
+            )}
           </div>
           <span className={cn('text-[11px] font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
             {status.label}
