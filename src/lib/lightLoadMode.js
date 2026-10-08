@@ -22,6 +22,14 @@ const FILTERED_TABLES = ['daily_recaps', 'appointments', 'package_tracking'];
 export const LIGHT_LOAD_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
 export const isLightLoadClinic = (clinicId) => clinicId === LIGHT_LOAD_CLINIC_ID;
 
+// Admin menu shown while the mode is on (Setup Akun stays so it can be turned off).
+export const LIGHT_LOAD_ALLOWED_PATHS = [
+  '/admin/appointments',
+  '/admin/daily-recap',
+  '/admin/database-patients',
+  '/admin/settings',
+];
+
 const state = {
   enabled: false,
   ready: false,
