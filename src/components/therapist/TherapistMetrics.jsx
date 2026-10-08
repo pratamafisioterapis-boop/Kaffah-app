@@ -8,15 +8,19 @@ import {
   Ban,
   CalendarDays,
   Lightbulb,
-  Umbrella
+  Umbrella,
+  Briefcase,
+  Stethoscope,
+  FileText,
+  GraduationCap
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { cn, getTherapistPeriodRange } from '@/lib/utils';
@@ -37,7 +41,9 @@ const TherapistMetrics = ({ therapist, userId }) => {
     targetStatus: null,
     annualLeaveRemaining: 0,
     annualLeaveQuota: 0,
-    annualLeaveEntries: []
+    annualLeaveEntries: [],
+    workDays: 0,
+    absence: { cuti: 0, izin: 0, sakit: 0, training: 0 }
   });
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -85,14 +91,16 @@ const [
   unfilledRes,
   patientTypeRes,
   todayAppointmentsRes,
-  leaveBalanceRes
+  leaveBalanceRes,
+  timeOffRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
   getUnfilledSOAPVisits(null, therapist.id, startCustom, endCustom),
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom }),
   getAppointments({ date: todayISO, therapistId: therapist.id }),
-  getTherapistAnnualLeaveBalance(therapist.id)
+  getTherapistAnnualLeaveBalance(therapist.id),
+  getTherapistTimeOff(therapist.id)
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -130,7 +138,34 @@ const rawMonthlyRecaps = recapsRes.data || [];
           status: progressData.status || null
         };
       }
+      // Hari kerja & ketidakhadiran pada periode (libur mingguan tidak dihitung hari kerja)
+      const periodDays = eachDayOfInterval({ start: startPeriod, end: endPeriod }).map(d => format(d, 'yyyy-MM-dd'));
+      const periodSet = new Set(periodDays);
+      const liburDates = new Set();
+      const absentByCategory = { cuti: new Set(), izin: new Set(), sakit: new Set(), training: new Set() };
+      const categoryOf = { annual: 'cuti', sick: 'sakit', training: 'training', personal: 'izin', other: 'izin' };
+      (timeOffRes?.data || []).forEach(t => {
+        if (t.start_time) return; // izin parsial (jam tertentu) tidak menghilangkan satu hari penuh
+        const isLibur = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        const cat = categoryOf[t.leave_type] || 'izin';
+        eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
+          const key = format(d, 'yyyy-MM-dd');
+          if (!periodSet.has(key)) return;
+          if (isLibur) liburDates.add(key);
+          else absentByCategory[cat].add(key);
+        });
+      });
+      Object.values(absentByCategory).forEach(set => set.forEach(k => liburDates.delete(k)));
+      const workDays = periodDays.length - liburDates.size;
+
       setMetrics({
+        workDays,
+        absence: {
+          cuti: absentByCategory.cuti.size,
+          izin: absentByCategory.izin.size,
+          sakit: absentByCategory.sakit.size,
+          training: absentByCategory.training.size
+        },
         totalPatients: allPatientsCount,
         todayAppointments: todayAppointmentsCount,
         monthlyVisitsTotal: rawMonthlyRecaps.length, 
@@ -310,6 +345,31 @@ const rawMonthlyRecaps = recapsRes.data || [];
           </div>
         </div>
 
+      </div>
+
+
+      {/* ── Row 2: hari kerja & ketidakhadiran periode (kartu absensi hanya muncul bila ada) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {[
+          { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-indigo-50', icon: 'text-indigo-600', always: true },
+          { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
+          { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
+          { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
+          { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
+        ].filter(c => c.always || c.value > 0).map(({ key, label, value, sub, Icon, box, icon }) => (
+          <div key={key} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+              <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", box)}>
+                <Icon className={cn("w-4 h-4", icon)} />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-slate-900 leading-none">{value}</p>
+              <p className="text-xs text-slate-400 mt-1">{sub}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Dialog: daftar tanggal cuti tahunan */}
