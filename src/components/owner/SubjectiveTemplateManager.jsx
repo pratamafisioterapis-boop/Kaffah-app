@@ -16,7 +16,7 @@ import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplate
 import { FORM_LIST } from '@/data/functionalForms';
 import {
   cancelSoapTemplateRequest, deleteSubjectiveVariable, getOperationalOptions, getSoapTemplateRequests,
-  getSubjectiveVariables, reviewSoapTemplateRequest, saveSubjectiveVariable, submitSoapTemplateRequest,
+  getSubjectiveVariables, getTherapistDiagnosisUsage, reviewSoapTemplateRequest, saveSubjectiveVariable, submitSoapTemplateRequest,
   updateDiagnosisSubjectiveTemplate,
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -246,7 +246,7 @@ const STATUS_META = {
 
 // requestMode = tampilan terapis: perubahan tidak langsung disimpan, tetapi
 // diajukan ke owner (butuh fitur diaktifkan Super Admin untuk kliniknya).
-const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) => {
+const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', therapistId = null }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [diagnoses, setDiagnoses] = useState([]);
@@ -259,16 +259,22 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) 
   const [saving, setSaving] = useState(false);
   const [varDialog, setVarDialog] = useState({ open: false, variable: null });
   const [requests, setRequests] = useState([]);
+  const [usageCounts, setUsageCounts] = useState({});
+  const [listTab, setListTab] = useState('mine');
   const textareaRef = useRef(null);
 
   const load = useCallback(async () => {
-    const [d, v, r] = await Promise.all([getOperationalOptions('diagnosa'), getSubjectiveVariables(), getSoapTemplateRequests()]);
+    const [d, v, r, u] = await Promise.all([
+      getOperationalOptions('diagnosa'), getSubjectiveVariables(), getSoapTemplateRequests(),
+      requestMode ? getTherapistDiagnosisUsage(therapistId) : Promise.resolve({ data: {} }),
+    ]);
     setRequests(r.data || []);
+    setUsageCounts(u.data || {});
     if (d.error) toast({ variant: 'destructive', title: 'Gagal memuat diagnosa', description: d.error.message });
     setDiagnoses((d.data || []).filter((x) => x.is_active !== false).sort((a, b) => a.label.localeCompare(b.label, 'id', { sensitivity: 'base' })));
     setVariables(v.data || []);
     setLoading(false);
-  }, [toast]);
+  }, [toast, requestMode, therapistId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -300,10 +306,31 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) 
     setOnlyEmpty(false);
   };
 
+  // Pemakaian per diagnosa (id atau label teks di rekap), hanya relevan di mode terapis.
+  const usageById = useMemo(() => {
+    const byLabel = {};
+    diagnoses.forEach((d) => { byLabel[d.label.trim().toLowerCase()] = d.id; });
+    const result = {};
+    Object.entries(usageCounts).forEach(([value, count]) => {
+      const id = byLabel[value.trim().toLowerCase()] || value;
+      result[id] = (result[id] || 0) + count;
+    });
+    return result;
+  }, [diagnoses, usageCounts]);
+  const mineCount = useMemo(() => diagnoses.filter((d) => usageById[d.id] > 0).length, [diagnoses, usageById]);
+  const showMine = requestMode && listTab === 'mine';
+
+  // Terapis tanpa riwayat diagnosa langsung melihat daftar lengkap.
+  useEffect(() => {
+    if (!loading && requestMode && mineCount === 0) setListTab('all');
+  }, [loading, requestMode, mineCount]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return diagnoses.filter((d) => (!q || d.label.toLowerCase().includes(q)) && (!onlyEmpty || !d[field]));
-  }, [diagnoses, query, onlyEmpty, field]);
+    const list = diagnoses.filter((d) => (!q || d.label.toLowerCase().includes(q)) && (!onlyEmpty || !d[field])
+      && (!showMine || usageById[d.id] > 0));
+    return showMine ? [...list].sort((a, b) => usageById[b.id] - usageById[a.id]) : list;
+  }, [diagnoses, query, onlyEmpty, field, showMine, usageById]);
 
   const variableMap = useMemo(() => Object.fromEntries(variables.map((v) => [v.key, v])), [variables]);
   const withTemplate = diagnoses.filter((d) => d[field]).length;
@@ -481,6 +508,20 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <div className={cn('rounded-2xl border border-slate-200 bg-white shadow-sm', selected && 'hidden lg:block')}>
           <div className="space-y-2 border-b p-3">
+            {requestMode && (
+              <div className="inline-flex w-full rounded-xl bg-slate-100 p-1">
+                {[['mine', `Sering saya pakai (${mineCount})`], ['all', 'Semua diagnosa']].map(([tab, label]) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setListTab(tab)}
+                    className={cn('flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors', listTab === tab ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari diagnosa..." className="pl-9" />
@@ -491,7 +532,13 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) 
             </label>
           </div>
           <div className="max-h-[60vh] divide-y overflow-y-auto">
-            {filtered.length === 0 && <p className="p-4 text-center text-sm text-slate-400">Tidak ada diagnosa.</p>}
+            {filtered.length === 0 && (
+              <p className="p-4 text-center text-sm text-slate-400">
+                {showMine && !query && !onlyEmpty
+                  ? 'Belum ada diagnosa yang tercatat di rekap Anda. Lihat tab "Semua diagnosa".'
+                  : 'Tidak ada diagnosa.'}
+              </p>
+            )}
             {filtered.map((d) => (
               <button
                 key={d.id}
@@ -502,7 +549,12 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '' }) 
                   d.id === selectedId && 'bg-blue-50 font-medium text-blue-700'
                 )}
               >
-                <span className="truncate">{d.label}</span>
+                <span className="min-w-0 truncate">
+                  {d.label}
+                  {requestMode && usageById[d.id] > 0 && (
+                    <span className="ml-1.5 text-[11px] font-normal text-slate-400">{usageById[d.id]}×</span>
+                  )}
+                </span>
                 {d[field]
                   ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                   : <Badge variant="outline" className="shrink-0 text-[10px] text-slate-400">kosong</Badge>}
