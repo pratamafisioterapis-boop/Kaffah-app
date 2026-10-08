@@ -382,6 +382,23 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
                     <Input type="time" aria-label="Jam selesai pengganti" value={shift.end_time} onChange={(e) => updateShift(shift.date, { end_time: e.target.value })} />
                   </div>
                   {err && <p className="text-xs text-red-600 mt-2 flex items-start gap-1"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{err}</p>}
+                  {!err && missedMinutes > 0 && replacedMinutes < missedMinutes && (() => {
+                    // Jam selesai yang pas agar total jam pengganti = jam yang ditinggalkan
+                    // (hari pengganti lain dianggap tetap).
+                    const needed = missedMinutes - (replacedMinutes - shiftMinutes(shift));
+                    const suggestedEnd = timeToMinutes(shift.start_time) + needed;
+                    return (
+                      <p className="text-xs text-amber-700 bg-amber-50 rounded-md px-2 py-1.5 mt-2 flex items-start gap-1">
+                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          Jam pengganti kurang {formatDuration(missedMinutes - replacedMinutes)} dari izin ({formatDuration(missedMinutes)}).
+                          {suggestedEnd <= 24 * 60
+                            ? <> Seharusnya sampai jam <b>{minutesToTime(suggestedEnd)}</b>.</>
+                            : ' Tambah hari pengganti lain untuk menutup kekurangannya.'}
+                        </span>
+                      </p>
+                    );
+                  })()}
                   {!err && (() => {
                     const total = shiftMinutes(shift);
                     const count = Math.floor(total / slotMinutes);
