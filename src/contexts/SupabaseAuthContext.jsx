@@ -144,13 +144,6 @@ export const AuthProvider = ({ children }) => {
          currentSession = data.session;
       }
 
-      // Origin yang tersimpan tapi sesi aktif sudah akun asalnya sendiri = basi.
-      const staleOrigin = readImpersonationOrigin();
-      if (staleOrigin?.admin_email && staleOrigin.admin_email === currentSession.user.email) {
-        try { localStorage.removeItem(IMPERSONATION_ORIGIN_KEY); } catch { /* ignore */ }
-        setImpersonationOrigin(null);
-      }
-
       setSession(currentSession);
       const currentUser = currentSession.user;
       setUser(currentUser);
@@ -225,6 +218,15 @@ export const AuthProvider = ({ children }) => {
 
         if (mounted) {
           if (data?.session) {
+            // Hanya saat aplikasi baru dibuka: asal impersonasi yang tersimpan
+            // tapi sesi aktif sudah akun asalnya sendiri = basi. Jangan cek di
+            // handleSession — saat pindah akun sesi owner dipulihkan sesaat dan
+            // asalnya akan ikut terhapus.
+            const storedOrigin = readImpersonationOrigin();
+            if (storedOrigin?.admin_email && storedOrigin.admin_email === data.session.user?.email) {
+              try { localStorage.removeItem(IMPERSONATION_ORIGIN_KEY); } catch { /* ignore */ }
+              setImpersonationOrigin(null);
+            }
             await handleSession(data.session);
           } else {
             // Tidak ada session — tapi jika offline, jangan paksa logout
