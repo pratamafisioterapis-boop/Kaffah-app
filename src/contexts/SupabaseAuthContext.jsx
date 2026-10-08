@@ -10,9 +10,13 @@ const AuthContext = createContext(undefined);
 
 const IMPERSONATION_ORIGIN_KEY = 'impersonation_origin_session';
 
+// Disimpan di localStorage (bukan sessionStorage): sesi Supabase sendiri ada
+// di localStorage, jadi kalau PWA ditutup/di-minimize lalu dibuka lagi, data
+// asal owner harus ikut bertahan. Kalau tidak, aplikasi terlihat login
+// sebagai akun yang dituju padahal sebenarnya masih remote dari owner.
 const readImpersonationOrigin = () => {
   try {
-    const raw = sessionStorage.getItem(IMPERSONATION_ORIGIN_KEY);
+    const raw = localStorage.getItem(IMPERSONATION_ORIGIN_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -54,6 +58,7 @@ export const AuthProvider = ({ children }) => {
 
   // Ref to track if we are currently handling a session update to prevent loops
   const isHandlingSession = useRef(false);
+  const pendingSession = useRef(null);
   const retryCount = useRef(0);
   const MAX_RETRIES = 3;
 
@@ -106,7 +111,12 @@ export const AuthProvider = ({ children }) => {
 
   // Centralized session handler
   const handleSession = useCallback(async (currentSession) => {
-    if (isHandlingSession.current) return;
+    // Jangan buang sesi yang datang saat handler masih berjalan (mis. pindah
+    // akun: setSession lalu verifyOtp beruntun) — proses yang terbaru setelahnya.
+    if (isHandlingSession.current) {
+      pendingSession.current = { session: currentSession };
+      return;
+    }
     isHandlingSession.current = true;
 
     try {
@@ -130,6 +140,13 @@ export const AuthProvider = ({ children }) => {
              throw new Error("Session refresh failed");
          }
          currentSession = data.session;
+      }
+
+      // Origin yang tersimpan tapi sesi aktif sudah akun asalnya sendiri = basi.
+      const staleOrigin = readImpersonationOrigin();
+      if (staleOrigin?.admin_email && staleOrigin.admin_email === currentSession.user.email) {
+        try { localStorage.removeItem(IMPERSONATION_ORIGIN_KEY); } catch { /* ignore */ }
+        setImpersonationOrigin(null);
       }
 
       setSession(currentSession);
@@ -169,6 +186,11 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
       isHandlingSession.current = false;
+      if (pendingSession.current) {
+        const next = pendingSession.current.session;
+        pendingSession.current = null;
+        handleSession(next);
+      }
     }
   }, [fetchUserDetails, clearLocalState]);
 
@@ -323,6 +345,8 @@ export const AuthProvider = ({ children }) => {
   const signOut = useCallback(async () => {
     try {
       console.log("[AuthContext] Signing out...");
+      try { localStorage.removeItem(IMPERSONATION_ORIGIN_KEY); } catch { /* ignore */ }
+      setImpersonationOrigin(null);
       const { error } = await supabase.auth.signOut();
       clearLocalState();
       if (error) console.error("[AuthContext] Server sign out error:", error);
@@ -381,6 +405,8 @@ export const AuthProvider = ({ children }) => {
     if (!isOnline) {
       return { error: { message: "Tidak ada koneksi internet. Mohon periksa jaringan Anda." } };
     }
+    switchFromIdRef.current = userIdRef.current;
+    setIsSwitching(true);
     try {
       // Already impersonating as an owner: restore the owner's own session
       // first so they can hop straight to another account.
@@ -414,7 +440,7 @@ export const AuthProvider = ({ children }) => {
         origin_role: existingOrigin?.origin_role || userDetails?.role || null,
         origin_clinic_id: existingOrigin?.origin_clinic_id || userDetails?.clinic_id || null,
       };
-      sessionStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
+      localStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
       setImpersonationOrigin(originPayload);
 
       const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -422,7 +448,7 @@ export const AuthProvider = ({ children }) => {
         type: 'magiclink',
       });
       if (verifyError) {
-        sessionStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
+        localStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
         setImpersonationOrigin(null);
         throw verifyError;
       }
@@ -448,7 +474,7 @@ export const AuthProvider = ({ children }) => {
         access_token: origin.access_token,
         refresh_token: origin.refresh_token,
       });
-      sessionStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
+      localStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
       setImpersonationOrigin(null);
       if (error) throw error;
       return { error: null };

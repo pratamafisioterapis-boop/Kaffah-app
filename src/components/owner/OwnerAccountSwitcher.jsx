@@ -12,7 +12,7 @@ const THERAPIST_ROLES = ['therapist', 'physiotherapist'];
 const CACHE_KEY = 'owner_switcher_accounts';
 
 const readCache = () => {
-  try { return JSON.parse(sessionStorage.getItem(CACHE_KEY)) || null; } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || null; } catch { return null; }
 };
 
 // Lets an owner jump into any admin/therapist account of their own clinic;
@@ -66,7 +66,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
         })
         .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
       if (!isImpersonating) {
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
       }
       setAccounts(list.filter((a) => a.id !== user?.id));
       setLoading(false);
