@@ -18,6 +18,10 @@ const STORAGE_PREFIX = 'kaffah-light-load-mode:';
 const PAGE_SIZE = 1000;
 const FILTERED_TABLES = ['daily_recaps', 'appointments', 'package_tracking'];
 
+// Only available for the Kaffah Physiotherapy clinic.
+export const LIGHT_LOAD_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
+export const isLightLoadClinic = (clinicId) => clinicId === LIGHT_LOAD_CLINIC_ID;
+
 const state = {
   enabled: false,
   ready: false,
@@ -167,7 +171,7 @@ export const refreshLightLoadMode = async (clinicId) => {
 // ever have the mode active.
 export const initLightLoadMode = async ({ userId, role, clinicId }) => {
   state.userId = userId || null;
-  const allowed = !!userId && role === 'admin';
+  const allowed = !!userId && role === 'admin' && isLightLoadClinic(clinicId);
   state.enabled = allowed && readStored(userId);
   state.ready = false;
   state.hidden = new Set();
@@ -177,6 +181,7 @@ export const initLightLoadMode = async ({ userId, role, clinicId }) => {
 };
 
 export const setLightLoadModeEnabled = async ({ userId, clinicId, enabled }) => {
+  if (enabled && !isLightLoadClinic(clinicId)) return;
   try { window.localStorage.setItem(STORAGE_PREFIX + userId, enabled ? '1' : '0'); } catch { /* ignore */ }
   state.userId = userId;
   state.enabled = enabled;

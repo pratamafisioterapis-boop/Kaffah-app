@@ -12,6 +12,7 @@ import AdminTherapistSwitcher from '@/components/admin/AdminTherapistSwitcher';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const ACTIVITY_LIMIT = 20;
 
@@ -704,7 +705,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           <OwnerAccountSwitcher clinicId={ownerOrigin?.origin_clinic_id || clinicId} />
         )}
 
-        {isAdminSwitcherContext && (
+        {isAdminSwitcherContext && !isLightLoadModeEnabled() && (
           <AdminTherapistSwitcher clinicId={clinicId} />
         )}
 

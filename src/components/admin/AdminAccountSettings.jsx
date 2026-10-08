@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Mail, Lock, UserCircle, Upload, Bell, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { getStoredLightLoadMode, setLightLoadModeEnabled } from '@/lib/lightLoadMode';
+import { isLightLoadClinic, getStoredLightLoadMode, setLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { prepareImageForUpload } from '@/lib/imageUpload';
 import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
@@ -174,6 +174,7 @@ const AdminAccountSettings = () => {
           </div>
         </div>
 
+        {isLightLoadClinic(userDetails?.clinic_id) && (
         <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
@@ -183,11 +184,13 @@ const AdminAccountSettings = () => {
                 (kunjungan, appointment, dan sesi paket di dashboard, Appointments, Daily Recaps, Package Recaps, dll).
                 Hari ini dan jadwal ke depan tetap normal. Hanya mengubah tampilan di akun ini &mdash; data asli tidak
                 dihapus atau diubah, akun lain tetap melihat data sebenarnya, dan data keuangan/invoice tidak ikut berubah.
+                Tombol pindah ke akun terapis juga disembunyikan selama mode ini aktif.
               </p>
             </div>
             <Switch checked={lightLoad} onCheckedChange={handleToggleLightLoad} disabled={savingLightLoad} aria-label="Mode Beban Ringan" />
           </div>
         </div>
+        )}
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
           <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Mail className="w-4 h-4" /> Ubah Email Login</h3>
