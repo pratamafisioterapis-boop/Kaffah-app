@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays, format, parseISO } from 'date-fns';
 import {
-  CalendarOff, Send, Loader2, Paperclip, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown,
+  CalendarOff, Send, Loader2, Paperclip, Repeat, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,8 @@ import {
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
+import ShiftSwapReview from '@/components/shared/ShiftSwapReview';
+import TherapistShiftSwap from '@/components/therapist/TherapistShiftSwap';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 
 const DAY_KEY = 'yyyy-MM-dd';
@@ -644,21 +646,28 @@ const TherapistLeaveRequests = ({ therapist }) => {
         </div>
       )}
 
-      {isHead ? (
-        <Tabs defaultValue={pendingForReview > 0 ? 'review' : 'mine'} className="space-y-5">
-          <TabsList className="grid grid-cols-2 w-full sm:w-[420px] bg-slate-100 p-1 rounded-lg">
-            <TabsTrigger value="mine">Ajukan Izin</TabsTrigger>
+      <Tabs defaultValue={isHead && pendingForReview > 0 ? 'review' : 'mine'} className="space-y-5">
+        <TabsList className={cn('grid w-full bg-slate-100 p-1 rounded-lg', isHead ? 'grid-cols-3 sm:w-[560px]' : 'grid-cols-2 sm:w-[380px]')}>
+          <TabsTrigger value="mine">Ajukan Izin</TabsTrigger>
+          <TabsTrigger value="swap" className="gap-1.5"><Repeat className="w-3.5 h-3.5" /> Tukar Shift</TabsTrigger>
+          {isHead && (
             <TabsTrigger value="review" className="gap-1.5">
               <Crown className="w-3.5 h-3.5" /> Izin Tim
               {pendingForReview > 0 && (
                 <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5">{pendingForReview}</span>
               )}
             </TabsTrigger>
-          </TabsList>
-          <TabsContent value="mine">{mine}</TabsContent>
-          <TabsContent value="review"><LeaveRequestReview onChanged={() => { refreshPending(); load(); }} /></TabsContent>
-        </Tabs>
-      ) : mine}
+          )}
+        </TabsList>
+        <TabsContent value="mine">{mine}</TabsContent>
+        <TabsContent value="swap"><TherapistShiftSwap therapist={therapist} /></TabsContent>
+        {isHead && (
+          <TabsContent value="review" className="space-y-8">
+            <LeaveRequestReview onChanged={() => { refreshPending(); load(); }} />
+            <ShiftSwapReview />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 };

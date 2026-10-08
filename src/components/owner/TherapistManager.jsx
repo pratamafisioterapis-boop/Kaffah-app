@@ -32,12 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
+import { WORK_SHIFT_PRESETS } from '@/lib/leaveRequestUtils';
 
-// Preset jam kerja shift (khusus klinik dengan fitur izin terapis, mis. Kaffah). Bisa diubah manual.
-const WORK_SHIFT_PRESETS = [
-  { name: 'Shift Pagi', start: '09:00', end: '17:00' },
-  { name: 'Shift Siang', start: '13:00', end: '21:00' },
-];
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">

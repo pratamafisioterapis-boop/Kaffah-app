@@ -1514,6 +1514,59 @@ export const reviewLeaveRequest = async (id, approve, note = null) => {
   return { error };
 };
 
+// ── Tukar shift terapis (tanggal yang sama; disetujui owner / terapis kepala) ──
+const SHIFT_SWAP_COLUMNS = 'id, therapist_id, therapist_name, swap_date, from_shift_name, from_start_time, from_end_time, to_shift_name, to_start_time, to_end_time, notes, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at';
+
+export const getShiftSwapRequests = async ({ status } = {}) => {
+  let query = supabase
+    .from('therapist_shift_swap_requests')
+    .select(SHIFT_SWAP_COLUMNS)
+    .order('swap_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
+
+export const submitShiftSwapRequest = async ({ therapistId, therapistName, swapDate, from, to, notes }) => {
+  const { error } = await supabase.from('therapist_shift_swap_requests').insert({
+    therapist_id: therapistId,
+    therapist_name: therapistName || null,
+    swap_date: swapDate,
+    from_shift_name: from?.name || null,
+    from_start_time: from?.start || null,
+    from_end_time: from?.end || null,
+    to_shift_name: to.name || null,
+    to_start_time: to.start,
+    to_end_time: to.end,
+    notes: notes && notes.trim() ? notes.trim() : null,
+  });
+  return { error };
+};
+
+export const cancelShiftSwapRequest = async (id) => {
+  const { error } = await supabase.from('therapist_shift_swap_requests').delete().eq('id', id).eq('status', 'pending');
+  return { error };
+};
+
+export const reviewShiftSwapRequest = async (id, approve, note = null) => {
+  const { error } = await supabase.rpc('review_therapist_shift_swap_request', {
+    p_request_id: id, p_approve: approve, p_note: note,
+  });
+  return { error };
+};
+
+// Shift yang dipakai terapis di klinik ini (untuk pilihan tukar shift).
+export const getClinicWorkShifts = async (clinicId) => {
+  const { data, error } = await supabase
+    .from('physiotherapists')
+    .select('work_shift_name, work_start_time, work_end_time')
+    .eq('clinic_id', clinicId)
+    .not('work_start_time', 'is', null);
+  return { data: data || [], error };
+};
+
 export const getPatientTypeOptions = async (term) => getOperationalOptionsByCategory('patient_type', term);
 export const getPackageOptions = async (term) => getOperationalOptionsByCategory('tipe_paket', term);
 export const getPaymentMethodOptions = async (term) => getOperationalOptionsByCategory('payment_method', term);
