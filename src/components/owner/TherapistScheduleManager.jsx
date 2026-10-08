@@ -369,7 +369,15 @@ const TherapistScheduleManager = () => {
                       {getInitials(selectedTherapist.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="text-lg font-bold text-slate-900">{selectedTherapist.name}</h3>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{selectedTherapist.name}</h3>
+                    {selectedTherapist.work_start_time && selectedTherapist.work_end_time && (
+                      <p className="text-xs font-semibold text-sky-700">
+                        Jam kerja: {selectedTherapist.work_shift_name ? `${selectedTherapist.work_shift_name} · ` : ''}
+                        {selectedTherapist.work_start_time.slice(0, 5)}–{selectedTherapist.work_end_time.slice(0, 5)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-semibold px-3 py-1">
                   Total {schedules.length} Slot
