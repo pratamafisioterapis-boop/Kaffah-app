@@ -88,6 +88,11 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                   {t.specialization && (
                     <p className="text-xs text-slate-400 truncate">{t.specialization}</p>
                   )}
+                  {t.work_start_time && t.work_end_time && (
+                    <p className="text-[11px] font-semibold text-sky-700 truncate">
+                      {t.work_shift_name ? `${t.work_shift_name} · ` : ''}{t.work_start_time.slice(0, 5)}–{t.work_end_time.slice(0, 5)}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className={cn("w-1.5 h-1.5 rounded-full", t.is_active ? "bg-emerald-500" : "bg-slate-300")} />
                     <span className="text-[11px] font-medium text-slate-400">
