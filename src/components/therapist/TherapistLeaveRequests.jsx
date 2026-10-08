@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays, format, parseISO } from 'date-fns';
 import {
-  CalendarOff, Send, Loader2, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown,
+  CalendarOff, Send, Loader2, Paperclip, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import {
   getLeaveRequests, submitLeaveRequest, cancelLeaveRequest, getTherapistSchedules, getTherapistTimeOff,
@@ -31,12 +32,17 @@ const minutesToTime = (min) => {
 };
 
 const emptyForm = () => ({
-  leaveDate: '', partial: false, startTime: '09:00', endTime: '12:00', leaveType: 'personal', notes: '', shifts: [],
+  leaveDate: '', partial: false, startTime: '09:00', endTime: '12:00', leaveType: 'personal', notes: '', shifts: [], proofFile: null,
 });
+
+const PROOF_MAX_BYTES = 5 * 1024 * 1024;
+const PROOF_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(emptyForm);
+  const [proofInputKey, setProofInputKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const todayStr = format(new Date(), DAY_KEY);
 
@@ -168,6 +174,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
     if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
+    if (form.leaveType === 'sick' && !form.proofFile) return 'Izin sakit wajib melampirkan foto / PDF surat dokter.';
     if (form.partial && leaveDayHours.length) {
       const dayStart = Math.min(...leaveDayHours.map((s) => timeToMinutes(s.start_time)));
       const dayEnd = Math.max(...leaveDayHours.map((s) => timeToMinutes(s.end_time)));
@@ -187,6 +194,17 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   const handleSubmit = async () => {
     if (blocker) return;
     setSubmitting(true);
+    let proofPath = null;
+    if (form.leaveType === 'sick' && form.proofFile) {
+      const ext = (form.proofFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      proofPath = `${therapist.clinic_id}/${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('leave-proofs').upload(proofPath, form.proofFile, { contentType: form.proofFile.type });
+      if (uploadError) {
+        setSubmitting(false);
+        toast({ variant: 'destructive', title: 'Gagal mengunggah surat dokter', description: uploadError.message });
+        return;
+      }
+    }
     const { error } = await submitLeaveRequest({
       therapistId: therapist.id,
       therapistName: therapist.name,
@@ -197,9 +215,11 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
       leaveType: form.leaveType,
       notes: form.notes,
       replacementShifts: sortedShifts.map((s) => ({ date: s.date, start_time: s.start_time, end_time: s.end_time })),
+      proofPath,
     });
     setSubmitting(false);
     if (error) {
+      if (proofPath) supabase.storage.from('leave-proofs').remove([proofPath]);
       toast({ variant: 'destructive', title: 'Gagal mengirim pengajuan', description: error.message });
       return;
     }
@@ -209,6 +229,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
       className: 'bg-green-50 text-green-800 border-green-200',
     });
     setForm(emptyForm());
+    setProofInputKey((k) => k + 1);
     onSubmitted();
   };
 
@@ -306,6 +327,39 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             <p className="text-[11px] text-amber-700">Cuti tahunan belum tersedia di tahun pertama bergabung.</p>
           )}
         </div>
+
+        {form.leaveType === 'sick' && (
+          <div className="space-y-1.5 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+            <Label htmlFor="leave-proof" className="flex items-center gap-1.5">
+              <Paperclip className="w-3.5 h-3.5" /> Surat dokter <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="leave-proof"
+              key={proofInputKey}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file && !PROOF_TYPES.includes(file.type)) {
+                  toast({ variant: 'destructive', title: 'Format tidak didukung', description: 'Gunakan foto (JPG/PNG/WebP) atau PDF.' });
+                  e.target.value = '';
+                  setForm((f) => ({ ...f, proofFile: null }));
+                  return;
+                }
+                if (file && file.size > PROOF_MAX_BYTES) {
+                  toast({ variant: 'destructive', title: 'Berkas terlalu besar', description: 'Maksimal 5 MB.' });
+                  e.target.value = '';
+                  setForm((f) => ({ ...f, proofFile: null }));
+                  return;
+                }
+                setForm((f) => ({ ...f, proofFile: file }));
+              }}
+            />
+            <p className="text-[11px] text-slate-500">
+              {form.proofFile ? `Terpilih: ${form.proofFile.name}` : 'Wajib untuk izin sakit. Foto (JPG/PNG/WebP) atau PDF, maksimal 5 MB.'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="leave-notes">Catatan (opsional)</Label>

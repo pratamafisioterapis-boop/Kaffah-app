@@ -1,5 +1,6 @@
 import React from 'react';
-import { CalendarOff, Repeat, Clock, MessageSquare } from 'lucide-react';
+import { CalendarOff, Repeat, Clock, MessageSquare, Paperclip } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import {
   STATUS_META, leaveTypeLabel, formatLongDate, formatShortDate, leaveScopeLabel,
@@ -8,6 +9,11 @@ import {
 
 // Ringkasan satu pengajuan izin + jadwal penggantinya. `footer` untuk tombol aksi.
 const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => {
+  const openProof = async () => {
+    const { data, error } = await supabase.storage.from('leave-proofs').createSignedUrl(request.proof_path, 600);
+    if (error || !data?.signedUrl) { window.alert('Gagal membuka surat dokter.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener');
+  };
   const status = STATUS_META[request.status] || STATUS_META.pending;
   const work = request.physiotherapists;
   const workShift = work?.work_start_time && work?.work_end_time
@@ -41,6 +47,12 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
             {status.label}
           </span>
         </div>
+
+        {request.proof_path && (
+          <button type="button" onClick={openProof} className="text-xs text-blue-700 hover:underline flex items-center gap-1.5">
+            <Paperclip className="w-3.5 h-3.5" /> Lihat surat dokter
+          </button>
+        )}
 
         {request.notes && (
           <p className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">“{request.notes}”</p>
