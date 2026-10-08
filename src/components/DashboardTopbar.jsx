@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Bell, X, User as UserIcon,
   Calendar as CalendarIcon, LayoutGrid, Activity as ActivityIcon,
-  Package as PackageIcon, FileText as FileTextIcon, Award, Loader2
+  Package as PackageIcon, FileText as FileTextIcon, Award, Loader2, ClipboardCheck
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -15,6 +15,72 @@ import { Button } from '@/components/ui/button';
 import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const ACTIVITY_LIMIT = 20;
+
+// Pengajuan terapis yang menunggu persetujuan owner. Selama masih pending,
+// item tampil sebagai notifikasi belum dibaca di lonceng; klik membawa owner
+// ke halaman approval terkait. Hilang otomatis setelah ditinjau.
+const APPROVAL_LINKS = {
+  leave: '/owner/physiotherapist-management?tab=timeoff',
+  swap: '/owner/physiotherapist-management?tab=timeoff',
+  soap: '/owner/settings?tab=subjective_template',
+};
+
+function formatHm(t) {
+  return t ? String(t).slice(0, 5) : '';
+}
+
+async function loadPendingApprovals(clinicId) {
+  const scope = (q) => (clinicId ? q.eq('clinic_id', clinicId) : q);
+  const safe = (promise) => promise.then((r) => r, () => ({ data: [] }));
+  const [leaveRes, swapRes, soapRes] = await Promise.all([
+    safe(scope(supabase
+      .from('therapist_leave_requests')
+      .select('id, therapist_name, leave_date, is_partial, start_time, end_time, created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(ACTIVITY_LIMIT))),
+    safe(scope(supabase
+      .from('therapist_shift_swap_requests')
+      .select('id, therapist_name, swap_date, to_start_time, to_end_time, created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(ACTIVITY_LIMIT))),
+    safe(scope(supabase
+      .from('soap_template_change_requests')
+      .select('id, requested_by_name, field, created_at, diagnosis:operational_options!diagnosis_id(label)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(ACTIVITY_LIMIT))),
+  ]);
+
+  const base = { isRead: false, actorRole: 'therapist', actorRoleRaw: 'therapist', isApproval: true };
+  return [
+    ...(leaveRes.data || []).map((r) => ({
+      ...base,
+      id: `leave-${r.id}`,
+      time: r.created_at,
+      link: APPROVAL_LINKS.leave,
+      actorName: r.therapist_name || 'Terapis',
+      text: `mengajukan izin ${r.is_partial ? `pukul ${formatHm(r.start_time)}–${formatHm(r.end_time)}` : 'seharian'} pada ${formatShortDate(r.leave_date)} — menunggu persetujuan`,
+    })),
+    ...(swapRes.data || []).map((r) => ({
+      ...base,
+      id: `swap-${r.id}`,
+      time: r.created_at,
+      link: APPROVAL_LINKS.swap,
+      actorName: r.therapist_name || 'Terapis',
+      text: `mengajukan tukar shift pada ${formatShortDate(r.swap_date)} (${formatHm(r.to_start_time)}–${formatHm(r.to_end_time)}) — menunggu persetujuan`,
+    })),
+    ...(soapRes.data || []).map((r) => ({
+      ...base,
+      id: `soap-${r.id}`,
+      time: r.created_at,
+      link: APPROVAL_LINKS.soap,
+      actorName: r.requested_by_name || 'Terapis',
+      text: `mengajukan perubahan template ${r.field === 'objective_template' ? 'Objective' : 'Subjective'} untuk ${r.diagnosis?.label || 'diagnosa'} — menunggu persetujuan`,
+    })),
+  ];
+}
 
 function timeAgo(dateStr) {
   const d = new Date(dateStr);
@@ -438,6 +504,15 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         .sort((a, b) => new Date(b.time) - new Date(a.time))
         .slice(0, ACTIVITY_LIMIT);
 
+      // Owner: pengajuan terapis yang belum ditinjau selalu tampil paling atas.
+      if (role === 'owner') {
+        const approvals = await loadPendingApprovals(clinicId);
+        mapped = [
+          ...approvals.sort((a, b) => new Date(b.time) - new Date(a.time)),
+          ...mapped,
+        ];
+      }
+
       // Admin's notification feed must never include the owner's own
       // activity; the owner's feed keeps seeing every admin/therapist action.
       if (role === 'admin' || role === 'clinic_admin') {
@@ -464,10 +539,30 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     return () => supabase.removeChannel(channel);
   }, [loadActivities]);
 
+  // Pengajuan baru / yang baru ditinjau memperbarui lonceng owner langsung.
+  useEffect(() => {
+    if (role !== 'owner') return undefined;
+    let channel = supabase.channel('topbar-approval-requests');
+    ['therapist_leave_requests', 'therapist_shift_swap_requests', 'soap_template_change_requests'].forEach((table) => {
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => loadActivities());
+    });
+    channel.subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [role, loadActivities]);
+
   const unreadCount = activities.filter((a) => !a.isRead).length;
   const filteredActivities = activityFilter === 'all'
     ? activities
     : activities.filter((a) => a.actorRole === activityFilter);
+
+  const handleActivityClick = (item) => {
+    if (item.isApproval) {
+      setIsActivityOpen(false);
+      navigate(item.link);
+      return;
+    }
+    markAsRead(item.id);
+  };
 
   const markAsRead = async (id) => {
     setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, isRead: true } : a)));
@@ -711,7 +806,10 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button
-            onClick={() => setIsActivityOpen((o) => !o)}
+            onClick={() => {
+              if (!isActivityOpen && role === 'owner') loadActivities();
+              setIsActivityOpen((o) => !o);
+            }}
             className="relative w-9 h-9 rounded-full sm:rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
             aria-label="Aktivitas"
           >
@@ -751,7 +849,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                   filteredActivities.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => markAsRead(item.id)}
+                      onClick={() => handleActivityClick(item)}
                       className={cn(
                         'w-full flex items-start gap-3 px-4 py-3 text-left border-b border-[#F5F9FC] last:border-0 hover:bg-[#F5F9FC] transition-colors',
                         !item.isRead && 'bg-[#EAF4FF]/40'
@@ -763,7 +861,9 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                           item.actorRole === 'therapist' ? 'bg-[#E6FBF9] text-[#35C8C1]' : 'bg-[#EAF4FF] text-[#1677D2]'
                         )}
                       >
-                        {item.actorRole === 'therapist' ? <ActivityIcon className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
+                        {item.isApproval
+                          ? <ClipboardCheck className="w-4 h-4" />
+                          : item.actorRole === 'therapist' ? <ActivityIcon className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm text-[#102F52]">
