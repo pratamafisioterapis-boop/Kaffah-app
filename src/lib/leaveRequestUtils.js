@@ -51,3 +51,23 @@ export const leaveScopeLabel = (req) =>
 export const shiftMinutes = (shift) => Math.max(0, timeToMinutes(shift.end_time) - timeToMinutes(shift.start_time));
 
 export const totalShiftMinutes = (shifts) => (shifts || []).reduce((sum, s) => sum + shiftMinutes(s), 0);
+
+// Preset jam kerja shift (klinik dengan fitur izin terapis, mis. Kaffah).
+export const WORK_SHIFT_PRESETS = [
+  { name: 'Shift Pagi', start: '09:00', end: '17:00' },
+  { name: 'Shift Siang', start: '13:00', end: '21:00' },
+];
+
+// Gabungkan preset dengan shift yang dipakai terapis klinik; jam yang sama dianggap satu shift.
+export const buildShiftOptions = (therapists = []) => {
+  const map = new Map();
+  WORK_SHIFT_PRESETS.forEach((p) => map.set(`${p.start}-${p.end}`, { name: p.name, start: p.start, end: p.end }));
+  therapists.forEach((t) => {
+    if (!t.work_start_time || !t.work_end_time) return;
+    const start = hhmm(t.work_start_time);
+    const end = hhmm(t.work_end_time);
+    const key = `${start}-${end}`;
+    if (!map.has(key)) map.set(key, { name: t.work_shift_name || 'Shift', start, end });
+  });
+  return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
+};
