@@ -15,7 +15,7 @@ import {
   getLeaveRequests, submitLeaveRequest, cancelLeaveRequest, getTherapistSchedules, getTherapistTimeOff,
 } from '@/lib/api';
 import {
-  LEAVE_TYPES, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
+  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -118,7 +118,8 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   const blocker = (() => {
     if (!form.leaveDate) return 'Pilih tanggal izin dulu.';
     if (form.leaveDate < todayStr) return 'Tanggal izin tidak boleh sudah lewat.';
-    if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya izin / pengajuan di tanggal ini.';
+    if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
+    if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
     if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
@@ -255,7 +256,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             Ganti jam kerjanya kapan?
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah hari Anda biasanya tidak masuk.
+            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
         </div>
 
@@ -285,7 +286,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
               >
                 <span className="text-sm font-bold">{format(day.date, 'd')}</span>
                 <span className={cn('text-[9px]', selected ? 'text-blue-100' : off ? 'text-emerald-600' : 'text-slate-400')}>
-                  {isLeaveDay ? 'Izin' : off ? 'Libur' : 'Kerja'}
+                  {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : off ? 'Libur' : 'Kerja'}
                 </span>
               </button>
             );
@@ -431,15 +432,17 @@ const TherapistLeaveRequests = ({ therapist }) => {
     return set;
   }, [timeOff]);
 
-  // Tanggal yang tidak bisa dipilih: sudah ada cuti lain (sakit, cuti tahunan, dll.) atau pengajuan pending/disetujui.
+  // Tanggal yang tidak bisa dipilih: sudah ada cuti/izin (sakit, cuti tahunan, dll.) atau pengajuan
+  // pending/disetujui. Disimpan bersama labelnya agar Cuti, Sakit, dan Izin tidak disamakan dengan Libur.
   const blockedDates = useMemo(() => {
-    const set = new Set();
+    const map = new Map();
     timeOff.filter((t) => t.leave_type !== 'weekly_off' || t.start_time).forEach((t) => {
+      const label = t.leave_type === 'weekly_off' ? 'Libur' : t.leave_type === 'other' ? 'Izin' : leaveTypeLabel(t.leave_type);
       const end = parseISO(t.end_date);
-      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) set.add(format(d, DAY_KEY));
+      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) map.set(format(d, DAY_KEY), label);
     });
-    requests.filter((r) => r.status !== 'rejected').forEach((r) => set.add(r.leave_date));
-    return set;
+    requests.filter((r) => r.status !== 'rejected').forEach((r) => map.set(r.leave_date, 'Diajukan'));
+    return map;
   }, [timeOff, requests]);
 
   const handleCancel = async (request) => {
