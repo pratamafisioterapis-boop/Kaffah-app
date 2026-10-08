@@ -159,7 +159,7 @@ const TherapistDashboard = () => {
           <Route path="/records/new/:patientId" element={<MedicalRecordForm therapist={therapistProfile} />} />
           {therapistFillsMedicalRecords && <Route path="/medical-records" element={<MedicalRecordsManagement />} />}
           {canRequestLeave && <Route path="/leave" element={<TherapistLeaveRequests therapist={therapistProfile} />} />}
-          {canRequestSoapTemplates && <Route path="/soap-templates" element={<SubjectiveTemplateManager requestMode requesterName={therapistProfile.name} />} />}
+          {canRequestSoapTemplates && <Route path="/soap-templates" element={<SubjectiveTemplateManager requestMode requesterName={therapistProfile.name} therapistId={therapistProfile.id} />} />}
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />

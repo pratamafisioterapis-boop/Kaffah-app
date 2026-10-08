@@ -1372,6 +1372,37 @@ export const updateDiagnosisSubjectiveTemplate = async (id, template, field = 's
   return { error };
 };
 
+// Jumlah pemakaian tiap diagnosa oleh satu terapis (dari rekap harian miliknya).
+// Hasil: { nilaiDiagnosa: jumlah } — nilai bisa berupa id operational_options
+// atau label teks bebas, pemetaan ke diagnosa dilakukan pemanggil.
+export const getTherapistDiagnosisUsage = async (therapistId) => {
+  if (!therapistId) return { data: {}, error: null };
+  const PAGE = 1000;
+  const MAX_PAGES = 5;
+  const counts = {};
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const { data, error } = await supabase
+      .from('daily_recaps')
+      .select('diagnosis')
+      .eq('therapist_id', therapistId)
+      .order('recap_date', { ascending: false })
+      .range(page * PAGE, (page + 1) * PAGE - 1);
+    if (error) return { data: counts, error };
+    (data || []).forEach((row) => {
+      let list = row.diagnosis;
+      if (typeof list === 'string') {
+        try { list = JSON.parse(list); } catch { list = [list]; }
+      }
+      if (!Array.isArray(list)) list = list ? [list] : [];
+      new Set(list.flat().filter((v) => typeof v === 'string' && v.trim())).forEach((v) => {
+        counts[v] = (counts[v] || 0) + 1;
+      });
+    });
+    if (!data || data.length < PAGE) break;
+  }
+  return { data: counts, error: null };
+};
+
 // ── Pengajuan perubahan template SOAP oleh terapis (disetujui owner) ──
 const REQUEST_COLUMNS = 'id, diagnosis_id, field, proposed_template, previous_template, status, requested_by, requested_by_name, review_note, created_at, reviewed_at';
 
