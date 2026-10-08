@@ -60,7 +60,7 @@ const AdminAccountSettings = () => {
     setSavingLightLoad(true);
     setLightLoad(checked);
     await setLightLoadModeEnabled({ userId: user.id, clinicId: userDetails?.clinic_id, enabled: checked });
-    toast({ title: checked ? 'Mode Beban Ringan aktif' : 'Mode Beban Ringan nonaktif', description: 'Memuat ulang tampilan...' });
+    toast({ title: checked ? 'Mode Beban Ringan aktif' : 'Mode Beban Ringan nonaktif' });
     // Reload so every open page re-reads its data through the new view.
     setTimeout(() => window.location.reload(), 600);
   };
@@ -176,17 +176,8 @@ const AdminAccountSettings = () => {
 
         {isLightLoadClinic(userDetails?.clinic_id) && (
         <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2"><EyeOff className="w-4 h-4" /> Mode Beban Ringan</h3>
-              <p className="text-sm text-slate-500">
-                Jika aktif, di akun admin ini setiap terapis hanya tampil menangani 0-2 pasien per hari
-                (kunjungan, appointment, dan sesi paket di dashboard, Appointments, Daily Recaps, Package Recaps, dll).
-                Hari ini dan jadwal ke depan tetap normal. Hanya mengubah tampilan di akun ini &mdash; data asli tidak
-                dihapus atau diubah, akun lain tetap melihat data sebenarnya, dan data keuangan/invoice tidak ikut berubah.
-                Tombol pindah ke akun terapis juga disembunyikan selama mode ini aktif.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2"><EyeOff className="w-4 h-4" /> Mode Beban Ringan</h3>
             <Switch checked={lightLoad} onCheckedChange={handleToggleLightLoad} disabled={savingLightLoad} aria-label="Mode Beban Ringan" />
           </div>
         </div>

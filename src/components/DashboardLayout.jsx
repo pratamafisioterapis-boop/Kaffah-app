@@ -17,6 +17,7 @@ import { useDesignTheme } from '@/contexts/ThemeContext';
 import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
 import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
+import { isLightLoadModeEnabled, LIGHT_LOAD_ALLOWED_PATHS } from '@/lib/lightLoadMode';
 import DashboardTopbar from '@/components/DashboardTopbar';
 import { preloadHeroImages } from '@/lib/preloadHeroImages';
 
@@ -186,7 +187,10 @@ const isPWA =
     // Don't show any nav items (which would include ones this clinic has
     // disabled) until we actually know its disabled-feature list.
     if (!clinicFeaturesLoaded) return [];
-    const processed = processNavItems(navItems);
+    let processed = processNavItems(navItems);
+    if (role === 'admin' && isLightLoadModeEnabled()) {
+      processed = processed.filter((item) => LIGHT_LOAD_ALLOWED_PATHS.includes(item.path));
+    }
     const disabledFeatures = clinicInfo?.disabled_features_by_role?.[role];
     if (!disabledFeatures || disabledFeatures.length === 0) return processed;
     return processed

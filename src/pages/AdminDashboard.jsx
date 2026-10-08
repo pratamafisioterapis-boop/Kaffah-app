@@ -34,6 +34,7 @@ import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapi
 import AdminAccountSettings from '@/components/admin/AdminAccountSettings';
 import AttendanceManagement from '@/pages/admin/AttendanceManagement';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { getCachedClinicId } from '@/lib/api';
 const useNow = () => {
   const [now, setNow] = React.useState(new Date());
@@ -815,7 +816,7 @@ const AdminDashboard = () => {
 return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
       <Routes>
-        <Route path="/" element={<AdminDashboardHome />} />
+        <Route path="/" element={isLightLoadModeEnabled() ? <Navigate to="/admin/appointments" replace /> : <AdminDashboardHome />} />
         
         {/* Consolidated Routes */}
         <Route path="/database-patients" element={<AdminDatabasePatients />} />
