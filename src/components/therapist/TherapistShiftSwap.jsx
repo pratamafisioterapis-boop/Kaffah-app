@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
 import {
   getShiftSwapRequests, submitShiftSwapRequest, cancelShiftSwapRequest, getClinicWorkShifts,
-  getTherapistSchedules, getTherapistTimeOff,
+  getTherapistSchedules, getTherapistTimeOff, getShiftSwapBookingConflicts,
 } from '@/lib/api';
 import { buildShiftOptions, hhmm, timeToMinutes, formatDuration, formatLongDate } from '@/lib/leaveRequestUtils';
 import ShiftSwapCard from '@/components/shared/ShiftSwapCard';
@@ -33,6 +33,8 @@ const TherapistShiftSwap = ({ therapist }) => {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
+  const [conflicts, setConflicts] = useState(null);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   const current = therapist.work_start_time && therapist.work_end_time
     ? { name: therapist.work_shift_name || '', start: hhmm(therapist.work_start_time), end: hhmm(therapist.work_end_time) }
@@ -73,6 +75,20 @@ const TherapistShiftSwap = ({ therapist }) => {
     return null;
   }, [date, timeOff, schedules, requests, todayStr]);
 
+  // Cek booking pasien di tanggal itu yang tidak muat di jam shift tujuan.
+  useEffect(() => {
+    setConflicts(null);
+    if (!date || !target || blockedReason) return undefined;
+    let active = true;
+    setCheckingConflicts(true);
+    getShiftSwapBookingConflicts(therapist.id, date, target.start, target.end).then(({ count, error }) => {
+      if (!active) return;
+      setConflicts(error ? null : count);
+      setCheckingConflicts(false);
+    });
+    return () => { active = false; };
+  }, [date, target, blockedReason, therapist.id]);
+
   const sameAsCurrent = (opt) => !!current && opt.start === current.start && opt.end === current.end;
 
   const blocker = (() => {
@@ -80,6 +96,8 @@ const TherapistShiftSwap = ({ therapist }) => {
     if (blockedReason) return blockedReason;
     if (!target) return 'Pilih shift tujuan.';
     if (sameAsCurrent(target)) return 'Shift tujuan sama dengan shift Anda saat ini.';
+    if (checkingConflicts) return 'Memeriksa booking pasien…';
+    if (conflicts > 0) return `Sudah ada ${conflicts} pasien yang booking di jam yang terdampak, tukar shift tidak bisa diajukan.`;
     return null;
   })();
 
@@ -138,6 +156,7 @@ const TherapistShiftSwap = ({ therapist }) => {
             <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"><Repeat className="w-3.5 h-3.5" /></span>
             Tukar shift di tanggal yang sama
           </h3>
+          <p className="text-xs text-slate-500 -mt-2">Hanya untuk jadwal Anda sendiri (bukan tukar dengan terapis lain) dan hanya bisa jika belum ada pasien yang booking di jam yang berubah.</p>
 
           <div className="space-y-1.5">
             <Label htmlFor="swap-date">Tanggal</Label>
@@ -149,6 +168,9 @@ const TherapistShiftSwap = ({ therapist }) => {
               </p>
             )}
             {blockedReason && <p className="text-xs text-red-600 flex items-center gap-1"><Info className="w-3.5 h-3.5" />{blockedReason}</p>}
+            {!blockedReason && conflicts > 0 && (
+              <p className="text-xs text-red-600 flex items-center gap-1"><Info className="w-3.5 h-3.5" />Sudah ada {conflicts} pasien yang booking di jam yang terdampak, tukar shift tidak bisa diajukan.</p>
+            )}
           </div>
 
           <div className="space-y-2">
