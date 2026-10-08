@@ -29,8 +29,16 @@ function formatHm(t) {
   return t ? String(t).slice(0, 5) : '';
 }
 
-async function loadPendingApprovals(clinicId) {
-  const scope = (q) => (clinicId ? q.eq('clinic_id', clinicId) : q);
+// Terapis kepala meninjau izin & tukar shift (bukan template SOAP) milik
+// terapis lain, lewat halaman Izin di dashboard terapis.
+async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
+  const isHead = !!headUserId;
+  const scope = (q) => {
+    let scoped = clinicId ? q.eq('clinic_id', clinicId) : q;
+    if (isHead) scoped = scoped.neq('requested_by', headUserId);
+    return scoped;
+  };
+  const link = isHead ? '/therapist/leave' : null;
   const safe = (promise) => promise.then((r) => r, () => ({ data: [] }));
   const [leaveRes, swapRes, soapRes] = await Promise.all([
     safe(scope(supabase
@@ -45,12 +53,14 @@ async function loadPendingApprovals(clinicId) {
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(ACTIVITY_LIMIT))),
-    safe(scope(supabase
-      .from('soap_template_change_requests')
-      .select('id, requested_by_name, field, created_at, diagnosis:operational_options!diagnosis_id(label)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(ACTIVITY_LIMIT))),
+    isHead
+      ? Promise.resolve({ data: [] })
+      : safe(scope(supabase
+        .from('soap_template_change_requests')
+        .select('id, requested_by_name, field, created_at, diagnosis:operational_options!diagnosis_id(label)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(ACTIVITY_LIMIT))),
   ]);
 
   const base = { isRead: false, actorRole: 'therapist', actorRoleRaw: 'therapist', isApproval: true };
@@ -59,7 +69,7 @@ async function loadPendingApprovals(clinicId) {
       ...base,
       id: `leave-${r.id}`,
       time: r.created_at,
-      link: APPROVAL_LINKS.leave,
+      link: link || APPROVAL_LINKS.leave,
       actorName: r.therapist_name || 'Terapis',
       text: `mengajukan izin ${r.is_partial ? `pukul ${formatHm(r.start_time)}–${formatHm(r.end_time)}` : 'seharian'} pada ${formatShortDate(r.leave_date)} — menunggu persetujuan`,
     })),
@@ -67,7 +77,7 @@ async function loadPendingApprovals(clinicId) {
       ...base,
       id: `swap-${r.id}`,
       time: r.created_at,
-      link: APPROVAL_LINKS.swap,
+      link: link || APPROVAL_LINKS.swap,
       actorName: r.therapist_name || 'Terapis',
       text: `mengajukan tukar shift pada ${formatShortDate(r.swap_date)} (${formatHm(r.to_start_time)}–${formatHm(r.to_end_time)}) — menunggu persetujuan`,
     })),
@@ -293,7 +303,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   // therapist's SOAP page — never to the owner or another admin account.
   const isAdminSwitcherContext = role === 'admin' || topbarLocation.pathname.startsWith('/admin/as-therapist');
   const navigate = useNavigate();
-  const { impersonationOrigin } = useAuth();
+  const { impersonationOrigin, user } = useAuth();
   const ownerOrigin = impersonationOrigin?.origin_role === 'owner' ? impersonationOrigin : null;
   const searchRef = useRef(null);
   const bellRef = useRef(null);
@@ -314,6 +324,27 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [activityFilter, setActivityFilter] = useState('all');
+
+  // Terapis kepala ikut menerima pengajuan izin / tukar shift di lonceng.
+  const [isHeadTherapist, setIsHeadTherapist] = useState(false);
+  useEffect(() => {
+    if (role !== 'therapist' || !user?.id) {
+      setIsHeadTherapist(false);
+      return undefined;
+    }
+    let cancelled = false;
+    supabase
+      .from('physiotherapists')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_head_therapist', true)
+      .neq('is_active', false)
+      .limit(1)
+      .then(({ data }) => { if (!cancelled) setIsHeadTherapist((data || []).length > 0); },
+        () => {});
+    return () => { cancelled = true; };
+  }, [role, user?.id]);
+  const canReviewRequests = role === 'owner' || isHeadTherapist;
 
   const menuItems = useMemo(() => flattenNavItems(navItems), [navItems]);
 
@@ -505,8 +536,10 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         .slice(0, ACTIVITY_LIMIT);
 
       // Owner: pengajuan terapis yang belum ditinjau selalu tampil paling atas.
-      if (role === 'owner') {
-        const approvals = await loadPendingApprovals(clinicId);
+      if (canReviewRequests) {
+        const approvals = await loadPendingApprovals(clinicId, {
+          headUserId: role === 'owner' ? null : user?.id,
+        });
         mapped = [
           ...approvals.sort((a, b) => new Date(b.time) - new Date(a.time)),
           ...mapped,
@@ -525,7 +558,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     } finally {
       setIsLoadingActivities(false);
     }
-  }, [clinicId, role]);
+  }, [clinicId, role, canReviewRequests, user?.id]);
 
   useEffect(() => { loadActivities(); }, [loadActivities]);
 
@@ -541,14 +574,14 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
   // Pengajuan baru / yang baru ditinjau memperbarui lonceng owner langsung.
   useEffect(() => {
-    if (role !== 'owner') return undefined;
+    if (!canReviewRequests) return undefined;
     let channel = supabase.channel('topbar-approval-requests');
     ['therapist_leave_requests', 'therapist_shift_swap_requests', 'soap_template_change_requests'].forEach((table) => {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => loadActivities());
     });
     channel.subscribe();
     return () => supabase.removeChannel(channel);
-  }, [role, loadActivities]);
+  }, [canReviewRequests, loadActivities]);
 
   const unreadCount = activities.filter((a) => !a.isRead).length;
   const filteredActivities = activityFilter === 'all'
@@ -807,7 +840,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button
             onClick={() => {
-              if (!isActivityOpen && role === 'owner') loadActivities();
+              if (!isActivityOpen && canReviewRequests) loadActivities();
               setIsActivityOpen((o) => !o);
             }}
             className="relative w-9 h-9 rounded-full sm:rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
