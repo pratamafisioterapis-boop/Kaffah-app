@@ -1464,7 +1464,7 @@ export const reviewSoapTemplateRequest = async (id, approve, note = null) => {
 };
 
 // ── Pengajuan izin terapis (disetujui owner / terapis kepala) ──
-const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, physiotherapists(work_shift_name, work_start_time, work_end_time)';
+const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, proof_path, physiotherapists(work_shift_name, work_start_time, work_end_time)';
 
 // RLS yang membatasi baris: terapis hanya melihat miliknya, owner / terapis kepala
 // melihat seluruh pengajuan klinik.
@@ -1480,7 +1480,7 @@ export const getLeaveRequests = async ({ status } = {}) => {
   return { data: data || [], error: null };
 };
 
-export const submitLeaveRequest = async ({ therapistId, therapistName, leaveDate, isPartial, startTime, endTime, leaveType, notes, replacementShifts }) => {
+export const submitLeaveRequest = async ({ therapistId, therapistName, leaveDate, isPartial, startTime, endTime, leaveType, notes, replacementShifts, proofPath }) => {
   if (leaveType === 'annual') {
     const { data: balance } = await getTherapistAnnualLeaveBalance(therapistId, leaveDate);
     if (balance?.isFirstYear) {
@@ -1497,6 +1497,7 @@ export const submitLeaveRequest = async ({ therapistId, therapistName, leaveDate
     leave_type: leaveType || 'personal',
     notes: notes && notes.trim() ? notes.trim() : null,
     replacement_shifts: replacementShifts,
+    proof_path: proofPath || null,
   });
   return { error };
 };
