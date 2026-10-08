@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -33,6 +34,7 @@ const MENU_ITEMS = [
 ];
 
 const PhysiotherapistManagementPage = () => {
+  const location = useLocation();
 
   const { count: pendingLeaveCount, refresh: refreshPendingLeave } = usePendingLeaveRequestCount();
   const [allSchedules, setAllSchedules] = useState([]);
@@ -92,7 +94,7 @@ const PhysiotherapistManagementPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'list'} className="w-full space-y-6">
+      <Tabs key={location.search} defaultValue={new URLSearchParams(location.search).get('tab') || 'list'} className="w-full space-y-6">
 
         {/* MENU GRID */}
         <TabsList className="grid grid-cols-3 gap-1.5 sm:gap-2 h-auto w-full bg-white p-2.5 sm:p-3 rounded-[20px] border border-[#DCE7F1] shadow-[0_1px_6px_rgba(23,50,77,0.05)]">

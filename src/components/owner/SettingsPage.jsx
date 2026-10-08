@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -1105,6 +1106,7 @@ const SETTINGS_TAB_GROUPS = [
 
 const SettingsPage = () => {
   const { userDetails, user } = useAuth();
+  const routerLocation = useLocation();
   const [reloadGallery, setReloadGallery] = useState(0);
   const [disabledFeatures, setDisabledFeatures] = useState([]);
   const [openGroups, setOpenGroups] = useState(() => {
@@ -1186,7 +1188,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue={initialTab} className="w-full">
+      <Tabs key={routerLocation.search} defaultValue={initialTab} className="w-full">
         <TabsList className="flex flex-col h-auto gap-3 bg-transparent p-0 border-none items-stretch w-full">
           {visibleTabGroups.map((group) => {
             const isOpen = openGroups.has(group.label);
