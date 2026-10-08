@@ -15,7 +15,7 @@ import {
   getLeaveRequests, submitLeaveRequest, cancelLeaveRequest, getTherapistSchedules, getTherapistTimeOff,
 } from '@/lib/api';
 import {
-  LEAVE_TYPES, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
+  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -33,7 +33,7 @@ const emptyForm = () => ({
   leaveDate: '', partial: false, startTime: '09:00', endTime: '12:00', leaveType: 'personal', notes: '', shifts: [],
 });
 
-const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
+const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }) => {
   const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +58,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
     return best ? Number(best[0]) : 60;
   }, [schedules]);
 
-  const scheduleOn = useCallback((dateStr) => schedulesByDow[parseISO(dateStr).getDay()] || [], [schedulesByDow]);
+  // Hari libur mingguan dicatat sebagai cuti bertipe 'weekly_off' (jadwal mingguan tetap
+  // aktif di semua hari), jadi tanggal itu dianggap tidak ada jadwal kerja.
+  const scheduleOn = useCallback(
+    (dateStr) => (offDates.has(dateStr) ? [] : schedulesByDow[parseISO(dateStr).getDay()] || []),
+    [schedulesByDow, offDates],
+  );
   const scheduleLabel = (list) => (list.length
     ? list.map((s) => `${hhmm(s.start_time)}–${hhmm(s.end_time)}`).join(', ')
     : '');
@@ -113,7 +118,8 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
   const blocker = (() => {
     if (!form.leaveDate) return 'Pilih tanggal izin dulu.';
     if (form.leaveDate < todayStr) return 'Tanggal izin tidak boleh sudah lewat.';
-    if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya izin / pengajuan di tanggal ini.';
+    if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
+    if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
     if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
@@ -250,7 +256,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
             Ganti jam kerjanya kapan?
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah hari Anda biasanya tidak masuk.
+            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
         </div>
 
@@ -280,7 +286,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
               >
                 <span className="text-sm font-bold">{format(day.date, 'd')}</span>
                 <span className={cn('text-[9px]', selected ? 'text-blue-100' : off ? 'text-emerald-600' : 'text-slate-400')}>
-                  {isLeaveDay ? 'Izin' : off ? 'Libur' : 'Kerja'}
+                  {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : off ? 'Libur' : 'Kerja'}
                 </span>
               </button>
             );
@@ -416,17 +422,27 @@ const TherapistLeaveRequests = ({ therapist }) => {
 
   useEffect(() => { load(); }, [load]);
 
-  // Tanggal yang tidak bisa dipilih: sudah ada cuti, atau pengajuan pending/disetujui.
-  const blockedDates = useMemo(() => {
+  // Libur mingguan (cuti 'weekly_off' seharian) = hari libur terapis: boleh dipilih untuk mengganti jam.
+  const offDates = useMemo(() => {
     const set = new Set();
-    timeOff.forEach((t) => {
+    timeOff.filter((t) => t.leave_type === 'weekly_off' && !t.start_time).forEach((t) => {
       const end = parseISO(t.end_date);
-      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) {
-        set.add(format(d, DAY_KEY));
-      }
+      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) set.add(format(d, DAY_KEY));
     });
-    requests.filter((r) => r.status !== 'rejected').forEach((r) => set.add(r.leave_date));
     return set;
+  }, [timeOff]);
+
+  // Tanggal yang tidak bisa dipilih: sudah ada cuti/izin (sakit, cuti tahunan, dll.) atau pengajuan
+  // pending/disetujui. Disimpan bersama labelnya agar Cuti, Sakit, dan Izin tidak disamakan dengan Libur.
+  const blockedDates = useMemo(() => {
+    const map = new Map();
+    timeOff.filter((t) => t.leave_type !== 'weekly_off' || t.start_time).forEach((t) => {
+      const label = t.leave_type === 'weekly_off' ? 'Libur' : t.leave_type === 'other' ? 'Izin' : leaveTypeLabel(t.leave_type);
+      const end = parseISO(t.end_date);
+      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) map.set(format(d, DAY_KEY), label);
+    });
+    requests.filter((r) => r.status !== 'rejected').forEach((r) => map.set(r.leave_date, 'Diajukan'));
+    return map;
   }, [timeOff, requests]);
 
   const handleCancel = async (request) => {
@@ -449,7 +465,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
   const mine = (
     <div className="grid gap-6 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-3">
-        <LeaveForm therapist={therapist} schedules={schedules} blockedDates={blockedDates} onSubmitted={load} />
+        <LeaveForm therapist={therapist} schedules={schedules} blockedDates={blockedDates} offDates={offDates} onSubmitted={load} />
       </div>
       <div className="lg:col-span-2 space-y-3">
         <h3 className="font-bold text-slate-800 flex items-center gap-2">Pengajuan Saya</h3>
