@@ -133,10 +133,13 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
       if (f.shifts.some((s) => s.date === day.key)) {
         return { ...f, shifts: f.shifts.filter((s) => s.date !== day.key) };
       }
-      // Hari kerja: default setelah jam kerja normal. Hari libur: default mulai 09:00.
+      // Hari kerja: default setelah jam kerja normal. Hari libur: default mulai jam shift (atau 09:00).
       const lastEnd = day.sched.reduce((mx, s) => Math.max(mx, timeToMinutes(s.end_time)), 0);
-      const start = day.sched.length ? lastEnd : 9 * 60;
-      const wanted = missedMinutes > 0 ? Math.min(missedMinutes, 8 * 60) : 3 * 60;
+      const shiftStart = workShift ? timeToMinutes(workShift.start_time) : 9 * 60;
+      const start = day.sched.length ? lastEnd : shiftStart;
+      // Default = jam yang ditinggalkan; kalau belum ada tanggal izin, satu shift penuh.
+      const shiftLength = workShift ? timeToMinutes(workShift.end_time) - shiftStart : 3 * 60;
+      const wanted = missedMinutes > 0 ? Math.min(missedMinutes, 8 * 60) : shiftLength;
       return {
         ...f,
         shifts: [...f.shifts, { date: day.key, start_time: minutesToTime(start), end_time: minutesToTime(start + wanted) }],
