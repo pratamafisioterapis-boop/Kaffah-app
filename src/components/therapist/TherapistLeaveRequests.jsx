@@ -33,7 +33,7 @@ const emptyForm = () => ({
   leaveDate: '', partial: false, startTime: '09:00', endTime: '12:00', leaveType: 'personal', notes: '', shifts: [],
 });
 
-const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
+const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }) => {
   const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +58,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, onSubmitted }) => {
     return best ? Number(best[0]) : 60;
   }, [schedules]);
 
-  const scheduleOn = useCallback((dateStr) => schedulesByDow[parseISO(dateStr).getDay()] || [], [schedulesByDow]);
+  // Hari libur mingguan dicatat sebagai cuti bertipe 'weekly_off' (jadwal mingguan tetap
+  // aktif di semua hari), jadi tanggal itu dianggap tidak ada jadwal kerja.
+  const scheduleOn = useCallback(
+    (dateStr) => (offDates.has(dateStr) ? [] : schedulesByDow[parseISO(dateStr).getDay()] || []),
+    [schedulesByDow, offDates],
+  );
   const scheduleLabel = (list) => (list.length
     ? list.map((s) => `${hhmm(s.start_time)}–${hhmm(s.end_time)}`).join(', ')
     : '');
@@ -416,14 +421,22 @@ const TherapistLeaveRequests = ({ therapist }) => {
 
   useEffect(() => { load(); }, [load]);
 
-  // Tanggal yang tidak bisa dipilih: sudah ada cuti, atau pengajuan pending/disetujui.
+  // Libur mingguan (cuti 'weekly_off' seharian) = hari libur terapis: boleh dipilih untuk mengganti jam.
+  const offDates = useMemo(() => {
+    const set = new Set();
+    timeOff.filter((t) => t.leave_type === 'weekly_off' && !t.start_time).forEach((t) => {
+      const end = parseISO(t.end_date);
+      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) set.add(format(d, DAY_KEY));
+    });
+    return set;
+  }, [timeOff]);
+
+  // Tanggal yang tidak bisa dipilih: sudah ada cuti lain (sakit, cuti tahunan, dll.) atau pengajuan pending/disetujui.
   const blockedDates = useMemo(() => {
     const set = new Set();
-    timeOff.forEach((t) => {
+    timeOff.filter((t) => t.leave_type !== 'weekly_off' || t.start_time).forEach((t) => {
       const end = parseISO(t.end_date);
-      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) {
-        set.add(format(d, DAY_KEY));
-      }
+      for (let d = parseISO(t.start_date); d <= end; d = addDays(d, 1)) set.add(format(d, DAY_KEY));
     });
     requests.filter((r) => r.status !== 'rejected').forEach((r) => set.add(r.leave_date));
     return set;
@@ -449,7 +462,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
   const mine = (
     <div className="grid gap-6 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-3">
-        <LeaveForm therapist={therapist} schedules={schedules} blockedDates={blockedDates} onSubmitted={load} />
+        <LeaveForm therapist={therapist} schedules={schedules} blockedDates={blockedDates} offDates={offDates} onSubmitted={load} />
       </div>
       <div className="lg:col-span-2 space-y-3">
         <h3 className="font-bold text-slate-800 flex items-center gap-2">Pengajuan Saya</h3>
