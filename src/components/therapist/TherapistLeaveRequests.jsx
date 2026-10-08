@@ -178,6 +178,9 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
     if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
+    if (missedMinutes > 0 && replacedMinutes < missedMinutes) {
+      return `Jam pengganti kurang ${formatDuration(missedMinutes - replacedMinutes)} dari jam izin (${formatDuration(missedMinutes)}). Tambah jam pengganti sampai cukup.`;
+    }
     return null;
   })();
 
