@@ -1450,6 +1450,12 @@ export const getLeaveRequests = async ({ status } = {}) => {
 };
 
 export const submitLeaveRequest = async ({ therapistId, therapistName, leaveDate, isPartial, startTime, endTime, leaveType, notes, replacementShifts }) => {
+  if (leaveType === 'annual') {
+    const { data: balance } = await getTherapistAnnualLeaveBalance(therapistId, leaveDate);
+    if (balance?.isFirstYear) {
+      return { error: { message: 'Terapis di tahun pertama bergabung belum mendapat jatah cuti tahunan.' } };
+    }
+  }
   const { error } = await supabase.from('therapist_leave_requests').insert({
     therapist_id: therapistId,
     therapist_name: therapistName || null,

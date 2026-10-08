@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
 import {
   getLeaveRequests, submitLeaveRequest, cancelLeaveRequest, getTherapistSchedules, getTherapistTimeOff,
+  getTherapistAnnualLeaveBalance,
 } from '@/lib/api';
 import {
   LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
@@ -38,6 +39,19 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const todayStr = format(new Date(), DAY_KEY);
+
+  // Terapis tahun pertama belum berhak Cuti (annual); opsi dinonaktifkan.
+  const [firstYear, setFirstYear] = useState(false);
+  useEffect(() => {
+    let active = true;
+    getTherapistAnnualLeaveBalance(therapist.id).then(({ data }) => {
+      if (!active) return;
+      const isFirst = !!data?.isFirstYear;
+      setFirstYear(isFirst);
+      if (isFirst) setForm((f) => (f.leaveType === 'annual' ? { ...f, leaveType: 'personal' } : f));
+    });
+    return () => { active = false; };
+  }, [therapist.id]);
 
   const schedulesByDow = useMemo(() => {
     const map = {};
@@ -220,20 +234,28 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
         <div className="space-y-1.5">
           <Label>Alasan</Label>
           <div className="flex flex-wrap gap-1.5">
-            {LEAVE_TYPES.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, leaveType: t.value }))}
-                className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
-                  form.leaveType === t.value ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300',
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
+            {LEAVE_TYPES.map((t) => {
+              const locked = t.value === 'annual' && firstYear;
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => setForm((f) => ({ ...f, leaveType: t.value }))}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                    form.leaveType === t.value ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300',
+                    locked && 'opacity-50 cursor-not-allowed hover:border-slate-200',
+                  )}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
+          {firstYear && (
+            <p className="text-[11px] text-amber-700">Cuti tahunan belum tersedia di tahun pertama bergabung.</p>
+          )}
         </div>
 
         <div className="space-y-1.5">

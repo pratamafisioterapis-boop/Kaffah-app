@@ -406,6 +406,11 @@ const TabCuti = ({ therapistId }) => {
   const [form, setForm] = useState({ start_date: '', end_date: '', leave_type: 'annual', reason: '' });
   const [balance, setBalance] = useState(null);
 
+  // Terapis tahun pertama tidak bisa memilih Cuti Tahunan; default ke Sakit.
+  useEffect(() => {
+    if (balance?.isFirstYear) setForm(f => (f.leave_type === 'annual' ? { ...f, leave_type: 'sick' } : f));
+  }, [balance]);
+
   const fetchCuti = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -433,6 +438,10 @@ const TabCuti = ({ therapistId }) => {
       toast({ variant: 'destructive', title: 'Tanggal selesai harus setelah tanggal mulai' });
       return;
     }
+    if (form.leave_type === 'annual' && balance?.isFirstYear) {
+      toast({ variant: 'destructive', title: 'Belum berhak cuti tahunan', description: 'Terapis di tahun pertama bergabung belum mendapat jatah cuti tahunan.' });
+      return;
+    }
     setSaving(true);
     const reasonLabel = LEAVE_REASONS.find(r => r.value === form.leave_type)?.label || 'Lainnya';
     const { error } = await supabase.from('therapist_time_off').insert({
@@ -448,7 +457,7 @@ const TabCuti = ({ therapistId }) => {
       toast({ variant: 'destructive', title: 'Gagal menambah cuti', description: error.message });
     } else {
       toast({ title: 'Cuti berhasil ditambahkan' });
-      setForm({ start_date: '', end_date: '', leave_type: 'annual', reason: '' });
+      setForm({ start_date: '', end_date: '', leave_type: balance?.isFirstYear ? 'sick' : 'annual', reason: '' });
       setShowForm(false);
       fetchCuti();
       fetchBalance();
@@ -526,7 +535,11 @@ const TabCuti = ({ therapistId }) => {
             <Select value={form.leave_type} onValueChange={v => setForm(f => ({ ...f, leave_type: v }))}>
               <SelectTrigger className="rounded-xl text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {LEAVE_REASONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                {LEAVE_REASONS.map(r => (
+                  <SelectItem key={r.value} value={r.value} disabled={r.value === 'annual' && balance?.isFirstYear}>
+                    {r.label}{r.value === 'annual' && balance?.isFirstYear ? ' (belum berhak)' : ''}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
