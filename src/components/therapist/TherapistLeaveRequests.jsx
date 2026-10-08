@@ -574,6 +574,22 @@ const TherapistLeaveRequests = ({ therapist }) => {
         </div>
       </div>
 
+      {therapist?.work_start_time && therapist?.work_end_time && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
+          <Clock3 className="w-5 h-5 text-sky-600 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs text-sky-700">Jam kerja Anda</p>
+            <p className="text-sm font-bold text-sky-900">
+              {therapist.work_shift_name ? `${therapist.work_shift_name} · ` : ''}
+              {hhmm(therapist.work_start_time)}–{hhmm(therapist.work_end_time)}
+              <span className="font-normal text-sky-700">
+                {' '}({formatDuration(timeToMinutes(therapist.work_end_time) - timeToMinutes(therapist.work_start_time))})
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {isHead ? (
         <Tabs defaultValue={pendingForReview > 0 ? 'review' : 'mine'} className="space-y-5">
           <TabsList className="grid grid-cols-2 w-full sm:w-[420px] bg-slate-100 p-1 rounded-lg">
