@@ -5,6 +5,7 @@ import {
   listenForegroundNotifications
 } from '@/lib/pushNotifications';
 import { useToast } from '@/components/ui/use-toast';
+import { initLightLoadMode, refreshLightLoadMode, isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const AuthContext = createContext(undefined);
 
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }) => {
   setUser(null);
   setSession(null);
   setUserDetails(null);
+  initLightLoadMode({ userId: null, role: null, clinicId: null });
   retryCount.current = 0;
 }, []);
 
@@ -157,6 +159,12 @@ export const AuthProvider = ({ children }) => {
       if (currentUser && currentUser.id) {
         console.log("[AuthContext] Session handled successfully for user:", currentUser.id);
         const details = await fetchUserDetails(currentUser.id);
+        // Admin-only display mode: work out the trimmed view before the
+        // dashboards mount, so they never flash the real numbers first.
+        await withTimeout(
+          initLightLoadMode({ userId: currentUser.id, role: details?.role, clinicId: details?.clinic_id }),
+          8000
+        ).catch(() => {});
         setUserDetails(details);
 
       } else {
@@ -514,6 +522,15 @@ export const AuthProvider = ({ children }) => {
     fetchClinicName();
     return () => { active = false; };
   }, [userDetails?.clinic_id]);
+  // Keep the admin-only trimmed view current as days roll over and new
+  // visits are recorded.
+  useEffect(() => {
+    if (!userDetails?.clinic_id) return undefined;
+    const tick = () => { if (isLightLoadModeEnabled()) refreshLightLoadMode(userDetails.clinic_id); };
+    const id = setInterval(tick, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [userDetails?.clinic_id]);
+
   const foregroundListenerAttached = useRef(false);
 
   useEffect(() => {

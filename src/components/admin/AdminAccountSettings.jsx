@@ -4,7 +4,9 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Mail, Lock, UserCircle, Upload, Bell } from 'lucide-react';
+import { Loader2, Mail, Lock, UserCircle, Upload, Bell, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { isLightLoadClinic, getStoredLightLoadMode, setLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { prepareImageForUpload } from '@/lib/imageUpload';
 import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
@@ -48,6 +50,19 @@ const AdminAccountSettings = () => {
     } finally {
       setUploadingSignature(false);
     }
+  };
+
+  const [lightLoad, setLightLoad] = useState(() => getStoredLightLoadMode(user?.id));
+  const [savingLightLoad, setSavingLightLoad] = useState(false);
+
+  const handleToggleLightLoad = async (checked) => {
+    if (!user?.id) return;
+    setSavingLightLoad(true);
+    setLightLoad(checked);
+    await setLightLoadModeEnabled({ userId: user.id, clinicId: userDetails?.clinic_id, enabled: checked });
+    toast({ title: checked ? 'Mode Beban Ringan aktif' : 'Mode Beban Ringan nonaktif', description: 'Memuat ulang tampilan...' });
+    // Reload so every open page re-reads its data through the new view.
+    setTimeout(() => window.location.reload(), 600);
   };
 
   useEffect(() => {
@@ -158,6 +173,24 @@ const AdminAccountSettings = () => {
             </label>
           </div>
         </div>
+
+        {isLightLoadClinic(userDetails?.clinic_id) && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2"><EyeOff className="w-4 h-4" /> Mode Beban Ringan</h3>
+              <p className="text-sm text-slate-500">
+                Jika aktif, di akun admin ini setiap terapis hanya tampil menangani 0-2 pasien per hari
+                (kunjungan, appointment, dan sesi paket di dashboard, Appointments, Daily Recaps, Package Recaps, dll).
+                Hari ini dan jadwal ke depan tetap normal. Hanya mengubah tampilan di akun ini &mdash; data asli tidak
+                dihapus atau diubah, akun lain tetap melihat data sebenarnya, dan data keuangan/invoice tidak ikut berubah.
+                Tombol pindah ke akun terapis juga disembunyikan selama mode ini aktif.
+              </p>
+            </div>
+            <Switch checked={lightLoad} onCheckedChange={handleToggleLightLoad} disabled={savingLightLoad} aria-label="Mode Beban Ringan" />
+          </div>
+        </div>
+        )}
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
           <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Mail className="w-4 h-4" /> Ubah Email Login</h3>
