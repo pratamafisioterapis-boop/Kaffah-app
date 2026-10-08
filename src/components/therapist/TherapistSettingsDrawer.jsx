@@ -491,6 +491,11 @@ const TabCuti = ({ therapistId }) => {
             <p className="text-[11px] text-emerald-600/80 mt-1">
               Periode {formatTgl(balance.periodStart)} – {formatTgl(balance.periodEnd)}
             </p>
+            {balance.isFirstYear && (
+              <p className="text-[11px] text-amber-700 mt-1">
+                Tahun pertama bergabung belum mendapat jatah cuti tahunan (hanya izin tidak hadir).
+              </p>
+            )}
           </div>
         </div>
       )}

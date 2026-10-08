@@ -6467,11 +6467,23 @@ export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate 
     const periodStartISO = toISO(periodStart);
     const periodEndISO = toISO(periodEnd);
 
-    // Pro-rata kuota untuk periode pertama yang kurang dari 1 tahun penuh
-    const periodDays = Math.round((periodEnd - periodStart) / MS_PER_DAY) + 1;
-    const quota = periodDays < 360
-      ? Math.round(ANNUAL_LEAVE_QUOTA_DAYS * (periodDays / 365))
-      : ANNUAL_LEAVE_QUOTA_DAYS;
+    // Terapis baru (tahun pertama di Kaffah, belum genap 1 tahun sejak join_date atau
+    // MOU yang berlaku masih periode ke-1) belum mendapat jatah cuti tahunan.
+    const isFirstPeriodByJoinDate = !!joinDate && !isNaN(joinDate.getTime()) && periodStart.getTime() === joinDate.getTime();
+
+    const refISO = toISO(ref);
+    const { data: activeMou } = await supabase
+      .from('therapist_mou_documents')
+      .select('period_number')
+      .eq('physiotherapist_id', therapistId)
+      .lte('period_start', refISO)
+      .gte('period_end', refISO)
+      .order('period_start', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const isFirstPeriodByMou = (activeMou?.period_number ?? 0) === 1;
+
+    const quota = (isFirstPeriodByJoinDate || isFirstPeriodByMou) ? 0 : ANNUAL_LEAVE_QUOTA_DAYS;
 
     const { data, error } = await supabase
       .from('therapist_time_off')
@@ -6497,7 +6509,7 @@ export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate 
     const remaining = Math.max(quota - usedDays, 0);
 
     return {
-      data: { quota, used: usedDays, remaining, periodStart: periodStartISO, periodEnd: periodEndISO, entries: data || [] },
+      data: { quota, isFirstYear: quota === 0, used: usedDays, remaining, periodStart: periodStartISO, periodEnd: periodEndISO, entries: data || [] },
       error: null
     };
   }, 'getTherapistAnnualLeaveBalance');
