@@ -1557,6 +1557,14 @@ export const reviewShiftSwapRequest = async (id, approve, note = null) => {
   return { error };
 };
 
+// Jumlah booking aktif terapis di tanggal itu yang berada di luar jam shift tujuan (> 0 = tukar shift diblokir).
+export const getShiftSwapBookingConflicts = async (therapistId, date, start, end) => {
+  const { data, error } = await supabase.rpc('shift_swap_booking_conflicts', {
+    p_therapist_id: therapistId, p_date: date, p_start: start, p_end: end,
+  });
+  return { count: typeof data === 'number' ? data : 0, error };
+};
+
 // Shift yang dipakai terapis di klinik ini (untuk pilihan tukar shift).
 export const getClinicWorkShifts = async (clinicId) => {
   const { data, error } = await supabase
