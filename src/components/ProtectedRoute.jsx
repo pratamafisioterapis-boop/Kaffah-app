@@ -8,7 +8,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const location = useLocation();
 
   // Show loading state while auth is being determined
-  if (loading || isSwitching) {
+  // userDetails masih milik akun sebelumnya selama profil akun baru dimuat;
+  // jangan nilai role-nya sebelum cocok dengan user aktif.
+  const detailsStale = !!user && !!userDetails && userDetails.id !== user.id;
+
+  if (loading || isSwitching || detailsStale) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
