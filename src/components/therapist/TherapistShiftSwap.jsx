@@ -17,7 +17,7 @@ import ShiftSwapCard from '@/components/shared/ShiftSwapCard';
 
 const DAY_KEY = 'yyyy-MM-dd';
 
-// Tukar shift di tanggal yang sama: pilih tanggal, pilih shift tujuan, jam kerja shift ditampilkan.
+// Ubah shift di tanggal yang sama: pilih tanggal, pilih shift tujuan, jam kerja shift ditampilkan.
 const TherapistShiftSwap = ({ therapist }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -154,9 +154,9 @@ const TherapistShiftSwap = ({ therapist }) => {
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"><Repeat className="w-3.5 h-3.5" /></span>
-            Tukar shift di tanggal yang sama
+            Ubah shift di tanggal yang sama
           </h3>
-          <p className="text-xs text-slate-500 -mt-2">Hanya untuk jadwal Anda sendiri (bukan tukar dengan terapis lain) dan hanya bisa jika belum ada pasien yang booking di jam yang berubah.</p>
+          <p className="text-xs text-slate-500 -mt-2">Hanya untuk jadwal Anda sendiri (untuk tukar jadwal Minggu dengan terapis lain, pakai tab Tukar Jadwal) dan hanya bisa jika belum ada pasien yang booking di jam yang berubah.</p>
 
           <div className="space-y-1.5">
             <Label htmlFor="swap-date">Tanggal</Label>
@@ -233,7 +233,7 @@ const TherapistShiftSwap = ({ therapist }) => {
             className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
           >
             {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-            Kirim Pengajuan Tukar Shift
+            Kirim Pengajuan Ubah Shift
           </Button>
         </div>
       </div>

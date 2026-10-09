@@ -1557,6 +1557,50 @@ export const reviewShiftSwapRequest = async (id, approve, note = null) => {
   return { error };
 };
 
+// ── Tukar jadwal hari Minggu (A -> B wajib acc -> owner acc) ──
+const SUNDAY_SWAP_COLUMNS = 'id, therapist_id, therapist_name, substitute_id, substitute_name, substitute_user_id, swap_date, start_time, end_time, notes, status, rejected_by, requested_by, substitute_responded_at, substitute_note, reviewed_by_name, review_note, reviewed_at, created_at';
+
+export const getSundaySwapRequests = async () => {
+  const { data, error } = await supabase
+    .from('therapist_sunday_swap_requests')
+    .select(SUNDAY_SWAP_COLUMNS)
+    .order('swap_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) return { data: [], error };
+  return { data: data || [], error: null };
+};
+
+export const getSundaySwapCandidates = async (date) => {
+  const { data, error } = await supabase.rpc('sunday_swap_candidates', { p_date: date });
+  return { data: data || [], error };
+};
+
+export const createSundaySwapRequest = async ({ substituteId, date, notes }) => {
+  const { error } = await supabase.rpc('create_sunday_swap_request', {
+    p_substitute_id: substituteId, p_date: date, p_notes: notes && notes.trim() ? notes.trim() : null,
+  });
+  return { error };
+};
+
+export const respondSundaySwapRequest = async (id, accept, note = null) => {
+  const { error } = await supabase.rpc('respond_sunday_swap_request', {
+    p_request_id: id, p_accept: accept, p_note: note,
+  });
+  return { error };
+};
+
+export const reviewSundaySwapRequest = async (id, approve, note = null) => {
+  const { error } = await supabase.rpc('review_sunday_swap_request', {
+    p_request_id: id, p_approve: approve, p_note: note,
+  });
+  return { error };
+};
+
+export const cancelSundaySwapRequest = async (id) => {
+  const { error } = await supabase.from('therapist_sunday_swap_requests').delete().eq('id', id);
+  return { error };
+};
+
 // Jumlah booking aktif terapis di tanggal itu yang berada di luar jam shift tujuan (> 0 = tukar shift diblokir).
 export const getShiftSwapBookingConflicts = async (therapistId, date, start, end) => {
   const { data, error } = await supabase.rpc('shift_swap_booking_conflicts', {
