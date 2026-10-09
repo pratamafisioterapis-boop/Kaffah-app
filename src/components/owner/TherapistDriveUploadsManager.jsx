@@ -60,11 +60,11 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-blue-600" /> Konten Upload Terapis
+            <FolderOpen className="w-5 h-5 text-app-accent" /> Konten Upload Terapis
           </h3>
           <p className="text-sm text-slate-500">Pantau dan kelola konten yang diunggah terapis ke Google Drive klinik.</p>
         </div>
@@ -77,7 +77,7 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
       ) : uploads.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+        <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
           Belum ada konten yang diunggah terapis.
         </div>
       ) : (
@@ -87,7 +87,7 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
               key={item.id}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -103,7 +103,7 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
               </div>
               <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                 {item.web_view_link && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => window.open(item.web_view_link, '_blank')} title="Buka di Drive">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-app-accent" onClick={() => window.open(item.web_view_link, '_blank')} title="Buka di Drive">
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 )}

@@ -95,7 +95,7 @@ const AdminIncomeEditModal = ({ isOpen, onClose, income, onSuccess }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose(val)}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-xl shadow-lg border-0">
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-app shadow-lg border-0">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="text-xl font-bold text-slate-800">Edit Pemasukan</DialogTitle>
         </DialogHeader>

@@ -187,7 +187,7 @@ const patientOptions = filteredPatients.map(p => ({
                 </DialogHeader>
                 
                 {isLoading ? (
-                    <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-app-accent" /></div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4 py-4">
                         <div className="space-y-2">

@@ -55,7 +55,7 @@ const InventoryMonthlyTakeOut = () => {
         </div>
       </div>
 
-      <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
+      <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
         {loading ? (
           <div className="text-center py-12 text-slate-400">Memuat data...</div>
         ) : rows.length === 0 ? (

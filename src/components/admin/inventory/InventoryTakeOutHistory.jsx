@@ -44,7 +44,7 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
+    <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
       {history.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
           <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>
@@ -77,10 +77,10 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
                   </div>
                 )}
                 <div className="flex items-center justify-end gap-1 pt-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -111,10 +111,10 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
                     <td className="px-6 py-4 text-slate-500">{row.notes || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-105" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-all hover:scale-105" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all hover:scale-105" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-all hover:scale-105" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

@@ -81,7 +81,7 @@ const DailyEvaluationReportWidget = () => {
     <Card className="shadow-sm border-slate-200 h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-rose-100 rounded-lg">
+          <div className="p-2 bg-rose-100 rounded-app-sm">
             <FileText className="h-4 w-4 text-rose-600" />
           </div>
           <div>

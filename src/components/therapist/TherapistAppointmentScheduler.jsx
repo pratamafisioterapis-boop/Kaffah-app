@@ -242,7 +242,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
        {/* Hero Banner */}
-       <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+       <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
          <img
            src="/hero/clinara-appointment-hero.webp"
            alt="Kaffah Physiotherapy"
@@ -251,17 +251,17 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-             <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+             <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
              <h1
                style={{ fontFamily: "'Caveat', cursive" }}
-               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
              >
                Jadwalkan<br />
-               <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+               <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                  Pasien
                </span>
              </h1>
-             <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+             <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                Buat appointment baru untuk pasien Anda.
              </p>
            </div>
@@ -282,8 +282,8 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
                          <button
                            key={i}
                            onClick={() => { setSelectedDate(date); setSelectedSlot(null); }}
-                           className={`flex-shrink-0 w-14 h-16 rounded-lg flex flex-col items-center justify-center border transition-all ${
-                              isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-200 hover:border-blue-300'
+                           className={`flex-shrink-0 w-14 h-16 rounded-app-sm flex flex-col items-center justify-center border transition-all ${
+                              isSelected ? 'bg-app-accent text-white border-app-accent' : 'bg-white border-slate-200 hover:border-app-accent/40'
                            }`}
                          >
                             <span className="text-[10px] uppercase">{format(date, 'EEE', {locale: idLocale})}</span>
@@ -300,7 +300,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
                <CardContent>
                   {/* TASK 5: Leave Error State */}
                   {leaveStatus?.isOnLeave ? (
-                     <div className="text-center py-8 bg-amber-50 rounded-lg border border-amber-100">
+                     <div className="text-center py-8 bg-amber-50 rounded-app-sm border border-amber-100">
                          <CalendarOff className="w-8 h-8 text-amber-400 mx-auto mb-2" />
                          <p className="text-amber-800 font-semibold">Anda Sedang Cuti</p>
                          <p className="text-xs text-amber-600 px-4 mt-1">
@@ -335,7 +335,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
              <Card className="h-full">
                <CardHeader><CardTitle className="text-sm">3. Data Pasien</CardTitle></CardHeader>
                <CardContent className="space-y-4">
-                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                  <div className="flex bg-slate-100 p-1 rounded-app-sm">
                      <button 
                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${bookingType === 'registered' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                        onClick={() => setBookingType('registered')}
@@ -414,7 +414,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
 
                   <div className="pt-4 mt-auto">
                      <Button 
-                       className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                       className="w-full bg-app-accent hover:bg-app-accent-hover disabled:opacity-50"
                        disabled={loading || !selectedSlot || (bookingType === 'registered' && !selectedPatientId) || !!leaveStatus?.isOnLeave}
                        onClick={handleBook}
                      >

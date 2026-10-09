@@ -16,7 +16,7 @@ import { colorForLabel } from './TherapistTodayPatientHistory';
 import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 
 const SOAP_FIELDS = [
-  { key: 'subjective', short: 'S', label: 'Subjective', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
+  { key: 'subjective', short: 'S', label: 'Subjective', color: 'text-app-accent-hover', bg: 'bg-app-soft border-app-accent/15' },
   { key: 'objective', short: 'O', label: 'Objective', color: 'text-teal-700', bg: 'bg-teal-50 border-teal-100' },
   { key: 'assessment', short: 'A', label: 'Assessment', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-100' },
   { key: 'plan', short: 'P', label: 'Plan', color: 'text-rose-700', bg: 'bg-rose-50 border-rose-100' },
@@ -102,7 +102,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 rounded-app-lg overflow-hidden">
 
         {/* Header */}
         <div className="p-5 border-b bg-white shrink-0">
@@ -112,7 +112,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
           </DialogHeader>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg shrink-0">
+            <div className="w-11 h-11 rounded-app bg-app-accent/15 flex items-center justify-center text-app-accent-hover font-bold text-lg shrink-0">
               {patient.name?.charAt(0).toUpperCase() || '?'}
             </div>
             <div className="min-w-0">
@@ -122,15 +122,15 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
           </div>
 
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-center">
+            <div className="bg-slate-50 border border-slate-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-lg font-bold text-slate-800">{visits.length}</p>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Kunjungan</p>
             </div>
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5 text-center">
-              <p className="text-lg font-bold text-indigo-600">{uniqueTherapists.length}</p>
-              <p className="text-[10px] text-indigo-500 font-medium mt-0.5">Terapis Terlibat</p>
+            <div className="bg-app-soft border border-app-accent/15 rounded-app px-3 py-2.5 text-center">
+              <p className="text-lg font-bold text-app-accent">{uniqueTherapists.length}</p>
+              <p className="text-[10px] text-app-accent-bright font-medium mt-0.5">Terapis Terlibat</p>
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-center">
+            <div className="bg-slate-50 border border-slate-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-[11px] font-bold text-slate-800 mt-1" title={formatVisitDate(firstVisitDate)}>
                 {firstVisitDate ? format(new Date(`${firstVisitDate}T00:00:00`), 'dd MMM yyyy', { locale: idLocale }) : '-'}
               </p>
@@ -147,7 +147,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
               rose: 'bg-rose-50 border-rose-200 text-rose-800',
             };
             return (
-              <div className={cn('mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5', phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700')}>
+              <div className={cn('mb-3 flex items-start gap-2 rounded-app border px-3 py-2.5', phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700')}>
                 <Clock className="w-4 h-4 mt-0.5 shrink-0" />
                 <p className="text-xs leading-relaxed">
                   <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
@@ -185,7 +185,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
         <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50">
           <div className="px-4 py-3 space-y-2">
             {loading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-indigo-600" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-app-accent" /></div>
             ) : visits.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm">
                 <History className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -201,8 +201,8 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
                 <div
                   key={visit.id}
                   className={cn(
-                    'bg-white rounded-2xl border shadow-sm overflow-hidden transition-all',
-                    isExpanded ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-slate-100'
+                    'bg-white rounded-app-lg border shadow-sm overflow-hidden transition-all',
+                    isExpanded ? 'border-app-accent/40 ring-1 ring-app-accent/15' : 'border-slate-100'
                   )}
                 >
                   <div
@@ -266,7 +266,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
                           {hasSoap ? SOAP_FIELDS.map((f) => (
                             <div key={f.key}>
                               <span className={cn('font-bold block mb-1', f.color)}>{f.label} ({f.short})</span>
-                              <p className={cn('text-slate-600 p-2.5 rounded-lg border whitespace-pre-wrap text-xs', f.bg)}>
+                              <p className={cn('text-slate-600 p-2.5 rounded-app-sm border whitespace-pre-wrap text-xs', f.bg)}>
                                 {visit.soap[f.key] || '-'}
                               </p>
                             </div>
@@ -287,7 +287,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
 
         {/* Footer */}
         <div className="p-4 border-t bg-white flex justify-end shrink-0">
-          <Button variant="outline" onClick={onClose} className="rounded-xl">Tutup</Button>
+          <Button variant="outline" onClick={onClose} className="rounded-app">Tutup</Button>
         </div>
 
       </DialogContent>

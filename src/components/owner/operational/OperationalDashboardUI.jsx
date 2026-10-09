@@ -31,9 +31,9 @@ const HOVER_LIFT_SM = '[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md'
 
 // Skeleton
 const KPISkeleton = ({ large }) => (
-  <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm animate-pulse ${large ? 'p-6' : 'p-4'}`}>
+  <div className={`bg-white rounded-app-lg border border-slate-100 shadow-sm animate-pulse ${large ? 'p-6' : 'p-4'}`}>
     <div className="flex items-center justify-between mb-4">
-      <div className="w-11 h-11 rounded-xl bg-slate-100" />
+      <div className="w-11 h-11 rounded-app bg-slate-100" />
       <div className="w-14 h-5 rounded-full bg-slate-100" />
     </div>
     <div className={`${large ? 'h-10' : 'h-8'} w-20 bg-slate-200 rounded mb-2`} />
@@ -58,7 +58,7 @@ const OperationalDashboardUI = ({
   const reduceMotion = useReducedMotion();
 
   const periodKPIs = [
-    { label: 'Total Sesi', value: totalSessions, change: 'Periode', icon: Activity, iconColor: 'text-blue-600', iconBg: 'bg-blue-50', accent: 'border-l-blue-500' },
+    { label: 'Total Sesi', value: totalSessions, change: 'Periode', icon: Activity, iconColor: 'text-app-accent', iconBg: 'bg-app-soft', accent: 'border-l-app-accent-bright' },
     { label: 'Total Pasien', value: totalPatients, change: 'Unik', icon: Users, iconColor: 'text-indigo-600', iconBg: 'bg-indigo-50', accent: 'border-l-indigo-500' },
     { label: 'Total Paket', value: totalPackages, change: 'Aktif', icon: Package, iconColor: 'text-violet-600', iconBg: 'bg-violet-50', accent: 'border-l-violet-500' },
   ];
@@ -96,10 +96,10 @@ const OperationalDashboardUI = ({
           <motion.div
             key={i}
             {...cardEntrance(i, 12, reduceMotion)}
-            className={`bg-white rounded-2xl border border-slate-100 shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
+            className={`bg-white rounded-app-lg border border-slate-100 shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
           >
             <div className="flex items-start justify-between gap-1">
-              <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
+              <div className={`w-8 h-8 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
                 <kpi.icon className={`w-4 h-4 md:w-6 md:h-6 ${kpi.iconColor}`} />
               </div>
               {/* Badge — hidden di PWA mobile, tampil di desktop */}
@@ -123,13 +123,13 @@ const OperationalDashboardUI = ({
           <motion.div
             key={i}
             {...cardEntrance(i + 3, 10, reduceMotion)}
-            className={`rounded-2xl border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-4 md:p-5 flex items-center gap-3 md:gap-4 ${
+            className={`rounded-app-lg border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-4 md:p-5 flex items-center gap-3 md:gap-4 ${
               kpi.variant === 'danger'  ? 'bg-rose-50 border-rose-100' :
               kpi.variant === 'warning' ? 'bg-orange-50 border-orange-100' :
               'bg-white border-slate-100'
             }`}
           >
-            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
               <kpi.icon className={`w-5 h-5 md:w-6 md:h-6 ${kpi.iconColor}`} />
             </div>
             <div className="min-w-0">

@@ -34,7 +34,7 @@ const DesignStyleManager = () => {
             onClick={() => handleSelect(key)}
             disabled={saving === key}
             className={cn(
-              "relative text-left rounded-2xl border-2 p-4 transition-all hover:shadow-md",
+              "relative text-left rounded-app-lg border-2 p-4 transition-all hover:shadow-md",
               themeKey === key ? "border-indigo-600 shadow-md" : "border-slate-200"
             )}
           >

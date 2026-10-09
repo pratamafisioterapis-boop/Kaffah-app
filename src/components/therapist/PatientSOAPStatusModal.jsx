@@ -48,12 +48,12 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg flex flex-col max-h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh] p-0 gap-0 rounded-app-lg overflow-hidden">
 
         {/* Header */}
         <div className="p-5 border-b bg-white">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-app bg-slate-100 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5 text-slate-600" />
             </div>
             <div className="min-w-0">
@@ -62,15 +62,15 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-center">
+            <div className="flex-1 bg-slate-50 border border-slate-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-slate-800">{timeline.length}</p>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Kunjungan</p>
             </div>
-            <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5 text-center">
+            <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-emerald-600">{filledCount}</p>
               <p className="text-[10px] text-emerald-500 font-medium mt-0.5">Sudah SOAP</p>
             </div>
-            <div className="flex-1 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5 text-center">
+            <div className="flex-1 bg-rose-50 border border-rose-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-rose-600">{unfilledCount}</p>
               <p className="text-[10px] text-rose-400 font-medium mt-0.5">Belum SOAP</p>
             </div>
@@ -86,12 +86,12 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
           ) : timeline.map((item) => (
             <div
               key={item.id}
-              className={`bg-white rounded-2xl border p-4 flex items-center justify-between gap-3 shadow-sm ${
+              className={`bg-white rounded-app-lg border p-4 flex items-center justify-between gap-3 shadow-sm ${
                 item.status === 'filled' ? 'border-slate-100' : 'border-rose-200 bg-rose-50/40'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                <div className={`w-9 h-9 rounded-app flex items-center justify-center shrink-0 ${
                   item.status === 'filled' ? 'bg-emerald-50' : 'bg-rose-50'
                 }`}>
                   <Calendar className={`w-4 h-4 ${item.status === 'filled' ? 'text-emerald-500' : 'text-rose-500'}`} />
@@ -109,7 +109,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs rounded-xl border-slate-200"
+                    className="h-8 text-xs rounded-app border-slate-200"
                     onClick={() => handleEdit(item.record.id, item.date)}
                   >
                     <Edit className="w-3 h-3 mr-1" /> Edit
@@ -117,7 +117,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
                 ) : (
                   <Button
                     size="sm"
-                    className="h-8 text-xs bg-blue-600 hover:bg-blue-700 rounded-xl"
+                    className="h-8 text-xs bg-app-accent hover:bg-app-accent-hover rounded-app"
                     onClick={() => handleCreate(item.date, item.id)}
                   >
                     <PlusCircle className="w-3 h-3 mr-1" /> Tambah SOAP
@@ -130,7 +130,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
 
         {/* Footer */}
         <div className="p-4 border-t bg-white flex justify-end">
-          <Button variant="outline" onClick={onClose} className="rounded-xl">Tutup</Button>
+          <Button variant="outline" onClick={onClose} className="rounded-app">Tutup</Button>
         </div>
 
       </DialogContent>

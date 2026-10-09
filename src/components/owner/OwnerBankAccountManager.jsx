@@ -71,7 +71,7 @@ const BankAccountForm = ({ initialData, onSuccess, onCancel }) => {
               value={formData.bank_name}
               onChange={e => setFormData({...formData, bank_name: e.target.value})}
               placeholder="e.g. BCA, Mandiri, CASH, QRIS Merchant"
-              className="rounded-xl border-slate-200 focus:border-cyan-500 focus:ring-cyan-200"
+              className="rounded-app border-slate-200 focus:border-cyan-500 focus:ring-cyan-200"
             />
          </div>
          <div className="space-y-2">
@@ -80,7 +80,7 @@ const BankAccountForm = ({ initialData, onSuccess, onCancel }) => {
               value={formData.account_number}
               onChange={e => setFormData({...formData, account_number: e.target.value})}
               placeholder="1234567890"
-              className="rounded-xl border-slate-200 focus:border-cyan-500 focus:ring-cyan-200 font-mono"
+              className="rounded-app border-slate-200 focus:border-cyan-500 focus:ring-cyan-200 font-mono"
             />
          </div>
        </div>
@@ -90,7 +90,7 @@ const BankAccountForm = ({ initialData, onSuccess, onCancel }) => {
             value={formData.holder_name}
             onChange={e => setFormData({...formData, holder_name: e.target.value})}
             placeholder="Name on card"
-            className="rounded-xl border-slate-200 focus:border-cyan-500 focus:ring-cyan-200"
+            className="rounded-app border-slate-200 focus:border-cyan-500 focus:ring-cyan-200"
           />
        </div>
        <div className="space-y-2">
@@ -99,13 +99,13 @@ const BankAccountForm = ({ initialData, onSuccess, onCancel }) => {
             type="number"
             value={formData.balance}
             onChange={e => setFormData({...formData, balance: e.target.value})}
-            className="rounded-xl border-slate-200 focus:border-cyan-500 focus:ring-cyan-200 font-medium"
+            className="rounded-app border-slate-200 focus:border-cyan-500 focus:ring-cyan-200 font-medium"
           />
           <p className="text-xs text-slate-400">Saldo sebelum sistem mulai mencatat transaksi. Saldo saat ini dihitung otomatis dari transaksi yang terhubung ke akun ini.</p>
        </div>
        <div className="flex justify-end gap-3 mt-6 pt-2 border-t border-slate-100">
-          <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl hover:bg-slate-50">Cancel</Button>
-          <Button type="submit" disabled={loading} className="rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white">
+          <Button type="button" variant="outline" onClick={onCancel} className="rounded-app hover:bg-slate-50">Cancel</Button>
+          <Button type="submit" disabled={loading} className="rounded-app bg-cyan-600 hover:bg-cyan-700 text-white">
             {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Save Account'}
           </Button>
        </div>
@@ -197,8 +197,8 @@ const FeeForm = ({ bankAccountId, initialData, paymentMethodOptions, onSuccess, 
       </div>
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-        <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">Batal</Button>
-        <Button type="submit" disabled={loading} className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white">
+        <Button type="button" variant="outline" onClick={onCancel} className="rounded-app">Batal</Button>
+        <Button type="submit" disabled={loading} className="rounded-app bg-amber-600 hover:bg-amber-700 text-white">
           {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Simpan'}
         </Button>
       </div>
@@ -239,7 +239,7 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] rounded-2xl">
+      <DialogContent className="sm:max-w-[520px] rounded-app-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <Percent className="w-5 h-5 text-amber-600" />
@@ -257,7 +257,7 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-700">
+            <div className="flex items-start gap-2 p-3 rounded-app bg-blue-50 border border-blue-100 text-xs text-blue-700">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
               <p>Atur berapa persen atau berapa rupiah potongan bank untuk tiap metode pembayaran (mis. QRIS). Potongan ini otomatis dihitung saat mencatat pemasukan (daily recap pasien maupun pemasukan lainnya) yang memilih akun &amp; metode pembayaran ini.</p>
             </div>
@@ -265,13 +265,13 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>
             ) : fees.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada aturan potongan untuk akun ini.
               </div>
             ) : (
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {fees.map(fee => (
-                  <div key={fee.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                  <div key={fee.id} className="flex items-center justify-between p-3 rounded-app border border-slate-200 bg-white">
                     <div>
                       <p className="text-sm font-semibold text-slate-700">{fee.payment_method}</p>
                       <p className="text-xs text-slate-500">
@@ -292,7 +292,7 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
               </div>
             )}
 
-            <Button onClick={() => { setEditingFee(null); setIsFormOpen(true); }} className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white">
+            <Button onClick={() => { setEditingFee(null); setIsFormOpen(true); }} className="w-full rounded-app bg-amber-600 hover:bg-amber-700 text-white">
               <Plus className="w-4 h-4 mr-2" /> Tambah Aturan Potongan
             </Button>
           </div>
@@ -369,8 +369,8 @@ const AdjustmentForm = ({ bankAccountId, onSuccess, onCancel }) => {
       </div>
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-        <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">Batal</Button>
-        <Button type="submit" disabled={loading} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button type="button" variant="outline" onClick={onCancel} className="rounded-app">Batal</Button>
+        <Button type="submit" disabled={loading} className="rounded-app bg-indigo-600 hover:bg-indigo-700 text-white">
           {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Simpan'}
         </Button>
       </div>
@@ -410,7 +410,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] rounded-2xl">
+      <DialogContent className="sm:max-w-[520px] rounded-app-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <SlidersHorizontal className="w-5 h-5 text-indigo-600" />
@@ -426,7 +426,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-700">
+            <div className="flex items-start gap-2 p-3 rounded-app bg-blue-50 border border-blue-100 text-xs text-blue-700">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
               <p>Gunakan ini untuk koreksi saldo manual (mis. ambil kas, selisih fisik) yang bukan bagian dari pemasukan/pengeluaran biasa.</p>
             </div>
@@ -434,13 +434,13 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>
             ) : adjustments.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada penyesuaian saldo untuk akun ini.
               </div>
             ) : (
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {adjustments.map(adj => (
-                  <div key={adj.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                  <div key={adj.id} className="flex items-center justify-between p-3 rounded-app border border-slate-200 bg-white">
                     <div>
                       <p className={`text-sm font-bold ${adj.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                         {adj.amount < 0 ? '-' : '+'}{formatIDR(Math.abs(adj.amount))}
@@ -455,7 +455,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
               </div>
             )}
 
-            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-app bg-indigo-600 hover:bg-indigo-700 text-white">
               <Plus className="w-4 h-4 mr-2" /> Tambah Penyesuaian
             </Button>
           </div>
@@ -550,8 +550,8 @@ const TransferForm = ({ accounts, onSuccess, onCancel }) => {
       </div>
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-        <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">Batal</Button>
-        <Button type="submit" disabled={loading} className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white">
+        <Button type="button" variant="outline" onClick={onCancel} className="rounded-app">Batal</Button>
+        <Button type="submit" disabled={loading} className="rounded-app bg-violet-600 hover:bg-violet-700 text-white">
           {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Transfer'}
         </Button>
       </div>
@@ -591,7 +591,7 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] rounded-2xl">
+      <DialogContent className="sm:max-w-[560px] rounded-app-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-violet-600" />
@@ -610,13 +610,13 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-violet-500" /></div>
             ) : transfers.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada transfer antar akun.
               </div>
             ) : (
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {transfers.map(tr => (
-                  <div key={tr.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+                  <div key={tr.id} className="flex items-center justify-between p-3 rounded-app border border-slate-200 bg-white">
                     <div>
                       <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                         {tr.from_account?.bank_name || '-'} <ArrowLeftRight className="w-3 h-3 text-slate-400" /> {tr.to_account?.bank_name || '-'}
@@ -631,7 +631,7 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
               </div>
             )}
 
-            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white">
+            <Button onClick={() => setIsFormOpen(true)} className="w-full rounded-app bg-violet-600 hover:bg-violet-700 text-white">
               <Plus className="w-4 h-4 mr-2" /> Transfer Baru
             </Button>
           </div>
@@ -694,13 +694,13 @@ const OwnerBankAccountManager = () => {
            <Button
               variant="outline"
               onClick={() => setIsTransferDialogOpen(true)}
-              className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 w-full sm:w-auto justify-center whitespace-nowrap"
+              className="rounded-app border-violet-200 text-violet-700 hover:bg-violet-50 w-full sm:w-auto justify-center whitespace-nowrap"
            >
              <ArrowLeftRight className="w-4 h-4 mr-2 shrink-0" /> Transfer Antar Bank
            </Button>
            <Button
               onClick={() => { setEditingAccount(null); setIsDialogOpen(true); }}
-              className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 w-full sm:w-auto justify-center whitespace-nowrap"
+              className="bg-teal-600 hover:bg-teal-700 text-white rounded-app shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 w-full sm:w-auto justify-center whitespace-nowrap"
            >
              <Plus className="w-4 h-4 mr-2 shrink-0" /> Add Account
            </Button>
@@ -708,7 +708,7 @@ const OwnerBankAccountManager = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+        <DialogContent className="sm:max-w-[500px] rounded-app-lg">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Building className="w-5 h-5 text-teal-600" />
@@ -748,7 +748,7 @@ const OwnerBankAccountManager = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.length === 0 && (
-             <div className="col-span-full py-12 text-center bg-white/50 border border-dashed border-teal-200 rounded-2xl">
+             <div className="col-span-full py-12 text-center bg-white/50 border border-dashed border-teal-200 rounded-app-lg">
                 <CreditCard className="w-12 h-12 text-teal-200 mx-auto mb-3" />
                 <p className="text-teal-600 font-medium">No bank accounts added yet.</p>
              </div>
@@ -767,20 +767,20 @@ const OwnerBankAccountManager = () => {
 
                   <CardContent className="p-5 relative">
                      <div className="flex justify-between items-start mb-3">
-                        <div className="p-2.5 bg-teal-50 rounded-xl text-teal-600 shadow-sm">
+                        <div className="p-2.5 bg-teal-50 rounded-app text-teal-600 shadow-sm">
                            <Building className="w-5 h-5" />
                         </div>
                         <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-app-sm" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
                               <SlidersHorizontal className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-lg" title="Potongan Bank" onClick={() => { setFeeAccount(acc); setIsFeeDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-app-sm" title="Potongan Bank" onClick={() => { setFeeAccount(acc); setIsFeeDialogOpen(true); }}>
                               <Percent className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-teal-50 text-slate-400 hover:text-teal-600 rounded-lg" onClick={() => { setEditingAccount({ ...acc, id: acc.bank_account_id, balance: acc.opening_balance }); setIsDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-teal-50 text-slate-400 hover:text-teal-600 rounded-app-sm" onClick={() => { setEditingAccount({ ...acc, id: acc.bank_account_id, balance: acc.opening_balance }); setIsDialogOpen(true); }}>
                               <Pencil className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg" onClick={() => handleDelete(acc.bank_account_id)}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-app-sm" onClick={() => handleDelete(acc.bank_account_id)}>
                               <Trash2 className="w-4 h-4" />
                            </Button>
                         </div>

@@ -128,14 +128,14 @@ const TherapistDashboard = () => {
     </div>
   );
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin w-8 h-8 text-blue-600" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin w-8 h-8 text-app-accent" /></div>;
 
   if (!therapistProfile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-gray-50">
          <h2 className="text-2xl font-bold text-red-600">Profil Terapis Tidak Ditemukan</h2>
          <p className="text-slate-700 mt-2 text-lg">Akun Anda terdaftar ({user?.email}), namun data profil Fisioterapis belum terhubung.</p>
-         <button onClick={signOut} className="mt-6 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-md">Logout</button>
+         <button onClick={signOut} className="mt-6 px-6 py-3 bg-red-500 text-white rounded-app-sm hover:bg-red-600 transition-colors shadow-md">Logout</button>
       </div>
     );
   }

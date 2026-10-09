@@ -129,7 +129,7 @@ const emptySlotsCount = slotData?.filter(slot => slot.status === 'aktif').length
         title="Total Appointment" 
         value={metrics.totalAppointments} 
         icon={Calendar} 
-        colorClass="bg-blue-600" 
+        colorClass="bg-app-accent" 
         loading={loading} 
       />
       <OverviewCard 

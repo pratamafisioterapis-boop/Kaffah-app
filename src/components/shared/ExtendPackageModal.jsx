@@ -35,7 +35,7 @@ const ExtendPackageModal = ({ open, onOpenChange, onExtend, isLoading }) => {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md rounded-lg shadow-lg p-6">
+            <DialogContent className="max-w-md rounded-app-sm shadow-lg p-6">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-bold">Perpanjang Paket</DialogTitle>
                 </DialogHeader>
@@ -77,7 +77,7 @@ const ExtendPackageModal = ({ open, onOpenChange, onExtend, isLoading }) => {
 
                 <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>Batal</Button>
-                    <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button onClick={handleSubmit} disabled={isLoading} className="bg-app-accent hover:bg-app-accent-hover text-white">
                         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Simpan
                     </Button>

@@ -170,10 +170,10 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
         <div className="flex-1 overflow-y-auto p-6 pt-2">
           {step === 'upload' && (
             <div className="space-y-6">
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Format File</AlertTitle>
-                <AlertDescription className="text-blue-700 text-sm mt-1">
+              <Alert className="bg-app-soft border-app-accent/25">
+                <Info className="h-4 w-4 text-app-accent" />
+                <AlertTitle className="text-app-accent-hover">Format File</AlertTitle>
+                <AlertDescription className="text-app-accent-hover text-sm mt-1">
                   Gunakan file "Employee Attendance Record" asli dari mesin fingerprint/absensi (berisi User ID, Name, Department,
                   dan jam masuk-pulang per tanggal). Data akan dicocokkan otomatis dengan nama fisioterapis yang terdaftar bila cocok.
                   Jam masuk yang diharapkan mengikuti jadwal praktik fisioterapis pada hari itu di kalender booking; bila fisioterapis
@@ -183,7 +183,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
               </Alert>
 
               <div
-                className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-slate-300 rounded-app p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <FileSpreadsheet className="w-12 h-12 text-slate-400 mb-4" />
@@ -227,7 +227,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                     </p>
                     <div className="space-y-2">
                       {unmatchedEmployeeNames.map(({ employee_name, department }) => (
-                        <div key={employee_name} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-2">
+                        <div key={employee_name} className="flex items-center gap-2 bg-white border border-slate-200 rounded-app-sm p-2">
                           <span className="font-medium text-slate-700 w-28 truncate">{employee_name}</span>
                           <span className="text-slate-400 w-24 truncate">{department || '-'}</span>
                           <Select
@@ -255,15 +255,15 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
               )}
 
               <div className="flex gap-3">
-                <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-lg">
+                <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-app-sm">
                   <p className="text-xs text-green-600 font-medium">Tepat Waktu</p>
                   <p className="text-xl font-bold text-green-700">{onTimeCount}</p>
                 </div>
-                <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-lg">
+                <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-app-sm">
                   <p className="text-xs text-red-600 font-medium">Terlambat</p>
                   <p className="text-xl font-bold text-red-700">{lateCount}</p>
                 </div>
-                <div className="flex-1 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                <div className="flex-1 bg-amber-50 border border-amber-200 p-3 rounded-app-sm">
                   <p className="text-xs text-amber-600 font-medium">Tidak Lengkap</p>
                   <p className="text-xl font-bold text-amber-700">{incompleteCount}</p>
                 </div>
@@ -298,7 +298,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                           <TableCell>{r.check_out || '-'}</TableCell>
                           <TableCell className="text-xs">
                             {r.expected_check_in ? (
-                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' || r.expected_source === 'homecare' ? 'text-blue-600 font-medium' : 'text-slate-500'}>
+                              <span className={r.expected_source === 'override' || r.expected_source === 'schedule' || r.expected_source === 'homecare' ? 'text-app-accent font-medium' : 'text-slate-500'}>
                                 {r.expected_check_in}
                                 {r.expected_source === 'override' ? ' (jadwal pengganti)' : r.expected_source === 'schedule' ? ' (jadwal booking)' : r.expected_source === 'homecare' ? ' (setelah homecare)' : r.expected_source === 'department' ? ' (departemen)' : ' (default)'}
                               </span>

@@ -113,7 +113,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
       {waivers.length > 0 && (
          <div className="space-y-2">
             {waivers.map(w => (
-               <div key={w.id} className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+               <div key={w.id} className="flex items-start gap-3 rounded-app-sm border border-rose-200 bg-rose-50 px-4 py-3">
                   <CalendarCheck className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
                   <div className="text-sm text-rose-900">
                      <span className="font-semibold">{format(new Date(`${w.off_date}T00:00:00`), 'EEEE, dd MMM yyyy', { locale: id })}</span>
@@ -129,10 +129,10 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
 
       {loading ? (
          <div className="space-y-3">
-            {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />)}
+            {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-app-sm animate-pulse" />)}
          </div>
       ) : timeOffs.length === 0 ? (
-         <div className="text-center py-10 bg-slate-50 border border-slate-100 rounded-lg text-slate-500">
+         <div className="text-center py-10 bg-slate-50 border border-slate-100 rounded-app-sm text-slate-500">
             Tidak ada data cuti.
          </div>
       ) : (
@@ -150,7 +150,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                   <Card key={item.id} className="group hover:border-orange-200 transition-colors">
                      <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-start gap-4">
-                           <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
+                           <div className="bg-orange-50 text-orange-600 p-2 rounded-app-sm">
                               <CalendarDays className="w-5 h-5" />
                            </div>
                            <div>
@@ -186,7 +186,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                         <Button 
                            variant="ghost" 
                            size="icon" 
-                           className="text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+                           className="text-slate-300 hover:text-app-accent-bright hover:bg-app-soft"
                            onClick={() => openEdit(item)}
                         >
                            <Pencil className="w-4 h-4" />

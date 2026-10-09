@@ -89,7 +89,7 @@ const TrendSessionChart = () => {
 
   if (error) {
     return (
-      <Card className="rounded-xl border-red-200 shadow-sm bg-red-50">
+      <Card className="rounded-app border-red-200 shadow-sm bg-red-50">
         <CardContent className="pt-6 flex items-center justify-center text-red-600">
           <p>Gagal memuat data grafik.</p>
         </CardContent>
@@ -101,7 +101,7 @@ const TrendSessionChart = () => {
   const peakDay = data.reduce((max, d) => d.sessions > max.sessions ? d : max, data[0] || { sessions: 0, date: '-' });
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       {/* Header */}
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">

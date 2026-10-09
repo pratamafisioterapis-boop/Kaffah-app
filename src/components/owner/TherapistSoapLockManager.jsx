@@ -157,7 +157,7 @@ const TherapistSoapLockManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-4 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <Lock className="w-5 h-5 text-red-500" /> Kunci SOAP Terapis
         </h2>
@@ -167,7 +167,7 @@ const TherapistSoapLockManager = () => {
       </div>
 
       {/* GLOBAL SETTINGS */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-app border border-slate-200 shadow-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-slate-800">Aturan Klinik (Default)</h3>
@@ -186,7 +186,7 @@ const TherapistSoapLockManager = () => {
         </div>
 
         {!settings.enabled && (
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg">
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-app-sm">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <span>Fitur ini nonaktif secara default agar tidak tiba-tiba mengunci jadwal terapis yang sudah punya backlog SOAP. Aktifkan setelah threshold di bawah dirasa sesuai.</span>
           </div>
@@ -230,7 +230,7 @@ const TherapistSoapLockManager = () => {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                  "rounded-xl border p-4 flex flex-col gap-3 shadow-sm",
+                  "rounded-app border p-4 flex flex-col gap-3 shadow-sm",
                   locked ? "bg-red-50 border-red-200" : "bg-white border-slate-200"
                 )}
               >
@@ -267,7 +267,7 @@ const TherapistSoapLockManager = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-app-sm px-3 py-2 border border-slate-100">
                   <ShieldAlert className={cn("w-3.5 h-3.5", locked ? "text-red-500" : "text-slate-400")} />
                   <span>
                     <strong className={locked ? "text-red-600" : "text-slate-700"}>{status?.unfilled_count ?? 0}</strong> SOAP kosong
@@ -280,7 +280,7 @@ const TherapistSoapLockManager = () => {
 
                 {status?.age_rule_enabled && (
                   <div className={cn(
-                    "flex items-center gap-2 text-xs rounded-lg px-3 py-2 border",
+                    "flex items-center gap-2 text-xs rounded-app-sm px-3 py-2 border",
                     status?.age_rule_triggered ? "text-red-700 bg-red-50 border-red-100" : "text-slate-500 bg-slate-50 border-slate-100"
                   )}>
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -320,7 +320,7 @@ const TherapistSoapLockManager = () => {
 
           {editForm && (
             <div className="space-y-4 py-2">
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-slate-50">
+              <div className="flex items-center justify-between p-3 rounded-app-sm border bg-slate-50">
                 <div>
                   <p className="text-sm font-medium text-slate-800">Kecualikan dari kunci</p>
                   <p className="text-[11px] text-slate-500">Terapis ini tidak akan pernah terkunci otomatis.</p>
@@ -331,7 +331,7 @@ const TherapistSoapLockManager = () => {
                 />
               </div>
 
-              <div className={cn("p-3 rounded-lg border space-y-3", editForm.soap_lock_exempt ? "bg-slate-50 opacity-50 pointer-events-none" : "bg-white")}>
+              <div className={cn("p-3 rounded-app-sm border space-y-3", editForm.soap_lock_exempt ? "bg-slate-50 opacity-50 pointer-events-none" : "bg-white")}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">Gunakan aturan khusus</p>
@@ -356,7 +356,7 @@ const TherapistSoapLockManager = () => {
                 )}
               </div>
 
-              <div className={cn("p-3 rounded-lg border space-y-3", editForm.soap_lock_exempt ? "bg-slate-50 opacity-50 pointer-events-none" : "bg-white")}>
+              <div className={cn("p-3 rounded-app-sm border space-y-3", editForm.soap_lock_exempt ? "bg-slate-50 opacity-50 pointer-events-none" : "bg-white")}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">Kunci jika SOAP menunggak lama</p>
@@ -385,7 +385,7 @@ const TherapistSoapLockManager = () => {
                 )}
               </div>
 
-              <div className="p-3 rounded-lg border bg-amber-50 border-amber-200 space-y-3">
+              <div className="p-3 rounded-app-sm border bg-amber-50 border-amber-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-amber-900">Buka kunci manual (darurat)</p>

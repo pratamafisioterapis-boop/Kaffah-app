@@ -459,7 +459,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-            <DialogContent className="w-full h-full sm:h-auto max-w-full sm:max-w-2xl max-h-full sm:max-h-[90vh] overflow-hidden rounded-none sm:rounded-xl shadow-lg p-0 gap-0 flex flex-col">
+            <DialogContent className="w-full h-full sm:h-auto max-w-full sm:max-w-2xl max-h-full sm:max-h-[90vh] overflow-hidden rounded-none sm:rounded-app shadow-lg p-0 gap-0 flex flex-col">
                 <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 sm:py-6 border-b border-slate-100 shrink-0">
                     <DialogHeader>
                         <DialogTitle className="text-lg sm:text-xl font-bold text-slate-900 pr-6">{mode === 'add' ? 'Tambah Pasien Baru' : 'Edit Data Pasien'}</DialogTitle>
@@ -509,11 +509,11 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                 className="flex gap-4 pt-2.5"
                              >
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="aktif" id="st-aktif" className="text-blue-600 border-slate-300" />
+                                    <RadioGroupItem value="aktif" id="st-aktif" className="text-app-accent border-slate-300" />
                                     <Label htmlFor="st-aktif" className="font-normal cursor-pointer text-sm text-slate-700">Aktif</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="nonaktif" id="st-nonaktif" className="text-blue-600 border-slate-300" />
+                                    <RadioGroupItem value="nonaktif" id="st-nonaktif" className="text-app-accent border-slate-300" />
                                     <Label htmlFor="st-nonaktif" className="font-normal cursor-pointer text-sm text-slate-500">Nonaktif</Label>
                                 </div>
                              </RadioGroup>
@@ -530,7 +530,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                 value={formData.full_name}
                                 onChange={handleInputChange}
                                 placeholder="Contoh: Budi Santoso"
-                                className={cn("px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500", errors.full_name ? "border-red-500 focus:ring-red-200" : "")}
+                                className={cn("px-3 py-2 border border-slate-300 rounded-app-sm focus:ring-2 focus:ring-app-accent-bright", errors.full_name ? "border-red-500 focus:ring-red-200" : "")}
                             />
                             {errors.full_name && <span className="text-xs text-red-500 font-medium">{errors.full_name}</span>}
                         </div>
@@ -542,7 +542,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                 value={formData.nickname}
                                 onChange={handleInputChange}
                                 placeholder="Contoh: Bapak Budi"
-                                className={cn("px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500", errors.nickname ? "border-red-500 focus:ring-red-200" : "")}
+                                className={cn("px-3 py-2 border border-slate-300 rounded-app-sm focus:ring-2 focus:ring-app-accent-bright", errors.nickname ? "border-red-500 focus:ring-red-200" : "")}
                             />
                              {errors.nickname && <span className="text-xs text-red-500 font-medium">{errors.nickname}</span>}
                         </div>
@@ -558,11 +558,11 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                 className="flex gap-6 pt-3"
                              >
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="L" id="g-l" className="text-blue-600 border-slate-300" />
+                                    <RadioGroupItem value="L" id="g-l" className="text-app-accent border-slate-300" />
                                     <Label htmlFor="g-l" className="font-normal cursor-pointer text-sm text-slate-700">Laki-laki</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="P" id="g-p" className="text-blue-600 border-slate-300" />
+                                    <RadioGroupItem value="P" id="g-p" className="text-app-accent border-slate-300" />
                                     <Label htmlFor="g-p" className="font-normal cursor-pointer text-sm text-slate-700">Perempuan</Label>
                                 </div>
                              </RadioGroup>
@@ -602,7 +602,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                         onClick={() => setShowDatePicker(false)}
                                     />
 
-                                    <div className="relative bg-white shadow-2xl rounded-xl border border-slate-200 p-2">
+                                    <div className="relative bg-white shadow-2xl rounded-app border border-slate-200 p-2">
                                         <DatePicker
                                             value={formData.birth_date_iso}
                                             onChange={handleDateSelect}
@@ -774,7 +774,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                             value={formData.address}
                             onChange={handleInputChange}
                             placeholder="Jalan, No Rumah, RT/RW, Kelurahan, Kecamatan..."
-                            className="h-20 border-slate-300 focus:ring-2 focus:ring-blue-500 rounded-lg resize-none"
+                            className="h-20 border-slate-300 focus:ring-2 focus:ring-app-accent-bright rounded-app-sm resize-none"
                         />
                     </div>
 
@@ -801,7 +801,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                         <X className="h-3 w-3" />
                                     </Button>
                                 </div>
-                                <label htmlFor="ktp" className="text-xs text-blue-600 cursor-pointer hover:underline pt-1">Ganti</label>
+                                <label htmlFor="ktp" className="text-xs text-app-accent cursor-pointer hover:underline pt-1">Ganti</label>
                             </div>
                         ) : (
                             <label
@@ -829,7 +829,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                     <Trash2 className="w-4 h-4 mr-2" /> Hapus Pasien
                                 </Button>
                              ) : (
-                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-lg border border-red-100 animate-in fade-in zoom-in duration-200 w-full sm:w-auto">
+                                 <div className="flex items-center gap-2 bg-red-50 p-1 rounded-app-sm border border-red-100 animate-in fade-in zoom-in duration-200 w-full sm:w-auto">
                                      <span className="text-xs text-red-700 font-medium px-2">Yakin hapus?</span>
                                      <Button size="sm" variant="destructive" onClick={handleDelete} disabled={loading}>{loading ? '...' : 'Ya, Hapus'}</Button>
                                      <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={loading} className="text-slate-600 hover:text-slate-800">Batal</Button>
@@ -842,7 +842,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
                     <div className="flex gap-3">
                         <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="flex-1 sm:flex-none px-6">Batal</Button>
-                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6">
+                        <Button type="button" onClick={handleSubmit} disabled={loading || fetchingRM} className="flex-1 sm:flex-none bg-app-accent hover:bg-app-accent-hover text-white px-6">
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {mode === 'add' ? 'Simpan Pasien' : 'Simpan Perubahan'}
                         </Button>

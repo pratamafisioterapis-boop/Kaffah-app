@@ -511,10 +511,10 @@ if (isCreate) {
     } catch { return false; }
   })();
 
-  if (initialLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-blue-600" /></div>;
+  if (initialLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-app-accent" /></div>;
 
   const soapFields = [
-    { key: 'subjective',  label: 'Subjective',  short: 'S', placeholder: 'Keluhan pasien, riwayat penyakit...', accent: 'border-l-blue-400',    badge: 'bg-blue-500',    labelColor: 'text-blue-700'   },
+    { key: 'subjective',  label: 'Subjective',  short: 'S', placeholder: 'Keluhan pasien, riwayat penyakit...', accent: 'border-l-app-accent-bright',    badge: 'bg-app-accent-bright',    labelColor: 'text-app-accent-hover'   },
     { key: 'objective',   label: 'Objective',   short: 'O', placeholder: 'Hasil observasi, pemeriksaan fisik, vital signs...', accent: 'border-l-teal-400',    badge: 'bg-teal-500',    labelColor: 'text-teal-700'   },
     { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: isDiagnosisMode ? 'Terisi otomatis dari diagnosa yang dipilih...' : 'Terisi otomatis (format ICF) setelah Subjective & Objective diisi...', accent: 'border-l-violet-400',  badge: 'bg-violet-500',  labelColor: 'text-violet-700' },
     { key: 'plan',        label: 'Plan',        short: 'P', placeholder: 'Rencana terapi, edukasi, home program...', accent: 'border-l-rose-400',    badge: 'bg-rose-500',    labelColor: 'text-rose-700'   },
@@ -526,7 +526,7 @@ if (isCreate) {
       {/* ── Header ── */}
       <div className={`flex items-center justify-between gap-3 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => {
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-app" onClick={() => {
             if (window.history.length > 1) {
               navigate(-1);
             } else {
@@ -542,7 +542,7 @@ if (isCreate) {
                 : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}
             </h2>
             {dateParam && (
-              <span className="flex items-center gap-1 text-blue-600 font-medium text-xs mt-0.5">
+              <span className="flex items-center gap-1 text-app-accent font-medium text-xs mt-0.5">
                 <CalendarDays className="w-3.5 h-3.5 shrink-0" />
                 {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
               </span>
@@ -554,7 +554,7 @@ if (isCreate) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-xl text-xs"
+              className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-app text-xs"
               onClick={() => handleCopySOAP(latestRecord)}
             >
               <Copy className="w-3.5 h-3.5" />
@@ -563,7 +563,7 @@ if (isCreate) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl text-xs"
+              className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app text-xs"
               onClick={() => setIsHistoryOpen(true)}
             >
               <History className="w-3.5 h-3.5" />
@@ -574,7 +574,7 @@ if (isCreate) {
       </div>
 
       {/* ── Form ── */}
-      <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-2xl'}`}>
+      <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-app-lg'}`}>
         <CardContent className="p-0">
           <form onSubmit={handleSubmit}>
             {/* Nama Pasien */}
@@ -599,7 +599,7 @@ if (isCreate) {
                   rose: 'bg-rose-50 border-rose-200 text-rose-800',
                 };
                 return (
-                  <div className={`mt-3 flex items-start gap-2 rounded-xl border px-3 py-2.5 ${phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                  <div className={`mt-3 flex items-start gap-2 rounded-app border px-3 py-2.5 ${phaseStyles[phase?.color] || 'bg-slate-50 border-slate-200 text-slate-700'}`}>
                     <Clock className="w-4 h-4 mt-0.5 shrink-0" />
                     <p className="text-xs leading-relaxed">
                       <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
@@ -636,7 +636,7 @@ if (isCreate) {
                   className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className={`w-6 h-6 rounded-lg ${field.badge} text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}>
+                    <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}>
                       {field.short}
                     </span>
                     <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
@@ -672,7 +672,7 @@ if (isCreate) {
                         onClick={() => setTemplateDialog(field.key)}
                         title={`Template ${field.label}`}
                         aria-label={`Buka template ${field.label}`}
-                        className="ml-auto flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                        className="ml-auto flex h-8 w-8 items-center justify-center rounded-app bg-app-accent text-white shadow-sm hover:bg-app-accent-hover"
                       >
                         {field.key === 'objective' ? <Stethoscope className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
                       </button>
@@ -690,7 +690,7 @@ if (isCreate) {
                   ) : (
                   <>
                   {isKaffahClinic && (field.key === 'subjective' || field.key === 'objective') && templatesOf(field.key).length > 0 && (
-                    <div className="mb-3 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/30 p-3">
+                    <div className="mb-3 overflow-hidden rounded-app-lg border border-app-accent/15 bg-app-soft/30 p-3">
                       <SubjectiveTemplateBuilder
                         embedded
                         templates={templatesOf(field.key)}
@@ -704,7 +704,7 @@ if (isCreate) {
                   <Textarea
                     readOnly={isTemplateLocked(field.key)}
                     placeholder={isTemplateLocked(field.key) ? `Pilih & isi template di atas, lalu klik "Masukkan ke ${field.label}". Setelah itu teks bisa diedit.` : field.placeholder}
-                    className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${
+                    className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${
                       field.key === 'assessment'
                         ? (isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]')
                         : (isPWA ? 'min-h-[100px] text-base' : 'min-h-[130px]')
@@ -735,7 +735,7 @@ if (isCreate) {
             {/* Edukasi Pasien */}
             <div className={`bg-white border-t border-l-4 border-l-emerald-400 ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
               <div className="flex items-center gap-2 mb-2.5">
-                <span className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">E</span>
+                <span className="w-6 h-6 rounded-app-sm bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">E</span>
                 <label className="text-sm font-semibold text-emerald-700">Edukasi Pasien</label>
                 <span className="ml-auto flex items-center gap-1.5">
                   {educationAuto ? (
@@ -755,7 +755,7 @@ if (isCreate) {
               </div>
               <Textarea
                 placeholder="Terisi otomatis dari template edukasi setelah diagnosa dipilih. Bisa diedit."
-                className={`bg-slate-50/80 border-slate-200 resize-none rounded-xl focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]'}`}
+                className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]'}`}
                 value={formData.education}
                 onChange={(e) => {
                   setEducationAuto(false);
@@ -766,14 +766,14 @@ if (isCreate) {
 
             {/* Submit */}
             <div className={`flex justify-end gap-3 bg-white border-t ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
-              <Button type="button" variant="outline" className="rounded-xl" onClick={() => {
+              <Button type="button" variant="outline" className="rounded-app" onClick={() => {
                 if (window.history.length > 1) {
                   navigate(-1);
                 } else {
                   navigate(basePath);
                 }
               }}>Batal</Button>
-              <Button type="submit" className={`bg-blue-600 hover:bg-blue-700 rounded-xl ${isPWA ? 'flex-1' : 'min-w-[140px]'}`} disabled={loading}>
+              <Button type="submit" className={`bg-app-accent hover:bg-app-accent-hover rounded-app ${isPWA ? 'flex-1' : 'min-w-[140px]'}`} disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Simpan Data</>}
               </Button>
             </div>

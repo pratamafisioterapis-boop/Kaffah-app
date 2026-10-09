@@ -232,13 +232,13 @@ const ModalAwalManagement = () => {
 
       <div className="space-y-5 pb-24 md:pb-8 animate-in fade-in duration-500">
         {/* ── Hero Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white p-5 md:p-7 shadow-xl">
+        <div className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white p-5 md:p-7 shadow-xl">
           <div className="absolute -top-10 -right-10 w-44 h-44 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-900/40 shrink-0">
+              <div className="w-12 h-12 rounded-app-lg flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-900/40 shrink-0">
                 <PiggyBank className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -251,7 +251,7 @@ const ModalAwalManagement = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex flex-col gap-1 bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-4 py-2.5">
+              <div className="flex flex-col gap-1 bg-white/10 backdrop-blur-sm border border-white/15 rounded-app px-4 py-2.5">
                 <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Total Modal Awal</span>
                 <span className="text-lg md:text-xl font-bold tabular-nums">{formatCurrency(totalModal)}</span>
               </div>
@@ -281,12 +281,12 @@ const ModalAwalManagement = () => {
               return (
                 <div
                   key={opt.value}
-                  className="rounded-2xl p-4 bg-white border shadow-sm"
+                  className="rounded-app-lg p-4 bg-white border shadow-sm"
                   style={{ borderColor: style.border }}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      className="w-7 h-7 rounded-app-sm flex items-center justify-center shrink-0"
                       style={{ background: style.bg }}
                     >
                       <Landmark className="w-3.5 h-3.5" style={{ color: style.color }} />
@@ -303,10 +303,10 @@ const ModalAwalManagement = () => {
         )}
 
         {/* ── Data List ── */}
-        <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+        <div className="rounded-app-lg bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-emerald-50">
+              <div className="w-8 h-8 rounded-app flex items-center justify-center bg-emerald-50">
                 <TrendingUp className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
@@ -318,13 +318,13 @@ const ModalAwalManagement = () => {
 
           <div className="p-5">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                 <Loader2 className="w-6 h-6 animate-spin mb-2 text-emerald-500" />
                 <p className="text-xs text-slate-400 font-medium">Memuat data...</p>
               </div>
             ) : items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
+              <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
+                <div className="w-11 h-11 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
                   <AlertCircle className="w-5 h-5 text-slate-300" />
                 </div>
                 <p className="text-sm font-semibold text-slate-400 mb-2">Belum ada data modal awal.</p>
@@ -335,7 +335,7 @@ const ModalAwalManagement = () => {
             ) : (
               <>
               {/* ── Mobile / PWA Card List ── */}
-              <div className="sm:hidden overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0' }}>
+              <div className="sm:hidden overflow-hidden rounded-app-lg" style={{ border: '1px solid #e2e8f0' }}>
                 {sortedItems.map((item, idx) => {
                   const style = sourceStyle(item.source);
                   return (
@@ -354,14 +354,14 @@ const ModalAwalManagement = () => {
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => openEditForm(item)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center"
+                            className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                             style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => openDelete(item)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center"
+                            className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                             style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -396,7 +396,7 @@ const ModalAwalManagement = () => {
                 })}
               </div>
               {/* ── Desktop Table ── */}
-              <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="hidden sm:block overflow-hidden rounded-app-lg" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left" style={{ fontSize: '12px' }}>
                     <thead>
@@ -459,13 +459,13 @@ const ModalAwalManagement = () => {
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => openEditForm(item)}
-                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                                  className="w-7 h-7 rounded-app-sm flex items-center justify-center text-slate-500 hover:text-app-accent hover:bg-app-soft"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => openDelete(item)}
-                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                                  className="w-7 h-7 rounded-app-sm flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-50"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -486,7 +486,7 @@ const ModalAwalManagement = () => {
 
       {/* ── Add / Edit Modal ── */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-2xl">
+        <DialogContent className="sm:max-w-[480px] rounded-app-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="w-5 h-5 text-emerald-600" />
@@ -589,7 +589,7 @@ const ModalAwalManagement = () => {
               />
             </div>
 
-            <div className="rounded-xl p-3.5" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <div className="rounded-app p-3.5" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-start gap-2">
                   <Tag className="w-3.5 h-3.5 mt-0.5 text-slate-500 shrink-0" />
@@ -638,7 +638,7 @@ const ModalAwalManagement = () => {
 
       {/* ── Delete Confirmation Modal ── */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+        <DialogContent className="sm:max-w-[420px] rounded-app-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-600">
               <AlertCircle className="w-5 h-5" />

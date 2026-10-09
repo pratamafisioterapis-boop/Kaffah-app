@@ -108,7 +108,7 @@ const SlotGrid = ({
                                             onClick={() => status === 'available' && onSlotClick(therapist, slot)}
                                             disabled={status !== 'available'}
                                             className={`
-                                                relative flex flex-col items-start justify-between p-3 rounded-lg border text-left transition-all h-[90px] w-full
+                                                relative flex flex-col items-start justify-between p-3 rounded-app-sm border text-left transition-all h-[90px] w-full
                                                 ${status === 'available' ? 'bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300 hover:shadow-sm cursor-pointer group' : ''}
                                                 ${status === 'booked' ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-90' : ''}
                                                 ${status === 'in-progress' ? 'bg-yellow-50 border-yellow-200 cursor-not-allowed' : ''}

@@ -9,7 +9,7 @@ import { PHASE_TITLES, REQUIRED_MANUAL_OPTIONS, mergePlanPhases, buildPlanText }
 const EMPTY = { epa: [], manual: [], dose: {}, exercises: {}, exDose: {}, notes: '' };
 
 const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', children, picker }) => (
-  <section className="rounded-2xl border border-slate-200 bg-white">
+  <section className="rounded-app-lg border border-slate-200 bg-white">
     <header className="flex items-center justify-between gap-2 px-4 py-3">
       <div className="flex items-center gap-2">
         <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
@@ -32,10 +32,10 @@ const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', child
   </section>
 );
 
-const EmptyHint = ({ children }) => <p className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400">{children}</p>;
+const EmptyHint = ({ children }) => <p className="rounded-app border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400">{children}</p>;
 
 const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, detail }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+  <div className="rounded-app border border-slate-100 bg-slate-50/60 px-3 py-2">
     <div className="flex flex-wrap items-center gap-2">
       <p className="min-w-0 flex-1 basis-40 text-sm font-medium text-slate-800">{name}</p>
       <Input
@@ -43,14 +43,14 @@ const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, 
         onChange={(e) => onDose(e.target.value)}
         placeholder={placeholder}
         aria-label={`Dosis ${name}`}
-        className="h-8 w-full rounded-lg border-slate-200 bg-white text-xs sm:w-56"
+        className="h-8 w-full rounded-app-sm border-slate-200 bg-white text-xs sm:w-56"
       />
       {onInfo && (
-        <button type="button" onClick={onInfo} aria-label="Detail latihan" className="rounded-lg p-1 text-slate-400 hover:bg-white">
+        <button type="button" onClick={onInfo} aria-label="Detail latihan" className="rounded-app-sm p-1 text-slate-400 hover:bg-white">
           <Info className="h-4 w-4" />
         </button>
       )}
-      <button type="button" onClick={onRemove} aria-label={`Hapus ${name}`} className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-rose-500">
+      <button type="button" onClick={onRemove} aria-label={`Hapus ${name}`} className="rounded-app-sm p-1 text-slate-400 hover:bg-white hover:text-rose-500">
         <X className="h-4 w-4" />
       </button>
     </div>
@@ -65,7 +65,7 @@ const OptionPicker = ({ options, selected, onAdd }) => {
     <div className="space-y-2">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari..." className="h-8 rounded-lg bg-white pl-8 text-xs" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari..." className="h-8 rounded-app-sm bg-white pl-8 text-xs" />
       </div>
       <div className="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto">
         {list.map((o) => (
@@ -230,14 +230,14 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
           <div className="space-y-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari exercise (nama atau kelompok)..." className="h-8 rounded-lg bg-white pl-8 text-xs" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari exercise (nama atau kelompok)..." className="h-8 rounded-app-sm bg-white pl-8 text-xs" />
             </div>
             {searchMode ? (
               <div className="max-h-64 space-y-1.5 overflow-y-auto">
                 {searching && <div className="flex items-center gap-2 text-xs text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Mencari...</div>}
                 {!searching && searchIds.length === 0 && <p className="text-xs text-slate-400">Tidak ada exercise yang cocok.</p>}
                 {searchIds.map((id) => (
-                  <button key={id} type="button" onClick={() => addExercise(id)} className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left hover:border-rose-300 hover:bg-rose-50">
+                  <button key={id} type="button" onClick={() => addExercise(id)} className="flex w-full items-center justify-between gap-2 rounded-app border border-slate-200 bg-white px-3 py-2 text-left hover:border-rose-300 hover:bg-rose-50">
                     <span className="min-w-0">
                       <span className="block text-sm font-medium text-slate-800">{results[id].n}</span>
                       <span className="block text-xs text-slate-500">{[results[id].g, results[id].d].filter(Boolean).join(' · ')}</span>
@@ -255,7 +255,7 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
                   const avail = ids.filter((id) => catalog.exercises[id] && !data.exercises[id]);
                   if (!ids.length) return null;
                   return (
-                    <div key={PHASE_TITLES[i]} className="rounded-xl border border-slate-200 bg-white">
+                    <div key={PHASE_TITLES[i]} className="rounded-app border border-slate-200 bg-white">
                       <button type="button" onClick={() => setOpenPhase(openPhase === i ? -1 : i)} className="flex w-full items-center justify-between px-3 py-2 text-left">
                         <span className="text-sm font-semibold text-slate-700">{PHASE_TITLES[i]}</span>
                         <span className="flex items-center gap-2 text-xs text-slate-500">
@@ -268,7 +268,7 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
                           {avail.length === 0 && <li className="px-1 py-1 text-xs text-slate-400">Semua latihan fase ini sudah dipilih.</li>}
                           {avail.map((id) => (
                             <li key={id}>
-                              <button type="button" onClick={() => addExercise(id)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-100 px-3 py-2 text-left hover:border-rose-300 hover:bg-rose-50">
+                              <button type="button" onClick={() => addExercise(id)} className="flex w-full items-center justify-between gap-2 rounded-app-sm border border-slate-100 px-3 py-2 text-left hover:border-rose-300 hover:bg-rose-50">
                                 <span className="min-w-0">
                                   <span className="block text-sm font-medium text-slate-800">{catalog.exercises[id].n}</span>
                                   <span className="block text-xs text-slate-500">{catalog.exercises[id].d}</span>
@@ -306,17 +306,17 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
           );
         })}
         {merged.cautions.map((c) => (
-          <p key={c.label} className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <p key={c.label} className="rounded-app-sm bg-amber-50 px-3 py-2 text-xs text-amber-800">
             <span className="font-semibold">Perhatian{merged.cautions.length > 1 ? ` (${c.label})` : ''}:</span> {c.text}
           </p>
         ))}
       </PlanCard>
 
-      <section className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <section className="rounded-app-lg border border-slate-200 bg-white px-4 py-3">
         <h4 className="mb-2 text-sm font-semibold text-slate-800">Catatan tambahan</h4>
         <Textarea
           placeholder="Edukasi, home program, target, frekuensi kunjungan..."
-          className="min-h-[80px] resize-none rounded-xl border-slate-200 bg-slate-50/80 focus:bg-white"
+          className="min-h-[80px] resize-none rounded-app border-slate-200 bg-slate-50/80 focus:bg-white"
           value={data.notes}
           onChange={(e) => emit({ ...data, notes: e.target.value })}
         />

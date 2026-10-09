@@ -182,23 +182,23 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
 
   return (
     <div className="space-y-6 max-w-xl">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Mail className="w-4 h-4" /> Ubah Email Login</h3>
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Button onClick={handleUpdateEmail} disabled={savingEmail} className="bg-blue-600">
+        <Button onClick={handleUpdateEmail} disabled={savingEmail} className="bg-app-accent">
           {savingEmail && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Email
         </Button>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Lock className="w-4 h-4" /> Ubah Password</h3>
         <Input type="password" placeholder="Password baru (min. 6 karakter)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-blue-600">
+        <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-app-accent">
           {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
         </Button>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Foto Profil (Splash Screen)</h3>
         <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
         <div className="flex items-center gap-4">
@@ -206,7 +206,7 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
             {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
           </div>
           <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-app-sm hover:bg-slate-50">
               {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Foto
             </span>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} disabled={uploadingAvatar} />
@@ -214,14 +214,14 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 className="w-4 h-4" /> Profil Klinik</h3>
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center border">
+          <div className="w-16 h-16 rounded-app overflow-hidden bg-slate-100 flex items-center justify-center border">
             {clinic?.logo_url ? <img src={clinic.logo_url} alt="Logo" className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-slate-400" />}
           </div>
           <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-app-sm hover:bg-slate-50">
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Logo
             </span>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadLogo} disabled={uploading} />
@@ -229,11 +229,11 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center border">
+          <div className="w-16 h-16 rounded-app overflow-hidden bg-slate-100 flex items-center justify-center border">
             {clinic?.stamp_url ? <img src={clinic.stamp_url} alt="Stempel" className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-slate-400" />}
           </div>
           <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+            <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-app-sm hover:bg-slate-50">
               {uploadingStamp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Ganti Stempel
             </span>
             <input type="file" accept="image/*" className="hidden" onChange={handleUploadStamp} disabled={uploadingStamp} />
@@ -256,13 +256,13 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
           <label className="text-sm font-medium">No. HP Klinik</label>
           <Input value={clinicPhone} onChange={(e) => setClinicPhone(e.target.value)} />
         </div>
-        <Button onClick={handleSaveClinicName} disabled={savingClinic} className="bg-blue-600">
+        <Button onClick={handleSaveClinicName} disabled={savingClinic} className="bg-app-accent">
           {savingClinic && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Profil Klinik
         </Button>
       </div>
 
       {!hideOwnerIdentity && (
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserCircle className="w-4 h-4" /> Identitas Pihak Pertama</h3>
         <p className="text-sm text-slate-500">
           Dipakai sebagai data PIHAK PERTAMA pada dokumen MOU/Perjanjian Kemitraan yang diterbitkan untuk terapis.
@@ -285,7 +285,7 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
           <label className="text-sm font-medium">Jabatan</label>
           <Input value={ownerPosition} onChange={(e) => setOwnerPosition(e.target.value)} placeholder="Pimpinan Klinik" />
         </div>
-        <Button onClick={handleSaveOwnerIdentity} disabled={savingOwnerIdentity} className="bg-blue-600">
+        <Button onClick={handleSaveOwnerIdentity} disabled={savingOwnerIdentity} className="bg-app-accent">
           {savingOwnerIdentity && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Identitas
         </Button>
       </div>

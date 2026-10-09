@@ -102,8 +102,8 @@ const PatientIncomeSection = () => {
   const SortIcon = ({ columnKey }) => {
     if (sortConfig.key !== columnKey) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-30" />;
     return sortConfig.direction === 'ascending' 
-      ? <ArrowUp className="ml-1 h-3 w-3 text-blue-600" /> 
-      : <ArrowDown className="ml-1 h-3 w-3 text-blue-600" />;
+      ? <ArrowUp className="ml-1 h-3 w-3 text-app-accent" /> 
+      : <ArrowDown className="ml-1 h-3 w-3 text-app-accent" />;
   };
 
   const getStatusBadge = (status) => {
@@ -121,7 +121,7 @@ const PatientIncomeSection = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
              <div>
                 <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                   <Package className="w-6 h-6 text-blue-600" />
+                   <Package className="w-6 h-6 text-app-accent" />
                    Riwayat Paket Pasien
                 </h2>
                 <p className="text-slate-500 mt-1">
@@ -129,14 +129,14 @@ const PatientIncomeSection = () => {
                 </p>
              </div>
              
-             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-app-sm border border-slate-200">
                 <Users className="w-4 h-4" />
                 <span>Total: <strong className="text-slate-900">{processedPackages.length}</strong> Paket Terdaftar</span>
              </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6 flex items-center gap-2">
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-app-sm mb-6 flex items-center gap-2">
                <AlertCircle className="w-5 h-5" />
                Error fetching data: {error}
             </div>
@@ -144,13 +144,13 @@ const PatientIncomeSection = () => {
 
           {loading ? (
              <div className="flex flex-col items-center justify-center p-12 gap-2">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" />
                 <span className="text-sm text-slate-400">Memuat data paket...</span>
              </div>
           ) : (
             <motion.div 
                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-               className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm"
+               className="rounded-app border border-slate-200 overflow-hidden bg-white shadow-sm"
             >
                 {/* Mobile / PWA: kartu, tanpa geser horizontal */}
                 <div className="sm:hidden divide-y divide-slate-100">
@@ -171,7 +171,7 @@ const PatientIncomeSection = () => {
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
                                         <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jenis Paket</p>
-                                        <p className="text-blue-700 font-medium">{pkg.package_name}</p>
+                                        <p className="text-app-accent-hover font-medium">{pkg.package_name}</p>
                                     </div>
                                     <div>
                                         <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tanggal Beli</p>
@@ -234,13 +234,13 @@ const PatientIncomeSection = () => {
                                 </tr>
                             ) : (
                                 processedPackages.map((pkg) => (
-                                    <tr key={pkg.id} className="hover:bg-blue-50/30 transition-colors">
+                                    <tr key={pkg.id} className="hover:bg-app-soft/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{pkg.patient?.full_name || 'Deleted User'}</div>
                                             <div className="text-xs text-slate-500 font-mono">{pkg.patient?.rm_number || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-blue-700 font-medium">{pkg.package_name}</span>
+                                            <span className="text-app-accent-hover font-medium">{pkg.package_name}</span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-600">
                                             <div className="flex items-center gap-2">

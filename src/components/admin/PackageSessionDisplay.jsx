@@ -32,7 +32,7 @@ const PackageSessionDisplay = ({ sessionData, packageName }) => {
   const getProgressColor = (used, total) => {
       if (used === 0) return 'bg-slate-300';
       const percentage = total > 0 ? (used / total) * 100 : 0;
-      if (percentage >= 100) return 'bg-blue-500'; // Finished
+      if (percentage >= 100) return 'bg-app-accent-bright'; // Finished
       return 'bg-green-500'; // Active
   };
 
@@ -73,15 +73,15 @@ const PackageSessionDisplay = ({ sessionData, packageName }) => {
 
          {/* Grid Details */}
          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            <div className="bg-slate-50 p-2.5 rounded-app-sm border border-slate-100">
                <div className="text-slate-500 mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3 text-blue-400" /> Berlaku Hingga
+                  <Calendar className="w-3 h-3 text-app-accent-bright" /> Berlaku Hingga
                </div>
                <div className="font-semibold text-slate-700">
                   {displayEndDate ? format(new Date(displayEndDate), 'dd MMM yyyy', { locale: id }) : '-'}
                </div>
             </div>
-             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+             <div className="bg-slate-50 p-2.5 rounded-app-sm border border-slate-100">
                <div className="text-slate-500 mb-1 flex items-center gap-1.5">
                   <Activity className="w-3 h-3 text-green-400" /> Sisa Sesi
                </div>

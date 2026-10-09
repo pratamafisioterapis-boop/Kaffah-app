@@ -73,7 +73,7 @@ const SectionHeader = ({ title, icon: Icon, isExpanded, onToggle, color = '#4f46
     }}
   >
     <div className="flex items-center gap-2.5">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+      <div className="w-7 h-7 rounded-app-sm flex items-center justify-center shrink-0"
         style={{ background: color + '15' }}>
         <Icon className="w-3.5 h-3.5" style={{ color }} />
       </div>
@@ -306,7 +306,7 @@ onClose();
         <div className="px-5 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #f1f5f9', background: 'white' }}>
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+              <div className="w-8 h-8 rounded-app flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
                 <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
               </div>
               <div>
@@ -324,7 +324,7 @@ onClose();
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-app-accent" />
               <p className="text-slate-500">Memuat data...</p>
             </div>
           ) : (
@@ -337,7 +337,7 @@ onClose();
               )}
 
               {/* 1. IDENTITAS & KELUHAN */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Identitas & Keluhan" icon={User} isExpanded={expandedSections.identity} onToggle={() => toggleSection('identity')} color="#4f46e5" />
                 {expandedSections.identity && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
@@ -419,7 +419,7 @@ onClose();
               </div>
 
               {/* 2. TANDA VITAL */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Tanda Vital" icon={Activity} isExpanded={expandedSections.vitals} onToggle={() => toggleSection('vitals')} color="#0891b2" />
                 {expandedSections.vitals && (
                   <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
@@ -447,7 +447,7 @@ onClose();
               </div>
 
               {/* 3. PEMERIKSAAN FISIK */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Pemeriksaan Fisik" icon={Search} isExpanded={expandedSections.physical} onToggle={() => toggleSection('physical')} color="#059669" />
                 {expandedSections.physical && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
@@ -476,7 +476,7 @@ onClose();
               </div>
 
               {/* 4. PENILAIAN FISIOTERAPI */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Penilaian Fisioterapi" icon={BarChart} isExpanded={expandedSections.assessment} onToggle={() => toggleSection('assessment')} color="#7c3aed" />
                 {expandedSections.assessment && (
                   <div className="p-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
@@ -497,7 +497,7 @@ onClose();
               </div>
 
               {/* 5. PEMERIKSAAN PENUNJANG */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Pemeriksaan Penunjang" icon={FileSearch} isExpanded={expandedSections.investigation} onToggle={() => toggleSection('investigation')} color="#d97706" />
                 {expandedSections.investigation && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
@@ -514,7 +514,7 @@ onClose();
               </div>
 
               {/* 6. RENCANA TERAPI */}
-              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Rencana Terapi" icon={Target} isExpanded={expandedSections.plan} onToggle={() => toggleSection('plan')} color="#e11d48" />
                 {expandedSections.plan && (
                   <div className="p-4 animate-in slide-in-from-top-2 duration-200">
@@ -527,7 +527,7 @@ onClose();
               </div>
 
               {/* 7. INFORMASI TERAPIS */}
-              <div className="rounded-xl overflow-visible" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="rounded-app overflow-visible" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <SectionHeader title="Informasi Terapis" icon={UserCog} isExpanded={expandedSections.therapist} onToggle={() => toggleSection('therapist')} color="#64748b" />
                 {expandedSections.therapist && (
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
@@ -563,12 +563,12 @@ onClose();
         <div className="px-5 py-3.5 flex justify-end gap-2 flex-shrink-0"
           style={{ borderTop: '1px solid #e2e8f0', background: 'white' }}>
           <button type="button" onClick={onClose} disabled={saving}
-            className="px-4 h-9 rounded-xl text-xs font-semibold transition-all"
+            className="px-4 h-9 rounded-app text-xs font-semibold transition-all"
             style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
             Batal
           </button>
           <button type="submit" form="medical-record-form" disabled={saving || loading}
-            className="flex items-center gap-2 px-5 h-9 rounded-xl text-xs font-bold text-white transition-all min-w-[120px] justify-center"
+            className="flex items-center gap-2 px-5 h-9 rounded-app text-xs font-bold text-white transition-all min-w-[120px] justify-center"
             style={{ background: saving ? '#818cf8' : '#4f46e5' }}>
             {saving ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan...</>

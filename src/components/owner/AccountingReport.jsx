@@ -457,7 +457,7 @@ combinedExpenses.sort((a, b) => {
   };
 
   if (loading) {
-      return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+      return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-app-accent" /></div>;
   }
 
   return (
@@ -465,7 +465,7 @@ combinedExpenses.sort((a, b) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
+          <div className="w-9 h-9 rounded-app flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
             <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
           </div>
           <div className="min-w-0">
@@ -514,8 +514,8 @@ combinedExpenses.sort((a, b) => {
             iconBg: netProfit >= 0 ? '#dbeafe' : '#fef3c7',
             color: netProfit >= 0 ? '#2563eb' : '#d97706' },
         ].map(({ label, value, icon: Icon, bg, iconBg, color }) => (
-          <div key={label} className="rounded-xl p-4 flex items-center gap-3 min-w-0" style={{ background: bg }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: iconBg }}>
+          <div key={label} className="rounded-app p-4 flex items-center gap-3 min-w-0" style={{ background: bg }}>
+            <div className="w-10 h-10 rounded-app flex items-center justify-center shrink-0" style={{ background: iconBg }}>
               <Icon className="w-5 h-5" style={{ color }} />
             </div>
             <div className="min-w-0 flex-1">
@@ -559,7 +559,7 @@ combinedExpenses.sort((a, b) => {
           <div className="flex items-center gap-2 px-1">
             <TrendingUp className="w-4 h-4 text-emerald-500" />
             <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Pemasukan (Income)</span>
-            <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+            <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-app-sm">
               Total: Rp {new Intl.NumberFormat('id-ID').format(totalIncome)}
             </span>
           </div>
@@ -610,7 +610,7 @@ combinedExpenses.sort((a, b) => {
           <div className="flex items-center gap-2 px-1">
             <TrendingDown className="w-4 h-4 text-rose-500" />
             <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Pengeluaran (Expense)</span>
-            <span className="ml-auto text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg">
+            <span className="ml-auto text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-app-sm">
               Total: Rp {new Intl.NumberFormat('id-ID').format(totalExpenses)}
             </span>
           </div>

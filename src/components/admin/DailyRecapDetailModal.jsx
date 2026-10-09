@@ -147,7 +147,7 @@ const DailyRecapDetailModal = ({ isOpen, recap, onClose, onSave, mode = 'view' }
                 {/* Delete Confirmation Overlay for Edit Mode */}
                 {showDeleteConfirm && (
                     <div className="absolute inset-0 bg-white/95 z-50 flex items-center justify-center backdrop-blur-sm animate-in fade-in">
-                         <div className="text-center p-6 max-w-sm border rounded-lg shadow-lg bg-white">
+                         <div className="text-center p-6 max-w-sm border rounded-app-sm shadow-lg bg-white">
                             <h3 className="font-semibold text-lg mb-2">Konfirmasi Hapus</h3>
                             <p className="text-slate-600 mb-4 text-sm">Anda yakin ingin menghapus data ini?</p>
                             <div className="flex gap-2 justify-center">

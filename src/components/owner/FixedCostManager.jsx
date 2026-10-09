@@ -167,7 +167,7 @@ const FixedCostManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-0">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-0">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Pengeluaran Rutin Bulanan</h2>
@@ -176,7 +176,7 @@ const FixedCostManager = () => {
             Item dengan Auto-Posting aktif akan otomatis tercatat sebagai pengeluaran tiap tanggal yang ditentukan. Item gaji tidak auto-posting di sini — nanti terposting otomatis setelah payroll dibuat.
           </p>
         </div>
-        <Button onClick={() => setIsAddOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setIsAddOpen(true)} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" />
           Tambah Item
         </Button>
@@ -187,9 +187,9 @@ const FixedCostManager = () => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada item.</p>
-              <Button variant="link" onClick={() => setIsAddOpen(true)} className="text-blue-600 mt-2">Tambahkan item pertama</Button>
+              <Button variant="link" onClick={() => setIsAddOpen(true)} className="text-app-accent mt-2">Tambahkan item pertama</Button>
             </div>
           ) : (
             items.map((item) => (
@@ -197,11 +197,11 @@ const FixedCostManager = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex flex-col gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                className="group flex flex-col gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-3">
                   <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                    <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-app-sm bg-amber-50 flex items-center justify-center shrink-0">
                       <Wallet className="w-4 h-4 text-amber-600" />
                     </div>
                     <Input
@@ -267,7 +267,7 @@ const FixedCostManager = () => {
         </div>
 
         {items.length > 0 && (
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 mt-4 border border-slate-100">
+          <div className="flex items-center justify-between rounded-app bg-slate-50 px-4 py-3 mt-4 border border-slate-100">
             <span className="text-sm font-semibold text-slate-600">Total Pengeluaran Rutin per Bulan</span>
             <span className="text-base font-bold text-indigo-600">{formatCurrency(totalMonthly)}</span>
           </div>
@@ -303,7 +303,7 @@ const FixedCostManager = () => {
               <Input type="number" min="1" max="31" value={newItemPostDay} onChange={(e) => setNewItemPostDay(e.target.value)} placeholder="Contoh: 1" />
               <p className="text-xs text-slate-500">Jika bulan tidak punya tanggal itu (mis. 31 di Februari), akan diposting di hari terakhir bulan tersebut.</p>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5">
+            <div className="flex items-center justify-between rounded-app-sm border border-slate-200 px-3 py-2.5">
               <div>
                 <p className="text-sm font-medium text-slate-700">Auto-Posting</p>
                 <p className="text-xs text-slate-500">Matikan untuk item gaji — akan terposting otomatis lewat payroll, bukan dari sini.</p>
@@ -313,7 +313,7 @@ const FixedCostManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Batal</Button>
-            <Button onClick={handleAddItem} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleAddItem} disabled={isProcessing} className="bg-app-accent hover:bg-app-accent-hover">
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Simpan
             </Button>

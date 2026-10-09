@@ -108,7 +108,7 @@ const PackageSessionHistoryModal = ({ isOpen, onClose, packageInfo, usedSessions
         <div className="flex-1 overflow-y-auto p-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" />
               <p className="text-sm">Memuat riwayat sesi...</p>
             </div>
           ) : error ? (

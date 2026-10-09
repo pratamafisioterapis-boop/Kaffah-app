@@ -213,7 +213,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
     if (active && payload && payload.length) {
       const dataPoint = payload[0].payload; // Access the full data object
       return (
-        <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-lg text-xs z-50">
+        <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-app-sm text-xs z-50">
           <p className="font-bold text-slate-800 mb-1">{label}</p>
           <p className="text-slate-500 mb-2 text-xs">{dataPoint.periodLabel}</p>
           {payload.map((entry, index) => (
@@ -234,7 +234,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
 
   if (error) {
     return (
-      <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
          <CardHeader className="flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-bold text-slate-800">Target vs Realisasi</CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
@@ -249,7 +249,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
   }
 
   return (
-    <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-slate-800">Target vs Realisasi</h2>
@@ -275,7 +275,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       {/* Legend */}
       <div className="flex items-center gap-4 px-5 md:px-6 pt-2">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1.5 rounded-full bg-blue-100" />
+          <div className="w-3 h-1.5 rounded-full bg-app-accent/15" />
           <span className="text-xs text-slate-500 font-medium">Target</span>
         </div>
         <div className="flex items-center gap-1.5">

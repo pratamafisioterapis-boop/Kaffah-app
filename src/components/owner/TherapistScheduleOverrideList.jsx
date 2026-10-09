@@ -51,19 +51,19 @@ const TherapistScheduleOverrideList = ({ therapist, refreshTrigger }) => {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-slate-100 rounded-app-sm animate-pulse" />)}
         </div>
       ) : overrides.length === 0 ? (
-        <div className="text-center py-10 bg-slate-50 border border-slate-100 rounded-lg text-slate-500">
+        <div className="text-center py-10 bg-slate-50 border border-slate-100 rounded-app-sm text-slate-500">
           Belum ada jadwal pengganti untuk terapis ini.
         </div>
       ) : (
         <div className="space-y-3">
           {overrides.map((item) => (
-            <Card key={item.id} className="group hover:border-blue-200 transition-colors">
+            <Card key={item.id} className="group hover:border-app-accent/25 transition-colors">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="bg-blue-50 text-blue-600 p-2 rounded-lg">
+                  <div className="bg-app-soft text-app-accent p-2 rounded-app-sm">
                     <CalendarClock className="w-5 h-5" />
                   </div>
                   <div>

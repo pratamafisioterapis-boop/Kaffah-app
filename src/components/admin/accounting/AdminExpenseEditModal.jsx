@@ -121,7 +121,7 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose(val)}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-xl shadow-lg border-0">
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-app shadow-lg border-0">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="text-xl font-bold text-slate-800">Edit Pengeluaran</DialogTitle>
         </DialogHeader>
@@ -215,7 +215,7 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
             <Button type="button" variant="outline" onClick={() => onClose()} disabled={loading}>
               Batal
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]" disabled={loading}>
+            <Button type="submit" className="bg-app-accent hover:bg-app-accent-hover text-white min-w-[100px]" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Simpan
             </Button>

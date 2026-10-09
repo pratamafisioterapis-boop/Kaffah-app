@@ -217,7 +217,7 @@ const TherapistTargetManagement = () => {
                     {loading ? (
                         <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-600" /></div>
                     ) : targets.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 border-2 border-dashed rounded-lg">Belum ada target yang dibuat.</div>
+                        <div className="text-center py-12 text-slate-500 border-2 border-dashed rounded-app-sm">Belum ada target yang dibuat.</div>
                     ) : (
                         <div className="overflow-x-auto">
                         <Table>

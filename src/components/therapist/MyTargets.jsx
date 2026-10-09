@@ -55,7 +55,7 @@ const MyTargets = () => {
   if (loading) {
     return (
       <div className="flex justify-center p-10">
-        <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
+        <Loader2 className="animate-spin text-app-accent w-8 h-8" />
       </div>
     );
   }
@@ -78,10 +78,10 @@ const MyTargets = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Target className="w-6 h-6 text-blue-600" /> Target Saya
+          <Target className="w-6 h-6 text-app-accent" /> Target Saya
         </h2>
-        <div className="text-sm text-slate-500 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-500" />
+        <div className="text-sm text-slate-500 bg-app-soft px-3 py-1 rounded-full border border-app-accent/15 flex items-center gap-2">
+            <Info className="w-4 h-4 text-app-accent-bright" />
             Target dikelola oleh manajemen klinik
         </div>
       </div>
@@ -105,17 +105,17 @@ const MyTargets = () => {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-             <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-100">
+             <div className="text-center p-4 bg-slate-50 rounded-app-sm border border-slate-100">
                 <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold mb-1">Target Kunjungan</p>
                 <p className="text-3xl font-bold text-slate-900">{targetData.target_visits}</p>
              </div>
-             <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-100">
+             <div className="text-center p-4 bg-slate-50 rounded-app-sm border border-slate-100">
                 <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold mb-1">Capaian Saat Ini</p>
-                <p className={`text-3xl font-bold ${targetData.achievement_percentage >= 100 ? 'text-emerald-600' : 'text-blue-600'}`}>
+                <p className={`text-3xl font-bold ${targetData.achievement_percentage >= 100 ? 'text-emerald-600' : 'text-app-accent'}`}>
                   {targetData.actual_visits}
                 </p>
              </div>
-             <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-100">
+             <div className="text-center p-4 bg-slate-50 rounded-app-sm border border-slate-100">
                 <p className="text-sm text-slate-500 uppercase tracking-wider font-semibold mb-1">Persentase</p>
                 <p className={`text-3xl font-bold ${targetData.achievement_percentage >= 100 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {targetData.achievement_percentage}%

@@ -392,7 +392,7 @@ const handleConfirmReschedule = async () => {
                 <label className="text-sm font-medium flex items-center gap-2">
                     Time 
                     {!canEditDateTime && <Lock className="w-3 h-3 text-slate-400" />}
-                    {loadingSlots && <Loader2 className="w-3 h-3 animate-spin text-blue-500" />}
+                    {loadingSlots && <Loader2 className="w-3 h-3 animate-spin text-app-accent-bright" />}
                 </label>
                 <Select 
                     value={formData.appointment_time} 
@@ -568,7 +568,7 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
     whatsappQueues.map((item) => (
       <div
         key={item.id}
-        className="border rounded-xl p-4 space-y-3 bg-white"
+        className="border rounded-app p-4 space-y-3 bg-white"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -592,7 +592,7 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
           </Badge>
         </div>
 
-        <div className="text-sm whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border">
+        <div className="text-sm whitespace-pre-wrap bg-slate-50 rounded-app-sm p-3 border">
           {item.message_content || '-'}
         </div>
 

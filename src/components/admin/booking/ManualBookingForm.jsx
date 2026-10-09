@@ -340,11 +340,11 @@ const handleConfirmRecurring = async () => {
   if (showConflictModal && conflictData) {
     return (
       <div className="space-y-4">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <h3 className="font-semibold text-blue-800 mb-2">
+        <div className="bg-app-soft p-4 rounded-app-sm border border-app-accent/15">
+          <h3 className="font-semibold text-app-accent-hover mb-2">
             Konfirmasi Booking Berulang
           </h3>
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-app-accent-hover">
             Anda akan membuat <strong>{conflictData.total_planned}</strong> jadwal setiap{' '}
             <strong>{format(date, 'EEEE', { locale: idLocale })}</strong> sampai{' '}
             <strong>{format(new Date(formData.recurringEndDate), 'dd MMM yyyy', { locale: idLocale })}</strong>.
@@ -352,7 +352,7 @@ const handleConfirmRecurring = async () => {
         </div>
 
         {conflictData.conflicts?.length > 0 && (
-          <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+          <div className="bg-red-50 p-4 rounded-app-sm border border-red-100">
             <h4 className="font-medium text-red-800 mb-1">
               Terdapat {conflictData.conflicts.length} Bentrok
             </h4>
@@ -422,12 +422,12 @@ const handleConfirmRecurring = async () => {
   return (
     <div className="space-y-4">
       <div className={cn(
-        "p-5 rounded-2xl border flex flex-col gap-3 shadow-sm",
+        "p-5 rounded-app-lg border flex flex-col gap-3 shadow-sm",
         isLeave ? "bg-red-50 border-red-100" : "bg-gradient-to-br from-white to-slate-50 border-slate-200"
       )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-700">
-            <CalendarDays className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-blue-600")} />
+            <CalendarDays className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-app-accent")} />
             <span className="text-sm font-medium">
               {date && isValid(date)
                 ? format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })
@@ -440,7 +440,7 @@ const handleConfirmRecurring = async () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Clock className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-blue-600")} />
+          <Clock className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-app-accent")} />
           <span className="text-3xl font-bold text-slate-900 tracking-tight">
             {formData.start_time}
           </span>
@@ -475,13 +475,13 @@ const handleConfirmRecurring = async () => {
         )}
       </div>
 
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+      <div className="flex bg-slate-100 p-1.5 rounded-app-lg gap-1">
         <button
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-semibold py-2.5 rounded-xl transition-all",
-            formData.patient_type === 'registered' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500"
+            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-all",
+            formData.patient_type === 'registered' ? "bg-white text-app-ink shadow-sm" : "text-slate-500"
           )}
         >
           Pasien Terdaftar
@@ -490,8 +490,8 @@ const handleConfirmRecurring = async () => {
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-semibold py-2.5 rounded-xl transition-all",
-            formData.patient_type === 'guest' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500"
+            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-all",
+            formData.patient_type === 'guest' ? "bg-white text-app-ink shadow-sm" : "text-slate-500"
           )}
         >
           Tamu / Baru
@@ -521,7 +521,7 @@ const handleConfirmRecurring = async () => {
     console.error(err);
   }
 }}
-    className={cn("rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
+    className={cn("rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
   />
   {formData.patient_id && (
     <CheckCircle className="absolute right-3 top-2.5 h-4 w-4 text-green-500" />
@@ -561,7 +561,7 @@ const handleConfirmRecurring = async () => {
   new Date(lastDate) < new Date(new Date().setHours(0,0,0,0));
 
   return (
-    <div className={`border rounded-lg p-3 mt-2 ${
+    <div className={`border rounded-app-sm p-3 mt-2 ${
       isExpired ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
     }`}>
       
@@ -612,14 +612,14 @@ const handleConfirmRecurring = async () => {
             value={formData.guest_name}
             onChange={e => setFormData(prev => ({ ...prev, guest_name: e.target.value }))}
             disabled={isLeave}
-            className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
+            className="rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40"
           />
           <Input
             placeholder="No HP"
             value={formData.guest_phone}
             onChange={e => setFormData(prev => ({ ...prev, guest_phone: e.target.value }))}
             disabled={isLeave}
-            className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
+            className="rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40"
           />
         </>
       )}
@@ -664,7 +664,7 @@ const handleConfirmRecurring = async () => {
       )}
       <Textarea
         placeholder="Tulis catatan..."
-        className="h-20 resize-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40"
+        className="h-20 resize-none rounded-app focus-visible:ring-2 focus-visible:ring-app-ink/40"
         value={formData.notes}
         onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
         disabled={isLeave}
@@ -672,14 +672,14 @@ const handleConfirmRecurring = async () => {
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-full">Batal</Button>
-        <Button onClick={handleSubmit} disabled={loading || isLeave} className="bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] rounded-full font-bold shadow-lg shadow-[#0f1e3d]/20">
+        <Button onClick={handleSubmit} disabled={loading || isLeave} className="bg-gradient-to-r from-app-ink to-app-ink hover:from-[#0b1830] hover:to-[#172554] rounded-full font-bold shadow-lg shadow-app-ink/20">
           {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           Simpan
         </Button>
       </DialogFooter>
       {showExtendModal && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-    <div className="bg-white rounded-xl p-6 w-full max-w-xs space-y-4 shadow-2xl">
+    <div className="bg-white rounded-app p-6 w-full max-w-xs space-y-4 shadow-2xl">
       <h3 className="font-bold text-lg">Perpanjang Paket</h3>
 
       <div className="space-y-2">
@@ -697,7 +697,7 @@ const handleConfirmRecurring = async () => {
         </Button>
 
         <Button
-          className="flex-1 bg-blue-600"
+          className="flex-1 bg-app-accent"
           onClick={async () => {
             try {
               const today = new Date();

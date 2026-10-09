@@ -75,7 +75,7 @@ const InventoryItemForm = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl border border-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-app border border-slate-200">
       <h3 className="text-lg font-semibold text-slate-900 mb-2">Tambah Barang Baru</h3>
       <div className="space-y-2">
         <Label htmlFor="item_name">Nama Barang</Label>
@@ -122,7 +122,7 @@ const InventoryItemForm = ({ onSuccess }) => {
         )}
       </div>
       {pricePerUnit > 0 && (
-        <div className="text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-600">
+        <div className="text-sm bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2 text-slate-600">
           Harga per {form.unit || 'satuan'}: <span className="font-semibold text-slate-900">Rp {pricePerUnit.toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
         </div>
       )}

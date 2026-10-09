@@ -26,7 +26,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
   };
 
   const tone = (opt) => {
-    if (!tok.flag) return 'bg-blue-600 border-blue-600 text-white';
+    if (!tok.flag) return 'bg-app-accent border-app-accent text-white';
     return ['ada', 'ya'].includes(opt.toLowerCase())
       ? 'bg-emerald-600 border-emerald-600 text-white'
       : 'bg-slate-600 border-slate-600 text-white';
@@ -47,7 +47,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
               'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-all active:scale-95 max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
               active
                 ? cn(tone(opt), 'font-medium shadow-sm')
-                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
             )}
           >
             {opt}
@@ -69,7 +69,7 @@ const DurationInput = ({ value, onChange }) => {
   const quick = [1, 2, 3, 5, 7];
 
   return (
-    <span className="my-1.5 flex w-full flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-2 sm:mx-1 sm:my-0 sm:inline-flex sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 sm:p-1 sm:align-middle">
+    <span className="my-1.5 flex w-full flex-col gap-2 rounded-app-lg border border-app-accent/15 bg-app-soft/60 p-2 sm:mx-1 sm:my-0 sm:inline-flex sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 sm:p-1 sm:align-middle">
       <span className="flex items-center justify-between rounded-full border border-slate-200 bg-white sm:inline-flex sm:justify-start">
         <button
           type="button"
@@ -106,7 +106,7 @@ const DurationInput = ({ value, onChange }) => {
             onClick={() => set({ unit: u, n: n || 1 })}
             className={cn(
               'rounded-full px-2.5 py-2.5 text-sm transition-colors sm:py-1 sm:text-[13px]',
-              unit === u && n > 0 ? 'bg-blue-600 font-medium text-white' : 'text-slate-600 hover:bg-slate-100'
+              unit === u && n > 0 ? 'bg-app-accent font-medium text-white' : 'text-slate-600 hover:bg-slate-100'
             )}
           >
             {u}
@@ -120,7 +120,7 @@ const DurationInput = ({ value, onChange }) => {
               key={q}
               type="button"
               onClick={() => set({ n: q })}
-              className="h-10 min-w-[44px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-blue-300 hover:text-blue-600"
+              className="h-10 min-w-[44px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-app-accent/40 hover:text-app-accent"
             >
               {q}
             </button>
@@ -143,8 +143,8 @@ const FreeInput = ({ tok, value, onChange }) => {
       onChange={(e) => onChange(e.target.value)}
       style={{ '--w': `${width}ch` }}
       className={cn(
-        'my-1.5 block h-11 w-full rounded-lg border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100',
-        value?.trim() ? 'border-blue-300 bg-blue-50/40' : 'border-dashed border-slate-300'
+        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
+        value?.trim() ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
   );
@@ -164,15 +164,15 @@ const DateInput = ({ value, onChange }) => (
       max="2100-12-31"
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'h-11 min-w-0 flex-1 rounded-lg border bg-white px-3 text-base text-slate-800 outline-none focus:border-blue-500 sm:h-8 sm:flex-none sm:px-2 sm:text-sm focus:ring-2 focus:ring-blue-100',
-        value ? 'border-blue-300 bg-blue-50/40' : 'border-dashed border-slate-300'
+        'h-11 min-w-0 flex-1 rounded-app-sm border bg-white px-3 text-base text-slate-800 outline-none focus:border-app-accent-bright sm:h-8 sm:flex-none sm:px-2 sm:text-sm focus:ring-2 focus:ring-app-accent/15',
+        value ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
     {!value && (
       <button
         type="button"
         onClick={() => onChange(todayIso())}
-        className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 hover:border-blue-300 hover:text-blue-600 sm:h-7 sm:px-2.5 sm:text-xs"
+        className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 hover:border-app-accent/40 hover:text-app-accent sm:h-7 sm:px-2.5 sm:text-xs"
       >
         Hari ini
       </button>
@@ -186,16 +186,16 @@ const ToggleSentence = ({ tok, value, onChange }) => (
     aria-pressed={!!value}
     onClick={() => onChange(value ? undefined : true)}
     className={cn(
-      'my-1 flex w-full items-start gap-2 rounded-xl border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-all active:scale-[0.99]',
+      'my-1 flex w-full items-start gap-2 rounded-app border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-all active:scale-[0.99]',
       value
-        ? 'border-blue-600 bg-blue-600 font-medium text-white shadow-sm'
-        : 'border-dashed border-slate-300 bg-white text-slate-500 hover:border-blue-300 hover:bg-blue-50'
+        ? 'border-app-accent bg-app-accent font-medium text-white shadow-sm'
+        : 'border-dashed border-slate-300 bg-white text-slate-500 hover:border-app-accent/40 hover:bg-app-soft'
     )}
   >
     <span
       className={cn(
         'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border',
-        value ? 'border-white bg-white text-blue-600' : 'border-slate-300'
+        value ? 'border-white bg-white text-app-accent' : 'border-slate-300'
       )}
     >
       {value && <Check className="h-3 w-3" />}
@@ -207,7 +207,7 @@ const ToggleSentence = ({ tok, value, onChange }) => (
 const ScaleChips = ({ tok, value, onChange }) => {
   const nums = Array.from({ length: tok.max - tok.min + 1 }, (_, i) => String(tok.min + i));
   const tone = (n) => {
-    if (tok.max !== 10) return 'bg-blue-600 border-blue-600 text-white';
+    if (tok.max !== 10) return 'bg-app-accent border-app-accent text-white';
     return n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white';
   };
   return (
@@ -221,7 +221,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
           onClick={() => onChange(value === n ? undefined : n)}
           className={cn(
             'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 sm:min-w-[32px] sm:align-middle sm:text-[13px] leading-none transition-all active:scale-95',
-            value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+            value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
           )}
         >
           {n}
@@ -234,10 +234,10 @@ const ScaleChips = ({ tok, value, onChange }) => {
 const FormButtons = ({ tok, value, onOpen, onClear }) => (
   <span className="my-1.5 flex flex-wrap items-center gap-1.5 sm:mx-1 sm:my-0 sm:inline-flex sm:align-middle">
     {value?.text ? (
-      <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-300 bg-blue-50 py-1 pl-3 pr-1.5 text-[13px] font-medium text-blue-800">
+      <span className="inline-flex items-center gap-1.5 rounded-app border border-app-accent/40 bg-app-soft py-1 pl-3 pr-1.5 text-[13px] font-medium text-app-accent-hover">
         {value.text}
-        <button type="button" aria-label="Ubah" onClick={() => onOpen(value.form)} className="rounded-lg p-1 text-blue-600 hover:bg-blue-100"><Pencil className="h-3.5 w-3.5" /></button>
-        <button type="button" aria-label="Hapus" onClick={onClear} className="rounded-lg px-1.5 py-1 text-xs text-slate-500 hover:bg-rose-50 hover:text-rose-600">✕</button>
+        <button type="button" aria-label="Ubah" onClick={() => onOpen(value.form)} className="rounded-app-sm p-1 text-app-accent hover:bg-app-accent/15"><Pencil className="h-3.5 w-3.5" /></button>
+        <button type="button" aria-label="Hapus" onClick={onClear} className="rounded-app-sm px-1.5 py-1 text-xs text-slate-500 hover:bg-rose-50 hover:text-rose-600">✕</button>
       </span>
     ) : (
       tok.forms.map((f) => (
@@ -245,7 +245,7 @@ const FormButtons = ({ tok, value, onOpen, onClear }) => (
           key={f}
           type="button"
           onClick={() => onOpen(f)}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-dashed border-blue-400 bg-blue-50/60 px-3 py-1 text-[13px] font-medium text-blue-700 hover:bg-blue-100 active:scale-95"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-app border border-dashed border-blue-400 bg-blue-50/60 px-3 py-1 text-[13px] font-medium text-blue-700 hover:bg-blue-100 active:scale-95"
         >
           <ClipboardCheck className="h-4 w-4" /> Isi {FUNCTIONAL_FORMS[f]?.name || f}
         </button>
@@ -434,7 +434,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   };
 
   return (
-    <div className={embedded ? '' : 'border-b bg-gradient-to-b from-blue-50/70 to-white'}>
+    <div className={embedded ? '' : 'border-b bg-gradient-to-b from-app-soft/70 to-white'}>
       {!embedded && (
       <button
         type="button"
@@ -443,7 +443,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
         aria-expanded={open}
       >
         <span className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-app bg-app-accent text-white shadow-sm">
             {isObjective ? <Stethoscope className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
           </span>
           <span className="min-w-0">
@@ -469,8 +469,8 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   className={cn(
                     'shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs',
                     t.key === active.key
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
+                      ? 'border-app-accent bg-app-accent text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40'
                   )}
                 >
                   {t.label}
@@ -485,7 +485,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           <div className="flex items-center gap-3">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-blue-500 transition-all"
+                className="h-full rounded-full bg-app-accent-bright transition-all"
                 style={{ width: total ? `${Math.round((filled / total) * 100)}%` : '0%' }}
               />
             </div>
@@ -500,14 +500,14 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             </button>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
+          <div className="space-y-3 rounded-app-lg border border-slate-200 bg-white p-3.5 shadow-sm">
             {[
               ...(vitalParsed ? [{ section: sharedVital, shared: 'vital' }] : []),
               ...sharedSections.map((section) => ({ section, shared: 'common' })),
               ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
             ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">
                   <span>
                     {section.title}
                     {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
@@ -539,7 +539,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   }
                   // Format daftar: satu baris per pemeriksaan, label di kiri, pilihan/isian di kanan.
                   return (
-                    <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
+                    <div className="divide-y divide-slate-100 overflow-hidden rounded-app border border-slate-100">
                       {section.sentences.map((sentence, si) => {
                         const sepIdx = sentence.kind === 'kv' ? sentence.tokens.findIndex((t) => t.t === 'text' && t.v === ' : ') : -1;
                         const labelToks = sepIdx > 0 ? sentence.tokens.slice(0, sepIdx) : [];
@@ -576,8 +576,8 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               placeholder="Teks akan muncul di sini setelah Anda memilih atau mengisi. Bisa diedit langsung."
               rows={Math.min(14, Math.max(4, finalText.split('\n').length + 1))}
               className={cn(
-                'block w-full resize-y rounded-xl border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-blue-200',
-                finalText ? 'border-blue-100 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
+                'block w-full resize-y rounded-app border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-app-accent/25',
+                finalText ? 'border-app-accent/15 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
               )}
             />
           </div>
@@ -587,7 +587,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             type="button"
             onClick={apply}
             disabled={!finalText.trim()}
-            className="h-11 w-full gap-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-700"
+            className="h-11 w-full gap-2 rounded-app bg-app-accent text-sm font-semibold hover:bg-app-accent-hover"
           >
             <Check className="h-4 w-4" />
             {willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}

@@ -99,9 +99,9 @@ const GoogleDriveSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <HardDrive className="w-6 h-6 text-blue-600" />
+          <HardDrive className="w-6 h-6 text-app-accent" />
           Upload Google Drive Terapis
         </h2>
         <p className="text-slate-500 mt-1">
@@ -109,7 +109,7 @@ const GoogleDriveSettings = () => {
         </p>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-slate-200">
+      <div className="bg-white p-4 rounded-app-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <div>
             <Label className="text-base">Status Koneksi Google Drive</Label>
@@ -133,18 +133,18 @@ const GoogleDriveSettings = () => {
         ) : (
           <div className="space-y-4">
             {connected ? (
-              <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-sm text-emerald-800">
+              <div className="bg-emerald-50 border border-emerald-100 rounded-app-sm p-4 text-sm text-emerald-800">
                 Terhubung sebagai <strong>{connectedEmail || 'akun Google'}</strong>.
                 <Button variant="link" onClick={handleConnect} disabled={connecting} className="text-emerald-700 h-auto p-0 ml-2">
                   Hubungkan ulang / ganti akun
                 </Button>
               </div>
             ) : (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-app-sm p-4 space-y-3">
                 <p className="text-sm text-slate-600">
                   Klik tombol di bawah untuk login dengan akun Google Anda dan mengizinkan aplikasi menyimpan file ke Drive Anda.
                 </p>
-                <Button onClick={handleConnect} disabled={connecting} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleConnect} disabled={connecting} className="bg-app-accent hover:bg-app-accent-hover">
                   {connecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
                   Hubungkan Google Drive
                 </Button>
@@ -176,11 +176,11 @@ const GoogleDriveSettings = () => {
                 href={folderInput ? `https://drive.google.com/drive/folders/${extractFolderId(folderInput)}` : '#'}
                 target="_blank"
                 rel="noreferrer"
-                className={`text-xs flex items-center gap-1 ${folderInput ? 'text-blue-600 hover:underline' : 'text-slate-300 pointer-events-none'}`}
+                className={`text-xs flex items-center gap-1 ${folderInput ? 'text-app-accent hover:underline' : 'text-slate-300 pointer-events-none'}`}
               >
                 Buka folder di Drive <ExternalLink className="w-3 h-3" />
               </a>
-              <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleSave} disabled={saving} className="bg-app-accent hover:bg-app-accent-hover">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Simpan Folder
               </Button>

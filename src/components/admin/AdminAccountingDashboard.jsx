@@ -129,14 +129,14 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
   if (loading && !initialData) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-600 bg-red-50 rounded-lg border border-red-200">
+      <div className="p-6 text-center text-red-600 bg-red-50 rounded-app-sm border border-red-200">
         <AlertCircle className="w-10 h-10 mx-auto mb-3" />
         <h3 className="font-bold text-lg">Gagal Memuat Data</h3>
         <p className="mb-4">{error}</p>
@@ -150,7 +150,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
   return (
     <div className="space-y-6 w-full font-sans">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-accounting-hero.webp"
           alt="Kaffah Physiotherapy"
@@ -159,17 +159,17 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
             >
               Akuntansi &<br />
-              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                 Keuangan
               </span>
             </h1>
-            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               Kelola arus kas operasional klinik.
             </p>
           </div>
@@ -178,24 +178,24 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
       {!isPWA && (
       <div className="flex justify-end">
-        <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm p-1.5 rounded-xl">
-          <div className="px-2 text-[#1677D2]">
+        <div className="flex items-center gap-2 bg-white border border-app-border shadow-sm p-1.5 rounded-app">
+          <div className="px-2 text-app-accent">
             <Calendar className="w-4 h-4" />
           </div>
           <input
             type="date"
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-[#102F52] w-32"
+            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-app-ink w-32"
             value={dateRange.startDate}
             onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
           />
-          <span className="text-[#DCE8F2]">|</span>
+          <span className="text-app-border">|</span>
           <input
             type="date"
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-[#102F52] w-32"
+            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-app-ink w-32"
             value={dateRange.endDate}
             onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
           />
-          <Button onClick={fetchData} size="sm" className="bg-[#1677D2] hover:bg-[#125fac] text-white rounded-lg h-8">
+          <Button onClick={fetchData} size="sm" className="bg-app-accent hover:bg-app-accent-hover text-white rounded-app-sm h-8">
             <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
           </Button>
         </div>
@@ -204,22 +204,22 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
       {/* Filter compact khusus PWA */}
       {isPWA && (
-        <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 bg-white p-3 rounded-app border border-slate-200 shadow-sm">
           <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="date"
-            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            className="flex-1 text-xs px-2 py-1.5 rounded-app-sm border border-slate-200 text-slate-700"
             value={dateRange.startDate}
             onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
           />
           <span className="text-slate-300">–</span>
           <input
             type="date"
-            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-700"
+            className="flex-1 text-xs px-2 py-1.5 rounded-app-sm border border-slate-200 text-slate-700"
             value={dateRange.endDate}
             onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
           />
-          <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg h-8 shrink-0">
+          <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-app-sm h-8 shrink-0">
             <Filter className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -229,7 +229,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setActiveTab("expenses")}
-          className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
             activeTab === "expenses" 
               ? "bg-rose-600 text-white shadow-lg shadow-rose-200 ring-1 ring-rose-500 ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
@@ -240,7 +240,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         </button>
         <button
           onClick={() => setActiveTab("income")}
-          className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
             activeTab === "income" 
               ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200 ring-1 ring-emerald-500 ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
@@ -251,9 +251,9 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         </button>
         <button
           onClick={() => setActiveTab("reports")}
-          className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
             activeTab === "reports" 
-              ? "bg-blue-600 text-white shadow-lg shadow-blue-200 ring-1 ring-blue-500 ring-offset-1" 
+              ? "bg-app-accent text-white shadow-lg shadow-app-accent/25 ring-1 ring-app-accent-bright ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
           }`}
         >
@@ -267,7 +267,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         {activeTab === "expenses" && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-1">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-4">
+              <div className="bg-white p-5 rounded-app-lg border border-slate-200 shadow-sm sticky top-4">
                 <div className="mb-4 pb-4 border-b border-slate-100">
                    <h3 className="font-bold text-slate-800 text-lg">Input Pengeluaran</h3>
                    <p className="text-slate-500 text-sm">Catat pengeluaran operasional baru</p>
@@ -297,7 +297,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         {activeTab === "income" && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-1">
-               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-4">
+               <div className="bg-white p-5 rounded-app-lg border border-slate-200 shadow-sm sticky top-4">
                 <div className="mb-4 pb-4 border-b border-slate-100">
                    <h3 className="font-bold text-slate-800 text-lg">Input Pemasukan</h3>
                    <p className="text-slate-500 text-sm">Catat pemasukan tambahan (non-pasien)</p>
@@ -325,7 +325,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         )}
 
         {activeTab === "reports" && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-app-lg border border-slate-200 shadow-sm p-6">
             <AdminAccountingReport data={reportData} dateRange={dateRange} />
           </div>
         )}

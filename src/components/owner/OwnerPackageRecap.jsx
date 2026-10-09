@@ -382,7 +382,7 @@ const OwnerPackageRecap = () => {
 
     if (s === 'pending') {
       return (
-        <Badge className="bg-blue-100 text-blue-800 border-transparent hover:bg-blue-200 font-medium">
+        <Badge className="bg-app-accent/15 text-app-accent-hover border-transparent hover:bg-app-accent/25 font-medium">
           Belum Dimulai
         </Badge>
       );
@@ -519,8 +519,8 @@ const OwnerPackageRecap = () => {
   const SortIcon = ({ column }) => {
     if (sortConfig.key !== column) return <ArrowUp className="ml-1 h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100" />;
     return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="ml-1 h-3 w-3 text-blue-600" />
-      : <ArrowDown className="ml-1 h-3 w-3 text-blue-600" />;
+      ? <ArrowUp className="ml-1 h-3 w-3 text-app-accent" />
+      : <ArrowDown className="ml-1 h-3 w-3 text-app-accent" />;
   };
 
   const ThSortable = ({ column, label, className = "" }) => (
@@ -604,16 +604,16 @@ const OwnerPackageRecap = () => {
   return (
     <div className="space-y-6">
       {/* Top Action Bar */}
-      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 space-y-4 xl:space-y-0">
+      <div className="bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 space-y-4 xl:space-y-0">
         
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-          <Button className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200" onClick={() => setManualDialogOpen(true)}>
+          <Button className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25" onClick={() => setManualDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> Tambah Manual
           </Button>
-          <Button variant="outline" className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]" onClick={() => setImportModalOpen(true)}>
+          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={() => setImportModalOpen(true)}>
             <Upload className="w-4 h-4 mr-2" /> Import CSV
           </Button>
-          <Button variant="outline" className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]" onClick={handleExport}>
+          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" /> Export CSV
           </Button>
         </div>
@@ -661,7 +661,7 @@ const OwnerPackageRecap = () => {
       )}
       
       {/* Package History View */}
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-md border border-slate-200 overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">📦 Riwayat Paket Pasien</h2>
@@ -673,7 +673,7 @@ const OwnerPackageRecap = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
                     placeholder="Cari..." 
-                    className="pl-9 h-10 border-slate-300 focus:ring-blue-500" 
+                    className="pl-9 h-10 border-slate-300 focus:ring-app-accent-bright" 
                     value={searchQuery} 
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -684,7 +684,7 @@ const OwnerPackageRecap = () => {
                 size="sm" 
                 onClick={handleSyncData} 
                 disabled={isSyncing || loading}
-                className="gap-2 text-blue-600 border-slate-300 hover:bg-blue-50 h-10"
+                className="gap-2 text-app-accent border-slate-300 hover:bg-app-soft h-10"
              >
                 <Database className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
                 {isSyncing ? 'Syncing...' : 'Sync Data'}
@@ -706,7 +706,7 @@ const OwnerPackageRecap = () => {
           {/* Mobile cards */}
           <div className="sm:hidden divide-y divide-slate-100">
             {loading ? (
-              <div className="h-48 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+              <div className="h-48 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" /></div>
             ) : filteredHistory.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-slate-500">
                 <PackageIcon className="w-12 h-12 mb-3 text-slate-300" />
@@ -731,7 +731,7 @@ const OwnerPackageRecap = () => {
                       </div>
                       <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" onClick={(e) => handleManualStatusUpdate(e, pkg.id)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Hitung Ulang Status" disabled={updatingStatusId === pkg.id}>
-                          <RefreshCw className={`w-4 h-4 text-slate-500 ${updatingStatusId === pkg.id ? 'animate-spin text-blue-600' : ''}`} />
+                          <RefreshCw className={`w-4 h-4 text-slate-500 ${updatingStatusId === pkg.id ? 'animate-spin text-app-accent' : ''}`} />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={(e) => openSessionModal(e, pkg)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Edit Sesi">
                           <Calculator className="w-4 h-4 text-slate-500" />
@@ -784,7 +784,7 @@ const OwnerPackageRecap = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow><TableCell colSpan={8} className="h-48 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="h-48 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-app-accent-bright" /></TableCell></TableRow>
                 ) : filteredHistory.length === 0 ? (
                     <TableRow>
                         <TableCell colSpan={8} className="h-64 text-center">
@@ -860,7 +860,7 @@ const OwnerPackageRecap = () => {
                                         title="Hitung Ulang Status"
                                         disabled={updatingStatusId === pkg.id}
                                     >
-                                        <RefreshCw className={`w-4 h-4 text-slate-500 ${updatingStatusId === pkg.id ? 'animate-spin text-blue-600' : ''}`} />
+                                        <RefreshCw className={`w-4 h-4 text-slate-500 ${updatingStatusId === pkg.id ? 'animate-spin text-app-accent' : ''}`} />
                                     </Button>
                                     <Button 
                                         variant="ghost" 
@@ -906,7 +906,7 @@ const OwnerPackageRecap = () => {
 
       {/* Manual Input Dialog */}
       <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
-         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl">
+         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-app">
             <DialogHeader><DialogTitle className="text-xl font-bold">Input Data Paket Manual</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
                 <div className="space-y-2"><label className="text-xs uppercase font-medium text-slate-500">Pasien</label><SearchableSelect options={patientOptions} value={manualForm.patient_id} onChange={(val) => setManualForm({...manualForm, patient_id: val})} placeholder="Cari Pasien..." /></div>
@@ -932,7 +932,7 @@ const OwnerPackageRecap = () => {
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setManualDialogOpen(false)} className="border-slate-300">Batal</Button>
-                <Button onClick={handleManualSubmit} disabled={manualLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button onClick={handleManualSubmit} disabled={manualLoading} className="bg-app-accent hover:bg-app-accent-hover text-white">
                     {manualLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     Simpan
                 </Button>

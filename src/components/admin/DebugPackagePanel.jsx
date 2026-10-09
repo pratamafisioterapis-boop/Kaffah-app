@@ -250,7 +250,7 @@ const DebugPackagePanel = () => {
                 {selectedPatient && (
                     <div className="space-y-6 animate-in fade-in duration-300">
                         {/* Patient Header */}
-                        <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm">
                             <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
                                 <User className="w-5 h-5" />
                             </div>

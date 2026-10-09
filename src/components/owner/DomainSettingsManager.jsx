@@ -137,13 +137,13 @@ const DomainSettingsManager = () => {
   return (
     <div className="space-y-6">
       {/* Subdomain gratis */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-lg font-semibold text-slate-800">Subdomain Klinik</h2>
           <p className="text-sm text-slate-500">Alamat website gratis untuk klinik Anda di bawah {APP_DOMAIN}.</p>
         </div>
         <div className="p-6 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="flex items-center flex-1 w-full border border-slate-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+          <div className="flex items-center flex-1 w-full border border-slate-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-app-accent-bright">
             <Input
               value={subdomain}
               onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
@@ -152,7 +152,7 @@ const DomainSettingsManager = () => {
             />
             <span className="px-3 text-sm text-slate-400 bg-slate-50 h-full flex items-center whitespace-nowrap">.{APP_DOMAIN}</span>
           </div>
-          <Button onClick={handleSaveSubdomain} disabled={savingSubdomain} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+          <Button onClick={handleSaveSubdomain} disabled={savingSubdomain} className="bg-app-accent hover:bg-app-accent-hover w-full sm:w-auto">
             {savingSubdomain && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             Simpan
           </Button>
@@ -160,7 +160,7 @@ const DomainSettingsManager = () => {
       </div>
 
       {/* Custom domain */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-semibold text-slate-800">Domain Sendiri (Custom Domain)</h2>
@@ -180,14 +180,14 @@ const DomainSettingsManager = () => {
                 placeholder="kliniksehat.com"
                 className="flex-1"
               />
-              <Button onClick={handleRequestDomain} disabled={requesting || !domainInput.trim()} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleRequestDomain} disabled={requesting || !domainInput.trim()} className="bg-app-accent hover:bg-app-accent-hover">
                 {requesting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Hubungkan Domain
               </Button>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-slate-50">
+              <div className="flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-slate-50">
                 <span className="font-medium text-slate-700">{clinic.custom_domain}</span>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={checking}>
@@ -202,7 +202,7 @@ const DomainSettingsManager = () => {
               </div>
 
               {clinic.custom_domain_status !== 'verified' && (
-                <div className="text-sm text-slate-600 bg-amber-50 border border-amber-100 rounded-lg p-4 space-y-2">
+                <div className="text-sm text-slate-600 bg-amber-50 border border-amber-100 rounded-app-sm p-4 space-y-2">
                   <p className="font-medium text-amber-800">Selesaikan setup DNS di penyedia domain Anda:</p>
                   <p>Tambahkan record berikut, lalu klik "Cek Status" (proses propagasi DNS bisa memakan waktu beberapa menit hingga beberapa jam):</p>
                   {verification && verification.length > 0 ? (

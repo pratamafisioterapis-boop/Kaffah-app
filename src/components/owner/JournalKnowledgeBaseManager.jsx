@@ -115,10 +115,10 @@ const JournalKnowledgeBaseManager = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200 shadow-sm rounded-2xl">
+      <Card className="border-slate-200 shadow-sm rounded-app-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <BookOpen className="w-5 h-5 text-blue-600" />
+            <BookOpen className="w-5 h-5 text-app-accent" />
             Tambah Jurnal / Ebook Fisioterapi
           </CardTitle>
           <p className="text-sm text-slate-500">
@@ -137,7 +137,7 @@ const JournalKnowledgeBaseManager = () => {
               <Label className="flex items-center gap-1.5">
                 Bahasa Sumber
                 {languageAutoDetected && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-normal text-blue-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-normal text-app-accent">
                     <Sparkles className="w-3 h-3" /> Terdeteksi otomatis
                   </span>
                 )}
@@ -194,25 +194,25 @@ const JournalKnowledgeBaseManager = () => {
               <p className="text-xs text-slate-400">{form.content.length.toLocaleString('id-ID')} karakter</p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} disabled={saving} className="bg-app-accent hover:bg-app-accent-hover">
             {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : <><Save className="w-4 h-4 mr-2" /> Simpan</>}
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 shadow-sm rounded-2xl">
+      <Card className="border-slate-200 shadow-sm rounded-app-lg">
         <CardHeader>
           <CardTitle className="text-lg">Dokumen Referensi ({documents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="animate-spin text-blue-600" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="animate-spin text-app-accent" /></div>
           ) : documents.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Belum ada dokumen. Tambahkan jurnal/ebook pertama di atas.</p>
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => (
-                <div key={doc.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60">
+                <div key={doc.id} className="flex items-start justify-between gap-3 p-3 rounded-app border border-slate-200 bg-slate-50/60">
                   <div className="flex items-start gap-3 min-w-0">
                     <FileText className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                     <div className="min-w-0">

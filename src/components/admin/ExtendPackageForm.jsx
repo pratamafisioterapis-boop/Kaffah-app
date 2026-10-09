@@ -68,7 +68,7 @@ const ExtendPackageForm = ({ isOpen, onClose, packageData, onSuccess }) => {
 
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-                <Button type="submit" disabled={loading || !extendedUntil} className="bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" disabled={loading || !extendedUntil} className="bg-app-accent hover:bg-app-accent-hover">
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Simpan Perubahan
                 </Button>

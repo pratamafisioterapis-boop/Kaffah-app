@@ -40,7 +40,7 @@ const MonthYearSelect = ({ value, onChange, variant = 'light', className, placeh
       <SelectTrigger
         className={cn(
           isDark
-            ? 'h-8 w-auto border-none bg-transparent text-white text-sm font-medium px-1 gap-1.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/5 rounded-lg'
+            ? 'h-8 w-auto border-none bg-transparent text-white text-sm font-medium px-1 gap-1.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/5 rounded-app-sm'
             : 'h-9 bg-white',
           className
         )}

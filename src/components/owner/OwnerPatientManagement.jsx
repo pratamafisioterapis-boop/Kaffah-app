@@ -199,7 +199,7 @@ const OwnerPatientManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-red-50 border border-red-100 rounded-app-sm p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h3 className="text-red-800 font-semibold flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" /> Area Pemilik: Hapus Pasien Masal
@@ -216,13 +216,13 @@ const OwnerPatientManagement = () => {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-slate-500" />
             <h2 className="text-lg font-semibold text-slate-800">Daftar Pasien</h2>
           </div>
-          <Button onClick={handleAddNewClick} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleAddNewClick} className="bg-app-accent hover:bg-app-accent-hover">
             <Plus className="w-4 h-4 mr-2" /> Tambah Pasien
           </Button>
         </div>

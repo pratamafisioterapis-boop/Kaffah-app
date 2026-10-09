@@ -342,7 +342,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-amber-700">Pilih transaksi daily recap yang cocok dengan mutasi Rp {Number(row.nominal || row.amount).toLocaleString('id-ID')}:</p>
-      <div className="rounded-lg border overflow-x-auto">
+      <div className="rounded-app-sm border overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-amber-50 border-b text-amber-800 uppercase tracking-wide">
@@ -365,7 +365,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
                   onClick={() => onCheck(recap, !isChecked, row)}
                   className={cn('border-b cursor-pointer transition-colors',
                     isChecked ? 'bg-green-50' :
-                    isAlreadyMatched ? 'bg-blue-50/50' :
+                    isAlreadyMatched ? 'bg-app-soft/50' :
                     'hover:bg-amber-50'
                   )}
                 >
@@ -503,7 +503,7 @@ const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-500" />
+          <Calendar className="w-4 h-4 text-app-accent-bright" />
           Status Upload per Bulan
         </CardTitle>
         <p className="text-xs text-slate-500">Klik bulan untuk melihat transaksi yang sudah tersimpan</p>
@@ -540,9 +540,9 @@ const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
                 key={key}
                 onClick={() => !isFuture && info && onSelectMonth(isSelected ? null : key)}
                 className={cn(
-                  'rounded-xl border-2 p-2.5 transition-all',
+                  'rounded-app border-2 p-2.5 transition-all',
                   statusClass,
-                  isSelected && 'ring-2 ring-blue-400 ring-offset-1'
+                  isSelected && 'ring-2 ring-app-accent-bright ring-offset-1'
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1919,10 +1919,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+      <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+          <div className="flex-shrink-0 w-12 h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
             <Landmark className="w-6 h-6 text-amber-300" />
           </div>
           <div>
@@ -1941,7 +1941,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
       {/* Missing months warning */}
       {missingMonths.length > 0 && (
-        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-app-sm px-4 py-3">
           <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-red-700">Bulan belum ada file mutasi:</p>
@@ -1970,7 +1970,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             className={cn(
               'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
               activeTab === 'upload'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-app-accent text-app-accent'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             )}
           >
@@ -1983,7 +1983,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           className={cn(
             'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
             activeTab === 'check'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-app-accent text-app-accent'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           )}
         >
@@ -1995,7 +1995,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           className={cn(
             'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
             activeTab === 'debit'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-app-accent text-app-accent'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           )}
         >
@@ -2007,7 +2007,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           className={cn(
             'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
             activeTab === 'audit'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-app-accent text-app-accent'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           )}
         >
@@ -2022,17 +2022,17 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           <Card>
             <CardContent className="pt-5">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-all text-sm font-medium text-slate-600">
-                  <Upload className="w-4 h-4 text-blue-500" />
+                <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-app-sm border-2 border-dashed border-slate-300 hover:border-app-accent-bright hover:bg-app-soft transition-all text-sm font-medium text-slate-600">
+                  <Upload className="w-4 h-4 text-app-accent-bright" />
                   {fileName
-                    ? <span className="text-blue-700 truncate max-w-[220px]">{fileName}</span>
+                    ? <span className="text-app-accent-hover truncate max-w-[220px]">{fileName}</span>
                     : <span>Pilih file CSV mutasi BSI</span>}
                   <input type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
                 </label>
 
                 {csvRows.length > 0 && (
                   <>
-                    <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                    <Button onClick={handleSave} disabled={saving} className="bg-app-accent hover:bg-app-accent-hover text-white gap-2">
                       {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
                       Simpan ke Database
                     </Button>
@@ -2044,7 +2044,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
               </div>
 
               {csvRows.length > 0 && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-app-sm px-3 py-2">
                   <Info className="w-4 h-4 shrink-0" />
                   <span>{csvRows.length} transaksi siap disimpan. Periode: {csvRows[0]?.masukDateStr} s/d {csvRows[csvRows.length - 1]?.masukDateStr}</span>
                 </div>
@@ -2122,7 +2122,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 ) : (
                   <div className="space-y-2">
                     {uploads.map(up => (
-                      <div key={up.id} className="flex items-center justify-between rounded-lg border px-4 py-3 bg-slate-50">
+                      <div key={up.id} className="flex items-center justify-between rounded-app-sm border px-4 py-3 bg-slate-50">
                         <div>
                           <p className="text-sm font-medium text-slate-700">{up.notes || 'Upload'}</p>
                           <p className="text-xs text-slate-500">{up.periode_start} s/d {up.periode_end} . {up.jumlah_transaksi} transaksi</p>
@@ -2149,7 +2149,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             <CardContent className="pt-5">
               <div className="flex flex-wrap gap-3 items-center">
                 {selectedMonth ? (
-                  <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-app-sm px-3 py-2">
                     <Calendar className="w-4 h-4" />
                     <span>
                       Menampilkan transaksi <strong>{MONTH_NAMES[parseInt(selectedMonth.split('-')[1]) - 1]} {selectedMonth.split('-')[0]}</strong>
@@ -2157,7 +2157,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                     </span>
                   </div>
                 ) : (
-                  <div className="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <div className="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2">
                     Pilih bulan di grid atas untuk melihat transaksi tersimpan, atau upload CSV baru di tab Upload.
                   </div>
                 )}
@@ -2166,7 +2166,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   <Button
                     onClick={handleReconcile}
                     disabled={reconciling}
-                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                    className="bg-app-accent hover:bg-app-accent-hover text-white gap-2"
                   >
                     {reconciling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                     Cocokkan dengan Daily Recap
@@ -2267,7 +2267,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                           </div>
                           <div>
                             {row.status === 'matched' ? (
-                              <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                              <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-app-accent hover:text-app-accent-hover">
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} {isExpanded ? 'Tutup detail' : 'Lihat recap'}
                               </button>
                             ) : row.tipe === 'debit' ? (
@@ -2329,7 +2329,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                               <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
                               <td className="px-4 py-3">
                                 {row.status === 'matched' ? (
-                                  <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                                  <button onClick={() => setExpandedIdx(isExpanded ? null : idx)} className="flex items-center gap-1 text-xs text-app-accent hover:text-app-accent-hover">
                                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} Lihat recap
                                   </button>
                                 ) : row.tipe === 'debit' ? (
@@ -2448,10 +2448,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   })}
                 </select>
                 <label className={cn(
-                  'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 border-dashed transition-all text-sm font-medium',
-                  debitParsing ? 'border-blue-300 bg-blue-50 text-blue-400 cursor-not-allowed' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-600'
+                  'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-app-sm border-2 border-dashed transition-all text-sm font-medium',
+                  debitParsing ? 'border-app-accent/40 bg-app-soft text-app-accent-bright cursor-not-allowed' : 'border-slate-300 hover:border-app-accent-bright hover:bg-app-soft text-slate-600'
                 )}>
-                  {debitParsing ? <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" /> : <FilePlus2 className="w-4 h-4 text-blue-500" />}
+                  {debitParsing ? <RefreshCw className="w-4 h-4 text-app-accent-bright animate-spin" /> : <FilePlus2 className="w-4 h-4 text-app-accent-bright" />}
                   {debitParsing ? 'Memproses File...' : 'Upload Settlement Debit (PDF/CSV)'}
                   <input type="file" accept=".pdf,.csv" multiple className="hidden" onChange={handleDebitPdfUpload} disabled={debitParsing} />
                 </label>
@@ -2490,7 +2490,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         <div className="flex items-center gap-2">
                           {checkedRecaps.length > 0 && selisih === 0
                             ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                            : <CreditCard className="w-4 h-4 text-blue-400 shrink-0" />}
+                            : <CreditCard className="w-4 h-4 text-app-accent-bright shrink-0" />}
                           <div>
                             <p className="text-sm font-semibold text-slate-800">{entry.file_name}</p>
                             <p className="text-xs text-slate-400">{entry.account_name}</p>
@@ -2550,7 +2550,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
                       {/* Tabel recap debit — muncul saat diklik "Lihat Recap" */}
                       {isLoaded && (
-                        <div className="mt-3 border rounded-xl overflow-hidden">
+                        <div className="mt-3 border rounded-app overflow-hidden">
                           <div className="bg-slate-50 px-4 py-2 flex items-center justify-between">
                             <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                               Transaksi Debit Daily Recap (10 hari sebelum {entry.report_date})
@@ -2653,7 +2653,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   <label className="text-xs text-slate-500 block mb-1">Sampai tanggal</label>
                   <input type="date" value={recapAuditRange.end} onChange={e => setRecapAuditRange(prev => ({ ...prev, end: e.target.value }))} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none" />
                 </div>
-                <Button onClick={runRecapAudit} disabled={recapAuditLoading} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                <Button onClick={runRecapAudit} disabled={recapAuditLoading} className="bg-app-accent hover:bg-app-accent-hover text-white gap-2">
                   {recapAuditLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   Cek Recap
                 </Button>
@@ -2760,7 +2760,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
         </div>
       )}
 
-      <div className="flex items-start gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
+      <div className="flex items-start gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2.5">
         <Info className="w-4 h-4 shrink-0 text-slate-400 mt-0.5" />
         <span>
           <strong>Catatan:</strong> QRIS dicocokkan berdasarkan tanggal scan QR (dari deskripsi) +/-Rp 15.000.

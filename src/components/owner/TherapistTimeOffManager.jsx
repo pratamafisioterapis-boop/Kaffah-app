@@ -37,22 +37,22 @@ const TherapistTimeOffManager = ({ readOnly = false }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white p-4 rounded-app border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-            <CalendarOff className="w-5 h-5 text-blue-600" />
+          <div className="w-11 h-11 rounded-app bg-app-soft flex items-center justify-center shrink-0">
+            <CalendarOff className="w-5 h-5 text-app-accent" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-800">Manajemen Cuti Terapis</h2>
             <p className="text-sm text-slate-500">Kelola izin dan hari libur fisioterapis</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-blue-600" />
+        <div className="flex items-center gap-3 bg-app-soft/70 border border-app-accent/15 rounded-app px-4 py-2.5 shrink-0">
+          <div className="w-9 h-9 rounded-full bg-app-accent/15 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-app-accent" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-blue-700 leading-tight">Tim Fisioterapis</p>
+            <p className="text-sm font-semibold text-app-accent-hover leading-tight">Tim Fisioterapis</p>
             <p className="text-xs text-slate-500 leading-tight">Bekerja bersama untuk pemulihan yang lebih baik</p>
           </div>
         </div>
@@ -74,7 +74,7 @@ const TherapistTimeOffManager = ({ readOnly = false }) => {
       />
 
       {!selectedTherapist ? (
-         <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
+         <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
             <User className="w-16 h-16 mb-4 opacity-30" />
             <p className="font-medium">Silakan pilih salah satu card terapis di atas untuk melihat{readOnly ? '' : ' dan menambah'} cuti</p>
          </div>

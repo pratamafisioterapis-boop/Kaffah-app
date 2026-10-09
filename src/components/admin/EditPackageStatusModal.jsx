@@ -211,7 +211,7 @@ const EditPackageStatusModal = ({ isOpen, onClose, packageData, onSuccess }) => 
             </div>
             
             {formData.status === 'diperpanjang' && (
-              <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+              <p className="text-xs text-app-accent bg-app-soft p-2 rounded">
                 Paket diperpanjang akan menggunakan tanggal "Diperpanjang Hingga" sebagai batas waktu baru.
               </p>
             )}

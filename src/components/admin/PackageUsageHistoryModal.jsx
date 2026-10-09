@@ -142,7 +142,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageId }) => {
                              {loading ? (
                                  <TableRow>
                                           <TableCell colSpan={4} className="h-32 text-center">
-                                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500 mb-2" />
+                                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-app-accent-bright mb-2" />
                                          <span className="text-slate-500 text-xs">Memuat riwayat...</span>
                                      </TableCell>
                                  </TableRow>

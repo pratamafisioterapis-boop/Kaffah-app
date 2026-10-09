@@ -123,14 +123,14 @@ const AdminChecklistManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <ListChecks className="w-5 h-5 text-[#0f1e3d]" />
+            <ListChecks className="w-5 h-5 text-app-ink" />
             Checklist Task Admin Harian
           </h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Daftar tugas ini akan muncul otomatis di Dashboard Admin (tab Operational) setiap hari.
           </p>
         </div>
-        <Button onClick={openAddDialog} className="bg-[#0f1e3d] hover:bg-[#0b1830] gap-2 rounded-xl">
+        <Button onClick={openAddDialog} className="bg-app-ink hover:bg-[#0b1830] gap-2 rounded-app">
           <Plus className="w-4 h-4" /> Tambah Task
         </Button>
       </div>
@@ -140,9 +140,9 @@ const AdminChecklistManager = () => {
           type="button"
           onClick={() => setScope(null)}
           className={cn(
-            "shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors",
+            "shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-app text-sm font-medium border transition-colors",
             scope === null
-              ? "bg-[#0f1e3d] text-white border-[#0f1e3d]"
+              ? "bg-app-ink text-white border-app-ink"
               : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
           )}
         >
@@ -154,9 +154,9 @@ const AdminChecklistManager = () => {
             type="button"
             onClick={() => setScope(admin.id)}
             className={cn(
-              "shrink-0 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors",
+              "shrink-0 px-3.5 py-2 rounded-app text-sm font-medium border transition-colors",
               scope === admin.id
-                ? "bg-[#0f1e3d] text-white border-[#0f1e3d]"
+                ? "bg-app-ink text-white border-app-ink"
                 : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
             )}
           >
@@ -170,13 +170,13 @@ const AdminChecklistManager = () => {
           : `Task di sini hanya muncul untuk ${admins.find(a => a.id === scope)?.full_name || 'admin ini'}.`}
       </p>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-app-lg border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-slate-300" /></div>
         ) : items.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <p>Belum ada task checklist.</p>
-            <Button variant="link" onClick={openAddDialog} className="text-[#0f1e3d] mt-1">Tambahkan task pertama</Button>
+            <Button variant="link" onClick={openAddDialog} className="text-app-ink mt-1">Tambahkan task pertama</Button>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -186,14 +186,14 @@ const AdminChecklistManager = () => {
                   <button
                     onClick={() => handleReorder(item, 'up')}
                     disabled={idx === 0}
-                    className="p-1 rounded-md text-slate-400 hover:text-[#0f1e3d] hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
+                    className="p-1 rounded-md text-slate-400 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
                   >
                     <ArrowUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleReorder(item, 'down')}
                     disabled={idx === items.length - 1}
-                    className="p-1 rounded-md text-slate-400 hover:text-[#0f1e3d] hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
+                    className="p-1 rounded-md text-slate-400 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
                   >
                     <ArrowDown className="w-3.5 h-3.5" />
                   </button>
@@ -210,14 +210,14 @@ const AdminChecklistManager = () => {
                   <button
                     onClick={() => handleToggleActive(item)}
                     title={item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    className={`p-2 rounded-lg transition-colors ${item.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
+                    className={`p-2 rounded-app-sm transition-colors ${item.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
                   >
                     <Power className="w-4 h-4" />
                   </button>
-                  <button onClick={() => openEditDialog(item)} className="p-2 rounded-lg text-slate-500 hover:text-[#0f1e3d] hover:bg-slate-100">
+                  <button onClick={() => openEditDialog(item)} className="p-2 rounded-app-sm text-slate-500 hover:text-app-ink hover:bg-slate-100">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => openDeleteDialog(item)} className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50">
+                  <button onClick={() => openDeleteDialog(item)} className="p-2 rounded-app-sm text-slate-500 hover:text-red-600 hover:bg-red-50">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -241,7 +241,7 @@ const AdminChecklistManager = () => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Contoh: Input rekap harian ke sistem"
-                className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f1e3d]/40"
+                className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-ink/40"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -256,7 +256,7 @@ const AdminChecklistManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Batal</Button>
-            <Button onClick={() => handleSave(false)} disabled={isProcessing} className="bg-[#0f1e3d] hover:bg-[#0b1830]">
+            <Button onClick={() => handleSave(false)} disabled={isProcessing} className="bg-app-ink hover:bg-[#0b1830]">
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
             </Button>
           </DialogFooter>
@@ -275,7 +275,7 @@ const AdminChecklistManager = () => {
               <input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f1e3d]/40"
+                className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-ink/40"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -289,7 +289,7 @@ const AdminChecklistManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
-            <Button onClick={() => handleSave(true)} disabled={isProcessing} className="bg-[#0f1e3d] hover:bg-[#0b1830]">
+            <Button onClick={() => handleSave(true)} disabled={isProcessing} className="bg-app-ink hover:bg-[#0b1830]">
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
             </Button>
           </DialogFooter>

@@ -143,7 +143,7 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-700 hover:bg-green-100';
-      case 'completed': return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
+      case 'completed': return 'bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/15';
       case 'cancelled': return 'bg-red-100 text-red-700 hover:bg-red-100';
       default: return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
     }
@@ -281,7 +281,7 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
                             <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" /> Confirm
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleStatusChange(apt.id, 'completed')}>
-                            <CheckCircle2 className="mr-2 h-4 w-4 text-blue-500" /> Mark Completed
+                            <CheckCircle2 className="mr-2 h-4 w-4 text-app-accent-bright" /> Mark Completed
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleStatusChange(apt.id, 'cancelled')}

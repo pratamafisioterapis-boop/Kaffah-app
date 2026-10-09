@@ -249,7 +249,7 @@ const SearchableSelect = ({
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <div 
         className={cn(
-          "flex min-h-[40px] w-full flex-wrap items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white focus-within:ring-2 focus-visible:ring-blue-500 focus-within:ring-offset-2 transition-all hover:border-slate-400",
+          "flex min-h-[40px] w-full flex-wrap items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white focus-within:ring-2 focus-visible:ring-app-accent-bright focus-within:ring-offset-2 transition-all hover:border-slate-400",
           disabled && "cursor-not-allowed opacity-50 bg-slate-50"
         )}
         onClick={() => !disabled && (setOpen(true), inputRef.current?.focus())}
@@ -304,11 +304,11 @@ const SearchableSelect = ({
         <div
           ref={menuRef}
           style={{ position: menuPos.position, left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom }}
-          className="bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100"
+          className="bg-white border border-slate-200 rounded-app-sm shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100"
         >
           {isLoading ? (
              <div className="p-4 flex items-center justify-center text-slate-500 text-sm">
-               <Loader2 className="w-4 h-4 animate-spin mr-2 text-blue-500" />
+               <Loader2 className="w-4 h-4 animate-spin mr-2 text-app-accent-bright" />
                Memuat data...
              </div>
           ) : filteredOptions.length === 0 ? (
@@ -340,12 +340,12 @@ const SearchableSelect = ({
                      className={cn(
                        "px-3 py-2 text-sm rounded cursor-pointer flex items-center justify-between transition-colors",
                        isSelected 
-                         ? "bg-blue-50 text-blue-900 font-medium" 
+                         ? "bg-app-soft text-app-ink font-medium" 
                          : "hover:bg-slate-100 text-slate-900"
                      )}
                    >
                      <span>{option.label}</span>
-                     {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+                     {isSelected && <Check className="w-4 h-4 text-app-accent" />}
                    </div>
                  );
                })}

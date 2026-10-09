@@ -122,7 +122,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
   const complianceColor = complianceRate >= 80 ? '#10b981' : complianceRate >= 50 ? '#f59e0b' : '#ef4444';
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between">
           <div>
@@ -185,7 +185,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
                   { label: 'Late Start', value: stats.lateStart, color: 'text-amber-600', bg: 'bg-amber-50' },
                   { label: 'Over Dur.', value: stats.overDuration, color: 'text-rose-600', bg: 'bg-rose-50' },
                 ].map(s => (
-                  <div key={s.label} className={`${s.bg} rounded-xl py-3 text-center`}>
+                  <div key={s.label} className={`${s.bg} rounded-app py-3 text-center`}>
                     <p className={`text-xl md:text-2xl font-black leading-none ${s.color}`}>{s.value}</p>
                     <p className="text-xs text-slate-500 font-semibold mt-1 leading-tight">{s.label}</p>
                   </div>

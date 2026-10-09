@@ -359,7 +359,7 @@ const RevenueOverview = ({ dateRange }) => {
     <div className="space-y-5 animate-in fade-in duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]">
       {/* Quick Action Widget */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+        <DialogContent className="sm:max-w-[500px] rounded-app-lg">
           <DialogHeader>
             <DialogTitle className="text-xl">
               {activeFormType === 'expenditure' ? 'Tambah Pengeluaran' : 'Tambah Pemasukan'} Owner
@@ -377,10 +377,10 @@ const RevenueOverview = ({ dateRange }) => {
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl"
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-app-lg"
         style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
         <div className={cn("flex items-center gap-2 mr-1", isPWA && "w-full")}>
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#0d9488' }}>
+          <div className="w-6 h-6 rounded-app-sm flex items-center justify-center shrink-0" style={{ background: '#0d9488' }}>
             <Plus className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
@@ -388,7 +388,7 @@ const RevenueOverview = ({ dateRange }) => {
         <button
           onClick={() => { setActiveFormType('expenditure'); setIsFormOpen(true); }}
           className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-app text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
             isPWA && "flex-1"
           )}
           style={{ background: '#e11d48' }}
@@ -399,7 +399,7 @@ const RevenueOverview = ({ dateRange }) => {
         <button
           onClick={() => { setActiveFormType('income'); setIsFormOpen(true); }}
           className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-app text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
             isPWA && "flex-1"
           )}
           style={{ background: '#059669' }}
@@ -412,7 +412,7 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* Refresh Button */}
       <div className="flex justify-end">
-        <Button onClick={() => fetchData(true)} variant="outline" size="sm" disabled={refreshing} className="rounded-xl">
+        <Button onClick={() => fetchData(true)} variant="outline" size="sm" disabled={refreshing} className="rounded-app">
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
@@ -432,12 +432,12 @@ const RevenueOverview = ({ dateRange }) => {
 
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 md:gap-3 pr-6">
               <div className="flex items-start gap-2.5 md:gap-4 min-w-0">
-                <div className="w-9 h-9 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-100 to-sky-50 flex items-center justify-center shrink-0">
-                  <BarChart3 className="w-4.5 h-4.5 md:w-7 md:h-7 text-blue-600" />
+                <div className="w-9 h-9 md:w-14 md:h-14 rounded-app md:rounded-app-lg bg-gradient-to-br from-app-accent/15 to-sky-50 flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-4.5 h-4.5 md:w-7 md:h-7 text-app-accent" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-0.5 leading-none">Financial Health Overview</p>
-                  <p className="text-xl sm:text-3xl md:text-5xl font-black text-[#0b1f4b] leading-none mt-1">
+                  <p className="text-xl sm:text-3xl md:text-5xl font-black text-app-ink leading-none mt-1">
                     {metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}
                   </p>
                   <p className="text-slate-500 text-xs mt-1 leading-tight">
@@ -465,12 +465,12 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
 
           <div className="space-y-1.5 md:space-y-2">
-            <div className="rounded-2xl p-2 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60">
+            <div className="rounded-app-lg p-2 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60">
               <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
                 <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                   <Coins className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-emerald-600" />
                 </div>
-                <span className="text-xs md:text-sm font-bold text-[#0b1f4b] flex-1">Profit Margin</span>
+                <span className="text-xs md:text-sm font-bold text-app-ink flex-1">Profit Margin</span>
                 <span className="text-base md:text-xl font-black text-emerald-600">
                   {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
                 </span>
@@ -481,12 +481,12 @@ const RevenueOverview = ({ dateRange }) => {
               </div>
             </div>
 
-            <div className="rounded-2xl p-2 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50/60">
+            <div className="rounded-app-lg p-2 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50/60">
               <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
                 <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                   <PieChartIcon className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-amber-600" />
                 </div>
-                <span className="text-xs md:text-sm font-bold text-[#0b1f4b] flex-1">Expense Ratio</span>
+                <span className="text-xs md:text-sm font-bold text-app-ink flex-1">Expense Ratio</span>
                 <span className="text-base md:text-xl font-black text-amber-600">
                   {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
                 </span>
@@ -506,14 +506,14 @@ const RevenueOverview = ({ dateRange }) => {
             <path fill="#bfdbfe" opacity="0.55" d="M0,82L120,78C240,73,480,64,720,66C960,68,1200,82,1320,88L1440,94L1440,110L0,110Z" />
           </svg>
           <div className="absolute inset-0 flex items-end justify-between px-4 md:px-8 pb-2.5 md:pb-4">
-            <p className="hidden sm:flex items-start gap-2 text-xs text-[#0b1f4b]/70 font-semibold leading-tight">
-              <BarChart3 className="w-3.5 h-3.5 text-[#0b1f4b]/40 mt-0.5 shrink-0" />
+            <p className="hidden sm:flex items-start gap-2 text-xs text-app-ink/70 font-semibold leading-tight">
+              <BarChart3 className="w-3.5 h-3.5 text-app-ink/40 mt-0.5 shrink-0" />
               <span>Better Financial Health<br />for a Stronger Tomorrow</span>
             </p>
-            <p className="sm:hidden text-xs text-[#0b1f4b]/60 font-semibold leading-tight">
+            <p className="sm:hidden text-xs text-app-ink/60 font-semibold leading-tight">
               Better Financial Health<br />for a Stronger Tomorrow
             </p>
-            <p className="hidden sm:block text-xs tracking-widest text-blue-800/50 font-bold uppercase">
+            <p className="hidden sm:block text-xs tracking-widest text-app-accent-hover/50 font-bold uppercase">
               Care &bull; Manage &bull; Grow Together
             </p>
           </div>
@@ -528,9 +528,9 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-app-lg border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-app bg-emerald-50 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
@@ -539,11 +539,11 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
         </div>
 
-        <div className={`bg-white rounded-2xl border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
+        <div className={`bg-white rounded-app-lg border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
           metrics.netProfit >= 0 ? 'border-indigo-100' : 'border-rose-100'
         }`}>
           <div className="flex items-start justify-between mb-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${metrics.netProfit >= 0 ? 'bg-indigo-50' : 'bg-rose-50'}`}>
+            <div className={`w-12 h-12 rounded-app flex items-center justify-center ${metrics.netProfit >= 0 ? 'bg-indigo-50' : 'bg-rose-50'}`}>
               {metrics.netProfit >= 0 ? <TrendingUp className="w-6 h-6 text-indigo-600" /> : <TrendingDown className="w-6 h-6 text-rose-600" />}
             </div>
             <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${metrics.netProfit >= 0 ? 'bg-indigo-50 text-indigo-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -555,9 +555,9 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-app-lg border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-app bg-rose-50 flex items-center justify-center">
               <TrendingDown className="w-6 h-6 text-rose-600" />
             </div>
             <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-rose-50 text-rose-600">
@@ -570,10 +570,10 @@ const RevenueOverview = ({ dateRange }) => {
         </div>
       </div>
       {/* ── Dana Paket ── */}
-      <div className="bg-white rounded-2xl border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+      <div className="bg-white rounded-app-lg border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-app bg-amber-50 flex items-center justify-center shrink-0">
               <DollarSign className="w-6 h-6 text-amber-600" />
             </div>
             <div className="min-w-0">
@@ -586,16 +586,16 @@ const RevenueOverview = ({ dateRange }) => {
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-          <div className="bg-amber-50 rounded-xl p-4 min-w-0">
+          <div className="bg-amber-50 rounded-app p-4 min-w-0">
             <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none whitespace-nowrap">{formatShortCurrency(danaPacket.total)}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
             <p className="text-xs text-slate-500 mt-0.5 break-words">{formatFull(danaPacket.total)}</p>
           </div>
-          <div className="bg-slate-50 rounded-xl p-4">
+          <div className="bg-slate-50 rounded-app p-4">
             <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.sisaSesi}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Sisa Sesi</p>
           </div>
-          <div className="bg-slate-50 rounded-xl p-4">
+          <div className="bg-slate-50 rounded-app p-4">
             <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.jumlahPaket}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Paket Aktif</p>
           </div>
@@ -606,7 +606,7 @@ const RevenueOverview = ({ dateRange }) => {
       <ExpenseCategoryWidget dateRange={dateRange} />
 
       {/* ── Revenue per Terapis ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-base font-bold text-slate-800">Revenue per Terapis</h2>
@@ -644,7 +644,7 @@ const RevenueOverview = ({ dateRange }) => {
       </div>
 
       {/* ── Pemasukan Paket vs Non-Paket ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
             <h2 className="text-sm font-bold text-slate-800">Pemasukan Paket vs Non-Paket</h2>
@@ -667,9 +667,9 @@ const RevenueOverview = ({ dateRange }) => {
               <div className="h-full bg-sky-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-app-lg border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-app bg-violet-50 flex items-center justify-center">
                     <Package className="w-4 h-4 text-violet-600" />
                   </div>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
@@ -679,9 +679,9 @@ const RevenueOverview = ({ dateRange }) => {
                 <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
                 <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
               </div>
-              <div className="rounded-2xl border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-app-lg border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-app bg-sky-50 flex items-center justify-center">
                     <Wallet className="w-4 h-4 text-sky-600" />
                   </div>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">
@@ -697,7 +697,7 @@ const RevenueOverview = ({ dateRange }) => {
       </div>
 
       {/* ── Pemasukan per Metode Pembayaran ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
             <h2 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h2>
@@ -720,10 +720,10 @@ const RevenueOverview = ({ dateRange }) => {
               return (
                 <div
                   key={i}
-                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
+                  className={`flex-1 basis-[160px] rounded-app-lg border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-xl ${style.bg} flex items-center justify-center`}>
+                    <div className={`w-9 h-9 rounded-app ${style.bg} flex items-center justify-center`}>
                       <style.icon className={`w-4 h-4 ${style.color}`} />
                     </div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.color}`}>

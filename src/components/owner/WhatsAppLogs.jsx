@@ -50,7 +50,7 @@ const WhatsAppLogs = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex gap-2">
                 <Button variant={filter === 'all' ? "default" : "outline"} size="sm" onClick={() => setFilter('all')}>Semua</Button>

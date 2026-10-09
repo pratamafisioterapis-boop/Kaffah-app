@@ -163,11 +163,11 @@ const BreakEvenPointWidget = () => {
       <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-5">
         <div className={cn("flex gap-3", isPWA ? "flex-col" : "items-start justify-between")}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-violet-100 to-indigo-50 shrink-0">
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-app-lg flex items-center justify-center bg-gradient-to-br from-violet-100 to-indigo-50 shrink-0">
               <Target className="w-5 h-5 text-violet-600" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-[#0b1f4b] font-bold text-base tracking-tight">Break Even Point</h3>
+              <h3 className="text-app-ink font-bold text-base tracking-tight">Break Even Point</h3>
               <p className="text-slate-400 text-xs mt-0.5">Total biaya bulan ini vs total pemasukan bulan ini</p>
               <p className="text-slate-400 text-[11px] mt-0.5">Per {format(today, 'd MMM yyyy', { locale: idLocale })}</p>
             </div>
@@ -179,22 +179,22 @@ const BreakEvenPointWidget = () => {
             <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
           </div>
         ) : !isConfigured ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+          <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
             <Info className="w-5 h-5 text-violet-500 mx-auto mb-2" />
             <p className="text-sm text-slate-500">Belum ada fixed cost. Atur di menu Accounting System untuk melihat titik impas.</p>
           </div>
         ) : (
           <>
             <div className={cn("grid gap-3", isPWA ? "grid-cols-1" : "grid-cols-2")}>
-              <div className="rounded-2xl bg-gradient-to-r from-rose-50 to-orange-50/60 p-4">
+              <div className="rounded-app-lg bg-gradient-to-r from-rose-50 to-orange-50/60 p-4">
                 <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Biaya Bulan Ini</p>
-                <p className="text-lg font-bold text-[#0b1f4b] tabular-nums break-words">{formatCurrency(totalCost)}</p>
+                <p className="text-lg font-bold text-app-ink tabular-nums break-words">{formatCurrency(totalCost)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">fixed cost + pengeluaran + transport + insentif</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">{expensePeriodLabel}</p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50/60 p-4">
+              <div className="rounded-app-lg bg-gradient-to-r from-emerald-50 to-teal-50/60 p-4">
                 <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Total Pemasukan Bulan Ini</p>
-                <p className="text-lg font-bold text-[#0b1f4b] tabular-nums break-words">{formatCurrency(revenueThisMonth)}</p>
+                <p className="text-lg font-bold text-app-ink tabular-nums break-words">{formatCurrency(revenueThisMonth)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">tgl 1 s/d akhir bulan</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">{revenuePeriodLabel}</p>
               </div>
@@ -203,7 +203,7 @@ const BreakEvenPointWidget = () => {
             <div className="space-y-2">
               <div className={cn("flex text-xs gap-1", isPWA ? "flex-col" : "items-center justify-between")}>
                 <span className="text-slate-400 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Progress terhadap biaya bulan ini</span>
-                <span className="text-[#0b1f4b] font-semibold">{progressPct}%</span>
+                <span className="text-app-ink font-semibold">{progressPct}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-slate-200/70 overflow-hidden">
                 <motion.div
@@ -222,36 +222,36 @@ const BreakEvenPointWidget = () => {
             </div>
 
             <div className={cn("grid gap-3 pt-1", isPWA ? "grid-cols-1" : "grid-cols-2")}>
-              <button type="button" onClick={() => setActiveDetail('fixedCost')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <button type="button" onClick={() => setActiveDetail('fixedCost')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p>Fixed Cost:</p>
-                  <p className="text-[#0b1f4b] font-semibold tabular-nums break-words">{formatCurrency(totalFixedCost)}</p>
+                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(totalFixedCost)}</p>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
               </button>
-              <button type="button" onClick={() => setActiveDetail('expense')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <button type="button" onClick={() => setActiveDetail('expense')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 <Receipt className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p>Pengeluaran ({expensePeriodLabel}):</p>
-                  <p className="text-[#0b1f4b] font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
+                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
               </button>
-              <button type="button" onClick={() => setActiveDetail('transport')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <button type="button" onClick={() => setActiveDetail('transport')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 <Bus className="w-3.5 h-3.5 text-cyan-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p>Transport Terapis:</p>
-                  <p className="text-[#0b1f4b] font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
+                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
                   {transportSource && <p className="text-[10px] text-slate-400">{transportSource}</p>}
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
               </button>
-              <button type="button" onClick={() => setActiveDetail('incentive')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-lg -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <button type="button" onClick={() => setActiveDetail('incentive')} className="flex items-start gap-2 text-xs text-slate-400 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 <Coins className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p>Insentif Terapis:</p>
-                  <p className="text-[#0b1f4b] font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
+                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
                   {incentiveSource && <p className="text-[10px] text-slate-400">{incentiveSource}</p>}
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />

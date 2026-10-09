@@ -372,7 +372,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
+<div className="bg-white rounded-app shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
 
   {/* TITLE */}
   <div>
@@ -385,7 +385,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* View Mode Toggle */}
-  <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 sm:inline-grid sm:w-auto">
+  <div className="grid grid-cols-2 gap-1 p-1 rounded-app bg-slate-100 sm:inline-grid sm:w-auto">
     {[
       { key: 'day', label: 'Jadwal Harian', icon: CalendarIcon },
       { key: 'week', label: 'Jadwal Mingguan', icon: CalendarRange },
@@ -394,7 +394,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
         key={key}
         type="button"
         onClick={() => setViewMode(key)}
-        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-all ${
           viewMode === key
             ? 'bg-white text-slate-900 shadow-sm'
             : 'text-slate-500 hover:text-slate-700'
@@ -407,7 +407,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   </div>
 
   {/* Bablast Toggle */}
-  <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
+  <div className="bg-slate-50 border border-slate-200 rounded-app px-3.5 py-2 space-y-0.5">
 
   <div className="flex items-center justify-between gap-2">
   <div className="flex items-center gap-2 min-w-0">
@@ -479,7 +479,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 }}
     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
       isBablastEnabled
-        ? 'bg-blue-600'
+        ? 'bg-app-accent'
         : 'bg-gray-300'
     }`}
   >
@@ -499,7 +499,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
   <div className={`items-center gap-1.5 w-full min-w-0 ${viewMode === 'day' ? 'flex' : 'hidden'}`}>
 
     {/* Date Controller */}
-    <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
+    <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-app-sm border border-slate-200">
 
   {/* tombol kiri */}
   <Button
@@ -563,7 +563,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
       {/* ERROR */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-app flex items-center gap-3">
           <AlertTriangle className="w-5 h-5" />
           <p className="text-sm">{error}</p>
         </div>
@@ -585,8 +585,8 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
           />
         )
       ) : loading ? (
-        <div className="flex flex-col items-center justify-center h-64 gap-4 bg-white rounded-2xl border shadow-sm">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <div className="flex flex-col items-center justify-center h-64 gap-4 bg-white rounded-app-lg border shadow-sm">
+          <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
           <p className="text-slate-400">Memuat jadwal...</p>
         </div>
       ) : (
@@ -671,7 +671,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       )}
 
       <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="w-full max-w-xl bg-white p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-xl bg-white p-6 rounded-app-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader className="mb-4">
             <DialogTitle>
               {activeModal?.type === 'slot' && 'Booking Slot'}
@@ -739,7 +739,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                   return (
                     <div
                       key={item.id}
-                      className={`border rounded-xl p-4 ${isCancelled ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}
+                      className={`border rounded-app p-4 ${isCancelled ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>

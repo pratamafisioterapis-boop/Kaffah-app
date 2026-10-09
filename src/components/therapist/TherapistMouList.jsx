@@ -46,7 +46,7 @@ const TherapistMouList = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <ScrollText className="w-6 h-6 text-emerald-600" />
           MOU Kemitraan
@@ -56,11 +56,11 @@ const TherapistMouList = () => {
         </p>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-slate-200">
+      <div className="bg-white p-4 rounded-app-sm border border-slate-200">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
         ) : records.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
             Belum ada dokumen MOU yang diterbitkan.
           </div>
         ) : (
@@ -70,7 +70,7 @@ const TherapistMouList = () => {
                 key={r.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                className="flex items-center justify-between gap-3 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-700">

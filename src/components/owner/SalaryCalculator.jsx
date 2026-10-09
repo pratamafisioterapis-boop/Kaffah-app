@@ -352,7 +352,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         {/* Back header */}
         <div className="flex items-center gap-3">
           <button onClick={() => { setSelectedTherapistDetail(null); setSelectedPatientType(null); }}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-semibold transition-all"
             style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
             ← Kembali
           </button>
@@ -369,7 +369,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: fmt(d.transportAllowance), color: '#0891b2', bg: '#ecfeff' },
             { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : d.salaryType === 'Probation' ? 'Jasa (Tidak Berlaku)' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
           ].map(({ label, value, color, bg }) => (
-            <div key={label} className="rounded-xl p-4 min-w-0" style={{ background: bg }}>
+            <div key={label} className="rounded-app p-4 min-w-0" style={{ background: bg }}>
               <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
               <div className="text-base font-bold break-words" style={{ color }}>{value}</div>
             </div>
@@ -377,13 +377,13 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         </div>
 
         {/* Total */}
-        <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
+        <div className="rounded-app p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
           <span className="text-xs font-bold text-white uppercase tracking-wider">Total Estimasi Gaji</span>
           <span className="text-lg font-bold" style={{ color: '#4ade80' }}>{fmt(d.total)}</span>
         </div>
 
         {/* Breakdown per tipe pasien */}
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
+        <div className="rounded-app-lg overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
           <div className="px-4 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Insentif / Omzet per Tipe Pasien</span>
             <span className="ml-2 text-xs text-slate-400">— klik untuk lihat detail</span>
@@ -395,7 +395,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                 className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
                 style={{ background: selectedPatientType === type ? '#eef2ff' : idx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                  <div className="w-7 h-7 rounded-app-sm flex items-center justify-center text-[10px] font-bold shrink-0"
                     style={{ background: '#ede9fe', color: '#7c3aed' }}>
                     {info.count}
                   </div>
@@ -524,7 +524,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#ede9fe' }}>
+          <div className="w-9 h-9 rounded-app flex items-center justify-center" style={{ background: '#ede9fe' }}>
             <Calculator className="w-4 h-4" style={{ color: '#7c3aed' }} />
           </div>
           <div>
@@ -538,7 +538,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col gap-2.5 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+      <div className="flex flex-col gap-2.5 p-3 rounded-app" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
             <Calendar className="w-3.5 h-3.5" />
@@ -556,7 +556,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         </div>
 
         {useAutoPeriod ? (
-          <div className="text-xs px-3 py-2 rounded-lg" style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}>
+          <div className="text-xs px-3 py-2 rounded-app-sm" style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}>
             Setiap terapis dihitung memakai Periode masing-masing (diatur di kartu terapis, tab Data Terapis). Matikan toggle di atas untuk memakai rentang tanggal manual.
           </div>
         ) : (
@@ -566,7 +566,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                 type="date"
                 value={dateRange?.startDate || ''}
                 onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+                className="text-xs border border-slate-200 rounded-app-sm px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
                 style={{ colorScheme: 'light' }}
               />
               <span className="text-slate-300 text-sm shrink-0">–</span>
@@ -574,13 +574,13 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                 type="date"
                 value={dateRange?.endDate || ''}
                 onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
+                className="text-xs border border-slate-200 rounded-app-sm px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
                 style={{ colorScheme: 'light' }}
               />
             </div>
             <button
               onClick={handlePeriodeIni}
-              className="text-xs px-3 py-2 rounded-lg font-semibold transition-all w-full"
+              className="text-xs px-3 py-2 rounded-app-sm font-semibold transition-all w-full"
               style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
             >
               Periode Ini (28 - 27)
@@ -591,7 +591,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         <button
           onClick={handleCalculateAll}
           disabled={calculatingAll || !therapists.length}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all w-full"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-xs font-bold text-white transition-all w-full"
           style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
         >
           {calculatingAll
@@ -603,7 +603,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
       {/* Table */}
       {allResults.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
+        <div className="overflow-hidden rounded-app-lg" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
           <>
             <div className="sm:hidden">
               {allResults.map((r, idx) => (
@@ -738,7 +738,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             ].map(({ label, value, icon: Icon }, i) => (
               <div key={label} className="flex items-center gap-3 px-5 py-3 min-w-0"
                 style={{ borderRight: !isPWA && i < 2 ? '1px solid #ede9fe' : 'none', borderBottom: isPWA && i < 2 ? '1px solid #ede9fe' : 'none' }}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#ede9fe' }}>
+                <div className="w-7 h-7 rounded-app-sm flex items-center justify-center shrink-0" style={{ background: '#ede9fe' }}>
                   <Icon className="w-3.5 h-3.5" style={{ color: '#7c3aed' }} />
                 </div>
                 <div className="min-w-0">
@@ -750,9 +750,9 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-16 rounded-2xl"
+        <div className="flex flex-col items-center justify-center py-16 rounded-app-lg"
           style={{ background: '#faf9ff', border: '1px dashed #ddd6fe' }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: '#ede9fe' }}>
+          <div className="w-14 h-14 rounded-app-lg flex items-center justify-center mb-4" style={{ background: '#ede9fe' }}>
             <Calculator className="w-7 h-7" style={{ color: '#7c3aed' }} />
           </div>
           <p className="text-sm font-semibold text-slate-600">Belum ada data kalkulasi</p>

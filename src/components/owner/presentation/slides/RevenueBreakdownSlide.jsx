@@ -6,7 +6,7 @@ import { formatShortCurrency } from '@/components/owner/presentation/presentatio
 const COLORS = ['#38bdf8', '#34d399', '#f59e0b', '#f472b6', '#a78bfa', '#fb7185', '#2dd4bf', '#facc15'];
 
 const ChartCard = ({ title, children }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col h-full">
+  <div className="rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col h-full">
     <p className="text-white font-bold text-sm md:text-base mb-3 md:mb-4">{title}</p>
     <div className="flex-1 min-h-[200px]">{children}</div>
   </div>

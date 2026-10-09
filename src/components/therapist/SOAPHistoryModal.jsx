@@ -78,7 +78,7 @@ const formatDateOnly = (dateString) => {
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <FileText className="w-5 h-5 text-app-accent" />
             Riwayat Catatan Medis (SOAP)
           </DialogTitle>
           <DialogDescription>
@@ -89,7 +89,7 @@ const formatDateOnly = (dateString) => {
         <div className="flex-1 overflow-y-auto pr-2 mt-2 space-y-4">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" />
             </div>
           ) : records.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
@@ -102,8 +102,8 @@ const formatDateOnly = (dateString) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                  "border rounded-xl bg-white shadow-sm overflow-hidden transition-all",
-                  expandedId === record.id ? "border-blue-300 ring-1 ring-blue-100" : "border-slate-200 hover:border-blue-200"
+                  "border rounded-app bg-white shadow-sm overflow-hidden transition-all",
+                  expandedId === record.id ? "border-app-accent/40 ring-1 ring-app-accent/15" : "border-slate-200 hover:border-app-accent/25"
                 )}
               >
                 {/* Header Card */}
@@ -115,15 +115,15 @@ const formatDateOnly = (dateString) => {
 
   {/* 🔥 HIGHLIGHT TANGGAL KUNJUNGAN */}
   <div className="flex items-center gap-2">
-    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 shadow-sm">
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-app-soft border border-app-accent/15 shadow-sm">
       
-      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+      <Calendar className="w-3.5 h-3.5 text-app-accent" />
 
-      <span className="text-xs font-semibold text-blue-700">
+      <span className="text-xs font-semibold text-app-accent-hover">
         Kunjungan:
       </span>
 
-      <span className="text-sm font-bold text-blue-800">
+      <span className="text-sm font-bold text-app-accent-hover">
         {formatDateOnly(record.daily_recap?.recap_date)}
       </span>
 
@@ -203,19 +203,19 @@ const formatDateOnly = (dateString) => {
                     >
                       <div className="p-4 grid gap-4 bg-white text-sm">
                         <div>
-                          <span className="font-bold text-blue-600 block mb-1">Subjective (S)</span>
+                          <span className="font-bold text-app-accent block mb-1">Subjective (S)</span>
                           <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.subjective || '-'}</p>
                         </div>
                         <div>
-                          <span className="font-bold text-blue-600 block mb-1">Objective (O)</span>
+                          <span className="font-bold text-app-accent block mb-1">Objective (O)</span>
                           <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.objective || '-'}</p>
                         </div>
                         <div>
-                          <span className="font-bold text-blue-600 block mb-1">Assessment (A)</span>
+                          <span className="font-bold text-app-accent block mb-1">Assessment (A)</span>
                           <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.assessment || '-'}</p>
                         </div>
                         <div>
-                          <span className="font-bold text-blue-600 block mb-1">Plan (P)</span>
+                          <span className="font-bold text-app-accent block mb-1">Plan (P)</span>
                           <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">{record.plan || '-'}</p>
                         </div>
                         {record.education && (

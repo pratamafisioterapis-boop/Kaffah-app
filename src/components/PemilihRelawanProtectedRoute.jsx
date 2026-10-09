@@ -34,7 +34,7 @@ const PemilihRelawanProtectedRoute = ({ children }) => {
   if (status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-app-accent" />
       </div>
     );
   }
@@ -46,7 +46,7 @@ const PemilihRelawanProtectedRoute = ({ children }) => {
   if (status === 'forbidden') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center max-w-md w-full">
+        <div className="bg-white p-8 rounded-app-lg shadow-sm border border-slate-200 text-center max-w-md w-full">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-8 h-8 text-red-500" />
           </div>
@@ -54,7 +54,7 @@ const PemilihRelawanProtectedRoute = ({ children }) => {
           <p className="text-slate-600 mb-6">
             Akun ini tidak terdaftar sebagai relawan aktif, atau sudah dinonaktifkan.
           </p>
-          <a href="/" className="inline-block px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors w-full">
+          <a href="/" className="inline-block px-6 py-2.5 bg-app-accent text-white font-medium rounded-app hover:bg-app-accent-hover transition-colors w-full">
             Kembali ke Beranda
           </a>
         </div>

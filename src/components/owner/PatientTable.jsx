@@ -86,7 +86,7 @@ const PatientTable = ({
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                 
                 {/* Search & Filters */}
-                <div className="flex-1 w-full bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
+                <div className="flex-1 w-full bg-white p-2 rounded-app border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <Input 
@@ -133,7 +133,7 @@ const PatientTable = ({
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader className="bg-slate-50 border-b border-slate-200">

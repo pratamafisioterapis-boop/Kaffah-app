@@ -88,8 +88,8 @@ const HeroClock = () => {
   const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
-      {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono tabular-nums">{heroTime}</span>
+    <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">
+      {todayLabel} <span className="text-app-border">•</span> <span className="font-mono tabular-nums">{heroTime}</span>
     </p>
   );
 };
@@ -415,7 +415,7 @@ setTherapists(enrichedTherapists);
       <div className="space-y-4 animate-in fade-in duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] pb-24 md:pb-12">
 
         {/* ── Hero Banner ── */}
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-owner-hero.webp"
             alt="Kaffah Physiotherapy"
@@ -427,14 +427,14 @@ setTherapists(enrichedTherapists);
               <HeroClock />
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
               >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
+                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
                   Owner {clinicName || ''}!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              <p className="text-app-muted text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
             </div>
@@ -443,8 +443,8 @@ setTherapists(enrichedTherapists);
 
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <div role="group" aria-labelledby="owner-period-label" className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-[#2F8CFF]/40">
-            <span id="owner-period-label" className="text-[#1677D2] text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <div role="group" aria-labelledby="owner-period-label" className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-app-accent-bright/40">
+            <span id="owner-period-label" className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
             <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <input
                 type="date"
@@ -452,16 +452,16 @@ setTherapists(enrichedTherapists);
                 value={rangeInput.startDate}
                 max={rangeInput.endDate || undefined}
                 onChange={(e) => setRangeInput((prev) => ({ ...prev, startDate: e.target.value }))}
-                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
               />
-              <span className="text-[#5B6B7D] shrink-0" aria-hidden="true">–</span>
+              <span className="text-app-muted shrink-0" aria-hidden="true">–</span>
               <input
                 type="date"
                 aria-label="Tanggal akhir periode"
                 value={rangeInput.endDate}
                 min={rangeInput.startDate || undefined}
                 onChange={(e) => setRangeInput((prev) => ({ ...prev, endDate: e.target.value }))}
-                className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
               />
             </div>
           </div>
@@ -469,16 +469,16 @@ setTherapists(enrichedTherapists);
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="operational" className="w-full space-y-5">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-[#DCE8F2] p-1 rounded-2xl shadow-sm sticky top-2 z-10">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-app-border p-1 rounded-app-lg shadow-sm sticky top-2 z-10">
             <TabsTrigger
               value="operational"
-              className="rounded-xl text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-[#1677D2] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
+              className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-app-accent data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
             >
               Operational
             </TabsTrigger>
             <TabsTrigger
               value="finance"
-              className="rounded-xl text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
+              className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
             >
               Finance
             </TabsTrigger>

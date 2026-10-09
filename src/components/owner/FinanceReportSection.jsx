@@ -77,13 +77,13 @@ const FinanceReportSection = ({ dateRange }) => {
     return (
       <div className="space-y-6">
          <div className={cn(
-           "p-6 rounded-2xl flex justify-between items-center shadow-sm border",
+           "p-6 rounded-app-lg flex justify-between items-center shadow-sm border",
            type === 'income' ? "bg-emerald-50 border-emerald-100" : 
            type === 'expense' ? "bg-rose-50 border-rose-100" : "bg-indigo-50 border-indigo-100"
          )}>
             <div className="flex items-center gap-3">
                <div className={cn(
-                 "p-2 rounded-lg",
+                 "p-2 rounded-app-sm",
                  type === 'income' ? "bg-emerald-100 text-emerald-600" : 
                  type === 'expense' ? "bg-rose-100 text-rose-600" : "bg-indigo-100 text-indigo-600"
                )}>
@@ -99,7 +99,7 @@ const FinanceReportSection = ({ dateRange }) => {
             </span>
          </div>
          
-         <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+         <div className="border border-slate-200 rounded-app overflow-hidden bg-white shadow-sm">
            {/* Mobile / PWA: kartu, tanpa geser horizontal */}
            <div className="sm:hidden divide-y divide-slate-100">
              {items.length === 0 ? (
@@ -201,10 +201,10 @@ const FinanceReportSection = ({ dateRange }) => {
     <Card className="border-0 shadow-none bg-transparent">
       <CardContent className="p-4 md:p-8">
         <Tabs defaultValue="income" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/50 border border-white/40 p-1 h-12 rounded-xl backdrop-blur-sm shadow-sm">
-            <TabsTrigger value="income" className="rounded-lg data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 font-medium transition-all">Pemasukan (Income)</TabsTrigger>
-            <TabsTrigger value="expenses" className="rounded-lg data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800 font-medium transition-all">Pengeluaran (Expenses)</TabsTrigger>
-            <TabsTrigger value="all" className="rounded-lg data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 font-medium transition-all">All Transactions</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/50 border border-white/40 p-1 h-12 rounded-app backdrop-blur-sm shadow-sm">
+            <TabsTrigger value="income" className="rounded-app-sm data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 font-medium transition-all">Pemasukan (Income)</TabsTrigger>
+            <TabsTrigger value="expenses" className="rounded-app-sm data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800 font-medium transition-all">Pengeluaran (Expenses)</TabsTrigger>
+            <TabsTrigger value="all" className="rounded-app-sm data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 font-medium transition-all">All Transactions</TabsTrigger>
           </TabsList>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>

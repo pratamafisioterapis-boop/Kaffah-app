@@ -36,9 +36,9 @@ import { WORK_SHIFT_PRESETS } from '@/lib/leaveRequestUtils';
 
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
-  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+  <div className="rounded-app border border-slate-200 bg-white p-4 space-y-3">
     <div className="flex items-center gap-2">
-      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", iconClass)}>
+      <div className={cn("w-7 h-7 rounded-app-sm flex items-center justify-center shrink-0", iconClass)}>
         <Icon className="w-3.5 h-3.5" />
       </div>
       <h4 className="font-semibold text-sm text-slate-800">{title}</h4>
@@ -632,7 +632,7 @@ const TherapistManager = () => {
   };
 
 const headerColorMap = {
-  blue: "from-blue-500 to-blue-600",
+  blue: "from-app-accent-bright to-app-accent",
   green: "from-green-500 to-green-600",
   purple: "from-purple-500 to-purple-600",
   amber: "from-amber-500 to-amber-600",
@@ -646,7 +646,7 @@ const headerColorMap = {
           <h2 className="text-xl font-semibold text-slate-800">Manajemen Terapis & Akun</h2>
           <p className="text-sm text-slate-500">Kelola profil, akun login, dan status fisioterapis.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+        <Button onClick={() => handleOpenDialog()} className="bg-app-accent hover:bg-app-accent-hover w-full sm:w-auto">
           <UserPlus className="w-4 h-4 mr-2" /> Buat Akun Terapis
         </Button>
       </div>
@@ -664,14 +664,14 @@ const headerColorMap = {
               initial={{ opacity: 0, scale: 0.97, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className={cn(
-                "group bg-white rounded-2xl border overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-lg",
+                "group bg-white rounded-app-lg border overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-lg",
                 !therapist.is_active ? "opacity-70 border-slate-200 bg-slate-50" : "border-slate-200/80"
               )}
             >
               <div className={cn(
                 "h-16 relative bg-gradient-to-r",
                 therapist.is_active
-                  ? headerColorMap[therapist.theme_color] || "from-blue-500 to-cyan-500"
+                  ? headerColorMap[therapist.theme_color] || "from-app-accent-bright to-cyan-500"
                   : "from-slate-400 to-slate-500"
               )}>
                 <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -872,7 +872,7 @@ const headerColorMap = {
             {!editingTherapist && (
               <SectionCard
                 icon={Shield}
-                iconClass="bg-blue-50 text-blue-600"
+                iconClass="bg-app-soft text-app-accent"
                 title="Owner Sekaligus Terapis?"
                 description="Aktifkan jika akun terapis ini untuk Anda sendiri (owner klinik) — tidak perlu email/password baru, memakai login owner yang sudah ada."
               >
@@ -881,7 +881,7 @@ const headerColorMap = {
                 ) : (
                   <div className="flex items-center justify-between gap-3 py-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <UserPlus className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <UserPlus className="w-3.5 h-3.5 text-app-accent-bright shrink-0" />
                       <span className="text-sm font-medium text-slate-700 truncate">Akun ini untuk saya sendiri (Owner)</span>
                     </div>
                     <Switch
@@ -1118,7 +1118,7 @@ const headerColorMap = {
             {/* Publikasi & Layanan */}
             <SectionCard
               icon={Megaphone}
-              iconClass="bg-blue-50 text-blue-600"
+              iconClass="bg-app-soft text-app-accent"
               title="Publikasi & Layanan"
               description="Mengatur tampilan profil di halaman publik dan jenis layanan yang bisa dipesan."
             >
@@ -1158,7 +1158,7 @@ const headerColorMap = {
                         onClick={() => handleServiceChange(svc.id, !selected)}
                         className={cn(
                           "text-xs px-3 py-1 rounded-full font-semibold border transition-all",
-                          selected ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                          selected ? "bg-app-accent text-white border-app-accent" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                         )}
                       >
                         {svc.label}
@@ -1170,7 +1170,7 @@ const headerColorMap = {
 
               <div className="pt-2.5 border-t border-slate-100 space-y-1.5">
                 <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-blue-500" /> Badge Profesional
+                  <Shield className="w-3.5 h-3.5 text-app-accent-bright" /> Badge Profesional
                 </label>
                 {availableBadges.length === 0 ? (
                   <p className="text-xs text-slate-400 italic">Belum ada badge. Tambahkan di tab "Badges".</p>
@@ -1255,7 +1255,7 @@ const headerColorMap = {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving || uploading} className="bg-blue-600">
+            <Button onClick={handleSave} disabled={saving || uploading} className="bg-app-accent">
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
             </Button>
           </DialogFooter>
@@ -1306,7 +1306,7 @@ const headerColorMap = {
                         {off.reason && <div className="text-xs text-slate-500">{off.reason}</div>}
                       </div>
                       <div className="flex items-center">
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-blue-500" onClick={() => startEditTimeOff(off)}>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-app-accent-bright" onClick={() => startEditTimeOff(off)}>
                           <Edit2 className="w-3 h-3" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={() => handleDeleteTimeOff(off.id)}>

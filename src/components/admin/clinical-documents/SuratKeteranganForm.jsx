@@ -147,7 +147,7 @@ const SuratKeteranganForm = ({ onSaved }) => {
 
   return (
     <>
-      <Card className="border-slate-200 shadow-sm rounded-2xl">
+      <Card className="border-slate-200 shadow-sm rounded-app-lg">
         <CardContent className="p-5 sm:p-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -173,7 +173,7 @@ const SuratKeteranganForm = ({ onSaved }) => {
           </div>
 
           {selectedPatient && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-app bg-slate-50 border border-slate-200 p-3 text-xs">
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">Usia</p><p className="font-semibold text-slate-800">{calcAge(selectedPatient.birth_date) ?? '-'} Th</p></div>
               <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{normalizeGender(selectedPatient.gender)}</p></div>
               <div className="col-span-2"><p className="text-slate-400 uppercase tracking-wide text-[10px]">No. RM</p><p className="font-semibold text-slate-800">{selectedPatient.medical_record_number || '-'}</p></div>

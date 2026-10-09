@@ -164,10 +164,10 @@ const fetchData = async () => {
       {/* HERO BANNER — sembunyikan di PWA */}
       {!hideControls && !isPWA && (
         <>
-        <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+        <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
           <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+            <div className="flex-shrink-0 w-12 h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
@@ -179,7 +179,7 @@ const fetchData = async () => {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-3 bg-white p-4 rounded-app-lg border border-slate-200 shadow-sm">
           <div className="relative flex-1 md:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
@@ -189,7 +189,7 @@ const fetchData = async () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)} className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] hover:bg-[#E4EFFA]">
+          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -199,7 +199,7 @@ const fetchData = async () => {
 
       {/* SEARCH BAR PWA */}
       {!hideControls && isPWA && (
-        <div className="flex items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 bg-white p-3 rounded-app-lg border border-slate-200 shadow-sm">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
@@ -219,11 +219,11 @@ const fetchData = async () => {
       <div className="sm:hidden space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+              <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright mb-3" />
               <p className="text-sm text-slate-400">Memuat data paket...</p>
             </div>
           ) : paginatedData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200">
               <PackageIcon className="w-12 h-12 text-slate-300 mb-3" />
               <p className="text-slate-500 font-medium">Belum ada data paket</p>
             </div>
@@ -231,7 +231,7 @@ const fetchData = async () => {
             paginatedData.map((item) => {
               const sisaHari = calculateSisaHari(item);
               return (
-                <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+                <div key={item.id} className="bg-white rounded-app-lg border border-slate-200 shadow-sm p-4 space-y-3">
                   {/* Baris 1: Nama + Status */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -243,18 +243,18 @@ const fetchData = async () => {
 
                   {/* Baris 2: Sesi & Sisa Hari */}
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                    <div className="flex-1 bg-slate-50 rounded-app p-3 text-center border border-slate-100">
                       <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
                       <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
                         {item.computed_sessions_used}<span className="text-slate-400 font-normal">/{item.computed_total_sessions}</span>
                       </p>
                     </div>
-                    <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-                      <p className="text-[10px] text-blue-400 font-medium uppercase tracking-wide">Sisa Sesi</p>
-                      <p className="text-base font-bold text-blue-600 mt-0.5">{item.computed_sessions_remaining}</p>
+                    <div className="flex-1 bg-app-soft rounded-app p-3 text-center border border-app-accent/15">
+                      <p className="text-[10px] text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
+                      <p className="text-base font-bold text-app-accent mt-0.5">{item.computed_sessions_remaining}</p>
                     </div>
                     {sisaHari !== null && (
-                      <div className={`flex-1 rounded-xl p-3 text-center border ${getSisaHariColor(sisaHari)}`}>
+                      <div className={`flex-1 rounded-app p-3 text-center border ${getSisaHariColor(sisaHari)}`}>
                         <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
                         <p className="text-base font-bold mt-0.5">{sisaHari}</p>
                       </div>
@@ -275,7 +275,7 @@ const fetchData = async () => {
         </div>
 
       {/* TABLE LAYOUT (desktop/wide) */}
-      <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+      <div className="hidden sm:block bg-white rounded-app-lg border border-slate-200 overflow-x-auto">
         <Table className={TABLE_FIT}>
           <TableCols widths={[20, 20, 10, 8, 12, 10, 12, 8]} />
           <TableHeader className="bg-slate-100">
@@ -294,7 +294,7 @@ const fetchData = async () => {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-16 text-center">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-app-accent mb-4" />
                   <p className="text-base text-slate-500">Sedang memuat data paket...</p>
                 </TableCell>
               </TableRow>
@@ -315,7 +315,7 @@ const fetchData = async () => {
                     <TableCell className="px-6 py-4 text-center text-base font-mono">
                       {item.computed_sessions_used} / {item.computed_total_sessions}
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-center text-base font-semibold text-blue-600">
+                    <TableCell className="px-6 py-4 text-center text-base font-semibold text-app-accent">
                       {item.computed_sessions_remaining}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center text-base">
@@ -332,7 +332,7 @@ const fetchData = async () => {
                       {getStatusBadge(item.computed_status)}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">
-                      <Button variant="ghost" className="h-10 w-10 rounded-xl">
+                      <Button variant="ghost" className="h-10 w-10 rounded-app">
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                       </Button>
                     </TableCell>

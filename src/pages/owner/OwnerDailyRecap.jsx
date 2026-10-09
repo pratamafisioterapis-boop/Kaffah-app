@@ -352,10 +352,10 @@ const OwnerDailyRecap = () => {
   return (
     <div className="space-y-6">
       {/* Hero Banner — desktop & PWA */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+      <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className={`relative flex items-center gap-4 ${isPWA ? 'px-4 py-4' : 'px-5 py-5 sm:px-7 sm:py-6'}`}>
-          <div className={`flex-shrink-0 ${isPWA ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg`}>
+          <div className={`flex-shrink-0 ${isPWA ? 'w-10 h-10' : 'w-12 h-12'} rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg`}>
             <svg xmlns="http://www.w3.org/2000/svg" className={`${isPWA ? 'w-5 h-5' : 'w-6 h-6'} text-amber-300`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
@@ -370,19 +370,19 @@ const OwnerDailyRecap = () => {
       <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
         <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1></div>
         <div className="grid grid-cols-4 gap-1.5">
-            <button type="button" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'today' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'today' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
               <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Hari Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'week' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'week' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
               <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Minggu Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'month' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'month' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
               <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Bulan Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1 ${activeFilter === 'period' ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'period' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
               <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Periode Ini</span>
             </button>
@@ -390,16 +390,16 @@ const OwnerDailyRecap = () => {
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1 min-w-0">
             <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input value={dateRangeDisplay.start} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, start: e.target.value})); }} onClick={() => setShowStartCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
+            <Input value={dateRangeDisplay.start} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, start: e.target.value})); }} onClick={() => setShowStartCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
             {showStartCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, start: val})); setDateRangeDisplay(p => ({...p, start: displayDateID(val)})); setShowStartCalendar(false); }} onClose={() => setShowStartCalendar(false)} /></div>)}
           </div>
           <span className="text-slate-400 font-medium shrink-0 -mx-0.5">-</span>
           <div className="relative flex-1 min-w-0">
             <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input value={dateRangeDisplay.end} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, end: e.target.value})); }} onClick={() => setShowEndCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
+            <Input value={dateRangeDisplay.end} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, end: e.target.value})); }} onClick={() => setShowEndCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
             {showEndCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, end: val})); setDateRangeDisplay(p => ({...p, end: displayDateID(val)})); setShowEndCalendar(false); }} onClose={() => setShowEndCalendar(false)} /></div>)}
           </div>
-          <Button variant="outline" size="icon" onClick={() => fetchRecaps()} className="h-9 sm:h-10 w-9 sm:w-10 shrink-0 rounded-xl"><RefreshCcw className="w-3.5 h-3.5" /></Button>
+          <Button variant="outline" size="icon" onClick={() => fetchRecaps()} className="h-9 sm:h-10 w-9 sm:w-10 shrink-0 rounded-app"><RefreshCcw className="w-3.5 h-3.5" /></Button>
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
@@ -407,7 +407,7 @@ const OwnerDailyRecap = () => {
             <select
               value={selectedPaymentMethod}
               onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-              className="w-full h-9 sm:h-10 rounded-xl pl-9 pr-8 text-sm appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
+              className="w-full h-9 sm:h-10 rounded-app pl-9 pr-8 text-sm appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50"
             >
               <option value="">Semua Metode</option>
               {paymentMethodOptions.map((pm) => (
@@ -416,22 +416,22 @@ const OwnerDailyRecap = () => {
             </select>
             <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
-          <div className="relative flex-1 min-w-0"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-9 sm:h-10 pl-9 text-sm rounded-xl border border-[#D8E2EB]" /></div>
+          <div className="relative flex-1 min-w-0"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-9 sm:h-10 pl-9 text-sm rounded-app border border-[#D8E2EB]" /></div>
         </div>
         <div className="flex gap-2">
-          <div className="flex-1 min-w-0 flex items-center gap-1.5 px-3 h-8 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div className="flex-1 min-w-0 flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
             <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span></span>
           </div>
-          <Button onClick={handleAddClick} className="gap-1.5 bg-blue-600 hover:bg-blue-700 h-8 rounded-xl text-xs"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>
+          <Button onClick={handleAddClick} className="gap-1.5 bg-app-accent hover:bg-app-accent-hover h-8 rounded-app text-xs"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         {/* Mobile / PWA: kartu, tanpa geser horizontal */}
         <div className="sm:hidden divide-y divide-slate-100">
           {loadingRecaps ? (
-            <div className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-blue-500" /></div>
+            <div className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-app-accent-bright" /></div>
           ) : recaps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-slate-500">
               <Search className="w-8 h-8 text-slate-300 mb-2" />
@@ -451,7 +451,7 @@ const OwnerDailyRecap = () => {
                       <p className="text-[11px] text-slate-500 mt-0.5">{recap.date ? formatDateIndonesian(recap.date) : '-'}</p>
                     </div>
                     {recap.end_time ? <Badge className="bg-green-100 text-green-800 border-0 shrink-0">Selesai</Badge> :
-                     recap.start_time ? <Badge className="bg-blue-100 text-blue-800 border-0 shrink-0">Berlangsung</Badge> :
+                     recap.start_time ? <Badge className="bg-app-accent/15 text-app-accent-hover border-0 shrink-0">Berlangsung</Badge> :
                      <Badge variant="outline" className="text-slate-500 border-slate-200 shrink-0">Belum</Badge>}
                   </div>
 
@@ -468,7 +468,7 @@ const OwnerDailyRecap = () => {
                     </div>
                     <div>
                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
-                      <p className="font-medium text-blue-600">{packageLabel}</p>
+                      <p className="font-medium text-app-accent">{packageLabel}</p>
                     </div>
                     <div>
                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
@@ -487,7 +487,7 @@ const OwnerDailyRecap = () => {
                     <div onClick={(e) => e.stopPropagation()} className="text-right">
                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Waktu Sesi</p>
                       {!recap.start_time ? (
-                        <Button size="sm" className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
+                        <Button size="sm" className="h-7 text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
                           {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>
                       ) : !recap.end_time ? (
@@ -570,7 +570,7 @@ const OwnerDailyRecap = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loadingRecaps ? ( <tr><td colSpan={11} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-blue-500" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={11} className="p-8 text-center text-slate-500">
+              {loadingRecaps ? ( <tr><td colSpan={11} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-app-accent-bright" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={11} className="p-8 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center py-6">
                        <Search className="w-8 h-8 text-slate-300 mb-2" />
                        <p>Tidak ada data rekap harian.</p>
@@ -587,7 +587,7 @@ const OwnerDailyRecap = () => {
                         key={recap.id} 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
-                        className={cn(index % 2 === 0 ? 'bg-white' : 'bg-slate-50', "hover:bg-blue-50 cursor-pointer transition-colors")}
+                        className={cn(index % 2 === 0 ? 'bg-white' : 'bg-slate-50', "hover:bg-app-soft cursor-pointer transition-colors")}
                         onClick={() => handleRowClick(recap)}
                       >
                         <td className="px-4 py-3 text-center">{recap.date ? formatDateIndonesian(recap.date) : '-'}</td>
@@ -601,7 +601,7 @@ const OwnerDailyRecap = () => {
                         <td className="px-4 py-3 text-center">
                           <Badge variant="outline" className="text-[10px] font-normal">{patientTypeLabel}</Badge>
                         </td>
-                        <td className="px-4 py-3 text-center font-medium text-blue-600">{packageLabel}</td>
+                        <td className="px-4 py-3 text-center font-medium text-app-accent">{packageLabel}</td>
                         
                         <td className="px-4 py-3 text-center">
                             {recap.display_therapist_name}
@@ -615,12 +615,12 @@ const OwnerDailyRecap = () => {
                         </td>
                         <td className="px-4 py-3 text-center">
                             {recap.end_time ? <Badge className="bg-green-100 text-green-800 border-0">Selesai</Badge> : 
-                             recap.start_time ? <Badge className="bg-blue-100 text-blue-800 border-0">Berlangsung</Badge> : 
+                             recap.start_time ? <Badge className="bg-app-accent/15 text-app-accent-hover border-0">Berlangsung</Badge> : 
                              <Badge variant="outline" className="text-slate-500 border-slate-200">Belum</Badge>}
                         </td>
                         <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             {!recap.start_time ? (
-                                <Button size="sm" className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700 w-full" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
+                                <Button size="sm" className="h-7 text-[10px] bg-app-accent hover:bg-app-accent-hover w-full" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
                                     {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                                 </Button>
                             ) : !recap.end_time ? (

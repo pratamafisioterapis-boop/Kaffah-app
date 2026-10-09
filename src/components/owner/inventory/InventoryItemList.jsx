@@ -63,7 +63,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
   const pageItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
+    <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
       {items.length > 0 && (
         <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
@@ -148,13 +148,13 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" onClick={() => onRestock(item)} title="Tambah Stok">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm" onClick={() => onRestock(item)} title="Tambah Stok">
                         <PackagePlus className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -229,13 +229,13 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                       <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-105" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-all hover:scale-105" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all hover:scale-105" onClick={() => onRestock(item)} title="Tambah Stok">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm transition-all hover:scale-105" onClick={() => onRestock(item)} title="Tambah Stok">
                             <PackagePlus className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all hover:scale-105" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-all hover:scale-105" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>

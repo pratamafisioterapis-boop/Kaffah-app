@@ -200,7 +200,7 @@ const AccountingCategoryManager = () => {
         const isExpanded = expandedCategories[cat.id];
 
         return (
-          <div key={cat.id} className="border border-slate-200 rounded-lg overflow-hidden">
+          <div key={cat.id} className="border border-slate-200 rounded-app-sm overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-slate-50 hover:bg-slate-100 transition-colors">
               <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpand(cat.id)}>
                 {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />}
@@ -208,7 +208,7 @@ const AccountingCategoryManager = () => {
                 <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full shrink-0">{catSubs.length} Sub</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 pl-7 sm:pl-0">
-                <Button variant="ghost" size="sm" onClick={() => handleOpenAddSubCat(cat.id)} className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                <Button variant="ghost" size="sm" onClick={() => handleOpenAddSubCat(cat.id)} className="h-8 text-app-accent hover:text-app-accent-hover hover:bg-app-soft">
                   <Plus className="w-3 h-3 mr-1" /> Sub
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => handleOpenEditCat(cat)} className="h-8 w-8 text-slate-500">
@@ -235,7 +235,7 @@ const AccountingCategoryManager = () => {
                         <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Gabungkan ke sub-kategori lain (transaksi lama ikut pindah, ini terhapus)">
                           <GitMerge className="w-3 h-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-blue-600">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-app-accent">
                           <Edit2 className="w-3 h-3" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => { setSelectedSubCat(sub); setIsDeleteSubCatOpen(true); }} className="h-6 w-6 text-slate-400 hover:text-red-600">
@@ -257,13 +257,13 @@ const AccountingCategoryManager = () => {
   const expenseCats = categories.filter(cat => cat.type !== 'income');
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-6">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Manajemen Kategori Akuntansi</h2>
           <p className="text-sm text-slate-500">Atur kategori pemasukan dan pengeluaran.</p>
         </div>
-        <Button onClick={() => handleOpenAddCat('expense')} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => handleOpenAddCat('expense')} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" /> Kategori Baru
         </Button>
       </div>

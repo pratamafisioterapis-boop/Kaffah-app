@@ -251,8 +251,8 @@ const isPWA =
 
   // Converted to standard function rendering to avoid unmount/remount on parent render
   const renderSidebarContent = () => (
-    <div className="flex flex-col h-full text-[#102F52] shadow-lg relative overflow-hidden bg-white border-r border-[#DCE8F2]">
-      <div className="relative overflow-hidden border-b border-[#DCE8F2] flex-shrink-0">
+    <div className="flex flex-col h-full text-app-ink shadow-lg relative overflow-hidden bg-white border-r border-app-border">
+      <div className="relative overflow-hidden border-b border-app-border flex-shrink-0">
         {/* Clinic photo behind only this header block, faded into white so
             the clinic logo/name stay fully legible on top of it. */}
         <div className="absolute inset-0 pointer-events-none z-0">
@@ -268,20 +268,20 @@ const isPWA =
         {role === 'super_admin' ? (
           <>
             <div className="relative">
-              <div className="w-16 h-16 bg-[#EAF4FF] flex items-center justify-center" style={{ borderRadius: activeTheme.radius }}>
-                <ShieldCheck className="w-8 h-8 text-[#1677D2]" />
+              <div className="w-16 h-16 bg-app-soft flex items-center justify-center" style={{ borderRadius: activeTheme.radius }}>
+                <ShieldCheck className="w-8 h-8 text-app-accent" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[#102F52] tracking-tight leading-none">Super Admin</h2>
-              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">SYSTEM CONTROL</p>
+              <h2 className="text-2xl font-bold text-app-ink tracking-tight leading-none">Super Admin</h2>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-app-accent">SYSTEM CONTROL</p>
             </div>
           </>
         ) : (
           <>
             <div className="relative">
-               <div className="w-16 h-16 bg-white flex items-center justify-center overflow-hidden border border-[#DCE8F2]" style={{ borderRadius: activeTheme.radius }}>
+               <div className="w-16 h-16 bg-white flex items-center justify-center overflow-hidden border border-app-border" style={{ borderRadius: activeTheme.radius }}>
                  {clinicInfo ? (
                    <img
                      src={clinicInfo.logo_url || "/clinara-logo.png"}
@@ -289,16 +289,16 @@ const isPWA =
                      className="w-full h-full object-contain p-1"
                    />
                  ) : (
-                   <div className="w-full h-full animate-pulse bg-[#EAF4FF]" />
+                   <div className="w-full h-full animate-pulse bg-app-soft" />
                  )}
                </div>
                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#3FBF80] rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-[#102F52] tracking-tight leading-tight break-words">
-                {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-[#EAF4FF] align-middle" />}
+              <h2 className="text-lg font-bold text-app-ink tracking-tight leading-tight break-words">
+                {clinicInfo ? clinicInfo.name : <span className="inline-block w-24 h-4 rounded animate-pulse bg-app-soft align-middle" />}
               </h2>
-              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-[#1677D2]">CLINIC MANAGEMENT</p>
+              <p className="text-xs font-bold tracking-[0.1em] uppercase mt-1.5 text-app-accent">CLINIC MANAGEMENT</p>
             </div>
           </>
         )}
@@ -308,17 +308,17 @@ const isPWA =
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6 relative z-10 min-h-0">
         {role === 'owner' && (
           <div className="relative mb-4 px-2">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5B6B7D] pointer-events-none" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted pointer-events-none" />
             <input
               type="text"
               value={menuSearchQuery}
               onChange={(e) => setMenuSearchQuery(e.target.value)}
               placeholder="Cari menu..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[#DCE8F2] bg-[#F5F9FC] text-[#102F52] placeholder:text-[#5B6B7D] focus:outline-none focus:ring-2 focus:ring-[#1677D2]/30 focus:border-[#1677D2] transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-app border border-app-border bg-[#F5F9FC] text-app-ink placeholder:text-app-muted focus:outline-none focus:ring-2 focus:ring-app-accent/30 focus:border-app-accent transition-colors"
             />
           </div>
         )}
-        <div className="text-xs font-semibold text-[#5B6B7D] uppercase tracking-wider mb-4 px-2">Menu Utama</div>
+        <div className="text-xs font-semibold text-app-muted uppercase tracking-wider mb-4 px-2">Menu Utama</div>
         {displayedNavItems.map((item, index) => {
           const Icon = iconMap[item.icon] || Home;
           const isActive = location.pathname === item.path || (item.path !== `/${role}` && location.pathname.startsWith(item.path) && !item.submenu);
@@ -332,20 +332,20 @@ const isPWA =
                 <button
                   onClick={() => toggleSubmenu(index)}
                   className={cn(
-                    "w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden select-none",
-                    isParentActive ? "bg-[#EAF4FF] text-[#1677D2]" : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
+                    "w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden select-none",
+                    isParentActive ? "bg-app-soft text-app-accent" : "text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                   )}
                 >
-                  <Icon className={cn("h-5 w-5 transition-colors", isParentActive ? "text-[#1677D2]" : "text-[#5B6B7D] group-hover:text-[#1677D2]")} />
+                  <Icon className={cn("h-5 w-5 transition-colors", isParentActive ? "text-app-accent" : "text-app-muted group-hover:text-app-accent")} />
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
                   <ChevronDown className={cn("w-4 h-4 transition-transform duration-200 opacity-50", isExpanded ? "rotate-180" : "")} />
                 </button>
               ) : item.onClick ? (
                 <button
                   onClick={() => { item.onClick(); setIsSidebarOpen(false); }}
-                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
+                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                 >
-                  <Icon className="h-5 w-5 transition-colors text-[#5B6B7D] group-hover:text-[#1677D2]" />
+                  <Icon className="h-5 w-5 transition-colors text-app-muted group-hover:text-app-accent" />
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
                 </button>
               ) : (
@@ -354,10 +354,10 @@ const isPWA =
                   end={item.path === `/${role}` || item.path === `/${role}/dashboard`}
                   className={({ isActive: linkActive }) =>
                     cn(
-                      "group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden",
+                      "group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden",
                       linkActive || (isActive && item.path !== `/${role}`)
                         ? ""
-                        : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
+                        : "text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                     )
                   }
                   style={({ isActive: linkActive }) =>
@@ -377,7 +377,7 @@ const isPWA =
                     const activeState = linkActive || (isActive && item.path !== `/${role}`);
                     return (
                     <>
-                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "" : "text-[#5B6B7D] group-hover:text-[#1677D2]")} style={activeState ? { color: navActive.color } : undefined} />
+                      <Icon className={cn("h-5 w-5 transition-colors", activeState ? "" : "text-app-muted group-hover:text-app-accent")} style={activeState ? { color: navActive.color } : undefined} />
                       <span className="font-medium text-sm flex-1">{item.label}</span>
                       {activeState && <ChevronRight className="w-4 h-4 opacity-50" />}
                       {activeState && navActive.indicator && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full" style={{ background: navActive.color }} />}
@@ -403,17 +403,17 @@ const isPWA =
                           to={subItem.path}
                           className={({ isActive }) =>
                             cn(
-                              "block px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
+                              "block px-3 py-2 rounded-app-sm text-sm font-medium transition-colors relative",
                               isActive
-                                ? "bg-[#EAF4FF]"
-                                : "text-[#5B6B7D] hover:text-[#1677D2] hover:bg-[#F5F9FC]"
+                                ? "bg-app-soft"
+                                : "text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                             )
                           }
                           style={({ isActive }) => isActive ? { color: navActive.color, fontWeight: navActive.weight } : undefined}
                         >
                           {({ isActive }) => (
                             <div className="flex items-center gap-2">
-                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-[#DCE8F2]")} style={isActive ? { background: navActive.color } : undefined} />
+                              <span className={cn("w-1.5 h-1.5 rounded-full transition-colors", isActive ? "" : "bg-app-border")} style={isActive ? { background: navActive.color } : undefined} />
                               {subItem.label}
                             </div>
                           )}
@@ -428,20 +428,20 @@ const isPWA =
         })}
       </nav>
 
-      <div className="mt-auto p-4 border-t border-[#DCE8F2] relative z-10 bg-[#F5F9FC] flex-shrink-0">
-        <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#DCE8F2] mb-3">
+      <div className="mt-auto p-4 border-t border-app-border relative z-10 bg-[#F5F9FC] flex-shrink-0">
+        <div className="flex items-center gap-3 p-3 bg-white rounded-app border border-app-border mb-3">
           <div className="flex-shrink-0 relative">
             <img
               src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=1677D2`}
               alt="Avatar"
-              className="h-10 w-10 rounded-full bg-[#EAF4FF] border-2 border-white shadow-sm"
+              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm"
             />
           </div>
           <div className="overflow-hidden min-w-0">
-            <p className="text-sm font-semibold text-[#102F52] truncate">
+            <p className="text-sm font-semibold text-app-ink truncate">
               {typeof userName === 'string' ? userName : 'User'}
             </p>
-            <p className="text-xs text-[#5B6B7D] truncate flex items-center gap-1">
+            <p className="text-xs text-app-muted truncate flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block flex-shrink-0"></span>
               {(role === 'admin' || role === 'owner') && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
             </p>
@@ -450,7 +450,7 @@ const isPWA =
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start gap-3 text-[#F16063] hover:text-[#F16063] hover:bg-[#F16063]/10 h-10 rounded-xl"
+          className="w-full justify-start gap-3 text-[#F16063] hover:text-[#F16063] hover:bg-[#F16063]/10 h-10 rounded-app"
         >
           <LogOut className="h-4 w-4" />
           <span className="text-sm font-medium">Keluar Aplikasi</span>
@@ -566,7 +566,7 @@ const isPWA =
                         className="flex items-center gap-2 shrink-0 self-end"
                       >
                         <span className={cn(
-                          "text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap flex items-center gap-1",
+                          "text-xs font-medium px-2.5 py-1.5 rounded-app-sm shadow-sm border whitespace-nowrap flex items-center gap-1",
                           isActive
                             ? "text-white"
                             : "bg-white text-slate-700 border-slate-200"
@@ -610,7 +610,7 @@ const isPWA =
                                     className="flex items-center gap-2 shrink-0"
                                   >
                                     <span className={cn(
-                                      "text-[11px] font-medium px-2 py-1 rounded-lg shadow-sm border whitespace-nowrap",
+                                      "text-[11px] font-medium px-2 py-1 rounded-app-sm shadow-sm border whitespace-nowrap",
                                       isSubActive
                                         ? "text-white"
                                         : "bg-slate-50 text-slate-600 border-slate-200"
@@ -645,7 +645,7 @@ const isPWA =
                   }}
                   className="flex items-center gap-2 shrink-0"
                 >
-                  <span className="text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm border whitespace-nowrap bg-white text-red-500 border-red-200">
+                  <span className="text-xs font-medium px-2.5 py-1.5 rounded-app-sm shadow-sm border whitespace-nowrap bg-white text-red-500 border-red-200">
                     Keluar Aplikasi
                   </span>
                   <span className="w-9 h-9 rounded-full flex items-center justify-center shadow-md border shrink-0 bg-white border-red-200">

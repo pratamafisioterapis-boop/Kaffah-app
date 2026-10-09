@@ -137,7 +137,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
   }, [dateRange]);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
       {/* Header */}
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
@@ -176,7 +176,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
               return (
                 <div
                   key={s.key}
-                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors' : ''}`}
+                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-app-sm hover:bg-slate-50 transition-colors' : ''}`}
                   onClick={isClickable ? () => setShowUncategorizedModal(true) : undefined}
                   role={isClickable ? 'button' : undefined}
                   tabIndex={isClickable ? 0 : undefined}
@@ -219,7 +219,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
           component's default vw-based centering. */}
       <Dialog open={showUncategorizedModal} onOpenChange={setShowUncategorizedModal}>
         <DialogContent hideClose className="left-0 top-0 h-full w-full max-w-none translate-x-0 translate-y-0 flex items-center justify-center gap-0 border-0 bg-transparent p-4 shadow-none rounded-none">
-          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-xl bg-white shadow-lg">
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-app bg-white shadow-lg">
             <DialogHeader className="sticky top-0 z-10 px-5 py-4 pr-12 border-b border-slate-100 bg-slate-50/95 backdrop-blur relative">
               <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <HelpCircle className="w-4.5 h-4.5 text-slate-500 shrink-0" />

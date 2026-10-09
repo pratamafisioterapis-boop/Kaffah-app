@@ -31,7 +31,7 @@ const PALETTE = [
   { dot: 'bg-violet-500', border: 'border-l-violet-500', card: 'from-violet-50 border-violet-200/70', text: 'text-violet-600', tag: 'bg-violet-100 text-violet-700', ring: 'ring-violet-400' },
   { dot: 'bg-cyan-500', border: 'border-l-cyan-500', card: 'from-cyan-50 border-cyan-200/70', text: 'text-cyan-700', tag: 'bg-cyan-100 text-cyan-700', ring: 'ring-cyan-400' },
   { dot: 'bg-fuchsia-500', border: 'border-l-fuchsia-500', card: 'from-fuchsia-50 border-fuchsia-200/70', text: 'text-fuchsia-600', tag: 'bg-fuchsia-100 text-fuchsia-700', ring: 'ring-fuchsia-400' },
-  { dot: 'bg-blue-600', border: 'border-l-blue-600', card: 'from-blue-50 border-blue-200/70', text: 'text-blue-700', tag: 'bg-blue-100 text-blue-700', ring: 'ring-blue-400' },
+  { dot: 'bg-app-accent', border: 'border-l-app-accent', card: 'from-app-soft border-blue-200/70', text: 'text-app-accent-hover', tag: 'bg-app-accent/15 text-app-accent-hover', ring: 'ring-app-accent-bright' },
   { dot: 'bg-pink-500', border: 'border-l-pink-500', card: 'from-pink-50 border-pink-200/70', text: 'text-pink-600', tag: 'bg-pink-100 text-pink-700', ring: 'ring-pink-400' },
 ];
 
@@ -265,7 +265,7 @@ const WeeklyScheduleView = ({
           type="button"
           onClick={() => onAppointmentClick(a)}
           className={cn(
-            'w-full text-left rounded-xl border border-l-4 px-2.5 py-1.5 shadow-sm hover:shadow-md transition-all bg-gradient-to-br to-white',
+            'w-full text-left rounded-app border border-l-4 px-2.5 py-1.5 shadow-sm hover:shadow-md transition-all bg-gradient-to-br to-white',
             fill && 'h-full overflow-hidden',
             color.card, color.border
           )}
@@ -296,7 +296,7 @@ const WeeklyScheduleView = ({
         type="button"
         onClick={() => onSlotClick(s, t, dayDate)}
         className={cn(
-          'group w-full rounded-xl px-2.5 py-1.5 text-left',
+          'group w-full rounded-app px-2.5 py-1.5 text-left',
           fill && 'h-full overflow-hidden',
           'border border-dashed border-emerald-300 bg-emerald-50/60 text-emerald-700',
           'hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25',
@@ -326,7 +326,7 @@ const WeeklyScheduleView = ({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="group flex items-center gap-3 w-full md:w-auto md:min-w-[280px] pl-2 pr-3 py-1.5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 shadow-sm hover:shadow-md hover:border-clinara-sky transition-all"
+          className="group flex items-center gap-3 w-full md:w-auto md:min-w-[280px] pl-2 pr-3 py-1.5 rounded-app-lg border border-slate-200 bg-gradient-to-b from-white to-slate-50 shadow-sm hover:shadow-md hover:border-clinara-sky transition-all"
         >
           <div className="flex -space-x-2">
             {selectedTherapists.slice(0, 3).map(({ t, color }) => (
@@ -351,7 +351,7 @@ const WeeklyScheduleView = ({
           <ChevronDown className={cn('h-4 w-4 text-slate-400 transition-transform', pickerOpen && 'rotate-180')} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(92vw,340px)] p-0 rounded-2xl border-slate-200 shadow-2xl overflow-hidden">
+      <PopoverContent align="start" className="w-[min(92vw,340px)] p-0 rounded-app-lg border-slate-200 shadow-2xl overflow-hidden">
         <div className="px-4 py-3 bg-gradient-to-r from-clinara-navy to-clinara-blue text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-clinara-mint" />
@@ -372,7 +372,7 @@ const WeeklyScheduleView = ({
                 type="button"
                 onClick={() => toggleTherapist(t.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-2.5 py-2 rounded-xl border text-left transition-all',
+                  'w-full flex items-center gap-3 px-2.5 py-2 rounded-app border text-left transition-all',
                   on ? 'bg-slate-50 border-slate-200' : 'border-transparent hover:bg-slate-50'
                 )}
               >
@@ -383,7 +383,7 @@ const WeeklyScheduleView = ({
                     <span className={cn('h-2 w-2 rounded-full', color.dot)} /> Warna penanda
                   </p>
                 </div>
-                <span className={cn('h-5 w-5 rounded-full flex items-center justify-center border transition-all', on ? 'bg-clinara-primary border-clinara-primary text-white' : 'border-slate-300')}>
+                <span className={cn('h-5 w-5 rounded-full flex items-center justify-center border transition-all', on ? 'bg-app-accent border-app-accent text-white' : 'border-slate-300')}>
                   {on && <Check className="h-3 w-3" />}
                 </span>
               </button>
@@ -400,13 +400,13 @@ const WeeklyScheduleView = ({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 space-y-3">
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-3 sm:p-4 space-y-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-1.5">
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onDateChange(addDays(date, -7))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex-1 md:flex-none min-w-[170px] text-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+            <div className="flex-1 md:flex-none min-w-[170px] text-center px-3 py-1.5 rounded-app-sm bg-slate-50 border border-slate-200">
               <p className="text-sm font-bold text-slate-800 leading-tight">{rangeLabel}</p>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider">Jadwal mingguan</p>
             </div>
@@ -443,7 +443,7 @@ const WeeklyScheduleView = ({
 
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 gap-3">
-          <Loader2 className="w-9 h-9 animate-spin text-blue-600" />
+          <Loader2 className="w-9 h-9 animate-spin text-app-accent" />
           <p className="text-slate-400 text-sm">Memuat jadwal mingguan...</p>
         </div>
       ) : selectedIds.length === 0 ? (
@@ -451,7 +451,7 @@ const WeeklyScheduleView = ({
       ) : (
         <>
           {/* Desktop / tablet landscape */}
-          <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="hidden lg:block bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
             <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
               <div className="flex items-center justify-center text-sky-200/70"><Clock className="h-4 w-4" /></div>
               {days.map((d) => {
@@ -538,7 +538,7 @@ const WeeklyScheduleView = ({
                     type="button"
                     onClick={() => setSelectedDay(k)}
                     className={cn(
-                      'flex flex-col items-center py-2 rounded-2xl border transition-all',
+                      'flex flex-col items-center py-2 rounded-app-lg border transition-all',
                       active ? 'bg-clinara-navy text-white border-clinara-navy shadow-lg scale-[1.03]' : 'bg-white border-slate-200 text-slate-600'
                     )}
                   >
@@ -562,7 +562,7 @@ const WeeklyScheduleView = ({
               const k = toKey(dayDate);
               const times = [...new Set((itemsByDay[k] || []).map((i) => i.time))].sort();
               return (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
                   <div className="px-4 py-3 bg-gradient-to-r from-clinara-navy to-clinara-blue text-white flex items-center justify-between">
                     <div>
                       <p className="font-bold text-sm">{format(dayDate, 'EEEE, d MMMM yyyy', { locale: idLocale })}</p>

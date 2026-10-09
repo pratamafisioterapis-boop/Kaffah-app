@@ -290,7 +290,7 @@ const realIncome = filteredIncomeData.reduce(
   endDate={dateRange.endDate}
   onDateChange={setDateRange}
 />
-          <div className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-3 rounded-app border bg-white px-4 py-3 shadow-sm">
   <div className="flex flex-col">
     <span className="text-xs text-muted-foreground">
       Payment Method
@@ -409,7 +409,7 @@ const realIncome = filteredIncomeData.reduce(
               <div className="py-8 text-center text-muted-foreground">Tidak ada data pendapatan untuk periode ini.</div>
             ) : (
               filteredIncomeData.map((item, index) => (
-                <div key={`${item.patientId}-${index}`} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                <div key={`${item.patientId}-${index}`} className="bg-white rounded-app border border-slate-200 p-4 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-slate-500 whitespace-nowrap">
                       {item.recapDate ? format(new Date(item.recapDate), 'dd MMM yyyy', { locale: id }) : '-'}
@@ -424,7 +424,7 @@ const realIncome = filteredIncomeData.reduce(
                     <span className="text-slate-500 truncate">{item.paymentMethod || '-'}</span>
                   </div>
                   {item.packagePrice > 0 && (
-                    <p className="text-xs text-blue-600 font-medium">Harga Paket: {formatCurrency(item.packagePrice)}</p>
+                    <p className="text-xs text-app-accent font-medium">Harga Paket: {formatCurrency(item.packagePrice)}</p>
                   )}
                 </div>
               ))
@@ -490,7 +490,7 @@ const realIncome = filteredIncomeData.reduce(
   </span>
 </TableCell>
 
-<TableCell className="text-right font-medium text-blue-600">
+<TableCell className="text-right font-medium text-app-accent">
   {item.packagePrice > 0
     ? formatCurrency(item.packagePrice)
     : '-'}

@@ -32,20 +32,20 @@ const TherapistDocuments = ({ therapist }) => {
   return (
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-          <TabsTrigger value="upload_konten" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+        <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-app-lg border border-slate-200">
+          <TabsTrigger value="upload_konten" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <UploadCloud className="w-3.5 h-3.5" /> Upload Konten
           </TabsTrigger>
-          <TabsTrigger value="sharing_media" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+          <TabsTrigger value="sharing_media" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <ImageIcon className="w-3.5 h-3.5" /> Sharing Media
           </TabsTrigger>
-          <TabsTrigger value="payroll" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+          <TabsTrigger value="payroll" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <Receipt className="w-3.5 h-3.5" /> Payroll
           </TabsTrigger>
-          <TabsTrigger value="mou" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+          <TabsTrigger value="mou" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <ScrollText className="w-3.5 h-3.5" /> MOU Kemitraan
           </TabsTrigger>
-          <TabsTrigger value="sp" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
+          <TabsTrigger value="sp" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <AlertTriangle className="w-3.5 h-3.5" /> Surat Peringatan
           </TabsTrigger>
         </TabsList>

@@ -34,7 +34,7 @@ const ExpiredPackageWarningModal = ({
             </DialogDescription>
         </DialogHeader>
         
-        <div className="bg-amber-50 p-4 rounded-lg border border-amber-100 text-sm space-y-2 mt-2">
+        <div className="bg-amber-50 p-4 rounded-app-sm border border-amber-100 text-sm space-y-2 mt-2">
             <div className="flex justify-between items-center">
                 <span className="text-slate-600">Nama Paket:</span>
                 <span className="font-semibold text-slate-900">{packageInfo.package_name}</span>
@@ -56,7 +56,7 @@ const ExpiredPackageWarningModal = ({
         <div className="flex flex-col gap-3 pt-4">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Pilih Tindakan:</p>
             
-            <Button onClick={onExtend} className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white h-11">
+            <Button onClick={onExtend} className="w-full justify-start bg-app-accent hover:bg-app-accent-hover text-white h-11">
                 <Clock className="w-4 h-4 mr-3" />
                 <div className="flex flex-col items-start text-xs">
                     <span className="font-semibold text-sm">Perpanjang Paket Ini</span>

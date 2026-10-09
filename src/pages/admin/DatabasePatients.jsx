@@ -150,7 +150,7 @@ const AdminDatabasePatients = () => {
     return (
         <div className="space-y-6">
             {/* Hero Banner */}
-            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
               <img
                 src="/hero/clinara-patients-hero.webp"
                 alt="Kaffah Physiotherapy"
@@ -159,17 +159,17 @@ const AdminDatabasePatients = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
               <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
                 <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-                  <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+                  <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
                   <h1
                     style={{ fontFamily: "'Caveat', cursive" }}
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
                   >
                     Database<br />
-                    <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                    <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                       Pasien
                     </span>
                   </h1>
-                  <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                  <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                     Total {pagination.totalItems} pasien terdaftar dalam sistem.
                   </p>
                 </div>
@@ -181,14 +181,14 @@ const AdminDatabasePatients = () => {
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
-                className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]"
+                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]"
               >
                 <Upload className="w-4 h-4 shrink-0" strokeWidth={2.1} />
                 <span className="whitespace-nowrap"><span className="sm:hidden">Import</span><span className="hidden sm:inline">Import Excel</span></span>
               </Button>
               <Button
                 onClick={handleAddClick}
-                className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200"
+                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25"
               >
                 <Plus className="w-4 h-4 shrink-0" strokeWidth={2.2} />
                 <span className="whitespace-nowrap"><span className="sm:hidden">Tambah</span><span className="hidden sm:inline">Tambah Pasien</span></span>

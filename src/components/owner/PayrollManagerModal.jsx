@@ -336,9 +336,9 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-slate-50/50">
+        <div className="rounded-app border border-slate-200 p-4 space-y-3 bg-slate-50/50">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-app-sm bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <Wallet className="w-3.5 h-3.5" />
             </div>
             <h4 className="font-semibold text-sm text-slate-800">Buat Slip Gaji Baru</h4>
@@ -446,7 +446,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             </div>
           </div>
           {showIncentiveDetail && incentiveBreakdown.length > 0 && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+            <div className="rounded-app-sm border border-emerald-200 bg-emerald-50/50 overflow-hidden">
               <div className="px-3 py-2 text-[11px] font-medium text-emerald-800 border-b border-emerald-200 bg-emerald-50">
                 Rincian Jasa Insentif per Kunjungan
               </div>
@@ -475,7 +475,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             Uang Transport &amp; Jasa Insentif otomatis dihitung dari periode di atas (mengikuti hari kerja &amp; skema gaji terapis, sama seperti Simulasi Hitung Gaji). Nilainya tetap bisa diubah manual bila perlu.
           </p>
           {commissionBreakdown && (
-            <div className="text-[11px] text-slate-500 rounded-lg border border-slate-200 bg-white px-3 py-2 space-y-0.5">
+            <div className="text-[11px] text-slate-500 rounded-app-sm border border-slate-200 bg-white px-3 py-2 space-y-0.5">
               <div className="flex items-center justify-between">
                 <span>Omzet periode</span>
                 <span className="font-medium text-slate-700">{formatCurrency(commissionBreakdown.revenue)}</span>
@@ -505,14 +505,14 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
 
           {soapStatus && soapStatus.total > 0 && (
             soapStatus.unfilled > 0 ? (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+              <div className="flex items-start gap-2 rounded-app-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   <strong>{soapStatus.unfilled}</strong> dari {soapStatus.total} sesi pada periode ini belum memiliki catatan SOAP. Mohon lengkapi sebelum slip gaji difinalisasi.
                 </span>
               </div>
             ) : (
-              <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
+              <div className="flex items-start gap-2 rounded-app-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
                 <ClipboardCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>Semua {soapStatus.total} sesi pada periode ini sudah memiliki catatan SOAP lengkap.</span>
               </div>
@@ -543,7 +543,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                   key={r.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
                 >
                   <div>
                     <p className="text-sm font-medium text-slate-700">
@@ -566,7 +566,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                         {markingPaidId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                       </Button>
                     )}
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => handleView(r)} title="Lihat">
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-app-accent" onClick={() => handleView(r)} title="Lihat">
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => handleDownload(r)} title="Download">

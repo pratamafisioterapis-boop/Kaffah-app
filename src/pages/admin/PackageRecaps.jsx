@@ -249,7 +249,7 @@ export const PackageRecapsContent = () => {
     };
 
     const PaginationControls = () => (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-none sm:border-0 sm:border-t sm:border-slate-100 sm:bg-slate-50 sm:shadow-none sm:px-6 sm:py-3 sm:gap-0">
+        <div className="rounded-app border border-slate-200 bg-white shadow-sm p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-none sm:border-0 sm:border-t sm:border-slate-100 sm:bg-slate-50 sm:shadow-none sm:px-6 sm:py-3 sm:gap-0">
 
             {/* Mobile: card layout matching reference design */}
             <div className="flex sm:hidden items-center justify-between">
@@ -265,7 +265,7 @@ export const PackageRecapsContent = () => {
                         value={itemsPerPage.toString()}
                         onValueChange={(val) => setItemsPerPage(Number(val))}
                     >
-                        <SelectTrigger className="h-9 w-16 rounded-lg border-slate-200">
+                        <SelectTrigger className="h-9 w-16 rounded-app-sm border-slate-200">
                             <SelectValue placeholder={itemsPerPage} />
                         </SelectTrigger>
                         <SelectContent>
@@ -280,20 +280,20 @@ export const PackageRecapsContent = () => {
                 <div className="flex items-center gap-1.5">
                     <button
                         type="button"
-                        className="flex items-center justify-center h-9 w-9 rounded-xl bg-slate-100 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
+                        className="flex items-center justify-center h-9 w-9 rounded-app bg-slate-100 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
 
-                    <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-blue-600 text-white text-sm font-semibold">
+                    <div className="flex items-center justify-center h-9 w-9 rounded-app bg-app-accent text-white text-sm font-semibold">
                         {currentPage}
                     </div>
 
                     <button
                         type="button"
-                        className="flex items-center justify-center h-9 w-9 rounded-xl bg-slate-100 text-slate-500 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
+                        className="flex items-center justify-center h-9 w-9 rounded-app bg-slate-100 text-slate-500 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     >
@@ -357,7 +357,7 @@ export const PackageRecapsContent = () => {
 
     return (
         <div className="space-y-6">
-            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+            <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
               <img
                 src="/hero/clinara-package-hero.webp"
                 alt="Kaffah Physiotherapy"
@@ -366,17 +366,17 @@ export const PackageRecapsContent = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
               <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
                 <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-                  <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+                  <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
                   <h1
                     style={{ fontFamily: "'Caveat', cursive" }}
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
                   >
                     Rekap<br />
-                    <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                    <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                       Paket
                     </span>
                   </h1>
-                  <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+                  <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                     Kelola status dan riwayat paket pasien.
                   </p>
                 </div>
@@ -384,13 +384,13 @@ export const PackageRecapsContent = () => {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#1677D2] hover:bg-[#125fac] shadow-sm w-full sm:w-auto">
+              <Button onClick={() => setIsAddModalOpen(true)} className="bg-app-accent hover:bg-app-accent-hover shadow-sm w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
               </Button>
             </div>
 
             {/* Restructured Filter Section */}
-            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-4 sm:p-5 rounded-app border border-slate-200 shadow-sm">
                 <div className="flex flex-col gap-3 sm:gap-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                         {/* Search Input */}
@@ -402,7 +402,7 @@ export const PackageRecapsContent = () => {
                                     placeholder="Ketik nama pasien..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-9 h-9 sm:h-10 py-2 sm:py-2.5 bg-slate-50 border-slate-300 focus:ring-2 focus:ring-blue-500 rounded-lg shadow-sm"
+                                    className="pl-9 h-9 sm:h-10 py-2 sm:py-2.5 bg-slate-50 border-slate-300 focus:ring-2 focus:ring-app-accent-bright rounded-app-sm shadow-sm"
                                 />
                             </div>
                         </div>
@@ -411,7 +411,7 @@ export const PackageRecapsContent = () => {
                         <div className="space-y-1.5 sm:space-y-2">
                             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Filter Status</Label>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="h-9 sm:h-10 py-2 sm:py-2 bg-slate-50 border-slate-300 focus:ring-2 focus:ring-blue-500 rounded-lg shadow-sm">
+                                <SelectTrigger className="h-9 sm:h-10 py-2 sm:py-2 bg-slate-50 border-slate-300 focus:ring-2 focus:ring-app-accent-bright rounded-app-sm shadow-sm">
                                     <SelectValue placeholder="Pilih Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -431,7 +431,7 @@ export const PackageRecapsContent = () => {
                                     </SelectItem>
                                     <SelectItem value="pending">
                                         <div className="flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-blue-500" />
+                                            <Clock className="w-4 h-4 text-app-accent-bright" />
                                             <span>Pending / Belum Dimulai</span>
                                             <Badge variant="secondary" className="ml-auto text-xs h-5 px-1.5">{counts.pending}</Badge>
                                         </div>
@@ -461,11 +461,11 @@ export const PackageRecapsContent = () => {
             <div className="sm:hidden space-y-3">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16">
-                            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+                            <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright mb-3" />
                             <p className="text-sm text-slate-400">Memuat data paket...</p>
                         </div>
                     ) : paginatedPackages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+                        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200">
                             <Package className="w-12 h-12 text-slate-300 mb-3" />
                             <p className="text-slate-500 font-medium">Belum ada data paket</p>
                         </div>
@@ -473,7 +473,7 @@ export const PackageRecapsContent = () => {
                         paginatedPackages.map((pkg) => {
                             const sisaHari = calculateSisaHari(pkg);
                             return (
-                                <div key={pkg.id} onClick={() => handleRowClick(pkg)} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
+                                <div key={pkg.id} onClick={() => handleRowClick(pkg)} className="bg-white rounded-app-lg border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
                                     {/* Baris 1: Nama + Status */}
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
@@ -485,18 +485,18 @@ export const PackageRecapsContent = () => {
 
                                     {/* Baris 2: Sesi & Sisa Hari */}
                                     <div className="flex items-center gap-2">
-                                        <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                                        <div className="flex-1 bg-slate-50 rounded-app p-3 text-center border border-slate-100">
                                             <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
                                             <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
                                                 {pkg.sessions_used}<span className="text-slate-400 font-normal">/{pkg.total_sessions}</span>
                                             </p>
                                         </div>
-                                        <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-                                            <p className="text-[10px] text-blue-400 font-medium uppercase tracking-wide">Sisa Sesi</p>
-                                            <p className="text-base font-bold text-blue-600 mt-0.5">{pkg.sessions_remaining}</p>
+                                        <div className="flex-1 bg-app-soft rounded-app p-3 text-center border border-app-accent/15">
+                                            <p className="text-[10px] text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
+                                            <p className="text-base font-bold text-app-accent mt-0.5">{pkg.sessions_remaining}</p>
                                         </div>
                                         {sisaHari !== null && (
-                                            <div className={cn("flex-1 rounded-xl p-3 text-center border", getSisaHariColor(sisaHari))}>
+                                            <div className={cn("flex-1 rounded-app p-3 text-center border", getSisaHariColor(sisaHari))}>
                                                 <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
                                                 <p className="text-base font-bold mt-0.5">{sisaHari}</p>
                                             </div>
@@ -518,7 +518,7 @@ export const PackageRecapsContent = () => {
                                                     Perpanjang
                                                 </Button>
                                             )}
-                                            <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700 whitespace-nowrap shrink-0" onClick={(e) => handleEditStatusClick(e, pkg)}>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs border-app-accent/25 text-app-accent-hover whitespace-nowrap shrink-0" onClick={(e) => handleEditStatusClick(e, pkg)}>
                                                 Ubah Status
                                             </Button>
                                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 shrink-0" onClick={(e) => handleDeleteClick(e, pkg)}>
@@ -532,7 +532,7 @@ export const PackageRecapsContent = () => {
                     )}
                 </div>
             {/* TABLE DESKTOP */}
-            <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="hidden sm:block bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
@@ -559,7 +559,7 @@ export const PackageRecapsContent = () => {
                                 paginatedPackages.map((pkg) => {
                                     const sisaHari = calculateSisaHari(pkg);
                                     return (
-                                        <tr key={pkg.id} onClick={() => handleRowClick(pkg)} className="hover:bg-blue-50 cursor-pointer transition-colors">
+                                        <tr key={pkg.id} onClick={() => handleRowClick(pkg)} className="hover:bg-app-soft cursor-pointer transition-colors">
                                             <td className="px-4 py-3 font-medium text-slate-900 text-center">{pkg.patients?.full_name || '-'}</td>
                                             <td className="px-4 py-3 text-slate-600 text-center">{pkg.package_name || '-'}</td>
                                             <td className="px-4 py-3 text-center">{pkg.sessions_used} / {pkg.total_sessions}</td>

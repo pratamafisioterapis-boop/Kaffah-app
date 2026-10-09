@@ -115,7 +115,7 @@ const GoogleSheetsSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
           Backup Data ke Google Sheets
@@ -127,13 +127,13 @@ const GoogleSheetsSettings = () => {
       </div>
 
       {loading ? (
-        <div className="bg-white p-8 rounded-lg border border-slate-200 flex justify-center">
+        <div className="bg-white p-8 rounded-app-sm border border-slate-200 flex justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
         </div>
       ) : (
         <>
           {!driveConnected && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 flex items-start gap-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-app-sm p-4 text-sm text-amber-800 flex items-start gap-2">
               <ShieldAlert className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span>
                 Hubungkan akun Google Drive Anda terlebih dahulu di tab <strong>Google Drive</strong> sebelum membuat
@@ -142,7 +142,7 @@ const GoogleSheetsSettings = () => {
             </div>
           )}
 
-          <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
+          <div className="bg-white p-4 rounded-app-sm border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-base">Status Spreadsheet Backup</Label>
@@ -171,7 +171,7 @@ const GoogleSheetsSettings = () => {
                     href={settings.spreadsheet_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    className="text-sm text-app-accent hover:underline flex items-center gap-1"
                   >
                     Buka Spreadsheet <ExternalLink className="w-3.5 h-3.5" />
                   </a>
@@ -193,7 +193,7 @@ const GoogleSheetsSettings = () => {
           </div>
 
           {hasSpreadsheet && (
-            <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
+            <div className="bg-white p-4 rounded-app-sm border border-slate-200 space-y-4">
               <div>
                 <Label className="text-base">Data yang Disinkronkan</Label>
                 <p className="text-xs text-slate-500">Pilih data mana saja yang ingin dimasukkan ke spreadsheet.</p>
@@ -227,7 +227,7 @@ const GoogleSheetsSettings = () => {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button onClick={handleSaveSettings} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleSaveSettings} disabled={saving} className="bg-app-accent hover:bg-app-accent-hover">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   Simpan Pengaturan
                 </Button>

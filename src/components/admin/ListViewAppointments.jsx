@@ -91,7 +91,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
   return (
     <div className="space-y-4">
       {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm">
          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <Input 
@@ -132,7 +132,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
       </div>
 
       {/* Table — desktop / wide */}
-      <div className="hidden sm:block bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="hidden sm:block bg-white rounded-app-sm border border-slate-200 shadow-sm overflow-hidden">
          <div className="overflow-x-auto">
             <Table>
                <TableHeader className="bg-slate-50">
@@ -215,7 +215,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
       </div>
 
       {/* Card List — mobile/narrow */}
-      <div className="sm:hidden bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <div className="sm:hidden bg-white rounded-app-sm border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
          {loading ? (
             <div className="h-24 flex items-center justify-center text-sm text-slate-500">Loading appointments...</div>
          ) : sortedAppointments.length === 0 ? (

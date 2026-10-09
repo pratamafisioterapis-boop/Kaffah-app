@@ -88,15 +88,15 @@ const BadgeManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+    <div className="bg-white rounded-app border border-slate-200 p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <div>
            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-             <Shield className="w-5 h-5 text-blue-600" /> Pengaturan Badge Profesional
+             <Shield className="w-5 h-5 text-app-accent" /> Pengaturan Badge Profesional
            </h3>
            <p className="text-sm text-slate-500">Kelola badge dan label khusus untuk ditampilkan di profil terapis.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => handleOpenDialog()} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" /> Tambah Badge
         </Button>
       </div>
@@ -207,7 +207,7 @@ const BadgeManager = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={submitting} className="bg-blue-600">
+            <Button onClick={handleSave} disabled={submitting} className="bg-app-accent">
               {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
             </Button>
           </DialogFooter>

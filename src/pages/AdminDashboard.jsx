@@ -412,7 +412,7 @@ setTrendPatients(trendArray);
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
 
         {/* ── Hero Banner ── */}
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-owner-hero.webp"
             alt="Kaffah Physiotherapy"
@@ -421,19 +421,19 @@ setTrendPatients(trendArray);
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
             <div className="max-w-[74%] sm:max-w-[62%] md:max-w-md lg:max-w-xl">
-              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
-                {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono">{heroTime}</span>
+              <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">
+                {todayLabel} <span className="text-app-border">•</span> <span className="font-mono">{heroTime}</span>
               </p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
               >
                 Selamat datang,<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
+                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8 block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]">
                   Admin {clinicName || ''}!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Pusat kendali operasional dan manajemen klinik.
               </p>
             </div>
@@ -443,21 +443,21 @@ setTrendPatients(trendArray);
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
-              <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+            <div className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm">
+              <span className="text-app-accent text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
                 <input
                   type="date"
                   value={dateRange.startDate}
                   onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                  className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
                 />
-                <span className="text-[#DCE8F2] shrink-0">–</span>
+                <span className="text-app-border shrink-0">–</span>
                 <input
                   type="date"
                   value={dateRange.endDate}
                   onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                  className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
+                  className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
                 />
               </div>
             </div>
@@ -486,7 +486,7 @@ setTrendPatients(trendArray);
         ? Math.round((slotData.filled / slotData.total) * 100)
         : 0;
 
-    let color = "bg-blue-500";
+    let color = "bg-app-accent-bright";
     let label = "Normal";
 
     if (percent < 30) {
@@ -501,7 +501,7 @@ setTrendPatients(trendArray);
     }
 
     return (
-      <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 hover:shadow-md transition-all">
+      <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 hover:shadow-md transition-all">
         
         {/* TOP */}
         <div className="flex justify-between items-center">
@@ -538,7 +538,7 @@ setTrendPatients(trendArray);
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
   {/* TOP THERAPIST */}
-  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+  <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
 
   <h3 className="text-lg font-semibold text-slate-800">
     Top Therapist
@@ -550,7 +550,7 @@ setTrendPatients(trendArray);
     therapistStats.slice(0, 5).map((t, i) => (
       <div
         key={t.therapist_id}
-        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[60px]"
+        className="flex items-center justify-between p-3 rounded-app bg-slate-50 hover:bg-slate-100 transition min-h-[60px]"
       >
         <div className="flex items-center gap-3">
           <div className="text-lg">
@@ -592,7 +592,7 @@ setTrendPatients(trendArray);
 </div>
   
 {/* TOP PATIENT */}
-<div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+<div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
 
   <h3 className="text-lg font-semibold text-slate-800">
     Top Patient
@@ -607,7 +607,7 @@ setTrendPatients(trendArray);
     {topPatients.slice(0, 5).map((p, i) => (
       <div
         key={i}
-        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+        className="flex items-center justify-between p-3 rounded-app bg-slate-50 hover:bg-slate-100 transition"
       >
         <div className="flex items-center gap-3">
           <div className="text-lg">
@@ -650,7 +650,7 @@ setTrendPatients(trendArray);
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
   {/* TOP DIAGNOSA */}
-  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+  <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
 
     <h3 className="text-lg font-semibold text-slate-800">
       Top Diagnosa
@@ -665,7 +665,7 @@ setTrendPatients(trendArray);
     {topDiagnoses.slice(0, 5).map((d, i) => (
       <div
         key={i}
-        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+        className="flex items-center justify-between p-3 rounded-app bg-slate-50 hover:bg-slate-100 transition"
       >
         <div className="flex items-center gap-3">
           <div className="text-lg">
@@ -689,7 +689,7 @@ setTrendPatients(trendArray);
 
 
   {/* TOP LAYANAN */}
-  <div className="bg-white rounded-2xl border shadow-sm p-5 space-y-4 h-full flex flex-col">
+  <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
 
     <h3 className="text-lg font-semibold text-slate-800">
       Top Layanan
@@ -704,7 +704,7 @@ setTrendPatients(trendArray);
     {topServices.slice(0, 5).map((s, i) => (
       <div
         key={i}
-        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+        className="flex items-center justify-between p-3 rounded-app bg-slate-50 hover:bg-slate-100 transition"
       >
         <div className="flex items-center gap-3">
           <div className="text-lg">
@@ -731,7 +731,7 @@ setTrendPatients(trendArray);
     Trend Patients
   </h3>
 
-  <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl border shadow-sm p-6">
+  <div className="bg-gradient-to-br from-app-soft to-white rounded-app-lg border shadow-sm p-6">
 
   {trendPatients.length > 0 ? (
     <div className="w-full h-[250px]">

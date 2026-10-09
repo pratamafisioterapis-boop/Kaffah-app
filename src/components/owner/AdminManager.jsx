@@ -246,7 +246,7 @@ const AdminManager = () => {
           <h2 className="text-xl font-semibold text-slate-800">Manajemen Admin & Staff</h2>
           <p className="text-sm text-slate-500">Buat akun untuk resepsionis atau admin klinik.</p>
         </div>
-        <Button onClick={handleOpenDialog} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleOpenDialog} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" /> Tambah Admin
         </Button>
       </div>
@@ -260,7 +260,7 @@ const AdminManager = () => {
               key={admin.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+              className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col"
             >
               <div className="h-20 bg-slate-900 relative flex items-center justify-center">
                   <ShieldAlert className="text-slate-700 w-24 h-24 absolute -bottom-8 -right-8 opacity-20" />
@@ -293,7 +293,7 @@ const AdminManager = () => {
                 </div>
                 
                 <div className="mt-auto pt-4 border-t border-slate-100 flex justify-center gap-2">
-                   <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(admin)} className="text-blue-600 hover:bg-blue-50 hover:text-blue-700">
+                   <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(admin)} className="text-app-accent hover:bg-app-soft hover:text-app-accent-hover">
                       <Edit2 className="w-4 h-4 mr-2" /> Edit
                    </Button>
                    <Button variant="ghost" size="sm" onClick={() => setResetAdmin(admin)} className="text-amber-600 hover:bg-amber-50 hover:text-amber-700">
@@ -320,7 +320,7 @@ const AdminManager = () => {
           
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-2">
-               <label className="relative w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-blue-400">
+               <label className="relative w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-app-accent-bright">
                   {avatarPreview
                     ? <img src={avatarPreview} alt="Foto profil" className="w-full h-full object-cover" />
                     : <User className="w-10 h-10 text-slate-400" />}
@@ -354,7 +354,7 @@ const AdminManager = () => {
             </div>
 
             {!editingId && (
-            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg space-y-2">
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-app-sm space-y-2">
                 <h4 className="font-semibold text-yellow-800 flex items-center gap-2 text-sm">
                    <Lock className="w-3 h-3" /> Set Password
                 </h4>
@@ -371,7 +371,7 @@ const AdminManager = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-blue-600">
+            <Button onClick={handleSave} disabled={saving} className="bg-app-accent">
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} {editingId ? 'Simpan Perubahan' : 'Buat Akun'}
             </Button>
           </DialogFooter>
@@ -408,7 +408,7 @@ const AdminManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeResetDialog}>Batal</Button>
-            <Button onClick={handleResetPassword} disabled={resetting} className="bg-blue-600">
+            <Button onClick={handleResetPassword} disabled={resetting} className="bg-app-accent">
               {resetting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
             </Button>
           </DialogFooter>

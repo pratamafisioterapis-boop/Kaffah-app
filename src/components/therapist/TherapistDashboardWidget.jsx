@@ -72,14 +72,14 @@ const TherapistDashboardWidget = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-app-accent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="text-center py-10 bg-slate-50 rounded-app border border-slate-200">
         <p className="text-red-500 font-medium">{error}</p>
         <p className="text-sm text-slate-500 mt-2">Pastikan akun Anda terhubung dengan data terapis.</p>
         <Button onClick={loadData} variant="outline" className="mt-4">

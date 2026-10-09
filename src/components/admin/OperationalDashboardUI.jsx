@@ -30,14 +30,14 @@ import {
 // --- Dummy Data ---
 
 const KPI_STATS = [
-  { label: 'Total Sesi', value: '1,248', change: '+12%', trend: 'up', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { label: 'Total Sesi', value: '1,248', change: '+12%', trend: 'up', icon: Activity, color: 'text-app-accent', bg: 'bg-app-soft' },
   { label: 'Total Paket', value: '320', change: '+8%', trend: 'up', icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
   { label: 'Total Non-Paket', value: '145', change: '-3%', trend: 'down', icon: LayersIcon, color: 'text-orange-600', bg: 'bg-orange-50' },
   { label: 'Total Pasien', value: '856', change: '+5%', trend: 'up', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
 
 const TODAY_TASKS = [
-  { label: 'Total Appointment', value: 42, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-100', borderColor: 'border-blue-200' },
+  { label: 'Total Appointment', value: 42, icon: Calendar, color: 'text-app-accent', bg: 'bg-app-accent/15', borderColor: 'border-app-accent/25' },
   { label: 'Reschedule', value: 5, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', borderColor: 'border-amber-200' },
   { label: 'Cancel', value: 2, icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', borderColor: 'border-red-200' },
 ];
@@ -111,10 +111,10 @@ const OperationalDashboardUI = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="rounded-xl border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300">
+            <Card className="rounded-app border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
-                  <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
+                  <div className={`p-3 rounded-app-sm ${stat.bg} ${stat.color}`}>
                     <stat.icon className="w-5 h-5" />
                   </div>
                   <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
@@ -137,12 +137,12 @@ const OperationalDashboardUI = () => {
       {/* 2. Today Task Overview */}
       <section>
         <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-           <Calendar className="w-5 h-5 text-blue-600" />
+           <Calendar className="w-5 h-5 text-app-accent" />
            Today's Overview
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TODAY_TASKS.map((task, index) => (
-            <Card key={index} className={`rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all ${task.borderColor}`}>
+            <Card key={index} className={`rounded-app border-l-4 shadow-sm hover:shadow-md transition-all ${task.borderColor}`}>
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">{task.label}</p>
@@ -160,7 +160,7 @@ const OperationalDashboardUI = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 3. Schedule Control (Placeholder Visualization) */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="rounded-xl border-slate-200 shadow-sm h-full">
+          <Card className="rounded-app border-slate-200 shadow-sm h-full">
             <CardHeader className="border-b border-slate-100 pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -203,7 +203,7 @@ const OperationalDashboardUI = () => {
               </div>
               <div className="mt-6 flex items-center justify-end gap-4 text-xs text-slate-500">
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-slate-50 border border-slate-300 border-dashed rounded"></div> Empty</div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div> Booked</div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-app-accent/15 border border-app-accent/40 rounded"></div> Booked</div>
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div> Conflict/Overlap</div>
               </div>
             </CardContent>
@@ -212,7 +212,7 @@ const OperationalDashboardUI = () => {
 
         {/* 4. Therapist Availability List */}
         <div className="space-y-6">
-           <Card className="rounded-xl border-slate-200 shadow-sm h-full">
+           <Card className="rounded-app border-slate-200 shadow-sm h-full">
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-lg font-bold text-slate-800">Therapist Status</CardTitle>
             </CardHeader>
@@ -252,7 +252,7 @@ const OperationalDashboardUI = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
          {/* 5. Daily Report Completion Table */}
-         <Card className="rounded-xl border-slate-200 shadow-sm">
+         <Card className="rounded-app border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-bold text-slate-800">Laporan Harian</CardTitle>
               <Badge variant="outline" className="text-xs font-normal">Hari Ini</Badge>
@@ -290,7 +290,7 @@ const OperationalDashboardUI = () => {
          </Card>
 
          {/* 6. Workload Table */}
-         <Card className="rounded-xl border-slate-200 shadow-sm">
+         <Card className="rounded-app border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-bold text-slate-800">Beban Kerja Terapis</CardTitle>
               <Badge variant="outline" className="text-xs font-normal">Minggu Ini</Badge>
@@ -317,7 +317,7 @@ const OperationalDashboardUI = () => {
                       <TableCell className="text-center font-bold text-slate-900">{row.total}</TableCell>
                       <TableCell>
                          <div className="flex h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                           <div className="bg-blue-500 h-full" style={{ width: `${(row.newPatients / row.total) * 100}%` }}></div>
+                           <div className="bg-app-accent-bright h-full" style={{ width: `${(row.newPatients / row.total) * 100}%` }}></div>
                            <div className="bg-indigo-500 h-full" style={{ width: `${(row.oldPatients / row.total) * 100}%` }}></div>
                            <div className="bg-purple-500 h-full" style={{ width: `${(row.package / row.total) * 100}%` }}></div>
                          </div>
@@ -331,7 +331,7 @@ const OperationalDashboardUI = () => {
       </div>
 
       {/* 7. Patient Management Quick Access */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <section className="bg-white rounded-app border border-slate-200 shadow-sm p-6">
         <Tabs defaultValue="recaps" className="w-full" onValueChange={setActiveTab}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
              <div className="flex items-center gap-2">
@@ -374,7 +374,7 @@ const OperationalDashboardUI = () => {
                 </TableBody>
              </Table>
              <div className="mt-4 text-center">
-                <Button variant="link" className="text-blue-600">View All Recaps <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                <Button variant="link" className="text-app-accent">View All Recaps <ChevronRight className="w-4 h-4 ml-1" /></Button>
              </div>
           </TabsContent>
           
@@ -406,20 +406,20 @@ const OperationalDashboardUI = () => {
                 </TableBody>
              </Table>
              <div className="mt-4 text-center">
-                <Button variant="link" className="text-blue-600">View All Patients <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                <Button variant="link" className="text-app-accent">View All Patients <ChevronRight className="w-4 h-4 ml-1" /></Button>
              </div>
           </TabsContent>
 
           {/* Placeholder contents for other tabs */}
           <TabsContent value="history">
-            <div className="p-8 text-center text-slate-500 border-2 border-dashed border-slate-100 rounded-lg">
+            <div className="p-8 text-center text-slate-500 border-2 border-dashed border-slate-100 rounded-app-sm">
                <FileText className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                <p>Package History data will appear here.</p>
             </div>
           </TabsContent>
           
            <TabsContent value="followup">
-            <div className="p-8 text-center text-slate-500 border-2 border-dashed border-slate-100 rounded-lg">
+            <div className="p-8 text-center text-slate-500 border-2 border-dashed border-slate-100 rounded-app-sm">
                <PhoneCall className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                <p>Follow Up schedule will appear here.</p>
             </div>
@@ -431,7 +431,7 @@ const OperationalDashboardUI = () => {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button size="lg" className="rounded-full h-14 w-14 shadow-xl bg-blue-600 hover:bg-blue-700 text-white p-0 flex items-center justify-center">
+               <Button size="lg" className="rounded-full h-14 w-14 shadow-xl bg-app-accent hover:bg-app-accent-hover text-white p-0 flex items-center justify-center">
                   <Plus className="w-6 h-6" />
                </Button>
             </DropdownMenuTrigger>

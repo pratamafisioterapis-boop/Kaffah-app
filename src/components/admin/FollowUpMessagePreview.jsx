@@ -24,7 +24,7 @@ const FollowUpMessagePreview = ({ isOpen, onClose, message, onSend, sending, pho
           </DialogDescription>
         </DialogHeader>
         
-        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm whitespace-pre-wrap font-sans leading-relaxed text-slate-800">
+        <div className="bg-slate-50 p-4 rounded-app-sm border border-slate-200 text-sm whitespace-pre-wrap font-sans leading-relaxed text-slate-800">
           {message}
         </div>
 

@@ -58,7 +58,7 @@ const OwnerPresentationPage = () => {
       </Helmet>
 
       <div className="space-y-5 animate-in fade-in duration-500 pb-24 md:pb-12">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
+        <div className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl border border-slate-700/50">
           <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
           <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
@@ -91,14 +91,14 @@ const OwnerPresentationPage = () => {
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-4 text-sm">
+          <div className="rounded-app border border-red-200 bg-red-50 text-red-600 p-4 text-sm">
             Gagal memuat data presentasi. Silakan coba muat ulang.
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {SLIDE_PREVIEWS.map((slide, idx) => (
-            <div key={slide.title} className="rounded-2xl border border-slate-100 shadow-sm p-5 bg-white">
+            <div key={slide.title} className="rounded-app-lg border border-slate-100 shadow-sm p-5 bg-white">
               <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">Slide {idx + 1}</p>
               <p className="text-base font-bold text-slate-800 mb-1">{slide.title}</p>
               <p className="text-sm text-slate-500">{slide.desc}</p>

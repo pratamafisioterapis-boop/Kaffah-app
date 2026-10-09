@@ -221,13 +221,13 @@ const DiscountTypeManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-6">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Jenis Diskon</h2>
           <p className="text-sm text-slate-500">Kelola label diskon beserta nominal atau persentase potongannya (Misal: Promo Merdeka, Diskon Teman).</p>
         </div>
-        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={openAdd} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" />
           Tambah Baru
         </Button>
@@ -238,9 +238,9 @@ const DiscountTypeManager = () => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : discountTypes.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada opsi diskon yang tersedia.</p>
-              <Button variant="link" onClick={openAdd} className="text-blue-600 mt-2">Tambahkan opsi pertama</Button>
+              <Button variant="link" onClick={openAdd} className="text-app-accent mt-2">Tambahkan opsi pertama</Button>
             </div>
           ) : (
             discountTypes.map((opt) => (
@@ -248,12 +248,12 @@ const DiscountTypeManager = () => {
                 key={opt.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
                   {opt.discount_value != null && (
-                    <span className="text-xs text-blue-600 ml-2">
+                    <span className="text-xs text-app-accent ml-2">
                       {opt.discount_value_type === 'percentage'
                         ? `${opt.discount_value}%`
                         : `Rp${new Intl.NumberFormat('id-ID').format(opt.discount_value)}`}
@@ -261,7 +261,7 @@ const DiscountTypeManager = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(opt)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(opt)} className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft">
                     <Edit2 className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => openDelete(opt)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
@@ -296,7 +296,7 @@ const DiscountTypeManager = () => {
                   onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'nominal' })}
                   className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
                     discountTypeForm.discount_value_type === 'nominal'
-                      ? 'bg-blue-600 border-blue-600 text-white'
+                      ? 'bg-app-accent border-app-accent text-white'
                       : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
                   }`}
                 >
@@ -307,7 +307,7 @@ const DiscountTypeManager = () => {
                   onClick={() => setDiscountTypeForm({ ...discountTypeForm, discount_value_type: 'percentage' })}
                   className={`flex-1 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
                     discountTypeForm.discount_value_type === 'percentage'
-                      ? 'bg-blue-600 border-blue-600 text-white'
+                      ? 'bg-app-accent border-app-accent text-white'
                       : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
                   }`}
                 >
@@ -331,7 +331,7 @@ const DiscountTypeManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDiscountTypeModal(false)}>Batal</Button>
-            <Button onClick={handleSaveDiscountType} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSaveDiscountType} disabled={isProcessing} className="bg-app-accent hover:bg-app-accent-hover">
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Simpan
             </Button>
@@ -602,7 +602,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-6">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
@@ -610,12 +610,12 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
         </div>
         <div className="flex gap-2">
           {!isPackageType && (
-            <Button variant="outline" onClick={() => setIsPasteOpen(true)} className="text-slate-600 hover:text-blue-600">
+            <Button variant="outline" onClick={() => setIsPasteOpen(true)} className="text-slate-600 hover:text-app-accent">
               <ClipboardPaste className="w-4 h-4 mr-2" />
               Paste Banyak
             </Button>
           )}
-          <Button onClick={openAddDialog} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={openAddDialog} className="bg-app-accent hover:bg-app-accent-hover">
             <Plus className="w-4 h-4 mr-2" />
             Tambah Baru
           </Button>
@@ -627,9 +627,9 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : options.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada opsi yang tersedia.</p>
-              <Button variant="link" onClick={openAddDialog} className="text-blue-600 mt-2">Tambahkan opsi pertama</Button>
+              <Button variant="link" onClick={openAddDialog} className="text-app-accent mt-2">Tambahkan opsi pertama</Button>
             </div>
           ) : category === 'diagnosa' ? (
 
@@ -643,7 +643,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
     const isExpanded = expandedIds.includes(service.id);
 
     return (
-      <div key={service.id} className="border rounded-lg overflow-hidden">
+      <div key={service.id} className="border rounded-app-sm overflow-hidden">
 
         {/* HEADER SERVICE */}
         <div
@@ -677,7 +677,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
                     variant="ghost"
                     size="icon"
                     onClick={() => openEditDialog(opt)}
-                    className="h-8 w-8 text-slate-500 hover:text-blue-600"
+                    className="h-8 w-8 text-slate-500 hover:text-app-accent"
                   >
                     <Edit2 className="w-4 h-4" />
                   </Button>
@@ -706,7 +706,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
       key={opt.id}
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+      className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
     >
       <div className="flex flex-col">
         <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
@@ -731,7 +731,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           variant="ghost"
           size="icon"
           onClick={() => openEditDialog(opt)}
-          className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+          className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft"
         >
           <Edit2 className="w-4 h-4" />
         </Button>
@@ -769,7 +769,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           onChange={(e) =>
             setFormData({ ...formData, label: e.target.value })
           }
-          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           autoFocus
         />
       </div>
@@ -785,7 +785,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
             onChange={(e) =>
               setFormData({ ...formData, parent_id: e.target.value })
             }
-            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           >
             <option value="">Pilih Service</option>
             {parentOptions.map((srv) => (
@@ -808,7 +808,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
             onChange={(e) =>
               setFormData({ ...formData, bank_account_id: e.target.value })
             }
-            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           >
             <option value="">Tidak ditautkan</option>
             {bankAccounts.map((acc) => (
@@ -838,7 +838,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
                   session_count: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
             />
           </div>
 
@@ -856,7 +856,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
                   validity_days: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright w-full"
             />
           </div>
         </div>
@@ -870,7 +870,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
       <Button
         onClick={() => handleSave(false)}
         disabled={isProcessing}
-        className="bg-blue-600 hover:bg-blue-700"
+        className="bg-app-accent hover:bg-app-accent-hover"
       >
         Simpan
       </Button>
@@ -896,7 +896,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           onChange={(e) =>
             setFormData({ ...formData, label: e.target.value })
           }
-          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
         />
       </div>
 
@@ -911,7 +911,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
             onChange={(e) =>
               setFormData({ ...formData, parent_id: e.target.value })
             }
-            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           >
             <option value="">Pilih Service</option>
             {parentOptions.map((srv) => (
@@ -934,7 +934,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
             onChange={(e) =>
               setFormData({ ...formData, bank_account_id: e.target.value })
             }
-            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           >
             <option value="">Tidak ditautkan</option>
             {bankAccounts.map((acc) => (
@@ -964,7 +964,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
                   session_count: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
             />
           </div>
 
@@ -982,7 +982,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
                   validity_days: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright w-full"
             />
           </div>
         </div>
@@ -996,7 +996,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
       <Button
         onClick={() => handleSave(true)}
         disabled={isProcessing}
-        className="bg-blue-600 hover:bg-blue-700"
+        className="bg-app-accent hover:bg-app-accent-hover"
       >
         Perbarui
       </Button>
@@ -1046,7 +1046,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPasteOpen(false)}>Batal</Button>
-            <Button onClick={handleBulkPaste} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleBulkPaste} disabled={isProcessing} className="bg-app-accent hover:bg-app-accent-hover">
               {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Proses Paste
             </Button>
@@ -1172,7 +1172,7 @@ const SettingsPage = () => {
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-setup-hero.webp"
           alt="Kaffah Physiotherapy"
@@ -1181,17 +1181,17 @@ const SettingsPage = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
             >
               Pengaturan<br />
-              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                 Sistem
               </span>
             </h1>
-            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi.
             </p>
           </div>
@@ -1203,7 +1203,7 @@ const SettingsPage = () => {
           {visibleTabGroups.map((group) => {
             const isOpen = openGroups.has(group.label);
             return (
-              <div key={group.label} className="bg-slate-100/70 rounded-2xl border border-slate-200 overflow-hidden">
+              <div key={group.label} className="bg-slate-100/70 rounded-app-lg border border-slate-200 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleGroup(group.label)}
@@ -1222,7 +1222,7 @@ const SettingsPage = () => {
                         <TabsTrigger
                           key={value}
                           value={value}
-                          className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-xl py-2 px-3 flex gap-1.5 items-center text-xs font-medium"
+                          className="data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium"
                         >
                           {Icon && <Icon className="w-3.5 h-3.5" />} {label}
                         </TabsTrigger>
@@ -1249,7 +1249,7 @@ const SettingsPage = () => {
             <LandingPageManager />
           </TabsContent>
           <TabsContent value="notifications">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4 max-w-xl">
+            <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4 max-w-xl">
               <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Bell className="w-4 h-4" /> Notifikasi Push</h3>
               <p className="text-sm text-slate-500">Pilih jenis notifikasi push yang ingin Anda terima sebagai owner.</p>
               <NotificationPreferencesCard userId={user?.id} items={NOTIFICATION_CATALOG.owner} />

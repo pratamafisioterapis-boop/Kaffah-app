@@ -92,7 +92,7 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
   if (loading) return <div className="py-4"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>;
 
   return (
-    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+    <div className="bg-slate-50 p-4 rounded-app-sm border border-slate-200 space-y-4">
        <div className="flex items-center justify-between">
           <Label className="text-base font-semibold text-slate-800">Pengaturan Jadwal Pengiriman</Label>
           <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
        </div>
 
        <div className="pt-2">
-           <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 hover:bg-blue-700">
+           <Button onClick={handleSave} disabled={saving} size="sm" className="bg-app-accent hover:bg-app-accent-hover">
                {saving ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
                Simpan Jadwal
            </Button>

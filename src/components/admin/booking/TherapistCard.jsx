@@ -62,7 +62,7 @@ const TherapistCard = ({
       return timeA.localeCompare(timeB);
   }) : [];
   const colorMap = {
-    blue: "from-blue-50 to-blue-100 border-blue-200",
+    blue: "from-app-soft to-app-accent/15 border-app-accent/25",
     green: "from-green-50 to-green-100 border-green-200",
     purple: "from-purple-50 to-purple-100 border-purple-200",
     amber: "from-amber-50 to-amber-100 border-amber-200",
@@ -70,7 +70,7 @@ const TherapistCard = ({
     indigo: "from-indigo-50 to-indigo-100 border-indigo-200",
   };
   const headerColorMap = {
-    blue: "from-blue-500 to-blue-600",
+    blue: "from-app-accent-bright to-app-accent",
     green: "from-green-500 to-green-600",
     purple: "from-purple-500 to-purple-600",
     amber: "from-amber-500 to-amber-600",
@@ -80,7 +80,7 @@ const TherapistCard = ({
   return (
     <TooltipProvider>
       <Card className={cn(
-        "group relative h-full flex flex-col rounded-2xl overflow-hidden",
+        "group relative h-full flex flex-col rounded-app-lg overflow-hidden",
 
         // 🔥 PREMIUM BASE
         "bg-white/80 backdrop-blur-xl border border-white/40",
@@ -94,7 +94,7 @@ const TherapistCard = ({
         "transition-all duration-300 ease-out",
 
         // 🔥 SOFT GLOW BORDER
-        "before:absolute before:inset-0 before:rounded-2xl before:ring-1 before:ring-white/20 before:pointer-events-none",
+        "before:absolute before:inset-0 before:rounded-app-lg before:ring-1 before:ring-white/20 before:pointer-events-none",
 
         shouldGrayScale && "bg-slate-100",
         isWeeklyOff && "ring-2 ring-slate-300"
@@ -129,11 +129,11 @@ const TherapistCard = ({
     "relative z-30",
 
     // NORMAL
-    "border-slate-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50",
+    "border-slate-300 hover:border-app-accent-bright hover:text-app-accent hover:bg-app-soft",
 
     // 🔥 HIGHLIGHT
     (isFullBooked || isNoSchedule) && 
-    "border-blue-500 text-blue-600 bg-blue-50 shadow-md ring-2 ring-blue-200 animate-pulse"
+    "border-app-accent-bright text-app-accent bg-app-soft shadow-md ring-2 ring-app-accent/25 animate-pulse"
   )}
   onClick={() => onManualBooking(therapist)}
 >
@@ -262,7 +262,7 @@ const TherapistCard = ({
                       key={`${slot.id || index}`}
                       onClick={() => onSlotClick(slot, therapist)}
                       className={cn(
-  "w-full text-center px-2 py-2 rounded-xl text-[11px] md:text-sm font-semibold",
+  "w-full text-center px-2 py-2 rounded-app text-[11px] md:text-sm font-semibold",
 
                         // 🔥 BASE PREMIUM
                         "bg-emerald-500/90 text-white backdrop-blur",
@@ -286,7 +286,7 @@ const TherapistCard = ({
                   );
                 })
               ) : (
-                <div className="w-full py-4 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                <div className="w-full py-4 text-center bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
                    <span className="text-xs text-slate-400 italic">
                       {isSoapLocked && !isFullBooked && 'Terapis terkunci: SOAP belum lengkap'}
                       {isLeave && !isSoapLocked && !isFullBooked && `Terapis sedang ${
@@ -329,13 +329,13 @@ const TherapistCard = ({
                     <div
   key={app.id}
   className={cn(
-  "group flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-xl border",
+  "group flex items-center gap-2 md:gap-4 p-2 md:p-3 rounded-app border",
 
   isCancelled
   ? "bg-red-100 border-red-400 cursor-not-allowed"
 
     : app.is_homecare
-    ? "bg-blue-100 border-blue-400 cursor-pointer"
+    ? "bg-app-accent/15 border-app-accent-bright cursor-pointer"
 
     : "bg-white/70 backdrop-blur border-white/40 cursor-pointer",
 
@@ -346,7 +346,7 @@ const TherapistCard = ({
 
                       onClick={isCancelled ? undefined : () => onAppointmentClick(app)}
                     >
-                      <div className="shrink-0 font-mono text-[11px] md:text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-lg border border-white/40 shadow-sm">
+                      <div className="shrink-0 font-mono text-[11px] md:text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-app-sm border border-white/40 shadow-sm">
                           {timeString}
                        </div>
                        <div className="flex-1 min-w-0">
@@ -362,7 +362,7 @@ const TherapistCard = ({
     e.stopPropagation();
     onPatientClick?.(app.patient?.id || app.patient_id, app.guest_name, app.guest_phone);
   }}
-  className="text-sm font-semibold text-slate-800 truncate hover:text-blue-600 transition-colors text-left"
+  className="text-sm font-semibold text-slate-800 truncate hover:text-app-accent transition-colors text-left"
 >
                               {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
                             </button>

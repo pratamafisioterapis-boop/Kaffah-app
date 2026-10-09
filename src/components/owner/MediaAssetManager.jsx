@@ -103,7 +103,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-slate-900 mb-1">Upload Media Baru</h3>
         <p className="text-sm text-slate-500">Unggah gambar untuk logo klinik, header, footer, atau kebutuhan lainnya. File disimpan ke Google Drive klinik.</p>
@@ -129,8 +129,8 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
 
         <div
           className={cn(
-            "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 ease-in-out text-center cursor-pointer",
-            dragActive ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-blue-400 hover:bg-slate-50",
+            "relative border-2 border-dashed rounded-app p-8 transition-all duration-200 ease-in-out text-center cursor-pointer",
+            dragActive ? "border-app-accent-bright bg-app-soft" : "border-slate-200 hover:border-app-accent-bright hover:bg-slate-50",
             selectedFile ? "border-solid bg-slate-50 border-slate-300" : ""
           )}
           onDragEnter={handleDrag}
@@ -150,7 +150,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
 
           {selectedFile ? (
             <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-              <div className="relative w-full max-w-md h-48 bg-slate-200 rounded-lg overflow-hidden mb-4 border border-slate-200 shadow-sm">
+              <div className="relative w-full max-w-md h-48 bg-slate-200 rounded-app-sm overflow-hidden mb-4 border border-slate-200 shadow-sm">
                 <img src={preview} alt="Preview" className="w-full h-full object-contain" />
                 <button
                   onClick={(e) => { e.stopPropagation(); handleRemoveFile(); }}
@@ -160,7 +160,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
                 </button>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-700 font-medium">
-                <FileType className="w-4 h-4 text-blue-600" />
+                <FileType className="w-4 h-4 text-app-accent" />
                 {selectedFile.name}
                 <span className="text-slate-400 font-normal">
                   ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
@@ -171,7 +171,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
                 <Button 
                   onClick={(e) => { e.stopPropagation(); handleUpload(); }} 
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-app-accent hover:bg-app-accent-hover"
                 >
                   {loading ? (
                     <>

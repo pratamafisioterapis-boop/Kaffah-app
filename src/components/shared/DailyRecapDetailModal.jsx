@@ -118,8 +118,8 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-0 shadow-xl border border-slate-200/60">
-          <DialogHeader className="px-6 py-5 border-b border-slate-200/60 bg-white rounded-t-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-app-lg p-0 shadow-xl border border-slate-200/60">
+          <DialogHeader className="px-6 py-5 border-b border-slate-200/60 bg-white rounded-t-app-lg">
                     <div className="flex justify-between items-start">
                         <div>
                 <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">Detail Recap Harian</DialogTitle>
@@ -137,9 +137,9 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-6">
                     {/* Section 1: Pasien */}
-                    <div className="space-y-4 p-5 rounded-2xl border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
-                            <UserCircle className="w-4 h-4 text-blue-600" />
+                            <UserCircle className="w-4 h-4 text-app-accent" />
                 <h4 className="text-sm font-semibold text-slate-700 tracking-tight">Identitas Pasien</h4>
                         </div>
                         
@@ -152,7 +152,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         <DetailItem 
                             label="Pasien Aktual" 
                             value={displayActualPatient} 
-                            valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-blue-700" : "text-slate-400")}
+                            valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-app-accent-hover" : "text-slate-400")}
                         />
 
                         <div className="grid grid-cols-2 gap-4">
@@ -162,9 +162,9 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 2: Waktu */}
-                    <div className="space-y-4 p-5 rounded-2xl border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
-                            <Clock className="w-4 h-4 text-blue-600" />
+                            <Clock className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Waktu & Status</h4>
                         </div>
 
@@ -182,7 +182,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                     {recap.end_time ? (
                                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Selesai</Badge>
                                     ) : recap.start_time ? (
-                                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none">Berlangsung</Badge>
+                                        <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/15 border-none">Berlangsung</Badge>
                                     ) : (
                                         <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100 border-none">Belum Mulai</Badge>
                                     )}
@@ -191,15 +191,15 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
-                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(new Date(recap.start_time)) : '-'} valueClassName="font-mono text-blue-700" />
+                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(new Date(recap.start_time)) : '-'} valueClassName="font-mono text-app-accent-hover" />
                             <DetailItem label="Selesai" value={recap.end_time ? formatTime(new Date(recap.end_time)) : '-'} valueClassName="font-mono text-green-700" />
                         </div>
                     </div>
 
                     {/* Section 3: Detail Klinis */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-2xl border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
-                            <Activity className="w-4 h-4 text-blue-600" />
+                            <Activity className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Detail Layanan & Klinis</h4>
                         </div>
 
@@ -229,10 +229,10 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 4: Keuangan */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-2xl border border-blue-200/40 bg-gradient-to-br from-blue-50 via-white to-blue-50 shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-200/50">
-                            <CreditCard className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-sm font-bold text-blue-900">Informasi Pembayaran</h4>
+                            <CreditCard className="w-4 h-4 text-app-accent" />
+                            <h4 className="text-sm font-bold text-app-ink">Informasi Pembayaran</h4>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -275,7 +275,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                             )}
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 animate-in fade-in">
+                        <div className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-app-sm border border-red-100 animate-in fade-in">
                             <AlertTriangle className="w-4 h-4 text-red-600" />
                             <span className="text-xs font-medium text-red-700">Yakin hapus permanen?</span>
                             <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting} className="h-7 text-xs">
@@ -288,7 +288,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={onClose} className="bg-white">Tutup</Button>
                         {onEdit && (
-                            <Button onClick={() => { onEdit(recap); onClose(); }} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            <Button onClick={() => { onEdit(recap); onClose(); }} className="bg-app-accent hover:bg-app-accent-hover text-white">
                                 <Edit className="w-4 h-4 mr-2" /> Edit Data
                             </Button>
                         )}

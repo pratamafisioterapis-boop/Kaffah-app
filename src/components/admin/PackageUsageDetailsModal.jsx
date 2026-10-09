@@ -95,7 +95,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
 
          <div className="p-6 pt-2 space-y-4 flex-1 overflow-hidden flex flex-col">
              {/* Filter Bar */}
-             <div className="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+             <div className="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-app-sm border border-slate-100">
                  <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-500">Cari Pasien</label>
                     <div className="relative">
@@ -126,7 +126,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                         onChange={(e) => setEndDate(e.target.value)}
                     />
                  </div>
-                 <Button size="sm" onClick={handleRefresh} className="h-9 bg-blue-600 hover:bg-blue-700">
+                 <Button size="sm" onClick={handleRefresh} className="h-9 bg-app-accent hover:bg-app-accent-hover">
                      Filter
                  </Button>
              </div>
@@ -158,7 +158,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                          {loading ? (
                              <TableRow>
                                  <TableCell colSpan={3} className="h-32 text-center">
-                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500 mb-2" />
+                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-app-accent-bright mb-2" />
                                      <span className="text-slate-500 text-xs">Memuat riwayat...</span>
                                  </TableCell>
                              </TableRow>

@@ -71,11 +71,11 @@ if (isStandalone) {
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
       {/* Install PWA Prompt */}
       {showInstall && (
-        <div className="bg-slate-900 text-white p-4 rounded-lg shadow-xl border border-slate-700 max-w-xs animate-in slide-in-from-bottom-5">
+        <div className="bg-slate-900 text-white p-4 rounded-app-sm shadow-xl border border-slate-700 max-w-xs animate-in slide-in-from-bottom-5">
           <p className="text-sm font-medium mb-3">Install aplikasi untuk akses lebih cepat dan offline mode.</p>
           <div className="flex gap-2">
              <Button size="sm" variant="secondary" onClick={() => setShowInstall(false)}>Nanti</Button>
-             <Button size="sm" onClick={handleInstallClick} className="bg-blue-600 hover:bg-blue-500 text-white">
+             <Button size="sm" onClick={handleInstallClick} className="bg-app-accent hover:bg-app-accent-bright text-white">
                <Download className="w-4 h-4 mr-2" /> Install App
              </Button>
           </div>
@@ -84,7 +84,7 @@ if (isStandalone) {
 
       {/* Notification Request */}
       {showNotifRequest && (
-        <div className="bg-white text-slate-900 p-4 rounded-lg shadow-xl border border-slate-200 max-w-xs animate-in slide-in-from-bottom-5">
+        <div className="bg-white text-slate-900 p-4 rounded-app-sm shadow-xl border border-slate-200 max-w-xs animate-in slide-in-from-bottom-5">
           <p className="text-sm font-medium mb-3">Aktifkan notifikasi untuk mendapatkan update pasien baru?</p>
           <div className="flex gap-2">
              <Button size="sm" variant="ghost" onClick={() => setShowNotifRequest(false)}>Jangan</Button>

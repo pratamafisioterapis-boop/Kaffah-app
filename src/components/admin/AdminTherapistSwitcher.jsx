@@ -82,8 +82,8 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'w-9 h-9 rounded-full sm:rounded-xl border bg-white flex items-center justify-center hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm',
-          inTherapistMode ? 'border-amber-400 text-amber-600' : 'border-[#DCE8F2] text-[#102F52]'
+          'w-9 h-9 rounded-full sm:rounded-app border bg-white flex items-center justify-center hover:text-app-accent hover:bg-[#F5F9FC] transition-colors shadow-sm',
+          inTherapistMode ? 'border-amber-400 text-amber-600' : 'border-app-border text-app-ink'
         )}
         aria-label="Pindah ke akun terapis"
         title="Pindah ke akun terapis"
@@ -94,39 +94,39 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
         <div
           ref={panelRef}
           style={{ top: pos.top, left: pos.left, width: pos.width }}
-          className="fixed bg-white border border-[#DCE8F2] rounded-xl shadow-lg z-[100] overflow-hidden"
+          className="fixed bg-white border border-app-border rounded-app shadow-lg z-[100] overflow-hidden"
         >
-          <div className="px-4 pt-3 pb-2 border-b border-[#DCE8F2]">
-            <p className="text-sm font-bold text-[#102F52]">Pindah Akun</p>
-            <p className="text-xs text-[#5B6B7D]">Isi evaluasi pasien (SOAP) atas nama terapis</p>
+          <div className="px-4 pt-3 pb-2 border-b border-app-border">
+            <p className="text-sm font-bold text-app-ink">Pindah Akun</p>
+            <p className="text-xs text-app-muted">Isi evaluasi pasien (SOAP) atas nama terapis</p>
           </div>
           <div className="max-h-[min(360px,60vh)] overflow-y-auto p-2">
             {inTherapistMode && (
               <button
                 onClick={() => go('/admin')}
-                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left mb-1"
+                className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left mb-1"
               >
-                <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0"><Shield className="w-4 h-4" /></span>
-                <span className="text-sm font-medium text-[#102F52]">Kembali ke Akun Admin</span>
+                <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0"><Shield className="w-4 h-4" /></span>
+                <span className="text-sm font-medium text-app-ink">Kembali ke Akun Admin</span>
               </button>
             )}
             {loading ? (
-              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-[#1677D2]" /></div>
+              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-app-accent" /></div>
             ) : therapists.length === 0 ? (
-              <p className="text-xs text-[#5B6B7D] text-center py-6">Belum ada terapis yang diaktifkan oleh Super Admin.</p>
+              <p className="text-xs text-app-muted text-center py-6">Belum ada terapis yang diaktifkan oleh Super Admin.</p>
             ) : (
               <div>
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#5B6B7D]">Terapis</p>
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">Terapis</p>
                 {therapists.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => go(`/admin/as-therapist/${t.id}/records`)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                   >
-                    <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0"><Stethoscope className="w-4 h-4" /></span>
+                    <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0"><Stethoscope className="w-4 h-4" /></span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-[#102F52] truncate">{t.name}</span>
-                      {t.email && <span className="block text-xs text-[#5B6B7D] truncate">{t.email}</span>}
+                      <span className="block text-sm font-medium text-app-ink truncate">{t.name}</span>
+                      {t.email && <span className="block text-xs text-app-muted truncate">{t.email}</span>}
                     </span>
                   </button>
                 ))}

@@ -117,7 +117,7 @@ const PackageHistory = () => {
           <div className="text-center py-8 text-muted-foreground">Tidak ada data paket ditemukan.</div>
         ) : (
           filteredPackages.map((pkg) => (
-            <div key={pkg.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+            <div key={pkg.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium truncate">{pkg.patients?.full_name || 'Unknown'}</p>

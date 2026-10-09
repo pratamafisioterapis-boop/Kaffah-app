@@ -154,7 +154,7 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
     toast({
       title: `${generated.length} slot dibuat`,
       description: "Periksa daftar slot di bawah, lalu klik Simpan Jadwal.",
-      className: "bg-blue-50 border-blue-200"
+      className: "bg-app-soft border-app-accent/25"
     });
   };
 
@@ -393,7 +393,7 @@ if (results.length === 0) {
                 )}
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
-                <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs leading-relaxed">
+                <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-100 rounded-app-sm text-blue-800 text-xs leading-relaxed">
                     <Info className="w-4 h-4 shrink-0 mt-0.5" />
                     <p>
                         <strong>1 slot = 1 pasien</strong> secara default. Jam praktek harus dibagi menjadi beberapa slot
@@ -436,18 +436,18 @@ if (results.length === 0) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-app-sm">
                     <button
                         type="button"
                         onClick={() => setMode('auto')}
-                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'auto' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'auto' ? 'bg-white shadow-sm text-app-accent-hover' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         <Wand2 className="w-4 h-4" /> Otomatis
                     </button>
                     <button
                         type="button"
                         onClick={() => setMode('manual')}
-                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'manual' ? 'bg-white shadow-sm text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-md transition-colors ${mode === 'manual' ? 'bg-white shadow-sm text-app-accent-hover' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         <ListPlus className="w-4 h-4" /> Manual
                     </button>
@@ -505,7 +505,7 @@ if (results.length === 0) {
                             </div>
                         </div>
 
-                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-app-sm">
                             <p className="text-xs font-medium text-slate-500 mb-2">
                                 Pratinjau: {previewSlots.length} slot akan dibuat{capacity > 1 ? `, masing-masing ${capacity} pasien` : ''}
                             </p>
@@ -542,7 +542,7 @@ if (results.length === 0) {
                         const rowError = shiftRangeErrors[idx];
                         return (
                         <div key={idx} className="space-y-1.5">
-                            <div className={`flex flex-col sm:flex-row gap-3 items-end p-3 rounded-lg border relative group animate-in slide-in-from-left-2 duration-300 ${rowError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                            <div className={`flex flex-col sm:flex-row gap-3 items-end p-3 rounded-app-sm border relative group animate-in slide-in-from-left-2 duration-300 ${rowError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
                                 <div className="w-full sm:w-1/2 space-y-1.5">
                                     <span className="text-xs font-medium text-slate-500">Mulai</span>
                                     <Input
@@ -590,7 +590,7 @@ if (results.length === 0) {
                     variant="outline"
                     size="sm"
                     onClick={handleAddShift}
-                    className="w-full border-dashed text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                    className="w-full border-dashed text-slate-500 hover:text-app-accent hover:bg-app-soft"
                 >
                     <Plus className="w-4 h-4 mr-2" /> Tambah Slot
                 </Button>
@@ -620,11 +620,11 @@ if (results.length === 0) {
                         </div>
                         <div>
                             <span className="text-slate-500 block">Therapist ID:</span>
-                            <span className="text-blue-400 break-all">{therapist?.id || 'Missing'}</span>
+                            <span className="text-app-accent-bright break-all">{therapist?.id || 'Missing'}</span>
                         </div>
                          <div>
                             <span className="text-slate-500 block">Clinic ID:</span>
-                            <span className="text-blue-400 break-all">{therapist?.clinic_id || 'Missing'}</span>
+                            <span className="text-app-accent-bright break-all">{therapist?.clinic_id || 'Missing'}</span>
                         </div>
                     </div>
                     {debugInfo.lastPayload && (
@@ -654,7 +654,7 @@ if (results.length === 0) {
                 )}
                 <div className="flex justify-end gap-3">
                     <Button variant="ghost" onClick={onCancel} disabled={loading}>Batal</Button>
-                    <Button onClick={handleSubmit} disabled={loading || hasInvalidShift} className="bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={handleSubmit} disabled={loading || hasInvalidShift} className="bg-app-accent hover:bg-app-accent-hover">
                         {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                         Simpan Jadwal
                     </Button>
@@ -664,7 +664,7 @@ if (results.length === 0) {
 
         {/* Enhanced Error Modal */}
         <Dialog open={errorState.isOpen} onOpenChange={(open) => setErrorState(prev => ({ ...prev, isOpen: open }))}>
-            <DialogContent className="max-w-md md:max-w-lg lg:max-w-xl p-0 overflow-hidden rounded-lg">
+            <DialogContent className="max-w-md md:max-w-lg lg:max-w-xl p-0 overflow-hidden rounded-app-sm">
                 <DialogHeader className="px-4 py-4 md:px-6 md:py-6 bg-red-50 border-b border-red-100">
                     <DialogTitle className="flex items-center gap-2 text-red-700">
                         <AlertTriangle className="h-5 w-5 md:h-6 md:w-6" />
@@ -711,7 +711,7 @@ if (results.length === 0) {
                             Tutup
                         </Button>
                         <Button 
-                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                            className="w-full sm:w-auto bg-app-accent hover:bg-app-accent-hover"
                             onClick={() => {
                                 setErrorState(prev => ({ ...prev, isOpen: false }));
                                 handleSubmit(); // Retry logic

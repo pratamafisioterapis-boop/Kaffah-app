@@ -102,7 +102,7 @@ const WhatsAppAutomationSetup = () => {
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3,4,5].map(i => <div key={i} className="h-64 bg-slate-100 animate-pulse rounded-xl" />)}
+            {[1,2,3,4,5].map(i => <div key={i} className="h-64 bg-slate-100 animate-pulse rounded-app" />)}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

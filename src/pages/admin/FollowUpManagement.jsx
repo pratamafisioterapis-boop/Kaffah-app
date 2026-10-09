@@ -402,7 +402,7 @@ console.log({
   birthday: birthdayQueue.length,
 });
       return (
-          <div className={`border rounded-xl p-5 hover:shadow-lg transition-all flex flex-col h-full relative overflow-hidden group ${isSelected ? 'bg-blue-50 border-blue-200 shadow-md' : 'bg-white border-slate-200'}`}>
+          <div className={`border rounded-app p-5 hover:shadow-lg transition-all flex flex-col h-full relative overflow-hidden group ${isSelected ? 'bg-app-soft border-app-accent/25 shadow-md' : 'bg-white border-slate-200'}`}>
               <div className={`absolute top-0 left-0 w-1 h-full ${
                   item.status === 'sent' ? 'bg-green-500' : 
                   item.status === 'failed' ? 'bg-red-500' : 
@@ -414,7 +414,7 @@ console.log({
                   <Checkbox 
                       checked={isSelected}
                       onCheckedChange={() => toggleSelect(item.id)}
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 border-slate-300 bg-white"
+                      className="data-[state=checked]:bg-app-accent data-[state=checked]:border-app-accent border-slate-300 bg-white"
                       aria-label="Select item"
                   />
               </div>
@@ -433,7 +433,7 @@ console.log({
                   </Badge>
               </div>
               
-              <div className="bg-slate-50/50 p-3 rounded-lg text-sm text-slate-600 mb-4 border border-slate-100 font-normal leading-relaxed flex-grow">
+              <div className="bg-slate-50/50 p-3 rounded-app-sm text-sm text-slate-600 mb-4 border border-slate-100 font-normal leading-relaxed flex-grow">
                   {item.message_content}
               </div>
               
@@ -501,7 +501,7 @@ console.log({
   <Button
     size="sm"
     variant="ghost"
-    className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+    className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm"
     onClick={() => handleDelete(item.id)}
     disabled={processingId === item.id}
   >
@@ -518,7 +518,7 @@ console.log({
       
       return (
       <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-app-sm border border-slate-100">
               <div>
                   <h3 className="font-semibold text-lg text-slate-800 flex items-center gap-2">
                     {title} 
@@ -544,7 +544,7 @@ console.log({
                       </div>
                   )}
                   {typeForGen && (
-                      <Button variant="default" size="sm" onClick={() => handleGenerate(typeForGen)} disabled={generating} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                      <Button variant="default" size="sm" onClick={() => handleGenerate(typeForGen)} disabled={generating} className="bg-app-accent hover:bg-app-accent-hover text-white shadow-sm">
                           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <PlusCircle className="w-3.5 h-3.5 mr-1.5" />}
                           Generate New
                       </Button>
@@ -554,17 +554,17 @@ console.log({
           
           {loading ? (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {[1,2,3].map(i => <div key={i} className="h-48 bg-slate-100 animate-pulse rounded-xl" />)}
+                 {[1,2,3].map(i => <div key={i} className="h-48 bg-slate-100 animate-pulse rounded-app" />)}
              </div>
           ) : data.length === 0 ? (
-             <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center">
+             <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-app bg-slate-50/50 flex flex-col items-center justify-center">
                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                     <MessageCircle className="w-8 h-8 text-slate-300" />
                  </div>
                  <h3 className="text-lg font-medium text-slate-700">Tidak ada data antrian</h3>
                  <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">Data yang sudah kedaluwarsa atau tidak ada dalam jadwal hari ini tidak ditampilkan.</p>
                  {typeForGen && (
-                    <Button variant="link" onClick={() => handleGenerate(typeForGen)} className="mt-4 text-blue-600">
+                    <Button variant="link" onClick={() => handleGenerate(typeForGen)} className="mt-4 text-app-accent">
                         Generate Data Sekarang
                     </Button>
                  )}
@@ -581,11 +581,11 @@ console.log({
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-500 p-6 max-w-[1600px] mx-auto">
       {/* Hero Banner */}
-      <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+      <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+            <div className="flex-shrink-0 w-12 h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
               <MessageCircle className="w-6 h-6 text-amber-300" />
             </div>
             <div>
@@ -653,20 +653,20 @@ console.log({
   onValueChange={setActiveTab}
   className="w-full space-y-6"
 >
-        <TabsList className="bg-white p-1.5 border border-slate-200 rounded-xl shadow-sm grid grid-cols-2 lg:grid-cols-5 h-auto gap-1">
-          <TabsTrigger value="booking_confirmation" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
+        <TabsList className="bg-white p-1.5 border border-slate-200 rounded-app shadow-sm grid grid-cols-2 lg:grid-cols-5 h-auto gap-1">
+          <TabsTrigger value="booking_confirmation" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
             <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Booking ({bookingQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="post_treatment_follow_up" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="post_treatment_follow_up" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
             <MessageCircle className="w-4 h-4" /> <span className="hidden sm:inline">Follow Up ({postTreatmentQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="expiry_package" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="expiry_package" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
             <Package className="w-4 h-4" /> <span className="hidden sm:inline">Paket ({expiryQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="appointment_reminder" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="appointment_reminder" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
             <Clock className="w-4 h-4" /> <span className="hidden sm:inline">Jadwal ({reminderQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="birthday_greeting" className="py-3 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="birthday_greeting" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
             <Gift className="w-4 h-4" /> <span className="hidden sm:inline">Ultah ({birthdayQueue.length})</span>
           </TabsTrigger>
         </TabsList>

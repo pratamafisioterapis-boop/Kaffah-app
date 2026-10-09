@@ -116,7 +116,7 @@ const FollowUpCategory = ({ category }) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-48 w-full rounded-xl" />
+          <Skeleton key={i} className="h-48 w-full rounded-app" />
         ))}
       </div>
     );
@@ -139,7 +139,7 @@ const FollowUpCategory = ({ category }) => {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
+      <div className="text-center py-16 bg-white rounded-app border border-dashed border-slate-200 flex flex-col items-center justify-center">
         <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-4">
           <RefreshCcw className="w-6 h-6 text-slate-400" />
         </div>

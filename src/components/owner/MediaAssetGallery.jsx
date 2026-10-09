@@ -114,7 +114,7 @@ const MediaAssetGallery = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900 mb-1">Galeri Media</h3>
@@ -136,7 +136,7 @@ const MediaAssetGallery = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="space-y-3">
-              <Skeleton className="h-40 w-full rounded-lg" />
+              <Skeleton className="h-40 w-full rounded-app-sm" />
               <div className="space-y-2">
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
@@ -151,7 +151,7 @@ const MediaAssetGallery = () => {
             return (
               <div
                 key={asset.id}
-                className="group bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full"
+                className="group bg-white border border-slate-200 rounded-app-sm overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full"
               >
                 <div className="relative aspect-video bg-slate-100 border-b border-slate-100 overflow-hidden">
                   <img
@@ -212,13 +212,13 @@ const MediaAssetGallery = () => {
 
                   <button
                     onClick={() => openAccessDialog(asset)}
-                    className="mt-3 w-full flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors border-t border-slate-100 pt-3"
+                    className="mt-3 w-full flex items-center gap-1.5 text-xs text-slate-500 hover:text-app-accent transition-colors border-t border-slate-100 pt-3"
                   >
                     <Users className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">
                       {restricted ? `${restricted} terapis diblokir` : 'Semua terapis dapat melihat'}
                     </span>
-                    <span className="ml-auto text-blue-500 font-medium shrink-0">Atur</span>
+                    <span className="ml-auto text-app-accent-bright font-medium shrink-0">Atur</span>
                   </button>
                 </div>
               </div>
@@ -226,7 +226,7 @@ const MediaAssetGallery = () => {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <div className="text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-200">
           <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6" />
           </div>
@@ -271,7 +271,7 @@ const MediaAssetGallery = () => {
         <DialogContent className="sm:max-w-[440px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
+              <Users className="w-5 h-5 text-app-accent" />
               Pengaturan Akses
             </DialogTitle>
             <DialogDescription className="pt-1">
@@ -289,7 +289,7 @@ const MediaAssetGallery = () => {
                   <button
                     key={p.id}
                     onClick={() => toggleTherapist(p.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-app-sm hover:bg-slate-50 transition-colors text-left"
                   >
                     {checked ? (
                       <CheckSquare className="w-4 h-4 text-red-600 shrink-0" />
@@ -332,7 +332,7 @@ const MediaAssetGallery = () => {
             <Button
               onClick={handleSaveAccess}
               disabled={isSavingAccess}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-app-accent hover:bg-app-accent-hover"
             >
               {isSavingAccess ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Simpan

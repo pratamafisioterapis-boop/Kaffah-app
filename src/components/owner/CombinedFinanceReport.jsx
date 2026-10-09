@@ -17,7 +17,7 @@ const SummaryCard = ({ title, amount, type, icon: Icon, colorClass }) => (
     </div>
     <CardContent className="p-6">
       <div className="flex items-center gap-3 mb-2">
-        <div className={cn("p-2 rounded-lg bg-white shadow-sm border", colorClass.replace('text-', 'text-opacity-100 text-'))}>
+        <div className={cn("p-2 rounded-app-sm bg-white shadow-sm border", colorClass.replace('text-', 'text-opacity-100 text-'))}>
           <Icon className={cn("w-5 h-5", colorClass)} />
         </div>
         <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</h3>
@@ -45,7 +45,7 @@ const DetailedTable = ({ title, data, type }) => {
                 </span>
             </div>
             
-            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <div className="rounded-app border border-slate-200 bg-white overflow-hidden shadow-sm">
                 {/* Mobile / PWA: kartu, tanpa geser horizontal */}
                 <div className="sm:hidden divide-y divide-slate-100">
                     {data.length === 0 ? (

@@ -222,7 +222,7 @@ const getCount = (types) => {
   <div className="space-y-4 sm:space-y-6">
 
     {/* Hero Banner */}
-    <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+    <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
       <img
         src="/hero/clinara-followup-hero.webp"
         alt="Kaffah Physiotherapy"
@@ -231,17 +231,17 @@ const getCount = (types) => {
       <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
         <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-          <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+          <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
           <h1
             style={{ fontFamily: "'Caveat', cursive" }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
           >
             Follow Up<br />
-            <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+            <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
               Management
             </span>
           </h1>
-          <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+          <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
             Kelola antrian pesan WhatsApp otomatis.
           </p>
         </div>
@@ -249,7 +249,7 @@ const getCount = (types) => {
     </div>
 
     {/* ================= TABS SECTION ================= */}
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-6">
+    <div className="bg-white rounded-app-lg shadow-sm border border-slate-200 p-3 sm:p-6">
 
       <Tabs
         defaultValue="booking_appointment"
@@ -258,7 +258,7 @@ const getCount = (types) => {
         className="w-full"
       >
 
-        <TabsList className="w-full h-auto flex-nowrap justify-start gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory bg-slate-50 border border-slate-200 rounded-xl p-1.5 -mx-1 px-1 sm:mx-0 sm:px-1.5">
+        <TabsList className="w-full h-auto flex-nowrap justify-start gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory bg-slate-50 border border-slate-200 rounded-app p-1.5 -mx-1 px-1 sm:mx-0 sm:px-1.5">
           {TAB_CONFIG.map(tab => {
             const Icon = tab.icon;
             const count = getCount(tab.types);
@@ -266,7 +266,7 @@ const getCount = (types) => {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="shrink-0 snap-start gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:shadow-sm"
+                className="shrink-0 snap-start gap-1.5 rounded-app-sm px-3 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:shadow-sm"
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="sm:hidden">{tab.shortLabel}</span>
@@ -285,7 +285,7 @@ const getCount = (types) => {
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-slate-50 rounded-2xl border border-slate-200 px-4 text-center">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-slate-50 rounded-app-lg border border-slate-200 px-4 text-center">
               <CheckCircle2 className="w-12 h-12 text-slate-300 mb-3" />
               <h3 className="text-lg font-medium text-slate-900">
                 Tidak ada antrian
