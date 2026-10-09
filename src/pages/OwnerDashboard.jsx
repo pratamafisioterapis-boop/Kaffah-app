@@ -66,13 +66,31 @@ const BSIMutasiReconciliation = React.lazy(() =>
     )
   }))
 );
-const useNow = () => {
-  const [now, setNow] = useState(new Date());
+// Jam di hero hanya menampilkan HH:mm, jadi cukup update di pergantian menit
+// dan hanya komponen ini yang re-render (bukan seluruh dashboard tiap detik).
+const HeroClock = () => {
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
+    let timer;
+    const schedule = () => {
+      const d = new Date();
+      timer = setTimeout(() => {
+        setNow(new Date());
+        schedule();
+      }, (60 - d.getSeconds()) * 1000 - d.getMilliseconds() + 50);
+    };
+    schedule();
+    return () => clearTimeout(timer);
   }, []);
-  return now;
+
+  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
+      {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono tabular-nums">{heroTime}</span>
+    </p>
+  );
 };
 
 // Helper to safely extract numeric values
@@ -90,9 +108,6 @@ const OwnerDashboardHome = () => {
   const { toast } = useToast();
   const location = useLocation();
   const { clinicName } = useAuth();
-  const now = useNow();
-  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
@@ -382,7 +397,7 @@ setTherapists(enrichedTherapists);
         <meta name="description" content="Owner dashboard for Kaffah System Care" />
       </Helmet>
       
-      <div className="space-y-4 animate-in fade-in duration-500 pb-24 md:pb-12">
+      <div className="space-y-4 animate-in fade-in duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] pb-24 md:pb-12">
 
         {/* ── Hero Banner ── */}
         <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
@@ -394,9 +409,7 @@ setTherapists(enrichedTherapists);
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
             <div className="max-w-[74%] sm:max-w-[62%] md:max-w-md lg:max-w-xl">
-              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">
-                {todayLabel} <span className="text-[#DCE8F2]">•</span> <span className="font-mono">{heroTime}</span>
-              </p>
+              <HeroClock />
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
                 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
@@ -440,19 +453,19 @@ setTherapists(enrichedTherapists);
           <TabsList className="grid w-full grid-cols-2 bg-white border border-[#DCE8F2] p-1 rounded-2xl shadow-sm sticky top-2 z-10">
             <TabsTrigger
               value="operational"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#1677D2] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
+              className="rounded-xl text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-[#1677D2] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Operational
             </TabsTrigger>
             <TabsTrigger
               value="finance"
-              className="rounded-xl text-sm font-semibold transition-all duration-200 data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
+              className="rounded-xl text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-[#35C8C1] data-[state=active]:text-white data-[state=active]:shadow-md text-[#5B6B7D]"
             >
               Finance
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="operational" className="space-y-8 focus-visible:outline-none focus-visible:ring-0">
+          <TabsContent value="operational" className="space-y-8 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
              {/* Section 1: Top Level KPI Cards */}
              <section className="space-y-4">
                 <OperationalDashboardUI 
@@ -509,7 +522,7 @@ setTherapists(enrichedTherapists);
              </section>
           </TabsContent>
 
-          <TabsContent value="finance" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
+          <TabsContent value="finance" className="space-y-4 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
             <RevenueOverview dateRange={dateRange} />
             <PromoDiscountWidget dateRange={dateRange} />
           </TabsContent>
