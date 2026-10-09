@@ -24,14 +24,17 @@ export const isReplacementOptionalType = (value) => value === 'organization' || 
 
 // Aturan hari Minggu: izin seharian di hari Minggu (apa pun alasannya) atau Minggu yang
 // bertepatan dengan libur nasional membatalkan jatah libur mingguan (Senin / Selasa) setelahnya.
-export const isSundayDate = (dateStr) => !!dateStr && getDay(parseISO(dateStr)) === 0;
-
 export const SUNDAY_RULE_NOTE = 'Izin di hari Minggu: jatah libur mingguan Anda setelahnya (hari Senin atau Selasa) otomatis dibatalkan, jadi Anda tetap masuk di hari itu.';
 
 export const WAIVER_REASON_LABEL = {
   sunday_leave: 'Izin di hari Minggu',
   national_holiday: 'Libur nasional di hari Minggu',
 };
+
+// Izin yang disetujui lalu dibatalkan owner disimpan sebagai rejected + revoked_at.
+export const requestStatusMeta = (req) => (req.revoked_at
+  ? { label: 'Dibatalkan', className: 'bg-slate-100 text-slate-600 border-slate-300' }
+  : (STATUS_META[req.status] || STATUS_META.pending));
 
 export const hhmm = (t) => (t ? String(t).slice(0, 5) : '');
 
@@ -68,6 +71,17 @@ export const leaveScopeLabel = (req) =>
 export const attendanceImpactNote = (isPartial) => (isPartial
   ? 'Izin sebagian jam: hari izin ini tetap dihitung masuk (gaji & hari kerja). Tanggal pengganti hanya menambah jam kerja, tidak dihitung sebagai hari masuk lagi.'
   : 'Izin seharian: hari izin ini tidak dihitung masuk. Tanggal pengganti dihitung sebagai hari masuk (gaji & hari kerja).');
+
+// Izin di hari Sabtu/Minggu (seharian maupun jam tertentu): hari pengganti hanya boleh hari Minggu.
+export const isWeekendDate = (dateStr) => {
+  if (!dateStr) return false;
+  const dow = parseISO(dateStr).getDay();
+  return dow === 0 || dow === 6;
+};
+
+export const isSundayDate = (dateStr) => !!dateStr && parseISO(dateStr).getDay() === 0;
+
+export const WEEKEND_REPLACEMENT_NOTE = 'Izin di hari Sabtu/Minggu wajib diganti di hari Minggu. Hari lain tidak bisa dipilih.';
 
 export const shiftMinutes = (shift) => Math.max(0, timeToMinutes(shift.end_time) - timeToMinutes(shift.start_time));
 
