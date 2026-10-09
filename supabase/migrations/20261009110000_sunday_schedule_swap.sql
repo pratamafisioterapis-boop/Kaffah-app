@@ -17,9 +17,8 @@ CREATE TABLE IF NOT EXISTS public.therapist_sunday_swap_requests (
   start_time time NOT NULL,
   end_time time NOT NULL,
   notes text,
-  status text NOT NULL DEFAULT 'pending_substitute'
-    CHECK (status IN ('pending_substitute', 'pending_owner', 'approved', 'rejected')),
-  rejected_by text CHECK (rejected_by IN ('substitute', 'owner')),
+  status text NOT NULL DEFAULT 'pending_substitute',
+  rejected_by text,
   requested_by uuid NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   substitute_responded_at timestamptz,
   substitute_note text,
@@ -28,11 +27,15 @@ CREATE TABLE IF NOT EXISTS public.therapist_sunday_swap_requests (
   review_note text,
   reviewed_at timestamptz,
   time_off_id uuid REFERENCES public.therapist_time_off(id) ON DELETE SET NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sunday_swap_is_sunday CHECK (EXTRACT(DOW FROM swap_date) = 0),
-  CONSTRAINT sunday_swap_time_range CHECK (end_time > start_time),
-  CONSTRAINT sunday_swap_different CHECK (therapist_id <> substitute_id)
+  created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.therapist_sunday_swap_requests
+  ADD CONSTRAINT sunday_swap_status_check CHECK (status IN ('pending_substitute', 'pending_owner', 'approved', 'rejected')),
+  ADD CONSTRAINT sunday_swap_rejected_by_check CHECK (rejected_by IS NULL OR rejected_by IN ('substitute', 'owner')),
+  ADD CONSTRAINT sunday_swap_is_sunday CHECK (EXTRACT(DOW FROM swap_date) = 0),
+  ADD CONSTRAINT sunday_swap_time_range CHECK (end_time > start_time),
+  ADD CONSTRAINT sunday_swap_different CHECK (therapist_id <> substitute_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS sunday_swap_one_active_per_day
   ON public.therapist_sunday_swap_requests (therapist_id, swap_date)
@@ -48,7 +51,6 @@ ALTER TABLE public.therapist_extra_shifts
 
 ALTER TABLE public.therapist_sunday_swap_requests ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "sunday_swap_select" ON public.therapist_sunday_swap_requests;
 CREATE POLICY "sunday_swap_select" ON public.therapist_sunday_swap_requests
   FOR SELECT TO authenticated
   USING (
@@ -58,7 +60,6 @@ CREATE POLICY "sunday_swap_select" ON public.therapist_sunday_swap_requests
     OR (clinic_id = get_my_clinic_id() AND get_my_role() = 'owner')
   );
 
-DROP POLICY IF EXISTS "sunday_swap_delete_own_pending" ON public.therapist_sunday_swap_requests;
 CREATE POLICY "sunday_swap_delete_own_pending" ON public.therapist_sunday_swap_requests
   FOR DELETE TO authenticated
   USING (requested_by = auth.uid() AND status IN ('pending_substitute', 'pending_owner'));
@@ -68,7 +69,7 @@ CREATE POLICY "sunday_swap_delete_own_pending" ON public.therapist_sunday_swap_r
 CREATE OR REPLACE FUNCTION public.therapist_is_off_on(p_therapist_id uuid, p_date date)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$
+AS $fn$
   SELECT
     NOT EXISTS (
       SELECT 1 FROM public.therapist_time_off tto
@@ -90,7 +91,7 @@ AS $$
           AND s.day_of_week = EXTRACT(DOW FROM p_date)::int
       )
     );
-$$;
+$fn$;
 REVOKE ALL ON FUNCTION public.therapist_is_off_on(uuid, date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.therapist_is_off_on(uuid, date) TO authenticated;
 
@@ -98,7 +99,7 @@ GRANT EXECUTE ON FUNCTION public.therapist_is_off_on(uuid, date) TO authenticate
 CREATE OR REPLACE FUNCTION public.sunday_swap_candidates(p_date date)
 RETURNS TABLE (id uuid, name text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$
+AS $fn$
   SELECT p.id, p.name
   FROM public.physiotherapists p
   WHERE p.clinic_id = get_my_clinic_id()
@@ -112,7 +113,7 @@ AS $$
         AND r.status IN ('pending_substitute', 'pending_owner', 'approved')
     )
   ORDER BY p.name;
-$$;
+$fn$;
 REVOKE ALL ON FUNCTION public.sunday_swap_candidates(date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.sunday_swap_candidates(date) TO authenticated;
 
@@ -125,7 +126,7 @@ CREATE OR REPLACE FUNCTION public.create_sunday_swap_request(
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_me public.physiotherapists%ROWTYPE;
   v_sub public.physiotherapists%ROWTYPE;
@@ -162,7 +163,7 @@ BEGIN
   RETURNING id INTO v_id;
   RETURN v_id;
 END;
-$$;
+$fn$;
 REVOKE ALL ON FUNCTION public.create_sunday_swap_request(uuid, date, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_sunday_swap_request(uuid, date, text) TO authenticated;
 
@@ -175,7 +176,7 @@ CREATE OR REPLACE FUNCTION public.respond_sunday_swap_request(
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_req public.therapist_sunday_swap_requests%ROWTYPE;
 BEGIN
@@ -197,7 +198,7 @@ BEGIN
         substitute_note = NULLIF(btrim(COALESCE(p_note, '')), '')
     WHERE id = p_request_id;
 END;
-$$;
+$fn$;
 REVOKE ALL ON FUNCTION public.respond_sunday_swap_request(uuid, boolean, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.respond_sunday_swap_request(uuid, boolean, text) TO authenticated;
 
@@ -210,7 +211,7 @@ CREATE OR REPLACE FUNCTION public.review_sunday_swap_request(
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_req public.therapist_sunday_swap_requests%ROWTYPE;
   v_role text := get_my_role();
@@ -265,7 +266,7 @@ BEGIN
         time_off_id = v_time_off_id
     WHERE id = p_request_id;
 END;
-$$;
+$fn$;
 REVOKE ALL ON FUNCTION public.review_sunday_swap_request(uuid, boolean, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.review_sunday_swap_request(uuid, boolean, text) TO authenticated;
 
@@ -279,7 +280,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $fn$
 DECLARE
   v_owner RECORD;
   v_date text := to_char(NEW.swap_date, 'DD-MM-YYYY');
@@ -365,20 +366,10 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$fn$;
 
-DROP TRIGGER IF EXISTS trg_notify_sunday_swap_request ON public.therapist_sunday_swap_requests;
 CREATE TRIGGER trg_notify_sunday_swap_request
   AFTER INSERT OR UPDATE OF status ON public.therapist_sunday_swap_requests
   FOR EACH ROW EXECUTE FUNCTION public.notify_sunday_swap_request();
 
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime')
-     AND NOT EXISTS (
-       SELECT 1 FROM pg_publication_tables
-       WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'therapist_sunday_swap_requests'
-     ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.therapist_sunday_swap_requests;
-  END IF;
-END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.therapist_sunday_swap_requests;
