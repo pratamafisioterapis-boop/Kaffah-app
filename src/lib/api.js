@@ -1524,7 +1524,7 @@ export const revokeLeaveRequest = async (id, note = null) => {
 };
 
 // ── Tukar shift terapis (tanggal yang sama; disetujui owner / terapis kepala) ──
-const SHIFT_SWAP_COLUMNS = 'id, therapist_id, therapist_name, swap_date, from_shift_name, from_start_time, from_end_time, to_shift_name, to_start_time, to_end_time, notes, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at';
+const SHIFT_SWAP_COLUMNS = 'id, therapist_id, therapist_name, swap_date, from_shift_name, from_start_time, from_end_time, to_shift_name, to_start_time, to_end_time, notes, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, revoked_at, revoked_by_name, revoke_note';
 
 export const getShiftSwapRequests = async ({ status } = {}) => {
   let query = supabase
@@ -1567,7 +1567,7 @@ export const reviewShiftSwapRequest = async (id, approve, note = null) => {
 };
 
 // ── Tukar jadwal hari Minggu (A -> B wajib acc -> owner acc) ──
-const SUNDAY_SWAP_COLUMNS = 'id, therapist_id, therapist_name, substitute_id, substitute_name, substitute_user_id, swap_date, start_time, end_time, notes, status, rejected_by, requested_by, substitute_responded_at, substitute_note, reviewed_by_name, review_note, reviewed_at, created_at';
+const SUNDAY_SWAP_COLUMNS = 'id, therapist_id, therapist_name, substitute_id, substitute_name, substitute_user_id, swap_date, start_time, end_time, notes, status, rejected_by, requested_by, substitute_responded_at, substitute_note, reviewed_by_name, review_note, reviewed_at, created_at, revoked_at, revoked_by_name, revoke_note';
 
 export const getSundaySwapRequests = async () => {
   const { data, error } = await supabase
@@ -1577,6 +1577,18 @@ export const getSundaySwapRequests = async () => {
     .order('created_at', { ascending: false });
   if (error) return { data: [], error };
   return { data: data || [], error: null };
+};
+
+// Batalkan tukar shift / tukar Minggu yang sudah disetujui (owner).
+export const revokeShiftSwapRequest = async (id, note = null) => {
+  const { error } = await supabase.rpc('revoke_therapist_shift_swap_request', { p_request_id: id, p_note: note });
+  return { error };
+};
+
+// data = jumlah booking aktif yang masih ada di jam masuk pengganti.
+export const revokeSundaySwapRequest = async (id, note = null) => {
+  const { data, error } = await supabase.rpc('revoke_sunday_swap_request', { p_request_id: id, p_note: note });
+  return { data: data ?? 0, error };
 };
 
 export const getSundaySwapCandidates = async (date) => {
