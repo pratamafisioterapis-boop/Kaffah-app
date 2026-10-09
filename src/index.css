@@ -190,3 +190,12 @@
     --tw-enter-rotate: 0;
   }
 }
+
+/* SOAP template builder: the form and the live result sit side by side once the
+   builder itself (not the viewport) is wide enough; otherwise they stack. */
+.soap-root { container-type: inline-size; container-name: soap; }
+@container soap (min-width: 52rem) {
+  .soap-split { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 1.25rem; align-items: start; }
+  .soap-split > * + * { margin-top: 0; }
+  .soap-aside { position: sticky; top: 0.25rem; }
+}

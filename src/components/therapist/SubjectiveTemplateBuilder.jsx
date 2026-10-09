@@ -44,7 +44,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
             aria-pressed={active}
             onClick={() => toggle(opt)}
             className={cn(
-              'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97] max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
+              'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97] max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 [@media(pointer:coarse)]:sm:min-h-[40px] sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
               active
                 ? cn(tone(opt), 'font-medium shadow-sm')
                 : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
@@ -75,7 +75,7 @@ const DurationInput = ({ value, onChange }) => {
           type="button"
           aria-label="Kurangi"
           onClick={() => set({ n: Math.max(0, n - 1) })}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
@@ -86,13 +86,13 @@ const DurationInput = ({ value, onChange }) => {
           value={n || ''}
           placeholder="0"
           onChange={(e) => set({ n: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-          className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-center text-base font-semibold sm:h-8 sm:w-10 sm:flex-none sm:text-sm text-slate-800 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-center text-base font-semibold sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-10 sm:flex-none sm:text-sm text-slate-800 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <button
           type="button"
           aria-label="Tambah"
           onClick={() => set({ n: n + 1 })}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -120,7 +120,7 @@ const DurationInput = ({ value, onChange }) => {
               key={q}
               type="button"
               onClick={() => set({ n: q })}
-              className="h-10 min-w-[44px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-app-accent/40 hover:text-app-accent"
+              className="h-10 min-w-[44px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 [@media(pointer:coarse)]:sm:h-9 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-app-accent/40 hover:text-app-accent"
             >
               {q}
             </button>
@@ -143,12 +143,14 @@ const FreeInput = ({ tok, value, onChange }) => {
       onChange={(e) => onChange(e.target.value)}
       style={{ '--w': `${width}ch` }}
       className={cn(
-        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-500 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
+        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-500 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
         value?.trim() ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
   );
 };
+
+const hasValue = (v) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
 
 const todayIso = () => {
   const d = new Date();
@@ -164,7 +166,7 @@ const DateInput = ({ value, onChange }) => (
       max="2100-12-31"
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'h-11 min-w-0 flex-1 rounded-app-sm border bg-white px-3 text-base text-slate-800 outline-none focus:border-app-accent-bright sm:h-8 sm:flex-none sm:px-2 sm:text-sm focus:ring-2 focus:ring-app-accent/15',
+        'h-11 min-w-0 flex-1 rounded-app-sm border bg-white px-3 text-base text-slate-800 outline-none focus:border-app-accent-bright sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:flex-none sm:px-2 sm:text-sm focus:ring-2 focus:ring-app-accent/15',
         value ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
@@ -172,7 +174,7 @@ const DateInput = ({ value, onChange }) => (
       <button
         type="button"
         onClick={() => onChange(todayIso())}
-        className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 hover:border-app-accent/40 hover:text-app-accent sm:h-7 sm:px-2.5 sm:text-xs"
+        className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 hover:border-app-accent/40 hover:text-app-accent sm:h-7 [@media(pointer:coarse)]:sm:h-9 sm:px-2.5 sm:text-xs"
       >
         Hari ini
       </button>
@@ -220,7 +222,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
           aria-pressed={value === n}
           onClick={() => onChange(value === n ? undefined : n)}
           className={cn(
-            'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 sm:min-w-[32px] sm:align-middle sm:text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
+            'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:min-w-[32px] [@media(pointer:coarse)]:sm:min-w-[40px] sm:align-middle sm:text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
             value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
           )}
         >
@@ -256,6 +258,9 @@ const FormButtons = ({ tok, value, onOpen, onClear }) => (
 
 const renderToken = (tok, key, values, setValue, openForm) => {
   if (tok.t === 'gopen' || tok.t === 'gclose') return null;
+  // Tanda baca yang berdiri sendiri (".", ",", ")") hanya berguna di teks yang mengalir;
+  // di HP kontrol tampil satu per baris, jadi tanda baca itu cuma menjadi baris kosong.
+  if (tok.t === 'text' && /^[\s.,;:()]+$/.test(tok.v)) return <span key={key} className="max-sm:hidden">{tok.v}</span>;
   if (tok.t === 'text') return <span key={key}>{tok.v}</span>;
   const value = values[tok.id];
   const onChange = (v) => setValue(tok.id, v);
@@ -434,7 +439,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   };
 
   return (
-    <div className={embedded ? '' : 'border-b bg-gradient-to-b from-app-soft/70 to-white'}>
+    <div className={cn('soap-root', embedded ? '' : 'border-b bg-gradient-to-b from-app-soft/70 to-white')}>
       {!embedded && (
       <button
         type="button"
@@ -482,25 +487,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-app-accent-bright transition-[color,background-color,border-color,box-shadow,transform,opacity]"
-                style={{ width: total ? `${Math.round((filled / total) * 100)}%` : '0%' }}
-              />
-            </div>
-            <span className="shrink-0 text-xs tabular-nums text-slate-500">{filled}/{total} terisi</span>
-            <button
-              type="button"
-              onClick={reset}
-              disabled={filled === 0}
-              className="flex shrink-0 items-center gap-1 text-xs text-slate-500 hover:text-rose-600 disabled:opacity-40"
-            >
-              <RotateCcw className="h-3 w-3" /> Reset
-            </button>
-          </div>
-
-          <div className="space-y-3 rounded-app-lg border border-slate-200 bg-white p-3.5 shadow-sm">
+          <div className="soap-split space-y-4">
+          <div className="soap-main min-w-0">
+          <div className="space-y-5">
             {[
               ...(vitalParsed ? [{ section: sharedVital, shared: 'vital' }] : []),
               ...sharedSections.map((section) => ({ section, shared: 'common' })),
@@ -528,12 +517,41 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   const openForm = (id, f) => setFormDialog({ id, form: f, shared });
                   if (section.layout !== 'lines') {
                     return (
-                      <div className="text-[15px] leading-7 text-slate-700 sm:text-sm sm:leading-[2.5rem]">
-                        {section.sentences.map((sentence, si) => (
-                          <React.Fragment key={si}>
-                            {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}{' '}
-                          </React.Fragment>
-                        ))}
+                      <div className="space-y-2">
+                        {section.sentences.map((sentence, si) => {
+                          const inputs = sentence.tokens.filter((tok) => tok.id);
+                          // Kalimat tanpa isian hanya teks penjelas.
+                          if (inputs.length === 0) {
+                            return (
+                              <p key={si} className="px-1 text-sm leading-6 text-slate-600">
+                                {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}
+                              </p>
+                            );
+                          }
+                          const done = inputs.some((tok) => hasValue(store[tok.id]));
+                          return (
+                            <div
+                              key={si}
+                              className={cn(
+                                'flex gap-3 rounded-app border px-3 py-2.5 transition-colors',
+                                done ? 'border-app-accent/30 bg-app-soft/40' : 'border-slate-200 bg-white'
+                              )}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={cn(
+                                  'mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border sm:mt-2',
+                                  done ? 'border-app-accent bg-app-accent text-white' : 'border-slate-300 bg-white'
+                                )}
+                              >
+                                {done && <Check className="h-3 w-3" />}
+                              </span>
+                              <div className="min-w-0 flex-1 text-[15px] leading-7 text-slate-700 sm:text-sm sm:leading-9">
+                                {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   }
@@ -566,7 +584,9 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             ))}
           </div>
 
-          <div>
+          </div>
+
+          <div className="soap-aside min-w-0">
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <Sparkles className="h-3 w-3" /> {merged ? 'Hasil gabungan semua diagnosa' : 'Hasil'}
             </div>
@@ -574,25 +594,47 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               value={finalText}
               onChange={(e) => setEdited(e.target.value)}
               placeholder="Teks akan muncul di sini setelah Anda memilih atau mengisi. Bisa diedit langsung."
-              rows={Math.min(14, Math.max(4, finalText.split('\n').length + 1))}
+              rows={Math.min(14, Math.max(5, finalText.split('\n').length + 1))}
               className={cn(
                 'block w-full resize-y rounded-app border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-app-accent/25',
                 finalText ? 'border-app-accent/15 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-500'
               )}
             />
           </div>
+          </div>
 
-          {!previewOnly && (
-          <Button
-            type="button"
-            onClick={apply}
-            disabled={!finalText.trim()}
-            className="h-11 w-full gap-2 rounded-app bg-app-accent text-sm font-semibold hover:bg-app-accent-hover"
-          >
-            <Check className="h-4 w-4" />
-            {willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}
-          </Button>
-          )}
+          <div className="soap-actions sticky bottom-0 z-10 -mx-1 flex items-center gap-3 border-t border-slate-200 bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-3">
+            <div className="min-w-0 flex-1">
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-app-accent-bright transition-[width] duration-300 ease-out motion-reduce:transition-none"
+                  style={{ width: total ? `${Math.round((filled / total) * 100)}%` : '0%' }}
+                />
+              </div>
+              <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                <span className="tabular-nums">{filled}/{total} terisi</span>
+                <button
+                  type="button"
+                  onClick={reset}
+                  disabled={filled === 0}
+                  className="tap-target flex items-center gap-1 hover:text-rose-600 disabled:opacity-40"
+                >
+                  <RotateCcw className="h-3 w-3" /> Reset
+                </button>
+              </div>
+            </div>
+            {!previewOnly && (
+              <Button
+                type="button"
+                onClick={apply}
+                disabled={!finalText.trim()}
+                className="h-11 shrink-0 gap-2 rounded-app bg-app-accent px-4 text-sm font-semibold hover:bg-app-accent-hover sm:px-6"
+              >
+                <Check className="h-4 w-4" />
+                {willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 

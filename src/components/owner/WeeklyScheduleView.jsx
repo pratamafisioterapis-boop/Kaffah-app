@@ -17,7 +17,8 @@ const toMin = (t) => {
   return h * 60 + (m || 0);
 };
 const fmtMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-const ROW_H = 76; // tinggi satu baris jam (px) pada tampilan desktop
+const ROW_H = 84; // tinggi satu baris jam (px) pada tampilan desktop (satu terapis)
+const ROW_H_MULTI = 108; // lebih tinggi bila ada penanda nama terapis di tiap kartu
 const initials = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const shortName = (name = '') => name.split(',')[0].trim();
@@ -88,6 +89,7 @@ const WeeklyScheduleView = ({
 
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
   const multi = selectedIds.length > 1;
+  const rowH = multi ? ROW_H_MULTI : ROW_H;
 
   useEffect(() => {
     if (!days.some((d) => toKey(d) === selectedDay)) {
@@ -236,6 +238,10 @@ const WeeklyScheduleView = ({
     return out;
   }, [itemsByDay, timeRows]);
 
+  // Kolom hari yang punya kartu bertumpuk (beberapa lajur) mendapat lebar lebih,
+  // supaya tiap lajur tetap cukup lebar untuk nama pasien.
+  const gridColumns = `64px ${days.map((d) => `minmax(0, ${layoutByDay[toKey(d)]?.lanes || 1}fr)`).join(' ')}`;
+
   const cellItems = (dayKey, time) => (itemsByDay[dayKey] || []).filter((i) => i.time === time);
   const freeCount = (k) => (itemsByDay[k] || []).filter((i) => i.kind === 'slot').length;
   const bookedCount = (k) => (itemsByDay[k] || []).filter((i) => i.kind === 'app').length;
@@ -264,26 +270,25 @@ const WeeklyScheduleView = ({
           key={`a-${a.id}`}
           type="button"
           onClick={() => onAppointmentClick(a)}
+          title={`${name} · ${item.time}–${item.end}`}
           className={cn(
-            'w-full text-left rounded-app border border-l-4 px-2.5 py-1.5 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] bg-gradient-to-br to-white',
+            'w-full text-left rounded-app border border-l-4 px-2 py-1.5 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] bg-gradient-to-br to-white',
             fill && 'h-full overflow-hidden',
             color.card, color.border
           )}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className={cn('text-[10px] font-mono font-bold', color.text)}>{item.time}<span className="font-normal opacity-70"> – {item.end}</span></span>
-            <span className="flex items-center gap-1">
-              {a.is_homecare && (
-                <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 rounded-full">
-                  <Home className="h-2.5 w-2.5" /> Homecare
-                </span>
-              )}
-              {a.is_new_patient && (
-                <span className="text-[8px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 rounded-full">Baru</span>
-              )}
-            </span>
-          </div>
-          <p className={cn('font-semibold text-slate-800 leading-tight truncate', compact ? 'text-sm' : 'text-xs')}>{name}</p>
+          <span className={cn('block font-mono font-bold whitespace-nowrap tracking-tight', compact ? 'text-xs' : 'text-[10px]', color.text)}>{item.time}<span className="font-normal opacity-70">–{item.end}</span></span>
+          <p className={cn('mt-0.5 font-semibold text-slate-800 leading-snug break-words', compact ? 'text-sm' : 'text-xs line-clamp-3 hyphens-auto')} lang="id">
+            {name}
+            {a.is_homecare && (
+              <span title="Homecare" aria-label="Homecare" className="ml-1 inline-flex translate-y-[1px] items-center gap-0.5 rounded-full bg-amber-100 px-1.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
+                <Home className="h-2.5 w-2.5" />{compact ? ' Homecare' : null}
+              </span>
+            )}
+            {a.is_new_patient && (
+              <span className="ml-1 inline-block translate-y-[-1px] rounded-full bg-emerald-100 px-1.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700">Baru</span>
+            )}
+          </p>
           {tag && <div className="mt-1">{tag}</div>}
         </button>
       );
@@ -296,7 +301,7 @@ const WeeklyScheduleView = ({
         type="button"
         onClick={() => onSlotClick(s, t, dayDate)}
         className={cn(
-          'group w-full rounded-app px-2.5 py-1.5 text-left',
+          'group w-full rounded-app px-2 py-1.5 text-left',
           fill && 'h-full overflow-hidden',
           'border border-dashed border-emerald-300 bg-emerald-50/60 text-emerald-700',
           'hover:bg-emerald-500 hover:text-white hover:border-emerald-500 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg hover:shadow-emerald-500/25',
@@ -304,11 +309,12 @@ const WeeklyScheduleView = ({
         )}
         title="Klik untuk tambah pasien di slot ini"
       >
-        <div className="flex items-center justify-between gap-1">
-          <span className={cn('font-mono font-bold', compact ? 'text-sm' : 'text-[11px]')}>
-            {item.time}
-            <span className="font-normal opacity-70"> – {hhmm(s.slot_end_time)}</span>
-          </span>
+        <span className={cn('block font-mono font-bold whitespace-nowrap tracking-tight', compact ? 'text-sm' : 'text-[10px]')}>
+          {item.time}
+          <span className="font-normal opacity-70">–{hhmm(s.slot_end_time)}</span>
+        </span>
+        <div className="mt-1 flex items-center justify-between gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Kosong</span>
           <span className="h-5 w-5 rounded-full bg-emerald-500 text-white group-hover:bg-white group-hover:text-emerald-600 flex items-center justify-center shrink-0 transition-colors">
             <Plus className="h-3 w-3" />
           </span>
@@ -451,8 +457,8 @@ const WeeklyScheduleView = ({
       ) : (
         <>
           {/* Desktop / tablet landscape */}
-          <div className="hidden lg:block bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
+          <div className="hidden xl:block bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
+            <div style={{ gridTemplateColumns: gridColumns }} className="grid bg-gradient-to-b from-clinara-navy to-[#173f6b] text-white">
               <div className="flex items-center justify-center text-sky-200/70"><Clock className="h-4 w-4" /></div>
               {days.map((d) => {
                 const k = toKey(d);
@@ -479,12 +485,12 @@ const WeeklyScheduleView = ({
             {totalFree + totalBooked === 0 ? (
               <div className="py-16 text-center text-slate-500 text-sm">Tidak ada jadwal minggu ini</div>
             ) : (
-              <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] max-h-[70vh] overflow-y-auto">
+              <div style={{ gridTemplateColumns: gridColumns }} className="grid max-h-[70vh] overflow-y-auto">
                 <div className="bg-slate-50/60">
                   {timeRows.map((t) => (
                     <div
                       key={t}
-                      style={{ height: ROW_H }}
+                      style={{ height: rowH }}
                       className="pt-2 text-center text-xs font-mono font-semibold text-slate-500 border-b border-slate-100"
                     >
                       {t}
@@ -499,9 +505,9 @@ const WeeklyScheduleView = ({
                       key={k}
                       style={{
                         display: 'grid',
-                        gridTemplateRows: `repeat(${timeRows.length}, ${ROW_H}px)`,
+                        gridTemplateRows: `repeat(${timeRows.length}, ${rowH}px)`,
                         gridTemplateColumns: `repeat(${lanes}, minmax(0, 1fr))`,
-                        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, #f1f5f9 ${ROW_H - 1}px, #f1f5f9 ${ROW_H}px)`,
+                        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${rowH - 1}px, #f1f5f9 ${rowH - 1}px, #f1f5f9 ${rowH}px)`,
                       }}
                       className={cn(
                         'p-0 border-l border-slate-100 gap-x-1 px-1',
@@ -526,7 +532,7 @@ const WeeklyScheduleView = ({
           </div>
 
           {/* Mobile / tablet portrait */}
-          <div className="lg:hidden space-y-3">
+          <div className="xl:hidden space-y-3">
             <div className="grid grid-cols-7 gap-1.5">
               {days.map((d) => {
                 const k = toKey(d);
