@@ -356,7 +356,7 @@ const RevenueOverview = ({ dateRange }) => {
   }
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-500">
+    <div className="space-y-5 animate-in fade-in duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]">
       {/* Quick Action Widget */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
@@ -388,7 +388,7 @@ const RevenueOverview = ({ dateRange }) => {
         <button
           onClick={() => { setActiveFormType('expenditure'); setIsFormOpen(true); }}
           className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
             isPWA && "flex-1"
           )}
           style={{ background: '#e11d48' }}
@@ -399,7 +399,7 @@ const RevenueOverview = ({ dateRange }) => {
         <button
           onClick={() => { setActiveFormType('income'); setIsFormOpen(true); }}
           className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm",
+            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
             isPWA && "flex-1"
           )}
           style={{ background: '#059669' }}
@@ -476,7 +476,7 @@ const RevenueOverview = ({ dateRange }) => {
                 </span>
               </div>
               <div className="h-2 md:h-2.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                <div className="h-full bg-emerald-500 rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                   style={{ width: `${Math.min(Math.abs(metrics.totalRevenue > 0 ? (metrics.netProfit / metrics.totalRevenue) * 100 : 0), 100)}%` }} />
               </div>
             </div>
@@ -492,7 +492,7 @@ const RevenueOverview = ({ dateRange }) => {
                 </span>
               </div>
               <div className="h-2 md:h-2.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full transition-all duration-700"
+                <div className="h-full bg-amber-500 rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                   style={{ width: `${Math.min(metrics.totalRevenue > 0 ? (metrics.totalExpenses / metrics.totalRevenue) * 100 : 0, 100)}%` }} />
               </div>
             </div>
@@ -528,7 +528,7 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-2xl border border-emerald-100 border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+        <div className="bg-white rounded-2xl border border-emerald-100 border-l-4 border-l-emerald-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-emerald-600" />
@@ -539,7 +539,7 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
         </div>
 
-        <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 md:p-6 ${
+        <div className={`bg-white rounded-2xl border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
           metrics.netProfit >= 0 ? 'border-indigo-100 border-l-4 border-l-indigo-500' : 'border-rose-100 border-l-4 border-l-rose-500'
         }`}>
           <div className="flex items-start justify-between mb-4">
@@ -555,7 +555,7 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-rose-100 border-l-4 border-l-rose-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+        <div className="bg-white rounded-2xl border border-rose-100 border-l-4 border-l-rose-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
               <TrendingDown className="w-6 h-6 text-rose-600" />
@@ -570,7 +570,7 @@ const RevenueOverview = ({ dateRange }) => {
         </div>
       </div>
       {/* ── Dana Paket ── */}
-      <div className="bg-white rounded-2xl border border-amber-100 border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-all p-5 md:p-6">
+      <div className="bg-white rounded-2xl border border-amber-100 border-l-4 border-l-amber-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
@@ -634,7 +634,7 @@ const RevenueOverview = ({ dateRange }) => {
                     </div>
                   </div>
                   <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    <div className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${pct}%`, backgroundColor: color }} />
                   </div>
                 </div>
               );
@@ -663,11 +663,11 @@ const RevenueOverview = ({ dateRange }) => {
         ) : (
           <>
             <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex mb-5">
-              <div className="h-full bg-violet-500 transition-all duration-700" style={{ width: `${packageVsNonPackage.paketPct}%` }} />
-              <div className="h-full bg-sky-500 transition-all duration-700" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
+              <div className="h-full bg-violet-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.paketPct}%` }} />
+              <div className="h-full bg-sky-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="rounded-2xl border border-violet-100 border-l-4 border-l-violet-500 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="rounded-2xl border border-violet-100 border-l-4 border-l-violet-500 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
                     <Package className="w-4 h-4 text-violet-600" />
@@ -679,7 +679,7 @@ const RevenueOverview = ({ dateRange }) => {
                 <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
                 <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
               </div>
-              <div className="rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
                     <Wallet className="w-4 h-4 text-sky-600" />
@@ -720,7 +720,7 @@ const RevenueOverview = ({ dateRange }) => {
               return (
                 <div
                   key={i}
-                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} border-l-4 ${style.accent} bg-white p-4 shadow-sm hover:shadow-md transition-all`}
+                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} border-l-4 ${style.accent} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className={`w-9 h-9 rounded-xl ${style.bg} flex items-center justify-center`}>

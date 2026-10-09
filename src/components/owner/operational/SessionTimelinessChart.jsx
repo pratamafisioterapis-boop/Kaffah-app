@@ -7,6 +7,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { getCachedClinicId } from '@/lib/api';
+import { CHART_MOTION } from '@/lib/chartMotion';
 
 const SessionTimelinessChart = ({ dateRange }) => {
   const [chartData, setChartData] = useState([]);
@@ -121,7 +122,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
   const complianceColor = complianceRate >= 80 ? '#10b981' : complianceRate >= 50 ? '#f59e0b' : '#ef4444';
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between">
           <div>
@@ -204,7 +205,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: '12px' }}
                     formatter={(value) => [`${value} Sesi`, 'Jumlah']}
                   />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40} {...CHART_MOTION}>
                     {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Bar>
                 </BarChart>
@@ -218,7 +219,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
                 <span className="font-bold" style={{ color: complianceColor }}>{complianceRate}%</span>
               </div>
               <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${complianceRate}%`, backgroundColor: complianceColor }} />
+                <div className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${complianceRate}%`, backgroundColor: complianceColor }} />
               </div>
             </div>
           </div>

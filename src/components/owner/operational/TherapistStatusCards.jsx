@@ -123,7 +123,7 @@ const TherapistStatusCards = ({
             <div
               key={therapist.id}
               onClick={() => navigate('/owner/appointments')}
-              className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98]"
+              className="bg-white rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[box-shadow,transform] duration-200 ease-out overflow-hidden cursor-pointer active:scale-[0.98]"
             >
               {/* ── Desktop: layout vertikal lebih besar ── */}
               {!isPWA ? (
@@ -185,7 +185,7 @@ const TherapistStatusCards = ({
                       </div>
                       <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-700 ${bar}`}
+                          className={`h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${bar}`}
                           style={{ width: `${Math.min(percentage, 100)}%` }}
                         />
                       </div>
@@ -201,7 +201,7 @@ const TherapistStatusCards = ({
                       </div>
                       <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden mb-2.5">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                           style={{ width: `${isLoadingPatientMetrics ? 0 : Math.min(returnRate, 100)}%` }}
                         />
                       </div>

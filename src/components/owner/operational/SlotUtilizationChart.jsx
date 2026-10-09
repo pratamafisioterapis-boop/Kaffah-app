@@ -125,7 +125,7 @@ const SlotUtilizationChart = () => {
   const strokeDash = (metrics.utilization / 100) * circumference;
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       {/* Header */}
       <div className="px-4 md:px-5 pt-4 md:pt-5 pb-2 flex items-start justify-between">
         <div>
@@ -133,7 +133,7 @@ const SlotUtilizationChart = () => {
           <p className="text-[11px] text-slate-400 mt-0.5">Real-time slot capacity</p>
         </div>
         {!loading && !error && (
-          <button onClick={fetchUtilizationData} className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0">
+          <button onClick={fetchUtilizationData} className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 shrink-0">
             <RefreshCw className="h-3 w-3 text-slate-400" />
           </button>
         )}
@@ -199,7 +199,7 @@ const SlotUtilizationChart = () => {
               <p className="text-[11px] text-slate-400 font-medium mt-1">slot terisi dari {total} total</p>
               <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
+                  className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                   style={{ width: `${metrics.utilization}%`, backgroundColor: utilizationColor }}
                 />
               </div>

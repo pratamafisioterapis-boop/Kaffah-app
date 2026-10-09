@@ -30,6 +30,7 @@ import { id } from 'date-fns/locale';
 import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { getCachedClinicId } from '@/lib/api';
+import { CHART_MOTION } from '@/lib/chartMotion';
 
 const CapacityVsDemandChart = () => {
   const [data, setData] = useState([]);
@@ -162,7 +163,7 @@ const CapacityVsDemandChart = () => {
     : 0;
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">
@@ -183,7 +184,7 @@ const CapacityVsDemandChart = () => {
             </div>
             {loading
               ? <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0" />
-              : <button onClick={fetchData} className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors">
+              : <button onClick={fetchData} className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95">
                   <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
                 </button>
             }
@@ -214,7 +215,7 @@ const CapacityVsDemandChart = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={goToPrevious}
-              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors"
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
               aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'}
             >
               <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
@@ -230,7 +231,7 @@ const CapacityVsDemandChart = () => {
             <button
               onClick={goToNext}
               disabled={isCurrentPeriod}
-              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
+              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
               aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
             >
               <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
@@ -328,8 +329,8 @@ const CapacityVsDemandChart = () => {
                     return [value, name];
                   }}
                 />
-                <Bar yAxisId="left" dataKey="capacity" name="capacity" fill="url(#capGrad)" radius={[6, 6, 0, 0]} barSize={20} animationDuration={1200} />
-                <Bar yAxisId="left" dataKey="demand" name="demand" fill="url(#demGrad)" radius={[6, 6, 0, 0]} barSize={20} animationDuration={1200} />
+                <Bar yAxisId="left" dataKey="capacity" name="capacity" fill="url(#capGrad)" radius={[6, 6, 0, 0]} barSize={20} {...CHART_MOTION} />
+                <Bar yAxisId="left" dataKey="demand" name="demand" fill="url(#demGrad)" radius={[6, 6, 0, 0]} barSize={20} {...CHART_MOTION} />
                 <Line
                   yAxisId="right"
                   type="monotone"
@@ -337,6 +338,7 @@ const CapacityVsDemandChart = () => {
                   name="utilization"
                   stroke="#10b981"
                   strokeWidth={2.5}
+                  {...CHART_MOTION}
                   dot={(props) => {
                     const { cx, cy, payload } = props;
                     return (
