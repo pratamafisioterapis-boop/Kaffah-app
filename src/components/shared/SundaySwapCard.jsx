@@ -39,6 +39,10 @@ const SundaySwapCard = ({ request, footer = null }) => {
           <span className="text-blue-700">{hhmm(request.start_time)}–{hhmm(request.end_time)}</span>
         </div>
 
+        <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          Jatah libur mingguan setelahnya (Senin / Selasa): <b>{request.therapist_name || 'terapis yang libur'}</b> tidak mendapat jatah libur (tetap masuk), jatahnya diberikan kepada <b>{request.substitute_name || 'terapis pengganti'}</b> di hari yang sama (satu libur per minggu; libur mingguan lain pengganti di minggu itu dipindahkan).
+        </p>
+
         {request.notes && (
           <p className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">“{request.notes}”</p>
         )}

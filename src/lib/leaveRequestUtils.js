@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { format, getDay, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
 export const LEAVE_TYPES = [
@@ -7,6 +7,7 @@ export const LEAVE_TYPES = [
   { value: 'annual', label: 'Cuti' },
   { value: 'training', label: 'Training' },
   { value: 'organization', label: 'Kegiatan Organisasi' },
+  { value: 'event', label: 'Event' },
   { value: 'other', label: 'Lainnya' },
 ];
 
@@ -16,6 +17,18 @@ export const STATUS_META = {
   pending: { label: 'Menunggu persetujuan', className: 'bg-amber-50 text-amber-700 border-amber-200' },
   approved: { label: 'Disetujui', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-700 border-red-200' },
+};
+
+// Jenis izin yang jadwal penggantinya tidak wajib (ditentukan peninjau).
+export const isReplacementOptionalType = (value) => value === 'organization' || value === 'event';
+
+// Aturan hari Minggu: izin seharian di hari Minggu (apa pun alasannya) atau Minggu yang
+// bertepatan dengan libur nasional membatalkan jatah libur mingguan (Senin / Selasa) setelahnya.
+export const SUNDAY_RULE_NOTE = 'Izin di hari Minggu: jatah libur mingguan Anda setelahnya (hari Senin atau Selasa) otomatis dibatalkan, jadi Anda tetap masuk di hari itu.';
+
+export const WAIVER_REASON_LABEL = {
+  sunday_leave: 'Izin di hari Minggu',
+  national_holiday: 'Libur nasional di hari Minggu',
 };
 
 // Izin yang disetujui lalu dibatalkan owner disimpan sebagai rejected + revoked_at.

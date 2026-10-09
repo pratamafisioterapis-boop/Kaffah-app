@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Label } from '@/components/ui/label';
 import { Loader2, CalendarX, CheckCircle } from 'lucide-react';
 
-const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Event', 'Lainnya'];
 
 const REASON_TO_LEAVE_TYPE = {
   'Cuti': 'annual',
@@ -22,6 +22,7 @@ const REASON_TO_LEAVE_TYPE = {
   'Libur': 'weekly_off',
   'Training': 'training',
   'Izin Pribadi': 'personal',
+  'Event': 'other',
   'Lainnya': 'other'
 };
 
