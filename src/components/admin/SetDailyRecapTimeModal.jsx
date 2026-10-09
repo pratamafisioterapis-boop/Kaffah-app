@@ -81,7 +81,7 @@ const SetDailyRecapTimeModal = ({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="bg-slate-50 p-4 rounded-lg space-y-3 mb-4 border border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-app-sm space-y-3 mb-4 border border-slate-100">
                     <div className="flex items-center gap-2 text-sm text-slate-700">
                         <Calendar className="w-4 h-4 text-slate-400" />
                         <span className="font-medium">{format(new Date(recap.recap_date), 'dd MMMM yyyy')}</span>
@@ -129,7 +129,7 @@ const SetDailyRecapTimeModal = ({
                     <Button variant="outline" onClick={onClose} disabled={loading}>
                         Batal
                     </Button>
-                    <Button onClick={handleConfirm} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button onClick={handleConfirm} disabled={loading} className="bg-app-accent hover:bg-app-accent-hover text-white">
                         {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Simpan Waktu
                     </Button>

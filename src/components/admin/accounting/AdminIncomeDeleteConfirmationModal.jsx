@@ -37,7 +37,7 @@ const AdminIncomeDeleteConfirmationModal = ({ isOpen, onClose, income, onSuccess
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !loading && onClose(val)}>
-      <DialogContent className="sm:max-w-[450px] bg-white rounded-xl border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[450px] bg-white rounded-app border-0 shadow-xl">
         <DialogHeader className="flex flex-col items-center gap-2 pb-2">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-2">
              <AlertTriangle className="w-8 h-8 text-amber-600" />
@@ -48,7 +48,7 @@ const AdminIncomeDeleteConfirmationModal = ({ isOpen, onClose, income, onSuccess
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3 text-sm my-4">
+        <div className="bg-slate-50 p-4 rounded-app border border-slate-100 space-y-3 text-sm my-4">
            <div className="flex justify-between items-center pb-2 border-b border-slate-200 border-dashed">
               <span className="text-slate-500 font-medium">Tanggal</span>
               <span className="font-semibold text-slate-800">{income.transaction_date ? format(new Date(income.transaction_date), 'dd/MM/yyyy') : '-'}</span>

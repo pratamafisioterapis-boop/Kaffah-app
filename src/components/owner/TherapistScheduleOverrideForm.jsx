@@ -81,7 +81,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
     <Card className="border-slate-200 shadow-sm h-full">
       <CardHeader className="bg-slate-50 border-b pb-4">
         <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
-          <CalendarClock className="w-5 h-5 text-blue-500" />
+          <CalendarClock className="w-5 h-5 text-app-accent-bright" />
           Tambah Jadwal Pengganti
         </CardTitle>
       </CardHeader>
@@ -160,7 +160,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
         </div>
       </CardContent>
       <CardFooter className="bg-slate-50 border-t p-4 flex justify-end">
-        <Button onClick={handleSubmit} disabled={loading || !therapist} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={handleSubmit} disabled={loading || !therapist} className="bg-app-accent hover:bg-app-accent-hover text-white">
           {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
           {loading ? 'Menyimpan...' : 'Simpan Jadwal Pengganti'}
         </Button>

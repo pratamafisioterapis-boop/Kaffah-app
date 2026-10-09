@@ -324,7 +324,7 @@ action_by_role: 'TEST_ROLE'
                                 type="button"
                                 onClick={() => handleSlotClick(slot)}
                                 className={`py-2 px-1 rounded text-sm border transition-all hover:bg-slate-50 flex flex-col items-center justify-center gap-1 ${
-                                    formData.time === slot.slot_start_time.slice(0,5) ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200'
+                                    formData.time === slot.slot_start_time.slice(0,5) ? 'bg-app-soft border-app-accent-bright ring-1 ring-app-accent-bright' : 'bg-white border-slate-200'
                                 }`}
                             >
                                 <span className="font-semibold">{slot.slot_start_time.slice(0,5)}</span>

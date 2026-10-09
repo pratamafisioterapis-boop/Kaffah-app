@@ -22,8 +22,8 @@ const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload || payload.length === 0) return null;
   const item = payload[0]?.payload;
   return (
-    <div className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-lg text-xs">
-      <p className="font-bold text-[#0b1f4b] mb-1">{item?.name}</p>
+    <div className="rounded-app border border-slate-100 bg-white px-3 py-2 shadow-lg text-xs">
+      <p className="font-bold text-app-ink mb-1">{item?.name}</p>
       <p className="text-slate-500">
         {formatCurrency(item?.value)} <span className="text-slate-400">({item?.pct}%)</span>
       </p>
@@ -103,11 +103,11 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
       <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-5">
         <div className={cn('flex gap-3', isPWA ? 'flex-col' : 'items-start justify-between')}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-rose-100 to-orange-50 shrink-0">
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-app-lg flex items-center justify-center bg-gradient-to-br from-rose-100 to-orange-50 shrink-0">
               <Layers className="w-5 h-5 text-rose-600" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-[#0b1f4b] font-bold text-base tracking-tight">Pengeluaran per Kategori</h3>
+              <h3 className="text-app-ink font-bold text-base tracking-tight">Pengeluaran per Kategori</h3>
               <p className="text-slate-400 text-xs mt-0.5">Rincian biaya berdasarkan kategori &amp; sub-kategori</p>
             </div>
           </div>
@@ -123,7 +123,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
             <Loader2 className="w-6 h-6 animate-spin text-rose-500" />
           </div>
         ) : categories.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+          <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
             <Info className="w-5 h-5 text-rose-500 mx-auto mb-2" />
             <p className="text-sm text-slate-500">Belum ada data pengeluaran pada periode ini.</p>
           </div>
@@ -151,7 +151,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Total</p>
-                  <p className="text-lg font-black text-[#0b1f4b] tabular-nums">{formatShort(total)}</p>
+                  <p className="text-lg font-black text-app-ink tabular-nums">{formatShort(total)}</p>
                 </div>
               </div>
 
@@ -162,7 +162,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                     <div
                       key={cat.name}
                       className={cn(
-                        'rounded-xl border transition-colors',
+                        'rounded-app border transition-colors',
                         isOpen ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/60 border-slate-100 hover:bg-slate-50'
                       )}
                     >
@@ -174,8 +174,8 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-semibold text-[#0b1f4b] truncate">{cat.name}</span>
-                            <span className="text-sm font-black text-[#0b1f4b] tabular-nums shrink-0">{formatShort(cat.value)}</span>
+                            <span className="text-sm font-semibold text-app-ink truncate">{cat.name}</span>
+                            <span className="text-sm font-black text-app-ink tabular-nums shrink-0">{formatShort(cat.value)}</span>
                           </div>
                           <div className="mt-1.5 h-1.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
                             <motion.div
@@ -205,7 +205,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                                 <div key={sub.name} className="flex items-center gap-2">
                                   <Receipt className="w-3 h-3 text-slate-400 shrink-0" />
                                   <span className="text-xs text-slate-500 truncate flex-1">{sub.name}</span>
-                                  <span className="text-xs font-semibold text-[#0b1f4b] tabular-nums shrink-0">{formatCurrency(sub.amount)}</span>
+                                  <span className="text-xs font-semibold text-app-ink tabular-nums shrink-0">{formatCurrency(sub.amount)}</span>
                                   <span className="text-[10px] text-slate-400 w-8 text-right shrink-0">{sub.pct}%</span>
                                 </div>
                               ))}

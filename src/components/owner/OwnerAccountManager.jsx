@@ -102,7 +102,7 @@ const OwnerAccountManager = () => {
           <h2 className="text-xl font-semibold text-slate-800">Manajemen Akun Owner</h2>
           <p className="text-sm text-slate-500">Tambahkan owner lain yang memiliki akses penuh ke klinik ini.</p>
         </div>
-        <Button onClick={handleOpenDialog} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleOpenDialog} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" /> Tambah Owner
         </Button>
       </div>
@@ -116,7 +116,7 @@ const OwnerAccountManager = () => {
               key={owner.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+              className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col"
             >
               <div className="h-20 bg-slate-900 relative flex items-center justify-center">
                 <Crown className="text-amber-700 w-24 h-24 absolute -bottom-8 -right-8 opacity-20" />
@@ -186,7 +186,7 @@ const OwnerAccountManager = () => {
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="owner@klinik.com" />
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg space-y-2">
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-app-sm space-y-2">
               <h4 className="font-semibold text-yellow-800 flex items-center gap-2 text-sm">
                 <Lock className="w-3 h-3" /> Set Password
               </h4>
@@ -202,7 +202,7 @@ const OwnerAccountManager = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-blue-600">
+            <Button onClick={handleSave} disabled={saving} className="bg-app-accent">
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Akun
             </Button>
           </DialogFooter>

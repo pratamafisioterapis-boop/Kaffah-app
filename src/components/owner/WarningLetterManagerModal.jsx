@@ -309,15 +309,15 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
         </DialogHeader>
 
         {!clinic?.owner_full_name && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-app-sm p-2.5">
             Nama & jabatan pimpinan klinik belum diisi, sehingga kolom tanda tangan "Pihak Yang Menerbitkan" pada PDF akan kosong. Isi dulu di menu <span className="font-semibold">Pengaturan &gt; Akun &amp; Klinik</span>.
           </p>
         )}
 
-        <div className="rounded-xl border border-slate-200 p-4 space-y-4 bg-slate-50/50">
+        <div className="rounded-app border border-slate-200 p-4 space-y-4 bg-slate-50/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-app-sm bg-red-50 text-red-600 flex items-center justify-center shrink-0">
                 {form.id ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
               </div>
               <div>
@@ -371,7 +371,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
               </p>
               <div className="space-y-3">
                 {form.violations.map((v, idx) => (
-                  <div key={v.key} className="rounded-lg border border-slate-200 p-3 space-y-2 bg-white">
+                  <div key={v.key} className="rounded-app-sm border border-slate-200 p-3 space-y-2 bg-white">
                     <div className="flex items-center justify-between gap-2">
                       <div className="space-y-1.5 w-44 shrink-0">
                         <label className="text-[11px] font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''} (opsional)</label>
@@ -438,7 +438,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                   key={r.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-700 truncate">
@@ -458,7 +458,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                     <Button size="sm" variant="ghost" className="h-8 gap-1 text-slate-600" onClick={() => handleEditRecord(r)} title="Edit">
                       <Pencil className="w-3.5 h-3.5" /> Edit
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-8 gap-1 text-blue-600" onClick={() => handleView(r)} disabled={viewingId === r.id} title="Lihat">
+                    <Button size="sm" variant="ghost" className="h-8 gap-1 text-app-accent" onClick={() => handleView(r)} disabled={viewingId === r.id} title="Lihat">
                       {viewingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />} Lihat
                     </Button>
                     <Button size="sm" variant="ghost" className="h-8 gap-1 text-emerald-600" onClick={() => handleDownload(r)} disabled={viewingId === r.id} title="Download">

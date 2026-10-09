@@ -23,7 +23,7 @@ const SlotGrid = ({
 
   if (!slots || slots.length === 0) {
     return (
-      <div className="w-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+      <div className="w-full py-8 text-center bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
         <span className="text-sm text-slate-400 italic">
            {isSoapLocked ? 'Terapis terkunci: SOAP belum lengkap.' : isCutiOrSakit ? 'Therapist tidak tersedia.' : 'Tidak ada slot tersedia.'}
         </span>

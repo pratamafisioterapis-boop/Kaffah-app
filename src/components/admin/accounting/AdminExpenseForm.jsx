@@ -140,7 +140,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-4 ${!isEditMode ? 'bg-white p-6 rounded-xl border border-slate-200' : ''}`}>
+    <form onSubmit={handleSubmit} className={`space-y-4 ${!isEditMode ? 'bg-white p-6 rounded-app border border-slate-200' : ''}`}>
       {!isEditMode && <h3 className="text-lg font-semibold text-slate-900 mb-4">Record Expense</h3>}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,7 +217,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={loading} className={`flex-1 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}>
+        <Button type="submit" disabled={loading} className={`flex-1 ${isEditMode ? 'bg-app-accent hover:bg-app-accent-hover' : 'bg-red-600 hover:bg-red-700'}`}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {isEditMode ? 'Save Changes' : 'Record Expense'}
         </Button>

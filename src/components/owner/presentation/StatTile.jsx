@@ -14,10 +14,10 @@ const StatTile = ({ icon: Icon, label, value, sublabel, accent = 'amber', classN
   };
 
   return (
-    <div className={cn('rounded-2xl border bg-white/5 backdrop-blur-sm p-4 md:p-5 flex flex-col gap-2', className)}>
+    <div className={cn('rounded-app-lg border bg-white/5 backdrop-blur-sm p-4 md:p-5 flex flex-col gap-2', className)}>
       <div className="flex items-center gap-2">
         {Icon && (
-          <div className={cn('h-8 w-8 rounded-lg flex items-center justify-center border', accentClasses[accent])}>
+          <div className={cn('h-8 w-8 rounded-app-sm flex items-center justify-center border', accentClasses[accent])}>
             <Icon className="h-4 w-4" />
           </div>
         )}

@@ -161,7 +161,7 @@ const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
             </div>
          </div>
 
-         <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+         <div className="flex items-center justify-between bg-slate-50 p-3 rounded-app-sm border border-slate-100">
             <Label htmlFor="partial-mode" className="cursor-pointer">Izin Parsial (Jam Tertentu)</Label>
             <Switch 
                id="partial-mode" 

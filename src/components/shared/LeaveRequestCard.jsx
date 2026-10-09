@@ -23,7 +23,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
   const shifts = [...(request.replacement_shifts || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-app border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -50,44 +50,44 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
         </div>
 
         {request.proof_path && (
-          <button type="button" onClick={openProof} className="text-xs text-blue-700 hover:underline flex items-center gap-1.5">
+          <button type="button" onClick={openProof} className="text-xs text-app-accent-hover hover:underline flex items-center gap-1.5">
             <Paperclip className="w-3.5 h-3.5" /> Lihat surat dokter
           </button>
         )}
 
         {request.notes && (
-          <p className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">“{request.notes}”</p>
+          <p className="text-xs text-slate-600 bg-slate-50 rounded-app-sm px-3 py-2">“{request.notes}”</p>
         )}
 
         {isSundayDate(request.leave_date) && !request.is_partial && request.status !== 'rejected' && (
-          <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-app-sm px-3 py-2">
             <b>Izin hari Minggu:</b> jatah libur mingguan setelahnya (Senin / Selasa) {request.status === 'approved' ? 'dibatalkan' : 'akan dibatalkan bila disetujui'}, terapis tetap masuk.
           </p>
         )}
 
         {request.leave_type === 'event' && request.status === 'pending' && showTherapist && (
-          <p className="text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-app-sm px-3 py-2">
             Event: tentukan apakah event ini memerlukan jadwal pengganti. Bila diperlukan, tolak pengajuan dengan catatan agar terapis mengajukan kembali beserta jadwal pengganti.
           </p>
         )}
 
         {request.leave_type === 'organization' && request.status === 'pending' && showTherapist && (
-          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-app-sm px-3 py-2">
             Kegiatan organisasi: tentukan apakah kegiatan ini memerlukan jadwal pengganti. Bila diperlukan, tolak pengajuan dengan catatan agar terapis mengajukan kembali beserta jadwal pengganti.
           </p>
         )}
 
         {shifts.length === 0 ? (
-          <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">Tanpa jadwal pengganti.</p>
+          <p className="text-xs text-slate-500 bg-slate-50 rounded-app-sm px-3 py-2">Tanpa jadwal pengganti.</p>
         ) : (
-        <div className="rounded-lg bg-blue-50/60 border border-blue-100 p-3">
-          <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5 mb-2">
+        <div className="rounded-app-sm bg-app-soft/60 border border-app-accent/15 p-3">
+          <p className="text-xs font-semibold text-app-accent-hover flex items-center gap-1.5 mb-2">
             <Repeat className="w-3.5 h-3.5" />
             Jadwal pengganti · total {formatDuration(totalShiftMinutes(shifts))}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {shifts.map((s, i) => (
-              <span key={`${s.date}-${i}`} className="text-xs bg-white border border-blue-100 text-slate-700 rounded-md px-2 py-1">
+              <span key={`${s.date}-${i}`} className="text-xs bg-white border border-app-accent/15 text-slate-700 rounded-md px-2 py-1">
                 <span className="font-semibold">{formatShortDate(s.date)}</span> · {hhmm(s.start_time)}–{hhmm(s.end_time)}
               </span>
             ))}
@@ -96,13 +96,13 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
         )}
 
         {shifts.length > 0 && (
-          <p className="text-[11px] text-sky-800 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
+          <p className="text-[11px] text-sky-800 bg-sky-50 border border-sky-100 rounded-app-sm px-3 py-2">
             {attendanceImpactNote(request.is_partial)}
           </p>
         )}
 
         {request.revoked_at && (
-          <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2">
             Persetujuan dibatalkan{request.revoked_by_name ? ` oleh ${request.revoked_by_name}` : ''}
             {request.revoke_note ? `: ${request.revoke_note}` : ''}. Libur dan jadwal pengganti sudah dikembalikan.
           </p>

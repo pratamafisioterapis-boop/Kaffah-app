@@ -169,8 +169,8 @@ const PatientImportCSV = ({ onImportSuccess }) => {
         { num: 3, label: 'Preview & Validasi' },
         { num: 4, label: 'Import' }
       ].map((step) => (
-        <div key={step.num} className={`flex items-center ${activeStep >= step.num ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 border ${activeStep >= step.num ? 'bg-blue-100 border-blue-600' : 'bg-slate-50 border-slate-300'}`}>
+        <div key={step.num} className={`flex items-center ${activeStep >= step.num ? 'text-app-accent font-semibold' : 'text-slate-400'}`}>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 border ${activeStep >= step.num ? 'bg-app-accent/15 border-app-accent' : 'bg-slate-50 border-slate-300'}`}>
             {step.num}
           </div>
           <span className="hidden sm:inline">{step.label}</span>
@@ -207,7 +207,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
                 <li>Alamat</li>
                 <li>No HP (10-15 digit)</li>
             </ol>
-            <div className="bg-blue-50 p-3 rounded-md text-xs text-blue-700">
+            <div className="bg-app-soft p-3 rounded-md text-xs text-app-accent-hover">
                 <p className="font-semibold mb-1">Tips:</p>
                 <ul className="list-disc list-inside space-y-1">
                     <li>Gunakan pemisah pipa (<strong>|</strong>) bukan koma (,).</li>
@@ -220,17 +220,17 @@ const PatientImportCSV = ({ onImportSuccess }) => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-dashed border-2 hover:border-blue-400 transition-colors cursor-pointer group" onClick={downloadTemplate}>
+        <Card className="border-dashed border-2 hover:border-app-accent-bright transition-colors cursor-pointer group" onClick={downloadTemplate}>
           <CardContent className="flex flex-col items-center justify-center p-6 text-center h-full">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Download className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-full bg-app-soft flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Download className="w-6 h-6 text-app-accent" />
             </div>
             <h3 className="font-semibold text-slate-900">1. Download Template</h3>
             <p className="text-xs text-slate-500 mt-1">Template CSV format pipa (|)</p>
           </CardContent>
         </Card>
 
-        <Card className="border-dashed border-2 hover:border-blue-400 transition-colors cursor-pointer group relative">
+        <Card className="border-dashed border-2 hover:border-app-accent-bright transition-colors cursor-pointer group relative">
           <input 
             type="file" 
             ref={fileInputRef}
@@ -240,7 +240,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
           />
           <CardContent className="flex flex-col items-center justify-center p-6 text-center h-full">
             {processingFile ? (
-               <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-3" />
+               <Loader2 className="w-12 h-12 text-app-accent animate-spin mb-3" />
             ) : (
                 <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <Upload className="w-6 h-6 text-green-600" />
@@ -310,7 +310,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
                       <td className="px-4 py-2 font-medium">
                           {row.fullName || <span className="text-red-500 italic">Kosong</span>}
                       </td>
-                      <td className="px-4 py-2 text-blue-600 font-medium">{row.nickname || '-'}</td>
+                      <td className="px-4 py-2 text-app-accent font-medium">{row.nickname || '-'}</td>
                       <td className="px-4 py-2">
                           {row.birthDate || '-'}
                       </td>
@@ -342,7 +342,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
             <Button 
               onClick={handleImportCSV} 
               disabled={importing || validCount === 0}
-              className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
+              className="bg-app-accent hover:bg-app-accent-hover w-full md:w-auto"
             >
               {importing ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengimport...</>

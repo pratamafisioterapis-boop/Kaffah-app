@@ -31,7 +31,7 @@ const FinanceSlide = ({ data, dateRange }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 flex-1 min-h-0">
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
+          <div className="lg:col-span-2 rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
             <p className="text-white font-bold text-sm md:text-base mb-4">Tren Pendapatan</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -59,7 +59,7 @@ const FinanceSlide = ({ data, dateRange }) => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col justify-center gap-3">
+          <div className="rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col justify-center gap-3">
             <div className="flex items-center gap-2 text-amber-300">
               <Target className="h-4 w-4" />
               <p className="font-bold text-sm md:text-base">Break Even Point</p>

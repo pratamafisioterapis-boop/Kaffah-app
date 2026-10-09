@@ -78,6 +78,16 @@ module.exports = {
     				danger: '#F16063',
     				purple: '#9B8CF2'
     			},
+    			// Per-clinic theme tokens (set by ThemeContext). Opacity modifiers work: bg-app-accent/10.
+    			app: {
+    				accent: 'rgb(var(--app-accent-rgb) / <alpha-value>)',
+    				'accent-hover': 'rgb(var(--app-accent-hover-rgb) / <alpha-value>)',
+    				'accent-bright': 'rgb(var(--app-accent-bright-rgb) / <alpha-value>)',
+    				soft: 'rgb(var(--app-accent-soft-rgb) / <alpha-value>)',
+    				border: 'rgb(var(--app-border-rgb) / <alpha-value>)',
+    				ink: 'rgb(var(--app-ink-rgb) / <alpha-value>)',
+    				muted: 'rgb(var(--app-muted-rgb) / <alpha-value>)'
+    			},
     			chart: {
     				'1': 'hsl(var(--chart-1))',
     				'2': 'hsl(var(--chart-2))',
@@ -89,7 +99,11 @@ module.exports = {
     		borderRadius: {
     			lg: 'var(--radius)',
     			md: 'calc(var(--radius) - 2px)',
-    			sm: 'calc(var(--radius) - 4px)'
+    			sm: 'calc(var(--radius) - 4px)',
+    			// Follow the clinic's design style (default theme: 0.75rem -> 8 / 12 / 16px)
+    			'app-sm': 'calc(var(--app-radius) * 0.6667)',
+    			app: 'var(--app-radius)',
+    			'app-lg': 'calc(var(--app-radius) * 1.3333)'
     		},
     		keyframes: {
     			'accordion-down': {

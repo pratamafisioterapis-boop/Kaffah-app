@@ -218,7 +218,7 @@ export default function SplashScreen({ onDone }) {
 
         {/* Quote */}
         <div
-          className="splash-anim mt-8 px-4 py-4 rounded-2xl"
+          className="splash-anim mt-8 px-4 py-4 rounded-app-lg"
           style={{ '--d': userDetails ? '1.05s' : '0.3s', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,175,55,.2)' }}
         >
           <p className="text-white/70 text-sm leading-relaxed italic">{quote}</p>

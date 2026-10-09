@@ -148,7 +148,7 @@ const PatientSourceChart = ({ dateRange }) => {
   }, [dateRange]);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
       {/* Header */}
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
@@ -183,7 +183,7 @@ const PatientSourceChart = ({ dateRange }) => {
               return (
                 <div
                   key={s.key}
-                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors' : ''}`}
+                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-app-sm hover:bg-slate-50 transition-colors' : ''}`}
                   onClick={isClickable ? () => setSelectedLabel(s.key) : undefined}
                   role={isClickable ? 'button' : undefined}
                   tabIndex={isClickable ? 0 : undefined}
@@ -218,7 +218,7 @@ const PatientSourceChart = ({ dateRange }) => {
       </CardContent>
 
       <Dialog open={!!selectedLabel} onOpenChange={(open) => !open && setSelectedLabel(null)}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-app">
           <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <UserX className="w-4.5 h-4.5 text-slate-500" />

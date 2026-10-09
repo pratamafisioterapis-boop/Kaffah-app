@@ -56,7 +56,7 @@ const ListEditor = ({ items, onChange, fields, emptyItem }) => {
   return (
     <div className="space-y-3">
       {items_.map((item, idx) => (
-        <div key={idx} className="border border-slate-200 rounded-lg p-3 space-y-2 relative bg-slate-50/50">
+        <div key={idx} className="border border-slate-200 rounded-app-sm p-3 space-y-2 relative bg-slate-50/50">
           <button
             type="button"
             onClick={() => remove(idx)}
@@ -256,7 +256,7 @@ const LandingPageManager = () => {
       </div>
 
       {/* Template picker */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6">
         <h3 className="text-sm font-semibold text-slate-800 mb-4">Pilih Gaya Landing Page</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {LANDING_TEMPLATES.map((tpl) => (
@@ -265,7 +265,7 @@ const LandingPageManager = () => {
               type="button"
               onClick={() => handleSelectTemplate(tpl.id)}
               className={cn(
-                'relative text-left rounded-xl border-2 p-3 transition-all hover:shadow-md',
+                'relative text-left rounded-app border-2 p-3 transition-all hover:shadow-md',
                 templateId === tpl.id ? 'border-indigo-600 shadow-md' : 'border-slate-200'
               )}
             >
@@ -274,7 +274,7 @@ const LandingPageManager = () => {
                   <Check className="w-3 h-3 text-white" />
                 </span>
               )}
-              <div className="w-full h-12 mb-2.5 rounded-lg" style={{ background: `linear-gradient(135deg, ${tpl.swatch[0]}, ${tpl.swatch[1]})` }} />
+              <div className="w-full h-12 mb-2.5 rounded-app-sm" style={{ background: `linear-gradient(135deg, ${tpl.swatch[0]}, ${tpl.swatch[1]})` }} />
               <p className="text-sm font-semibold text-slate-800">{tpl.name}</p>
               <p className="text-xs text-slate-500 mt-1 leading-snug">{tpl.description}</p>
             </button>
@@ -283,7 +283,7 @@ const LandingPageManager = () => {
       </div>
 
       {/* Colors */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Palette className="w-4 h-4 text-indigo-600" />
           <h3 className="text-sm font-semibold text-slate-800">Warna (opsional)</h3>
@@ -310,7 +310,7 @@ const LandingPageManager = () => {
       </div>
 
       {/* Content sections */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-8">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6 space-y-8">
         <h3 className="text-sm font-semibold text-slate-800">Isi Konten</h3>
 
         <div className="space-y-3">
@@ -438,7 +438,7 @@ const LandingPageManager = () => {
       </div>
 
       {/* Pricelist */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6 space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-slate-800">Daftar Harga Layanan</h3>
           <p className="text-xs text-slate-500">Ditampilkan pada bagian harga di landing page klinik Anda.</p>
@@ -446,7 +446,7 @@ const LandingPageManager = () => {
 
         <div className="space-y-3">
           {pricelist.map((row) => (
-            <div key={row.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+            <div key={row.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border border-slate-200 rounded-app-sm p-3 bg-slate-50/50">
               <div className="sm:col-span-3">
                 <Input value={row.category || ''} onChange={(e) => updatePricelistRow(row.id, 'category', e.target.value)} placeholder="Kategori (mis. Fisioterapi)" className="text-sm" />
               </div>

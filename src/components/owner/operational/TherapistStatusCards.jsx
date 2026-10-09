@@ -84,7 +84,7 @@ const TherapistStatusCards = ({
         <div className="h-6 w-36 bg-slate-200 rounded animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-36 rounded-2xl bg-slate-100 animate-pulse" />
+            <div key={i} className="h-36 rounded-app-lg bg-slate-100 animate-pulse" />
           ))}
         </div>
       </div>
@@ -93,7 +93,7 @@ const TherapistStatusCards = ({
 
   if (!therapists.length) {
     return (
-      <div className="p-10 text-center bg-slate-50 rounded-2xl border text-slate-500 text-sm">
+      <div className="p-10 text-center bg-slate-50 rounded-app-lg border text-slate-500 text-sm">
         Tidak ada data terapis
       </div>
     );
@@ -132,7 +132,7 @@ const TherapistStatusCards = ({
                   navigate('/owner/appointments');
                 }
               }}
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F8CFF] focus-visible:ring-offset-2 bg-white rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[box-shadow,transform] duration-200 ease-out overflow-hidden cursor-pointer active:scale-[0.98]"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent-bright focus-visible:ring-offset-2 bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[box-shadow,transform] duration-200 ease-out overflow-hidden cursor-pointer active:scale-[0.98]"
             >
               {/* ── Desktop: layout vertikal lebih besar ── */}
               {!isPWA ? (
@@ -141,7 +141,7 @@ const TherapistStatusCards = ({
                   <div className="p-5 flex items-center gap-4">
                     {/* Avatar dengan ring warna status */}
                     <div className={`relative shrink-0`}>
-                      <div className={`w-16 h-16 rounded-2xl overflow-hidden ring-2 ${ring}`}>
+                      <div className={`w-16 h-16 rounded-app-lg overflow-hidden ring-2 ${ring}`}>
                         {therapist.avatar_url ? (
                           <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
                         ) : (
@@ -172,15 +172,15 @@ const TherapistStatusCards = ({
                   {/* Stats */}
                   <div className="p-5 pt-4">
                     <div className="grid grid-cols-3 gap-2 mb-4">
-                      <div className="text-center bg-slate-50 rounded-xl py-3 px-2">
+                      <div className="text-center bg-slate-50 rounded-app py-3 px-2">
                         <p className="text-2xl font-black text-slate-900 leading-none">{sessions}</p>
                         <p className="text-xs text-slate-500 font-semibold mt-1.5 uppercase tracking-wider">Sesi</p>
                       </div>
-                      <div className="text-center bg-slate-50 rounded-xl py-3 px-2">
+                      <div className="text-center bg-slate-50 rounded-app py-3 px-2">
                         <p className={`text-2xl font-black leading-none ${text}`}>{percentage}%</p>
                         <p className="text-xs text-slate-500 font-semibold mt-1.5 uppercase tracking-wider">Load</p>
                       </div>
-                      <div className="text-center bg-slate-50 rounded-xl py-3 px-2">
+                      <div className="text-center bg-slate-50 rounded-app py-3 px-2">
                         <p className="text-2xl font-black text-slate-900 leading-none">{totalSlots}</p>
                         <p className="text-xs text-slate-500 font-semibold mt-1.5 uppercase tracking-wider">Slot</p>
                       </div>
@@ -201,7 +201,7 @@ const TherapistStatusCards = ({
                     </div>
 
                     {/* Retensi pasien */}
-                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3">
+                    <div className="mt-3 rounded-app border border-slate-100 bg-slate-50/70 px-3.5 py-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Retensi Pasien</span>
                         <span className="text-sm font-black text-indigo-700">
@@ -230,7 +230,7 @@ const TherapistStatusCards = ({
 
                     {/* SOAP belum diisi */}
                     <div
-                      className={`mt-2 flex items-center justify-between rounded-xl px-3 py-2 border ${
+                      className={`mt-2 flex items-center justify-between rounded-app px-3 py-2 border ${
                         unfilledSoapCounts[therapist.id] > 0
                           ? 'bg-rose-50 border-rose-200'
                           : 'bg-emerald-50 border-emerald-100'
@@ -253,8 +253,8 @@ const TherapistStatusCards = ({
                 <>
                   {/* ── PWA: layout horizontal compact ── */}
                   <div className="flex items-center gap-3 p-4">
-                    <div className={`relative shrink-0 ring-2 ${ring} rounded-xl`}>
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100">
+                    <div className={`relative shrink-0 ring-2 ${ring} rounded-app`}>
+                      <div className="w-12 h-12 rounded-app overflow-hidden bg-slate-100">
                         {therapist.avatar_url ? (
                           <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
                         ) : (
@@ -288,7 +288,7 @@ const TherapistStatusCards = ({
                   </div>
 
                   {/* Retensi pasien */}
-                  <div className="mx-4 mb-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2.5 py-2">
+                  <div className="mx-4 mb-2 rounded-app-sm border border-slate-100 bg-slate-50/70 px-2.5 py-2">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Retensi Pasien</span>
                       <span className="text-xs font-black text-indigo-700">
@@ -316,7 +316,7 @@ const TherapistStatusCards = ({
                   </div>
 
                   {/* SOAP belum diisi */}
-                  <div className={`mx-4 mb-3 flex items-center justify-between rounded-lg px-2.5 py-1.5 border ${
+                  <div className={`mx-4 mb-3 flex items-center justify-between rounded-app-sm px-2.5 py-1.5 border ${
                     unfilledSoapCounts[therapist.id] > 0
                       ? 'bg-rose-50 border-rose-200'
                       : 'bg-emerald-50 border-emerald-100'

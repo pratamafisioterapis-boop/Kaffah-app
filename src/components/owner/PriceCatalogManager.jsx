@@ -161,7 +161,7 @@ const PriceCatalogManager = () => {
         </TabsList>
       </Tabs>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-7 gap-2 items-end rounded-lg border border-slate-200 p-3 bg-slate-50">
+      <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-7 gap-2 items-end rounded-app-sm border border-slate-200 p-3 bg-slate-50">
         <div className="col-span-2">
           <label className="text-xs text-slate-500">Nama</label>
           <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama item" />
@@ -197,7 +197,7 @@ const PriceCatalogManager = () => {
         <Input className="pl-8" placeholder="Cari..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-app-sm border border-slate-200">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>

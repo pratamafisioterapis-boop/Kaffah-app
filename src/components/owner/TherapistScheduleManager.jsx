@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import TherapistPickerGrid from './TherapistPickerGrid';
 
 const DAYS = [
-  { value: 1, label: 'Senin', color: 'from-blue-500 to-blue-600', badgeColor: 'bg-blue-100 text-blue-800' },
+  { value: 1, label: 'Senin', color: 'from-app-accent-bright to-app-accent', badgeColor: 'bg-app-accent/15 text-app-accent-hover' },
   { value: 2, label: 'Selasa', color: 'from-indigo-500 to-indigo-600', badgeColor: 'bg-indigo-100 text-indigo-800' },
   { value: 3, label: 'Rabu', color: 'from-purple-500 to-purple-600', badgeColor: 'bg-purple-100 text-purple-800' },
   { value: 4, label: 'Kamis', color: 'from-pink-500 to-pink-600', badgeColor: 'bg-pink-100 text-pink-800' },
@@ -128,7 +128,7 @@ const TherapistScheduleManager = () => {
     toast({ 
         title: "Jadwal Disalin", 
         description: `Jadwal ${dayName} berhasil disalin (${slots.length} slot).`,
-        className: "bg-blue-50 border-blue-200"
+        className: "bg-app-soft border-app-accent/25"
     });
   };
 
@@ -267,22 +267,22 @@ const TherapistScheduleManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white p-4 rounded-app border border-slate-200 shadow-sm sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-            <CalendarClock className="w-5 h-5 text-blue-600" />
+          <div className="w-11 h-11 rounded-app bg-app-soft flex items-center justify-center shrink-0">
+            <CalendarClock className="w-5 h-5 text-app-accent" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-800">Manajemen Jadwal</h2>
             <p className="text-sm text-slate-500">Pilih terapis untuk melihat dan mengatur jadwal</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-2.5">
-          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-blue-600" />
+        <div className="flex items-center gap-3 bg-app-soft/70 border border-app-accent/15 rounded-app px-4 py-2.5">
+          <div className="w-9 h-9 rounded-full bg-app-accent/15 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-app-accent" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-blue-700 leading-tight">Tim Fisioterapis</p>
+            <p className="text-sm font-semibold text-app-accent-hover leading-tight">Tim Fisioterapis</p>
             <p className="text-xs text-slate-500 leading-tight">Bekerja bersama untuk pemulihan yang lebih baik</p>
           </div>
         </div>
@@ -295,7 +295,7 @@ const TherapistScheduleManager = () => {
       />
 
       {!selectedTherapist ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
           <User className="w-16 h-16 mb-4 opacity-30" />
           <p className="font-medium">Silakan pilih terapis terlebih dahulu</p>
         </div>
@@ -321,7 +321,7 @@ const TherapistScheduleManager = () => {
                 <CardContent className="space-y-3">
                     <div className="text-sm text-slate-500 mb-2">
                         {copiedSchedule ? (
-                            <div className="p-3 bg-blue-100 border border-blue-200 rounded-lg text-blue-800 flex items-start gap-2">
+                            <div className="p-3 bg-blue-100 border border-blue-200 rounded-app-sm text-blue-800 flex items-start gap-2">
                                 <Copy className="w-4 h-4 mt-0.5 shrink-0" />
                                 <div>
                                     <p className="font-semibold">Menyalin: {copiedDayName}</p>
@@ -329,7 +329,7 @@ const TherapistScheduleManager = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 text-xs italic">
+                            <div className="p-3 bg-slate-100 border border-slate-200 rounded-app-sm text-slate-500 text-xs italic">
                                 Belum ada jadwal yang disalin. Klik tombol "Copy" pada salah satu hari.
                             </div>
                         )}
@@ -363,9 +363,9 @@ const TherapistScheduleManager = () => {
           <div className="lg:col-span-8">
              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border-2 border-white shadow-md ring-2 ring-blue-100">
+                  <Avatar className="h-10 w-10 border-2 border-white shadow-md ring-2 ring-app-accent/15">
                     <AvatarImage src={selectedTherapist.avatar_url} className="object-cover" />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold">
+                    <AvatarFallback className="bg-gradient-to-br from-app-accent-bright to-app-accent-hover text-white font-bold">
                       {getInitials(selectedTherapist.name)}
                     </AvatarFallback>
                   </Avatar>
@@ -386,7 +386,7 @@ const TherapistScheduleManager = () => {
 
              {loading ? (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />)}
+                  {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-slate-100 rounded-app animate-pulse" />)}
                 </div>
              ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -400,7 +400,7 @@ const TherapistScheduleManager = () => {
                                 key={day.value} 
                                 className={cn(
                                     "relative transition-all duration-300 overflow-hidden bg-white hover:shadow-2xl hover:-translate-y-1 group",
-                                    isCopiedSource ? "border-2 border-blue-500 ring-4 ring-blue-100/50" : "border-slate-200"
+                                    isCopiedSource ? "border-2 border-app-accent-bright ring-4 ring-blue-100/50" : "border-slate-200"
                                 )}
                             >
                                 <div className={cn(
@@ -474,7 +474,7 @@ const TherapistScheduleManager = () => {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="py-8 flex flex-col items-center justify-center text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
+                                        <div className="py-8 flex flex-col items-center justify-center text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-app bg-slate-50/50">
                                             <CalendarClock className="w-8 h-8 mb-2 opacity-20" />
                                             <span className="text-xs font-medium">Kosong</span>
                                         </div>

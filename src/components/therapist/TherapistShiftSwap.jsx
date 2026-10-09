@@ -145,15 +145,15 @@ const TherapistShiftSwap = ({ therapist }) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>;
+    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>;
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-5">
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
+        <section className="rounded-app border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"><Repeat className="w-3.5 h-3.5" /></span>
+            <span className="w-6 h-6 rounded-full bg-app-accent text-white text-xs flex items-center justify-center"><Repeat className="w-3.5 h-3.5" /></span>
             Ubah shift di tanggal yang sama
           </h3>
           <p className="text-xs text-slate-500 -mt-2">Hanya untuk jadwal Anda sendiri (untuk tukar jadwal Minggu dengan terapis lain, pakai tab Tukar Jadwal) dan hanya bisa jika belum ada pasien yang booking di jam yang berubah.</p>
@@ -186,14 +186,14 @@ const TherapistShiftSwap = ({ therapist }) => {
                     disabled={same}
                     onClick={() => setTarget(opt)}
                     className={cn(
-                      'text-left rounded-xl border-2 p-3 transition-all',
-                      selected ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300',
+                      'text-left rounded-app border-2 p-3 transition-all',
+                      selected ? 'border-app-accent bg-app-soft' : 'border-slate-200 bg-white hover:border-app-accent/40',
                       same && 'opacity-50 cursor-not-allowed hover:border-slate-200',
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-bold text-slate-800">{opt.name}</p>
-                      {selected && <Check className="w-4 h-4 text-blue-600" />}
+                      {selected && <Check className="w-4 h-4 text-app-accent" />}
                     </div>
                     <p className="text-sm text-slate-700 flex items-center gap-1.5 mt-0.5">
                       <Clock3 className="w-3.5 h-3.5 text-slate-400" />
@@ -207,7 +207,7 @@ const TherapistShiftSwap = ({ therapist }) => {
               })}
             </div>
             {target && date && !blockedReason && !sameAsCurrent(target) && (
-              <p className="text-xs rounded-lg bg-blue-50 text-blue-800 px-3 py-2">
+              <p className="text-xs rounded-app-sm bg-blue-50 text-blue-800 px-3 py-2">
                 Pada {formatLongDate(date)} Anda bekerja di <b>{target.name} {target.start}–{target.end}</b>. Slot booking tanggal itu menyesuaikan setelah disetujui.
               </p>
             )}
@@ -230,7 +230,7 @@ const TherapistShiftSwap = ({ therapist }) => {
           <Button
             onClick={handleSubmit}
             disabled={!!blocker || submitting}
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            className="w-full h-11 bg-app-accent hover:bg-app-accent-hover text-white font-semibold"
           >
             {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
             Kirim Pengajuan Ubah Shift
@@ -241,7 +241,7 @@ const TherapistShiftSwap = ({ therapist }) => {
       <div className="lg:col-span-2 space-y-3">
         <h3 className="font-bold text-slate-800">Pengajuan Saya</h3>
         {requests.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-xl">
+          <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
             <Repeat className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm font-medium">Belum ada pengajuan tukar shift</p>
           </div>

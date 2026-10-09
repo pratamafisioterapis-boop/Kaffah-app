@@ -132,7 +132,7 @@ const PackageFunds = () => {
         ) : (
           <>
             {/* Mobile: kartu */}
-            <div className="sm:hidden rounded-xl border bg-white divide-y divide-slate-100">
+            <div className="sm:hidden rounded-app border bg-white divide-y divide-slate-100">
               {packages.map((item) => (
                 <div key={item.id} className="p-3 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
@@ -153,7 +153,7 @@ const PackageFunds = () => {
             </div>
 
             {/* Desktop: tabel */}
-            <div className="hidden sm:block rounded-xl border overflow-x-auto bg-white">
+            <div className="hidden sm:block rounded-app border overflow-x-auto bg-white">
               <Table>
                 <TableHeader>
                   <TableRow>

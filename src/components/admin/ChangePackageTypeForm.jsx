@@ -70,7 +70,7 @@ const ChangePackageTypeForm = ({ isOpen, onClose, packageData, onSuccess }) => {
                 <p><span className="font-medium">Status:</span> {packageData?.status}</p>
             </div>
             
-            <div className="p-3 bg-blue-50 text-blue-800 text-sm rounded">
+            <div className="p-3 bg-app-soft text-app-accent-hover text-sm rounded">
                 Konfirmasi perubahan ke tipe <strong>Regular</strong>?
             </div>
 

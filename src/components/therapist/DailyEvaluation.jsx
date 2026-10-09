@@ -17,13 +17,13 @@ const DailyEvaluation = () => {
         <p className="text-slate-600 mt-1">Record patient evaluations and progress</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-12 text-center">
         <ClipboardList className="w-16 h-16 text-slate-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-slate-900 mb-2">Daily Evaluation Form</h3>
         <p className="text-slate-600 mb-6">
           Create SOAP notes and track patient progress
         </p>
-        <Button onClick={handleCreateEvaluation} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleCreateEvaluation} className="bg-app-accent hover:bg-app-accent-hover">
           Start New Evaluation
         </Button>
       </div>

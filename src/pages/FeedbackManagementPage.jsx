@@ -102,7 +102,7 @@ export const FeedbackManagementContent = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-app-accent" />
       </div>
     );
   }
@@ -110,7 +110,7 @@ export const FeedbackManagementContent = () => {
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-feedback-hero.webp"
           alt="Kaffah Physiotherapy"
@@ -119,17 +119,17 @@ export const FeedbackManagementContent = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
             >
               Feedback<br />
-              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                 Pasien
               </span>
             </h1>
-            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               Kelola link dan ulasan feedback dari pasien.
             </p>
           </div>
@@ -145,7 +145,7 @@ export const FeedbackManagementContent = () => {
         </p>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Link2 className="w-4 h-4" /> Buat Link Feedback Baru</h3>
         <div className="flex gap-2">
           <Input
@@ -153,13 +153,13 @@ export const FeedbackManagementContent = () => {
             value={patientName}
             onChange={(e) => setPatientName(e.target.value)}
           />
-          <Button onClick={handleGenerateLink} disabled={generating} className="bg-blue-600 shrink-0">
+          <Button onClick={handleGenerateLink} disabled={generating} className="bg-app-accent shrink-0">
             {generating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Link
           </Button>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800">Link Terbaru</h3>
         {links.length === 0 && <p className="text-sm text-slate-500">Belum ada link feedback dibuat.</p>}
         <div className="divide-y divide-slate-100">
@@ -184,7 +184,7 @@ export const FeedbackManagementContent = () => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
+      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800">Feedback Masuk</h3>
         <p className="text-xs text-slate-400">
           Badge "Diarahkan ke Google" berarti pasien klik tombol menuju halaman Google Review -- Google tidak
@@ -209,7 +209,7 @@ export const FeedbackManagementContent = () => {
                   </div>
                   {response.rating >= 4 && (
                     response.google_review_clicked_at ? (
-                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 mt-1">Diarahkan ke Google</Badge>
+                      <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/15 mt-1">Diarahkan ke Google</Badge>
                     ) : (
                       <Badge variant="outline" className="mt-1">Belum klik ke Google</Badge>
                     )

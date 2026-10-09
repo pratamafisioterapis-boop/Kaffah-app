@@ -158,7 +158,7 @@ const AdminDashboardMetrics = ({ dateRange }) => {
         title="Total Sesi" 
         value={metrics.totalSesi} 
         icon={Activity} 
-        colorClass="bg-blue-500" 
+        colorClass="bg-app-accent-bright" 
         loading={loading} 
       />
       <MetricCard 

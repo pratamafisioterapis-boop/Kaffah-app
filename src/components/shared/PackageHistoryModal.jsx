@@ -73,7 +73,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl shadow-2xl">
+            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-app shadow-2xl">
                 <div className="px-4 sm:px-6 py-3.5 sm:py-5 border-b border-slate-100 bg-white">
                     <DialogHeader className="flex flex-row items-center justify-between">
                         <div>
@@ -86,7 +86,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
 
                 <div className="flex-1 overflow-y-auto px-3.5 sm:px-6 py-3.5 sm:py-6 bg-slate-50/30">
                     {/* Header Info from packageData prop */}
-                    <div className="mb-4 sm:mb-6 p-3.5 sm:p-5 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div className="mb-4 sm:mb-6 p-3.5 sm:p-5 bg-white rounded-app border border-slate-200 shadow-sm">
                         {/* Mobile: compact summary row */}
                         <div className="sm:hidden">
                             <div className="flex items-start justify-between gap-2">
@@ -101,7 +101,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
 
                             <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-xl font-bold text-blue-600">{packageData?.sessions_remaining ?? '-'}</span>
+                                    <span className="text-xl font-bold text-app-accent">{packageData?.sessions_remaining ?? '-'}</span>
                                     <span className="text-slate-400 text-xs font-medium">/ {packageData?.total_sessions ?? '-'} sesi tersisa</span>
                                 </div>
                                 {packageData?.end_date && (
@@ -134,7 +134,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                 <span className="text-sm text-slate-500">Sisa Sesi:</span>
                                 <div className="flex items-center gap-1">
-                                    <span className="text-2xl font-bold text-blue-600">{packageData?.sessions_remaining ?? '-'}</span>
+                                    <span className="text-2xl font-bold text-app-accent">{packageData?.sessions_remaining ?? '-'}</span>
                                     <span className="text-slate-400 text-sm font-medium">/ {packageData?.total_sessions ?? '-'} Sesi</span>
                                 </div>
                             </div>
@@ -147,12 +147,12 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden">
                         {/* Mobile / PWA: kartu, tanpa geser horizontal */}
                         <div className="sm:hidden divide-y divide-slate-100">
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center gap-3 p-12 text-center text-slate-500">
-                                    <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                                    <Loader2 className="animate-spin h-8 w-8 text-app-accent-bright" />
                                     <span className="text-sm font-medium text-slate-600">Memuat riwayat...</span>
                                 </div>
                             ) : history.length === 0 ? (
@@ -208,7 +208,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                         <tr>
                                             <td colSpan={4} className="p-12 text-center text-slate-500">
                                                 <div className="flex flex-col items-center justify-center gap-3">
-                                                    <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                                                    <Loader2 className="animate-spin h-8 w-8 text-app-accent-bright" />
                                                     <span className="text-sm font-medium text-slate-600">Memuat riwayat...</span>
                                                 </div>
                                             </td>
@@ -238,7 +238,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                             const displayPatientName = isDifferent ? actualName : (ownerName || '-');
 
                                             return (
-                                                <tr key={item.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50/30 transition-colors`}>
+                                                <tr key={item.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-app-soft/30 transition-colors`}>
                                                     <td className="px-5 py-4 text-slate-700 align-middle whitespace-nowrap font-medium">
                                                         {formatDateIndonesian(item.recap_date)}
                                                     </td>

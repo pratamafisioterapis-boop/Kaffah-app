@@ -48,7 +48,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
 
   if (rows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/30">
+      <div className="flex flex-col items-center justify-center py-12 text-center rounded-app-lg border-2 border-dashed border-slate-200 bg-slate-50/30">
         <div className="p-3 rounded-full bg-slate-100 mb-3"><FileX2 className="w-6 h-6 text-slate-400" /></div>
         <p className="text-sm text-slate-500">Belum ada dokumen yang dibuat.</p>
       </div>
@@ -60,7 +60,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
       {/* Mobile / PWA: cards */}
       <div className="sm:hidden space-y-3">
         {rows.map((row) => (
-          <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+          <div key={row.id} className="rounded-app border border-slate-200 bg-white p-4 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium text-slate-900 break-words">{row.data?.patient_name || row.patients?.full_name || '-'}</p>
@@ -81,7 +81,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
       </div>
 
       {/* Desktop: table */}
-      <div className="hidden sm:block overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+      <div className="hidden sm:block overflow-x-auto rounded-app-lg border border-slate-200 shadow-sm bg-white">
         <table className="w-full text-sm text-left">
           <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
             <tr>

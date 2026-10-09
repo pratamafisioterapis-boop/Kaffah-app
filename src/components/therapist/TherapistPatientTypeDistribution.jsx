@@ -55,9 +55,9 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
 
   const total = Object.values(patientTypeStats).reduce((s, v) => s + v, 0);
   const colors = [
-    { bar: 'bg-indigo-500', light: 'bg-indigo-50', text: 'text-indigo-600' },
+    { bar: 'bg-app-accent-bright', light: 'bg-app-soft', text: 'text-app-accent' },
     { bar: 'bg-violet-500', light: 'bg-violet-50', text: 'text-violet-600' },
-    { bar: 'bg-blue-500',   light: 'bg-blue-50',   text: 'text-blue-600'   },
+    { bar: 'bg-app-accent-bright',   light: 'bg-app-soft',   text: 'text-app-accent'   },
     { bar: 'bg-cyan-500',   light: 'bg-cyan-50',   text: 'text-cyan-600'   },
     { bar: 'bg-teal-500',   light: 'bg-teal-50',   text: 'text-teal-600'   },
     { bar: 'bg-emerald-500',light: 'bg-emerald-50',text: 'text-emerald-600' },
@@ -72,12 +72,12 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
     : [];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-            <Users className="w-3.5 h-3.5 text-indigo-500" />
+          <div className="w-7 h-7 rounded-app-sm bg-app-soft flex items-center justify-center">
+            <Users className="w-3.5 h-3.5 text-app-accent-bright" />
           </div>
           <h3 className="text-sm font-bold text-slate-700">Distribusi Tipe Pasien</h3>
         </div>
@@ -90,14 +90,14 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
       {/* Content */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mb-3 animate-pulse">
+          <div className="w-10 h-10 rounded-app bg-slate-50 flex items-center justify-center mb-3 animate-pulse">
             <Users className="w-5 h-5 text-slate-300" />
           </div>
           <p className="text-xs font-medium text-slate-400">Memuat data...</p>
         </div>
       ) : sortedTypes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center mb-3">
+          <div className="w-10 h-10 rounded-app bg-slate-50 flex items-center justify-center mb-3">
             <Users className="w-5 h-5 text-slate-300" />
           </div>
           <p className="text-xs font-medium text-slate-400">Belum ada data periode ini</p>
@@ -112,7 +112,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                   key={type}
                   type="button"
                   onClick={() => setSelectedType(type)}
-                  className="w-full flex items-center gap-3 group text-left rounded-lg -mx-1 px-1 py-0.5 hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center gap-3 group text-left rounded-app-sm -mx-1 px-1 py-0.5 hover:bg-slate-50 transition-colors"
                 >
                   {/* Color dot */}
                   <div className={`w-2 h-2 rounded-full shrink-0 ${color.bar}`} />
@@ -132,7 +132,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                     {count}
                   </span>
                   {/* Click affordance */}
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 group-hover:text-app-accent-bright group-hover:translate-x-0.5 transition-all" />
                 </button>
               );
             })}
@@ -147,7 +147,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 capitalize">
-              <Users className="w-5 h-5 text-indigo-500" />
+              <Users className="w-5 h-5 text-app-accent-bright" />
               {selectedType ? selectedType.toLowerCase() : ''}
               <span className="text-xs font-normal text-slate-400 normal-case">
                 ({selectedRecaps.length} kunjungan)
@@ -172,7 +172,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                 return (
                   <div
                     key={item.id}
-                    className="border border-slate-200 rounded-xl p-3.5 bg-white hover:border-indigo-200 transition-colors"
+                    className="border border-slate-200 rounded-app p-3.5 bg-white hover:border-app-accent/25 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

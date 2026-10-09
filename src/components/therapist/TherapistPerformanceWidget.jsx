@@ -127,8 +127,8 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center justify-center h-48">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-6 flex items-center justify-center h-48">
+        <Loader2 className="w-6 h-6 animate-spin text-app-accent-bright" />
       </div>
     );
   }
@@ -145,13 +145,13 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
     : (achievement / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
 
       {/* Header */}
       <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+          <div className="w-7 h-7 rounded-app-sm bg-app-soft flex items-center justify-center shrink-0">
+            <TrendingUp className="w-3.5 h-3.5 text-app-accent-bright" />
           </div>
           <h3 className="text-sm font-bold text-slate-700 truncate">Performa Bulan Ini</h3>
         </div>
@@ -236,12 +236,12 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
                       className={cn(
                         "w-full rounded-t-md transition-all duration-500",
                         count === 0 ? 'bg-slate-100' :
-                        isToday ? 'bg-indigo-500' : 'bg-indigo-200'
+                        isToday ? 'bg-app-accent-bright' : 'bg-app-accent/25'
                       )}
                       style={{ height: count === 0 ? '4px' : `${Math.max(heightPct, 10)}%` }}
                     />
                   </div>
-                  <span className={cn("text-[9px] font-medium", isToday ? 'text-indigo-600' : 'text-slate-400')}>
+                  <span className={cn("text-[9px] font-medium", isToday ? 'text-app-accent' : 'text-slate-400')}>
                     {format(new Date(date), 'EEE', { locale: idLocale })}
                   </span>
                 </div>
@@ -252,18 +252,18 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
 
         {/* ── Baris 3: Badge status ── */}
         <div className={cn(
-          "rounded-xl px-4 py-3 flex items-center gap-3",
+          "rounded-app px-4 py-3 flex items-center gap-3",
           achievement >= 100 ? 'bg-emerald-50 border border-emerald-100' :
-          achievement >= 60 ? 'bg-indigo-50 border border-indigo-100' :
+          achievement >= 60 ? 'bg-app-soft border border-app-accent/15' :
           'bg-amber-50 border border-amber-100'
         )}>
           <Award className={cn("w-5 h-5 shrink-0",
             achievement >= 100 ? 'text-emerald-500' :
-            achievement >= 60 ? 'text-indigo-500' : 'text-amber-500'
+            achievement >= 60 ? 'text-app-accent-bright' : 'text-amber-500'
           )} />
           <p className={cn("text-xs font-medium",
             achievement >= 100 ? 'text-emerald-700' :
-            achievement >= 60 ? 'text-indigo-700' : 'text-amber-700'
+            achievement >= 60 ? 'text-app-accent-hover' : 'text-amber-700'
           )}>
             {achievement >= 100 ? 'Target tercapai! Luar biasa! 🎉'
               : achievement >= 80 ? 'Hampir sampai! Sedikit lagi! 🔥'

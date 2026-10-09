@@ -15,8 +15,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
 
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    /* Brand accent (default "Clinara" theme). ThemeContext overrides these per clinic. */
+    --primary: 209 81% 45%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
@@ -32,9 +33,20 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 209 81% 45%;
 
     --radius: 0.5rem;
+
+    /* Per-clinic design tokens (defaults = default theme; see ThemeContext.applyThemeVars).
+       Channels are space-separated RGB so Tailwind opacity modifiers work: bg-app-accent/10. */
+    --app-radius: 0.75rem;
+    --app-accent-rgb: 22 119 210;
+    --app-accent-hover-rgb: 18 95 172;
+    --app-accent-bright-rgb: 47 140 255;
+    --app-accent-soft-rgb: 234 244 255;
+    --app-border-rgb: 220 232 242;
+    --app-ink-rgb: 16 47 82;
+    --app-muted-rgb: 91 107 125;
 
     --chart-1: 12 76% 61%;
 
@@ -151,5 +163,32 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ── Shared interaction details ─────────────────────────────────────────── */
+@layer base {
+  /* One keyboard focus ring for every control, in the clinic's accent color.
+     Specificity is above a bare `.outline-none`, below `focus-visible:outline-none`
+     (which components use when they draw their own ring). */
+  :is(a, button, [role='button'], [role='link'], [role='tab'], summary, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--app-accent-rgb));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Grows the tappable area of small icon buttons to ~44px without changing how they look. */
+  .tap-target { position: relative; }
+  .tap-target::before { content: ''; position: absolute; inset: -0.5rem; }
+}
+
+/* Reduced motion: keep fades (they carry state), drop travel and zoom. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-enter-scale: 1;
+    --tw-enter-rotate: 0;
   }
 }

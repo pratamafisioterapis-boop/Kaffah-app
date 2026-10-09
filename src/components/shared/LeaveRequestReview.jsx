@@ -85,7 +85,7 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>;
+    return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-app-accent" /></div>;
   }
 
   return (
@@ -98,7 +98,7 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
       </div>
 
       {pending.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-xl">
+        <div className="flex flex-col items-center justify-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
           <Inbox className="w-8 h-8 mb-2 opacity-40" />
           <p className="text-sm font-medium">Tidak ada pengajuan yang menunggu</p>
         </div>

@@ -74,13 +74,13 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 rounded-2xl">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 rounded-app-lg">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0"
           style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)', borderBottom: '1px solid #334155' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
+            <div className="w-9 h-9 rounded-app flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
               <FileText className="w-4 h-4" style={{ color: '#818cf8' }} />
             </div>
             <div>
@@ -91,13 +91,13 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
           <div className="flex items-center gap-2">
             {onEdit && (
               <button onClick={() => { onClose(); onEdit(record); }}
-                className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-bold transition-all"
                 style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
             )}
             <button onClick={onClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+              className="w-8 h-8 rounded-app flex items-center justify-center transition-all"
               style={{ background: 'rgba(255,255,255,0.1)', color: '#94a3b8' }}>
               <X className="w-4 h-4" />
             </button>

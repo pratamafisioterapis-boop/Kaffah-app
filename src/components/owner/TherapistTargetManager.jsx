@@ -379,11 +379,11 @@ const TherapistTargetManager = () => {
       <div className="flex justify-between items-center">
         <div>
            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-             <Target className="w-6 h-6 text-blue-600" /> Target Terapis
+             <Target className="w-6 h-6 text-app-accent" /> Target Terapis
            </h2>
            <p className="text-slate-500">Atur target kunjungan terapis berdasarkan periode.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => handleOpenDialog()} className="bg-app-accent hover:bg-app-accent-hover">
            <Plus className="w-4 h-4 mr-2" /> Tambah Target
         </Button>
       </div>
@@ -391,7 +391,7 @@ const TherapistTargetManager = () => {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-300" /></div>
       ) : targets.length === 0 ? (
-        <div className="bg-white border rounded-xl shadow-sm text-center py-12">
+        <div className="bg-white border rounded-app shadow-sm text-center py-12">
           <div className="flex flex-col items-center justify-center text-slate-500">
             <p className="font-medium">Belum ada target terapis</p>
             <p className="text-sm mt-1">Klik 'Tambah Target' untuk membuat target baru</p>
@@ -416,7 +416,7 @@ const TherapistTargetManager = () => {
                 <div className="p-5 pl-6">
                   <div className="flex items-start justify-between gap-2 mb-4">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                      <div className="w-11 h-11 rounded-app bg-gradient-to-br from-app-accent to-indigo-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
                         {getInitials(therapistName)}
                       </div>
                       <div className="min-w-0">
@@ -431,7 +431,7 @@ const TherapistTargetManager = () => {
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpenDialog(item)}>
-                        <Edit2 className="w-3.5 h-3.5 text-slate-500 hover:text-blue-600" />
+                        <Edit2 className="w-3.5 h-3.5 text-slate-500 hover:text-app-accent" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(item.id)}>
                         <Trash2 className="w-3.5 h-3.5 text-slate-500 hover:text-red-600" />
@@ -515,14 +515,14 @@ const TherapistTargetManager = () => {
                         key={t.id}
                         type="button"
                         onClick={() => handleSelectTherapist(t)}
-                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-all text-center ${
+                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-app-sm border transition-all text-center ${
                           isActive
-                            ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200'
+                            ? 'border-app-accent-bright bg-app-soft shadow-sm ring-1 ring-app-accent/25'
                             : 'border-slate-200 bg-white hover:border-slate-300'
                         }`}
                       >
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
-                          isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                          isActive ? 'bg-app-accent text-white' : 'bg-slate-100 text-slate-500'
                         }`}>
                           {getInitials(t.name)}
                         </div>
@@ -605,7 +605,7 @@ const TherapistTargetManager = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-blue-600">
+            <Button onClick={handleSave} disabled={saving} className="bg-app-accent">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} Simpan
             </Button>
           </DialogFooter>

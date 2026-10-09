@@ -16,12 +16,12 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
+      <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden sm:rounded-app">
         <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pr-8">
             <div>
               <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-blue-600" />
+                <ClipboardList className="w-5 h-5 text-app-accent" />
                 Riwayat Evaluasi Harian (SOAP)
               </DialogTitle>
               <DialogDescription className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -53,16 +53,16 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                     )}
                     
                     {/* Timeline Dot */}
-                    <div className="absolute left-0 top-2 h-[24px] w-[24px] rounded-full border-4 border-white bg-blue-600 shadow-sm z-10 flex items-center justify-center">
+                    <div className="absolute left-0 top-2 h-[24px] w-[24px] rounded-full border-4 border-white bg-app-accent shadow-sm z-10 flex items-center justify-center">
                     <div className="w-1.5 h-1.5 bg-white rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                    <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
                     {/* Record Header */}
                     <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex flex-wrap gap-y-2 justify-between items-center">
                         <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                            <Calendar className="w-4 h-4 text-blue-500" />
+                            <Calendar className="w-4 h-4 text-app-accent-bright" />
                             {format(new Date(record.created_at), 'EEEE, dd MMMM yyyy', { locale: id })}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -84,7 +84,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                             <span className="w-6 h-6 rounded-md bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">S</span>
                             Subjective
                             </h4>
-                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
+                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
                             {record.subjective || <span className="text-slate-400 italic">Tidak ada catatan</span>}
                             </div>
                         </div>
@@ -94,7 +94,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                             <span className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">O</span>
                             Objective
                             </h4>
-                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
+                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
                             {record.objective || <span className="text-slate-400 italic">Tidak ada catatan</span>}
                             </div>
                         </div>
@@ -104,7 +104,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                             <span className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">A</span>
                             Assessment
                             </h4>
-                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
+                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
                             {record.assessment || <span className="text-slate-400 italic">Tidak ada catatan</span>}
                             </div>
                         </div>
@@ -114,7 +114,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                             <span className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">P</span>
                             Plan
                             </h4>
-                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
+                            <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
                             {record.plan || <span className="text-slate-400 italic">Tidak ada catatan</span>}
                             </div>
                         </div>
@@ -125,7 +125,7 @@ const DailyEvaluationDetailModal = ({ isOpen, onClose, patientData }) => {
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 Catatan Tambahan
                             </h4>
-                            <p className="text-sm text-slate-600 bg-yellow-50/50 p-3 rounded-lg border border-yellow-100 italic">
+                            <p className="text-sm text-slate-600 bg-yellow-50/50 p-3 rounded-app-sm border border-yellow-100 italic">
                             "{record.treatment_notes}"
                             </p>
                         </div>

@@ -33,13 +33,13 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama terapis..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-app border border-slate-200 bg-white outline-none focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15 transition-all"
           />
         </div>
       )}
 
       {activeTherapists.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
+        <div className="flex flex-col items-center justify-center py-10 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
           <User className="w-10 h-10 mb-2 opacity-30" />
           <p className="text-sm font-medium">{emptyLabel}</p>
         </div>
@@ -52,10 +52,10 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                 key={t.id}
                 onClick={() => onSelect(t)}
                 className={cn(
-                  "group flex items-center gap-3.5 p-4 rounded-2xl border bg-white text-left transition-all",
+                  "group flex items-center gap-3.5 p-4 rounded-app-lg border bg-white text-left transition-all",
                   selected
-                    ? "border-blue-400 bg-blue-50/60 shadow-sm ring-1 ring-blue-200"
-                    : "border-slate-200 hover:border-blue-200 hover:shadow-md"
+                    ? "border-app-accent-bright bg-app-soft/60 shadow-sm ring-1 ring-app-accent/25"
+                    : "border-slate-200 hover:border-app-accent/25 hover:shadow-md"
                 )}
               >
                 <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 ring-2 ring-white shadow-sm bg-slate-100">
@@ -71,7 +71,7 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                   ) : (
                     <div className={cn(
                       "w-full h-full flex items-center justify-center font-bold text-base",
-                      selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                      selected ? "bg-app-accent text-white" : "bg-slate-100 text-slate-500"
                     )}>
                       {getInitials(t.name)}
                     </div>
@@ -81,7 +81,7 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
                 <div className="min-w-0 flex-1">
                   <p className={cn(
                     "text-sm font-bold leading-snug truncate",
-                    selected ? "text-blue-700" : "text-slate-800"
+                    selected ? "text-app-accent-hover" : "text-slate-800"
                   )}>
                     {t.name}
                   </p>
@@ -103,7 +103,7 @@ const TherapistPickerGrid = ({ therapists, selectedId, onSelect, emptyLabel = 'B
 
                 <ChevronRight className={cn(
                   "w-4 h-4 shrink-0 transition-colors",
-                  selected ? "text-blue-500" : "text-slate-300 group-hover:text-slate-400"
+                  selected ? "text-app-accent-bright" : "text-slate-300 group-hover:text-slate-400"
                 )} />
               </button>
             );

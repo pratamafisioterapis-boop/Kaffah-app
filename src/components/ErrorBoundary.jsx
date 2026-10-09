@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component {
       // You can render any custom fallback UI
       return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center bg-red-50 p-6 z-50 fixed inset-0">
-          <div className="max-w-2xl w-full bg-white rounded-xl shadow-2xl overflow-hidden border-2 border-red-500">
+          <div className="max-w-2xl w-full bg-white rounded-app shadow-2xl overflow-hidden border-2 border-red-500">
             <div className="bg-red-600 px-6 py-4">
               <h1 className="text-xl font-bold text-white flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component {
                 Something went wrong while rendering this page.
               </p>
               
-              <div className="bg-slate-900 rounded-lg p-4 mb-6 overflow-auto max-h-64 shadow-inner">
+              <div className="bg-slate-900 rounded-app-sm p-4 mb-6 overflow-auto max-h-64 shadow-inner">
                 <p className="text-red-400 font-mono text-sm font-bold mb-2">
                   {this.state.error && this.state.error.toString()}
                 </p>

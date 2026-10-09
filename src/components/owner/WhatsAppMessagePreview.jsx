@@ -51,7 +51,7 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName })
   const currentTime = format(new Date(), 'HH:mm');
 
   return (
-    <div className="w-full max-w-sm mx-auto bg-[#e5ddd5] rounded-lg overflow-hidden shadow-md border border-slate-200">
+    <div className="w-full max-w-sm mx-auto bg-[#e5ddd5] rounded-app-sm overflow-hidden shadow-md border border-slate-200">
       {/* Header */}
       <div className="bg-[#075e54] p-3 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[#075e54] font-bold text-xs">
@@ -65,7 +65,7 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName })
       
       {/* Chat Area */}
       <div className="p-4 min-h-[200px] flex flex-col justify-end">
-        <div className="self-start bg-white rounded-tr-lg rounded-br-lg rounded-bl-lg p-2 max-w-[90%] shadow-sm relative mb-2">
+        <div className="self-start bg-white rounded-tr-app-sm rounded-br-app-sm rounded-bl-app-sm p-2 max-w-[90%] shadow-sm relative mb-2">
             <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
               {message || <span className="text-slate-400 italic">Preview pesan akan muncul di sini...</span>}
             </p>

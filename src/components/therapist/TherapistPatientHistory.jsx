@@ -31,7 +31,7 @@ const QUICK_FILTERS = [
 ];
 
 const TYPE_COLOR_PALETTE = [
-  'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'bg-app-soft text-app-accent-hover border-app-accent/25',
   'bg-emerald-50 text-emerald-700 border-emerald-200',
   'bg-amber-50 text-amber-700 border-amber-200',
   'bg-rose-50 text-rose-700 border-rose-200',
@@ -183,8 +183,8 @@ const TherapistPatientHistory = ({ therapist }) => {
   const renderSortIcon = (field) => {
     if (sortConfig.sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-slate-300 ml-1" />;
     return sortConfig.sortOrder === 'asc'
-      ? <ArrowUp className="w-3 h-3 text-indigo-600 ml-1" />
-      : <ArrowDown className="w-3 h-3 text-indigo-600 ml-1" />;
+      ? <ArrowUp className="w-3 h-3 text-app-accent ml-1" />
+      : <ArrowDown className="w-3 h-3 text-app-accent ml-1" />;
   };
 
   const patientTypeOptions = useMemo(() => {
@@ -242,16 +242,16 @@ const TherapistPatientHistory = ({ therapist }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 shadow-xl">
-        <div className="absolute -top-16 -right-16 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-slate-900 via-app-ink to-slate-900 p-6 shadow-xl">
+        <div className="absolute -top-16 -right-16 w-56 h-56 bg-app-accent-bright/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-10 w-56 h-56 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-app bg-white/10 ring-1 ring-white/20 backdrop-blur">
               <Sparkles className="h-6 w-6 text-amber-300" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">
+              <p className="text-xs font-bold uppercase tracking-widest text-app-soft/60">
                 {therapist?.name || 'Terapis'}
               </p>
               <h2 className="text-xl md:text-2xl font-bold text-white">Riwayat Pasien</h2>
@@ -260,15 +260,15 @@ const TherapistPatientHistory = ({ therapist }) => {
           </div>
 
           <div className="grid grid-cols-3 gap-3 w-full md:w-auto">
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
+            <div className="rounded-app bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
               <p className="text-lg font-bold text-white">{stats.totalVisits}</p>
               <p className="text-[10px] uppercase tracking-wide text-slate-400 mt-0.5">Kunjungan</p>
             </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
+            <div className="rounded-app bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
               <p className="text-lg font-bold text-white">{stats.uniquePatients}</p>
               <p className="text-[10px] uppercase tracking-wide text-slate-400 mt-0.5">Pasien Unik</p>
             </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
+            <div className="rounded-app bg-white/5 border border-white/10 px-3 py-2 text-center backdrop-blur">
               <p className="text-[11px] font-bold text-white truncate" title={periodLabel}>{periodLabel}</p>
               <p className="text-[10px] uppercase tracking-wide text-slate-400 mt-0.5">Periode Saya</p>
             </div>
@@ -284,7 +284,7 @@ const TherapistPatientHistory = ({ therapist }) => {
               key={f.key}
               size="sm"
               variant={activeQuickFilter === f.key ? 'default' : 'outline'}
-              className={activeQuickFilter === f.key ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
+              className={activeQuickFilter === f.key ? 'bg-app-accent hover:bg-app-accent-hover text-white' : ''}
               onClick={() => handleQuickFilter(f.key)}
             >
               {f.label}
@@ -301,7 +301,7 @@ const TherapistPatientHistory = ({ therapist }) => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 md:items-end">
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-app-sm border border-slate-200">
             <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 shrink-0">
               <CalendarRange className="w-3.5 h-3.5" />Periode:
             </div>
@@ -378,7 +378,7 @@ const TherapistPatientHistory = ({ therapist }) => {
       {isPWA ? (
         <div className="space-y-2">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-indigo-600" /></div>
+            <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-app-accent" /></div>
           ) : paginatedList.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-sm">
               <History className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -387,7 +387,7 @@ const TherapistPatientHistory = ({ therapist }) => {
           ) : paginatedList.map((r) => {
             const diagnosisList = getDiagnosisList(r);
             return (
-              <div key={r.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+              <div key={r.id} className="bg-white rounded-app-lg border border-slate-100 p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-800 text-sm truncate">{getPatientName(r)}</p>
@@ -435,7 +435,7 @@ const TherapistPatientHistory = ({ therapist }) => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-indigo-600" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-app-accent" /></TableCell></TableRow>
                 ) : sortedList.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-12 text-slate-500">

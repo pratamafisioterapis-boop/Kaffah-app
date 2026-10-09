@@ -145,11 +145,11 @@ const FollowUpManagementPage = () => {
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
             {/* Hero Banner */}
-            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
+            <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
               <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
                     <MessageCircle className="w-6 h-6 text-amber-300" />
                   </div>
                   <div>
@@ -182,8 +182,8 @@ const FollowUpManagementPage = () => {
             </div>
 
             <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-900 font-semibold">Automated Follow Up System</AlertTitle>
+                <Info className="h-4 w-4 text-app-accent" />
+                <AlertTitle className="text-app-ink font-semibold">Automated Follow Up System</AlertTitle>
                 <AlertDescription className="text-xs mt-1 space-y-1">
                     <p>• <strong>Auto-Triggers:</strong> Booking confirmations, daily recap follow-ups, and referral rewards (Tab Reward) are created automatically.</p>
                     <p>• <strong>Scheduled Tasks:</strong> Therapy reminders (H-0), Package Expiry (H-7,3,1), and Birthdays are auto-generated daily at 00:00 via cron.</p>
@@ -220,7 +220,7 @@ const FollowUpManagementPage = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                         </div>
                     ) : filteredItems.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                        <div className="flex flex-col items-center justify-center py-16 bg-slate-50 rounded-app border-2 border-dashed border-slate-200">
                             <CheckCircle2 className="w-12 h-12 text-slate-300 mb-3" />
                             <h3 className="text-lg font-medium text-slate-900">Tidak ada antrian</h3>
                             <p className="text-slate-500 mb-4">Semua follow up untuk kategori ini sudah selesai!</p>

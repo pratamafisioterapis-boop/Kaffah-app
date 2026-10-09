@@ -18,22 +18,22 @@ const AdminMetrics = () => {
         </div>
 
         {/* Operational Section */}
-        <Card className="rounded-xl shadow-lg border border-gray-100 bg-white p-6">
+        <Card className="rounded-app shadow-lg border border-gray-100 bg-white p-6">
           <CardHeader className="p-0 mb-4">
-            <CardTitle className="text-2xl font-bold text-blue-700 flex items-center gap-3">
+            <CardTitle className="text-2xl font-bold text-app-accent-hover flex items-center gap-3">
               <Settings className="w-6 h-6" />
               Operational Dashboard
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="min-h-[200px] flex items-center justify-center bg-blue-50/50 border border-blue-100 rounded-lg text-blue-400 text-lg font-medium italic">
+            <div className="min-h-[200px] flex items-center justify-center bg-app-soft/50 border border-app-accent/15 rounded-app-sm text-app-accent-bright text-lg font-medium italic">
               Area untuk konten operasional akan ditampilkan di sini.
             </div>
           </CardContent>
         </Card>
 
         {/* Finance Section */}
-        <Card className="rounded-xl shadow-lg border border-gray-100 bg-white p-6">
+        <Card className="rounded-app shadow-lg border border-gray-100 bg-white p-6">
           <CardHeader className="p-0 mb-4">
             <CardTitle className="text-2xl font-bold text-emerald-700 flex items-center gap-3">
               <DollarSign className="w-6 h-6" />
@@ -41,7 +41,7 @@ const AdminMetrics = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="min-h-[200px] flex items-center justify-center bg-emerald-50/50 border border-emerald-100 rounded-lg text-emerald-400 text-lg font-medium italic">
+            <div className="min-h-[200px] flex items-center justify-center bg-emerald-50/50 border border-emerald-100 rounded-app-sm text-emerald-400 text-lg font-medium italic">
               Area untuk konten finansial akan ditampilkan di sini.
             </div>
           </CardContent>

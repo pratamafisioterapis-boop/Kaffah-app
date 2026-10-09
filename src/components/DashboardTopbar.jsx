@@ -655,34 +655,34 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
   return (
     <>
-    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-[#EAF4FF]/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
+    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-app-soft/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
       {/* Clipped separately from the content below so it never crops the
           search results dropdown, which must overflow past this header. */}
       <div className="absolute inset-0 overflow-hidden rounded-b-[20px] pointer-events-none sm:hidden" aria-hidden="true">
-        <div className="absolute -top-12 -right-8 w-28 h-28 rounded-full bg-[#1677D2]/10 blur-2xl" />
-        <div className="absolute -top-6 right-16 w-14 h-14 rounded-full bg-[#2F8CFF]/10 blur-xl" />
+        <div className="absolute -top-12 -right-8 w-28 h-28 rounded-full bg-app-accent/10 blur-2xl" />
+        <div className="absolute -top-6 right-16 w-14 h-14 rounded-full bg-app-accent-bright/10 blur-xl" />
       </div>
       <div className="relative flex items-center gap-2 sm:gap-3">
         <div className="relative flex-1 min-w-0 max-w-md" ref={searchRef}>
           <div
             className={cn(
-              'flex items-center gap-1.5 bg-white border rounded-full sm:rounded-xl px-2.5 h-9 transition-colors shadow-sm',
-              isSearchOpen ? 'border-[#1677D2]' : 'border-[#DCE8F2]'
+              'flex items-center gap-1.5 bg-white border rounded-full sm:rounded-app px-2.5 h-9 transition-colors shadow-sm',
+              isSearchOpen ? 'border-app-accent' : 'border-app-border'
             )}
           >
-            <Search className="w-3.5 h-3.5 text-[#5B6B7D] flex-shrink-0" />
+            <Search className="w-3.5 h-3.5 text-app-muted flex-shrink-0" />
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setIsSearchOpen(true); }}
               onFocus={() => setIsSearchOpen(true)}
               placeholder="Cari pasien, appointment..."
-              className="flex-1 min-w-0 bg-transparent outline-none text-[13px] sm:text-sm text-[#102F52] placeholder:text-[#5B6B7D] placeholder:truncate"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[13px] sm:text-sm text-app-ink placeholder:text-app-muted placeholder:truncate"
             />
             {query && (
               <button
                 onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                className="text-[#5B6B7D] hover:text-[#102F52] flex-shrink-0"
+                className="text-app-muted hover:text-app-ink flex-shrink-0"
                 aria-label="Hapus pencarian"
               >
                 <X className="w-3 h-3" />
@@ -691,38 +691,38 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           </div>
 
           {isSearchOpen && hasQuery && (
-            <div className="absolute left-0 right-0 mt-2 bg-white border border-[#DCE8F2] rounded-xl shadow-lg max-h-[70vh] overflow-y-auto z-30">
+            <div className="absolute left-0 right-0 mt-2 bg-white border border-app-border rounded-app shadow-lg max-h-[70vh] overflow-y-auto z-30">
               {isSearching ? (
-                <div className="p-4 text-sm text-[#5B6B7D]">Mencari...</div>
+                <div className="p-4 text-sm text-app-muted">Mencari...</div>
               ) : !hasResults ? (
-                <div className="p-4 text-sm text-[#5B6B7D]">Tidak ada hasil untuk &ldquo;{query}&rdquo;</div>
+                <div className="p-4 text-sm text-app-muted">Tidak ada hasil untuk &ldquo;{query}&rdquo;</div>
               ) : (
                 <div className="py-2">
                   {results.summary && (
-                    <div className="mx-2 mb-2 p-3 rounded-lg bg-[#EAF4FF] border border-[#DCE8F2]">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1677D2] mb-1.5">Ringkasan Pasien</div>
-                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-[#102F52]">
+                    <div className="mx-2 mb-2 p-3 rounded-app-sm bg-app-soft border border-app-border">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-app-accent mb-1.5">Ringkasan Pasien</div>
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-app-ink">
                         <div className="flex flex-col">
-                          <span className="text-[#5B6B7D]">Total sesi selesai</span>
+                          <span className="text-app-muted">Total sesi selesai</span>
                           <span className="font-medium">{results.summary.totalSessions}x</span>
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[#5B6B7D]">Terapis favorit</span>
+                          <span className="text-app-muted">Terapis favorit</span>
                           <span className="font-medium flex items-start gap-1">
                             {results.summary.favoriteTherapistName ? (
                               <>
-                                <Award className="w-3 h-3 text-[#1677D2] flex-shrink-0 mt-0.5" />
+                                <Award className="w-3 h-3 text-app-accent flex-shrink-0 mt-0.5" />
                                 <span className="break-words">{results.summary.favoriteTherapistName} ({results.summary.favoriteTherapistCount}x)</span>
                               </>
                             ) : '-'}
                           </span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[#5B6B7D]">Sesi terakhir</span>
+                          <span className="text-app-muted">Sesi terakhir</span>
                           <span className="font-medium">{results.summary.lastSessionDate ? formatShortDate(results.summary.lastSessionDate) : '-'}</span>
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[#5B6B7D]">Paket aktif</span>
+                          <span className="text-app-muted">Paket aktif</span>
                           <span className="font-medium break-words">
                             {results.summary.activePackage
                               ? `${results.summary.activePackage.package_name} (${results.summary.activePackage.sessions_used}/${results.summary.activePackage.total_sessions})`
@@ -735,19 +735,19 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.patients.length > 0 && (
                     <div className="px-2">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Pasien</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Pasien</div>
                       {results.patients.map((p) => (
                         <button
                           key={p.id}
                           onClick={() => openDetail('patient', p.id)}
-                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                         >
-                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                          <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                             <UserIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-[#102F52] truncate">{p.full_name}</span>
-                            <span className="block text-xs text-[#5B6B7D] truncate">{p.medical_record_number || 'Pasien'}</span>
+                            <span className="block text-sm font-medium text-app-ink truncate">{p.full_name}</span>
+                            <span className="block text-xs text-app-muted truncate">{p.medical_record_number || 'Pasien'}</span>
                           </span>
                         </button>
                       ))}
@@ -756,19 +756,19 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.appointments.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Appointment</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Appointment</div>
                       {results.appointments.map((a) => (
                         <button
                           key={a.id}
                           onClick={() => openDetail('appointment', a.id)}
-                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                         >
-                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                          <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                             <CalendarIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-[#102F52] truncate">{a.patients?.full_name || a.guest_name || 'Tamu'}</span>
-                            <span className="block text-xs text-[#5B6B7D] truncate">{formatApptDate(a.appointment_date)}</span>
+                            <span className="block text-sm font-medium text-app-ink truncate">{a.patients?.full_name || a.guest_name || 'Tamu'}</span>
+                            <span className="block text-xs text-app-muted truncate">{formatApptDate(a.appointment_date)}</span>
                           </span>
                         </button>
                       ))}
@@ -777,19 +777,19 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.packages.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Rekap Paket</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Rekap Paket</div>
                       {results.packages.map((pkg) => (
                         <button
                           key={pkg.id}
                           onClick={() => openDetail('package', pkg.id)}
-                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                         >
-                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                          <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                             <PackageIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-[#102F52] truncate">{pkg.package_name} · {pkg.patients?.full_name}</span>
-                            <span className="block text-xs text-[#5B6B7D] truncate">
+                            <span className="block text-sm font-medium text-app-ink truncate">{pkg.package_name} · {pkg.patients?.full_name}</span>
+                            <span className="block text-xs text-app-muted truncate">
                               {pkg.sessions_used}/{pkg.total_sessions} sesi · {pkg.status || '-'}
                             </span>
                           </span>
@@ -800,19 +800,19 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.medicalRecords.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Medical Record</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Medical Record</div>
                       {results.medicalRecords.map((mr) => (
                         <button
                           key={mr.id}
                           onClick={() => openDetail('medicalRecord', mr.id)}
-                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                         >
-                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                          <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                             <FileTextIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-[#102F52] truncate">{mr.patients?.full_name || 'Pasien'}</span>
-                            <span className="block text-xs text-[#5B6B7D] truncate">
+                            <span className="block text-sm font-medium text-app-ink truncate">{mr.patients?.full_name || 'Pasien'}</span>
+                            <span className="block text-xs text-app-muted truncate">
                               {formatShortDate(mr.daily_recap?.recap_date || mr.created_at)}
                               {mr.therapist_name ? ` · ${mr.therapist_name}` : ''}
                             </span>
@@ -824,17 +824,17 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.menu.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#5B6B7D]">Menu</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Menu</div>
                       {results.menu.map((m, i) => (
                         <button
                           key={`${m.path}-${i}`}
                           onClick={() => goTo(m.path)}
-                          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left"
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left"
                         >
-                          <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                          <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                             <LayoutGrid className="w-4 h-4" />
                           </span>
-                          <span className="text-sm font-medium text-[#102F52]">{m.label}</span>
+                          <span className="text-sm font-medium text-app-ink">{m.label}</span>
                         </button>
                       ))}
                     </div>
@@ -859,7 +859,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
               if (!isActivityOpen && canReviewRequests) loadActivities();
               setIsActivityOpen((o) => !o);
             }}
-            className="relative w-9 h-9 rounded-full sm:rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
+            className="relative w-9 h-9 rounded-full sm:rounded-app border border-app-border bg-white flex items-center justify-center text-app-ink hover:text-app-accent hover:bg-[#F5F9FC] transition-colors shadow-sm"
             aria-label="Aktivitas"
           >
             <Bell className="w-3.5 h-3.5" />
@@ -869,10 +869,10 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           </button>
 
           {isActivityOpen && (
-            <div className="absolute right-0 mt-2 w-[340px] max-w-[85vw] bg-white border border-[#DCE8F2] rounded-xl shadow-lg z-30 overflow-hidden">
-              <div className="px-4 pt-3 pb-2 border-b border-[#DCE8F2]">
-                <p className="text-sm font-bold text-[#102F52]">Aktivitas</p>
-                <p className="text-xs text-[#5B6B7D]">Aktivitas terbaru klinik</p>
+            <div className="absolute right-0 mt-2 w-[340px] max-w-[85vw] bg-white border border-app-border rounded-app shadow-lg z-30 overflow-hidden">
+              <div className="px-4 pt-3 pb-2 border-b border-app-border">
+                <p className="text-sm font-bold text-app-ink">Aktivitas</p>
+                <p className="text-xs text-app-muted">Aktivitas terbaru klinik</p>
                 <div className="flex items-center gap-1.5 mt-2">
                   {[['all', 'Semua'], ['admin', 'Admin'], ['therapist', 'Terapis']].map(([key, label]) => (
                     <button
@@ -880,7 +880,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       onClick={() => setActivityFilter(key)}
                       className={cn(
                         'px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-                        activityFilter === key ? 'bg-[#EAF4FF] text-[#1677D2]' : 'text-[#5B6B7D] hover:bg-[#F5F9FC]'
+                        activityFilter === key ? 'bg-app-soft text-app-accent' : 'text-app-muted hover:bg-[#F5F9FC]'
                       )}
                     >
                       {label}
@@ -891,9 +891,9 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
               <div className="max-h-80 overflow-y-auto">
                 {isLoadingActivities ? (
-                  <div className="p-4 text-sm text-[#5B6B7D]">Memuat aktivitas...</div>
+                  <div className="p-4 text-sm text-app-muted">Memuat aktivitas...</div>
                 ) : filteredActivities.length === 0 ? (
-                  <div className="p-4 text-sm text-[#5B6B7D]">Belum ada aktivitas.</div>
+                  <div className="p-4 text-sm text-app-muted">Belum ada aktivitas.</div>
                 ) : (
                   filteredActivities.map((item) => (
                     <button
@@ -901,13 +901,13 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                       onClick={() => handleActivityClick(item)}
                       className={cn(
                         'w-full flex items-start gap-3 px-4 py-3 text-left border-b border-[#F5F9FC] last:border-0 hover:bg-[#F5F9FC] transition-colors',
-                        !item.isRead && 'bg-[#EAF4FF]/40'
+                        !item.isRead && 'bg-app-soft/40'
                       )}
                     >
                       <span
                         className={cn(
                           'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
-                          item.actorRole === 'therapist' ? 'bg-[#E6FBF9] text-[#35C8C1]' : 'bg-[#EAF4FF] text-[#1677D2]'
+                          item.actorRole === 'therapist' ? 'bg-[#E6FBF9] text-[#35C8C1]' : 'bg-app-soft text-app-accent'
                         )}
                       >
                         {item.isApproval
@@ -915,12 +915,12 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                           : item.actorRole === 'therapist' ? <ActivityIcon className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm text-[#102F52]">
+                        <span className="block text-sm text-app-ink">
                           <span className="font-semibold">{item.actorName}</span> {item.text}
                         </span>
-                        <span className="block text-xs text-[#5B6B7D] mt-0.5">{timeAgo(item.time)}</span>
+                        <span className="block text-xs text-app-muted mt-0.5">{timeAgo(item.time)}</span>
                       </span>
-                      {!item.isRead && <span className="w-2 h-2 rounded-full bg-[#1677D2] mt-1.5 flex-shrink-0" />}
+                      {!item.isRead && <span className="w-2 h-2 rounded-full bg-app-accent mt-1.5 flex-shrink-0" />}
                     </button>
                   ))
                 )}
@@ -935,16 +935,16 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     <Dialog open={!!detail} onOpenChange={(open) => !open && closeDetail()}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         {detailLoading ? (
-          <div className="py-10 flex items-center justify-center text-[#5B6B7D]">
+          <div className="py-10 flex items-center justify-center text-app-muted">
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Memuat detail...
           </div>
         ) : !detailData ? (
-          <div className="py-10 text-center text-sm text-[#5B6B7D]">Data tidak ditemukan.</div>
+          <div className="py-10 text-center text-sm text-app-muted">Data tidak ditemukan.</div>
         ) : detail?.type === 'patient' ? (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <UserIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.full_name}
+                <UserIcon className="w-5 h-5 text-app-accent" /> {detailData.full_name}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
@@ -957,7 +957,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
               <DetailField label="Alamat" value={detailData.address} full />
             </div>
             {detailData.summary && (
-              <div className="p-3 rounded-lg bg-[#EAF4FF] border border-[#DCE8F2] grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-[#102F52]">
+              <div className="p-3 rounded-app-sm bg-app-soft border border-app-border grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-app-ink">
                 <DetailField label="Total sesi selesai" value={`${detailData.summary.totalSessions}x`} />
                 <DetailField
                   label="Terapis favorit"
@@ -982,7 +982,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.patients?.full_name || detailData.guest_name || 'Tamu'}
+                <CalendarIcon className="w-5 h-5 text-app-accent" /> {detailData.patients?.full_name || detailData.guest_name || 'Tamu'}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
@@ -1003,7 +1003,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <PackageIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.package_name}
+                <PackageIcon className="w-5 h-5 text-app-accent" /> {detailData.package_name}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
@@ -1024,7 +1024,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <FileTextIcon className="w-5 h-5 text-[#1677D2]" /> {detailData.patients?.full_name || 'Pasien'}
+                <FileTextIcon className="w-5 h-5 text-app-accent" /> {detailData.patients?.full_name || 'Pasien'}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
@@ -1049,8 +1049,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
 const DetailField = ({ label, value, full }) => (
   <div className={cn('flex flex-col min-w-0', full && 'col-span-2')}>
-    <span className="text-xs text-[#5B6B7D]">{label}</span>
-    <span className="font-medium text-[#102F52] break-words">{value || '-'}</span>
+    <span className="text-xs text-app-muted">{label}</span>
+    <span className="font-medium text-app-ink break-words">{value || '-'}</span>
   </div>
 );
 

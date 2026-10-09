@@ -182,7 +182,7 @@ const PatientManagement = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <TabsList className="grid w-full sm:w-auto grid-cols-2">
@@ -191,7 +191,7 @@ const PatientManagement = () => {
             </TabsList>
             
             {activeTab === "list" && (
-               <Button onClick={handleAddNewClick} className="bg-blue-600 hover:bg-blue-700">
+               <Button onClick={handleAddNewClick} className="bg-app-accent hover:bg-app-accent-hover">
                  <Plus className="w-4 h-4 mr-2" />
                  Tambah Pasien Manual
                </Button>

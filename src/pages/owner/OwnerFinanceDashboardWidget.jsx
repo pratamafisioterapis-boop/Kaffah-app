@@ -233,7 +233,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
 
       {/* ── Quick Action ── */}
       {(onAddExpense || onAddIncome) && (
-        <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-2xl p-3 md:p-4 shadow-sm">
+        <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-app-lg p-3 md:p-4 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 mr-1">
               <Zap className="w-4 h-4 text-teal-600" />
@@ -242,7 +242,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
             {onAddExpense && (
               <button
                 onClick={onAddExpense}
-                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-100 transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-app shadow-md shadow-rose-100 transition-colors"
               >
                 <TrendingDown className="w-4 h-4" />
                 + Pengeluaran
@@ -251,7 +251,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
             {onAddIncome && (
               <button
                 onClick={onAddIncome}
-                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-100 transition-colors"
+                className="inline-flex items-center gap-2 h-9 px-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-app shadow-md shadow-emerald-100 transition-colors"
               >
                 <TrendingUp className="w-4 h-4" />
                 + Pemasukan
@@ -265,9 +265,9 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
         {kpis.map((k, i) => (
-          <div key={i} className={`bg-white rounded-2xl border ${k.border} border-l-4 ${k.accent} shadow-sm hover:shadow-md transition-all p-4 md:p-5`}>
+          <div key={i} className={`bg-white rounded-app-lg border ${k.border} border-l-4 ${k.accent} shadow-sm hover:shadow-md transition-all p-4 md:p-5`}>
             <div className="flex items-start justify-between mb-3">
-              <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center`}>
+              <div className={`w-10 h-10 rounded-app ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`w-5 h-5 ${k.color}`} />
               </div>
               {k.sub && <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${k.bg} ${k.color}`}>{k.sub}</span>}
@@ -282,7 +282,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       {/* ── Row 1: Breakdown Revenue + Tren Harian ── */}
       <div className={`grid grid-cols-1 ${isPWA ? '' : 'lg:grid-cols-2'} gap-4`}>
         {/* Breakdown */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Breakdown Revenue</h3>
@@ -318,7 +318,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         </div>
 
         {/* Tren Harian */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="mb-3">
             <h3 className="text-sm font-bold text-slate-800">Tren Harian</h3>
             <p className="text-xs text-slate-400 mt-0.5">Revenue & pengeluaran per hari</p>
@@ -356,9 +356,9 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       <div className={`grid grid-cols-1 ${isPWA ? '' : 'lg:grid-cols-2'} gap-4`}>
 
         {/* Revenue per Terapis */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-app bg-indigo-50 flex items-center justify-center">
               <UserCheck className="w-4 h-4 text-indigo-600" />
             </div>
             <div>
@@ -394,9 +394,9 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         </div>
 
         {/* Revenue per Tipe Pasien */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-app bg-violet-50 flex items-center justify-center">
               <Users className="w-4 h-4 text-violet-600" />
             </div>
             <div>
@@ -437,15 +437,15 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       <div className={`grid grid-cols-1 ${isPWA ? '' : 'lg:grid-cols-2'} gap-4`}>
 
         {/* Transaksi Terbaru */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <h3 className="text-sm font-bold text-slate-800 mb-4">Transaksi Terbaru</h3>
           {recentTransactions.length === 0 ? (
             <p className="text-slate-400 text-sm text-center py-8">Belum ada transaksi</p>
           ) : (
             <div className="space-y-2">
               {recentTransactions.map((tx, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                <div key={i} className="flex items-center gap-3 p-3 rounded-app bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <div className={`w-8 h-8 rounded-app flex items-center justify-center shrink-0 ${tx.type === 'income' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                     {tx.type === 'income'
                       ? <TrendingUp className="w-4 h-4 text-emerald-600" />
                       : <TrendingDown className="w-4 h-4 text-rose-600" />
@@ -465,7 +465,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         </div>
 
         {/* Breakdown Pengeluaran */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Breakdown Pengeluaran</h3>

@@ -93,7 +93,7 @@ const OwnerAppointmentList = () => {
           <p className="text-slate-500">Manage schedule and bookings for all therapists.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+           <Button onClick={handleCreateNew} className="bg-app-accent hover:bg-app-accent-hover">
               <Plus className="w-4 h-4 mr-2" />
               New Appointment
            </Button>
@@ -132,7 +132,7 @@ const OwnerAppointmentList = () => {
         <TabsContent value="list" className="mt-0">
            {/* List view might benefit from its own date controls if decoupled from calendar, 
                but sharing state keeps them in sync which is usually better UX here. */}
-           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4 flex justify-between items-center">
+           <div className="bg-slate-50 p-4 rounded-app-sm border border-slate-200 mb-4 flex justify-between items-center">
               <span className="text-sm font-medium text-slate-600">
                  Showing appointments for {format(currentDate, 'MMMM yyyy')}
               </span>

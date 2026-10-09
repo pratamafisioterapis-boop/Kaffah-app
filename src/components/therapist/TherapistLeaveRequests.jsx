@@ -339,7 +339,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
   return (
     <div className="space-y-5">
       {/* LANGKAH 1 */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
+      <section className="rounded-app border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
         <h3 className="font-bold text-slate-800 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">1</span>
           Kapan Anda izin?
@@ -361,7 +361,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
             </p>
           )}
           {form.leaveDate && form.leaveDate < todayStr && (
-            <p className="text-xs rounded-lg bg-amber-50 text-amber-800 px-3 py-2 flex items-start gap-1.5">
+            <p className="text-xs rounded-app-sm bg-amber-50 text-amber-800 px-3 py-2 flex items-start gap-1.5">
               <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>Izin ini sudah lewat. Tetap bisa dicatat, dan Anda wajib memilih tanggal pengganti (mulai hari ini) sebanyak jam izinnya.</span>
             </p>
@@ -378,7 +378,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
               type="button"
               onClick={() => setForm((f) => ({ ...f, partial }))}
               className={cn(
-                'text-left rounded-xl border-2 p-3 transition-all',
+                'text-left rounded-app border-2 p-3 transition-all',
                 form.partial === partial ? 'border-orange-500 bg-orange-50' : 'border-slate-200 bg-white hover:border-orange-200',
               )}
             >
@@ -390,7 +390,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
         </div>
 
         {!form.partial && leaveDayHours.length > 0 && (
-          <p className="text-xs rounded-lg bg-orange-50 text-orange-800 px-3 py-2">
+          <p className="text-xs rounded-app-sm bg-orange-50 text-orange-800 px-3 py-2">
             Izin seharian = {workShift?.name ? `${workShift.name} ` : ''}jam kerja <b>{scheduleLabel(leaveDayHours)}</b> ({formatDuration(normalMinutes)}) — terisi otomatis.
           </p>
         )}
@@ -436,7 +436,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
         </div>
 
         {isEvent && (
-          <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 space-y-1 text-xs text-violet-900">
+          <div className="rounded-app-sm border border-violet-200 bg-violet-50 p-3 space-y-1 text-xs text-violet-900">
             <p className="font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Ketentuan izin Event</p>
             <p>
               Cantumkan nama event dan penyelenggaranya pada kolom catatan. Jadwal pengganti tidak wajib; owner / terapis kepala menentukan saat peninjauan. Bila jadwal pengganti diperlukan, pengajuan akan dikembalikan beserta catatan agar Anda mengajukannya kembali dengan jadwal pengganti.
@@ -445,7 +445,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
         )}
 
         {isSundayDate(form.leaveDate) && !form.partial && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 flex items-start gap-2">
+          <div className="rounded-app-sm border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <p>
               <b>Izin hari Minggu.</b> {SUNDAY_RULE_NOTE} Berlaku untuk semua alasan izin.
@@ -454,7 +454,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
         )}
 
         {isOrg && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
+          <div className="rounded-app-sm border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
             <p className="font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Ketentuan izin kegiatan organisasi</p>
             <ul className="list-disc pl-4 space-y-1">
               <li>
@@ -471,7 +471,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
         )}
 
         {form.leaveType === 'sick' && (
-          <div className="space-y-1.5 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+          <div className="space-y-1.5 rounded-app-sm border border-orange-200 bg-orange-50/50 p-3">
             <Label htmlFor="leave-proof" className="flex items-center gap-1.5">
               <Paperclip className="w-3.5 h-3.5" /> Surat dokter <span className="text-red-500">*</span>
             </Label>
@@ -516,10 +516,10 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
       </section>
 
       {/* LANGKAH 2 */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
+      <section className="rounded-app border border-slate-200 bg-white shadow-sm p-4 sm:p-5 space-y-4">
         <div>
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">2</span>
+            <span className="w-6 h-6 rounded-full bg-app-accent text-white text-xs flex items-center justify-center">2</span>
             {replacementOptional ? 'Jadwal pengganti (opsional)' : 'Ganti jam kerjanya kapan?'}
           </h3>
           <p className="text-xs text-slate-500 mt-1">
@@ -527,12 +527,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
           </p>
         </div>
 
-        <p className="text-xs rounded-lg bg-sky-50 text-sky-800 border border-sky-100 px-3 py-2 flex items-start gap-1.5">
+        <p className="text-xs rounded-app-sm bg-sky-50 text-sky-800 border border-sky-100 px-3 py-2 flex items-start gap-1.5">
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>{attendanceImpactNote(form.partial)}</span>
         </p>
         {sundayOnly && (
-          <p className="text-xs rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 flex items-start gap-1.5">
+          <p className="text-xs rounded-app-sm bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 flex items-start gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>{WEEKEND_REPLACEMENT_NOTE} Hanya tanggal hari Minggu yang bisa dipilih di kalender.</span>
           </p>
@@ -566,15 +566,15 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                 disabled={disabled}
                 onClick={() => toggleShift(day)}
                 className={cn(
-                  'rounded-lg border py-1.5 flex flex-col items-center leading-tight transition-all',
+                  'rounded-app-sm border py-1.5 flex flex-col items-center leading-tight transition-all',
                   disabled && 'opacity-40 cursor-not-allowed bg-slate-100 border-slate-100',
-                  !disabled && selected && 'bg-blue-600 border-blue-600 text-white shadow',
+                  !disabled && selected && 'bg-app-accent border-app-accent text-white shadow',
                   !disabled && !selected && off && 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:border-emerald-400',
-                  !disabled && !selected && !off && 'bg-white border-slate-200 text-slate-700 hover:border-blue-300',
+                  !disabled && !selected && !off && 'bg-white border-slate-200 text-slate-700 hover:border-app-accent/40',
                 )}
               >
                 <span className="text-sm font-bold">{format(day.date, 'd')}</span>
-                <span className={cn('text-[9px]', selected ? 'text-blue-100' : off ? 'text-emerald-600' : 'text-slate-400')}>
+                <span className={cn('text-[9px]', selected ? 'text-app-soft' : off ? 'text-emerald-600' : 'text-slate-400')}>
                   {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : full ? (openHoursOn(day.key).closed ? 'Tutup' : 'Penuh') : day.taken.length ? 'Terisi' : off ? 'Libur' : 'Kerja'}
                 </span>
               </button>
@@ -588,7 +588,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
               const err = shiftError(shift);
               const normal = scheduleLabel(hoursOn(shift.date));
               return (
-                <div key={shift.date} className={cn('rounded-lg border p-3', err ? 'border-red-200 bg-red-50/50' : 'border-blue-100 bg-blue-50/40')}>
+                <div key={shift.date} className={cn('rounded-app-sm border p-3', err ? 'border-red-200 bg-red-50/50' : 'border-app-accent/15 bg-app-soft/40')}>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">{formatLongDate(shift.date)}</p>
@@ -646,7 +646,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                     const count = Math.floor(total / slotMinutes);
                     const leftover = total - count * slotMinutes;
                     return (
-                      <p className={cn('text-[11px] mt-1.5', count === 0 || leftover ? 'text-amber-700' : 'text-blue-700')}>
+                      <p className={cn('text-[11px] mt-1.5', count === 0 || leftover ? 'text-amber-700' : 'text-app-accent-hover')}>
                         Durasi {formatDuration(total)} → {count} slot booking @ {slotMinutes} menit
                         {count === 0 && ' — terlalu pendek untuk satu slot'}
                         {count > 0 && leftover > 0 && ` (sisa ${formatDuration(leftover)} tidak jadi slot)`}
@@ -661,7 +661,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 
         {form.leaveDate && !replacementOptional && (
           <div className={cn(
-            'rounded-lg px-3 py-2 text-xs flex items-start gap-2',
+            'rounded-app-sm px-3 py-2 text-xs flex items-start gap-2',
             replacedMinutes >= missedMinutes && replacedMinutes > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800',
           )}>
             {replacedMinutes >= missedMinutes && replacedMinutes > 0
@@ -693,7 +693,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 const MyRequests = ({ requests, onCancel, cancellingId }) => {
   if (requests.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-xl">
+      <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
         <CalendarOff className="w-8 h-8 mx-auto mb-2 opacity-40" />
         <p className="text-sm font-medium">Belum ada pengajuan izin</p>
       </div>
@@ -802,7 +802,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>;
+    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>;
   }
 
   const mine = (
@@ -820,7 +820,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 rounded-app bg-orange-50 flex items-center justify-center shrink-0">
           <CalendarOff className="w-5 h-5 text-orange-600" />
         </div>
         <div>
@@ -830,7 +830,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
       </div>
 
       {therapist?.work_start_time && therapist?.work_end_time && (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
+        <div className="rounded-app border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
           <Clock3 className="w-5 h-5 text-sky-600 shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-sky-700">Jam kerja Anda</p>
@@ -846,7 +846,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
       )}
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-5">
-        <TabsList className={cn('grid w-full bg-slate-100 p-1 rounded-lg', isHead ? 'grid-cols-4 sm:w-[720px]' : 'grid-cols-3 sm:w-[540px]')}>
+        <TabsList className={cn('grid w-full bg-slate-100 p-1 rounded-app-sm', isHead ? 'grid-cols-4 sm:w-[720px]' : 'grid-cols-3 sm:w-[540px]')}>
           <TabsTrigger value="mine">Ajukan Izin</TabsTrigger>
           <TabsTrigger value="swap" className="gap-1.5"><Repeat className="w-3.5 h-3.5" /> Ubah Shift</TabsTrigger>
           <TabsTrigger value="sunday" className="gap-1.5">

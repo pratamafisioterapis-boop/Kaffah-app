@@ -174,7 +174,7 @@ const { error } = await setDailyRecapStartTime(recap.id, timeString);
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-app-accent-bright" /></TableCell></TableRow>
                 ) : recaps.length === 0 ? (
                   <TableRow><TableCell colSpan={5} className="h-24 text-center text-slate-400 italic">Tidak ada data kunjungan ditemukan.</TableCell></TableRow>
                 ) : (
@@ -213,7 +213,7 @@ const { error } = await setDailyRecapStartTime(recap.id, timeString);
                             </div>
                         </TableCell>
                         <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-blue-600" onClick={() => handleOpenInvoice(recap)} title="Cetak Invoice"><Receipt className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-app-accent" onClick={() => handleOpenInvoice(recap)} title="Cetak Invoice"><Receipt className="w-4 h-4" /></Button>
                         </TableCell>
                         </TableRow>
                     );

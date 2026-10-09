@@ -120,8 +120,8 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
   const SortIcon = ({ column }) => {
     if (sortConfig.key !== column) return <ArrowUpDown className="w-3 h-3 ml-1 text-slate-300" />;
     return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
-      : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+      ? <ArrowUp className="w-3 h-3 ml-1 text-app-accent" />
+      : <ArrowDown className="w-3 h-3 ml-1 text-app-accent" />;
   };
 
   return (
@@ -166,7 +166,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 truncate">{patient?.full_name || 'Nama Tidak Tersedia'}</p>
-                      <p className="text-xs font-mono text-blue-600 mt-0.5">{patient?.rm_number || '-'}</p>
+                      <p className="text-xs font-mono text-app-accent mt-0.5">{patient?.rm_number || '-'}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Button variant="ghost" size="sm" onClick={() => onEdit && onEdit(patient)}>
@@ -228,7 +228,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
 
                   return (
                     <tr key={patient?.id || Math.random()} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-blue-600 font-medium">
+                      <td className="px-4 py-3 font-mono text-app-accent font-medium">
                         {patient?.rm_number || '-'}
                       </td>
                       <td className="px-4 py-3 font-medium text-slate-900">

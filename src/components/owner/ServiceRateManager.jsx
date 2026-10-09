@@ -264,13 +264,13 @@ const ServiceRateManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-6">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Tarif Jasa Terapis per Tipe Pasien</h2>
           <p className="text-sm text-slate-500">Nilai insentif yang diterima terapis untuk setiap tipe pasien/layanan. Nama harus sama/mirip dengan Tipe Pasien di Setup.</p>
         </div>
-        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={openAdd} className="bg-app-accent hover:bg-app-accent-hover">
           <Plus className="w-4 h-4 mr-2" />
           Tambah Tarif
         </Button>
@@ -303,7 +303,7 @@ const ServiceRateManager = () => {
           {loadingTypes ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
           ) : patientTypes.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-sm">
+            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200 text-sm">
               Belum ada Tipe Pasien di Setup. Tambahkan dulu di tab "Tipe Pasien".
             </div>
           ) : (
@@ -318,10 +318,10 @@ const ServiceRateManager = () => {
                     key={key}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
                   >
                     <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-app-sm bg-emerald-50 flex items-center justify-center shrink-0">
                         <Wallet className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div className="min-w-0 flex-1 sm:flex-initial">
@@ -347,7 +347,7 @@ const ServiceRateManager = () => {
                         size="icon"
                         onClick={() => handleQuickSave(id, label, rateRow)}
                         disabled={isSaving}
-                        className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700"
+                        className="h-9 w-9 shrink-0 bg-app-accent hover:bg-app-accent-hover"
                       >
                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                       </Button>
@@ -369,10 +369,10 @@ const ServiceRateManager = () => {
                   key={item.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="group flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                  className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-app-sm bg-emerald-50 flex items-center justify-center shrink-0">
                       <Wallet className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
@@ -381,7 +381,7 @@ const ServiceRateManager = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(item)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(item)} className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft">
                       <Edit2 className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => openDelete(item)} className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
@@ -424,7 +424,7 @@ const ServiceRateManager = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSave} disabled={isProcessing} className="bg-app-accent hover:bg-app-accent-hover">
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Simpan
             </Button>

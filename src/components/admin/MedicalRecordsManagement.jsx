@@ -333,8 +333,8 @@ const handleViewRecord = (record) => {
   const renderSortIcon = (field) => {
     if (sortConfig.sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-slate-300 ml-1" />;
     return sortConfig.sortOrder === 'asc' 
-      ? <ArrowUp className="w-3 h-3 text-blue-600 ml-1" /> 
-      : <ArrowDown className="w-3 h-3 text-blue-600 ml-1" />;
+      ? <ArrowUp className="w-3 h-3 text-app-accent ml-1" /> 
+      : <ArrowDown className="w-3 h-3 text-app-accent ml-1" />;
   };
 
   const getStatusColor = (status) => {
@@ -355,17 +355,17 @@ const handleViewRecord = (record) => {
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-10 w-32" />
          </div>
-         <Skeleton className="h-[400px] w-full rounded-xl" />
+         <Skeleton className="h-[400px] w-full rounded-app" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden flex flex-col gap-3 p-4 rounded-2xl sm:flex-row sm:items-center sm:justify-between"
+      <div className="relative overflow-hidden flex flex-col gap-3 p-4 rounded-app-lg sm:flex-row sm:items-center sm:justify-between"
         style={{ background: 'linear-gradient(135deg, #ffffff 55%, #f3f6ff 100%)', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {/* Decorative subtle blue accents */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-app-lg">
           <div className="absolute -top-14 -right-10 w-36 h-36 rounded-full"
             style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, rgba(79,70,229,0) 70%)' }} />
           <div className="absolute -bottom-16 -left-8 w-28 h-28 rounded-full"
@@ -373,7 +373,7 @@ const handleViewRecord = (record) => {
         </div>
 
         <div className="relative flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
+          <div className="w-8 h-8 rounded-app flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
             <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
           </div>
           <div>
@@ -389,23 +389,23 @@ const handleViewRecord = (record) => {
               placeholder="Cari nama atau RM..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-3 h-8 text-[11px] rounded-lg outline-none"
+              className="w-full pl-7 pr-3 h-8 text-[11px] rounded-app-sm outline-none"
               style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}
             />
           </div>
           <div className="flex items-center gap-2">
             {!readOnly && (<>
             <button onClick={handleOpenCreateModal}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-[#125fac] text-white shadow-sm shadow-blue-200">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25">
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
             <button onClick={() => setImportDialogOpen(true)}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
               <Upload className="w-3.5 h-3.5" /> Import
             </button>
             </>)}
             <button onClick={handleExportCSV}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
               <Download className="w-3.5 h-3.5" /> Export
             </button>
           </div>
@@ -413,7 +413,7 @@ const handleViewRecord = (record) => {
       </div>
 
       {readOnly && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl text-xs">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-app text-xs">
           Di klinik ini rekam medis diisi oleh terapis. Admin hanya dapat melihat data.
         </div>
       )}
@@ -433,13 +433,13 @@ const handleViewRecord = (record) => {
       {/* Mobile / PWA: kartu, tanpa geser horizontal */}
         <div className="sm:hidden space-y-3">
           {sortedRecords.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200">
+              <div className="w-12 h-12 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
                 <FileText className="w-5 h-5 text-slate-300" />
               </div>
               <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
               {!readOnly && (
-              <button onClick={handleOpenCreateModal} className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+              <button onClick={handleOpenCreateModal} className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-app-sm" style={{ background: '#eef2ff', color: '#4f46e5' }}>
                 Buat sekarang
               </button>
               )}
@@ -450,7 +450,7 @@ const handleViewRecord = (record) => {
               const isCompleted = statusLabel?.toLowerCase() === 'completed' || statusLabel?.toLowerCase() === 'selesai';
               return (
                 <div key={record.id} onClick={() => handleViewRecord(record)}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
+                  className="bg-white rounded-app-lg border border-slate-200 shadow-sm p-4 space-y-3 active:bg-slate-50 cursor-pointer">
                   {/* Baris 1: Avatar + Nama + Status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
@@ -490,12 +490,12 @@ const handleViewRecord = (record) => {
                   {!readOnly && (
                   <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                     <button onClick={() => handleOpenEditModal(record)}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-semibold"
+                      className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-app text-xs font-semibold"
                       style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe' }}>
                       <Pencil className="w-3.5 h-3.5" /> Edit
                     </button>
                     <button onClick={() => handleDelete(record.id)}
-                      className="flex items-center justify-center w-8 h-8 rounded-xl"
+                      className="flex items-center justify-center w-8 h-8 rounded-app"
                       style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -508,7 +508,7 @@ const handleViewRecord = (record) => {
         </div>
 
       {/* Desktop: tabel */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div className="hidden sm:block overflow-hidden rounded-app-lg" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="overflow-x-auto">
           <table className={TABLE_FIT}>
             <TableCols widths={[12, 30, 14, 14, 24, 6]} />
@@ -546,13 +546,13 @@ const handleViewRecord = (record) => {
                 <tr>
                   <td colSpan={5} className="px-5 py-14 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: '#f1f5f9' }}>
+                      <div className="w-12 h-12 rounded-app-lg flex items-center justify-center" style={{ background: '#f1f5f9' }}>
                         <FileText className="w-5 h-5 text-slate-300" />
                       </div>
                       <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
                       {!readOnly && (
                       <button onClick={handleOpenCreateModal}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-app-sm"
                         style={{ background: '#eef2ff', color: '#4f46e5' }}>
                         Buat sekarang
                       </button>
@@ -612,7 +612,7 @@ const handleViewRecord = (record) => {
                       <td className="py-3" onClick={e => e.stopPropagation()}>
                         {!readOnly && (<DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-lg flex items-center justify-center"
+                            <button className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-app-sm flex items-center justify-center"
                               style={{ background: '#f1f5f9', color: '#64748b' }}>
                               <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
@@ -659,11 +659,11 @@ const handleViewRecord = (record) => {
 />
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-2xl border-0"
+        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-app-lg border-0"
           style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
           <div className="p-5 pb-4">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fff1f2' }}>
+              <div className="w-10 h-10 rounded-app flex items-center justify-center shrink-0" style={{ background: '#fff1f2' }}>
                 <Trash2 className="w-5 h-5" style={{ color: '#e11d48' }} />
               </div>
               <div>
@@ -676,12 +676,12 @@ const handleViewRecord = (record) => {
           </div>
           <div className="flex gap-2 px-5 pb-5">
             <button onClick={() => setDeleteDialogOpen(false)}
-              className="flex-1 h-9 rounded-xl text-xs font-semibold transition-all"
+              className="flex-1 h-9 rounded-app text-xs font-semibold transition-all"
               style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
               Batal
             </button>
             <button onClick={confirmDelete}
-              className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all"
+              className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-all"
               style={{ background: '#e11d48' }}>
               Hapus Permanen
             </button>
@@ -699,7 +699,7 @@ const handleViewRecord = (record) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
+             <div className="bg-slate-50 p-4 rounded-app-sm border border-slate-100 flex items-center justify-between">
                 <div className="text-sm text-slate-600">
                    <p className="font-medium">Belum punya format?</p>
                    <p className="text-xs">Download template CSV</p>
@@ -711,7 +711,7 @@ const handleViewRecord = (record) => {
              {!importStats ? (
                <div className="grid w-full items-center gap-1.5">
                   <div className="flex items-center justify-center w-full">
-                      <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
+                      <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-app-sm cursor-pointer bg-slate-50 hover:bg-slate-100">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                               <Upload className="w-8 h-8 mb-2 text-slate-400" />
                               <p className="mb-2 text-sm text-slate-500"><span className="font-semibold">Klik upload</span> atau drag and drop</p>
@@ -728,7 +728,7 @@ const handleViewRecord = (record) => {
                       </label>
                   </div> 
                   {importFile && (
-                    <div className="text-sm text-blue-600 font-medium flex items-center gap-2 mt-2">
+                    <div className="text-sm text-app-accent font-medium flex items-center gap-2 mt-2">
                        <FileDown className="w-4 h-4" />
                        {importFile.name}
                     </div>
@@ -769,7 +769,7 @@ const handleViewRecord = (record) => {
                 {importStats ? 'Tutup' : 'Batal'}
              </Button>
              {!importStats && (
-               <Button onClick={processImport} disabled={!importFile || importing} className="bg-blue-600 hover:bg-blue-700">
+               <Button onClick={processImport} disabled={!importFile || importing} className="bg-app-accent hover:bg-app-accent-hover">
                   {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Import Data
                </Button>

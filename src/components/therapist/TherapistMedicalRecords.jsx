@@ -282,14 +282,14 @@ const paginatedList = sortedList.slice(
   const renderSortIcon = (field) => {
     if (sortConfig.sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-slate-300 ml-1" />;
     return sortConfig.sortOrder === 'asc' 
-      ? <ArrowUp className="w-3 h-3 text-blue-600 ml-1" /> 
-      : <ArrowDown className="w-3 h-3 text-blue-600 ml-1" />;
+      ? <ArrowUp className="w-3 h-3 text-app-accent ml-1" /> 
+      : <ArrowDown className="w-3 h-3 text-app-accent ml-1" />;
   };
 
   return (
     <div className={isOwnerView ? "space-y-3" : "space-y-6"}>
       {!isOwnerView && (
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-medrec-hero.webp"
             alt="Kaffah Physiotherapy"
@@ -298,17 +298,17 @@ const paginatedList = sortedList.slice(
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
             <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+              <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
               >
                 Evaluasi<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                   Harian
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.
               </p>
             </div>
@@ -322,11 +322,11 @@ const paginatedList = sortedList.slice(
         )}
         <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" size={isOwnerView ? 'sm' : 'default'} onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
-            {!isOwnerView && (<Button onClick={() => navigate(`${basePath}/new/select`)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
+            {!isOwnerView && (<Button onClick={() => navigate(`${basePath}/new/select`)} className="bg-app-accent hover:bg-app-accent-hover"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}
         </div>
       </div>
 
-      <div className={cn("flex flex-col md:flex-row md:items-center gap-2 bg-white rounded-xl border border-slate-200 shadow-sm text-xs text-slate-500", isOwnerView ? "p-2" : "p-3")}>
+      <div className={cn("flex flex-col md:flex-row md:items-center gap-2 bg-white rounded-app border border-slate-200 shadow-sm text-xs text-slate-500", isOwnerView ? "p-2" : "p-3")}>
         <span className={isOwnerView ? "hidden sm:inline" : undefined}>
           {isSearchMode
             ? 'Mode pencarian: menampilkan hasil dari semua periode.'
@@ -379,7 +379,7 @@ const paginatedList = sortedList.slice(
         </div>
       </div>
 
-      <div className={cn("bg-white rounded-lg border shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end", isOwnerView ? "p-2" : "p-4")}>
+      <div className={cn("bg-white rounded-app-sm border shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end", isOwnerView ? "p-2" : "p-4")}>
          <div className="w-full sm:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
          <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
@@ -388,7 +388,7 @@ const paginatedList = sortedList.slice(
       <div className="sm:hidden space-y-2">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="animate-spin w-6 h-6 text-blue-600" />
+              <Loader2 className="animate-spin w-6 h-6 text-app-accent" />
             </div>
           ) : paginatedList.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-sm">
@@ -405,7 +405,7 @@ const paginatedList = sortedList.slice(
                 key={item.id}
                 onClick={() => handlePatientClick(item)}
                 className={cn(
-                  "bg-white rounded-2xl border p-4 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all shadow-sm",
+                  "bg-white rounded-app-lg border p-4 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all shadow-sm",
                   item.status === 'empty' ? "border-rose-200 bg-rose-50/40" :
                   item.status === 'incomplete' ? "border-amber-200 bg-amber-50/40" :
                   "border-slate-100"
@@ -472,7 +472,7 @@ const paginatedList = sortedList.slice(
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-blue-600" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="animate-spin w-6 h-6 mx-auto text-app-accent" /></TableCell></TableRow>
                 ) : sortedList.length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="text-center py-12 text-slate-500">{patients.length === 0 ? "Belum ada riwayat kunjungan (Daily Recaps)." : "Tidak ada pasien yang cocok."}</TableCell></TableRow>
                 ) : paginatedList.map((item) => {
@@ -492,7 +492,7 @@ const paginatedList = sortedList.slice(
                         {item.status === 'incomplete' && (<div className="flex items-center gap-2"><Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 font-medium shadow-none"><AlertCircle className="w-3 h-3 mr-1" /> Belum Lengkap</Badge><span className="text-xs font-medium text-amber-600">{item.missingCount} kunjungan belum di-SOAP</span></div>)}
                         {item.status === 'empty' && (<div className="flex items-center gap-2"><Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100 font-medium shadow-none"><ClipboardList className="w-3 h-3 mr-1" /> Kosong</Badge><span className="text-xs font-medium text-red-600">Belum ada SOAP sama sekali</span></div>)}
                       </TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">Detail <ArrowRight className="w-4 h-4 ml-1" /></Button></TableCell>
+                      <TableCell className="text-right"><Button variant="ghost" size="sm" className="text-app-accent hover:text-app-accent-hover hover:bg-app-soft">Detail <ArrowRight className="w-4 h-4 ml-1" /></Button></TableCell>
                     </TableRow>
                   );
                 })}

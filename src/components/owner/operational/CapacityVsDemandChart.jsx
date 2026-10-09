@@ -163,7 +163,7 @@ const CapacityVsDemandChart = () => {
     : 0;
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col">
+    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">

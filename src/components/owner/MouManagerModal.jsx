@@ -346,15 +346,15 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
         </DialogHeader>
 
         {!therapist?.join_date && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-app-sm p-2.5">
             Tanggal bergabung terapis ini belum diisi. Isi terlebih dahulu di form edit profil terapis supaya periode MOU dapat dihitung otomatis.
           </p>
         )}
 
-        <div className="rounded-xl border border-slate-200 p-4 space-y-4 bg-slate-50/50">
+        <div className="rounded-app border border-slate-200 p-4 space-y-4 bg-slate-50/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-app-sm bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                 {form.id ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
               </div>
               <div>
@@ -428,7 +428,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
             <div>
               <p className="text-xs font-semibold text-slate-700">KOMPENSASI (Pasal 4)</p>
               {isFirstYear && (
-                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5">
+                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-app-sm p-2 mt-1.5">
                   Tahun ke-1 memakai format kontrak fisioterapis baru: belum ada Remunerasi &amp; Komisi Cuti Tahunan (Pasal 4), dan Pasal 6 memakai "Izin Tidak Hadir" — bukan hak Cuti penuh.
                 </p>
               )}
@@ -461,7 +461,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 <p className="text-[11px] text-slate-400">
                   Diprefill dari Tarif Jasa klinik — sesuaikan kalau terapis ini punya tarif custom per tipe pasien. Baris dengan nilai Rp 0 tidak ditampilkan di Lampiran.
                 </p>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 rounded-lg border border-slate-200 p-2 bg-white">
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 rounded-app-sm border border-slate-200 p-2 bg-white">
                   {form.compensation.patient_type_rates.map((row, idx) => (
                     <div key={`${row.label}-${idx}`} className="flex items-center gap-2">
                       <span className="flex-1 text-xs text-slate-600 truncate">{row.label}</span>
@@ -536,7 +536,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                   key={r.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
                 >
                   <div>
                     <p className="text-sm font-medium text-slate-700">
@@ -552,7 +552,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                     </Button>
                     {r.status === 'signed' ? (
                       <>
-                        <Button size="sm" variant="ghost" className="h-8 gap-1 text-blue-600" onClick={() => handleViewSigned(r)} disabled={viewingSignedId === r.id} title="Lihat File Tertandatangan">
+                        <Button size="sm" variant="ghost" className="h-8 gap-1 text-app-accent" onClick={() => handleViewSigned(r)} disabled={viewingSignedId === r.id} title="Lihat File Tertandatangan">
                           {viewingSignedId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCheck2 className="w-3.5 h-3.5" />} Lihat
                         </Button>
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-emerald-600" onClick={() => handleDownloadSigned(r)} disabled={viewingSignedId === r.id} title="Download">
@@ -617,7 +617,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
             </DialogDescription>
           </DialogHeader>
           {scanPreview && (
-            <div className="flex justify-center items-center bg-slate-100 rounded-lg overflow-hidden" style={{ height: 360 }}>
+            <div className="flex justify-center items-center bg-slate-100 rounded-app-sm overflow-hidden" style={{ height: 360 }}>
               <img
                 src={scanPreview.dataUrl}
                 alt="Pratinjau scan halaman terakhir"

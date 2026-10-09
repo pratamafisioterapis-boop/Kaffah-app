@@ -163,9 +163,9 @@ const TherapistDriveUpload = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <UploadCloud className="w-6 h-6 text-blue-600" />
+          <UploadCloud className="w-6 h-6 text-app-accent" />
           Upload Konten
         </h2>
         <p className="text-slate-500 mt-1">
@@ -173,7 +173,7 @@ const TherapistDriveUpload = () => {
         </p>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-4">
+      <div className="bg-white p-4 rounded-app-sm border border-slate-200 space-y-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-600">Pilih File</Label>
           {/* Dua jalur terpisah: kamera dan galeri memakai picker media ringan
@@ -183,7 +183,7 @@ const TherapistDriveUpload = () => {
               type="button"
               onClick={() => cameraInputRef.current?.click()}
               disabled={uploading}
-              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-app-sm border border-slate-200 text-slate-600 hover:border-app-accent/40 hover:text-app-accent hover:bg-app-soft/50 transition-colors disabled:opacity-50"
             >
               <Camera className="w-4 h-4" /> Ambil Foto
             </button>
@@ -191,7 +191,7 @@ const TherapistDriveUpload = () => {
               type="button"
               onClick={() => galleryInputRef.current?.click()}
               disabled={uploading}
-              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-lg border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium py-2.5 rounded-app-sm border border-slate-200 text-slate-600 hover:border-app-accent/40 hover:text-app-accent hover:bg-app-soft/50 transition-colors disabled:opacity-50"
             >
               <ImageIcon className="w-4 h-4" /> Foto/Video
             </button>
@@ -214,13 +214,13 @@ const TherapistDriveUpload = () => {
             disabled={uploading}
           />
           {file && (
-            <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-lg px-3 py-2 mt-1">
+            <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-app-sm px-3 py-2 mt-1">
               <span className="flex items-center gap-1.5 min-w-0">
                 <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="truncate">{file.name}</span>
-                <span className="text-blue-400 flex-shrink-0">({formatFileSize(file.size)})</span>
+                <span className="text-app-accent-bright flex-shrink-0">({formatFileSize(file.size)})</span>
               </span>
-              <button type="button" onClick={handleClearFile} disabled={uploading} className="text-blue-400 hover:text-blue-600 flex-shrink-0">
+              <button type="button" onClick={handleClearFile} disabled={uploading} className="text-app-accent-bright hover:text-app-accent flex-shrink-0">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -236,19 +236,19 @@ const TherapistDriveUpload = () => {
           />
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleUpload} disabled={uploading || !file || !label.trim()} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleUpload} disabled={uploading || !file || !label.trim()} className="bg-app-accent hover:bg-app-accent-hover">
             {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
             Upload ke Drive
           </Button>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-slate-200">
+      <div className="bg-white p-4 rounded-app-sm border border-slate-200">
         <Label className="text-base mb-3 block">Riwayat Upload Saya</Label>
         {loadingHistory ? (
           <div className="p-6 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
         ) : history.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
             Belum ada file yang diunggah.
           </div>
         ) : (
@@ -258,7 +258,7 @@ const TherapistDriveUpload = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors"
+                className="flex items-center justify-between p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
@@ -271,7 +271,7 @@ const TherapistDriveUpload = () => {
                     href={item.web_view_link}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 hover:text-blue-700 flex-shrink-0"
+                    className="text-app-accent hover:text-app-accent-hover flex-shrink-0"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>

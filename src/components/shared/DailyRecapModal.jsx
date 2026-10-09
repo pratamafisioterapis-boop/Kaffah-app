@@ -1274,7 +1274,7 @@ setFormData({
     const fGuestPkg = (
         <>
                                 {formData.guest_name?.trim() && !formData.patient_id && (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-app-sm p-3">
                                         <p className="text-sm font-semibold text-amber-800">
                                             Pasien Baru: {formData.guest_name}
                                         </p>
@@ -1428,7 +1428,7 @@ setFormData({
                                     </div>
                                 )}
                                 {useSplitPayment && (
-                                    <div className="space-y-2 bg-slate-50 p-3 rounded-lg border">
+                                    <div className="space-y-2 bg-slate-50 p-3 rounded-app-sm border">
                                         {paymentSplits.map((row, index) => (
                                             <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
                                                 <SearchableSelect
@@ -1473,7 +1473,7 @@ setFormData({
 
     const fDiscount = (
         <>
-                                <div className="space-y-3 bg-slate-50 p-3 rounded-lg border">
+                                <div className="space-y-3 bg-slate-50 p-3 rounded-app-sm border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
                                     {/* Kode Reward Referral */}
                                     <div className="space-y-1">
@@ -1567,7 +1567,7 @@ setFormData({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onClose()}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-lg p-0">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-app shadow-lg p-0">
                     <div className="px-6 py-6 border-b border-slate-100">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-bold text-slate-900">{mode === 'add' ? 'Tambah Recap Harian' : 'Edit Recap Harian'}</DialogTitle>
@@ -1640,7 +1640,7 @@ setFormData({
 
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
                         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-app-accent hover:bg-app-accent-hover text-white">
                             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {mode === 'add' ? 'Simpan' : 'Simpan Perubahan'}
                         </Button>

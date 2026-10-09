@@ -86,7 +86,7 @@ const TherapistSchedule = ({ therapist }) => {
             {format(selectedDate, 'EEEE, dd MMMM yyyy', { locale: idLocale })}
           </p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full">
+        <div className="flex bg-slate-100 p-1 rounded-app-sm overflow-x-auto max-w-full">
           {[-1, 0, 1, 2, 3].map(offset => {
              const date = addDays(new Date(), offset);
              const isSelected = isSameDay(date, selectedDate);
@@ -95,7 +95,7 @@ const TherapistSchedule = ({ therapist }) => {
                  key={offset}
                  onClick={() => setSelectedDate(date)}
                  className={`px-3 py-2 rounded-md text-sm transition-all whitespace-nowrap ${
-                    isSelected ? 'bg-white shadow text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+                    isSelected ? 'bg-white shadow text-app-accent font-bold' : 'text-slate-500 hover:text-slate-800'
                  }`}
                >
                  <div className="text-xs uppercase">{format(date, 'EEE', { locale: idLocale })}</div>
@@ -107,15 +107,15 @@ const TherapistSchedule = ({ therapist }) => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>
+        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>
       ) : isDayOff ? (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-app p-8 text-center">
            <Calendar className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
            <h3 className="text-xl font-semibold text-yellow-800">Hari Libur / Cuti</h3>
            <p className="text-yellow-600">Anda sedang tidak memiliki jadwal praktik hari ini.</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+        <div className="bg-slate-50 border border-slate-200 rounded-app p-8 text-center">
            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
            <h3 className="text-lg font-medium text-slate-600">Tidak ada jadwal</h3>
            <p className="text-slate-400">Belum ada pasien yang terdaftar untuk hari ini.</p>
@@ -125,10 +125,10 @@ const TherapistSchedule = ({ therapist }) => {
           {items.map((item, idx) => {
             const isCancelled = item.type === 'appointment' && item.status === 'cancelled';
             return (
-            <Card key={`${item.type}-${item.id}-${idx}`} className={`hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-blue-500'}`}>
+            <Card key={`${item.type}-${item.id}-${idx}`} className={`hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-app-accent-bright'}`}>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                   <div className={`px-3 py-2 rounded-lg font-mono font-bold text-lg min-w-[80px] text-center ${isCancelled ? 'bg-red-100 text-red-700' : item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                   <div className={`px-3 py-2 rounded-app-sm font-mono font-bold text-lg min-w-[80px] text-center ${isCancelled ? 'bg-red-100 text-red-700' : item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
                       {item.displayTime ? format(new Date(item.displayTime), 'HH:mm') : '--:--'}
                    </div>
                    <div>

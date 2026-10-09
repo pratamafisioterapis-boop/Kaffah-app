@@ -723,8 +723,8 @@ className={errors.actual_patient_id ? "border-red-500" : ""}
 </div>
 
 {packageInfo && (
-<div className={cn("p-3 rounded-lg border text-sm flex justify-between items-center", 
-packageInfo.isExpired ? "bg-red-50 border-red-200" : "bg-blue-50 border-blue-200"
+<div className={cn("p-3 rounded-app-sm border text-sm flex justify-between items-center", 
+packageInfo.isExpired ? "bg-red-50 border-red-200" : "bg-app-soft border-app-accent/25"
 )}>
 <div>
 <p className="font-semibold text-slate-800">{packageInfo.package_name}</p>
@@ -876,7 +876,7 @@ Potongan bank ({feePreview.rule.fee_type === 'percentage' ? `${feePreview.rule.f
 )}
 </div>
 
-<div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+<div className="space-y-2 bg-slate-50 p-3 rounded-app-sm border border-slate-100">
 <Label className="mb-2 block">Diskon</Label>
 <RadioGroup 
 value={formData.discount_type} 
@@ -932,7 +932,7 @@ className={errors.discount_value ? "border-red-500 bg-white" : "bg-white"}
 ) : <div></div>}
 <div className="flex gap-2">
 <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Batal</Button>
-<Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 text-white hover:bg-blue-700">
+<Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="bg-app-accent text-white hover:bg-app-accent-hover">
 {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
 {mode === 'add' ? 'Simpan Recap' : 'Simpan Perubahan'}
 </Button>

@@ -28,7 +28,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
     if (index >= 0) return colors[index % colors.length];
     
     // Fallback if not found
-    return 'bg-blue-500 border-blue-600';
+    return 'bg-app-accent-bright border-app-accent';
   };
 
   const getStatusIndicator = (status) => {
@@ -36,7 +36,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
       case 'completed': return 'bg-green-400';
       case 'cancelled': return 'bg-red-400';
       case 'no-show': return 'bg-gray-400';
-      default: return 'bg-blue-400'; // scheduled/confirmed
+      default: return 'bg-app-accent-bright'; // scheduled/confirmed
     }
   };
 
@@ -53,7 +53,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[700px]">
+    <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[700px]">
       {/* Header */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
         <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
         {/* Legend */}
         <div className="hidden md:flex items-center gap-4 text-xs">
            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-blue-400"></span> Scheduled
+              <span className="w-2 h-2 rounded-full bg-app-accent-bright"></span> Scheduled
            </div>
            <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-400"></span> Completed
@@ -116,7 +116,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
               <div className="flex justify-between items-start">
                  <span className={cn(
                    "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full",
-                   isToday(day) ? "bg-blue-600 text-white" : "text-slate-700"
+                   isToday(day) ? "bg-app-accent text-white" : "text-slate-700"
                  )}>
                    {format(day, 'd')}
                  </span>

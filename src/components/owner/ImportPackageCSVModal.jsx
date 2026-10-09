@@ -280,17 +280,17 @@ const ImportPackageCSVModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="flex-1 overflow-y-auto p-6 pt-2">
           {step === 'upload' && (
              <div className="space-y-6">
-                 <Alert className="bg-blue-50 border-blue-200">
-                    <InfoIcon className="h-4 w-4 text-blue-600" />
-                    <AlertTitle className="text-blue-800">Petunjuk Format CSV</AlertTitle>
-                    <AlertDescription className="text-blue-700 text-sm mt-1">
+                 <Alert className="bg-app-soft border-app-accent/25">
+                    <InfoIcon className="h-4 w-4 text-app-accent" />
+                    <AlertTitle className="text-app-accent-hover">Petunjuk Format CSV</AlertTitle>
+                    <AlertDescription className="text-app-accent-hover text-sm mt-1">
                         Pastikan kolom CSV sesuai urutan: <br/>
                         <b>Nama Pasien, Tanggal Beli, Tanggal Selesai, Jenis Paket, Total Sesi</b><br/>
                         Format Tanggal: YYYY-MM-DD (Contoh: 2024-01-30)
                     </AlertDescription>
                  </Alert>
 
-                 <div className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                 <div className="border-2 border-dashed border-slate-300 rounded-app p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <FileSpreadsheet className="w-12 h-12 text-slate-400 mb-4" />
                     <h3 className="font-semibold text-lg text-slate-700">Klik untuk upload file CSV</h3>
                     <p className="text-slate-500 text-sm mt-1">atau drag & drop file disini</p>
@@ -314,14 +314,14 @@ const ImportPackageCSVModal = ({ isOpen, onClose, onSuccess }) => {
           {(step === 'preview' || step === 'importing') && (
               <div className="space-y-4">
                   <div className="flex gap-4">
-                      <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-lg flex items-center gap-3">
+                      <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-app-sm flex items-center gap-3">
                           <CheckCircle className="w-8 h-8 text-green-600" />
                           <div>
                               <p className="text-xs text-green-600 font-medium">Data Valid</p>
                               <p className="text-xl font-bold text-green-700">{validationSummary.valid}</p>
                           </div>
                       </div>
-                      <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-lg flex items-center gap-3">
+                      <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-app-sm flex items-center gap-3">
                           <XCircle className="w-8 h-8 text-red-600" />
                           <div>
                               <p className="text-xs text-red-600 font-medium">Data Invalid</p>
@@ -374,7 +374,7 @@ const ImportPackageCSVModal = ({ isOpen, onClose, onSuccess }) => {
                              <span>{progress}%</span>
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                            <div className="h-full bg-app-accent transition-all duration-300" style={{ width: `${progress}%` }}></div>
                         </div>
                      </div>
                   )}

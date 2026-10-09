@@ -56,7 +56,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange }) => {
       )}
 
       {items.map((it, i) => (
-        <div key={i} className="border rounded-lg p-2 space-y-2 bg-white">
+        <div key={i} className="border rounded-app-sm p-2 space-y-2 bg-white">
           <div className="flex gap-2 items-center">
             <select className="border rounded h-8 px-1 text-xs bg-white" value={it.category}
               onChange={(e) => patch(i, { category: e.target.value })}>

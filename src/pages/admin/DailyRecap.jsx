@@ -270,7 +270,7 @@ const DailyRecap = ({ hideControls = false }) => {
         toast({ 
           title: "Sesi Dimulai", 
           description: `Waktu mulai tercatat: ${timeString}`,
-          className: "bg-blue-600 text-white border-none"
+          className: "bg-app-accent text-white border-none"
         });
         await fetchRecaps();
       }
@@ -335,7 +335,7 @@ const getPremiumPastelBadge = (text) => {
   }
 
   const premiumColors = [
-    'bg-blue-50 text-blue-700 border-0',
+    'bg-app-soft text-app-accent-hover border-0',
     'bg-emerald-50 text-emerald-700 border-0',
     'bg-indigo-50 text-indigo-700 border-0',
     'bg-rose-50 text-rose-700 border-0',
@@ -388,11 +388,11 @@ const getPremiumPastelBadge = (text) => {
       {!hideControls && (
         <>
         {/* Hero Banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl">
+        <div className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-7 shadow-xl">
           <div className="absolute -top-8 -right-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 flex items-center gap-4">
-            <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
+            <div className="flex-shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
@@ -404,7 +404,7 @@ const getPremiumPastelBadge = (text) => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm">
           <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>
           <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
             <div className="flex items-center gap-2">
@@ -431,13 +431,13 @@ const getPremiumPastelBadge = (text) => {
               <Button variant="outline" size="icon" onClick={fetchRecaps}><RefreshCcw className="w-4 h-4"/></Button>
             </div>
             <Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[200px]" />
-            <Button onClick={handleAddRecap} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2"/> Tambah</Button>
+            <Button onClick={handleAddRecap} className="bg-app-accent hover:bg-app-accent-hover"><Plus className="w-4 h-4 mr-2"/> Tambah</Button>
           </div>
         </div>
         </>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         {/* Mobile / PWA: kartu, tanpa geser horizontal */}
         <div className="sm:hidden divide-y divide-slate-100">
           {loadingRecaps ? (
@@ -470,11 +470,11 @@ const getPremiumPastelBadge = (text) => {
                     </div>
                     <div className="shrink-0">
                       {recap.end_time ? (
-                        <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-lg">Selesai</Badge>
+                        <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-app-sm">Selesai</Badge>
                       ) : recap.start_time ? (
-                        <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-lg">Berlangsung</Badge>
+                        <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-app-sm">Berlangsung</Badge>
                       ) : (
-                        <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-lg">Belum</Badge>
+                        <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-app-sm">Belum</Badge>
                       )}
                     </div>
                   </div>
@@ -499,7 +499,7 @@ const getPremiumPastelBadge = (text) => {
                     </div>
                     <div>
                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
-                      <p className="text-blue-600 font-semibold">{packageLabel}</p>
+                      <p className="text-app-accent font-semibold">{packageLabel}</p>
                     </div>
                     <div>
                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
@@ -517,7 +517,7 @@ const getPremiumPastelBadge = (text) => {
                   <div className="pt-1 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1 mt-2">Waktu Sesi</p>
                     {!recap.start_time ? (
-                      <Button size="sm" className="h-7 w-full text-[10px] bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                      <Button size="sm" className="h-7 w-full text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                         {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                       </Button>
                     ) : !recap.end_time ? (
@@ -590,7 +590,7 @@ const getPremiumPastelBadge = (text) => {
                           </Badge>
                         </div>
                      </td>
-                     <td className="px-5 py-4 text-center text-blue-600 font-semibold">{packageLabel}</td>
+                     <td className="px-5 py-4 text-center text-app-accent font-semibold">{packageLabel}</td>
                      <td className="px-5 py-4 text-center text-slate-600">{recap.display_therapist_name}</td>
                      <td className="px-5 py-4 text-center whitespace-nowrap">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
@@ -600,16 +600,16 @@ const getPremiumPastelBadge = (text) => {
                      </td>
                      <td className="px-5 py-4 text-center">
                        {recap.end_time ? (
-                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-lg">Selesai</Badge>
+                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-3 py-1 rounded-app-sm">Selesai</Badge>
                        ) : recap.start_time ? (
-                         <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-lg">Berlangsung</Badge>
+                         <Badge className="bg-blue-50 text-blue-700 border-0 px-3 py-1 rounded-app-sm">Berlangsung</Badge>
                        ) : (
-                         <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-lg">Belum</Badge>
+                         <Badge className="bg-slate-100 text-slate-500 border-0 px-3 py-1 rounded-app-sm">Belum</Badge>
                        )}
                      </td>
                      <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {!recap.start_time ? (
-                        <Button size="sm" className="h-7 w-full text-[10px] bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        <Button size="sm" className="h-7 w-full text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>
                       ) : !recap.end_time ? (

@@ -38,7 +38,7 @@ const Avatar = ({ url, name, size = 'lg' }) => {
   return url ? (
     <img src={url} alt={name} className={`${dim} rounded-full object-cover border-2 border-white shadow-md`} />
   ) : (
-    <div className={`${dim} rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold border-2 border-white shadow-md`}>
+    <div className={`${dim} rounded-full bg-gradient-to-br from-app-accent-bright to-app-accent flex items-center justify-center text-white font-bold border-2 border-white shadow-md`}>
       {name?.charAt(0)?.toUpperCase() || 'T'}
     </div>
   );
@@ -193,13 +193,13 @@ const TabProfil = ({ therapist, onUpdated }) => {
   return (
     <div className="space-y-4">
       {/* Avatar */}
-      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div className="flex items-center gap-4 p-4 bg-white rounded-app-lg border border-slate-100 shadow-sm">
         <div className="relative shrink-0">
           <Avatar url={form.avatar_url} name={form.name} size="lg" />
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 shadow-lg hover:bg-blue-700 transition"
+            className="absolute -bottom-1 -right-1 bg-app-accent text-white rounded-full p-1.5 shadow-lg hover:bg-app-accent-hover transition"
           >
             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
           </button>
@@ -207,7 +207,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         <div>
           <p className="text-sm font-semibold text-slate-800">{form.name || 'Nama Terapis'}</p>
           <p className="text-xs text-slate-400 mt-0.5">{form.specialization || 'Spesialisasi'}</p>
-          <p className="text-xs text-blue-500 mt-1.5 cursor-pointer" onClick={() => fileRef.current?.click()}>
+          <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => fileRef.current?.click()}>
             Ganti foto profil
           </p>
         </div>
@@ -215,7 +215,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
       </div>
 
       {/* Form fields */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-50">
+      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm divide-y divide-slate-50">
         <div className="px-4 py-3 space-y-1">
           <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nama Lengkap</Label>
           <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border-0 px-0 shadow-none focus-visible:ring-0 text-sm font-medium text-slate-800 h-8" />
@@ -240,14 +240,14 @@ const TabProfil = ({ therapist, onUpdated }) => {
         </div>
       </div>
 
-      <Button onClick={handleSave} disabled={saving} className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 h-11">
+      <Button onClick={handleSave} disabled={saving} className="w-full rounded-app bg-app-accent hover:bg-app-accent-hover h-11">
         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
         Simpan Profil
       </Button>
 
       {/* Tanda Tangan Digital */}
-      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div className="relative shrink-0 w-20 h-14 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+      <div className="flex items-center gap-4 p-4 bg-white rounded-app-lg border border-slate-100 shadow-sm">
+        <div className="relative shrink-0 w-20 h-14 rounded-app bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
           {form.signature_url ? (
             <img src={form.signature_url} alt="Tanda Tangan" className="w-full h-full object-contain" />
           ) : (
@@ -256,7 +256,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
           <button
             onClick={() => signatureFileRef.current?.click()}
             disabled={uploadingSignature}
-            className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 shadow-lg hover:bg-blue-700 transition"
+            className="absolute -bottom-1 -right-1 bg-app-accent text-white rounded-full p-1.5 shadow-lg hover:bg-app-accent-hover transition"
           >
             {uploadingSignature ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
           </button>
@@ -264,7 +264,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         <div>
           <p className="text-sm font-semibold text-slate-800">Tanda Tangan Digital</p>
           <p className="text-xs text-slate-400 mt-0.5">Dipakai otomatis di invoice &amp; dokumen klinis (resume medis, surat keterangan, dll).</p>
-          <p className="text-xs text-blue-500 mt-1.5 cursor-pointer" onClick={() => signatureFileRef.current?.click()}>
+          <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => signatureFileRef.current?.click()}>
             {form.signature_url ? 'Ganti tanda tangan' : 'Upload tanda tangan'}
           </p>
         </div>
@@ -272,13 +272,13 @@ const TabProfil = ({ therapist, onUpdated }) => {
       </div>
 
       {/* Foto Splash Screen (terpisah dari foto di therapist card) */}
-      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div className="flex items-center gap-4 p-4 bg-white rounded-app-lg border border-slate-100 shadow-sm">
         <div className="relative shrink-0">
           <Avatar url={splashAvatarUrl} name={form.name} size="lg" />
           <button
             onClick={() => splashFileRef.current?.click()}
             disabled={uploadingSplash}
-            className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 shadow-lg hover:bg-blue-700 transition"
+            className="absolute -bottom-1 -right-1 bg-app-accent text-white rounded-full p-1.5 shadow-lg hover:bg-app-accent-hover transition"
           >
             {uploadingSplash ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
           </button>
@@ -286,7 +286,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         <div>
           <p className="text-sm font-semibold text-slate-800">Foto Splash Screen</p>
           <p className="text-xs text-slate-400 mt-0.5">Tampil saat kamu membuka aplikasi. Jika kosong, memakai foto di therapist card.</p>
-          <p className="text-xs text-blue-500 mt-1.5 cursor-pointer" onClick={() => splashFileRef.current?.click()}>
+          <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => splashFileRef.current?.click()}>
             Ganti foto splash screen
           </p>
         </div>
@@ -356,14 +356,14 @@ const TabNotifikasi = ({ userId }) => {
       <p className="text-xs text-slate-500">Notifikasi dikirim setiap hari jam <span className="font-semibold text-slate-700">21:30 WIB</span>. Kamu bisa matikan jenis notifikasi tertentu di sini.</p>
 
       {saving && (
-        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-app-sm">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan...
         </div>
       )}
 
       <div className="space-y-3">
         {items.map(item => (
-          <div key={item.key} className="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50">
+          <div key={item.key} className="flex items-start gap-3 p-4 rounded-app border border-slate-100 bg-slate-50">
             <span className="text-xl mt-0.5">{item.icon}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-800">{item.title}</p>
@@ -378,7 +378,7 @@ const TabNotifikasi = ({ userId }) => {
         ))}
       </div>
 
-      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+      <div className="bg-amber-50 border border-amber-100 rounded-app p-3">
         <p className="text-xs text-amber-700">Notifikasi hanya terkirim ke perangkat yang sudah mengaktifkan izin notifikasi di browser/PWA.</p>
       </div>
     </div>
@@ -488,8 +488,8 @@ const TabCuti = ({ therapistId }) => {
     <div className="space-y-4">
       {/* Ringkasan sisa cuti tahunan */}
       {balance && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-100 bg-emerald-50/60">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3 p-4 rounded-app border border-emerald-100 bg-emerald-50/60">
+          <div className="w-10 h-10 rounded-app bg-emerald-100 flex items-center justify-center shrink-0">
             <Umbrella className="w-5 h-5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
@@ -511,29 +511,29 @@ const TabCuti = ({ therapistId }) => {
 
       {/* Tombol tambah */}
       {!showForm && (
-        <Button onClick={() => setShowForm(true)} variant="outline" className="w-full rounded-xl border-dashed border-blue-300 text-blue-600 hover:bg-blue-50">
+        <Button onClick={() => setShowForm(true)} variant="outline" className="w-full rounded-app border-dashed border-app-accent/40 text-app-accent hover:bg-app-soft">
           <Plus className="w-4 h-4 mr-2" /> Ajukan Cuti Baru
         </Button>
       )}
 
       {/* Form tambah */}
       {showForm && (
-        <div className="border border-blue-100 bg-blue-50/50 rounded-xl p-4 space-y-3">
+        <div className="border border-app-accent/15 bg-app-soft/50 rounded-app p-4 space-y-3">
           <p className="text-sm font-semibold text-slate-700">Pengajuan Cuti Baru</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-slate-500">Mulai</Label>
-              <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="rounded-xl text-sm" />
+              <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="rounded-app text-sm" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-slate-500">Selesai</Label>
-              <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="rounded-xl text-sm" />
+              <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="rounded-app text-sm" />
             </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-slate-500">Jenis Cuti</Label>
             <Select value={form.leave_type} onValueChange={v => setForm(f => ({ ...f, leave_type: v }))}>
-              <SelectTrigger className="rounded-xl text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-app text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {LEAVE_REASONS.map(r => (
                   <SelectItem key={r.value} value={r.value} disabled={r.value === 'annual' && balance?.isFirstYear}>
@@ -545,14 +545,14 @@ const TabCuti = ({ therapistId }) => {
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-slate-500">Catatan (opsional)</Label>
-            <Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Keterangan tambahan..." className="rounded-xl text-sm" />
+            <Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Keterangan tambahan..." className="rounded-app text-sm" />
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleAdd} disabled={saving} className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm">
+            <Button onClick={handleAdd} disabled={saving} className="flex-1 rounded-app bg-app-accent hover:bg-app-accent-hover text-sm">
               {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
               Simpan
             </Button>
-            <Button onClick={() => setShowForm(false)} variant="outline" className="rounded-xl text-sm">
+            <Button onClick={() => setShowForm(false)} variant="outline" className="rounded-app text-sm">
               <X className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -572,7 +572,7 @@ const TabCuti = ({ therapistId }) => {
           {list.map(item => {
             const upcoming = isUpcoming(item.start_date);
             return (
-              <div key={item.id} className={`flex items-start gap-3 p-3.5 rounded-xl border ${upcoming ? 'border-blue-100 bg-blue-50/40' : 'border-slate-100 bg-slate-50'}`}>
+              <div key={item.id} className={`flex items-start gap-3 p-3.5 rounded-app border ${upcoming ? 'border-app-accent/15 bg-app-soft/40' : 'border-slate-100 bg-slate-50'}`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-slate-800">
@@ -589,7 +589,7 @@ const TabCuti = ({ therapistId }) => {
                   <button
                     onClick={() => handleDelete(item.id)}
                     disabled={deleting === item.id}
-                    className="text-red-400 hover:text-red-600 transition p-1 rounded-lg hover:bg-red-50"
+                    className="text-red-400 hover:text-red-600 transition p-1 rounded-app-sm hover:bg-red-50"
                   >
                     {deleting === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>
@@ -659,14 +659,14 @@ const TabAkun = ({ user }) => {
             type="email"
             value={emailForm.email}
             onChange={e => setEmailForm(f => ({ ...f, email: e.target.value }))}
-            className="rounded-xl"
+            className="rounded-app"
           />
         </div>
         <Button
           onClick={handleChangeEmail}
           disabled={emailForm.saving || emailForm.email === user?.email}
           variant="outline"
-          className="w-full rounded-xl"
+          className="w-full rounded-app"
         >
           {emailForm.saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           Kirim Konfirmasi Email
@@ -687,7 +687,7 @@ const TabAkun = ({ user }) => {
               value={pwForm.newPw}
               onChange={e => setPwForm(f => ({ ...f, newPw: e.target.value }))}
               placeholder="Minimal 8 karakter"
-              className="rounded-xl pr-10"
+              className="rounded-app pr-10"
             />
             <button
               type="button"
@@ -706,7 +706,7 @@ const TabAkun = ({ user }) => {
               value={pwForm.confirm}
               onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
               placeholder="Ulangi password baru"
-              className="rounded-xl pr-10"
+              className="rounded-app pr-10"
             />
             <button
               type="button"
@@ -723,7 +723,7 @@ const TabAkun = ({ user }) => {
         <Button
           onClick={handleChangePassword}
           disabled={pwForm.saving || !pwForm.newPw || !pwForm.confirm}
-          className="w-full rounded-xl bg-blue-600 hover:bg-blue-700"
+          className="w-full rounded-app bg-app-accent hover:bg-app-accent-hover"
         >
           {pwForm.saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}
           Ubah Password
@@ -746,12 +746,12 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 max-w-lg w-full rounded-2xl overflow-hidden border-0 shadow-2xl">
+      <DialogContent className="p-0 gap-0 max-w-lg w-full rounded-app-lg overflow-hidden border-0 shadow-2xl">
 
         {/* ── Header ── */}
         <div className="bg-white border-b border-slate-100">
           <div className="px-5 pt-5 pb-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base border-2 border-slate-100">
+            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-app-accent-bright to-app-accent flex items-center justify-center text-white font-bold text-base border-2 border-slate-100">
               {therapist?.avatar_url
                 ? <img src={therapist.avatar_url} alt="" className="w-full h-full object-cover" />
                 : therapist?.name?.charAt(0)?.toUpperCase()
@@ -774,7 +774,7 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-all border-b-2 ${
                     active
-                      ? 'text-blue-600 border-blue-600'
+                      ? 'text-app-accent border-app-accent'
                       : 'text-slate-400 border-transparent hover:text-slate-500'
                   }`}
                 >
@@ -789,7 +789,7 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
         {/* ── Content ── */}
         <div className="overflow-y-auto bg-slate-50/60 max-h-[70vh]">
           <div className="px-5 pt-5 pb-1 flex items-center gap-2">
-            {activeTabData && <activeTabData.icon className="w-3.5 h-3.5 text-blue-500" />}
+            {activeTabData && <activeTabData.icon className="w-3.5 h-3.5 text-app-accent-bright" />}
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{activeTabData?.label}</p>
           </div>
 

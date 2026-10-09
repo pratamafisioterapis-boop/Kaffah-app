@@ -275,10 +275,10 @@ const FinanceInput = ({ role }) => {
             {/* Mobile cards */}
             <div className="sm:hidden space-y-3">
               {expenses.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data.</div>
+                <div className="text-center py-8 text-slate-500 bg-white rounded-app border border-slate-200">Belum ada data.</div>
               ) : (
                 expenses.map(ex => (
-                  <div key={ex.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                  <div key={ex.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(ex.transaction_date), 'dd/MM/yyyy')}</span>
                       <span className="font-medium text-red-600 shrink-0 whitespace-nowrap">Rp {parseFloat(ex.amount).toLocaleString('id-ID')}</span>
@@ -294,7 +294,7 @@ const FinanceInput = ({ role }) => {
               )}
             </div>
 
-            <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
+            <div className="hidden sm:block bg-white rounded-app border border-slate-200 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
@@ -340,10 +340,10 @@ const FinanceInput = ({ role }) => {
             {/* Mobile cards */}
             <div className="sm:hidden space-y-3">
               {incomes.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data.</div>
+                <div className="text-center py-8 text-slate-500 bg-white rounded-app border border-slate-200">Belum ada data.</div>
               ) : (
                 incomes.map(inc => (
-                  <div key={inc.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5">
+                  <div key={inc.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(inc.transaction_date), 'dd/MM/yyyy')}</span>
                       <span className="font-medium text-green-600 shrink-0 whitespace-nowrap">Rp {parseFloat(inc.amount).toLocaleString('id-ID')}</span>
@@ -356,7 +356,7 @@ const FinanceInput = ({ role }) => {
               )}
             </div>
 
-            <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
+            <div className="hidden sm:block bg-white rounded-app border border-slate-200 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
@@ -392,21 +392,21 @@ const FinanceInput = ({ role }) => {
           {role === 'owner' && (
             <TabsContent value="banks" className="space-y-4">
               <div className="flex justify-end">
-                <Button onClick={() => setIsBankOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => setIsBankOpen(true)} className="bg-app-accent hover:bg-app-accent-hover">
                   <CreditCard className="w-4 h-4 mr-2" /> Tambah Akun Bank
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {bankAccounts.map(bank => (
-                  <div key={bank.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative group">
+                  <div key={bank.id} className="bg-white p-6 rounded-app border border-slate-200 shadow-sm relative group">
                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleDeleteBank(bank.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
+                      <div className="p-3 bg-app-soft rounded-app-sm text-app-accent">
                         <CreditCard className="w-6 h-6" />
                       </div>
                       <div>
@@ -440,10 +440,10 @@ const FinanceInput = ({ role }) => {
               {/* Mobile cards */}
               <div className="sm:hidden space-y-3">
                 {receivables.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200">Tidak ada data piutang.</div>
+                  <div className="text-center py-8 text-slate-500 bg-white rounded-app border border-slate-200">Tidak ada data piutang.</div>
                 ) : (
                   receivables.map(rec => (
-                    <div key={rec.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+                    <div key={rec.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium truncate">{rec.patient?.full_name}</p>
@@ -474,7 +474,7 @@ const FinanceInput = ({ role }) => {
                 )}
               </div>
 
-              <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
+              <div className="hidden sm:block bg-white rounded-app border border-slate-200 overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-slate-50">
                     <TableRow>

@@ -204,12 +204,12 @@ if (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600">Tanggal</label>
           <Input type="date" name="date" value={formData.date} onChange={handleChange} required
-            className="h-9 text-sm rounded-xl border-slate-200" />
+            className="h-9 text-sm rounded-app border-slate-200" />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600">Jumlah (IDR)</label>
           <Input type="number" name="amount" value={formData.amount} onChange={handleChange} placeholder="0" required
-            className="h-9 text-sm rounded-xl border-slate-200" />
+            className="h-9 text-sm rounded-app border-slate-200" />
         </div>
       </div>
 
@@ -230,7 +230,7 @@ if (
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Kategori Utama</label>
-            <div className="h-9 px-3 flex items-center rounded-xl text-sm text-slate-400"
+            <div className="h-9 px-3 flex items-center rounded-app text-sm text-slate-400"
               style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               {formData.category || 'Otomatis terisi setelah pilih sub kategori'}
             </div>
@@ -245,7 +245,7 @@ if (
           </label>
           <Input name="custom_name" value={formData.custom_name} onChange={handleChange}
             placeholder="Masukkan nama..." required
-            className="h-9 text-sm rounded-xl border-slate-200" />
+            className="h-9 text-sm rounded-app border-slate-200" />
         </div>
       )}
 
@@ -295,17 +295,17 @@ if (
         <label className="text-xs font-semibold text-slate-600">Deskripsi</label>
         <Textarea name="description" value={formData.description} onChange={handleChange}
           placeholder="Masukkan keterangan..." rows={3}
-          className="text-sm rounded-xl border-slate-200 resize-none" />
+          className="text-sm rounded-app border-slate-200 resize-none" />
       </div>
 
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={onCancel} disabled={loading}
-          className="flex-1 h-9 rounded-xl text-xs font-semibold transition-all"
+          className="flex-1 h-9 rounded-app text-xs font-semibold transition-all"
           style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
           Batal
         </button>
         <button type="submit" disabled={loading}
-          className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
+          className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
           style={{ background: type === 'expenditure' ? '#e11d48' : type === 'income' ? '#059669' : '#0891b2' }}>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {loading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan')}

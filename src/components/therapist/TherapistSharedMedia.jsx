@@ -56,9 +56,9 @@ const TherapistSharedMedia = ({ therapist }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <ImageIcon className="w-6 h-6 text-blue-600" />
+          <ImageIcon className="w-6 h-6 text-app-accent" />
           Sharing Media
         </h2>
         <p className="text-slate-500 mt-1">
@@ -68,10 +68,10 @@ const TherapistSharedMedia = ({ therapist }) => {
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-app-sm" />)}
         </div>
       ) : assets.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <div className="text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-200">
           <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
             <ImageIcon className="w-6 h-6" />
           </div>
@@ -83,7 +83,7 @@ const TherapistSharedMedia = ({ therapist }) => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {assets.map((asset) => (
-            <div key={asset.id} className="group bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
+            <div key={asset.id} className="group bg-white border border-slate-200 rounded-app-sm overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
               <div className="relative aspect-video bg-slate-100 border-b border-slate-100 overflow-hidden">
                 <img src={asset.file_url} alt={asset.name} className="w-full h-full object-contain p-2" loading="lazy" />
                 <div className="absolute top-2 left-2">

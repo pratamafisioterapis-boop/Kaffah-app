@@ -59,9 +59,9 @@ const NationalHolidayManager = () => {
   const isSunday = (d) => getDay(parseISO(d)) === 0;
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+    <div className="bg-white p-4 rounded-app border border-slate-200 shadow-sm space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-app bg-rose-50 flex items-center justify-center shrink-0">
           <CalendarHeart className="w-5 h-5 text-rose-600" />
         </div>
         <div>
@@ -87,11 +87,11 @@ const NationalHolidayManager = () => {
       </div>
 
       {loading ? (
-        <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+        <div className="h-10 bg-slate-100 rounded-app-sm animate-pulse" />
       ) : holidays.length === 0 ? (
         <p className="text-sm text-slate-400">Belum ada hari libur nasional yang dicatat.</p>
       ) : (
-        <div className="divide-y divide-slate-100 rounded-lg border border-slate-100">
+        <div className="divide-y divide-slate-100 rounded-app-sm border border-slate-100">
           {holidays.map((h) => (
             <div key={h.id} className="flex items-center justify-between gap-3 px-3 py-2">
               <div className="min-w-0">

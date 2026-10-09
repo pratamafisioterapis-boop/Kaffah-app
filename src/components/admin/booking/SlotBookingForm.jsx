@@ -301,14 +301,14 @@ action_by: user?.id,
   if (showConflictModal && conflictData) {
       return (
           <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <h3 className="font-semibold text-blue-800 mb-2">Konfirmasi Booking Berulang</h3>
-                  <p className="text-sm text-blue-700">
+              <div className="bg-app-soft p-4 rounded-app-sm border border-app-accent/15">
+                  <h3 className="font-semibold text-app-accent-hover mb-2">Konfirmasi Booking Berulang</h3>
+                  <p className="text-sm text-app-accent-hover">
                       Anda akan membuat <strong>{conflictData.total_planned}</strong> jadwal setiap <strong>{format(date, 'EEEE', { locale: idLocale })}</strong> sampai <strong>{format(new Date(formData.recurringEndDate), 'dd MMM yyyy', { locale: idLocale })}</strong>.
                   </p>
               </div>
               {conflictData.conflicts?.length > 0 && (
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                  <div className="bg-red-50 p-4 rounded-app-sm border border-red-100">
                       <h4 className="font-medium text-red-800 mb-1">Terdapat {conflictData.conflicts.length} Bentrok</h4>
                       <ul className="text-xs text-red-700 list-disc list-inside max-h-32 overflow-y-auto">
                           {conflictData.conflicts.map((cDate, i) => (
@@ -340,24 +340,24 @@ action_by: user?.id,
 
   return (
     <div className="space-y-5">
-      <div className={cn("p-5 rounded-2xl border flex flex-col gap-3 shadow-sm", isLeave ? "bg-red-50 border-red-100" : "bg-gradient-to-br from-[#0f1e3d]/[0.03] to-white border-[#0f1e3d]/10")}>
+      <div className={cn("p-5 rounded-app-lg border flex flex-col gap-3 shadow-sm", isLeave ? "bg-red-50 border-red-100" : "bg-gradient-to-br from-app-ink/[0.03] to-white border-app-ink/10")}>
          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-slate-700">
-               <CalendarDays className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-[#1e3a8a]")} />
+               <CalendarDays className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-app-ink")} />
                <span className="text-sm font-medium">{date && isValid(date) ? format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale }) : 'Tanggal Invalid'}</span>
             </div>
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{therapist.name}</div>
          </div>
          <div className="flex items-center gap-2">
-            <Clock className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-[#1e3a8a]")} />
-            <span className="text-3xl font-bold text-[#0f1e3d] tracking-tight">{startTimeStr}</span>
+            <Clock className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-app-ink")} />
+            <span className="text-3xl font-bold text-app-ink tracking-tight">{startTimeStr}</span>
             <span className="text-slate-400 text-sm">- {formattedEndTime}</span>
          </div>
       </div>
 
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-xl transition-all", formData.patient_type === 'registered' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500")}>Pasien Terdaftar</button>
-        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-xl transition-all", formData.patient_type === 'guest' ? "bg-white text-[#1e3a8a] shadow-sm" : "text-slate-500")}>Pasien Baru</button>
+      <div className="flex bg-slate-100 p-1.5 rounded-app-lg gap-1">
+        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-all", formData.patient_type === 'registered' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Terdaftar</button>
+        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-all", formData.patient_type === 'guest' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Baru</button>
       </div>
 
       {formData.patient_type === 'registered' ? (
@@ -388,7 +388,7 @@ action_by: user?.id,
   setFilteredPatients(patients);
   setShowDropdown(true);
 }}
-              className={cn("pl-9 rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
+              className={cn("pl-9 rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40", formData.patient_id && "pr-9 border-green-500 focus-visible:ring-green-500")}
               disabled={isLeave || loading}
             />
             {formData.patient_id && (
@@ -396,9 +396,9 @@ action_by: user?.id,
             )}
           </div>
           {showDropdown && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-app shadow-lg max-h-48 overflow-y-auto">
               {filteredPatients.length > 0 ? filteredPatients.map(p => (
-                <div key={p.id} className="px-4 py-2 hover:bg-[#1e3a8a]/5 cursor-pointer text-sm" onClick={() => handlePatientSelect(p.id)}>
+                <div key={p.id} className="px-4 py-2 hover:bg-app-ink/5 cursor-pointer text-sm" onClick={() => handlePatientSelect(p.id)}>
                   <div className="font-medium">{p.full_name}</div>
                   <div className="text-xs text-slate-500">{p.medical_record_number}</div>
                 </div>
@@ -408,8 +408,8 @@ action_by: user?.id,
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1"><Label>Nama Pasien</Label><Input value={formData.guest_name} onChange={e => setFormData(prev => ({ ...prev, guest_name: e.target.value }))} disabled={isLeave || loading} className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40" /></div>
-          <div className="space-y-1"><Label>No. WhatsApp</Label><Input value={formData.guest_phone} onChange={e => setFormData(prev => ({ ...prev, guest_phone: e.target.value }))} disabled={isLeave || loading} className="rounded-xl h-11 focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40" /></div>
+          <div className="space-y-1"><Label>Nama Pasien</Label><Input value={formData.guest_name} onChange={e => setFormData(prev => ({ ...prev, guest_name: e.target.value }))} disabled={isLeave || loading} className="rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40" /></div>
+          <div className="space-y-1"><Label>No. WhatsApp</Label><Input value={formData.guest_phone} onChange={e => setFormData(prev => ({ ...prev, guest_phone: e.target.value }))} disabled={isLeave || loading} className="rounded-app h-11 focus-visible:ring-2 focus-visible:ring-app-ink/40" /></div>
         </div>
       )}
 
@@ -420,14 +420,14 @@ action_by: user?.id,
   lastDate &&
   isBefore(new Date(lastDate), startOfDay(new Date()));
         return (
-          <div className={cn("p-4 rounded-xl border text-sm transition-all duration-300", isExpired ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200", isJustActivated && "ring-2 ring-emerald-400 scale-[1.01]")}>
+          <div className={cn("p-4 rounded-app border text-sm transition-all duration-300", isExpired ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200", isJustActivated && "ring-2 ring-emerald-400 scale-[1.01]")}>
             <div className="flex justify-between items-center mb-2">
               <span className="font-semibold text-slate-800">{packageInfo.package_name}</span>
               <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase", isExpired ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>{isExpired ? 'Expired' : 'Aktif'}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-white p-2 rounded border text-center"><p className="text-slate-500">Terpakai</p><p className="font-bold">{packageInfo.sessions_used}/{packageInfo.total_sessions}</p></div>
-              <div className="bg-white p-2 rounded border text-center"><p className="text-slate-500">Sisa</p><p className="font-bold text-blue-600">{packageInfo.sessions_remaining}</p></div>
+              <div className="bg-white p-2 rounded border text-center"><p className="text-slate-500">Sisa</p><p className="font-bold text-app-accent">{packageInfo.sessions_remaining}</p></div>
             </div>
             {isExpired && (
               <Button size="sm" className="w-full mt-3 bg-red-600 hover:bg-red-700" onClick={() => setShowExtendModal(true)}>Perpanjang Masa Aktif</Button>
@@ -451,16 +451,16 @@ action_by: user?.id,
         </div>
       )}
 
-      <div className="space-y-1"><Label>Keluhan / Catatan</Label><Textarea value={formData.notes} onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))} disabled={isLeave || loading} className="text-sm h-20 rounded-xl focus-visible:ring-2 focus-visible:ring-[#1e3a8a]/40" /></div>
+      <div className="space-y-1"><Label>Keluhan / Catatan</Label><Textarea value={formData.notes} onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))} disabled={isLeave || loading} className="text-sm h-20 rounded-app focus-visible:ring-2 focus-visible:ring-app-ink/40" /></div>
 
       <DialogFooter className="pt-2">
         <Button variant="outline" onClick={onClose} disabled={loading} className="rounded-full">Batal</Button>
-        <Button onClick={handleSubmit} disabled={loading || isLeave} className="bg-gradient-to-r from-[#0f1e3d] to-[#1e3a8a] hover:from-[#0b1830] hover:to-[#172554] text-white px-8 rounded-full font-bold shadow-lg shadow-[#0f1e3d]/20">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi"}</Button>
+        <Button onClick={handleSubmit} disabled={loading || isLeave} className="bg-gradient-to-r from-app-ink to-app-ink hover:from-[#0b1830] hover:to-[#172554] text-white px-8 rounded-full font-bold shadow-lg shadow-app-ink/20">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi"}</Button>
       </DialogFooter>
 
       {showExtendModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-xs space-y-4 shadow-2xl">
+          <div className="bg-white rounded-app p-6 w-full max-w-xs space-y-4 shadow-2xl">
             <h3 className="font-bold text-lg">Perpanjang Paket</h3>
             <div className="space-y-1 p-3 bg-slate-50 rounded border text-xs">
               <p className="text-slate-500">Expired Terakhir</p>
@@ -487,7 +487,7 @@ action_by: user?.id,
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" className="flex-1" onClick={() => setShowExtendModal(false)}>Batal</Button>
-              <Button className="flex-1 bg-blue-600" onClick={async () => {
+              <Button className="flex-1 bg-app-accent" onClick={async () => {
                 try {
                   const today = startOfDay(new Date());
                   const selected = startOfDay(new Date(extendDate));

@@ -53,9 +53,9 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] max-w-xl flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b bg-gradient-to-b from-blue-50 to-white px-5 pb-3 pt-5 text-left">
+        <DialogHeader className="border-b bg-gradient-to-b from-app-soft to-white px-5 pb-3 pt-5 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white"><ClipboardCheck className="h-4 w-4" /></span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-app bg-app-accent text-white"><ClipboardCheck className="h-4 w-4" /></span>
             {form.name}
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -63,7 +63,7 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
           </DialogDescription>
           <div className="mt-2 flex items-center gap-3">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${Math.round((done / total) * 100)}%` }} />
+              <div className="h-full rounded-full bg-app-accent-bright transition-all" style={{ width: `${Math.round((done / total) * 100)}%` }} />
             </div>
             <span className="text-xs tabular-nums text-slate-500">{done}/{total} item</span>
           </div>
@@ -77,9 +77,9 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
             const note = idx === 0 || form.items[idx - 1]?.scale !== item.scale ? itemNote(item) : null;
             return (
               <React.Fragment key={idx}>
-                {groupHeader && <div className="pt-1 text-[11px] font-semibold uppercase tracking-wider text-blue-700">{groupHeader}</div>}
-                {note && <p className="rounded-lg bg-slate-50 px-3 py-1.5 text-[11px] leading-snug text-slate-500">{note}</p>}
-                <div className={cn('rounded-xl border p-3 transition-colors', answers[idx] !== undefined ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 bg-white')}>
+                {groupHeader && <div className="pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">{groupHeader}</div>}
+                {note && <p className="rounded-app-sm bg-slate-50 px-3 py-1.5 text-[11px] leading-snug text-slate-500">{note}</p>}
+                <div className={cn('rounded-app border p-3 transition-colors', answers[idx] !== undefined ? 'border-app-accent/25 bg-app-soft/40' : 'border-slate-200 bg-white')}>
                   <div className="mb-2 flex gap-2 text-sm font-medium text-slate-800">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] text-slate-500">{idx + 1}</span>
                     {item.label}
@@ -96,11 +96,11 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
                           onClick={() => pick(idx, opt.value)}
                           className={cn(
                             'rounded-full border px-3 py-1.5 text-left text-[13px] leading-tight transition-all active:scale-95',
-                            active ? 'border-blue-600 bg-blue-600 font-medium text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300',
+                            active ? 'border-app-accent bg-app-accent font-medium text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40',
                             !wide && 'min-w-[38px] text-center'
                           )}
                         >
-                          {wide ? <><b className={active ? 'text-white' : 'text-blue-700'}>{opt.value}</b> · {opt.label}</> : opt.label}
+                          {wide ? <><b className={active ? 'text-white' : 'text-app-accent-hover'}>{opt.value}</b> · {opt.label}</> : opt.label}
                         </button>
                       );
                     })}
@@ -111,7 +111,7 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
           })}
 
           {form.manual && (
-            <div className="rounded-xl border border-dashed border-slate-300 p-3">
+            <div className="rounded-app border border-dashed border-slate-300 p-3">
               <div className="mb-1.5 text-xs font-semibold text-slate-500">Sudah punya skor dari lembar resmi?</div>
               <div className="flex items-center gap-2">
                 <Input
@@ -134,7 +134,7 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
         </div>
 
         <div className="space-y-2 border-t bg-white px-5 py-3">
-          <div className={cn('rounded-xl px-3 py-2 text-sm', result ? 'bg-blue-50 text-blue-900' : 'bg-slate-50 text-slate-400')}>
+          <div className={cn('rounded-app px-3 py-2 text-sm', result ? 'bg-app-soft text-app-ink' : 'bg-slate-50 text-slate-400')}>
             {result ? <><span className="font-semibold">{result.text}</span></> : 'Skor akan muncul setelah Anda memilih jawaban.'}
           </div>
           {!enough && done > 0 && (
@@ -150,8 +150,8 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
               <RotateCcw className="h-3 w-3" /> Kosongkan
             </button>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">Batal</Button>
-              <Button type="button" onClick={apply} disabled={!result || !enough} className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700">
+              <Button type="button" variant="outline" onClick={onClose} className="rounded-app">Batal</Button>
+              <Button type="button" onClick={apply} disabled={!result || !enough} className="gap-1.5 rounded-app bg-app-accent hover:bg-app-accent-hover">
                 <Check className="h-4 w-4" /> Terapkan
               </Button>
             </div>

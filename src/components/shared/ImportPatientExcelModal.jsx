@@ -215,17 +215,17 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="flex-1 overflow-y-auto p-6 pt-2">
           {step === 'upload' && (
             <div className="space-y-6">
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Petunjuk Format</AlertTitle>
-                <AlertDescription className="text-blue-700 text-sm mt-1">
+              <Alert className="bg-app-soft border-app-accent/25">
+                <Info className="h-4 w-4 text-app-accent" />
+                <AlertTitle className="text-app-accent-hover">Petunjuk Format</AlertTitle>
+                <AlertDescription className="text-app-accent-hover text-sm mt-1">
                   Kolom yang wajib diisi hanya <b>Nama Pasien</b> — kolom lain boleh dikosongkan dan bisa dilengkapi belakangan.
                   Nomor Rekam Medis otomatis dibuat jika kolom "No. RM" kosong.
                   Simpan kolom No. HP/NIK sebagai format Teks di Excel agar angka 0 di depan tidak hilang.
                 </AlertDescription>
               </Alert>
 
-              <div className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <div className="border-2 border-dashed border-slate-300 rounded-app p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 <FileSpreadsheet className="w-12 h-12 text-slate-400 mb-4" />
                 <h3 className="font-semibold text-lg text-slate-700">Klik untuk upload file Excel/CSV</h3>
                 <p className="text-slate-500 text-sm mt-1">atau drag &amp; drop file disini</p>
@@ -249,14 +249,14 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
           {(step === 'preview' || step === 'importing') && !resultSummary && (
             <div className="space-y-4">
               <div className="flex gap-4">
-                <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-lg flex items-center gap-3">
+                <div className="flex-1 bg-green-50 border border-green-200 p-3 rounded-app-sm flex items-center gap-3">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
                     <p className="text-xs text-green-600 font-medium">Siap Diimpor</p>
                     <p className="text-xl font-bold text-green-700">{validCount}</p>
                   </div>
                 </div>
-                <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-lg flex items-center gap-3">
+                <div className="flex-1 bg-red-50 border border-red-200 p-3 rounded-app-sm flex items-center gap-3">
                   <XCircle className="w-8 h-8 text-red-600" />
                   <div>
                     <p className="text-xs text-red-600 font-medium">Dilewati (Tanpa Nama)</p>
@@ -307,7 +307,7 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
                     <span>{progress}%</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                    <div className="h-full bg-app-accent transition-all duration-300" style={{ width: `${progress}%` }}></div>
                   </div>
                 </div>
               )}

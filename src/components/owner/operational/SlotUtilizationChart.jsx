@@ -125,7 +125,7 @@ const SlotUtilizationChart = () => {
   const strokeDash = (metrics.utilization / 100) * circumference;
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       {/* Header */}
       <div className="px-4 md:px-5 pt-4 md:pt-5 pb-2 flex items-start justify-between">
         <div>

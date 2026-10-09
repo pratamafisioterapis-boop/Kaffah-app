@@ -98,7 +98,7 @@ const TherapistTargetWidget = ({ userId }) => {
 
     if (loading) {
         return (
-            <Card className="border-l-4 border-l-indigo-500 shadow-sm h-full">
+            <Card className="border-l-4 border-l-app-accent-bright shadow-sm h-full">
                 <CardContent className="flex items-center justify-center h-40">
                     <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                 </CardContent>
@@ -155,7 +155,7 @@ const TherapistTargetWidget = ({ userId }) => {
     const getProgressColor = (pct) => {
         if (pct >= 100) return 'bg-emerald-500';
         if (pct >= 80) return 'bg-amber-500';
-        return 'bg-indigo-500';
+        return 'bg-app-accent-bright';
     };
 
     const getStreakColor = (count) => {
@@ -170,7 +170,7 @@ const TherapistTargetWidget = ({ userId }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
         >
-            <Card className="border-l-4 border-l-indigo-500 shadow-sm hover:shadow-md transition-shadow h-full relative overflow-hidden bg-white">
+            <Card className="border-l-4 border-l-app-accent-bright shadow-sm hover:shadow-md transition-shadow h-full relative overflow-hidden bg-white">
                 <CardContent className="p-6">
                     {/* Header: Period & Status */}
                     <div className="flex justify-between items-start mb-4 gap-2">
@@ -199,8 +199,8 @@ const TherapistTargetWidget = ({ userId }) => {
                     </div>
 
                     {/* Motivation Text */}
-                    <div className="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-start gap-3">
-                        <TrendingUp className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+                    <div className="mb-6 bg-slate-50 p-3 rounded-app-sm border border-slate-100 flex items-start gap-3">
+                        <TrendingUp className="w-5 h-5 text-app-accent-bright mt-0.5 shrink-0" />
                         <div>
                             <p className="text-sm font-medium text-slate-700 italic">"{getMotivationByProgress(achievement_percentage)}"</p>
                         </div>
@@ -214,7 +214,7 @@ const TherapistTargetWidget = ({ userId }) => {
                         </div>
                         <div>
                             <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Capaian</p>
-                            <p className={`text-xl font-bold ${achievement_percentage >= 100 ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                            <p className={`text-xl font-bold ${achievement_percentage >= 100 ? 'text-emerald-600' : 'text-app-accent'}`}>
                                 {actual_visits}
                             </p>
                         </div>

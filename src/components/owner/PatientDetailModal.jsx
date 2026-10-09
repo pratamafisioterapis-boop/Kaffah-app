@@ -243,7 +243,7 @@ const PatientDetailModal = ({
                                     Tutup
                                 </Button>
                                 <Button 
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="bg-app-accent hover:bg-app-accent-hover text-white"
                                     onClick={() => setIsEditing(true)}
                                 >
                                     <Edit2 className="w-4 h-4 mr-2" /> Edit

@@ -293,11 +293,11 @@ setExpandedServices({});
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-6">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-            <FolderTree className="w-5 h-5 text-blue-600" />
+            <FolderTree className="w-5 h-5 text-app-accent" />
             Manajemen Layanan & Diagnosa
           </h2>
           <p className="text-sm text-slate-500">Atur struktur layanan klinik dan diagnosa terkait.</p>
@@ -323,7 +323,7 @@ setExpandedServices({});
               Hapus Duplikat ({inactiveDiagnosisCount})
             </Button>
           )}
-          <Button onClick={() => handleOpenServiceModal()} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+          <Button onClick={() => handleOpenServiceModal()} className="bg-app-accent hover:bg-app-accent-hover whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" />
             Layanan Baru
           </Button>
@@ -333,12 +333,12 @@ setExpandedServices({});
       <div className="p-6 bg-slate-50/30 min-h-[500px]">
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+            <Loader2 className="w-10 h-10 animate-spin text-app-accent-bright" />
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-white">
+          <div className="text-center py-20 text-slate-400 border-2 border-dashed border-slate-200 rounded-app bg-white">
             <p>Belum ada layanan yang ditemukan.</p>
-            <Button variant="link" onClick={() => handleOpenServiceModal()} className="text-blue-600 mt-2">
+            <Button variant="link" onClick={() => handleOpenServiceModal()} className="text-app-accent mt-2">
               Tambah layanan pertama
             </Button>
           </div>
@@ -359,7 +359,7 @@ setExpandedServices({});
                   key={service.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
+                  className="bg-white border border-slate-200 rounded-app overflow-hidden shadow-sm"
                 >
                   <div className="flex items-center justify-between p-4 bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <div 
@@ -430,7 +430,7 @@ setExpandedServices({});
                             ) : (
                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                   {serviceDiagnoses.map(diagnosis => (
-                                    <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all">
+                                    <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-app-sm hover:border-app-accent/40 hover:shadow-sm transition-all">
                                        <span className="text-sm text-slate-700 font-medium truncate pr-2" title={diagnosis.label}>
                                           {diagnosis.label}
                                           {diagnosis.is_active === false && (
@@ -440,7 +440,7 @@ setExpandedServices({});
                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button 
                                             onClick={() => handleOpenDiagnosisModal(service.id, diagnosis)}
-                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                            className="p-1.5 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-colors"
                                           >
                                              <Edit2 className="w-3.5 h-3.5" />
                                           </button>
@@ -455,7 +455,7 @@ setExpandedServices({});
                                   ))}
                                   <button 
                                     onClick={() => handleOpenDiagnosisModal(service.id)}
-                                    className="flex items-center justify-center p-3 border border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all"
+                                    className="flex items-center justify-center p-3 border border-dashed border-slate-300 rounded-app-sm text-sm text-slate-500 hover:text-app-accent hover:border-app-accent/40 hover:bg-app-soft transition-all"
                                   >
                                      <Plus className="w-4 h-4 mr-2" /> Tambah Diagnosa
                                   </button>
@@ -494,7 +494,7 @@ setExpandedServices({});
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsServiceModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveService} disabled={isProcessing} className="bg-blue-600">
+            <Button onClick={handleSaveService} disabled={isProcessing} className="bg-app-accent">
               {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan
             </Button>
@@ -522,7 +522,7 @@ setExpandedServices({});
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDiagnosisModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveDiagnosis} disabled={isProcessing} className="bg-blue-600">
+            <Button onClick={handleSaveDiagnosis} disabled={isProcessing} className="bg-app-accent">
               {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan
             </Button>
@@ -550,7 +550,7 @@ setExpandedServices({});
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsBulkPasteOpen(false)}>Batal</Button>
-            <Button onClick={handleBulkPaste} disabled={isProcessing} className="bg-blue-600">
+            <Button onClick={handleBulkPaste} disabled={isProcessing} className="bg-app-accent">
               {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Proses Paste
             </Button>

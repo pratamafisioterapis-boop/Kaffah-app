@@ -37,7 +37,7 @@ const ExtendPackageModal = ({ isOpen, onClose, onExtend, packageInfo }) => {
                 </DialogHeader>
 
                 <div className="py-4 space-y-4">
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm space-y-2">
+                    <div className="bg-slate-50 p-3 rounded-app-sm border border-slate-200 text-sm space-y-2">
                         <div className="flex justify-between">
                             <span className="text-slate-500">Nama Paket:</span>
                             <span className="font-medium">{packageInfo?.package_type || '-'}</span>
@@ -81,7 +81,7 @@ const ExtendPackageModal = ({ isOpen, onClose, onExtend, packageInfo }) => {
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={loading}>Batal</Button>
-                    <Button onClick={handleSubmit} disabled={!expiredDate || loading} className="bg-blue-600 text-white hover:bg-blue-700">
+                    <Button onClick={handleSubmit} disabled={!expiredDate || loading} className="bg-app-accent text-white hover:bg-app-accent-hover">
                         {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Simpan Perubahan
                     </Button>

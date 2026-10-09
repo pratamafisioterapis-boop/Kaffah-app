@@ -30,7 +30,7 @@ const BepItemDetailModal = ({ isOpen, onClose, title, icon, iconClassName, perio
           {periodLabel && <p className="text-xs text-slate-400">{periodLabel}</p>}
         </DialogHeader>
 
-        <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
+        <div className="rounded-app bg-white/5 border border-white/10 px-4 py-3">
           <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Total</p>
           <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(totalAmount)}</p>
         </div>

@@ -414,7 +414,7 @@ end_time: r.end_time,
         toast({ 
   title: "Sesi Dimulai", 
   description: `Waktu mulai tercatat: ${timeString}`,
-  className: "bg-blue-600 text-white border-none"
+  className: "bg-app-accent text-white border-none"
 });
 
 // 🔥 UPDATE STATE LANGSUNG (INI KUNCI)
@@ -488,7 +488,7 @@ const getPremiumPastelBadge = (text) => {
   }
 
   const premiumColors = [
-    'bg-blue-50 text-blue-700 border-0',
+    'bg-app-soft text-app-accent-hover border-0',
     'bg-emerald-50 text-emerald-700 border-0',
     'bg-indigo-50 text-indigo-700 border-0',
     'bg-rose-50 text-rose-700 border-0',
@@ -533,7 +533,7 @@ const getPremiumPastelBadge = (text) => {
       {!hideControls && (
         <>
         {/* Hero Banner */}
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
           <img
             src="/hero/clinara-recap-hero.webp"
             alt="Kaffah Physiotherapy"
@@ -542,17 +542,17 @@ const getPremiumPastelBadge = (text) => {
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
             <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-              <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+              <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
               <h1
                 style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
               >
                 Rekap<br />
-                <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                   Harian
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Kelola data kunjungan dan pendapatan harian klinik.
               </p>
             </div>
@@ -565,9 +565,9 @@ const getPremiumPastelBadge = (text) => {
           <div className="grid grid-cols-4 gap-1.5">
             <div
               className={cn(
-                'relative flex items-center justify-center h-[46px] sm:h-[52px] rounded-xl border transition-all',
+                'relative flex items-center justify-center h-[46px] sm:h-[52px] rounded-app border transition-all',
                 activeFilter === 'today'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
+                  ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
@@ -681,9 +681,9 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
                 activeFilter === 'week'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
+                  ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
@@ -720,9 +720,9 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
                 activeFilter === 'month'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
+                  ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
@@ -756,9 +756,9 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-xl border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
                 activeFilter === 'period'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
+                  ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
@@ -777,7 +777,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, start: e.target.value }));
                 }}
-                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]"
                 onClick={() => setShowStartCalendar(true)}
               />
 
@@ -805,7 +805,7 @@ const getPremiumPastelBadge = (text) => {
                   setActiveFilter(null);
                   setDateRangeDisplay(p => ({ ...p, end: e.target.value }));
                 }}
-                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]"
                 onClick={() => setShowEndCalendar(true)}
               />
 
@@ -834,7 +834,7 @@ const getPremiumPastelBadge = (text) => {
                   setSelectedTherapist(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={cn('w-full h-9 sm:h-10 rounded-xl transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
+                className={cn('w-full h-9 sm:h-10 rounded-app transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
               >
                 <option value="">Semua Terapis</option>
 
@@ -855,7 +855,7 @@ const getPremiumPastelBadge = (text) => {
                   placeholder="Cari Pasien..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 sm:h-10 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+                  className="h-9 sm:h-10 w-full pl-9 text-sm rounded-app border border-[#D8E2EB]"
                 />
               </div>
             )}
@@ -866,7 +866,7 @@ const getPremiumPastelBadge = (text) => {
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                  className="w-full h-9 sm:h-10 rounded-xl pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                  className="w-full h-9 sm:h-10 rounded-app pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
                 >
                   <option value="">Semua Metode</option>
                   {paymentMethodOptions.map((pm) => (
@@ -881,7 +881,7 @@ const getPremiumPastelBadge = (text) => {
           {showPaymentFilter && (
             <>
               {/* Total Revenue */}
-              <div className="w-full flex items-center gap-1.5 px-3 h-8 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="w-full flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
                 <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
                   Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
@@ -897,7 +897,7 @@ const getPremiumPastelBadge = (text) => {
                 placeholder="Cari Pasien..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 sm:h-10 w-full pl-9 text-sm rounded-xl border border-[#D8E2EB]"
+                className="h-9 sm:h-10 w-full pl-9 text-sm rounded-app border border-[#D8E2EB]"
               />
             </div>
           )}
@@ -905,12 +905,12 @@ const getPremiumPastelBadge = (text) => {
         </>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <>
           {/* ── CARD LAYOUT (mobile/narrow) ── */}
           <div className="sm:hidden divide-y divide-slate-100">
             {loadingRecaps ? (
-              <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-blue-500"/></div>
+              <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-app-accent-bright"/></div>
             ) : recaps.length === 0 ? (
               <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
                 <Search className="w-8 h-8 text-slate-300"/>
@@ -927,7 +927,7 @@ const getPremiumPastelBadge = (text) => {
                 <div
                   key={recap.id}
                   onClick={() => handleRowClick(recap)}
-                  className={cn("px-4 py-3 cursor-pointer active:bg-blue-50 transition-colors", idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')}
+                  className={cn("px-4 py-3 cursor-pointer active:bg-app-soft transition-colors", idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')}
                 >
                   {/* Baris 1: Tanggal + Status */}
                   <div className="flex items-center justify-between mb-1">
@@ -935,7 +935,7 @@ const getPremiumPastelBadge = (text) => {
                     {recap.end_time
                       ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-[10px]">Selesai</Badge>
                       : recap.start_time
-                      ? <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px]">Berlangsung</Badge>
+                      ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-[10px]">Berlangsung</Badge>
                       : <Badge className="bg-slate-100 text-slate-500 border-0 text-[10px]">Belum</Badge>}
                   </div>
 
@@ -947,7 +947,7 @@ const getPremiumPastelBadge = (text) => {
                         <span className="text-[10px] text-slate-400">(Paket: {recap.patients.full_name})</span>
                       )}
                     </div>
-                    <span className="font-bold text-blue-600 text-sm ml-2 shrink-0">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                    <span className="font-bold text-app-accent text-sm ml-2 shrink-0">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
                   </div>
 
                   {/* Baris 3: Terapis + Badge */}
@@ -962,13 +962,13 @@ const getPremiumPastelBadge = (text) => {
                   {/* Baris 4: Tombol Sesi */}
                   <div onClick={(e) => e.stopPropagation()}>
                     {recap.start_time == null ? (
-                      <Button size="sm" className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                      <Button size="sm" className="h-8 w-full text-xs bg-app-accent hover:bg-app-accent-hover rounded-app-sm" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                         {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Play className="w-3 h-3 mr-1.5"/>Mulai Sesi</>}
                       </Button>
                     ) : !recap.end_time ? (
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 shrink-0">{formatTime(new Date(recap.start_time))}</span>
-                        <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white flex-1 rounded-lg" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white flex-1 rounded-app-sm" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Square className="w-3 h-3 mr-1.5"/>Selesai</>}
                         </Button>
                       </div>
@@ -1008,7 +1008,7 @@ const getPremiumPastelBadge = (text) => {
                             size="sm"
                             variant="outline"
                             disabled={parseFloat(recap.amount || 0) === 0}
-                            className="h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-lg"
+                            className="h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app-sm"
                             onClick={() => {
                               setSelectedInvoiceData(recap);
                               setInvoiceModalOpen(true);
@@ -1107,7 +1107,7 @@ const getPremiumPastelBadge = (text) => {
                           </Badge>
                         </div>
                      </td>
-                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-blue-600 font-semibold">{packageLabel}</td>
+                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold">{packageLabel}</td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-slate-600">{recap.display_therapist_name}</td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
@@ -1117,16 +1117,16 @@ const getPremiumPastelBadge = (text) => {
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        {recap.end_time ? (
-                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-1 xl:px-2 py-0.5 rounded-lg whitespace-normal text-center leading-tight">Selesai</Badge>
+                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Selesai</Badge>
                        ) : recap.start_time ? (
-                         <Badge className="bg-blue-50 text-blue-700 border-0 px-1 xl:px-2 py-0.5 rounded-lg whitespace-normal text-center leading-tight">Berlangsung</Badge>
+                         <Badge className="bg-blue-50 text-blue-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Berlangsung</Badge>
                        ) : (
-                         <Badge className="bg-slate-100 text-slate-500 border-0 px-1 xl:px-2 py-0.5 rounded-lg whitespace-normal text-center leading-tight">Belum</Badge>
+                         <Badge className="bg-slate-100 text-slate-500 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Belum</Badge>
                        )}
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {recap.start_time == null ? (
-                                 <Button size="sm" className="h-7 w-full text-sm bg-blue-600 hover:bg-blue-700" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                                 <Button size="sm" className="h-7 w-full text-sm bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>
                       ) : !recap.end_time ? (

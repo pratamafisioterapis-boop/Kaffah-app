@@ -78,10 +78,10 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
                     <span className="text-sm font-medium text-slate-900">{formatDate(row.purchase_date)}</span>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-bold text-slate-900">Rp {Number(row.total_price).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => setEditingRow(row)} title="Edit Riwayat">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => setEditingRow(row)} title="Edit Riwayat">
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>

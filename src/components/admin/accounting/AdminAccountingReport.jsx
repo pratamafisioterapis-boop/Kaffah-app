@@ -98,18 +98,18 @@ const AdminAccountingReport = ({ data, dateRange }) => {
 
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-blue-100 border-blue-200 shadow-sm">
+        <Card className="bg-app-accent/15 border-app-accent/25 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
-              <CardTitle className="text-sm font-bold text-blue-800 uppercase tracking-wider">Total Income</CardTitle>
-              <TrendingUp className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-sm font-bold text-app-accent-hover uppercase tracking-wider">Total Income</CardTitle>
+              <TrendingUp className="w-5 h-5 text-app-accent" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-bold text-app-ink">
               Rp {parseFloat(total_income || 0).toLocaleString('id-ID')}
             </div>
-            <p className="text-xs text-blue-700 mt-1">Total operational income</p>
+            <p className="text-xs text-app-accent-hover mt-1">Total operational income</p>
           </CardContent>
         </Card>
         
@@ -132,7 +132,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
 
       {/* Visual Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-6 rounded-app-sm border border-gray-200 shadow-sm">
           <h4 className="font-semibold text-gray-800 mb-4">Expense Distribution</h4>
           {Array.isArray(expenses_breakdown) && expenses_breakdown.length > 0 ? (
             <div className="space-y-3">
@@ -160,7 +160,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-6 rounded-app-sm border border-gray-200 shadow-sm">
            <h4 className="font-semibold text-gray-800 mb-4">Income Sources</h4>
            {Array.isArray(income_breakdown) && income_breakdown.length > 0 ? (
             <div className="space-y-3">

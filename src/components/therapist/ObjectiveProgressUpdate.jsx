@@ -46,7 +46,7 @@ const Chip = ({ active, tone, onClick, children }) => (
     onClick={onClick}
     className={cn(
       'inline-flex min-h-[34px] items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1 text-[13px] leading-none transition-all active:scale-95',
-      active ? cn(tone, 'font-medium shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+      active ? cn(tone, 'font-medium shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
     )}
   >
     {children}
@@ -117,9 +117,9 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
         </button>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
+      <div className="space-y-3 rounded-app-lg border border-slate-200 bg-white p-3.5 shadow-sm">
         <div>
-          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-blue-700">
+          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">
             Skala nyeri sekarang (0-10){prevVas !== null && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">sebelumnya {prevVas}/10</span>}
           </div>
           <div className="flex flex-wrap gap-1">
@@ -131,7 +131,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
                 onClick={() => { setEdited(null); setVas(vas === n ? undefined : n); }}
                 className={cn(
                   'inline-flex h-9 min-w-[36px] items-center justify-center rounded-full border px-2 text-[13px] transition-all active:scale-95',
-                  vas === n ? cn(vasTone(n), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+                  vas === n ? cn(vasTone(n), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
                 )}
               >
                 {n}
@@ -143,7 +143,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
         <div className="flex flex-wrap items-center gap-1.5 border-t pt-3">
           <span className="text-xs text-slate-500">Cepat, semua parameter:</span>
           {STATES.map((s) => (
-            <button key={s.key} type="button" onClick={() => setAll(s.key)} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50">
+            <button key={s.key} type="button" onClick={() => setAll(s.key)} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-app-accent/40 hover:bg-app-soft">
               Semua {s.label.toLowerCase()}
             </button>
           ))}
@@ -164,7 +164,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
           <span className="w-full text-sm text-slate-700 sm:w-52">Home program</span>
           <div className="flex flex-wrap gap-1.5">
             {HOME_PROGRAM.map((o) => (
-              <Chip key={o.key} active={home === o.key} tone="bg-blue-600 border-blue-600 text-white" onClick={() => { setEdited(null); setHome(home === o.key ? undefined : o.key); }}>
+              <Chip key={o.key} active={home === o.key} tone="bg-app-accent border-app-accent text-white" onClick={() => { setEdited(null); setHome(home === o.key ? undefined : o.key); }}>
                 {{ rutin: 'Rutin', kadang: 'Kadang', tidak: 'Belum' }[o.key]}
               </Chip>
             ))}
@@ -179,12 +179,12 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
           onChange={(e) => setEdited(e.target.value)}
           rows={3}
           placeholder="Klik perubahan di atas, barisnya muncul di sini."
-          className="block w-full resize-y rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 outline-none focus:ring-2 focus:ring-blue-200"
+          className="block w-full resize-y rounded-app border border-app-accent/15 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 outline-none focus:ring-2 focus:ring-app-accent/25"
         />
         <p className="mt-1 text-[11px] text-slate-400">Ditambahkan sebagai baris "Update Kondisi" di akhir Objective (menggantikan baris lama bila sudah ada).</p>
       </div>
 
-      <Button type="button" onClick={apply} disabled={!finalLine.trim()} className="h-11 w-full gap-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-700">
+      <Button type="button" onClick={apply} disabled={!finalLine.trim()} className="h-11 w-full gap-2 rounded-app bg-app-accent text-sm font-semibold hover:bg-app-accent-hover">
         <Check className="h-4 w-4" /> Masukkan ke Objective
       </Button>
     </div>

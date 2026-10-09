@@ -108,7 +108,7 @@ const NotificationPreferencesCard = ({ userId, items }) => {
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.key} className="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50">
+        <div key={item.key} className="flex items-start gap-3 p-4 rounded-app border border-slate-100 bg-slate-50">
           <span className="text-xl mt-0.5">{item.icon}</span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800">{item.title}</p>
@@ -122,7 +122,7 @@ const NotificationPreferencesCard = ({ userId, items }) => {
           />
         </div>
       ))}
-      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2">
+      <div className="bg-amber-50 border border-amber-100 rounded-app p-3 flex items-start gap-2">
         <Bell className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-700">Notifikasi hanya terkirim ke perangkat yang sudah mengaktifkan izin notifikasi di browser/PWA.</p>
       </div>

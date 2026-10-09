@@ -542,7 +542,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                           id="nickname" 
                           value={formData.nickname} 
                           onChange={(e) => handleNicknameChange(e.target.value)}
-                          className={`bg-white pr-10 ${!formData.nickname_custom && formData.nickname ? 'border-blue-300 bg-blue-50' : ''}`}
+                          className={`bg-white pr-10 ${!formData.nickname_custom && formData.nickname ? 'border-app-accent/40 bg-app-soft' : ''}`}
                           placeholder="Contoh: Budi"
                         />
                       </div>
@@ -803,7 +803,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                        <label htmlFor="ktp" className="text-xs text-blue-600 cursor-pointer hover:underline pt-1">Ganti</label>
+                        <label htmlFor="ktp" className="text-xs text-app-accent cursor-pointer hover:underline pt-1">Ganti</label>
                       </div>
                     ) : (
                       <label
@@ -842,10 +842,10 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
             <TabsContent value="packages" className="py-4 focus-visible:outline-none focus-visible:ring-0">
                 {loadingPackages ? (
                     <div className="flex justify-center py-10">
-                        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+                        <Loader2 className="animate-spin w-8 h-8 text-app-accent-bright" />
                     </div>
                 ) : packages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-500 border-2 border-dashed border-slate-200 rounded-app-sm">
                         <PackageX className="w-10 h-10 mb-2 opacity-20" />
                         <p className="font-medium">Belum ada paket yang terdaftar</p>
                     </div>
@@ -885,7 +885,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                                                         <AlertCircle className="w-3 h-3 mr-1" /> Expired
                                                     </Badge>
                                                 ) : sessionData.status === 'selesai' ? (
-                                                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none shadow-none text-[10px] h-5">
+                                                    <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/25 border-none shadow-none text-[10px] h-5">
                                                         Selesai
                                                     </Badge>
                                                 ) : sessionData.status === 'diperpanjang' ? (

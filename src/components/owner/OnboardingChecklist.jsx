@@ -225,7 +225,7 @@ const OnboardingChecklist = () => {
                 type="button"
                 onClick={() => goToStep(step)}
                 className={cn(
-                  'w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-colors',
+                  'w-full text-left flex items-start gap-3 p-3 rounded-app border transition-colors',
                   done ? 'bg-emerald-50/60 border-emerald-100' : 'bg-white border-slate-200 hover:border-clinara-teal/50 hover:bg-slate-50'
                 )}
               >

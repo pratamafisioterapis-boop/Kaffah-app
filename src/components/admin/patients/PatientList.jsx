@@ -111,7 +111,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
 
   if (error) {
       return (
-          <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-xl border border-red-100">
+          <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-app border border-red-100">
               <AlertCircle className="w-10 h-10 text-red-500 mb-2" />
               <p className="text-red-700 font-medium">{error}</p>
               <Button variant="outline" onClick={fetchPatients} className="mt-4 bg-white hover:bg-red-50 border-red-200 text-red-600">
@@ -137,21 +137,21 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
       <div className="sm:hidden space-y-3">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+            <div key={i} className="bg-white rounded-app border border-slate-200 shadow-sm p-4 space-y-2">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-6 w-24 rounded-full" />
             </div>
           ))
         ) : filteredPatients.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm py-12 text-center text-slate-500">
+          <div className="bg-white rounded-app border border-slate-200 shadow-sm py-12 text-center text-slate-500">
             <ClipboardList className="w-12 h-12 mb-3 mx-auto text-slate-300" />
             <h3 className="text-lg font-medium text-slate-900">Belum ada data pasien</h3>
             <p className="text-sm mt-1">Silakan tambah data pasien baru untuk memulai.</p>
           </div>
         ) : (
           filteredPatients.map((patient) => (
-            <div key={patient.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+            <div key={patient.id} className="bg-white rounded-app border border-slate-200 shadow-sm p-4 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-bold text-slate-900 text-sm truncate">{patient.full_name}</p>
@@ -168,7 +168,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                     <DropdownMenuItem onClick={() => onEdit(patient)} className="cursor-pointer">
-                      <Edit className="mr-2 h-4 w-4 text-blue-600" /> Edit Pasien
+                      <Edit className="mr-2 h-4 w-4 text-app-accent" /> Edit Pasien
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer" onClick={() => onDelete(patient)}>
                       <Trash2 className="mr-2 h-4 w-4" /> Hapus Pasien
@@ -206,7 +206,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
         )}
       </div>
 
-      <div className="hidden sm:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+      <div className="hidden sm:block bg-white rounded-app border border-slate-200 shadow-sm overflow-x-auto">
           <Table className={TABLE_FIT}>
               <TableCols widths={[10, 22, 6, 12, 8, 13, 12, 9, 8]} />
               <TableHeader className="bg-slate-100 border-b border-slate-300">
@@ -306,7 +306,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                                       <DropdownMenuContent align="end" className="w-40">
                                           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                           <DropdownMenuItem onClick={() => onEdit(patient)} className="cursor-pointer">
-                                              <Edit className="mr-2 h-4 w-4 text-blue-600" /> Edit Pasien
+                                              <Edit className="mr-2 h-4 w-4 text-app-accent" /> Edit Pasien
                                           </DropdownMenuItem>
                                           <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer" onClick={() => onDelete(patient)}>
                                               <Trash2 className="mr-2 h-4 w-4" /> Hapus Pasien

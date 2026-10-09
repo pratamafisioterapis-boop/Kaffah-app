@@ -34,7 +34,7 @@ const DateRangeFilter = ({ startDate, endDate, onDateChange, className }) => {
   };
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm", className)}>
+    <div className={cn("flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-white rounded-app border border-slate-200 shadow-sm", className)}>
       <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">Filter by Date Range:</span>
       
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

@@ -42,7 +42,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
 
   return (
     <div className="w-full space-y-4">
-      <div className="w-full rounded-xl border border-slate-200 shadow-sm bg-white overflow-hidden">
+      <div className="w-full rounded-app border border-slate-200 shadow-sm bg-white overflow-hidden">
         {dataToRender.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
             <div className="bg-slate-100 p-4 rounded-full mb-3">
@@ -72,7 +72,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all hover:scale-105"
+                          className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-all hover:scale-105"
                           onClick={() => onEdit && onEdit(ex)}
                           title="Edit Pengeluaran"
                         >
@@ -182,7 +182,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all hover:scale-105"
+                            className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-all hover:scale-105"
                             onClick={() => onEdit && onEdit(ex)}
                             title="Edit Pengeluaran"
                           >

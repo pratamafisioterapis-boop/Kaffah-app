@@ -144,7 +144,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
     <div className="relative flex-shrink-0" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-9 h-9 rounded-full sm:rounded-xl border border-[#DCE8F2] bg-white flex items-center justify-center text-[#102F52] hover:text-[#1677D2] hover:bg-[#F5F9FC] transition-colors shadow-sm"
+        className="w-9 h-9 rounded-full sm:rounded-app border border-app-border bg-white flex items-center justify-center text-app-ink hover:text-app-accent hover:bg-[#F5F9FC] transition-colors shadow-sm"
         aria-label="Pindah akun"
         title="Pindah akun admin / terapis"
       >
@@ -154,51 +154,51 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
         <div
           ref={panelRef}
           style={{ top: pos.top, left: pos.left, width: pos.width }}
-          className="fixed bg-white border border-[#DCE8F2] rounded-xl shadow-lg z-[100] overflow-hidden"
+          className="fixed bg-white border border-app-border rounded-app shadow-lg z-[100] overflow-hidden"
         >
-          <div className="px-4 pt-3 pb-2 border-b border-[#DCE8F2]">
-            <p className="text-sm font-bold text-[#102F52]">Pindah Akun</p>
-            <p className="text-xs text-[#5B6B7D]">Lihat tampilan sebagai admin / terapis klinik Anda</p>
+          <div className="px-4 pt-3 pb-2 border-b border-app-border">
+            <p className="text-sm font-bold text-app-ink">Pindah Akun</p>
+            <p className="text-xs text-app-muted">Lihat tampilan sebagai admin / terapis klinik Anda</p>
           </div>
           <div className="max-h-[min(360px,60vh)] overflow-y-auto p-2">
             {isImpersonating && (
               <div className="mb-1">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#5B6B7D]">Owner</p>
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">Owner</p>
                 <button
                   onClick={handleBackToOwner}
                   disabled={switchingId !== null}
-                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left disabled:opacity-60"
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left disabled:opacity-60"
                 >
-                  <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                  <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                     {switchingId === 'owner' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium text-[#102F52] truncate">Akun Owner</span>
-                    <span className="block text-xs text-[#5B6B7D] truncate">{impersonationOrigin?.admin_email}</span>
+                    <span className="block text-sm font-medium text-app-ink truncate">Akun Owner</span>
+                    <span className="block text-xs text-app-muted truncate">{impersonationOrigin?.admin_email}</span>
                   </span>
                 </button>
               </div>
             )}
             {loading ? (
-              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-[#1677D2]" /></div>
+              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-app-accent" /></div>
             ) : accounts.length === 0 ? (
-              <p className="text-xs text-[#5B6B7D] text-center py-6">Tidak ada akun lain.</p>
+              <p className="text-xs text-app-muted text-center py-6">Tidak ada akun lain.</p>
             ) : groups.map(([label, Icon, list]) => list.length > 0 && (
               <div key={label} className="mb-1">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#5B6B7D]">{label}</p>
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">{label}</p>
                 {list.map((a) => (
                   <button
                     key={a.id}
                     onClick={() => handleSwitch(a)}
                     disabled={switchingId !== null}
-                    className={cn('w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#F5F9FC] text-left disabled:opacity-60')}
+                    className={cn('w-full flex items-center gap-3 px-2 py-2 rounded-app-sm hover:bg-[#F5F9FC] text-left disabled:opacity-60')}
                   >
-                    <span className="w-8 h-8 rounded-full bg-[#EAF4FF] flex items-center justify-center text-[#1677D2] flex-shrink-0">
+                    <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0">
                       {switchingId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-[#102F52] truncate">{a.full_name || a.email}</span>
-                      <span className="block text-xs text-[#5B6B7D] truncate">{a.email}</span>
+                      <span className="block text-sm font-medium text-app-ink truncate">{a.full_name || a.email}</span>
+                      <span className="block text-xs text-app-muted truncate">{a.email}</span>
                     </span>
                   </button>
                 ))}

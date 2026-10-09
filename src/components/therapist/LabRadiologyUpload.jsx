@@ -64,7 +64,7 @@ const Section = ({ label, clinicId, value, onChange }) => {
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); upload(e.dataTransfer.files); }}
-        className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-6 text-sm text-slate-500 transition-colors ${dragging ? 'border-blue-400 bg-blue-50' : 'border-slate-300 bg-slate-50/80 hover:bg-slate-100'}`}
+        className={`flex cursor-pointer items-center justify-center gap-2 rounded-app border border-dashed px-4 py-6 text-sm text-slate-500 transition-colors ${dragging ? 'border-app-accent-bright bg-app-soft' : 'border-slate-300 bg-slate-50/80 hover:bg-slate-100'}`}
       >
         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
         <span>Drag &amp; Drop gambar atau <span className="underline">Browse</span></span>
@@ -80,9 +80,9 @@ const Section = ({ label, clinicId, value, onChange }) => {
       {files.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {files.map((f) => (
-            <li key={f.path} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs">
-              <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-              <button type="button" onClick={() => openFile(f.path)} className="min-w-0 flex-1 truncate text-left text-blue-700 hover:underline">
+            <li key={f.path} className="flex items-center gap-2 rounded-app-sm border border-slate-200 bg-white px-2.5 py-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-app-accent" />
+              <button type="button" onClick={() => openFile(f.path)} className="min-w-0 flex-1 truncate text-left text-app-accent-hover hover:underline">
                 {f.name}
               </button>
               <button type="button" onClick={() => remove(f)} aria-label={`Hapus ${f.name}`} className="text-slate-400 hover:text-red-600">
@@ -95,7 +95,7 @@ const Section = ({ label, clinicId, value, onChange }) => {
       <label className="mt-3 block text-xs font-semibold text-slate-500">Keterangan</label>
       <Textarea
         placeholder="Tulis keterangan / hasil..."
-        className="mt-1 min-h-[90px] resize-none rounded-xl border-slate-200 bg-slate-50/80 focus:bg-white"
+        className="mt-1 min-h-[90px] resize-none rounded-app border-slate-200 bg-slate-50/80 focus:bg-white"
         value={value?.note || ''}
         onChange={(e) => onChange({ ...value, note: e.target.value })}
       />

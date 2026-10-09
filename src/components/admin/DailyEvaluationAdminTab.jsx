@@ -11,7 +11,7 @@ import DailyEvaluationAdmin from '@/components/admin/DailyEvaluationAdmin';
  */
 const DailyEvaluationAdminTab = () => {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <div className="bg-white rounded-app border border-slate-200 shadow-sm p-6">
       <DailyEvaluationAdmin />
     </div>
   );

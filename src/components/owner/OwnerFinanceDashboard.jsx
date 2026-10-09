@@ -32,7 +32,7 @@ const TabButton = ({
   themeColor,
   activeClass,
   inactiveClass
-}) => <button onClick={onClick} className={cn("relative flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200", isActive ? activeClass : inactiveClass)}>
+}) => <button onClick={onClick} className={cn("relative flex items-center gap-2 px-6 py-3 rounded-app font-medium transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200", isActive ? activeClass : inactiveClass)}>
     <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-current" : "text-slate-400")} />
     <span>{label}</span>
     {isActive && <motion.div layoutId="activeTabIndicator" className={cn("absolute bottom-0 left-2 right-2 h-1 rounded-t-full", themeColor)} transition={{
@@ -51,7 +51,7 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
   const c = colors[color] || colors.blue;
   return (
     <button onClick={onClick}
-      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap"
+      className="flex items-center gap-2 px-4 py-2 rounded-app text-xs font-bold transition-all whitespace-nowrap"
       style={{
         background: isActive ? c.bg : 'white',
         color: isActive ? c.color : '#94a3b8',
@@ -68,7 +68,7 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
 const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete = true, onEdit, showEdit = false, accentColor = '#64748b' }) => {
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+      <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
         <Loader2 className="w-6 h-6 animate-spin mb-2" style={{ color: accentColor }} />
         <p className="text-xs text-slate-400 font-medium">Memuat data...</p>
       </div>
@@ -76,8 +76,8 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
   }
   if (!data || data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
+      <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
+        <div className="w-11 h-11 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
           <AlertCircle className="w-5 h-5 text-slate-300" />
         </div>
         <p className="text-sm font-semibold text-slate-400">{emptyMessage}</p>
@@ -87,7 +87,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
   return (
     <>
       {/* Mobile / PWA: Card List */}
-      <div className="sm:hidden overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="sm:hidden overflow-hidden rounded-app-lg" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         {data.map((row, rowIdx) => (
           <div key={row.id || rowIdx} className="px-4 py-3"
             style={{ background: rowIdx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
@@ -101,14 +101,14 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {showEdit && (
                     <button onClick={() => onEdit && onEdit(row)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center"
+                      className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                       style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                   )}
                   {showDelete && (
                     <button onClick={() => onDelete && onDelete(row.id)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center"
+                      className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                       style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -133,7 +133,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
       </div>
 
       {/* Desktop: Table */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="hidden sm:block overflow-hidden rounded-app-lg" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       <div className="overflow-x-auto">
         <table className="w-full text-left" style={{ fontSize: '12px' }}>
           <thead>
@@ -164,14 +164,14 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                     <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
                       {showEdit && (
                         <button onClick={() => onEdit && onEdit(row)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                           style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                       {showDelete && (
                         <button onClick={() => onDelete && onDelete(row.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          className="w-7 h-7 rounded-app-sm flex items-center justify-center"
                           style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -227,14 +227,14 @@ const MarkReceivablePaidModal = ({ receivable, bankAccounts, open, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] rounded-2xl">
+      <DialogContent className="sm:max-w-[420px] rounded-app-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800">Tandai Lunas &bull; {receivable?.custom_name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Tanggal Dibayar</label>
-            <Input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} className="h-9 text-sm rounded-xl border-slate-200" />
+            <Input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} className="h-9 text-sm rounded-app border-slate-200" />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Masuk ke Akun Bank</label>
@@ -246,8 +246,8 @@ const MarkReceivablePaidModal = ({ receivable, bankAccounts, open, onOpenChange,
             />
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Batal</Button>
-            <Button onClick={handleSubmit} disabled={loading} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-app">Batal</Button>
+            <Button onClick={handleSubmit} disabled={loading} className="rounded-app bg-emerald-600 hover:bg-emerald-700 text-white">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tandai Lunas'}
             </Button>
           </div>
@@ -433,7 +433,7 @@ const OwnerFinanceDashboard = () => {
   return <div className="w-full space-y-6 font-sans text-slate-900">
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-accounting-hero.webp"
           alt="Kaffah Physiotherapy"
@@ -442,17 +442,17 @@ const OwnerFinanceDashboard = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
+            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
             >
               Accounting<br />
-              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                 System
               </span>
             </h1>
-            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               Kelola keuangan, analitik & laporan klinik.
             </p>
           </div>
@@ -461,24 +461,24 @@ const OwnerFinanceDashboard = () => {
 
       {!isPWA && (
       <div className="flex justify-end">
-        <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] shadow-sm rounded-xl px-3 py-2">
-          <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+        <div className="flex items-center gap-2 bg-white border border-app-border shadow-sm rounded-app px-3 py-2">
+          <span className="text-app-accent text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
           <input
             type="date"
             value={dateRange.startDate}
             onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+            className="text-xs bg-transparent border-0 outline-none text-app-ink font-medium w-[110px]"
           />
-          <span className="text-[#DCE8F2] shrink-0">–</span>
+          <span className="text-app-border shrink-0">–</span>
           <input
             type="date"
             value={dateRange.endDate}
             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-            className="text-xs bg-transparent border-0 outline-none text-[#102F52] font-medium w-[110px]"
+            className="text-xs bg-transparent border-0 outline-none text-app-ink font-medium w-[110px]"
           />
           <button
             onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-            className="w-9 h-9 rounded-lg bg-[#F5F9FC] border border-[#DCE8F2] flex items-center justify-center hover:bg-[#EAF4FF] transition-colors text-[#5B6B7D] hover:text-[#1677D2] shrink-0"
+            className="w-9 h-9 rounded-app-sm bg-[#F5F9FC] border border-app-border flex items-center justify-center hover:bg-app-soft transition-colors text-app-muted hover:text-app-accent shrink-0"
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
@@ -488,7 +488,7 @@ const OwnerFinanceDashboard = () => {
       )}
 
       <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingRecord(null); }}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+        <DialogContent className="sm:max-w-[500px] rounded-app-lg">
           <DialogHeader>
             <DialogTitle className="capitalize text-xl">{editingRecord ? 'Edit' : 'Add New'} {activeFormType}</DialogTitle>
           </DialogHeader>
@@ -541,7 +541,7 @@ const OwnerFinanceDashboard = () => {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-app text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" />
               {label}
@@ -566,8 +566,8 @@ const OwnerFinanceDashboard = () => {
         opacity: 0,
         y: -10
       }}>
-             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-1 border border-emerald-100 shadow-lg">
-                <div className="bg-white/95 backdrop-blur rounded-xl p-6">
+             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-app-lg p-1 border border-emerald-100 shadow-lg">
+                <div className="bg-white/95 backdrop-blur rounded-app p-6">
                     <AccountingReport
   dateRange={dateRange}
   onDateRangeChange={setDateRange}
@@ -587,8 +587,8 @@ const OwnerFinanceDashboard = () => {
         opacity: 0,
         y: -10
       }}>
-             <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-2xl p-1 border border-violet-100 shadow-lg">
-                <div className="bg-white/95 backdrop-blur rounded-xl p-6">
+             <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-app-lg p-1 border border-violet-100 shadow-lg">
+                <div className="bg-white/95 backdrop-blur rounded-app p-6">
                     <SalaryCalculator
   dateRange={dateRange}
   setDateRange={setDateRange}
@@ -601,19 +601,19 @@ const OwnerFinanceDashboard = () => {
 
         {/* --- OWNER SECTION --- */}
         {activeTab === 'owner' && <motion.div key="owner" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-xl overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
+            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-app overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
               <SubTabButton isActive={activeOwnerTab === 'expenditures'} onClick={() => setActiveOwnerTab('expenditures')} label="Pengeluaran" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeOwnerTab === 'income'} onClick={() => setActiveOwnerTab('income')} label="Pemasukan" icon={TrendingUp} color="emerald" />
               <SubTabButton isActive={activeOwnerTab === 'receivables'} onClick={() => setActiveOwnerTab('receivables')} label="Piutang" icon={CreditCard} color="cyan" />
               <SubTabButton isActive={activeOwnerTab === 'fixed_cost'} onClick={() => setActiveOwnerTab('fixed_cost')} label="Rutin Bulanan" icon={Wallet} color="blue" />
             </div>
 
-            <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+            <div className="rounded-app-lg bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
               {activeOwnerTab === 'expenditures' && (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#fff1f2' }}>
+                      <div className="w-8 h-8 rounded-app flex items-center justify-center" style={{ background: '#fff1f2' }}>
                         <TrendingDown className="w-4 h-4" style={{ color: '#e11d48' }} />
                       </div>
                       <div>
@@ -622,7 +622,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                     </div>
                     <button onClick={() => openForm('expenditure')}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-app text-xs font-bold text-white"
                       style={{ background: '#e11d48' }}>
                       <Plus className="w-3.5 h-3.5" /> Tambah
                     </button>
@@ -656,7 +656,7 @@ const OwnerFinanceDashboard = () => {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                      <div className="w-8 h-8 rounded-app flex items-center justify-center" style={{ background: '#f0fdf4' }}>
                         <TrendingUp className="w-4 h-4" style={{ color: '#059669' }} />
                       </div>
                       <div>
@@ -665,7 +665,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                     </div>
                     <button onClick={() => openForm('income')}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-app text-xs font-bold text-white"
                       style={{ background: '#059669' }}>
                       <Plus className="w-3.5 h-3.5" /> Tambah
                     </button>
@@ -699,7 +699,7 @@ const OwnerFinanceDashboard = () => {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#ecfeff' }}>
+                      <div className="w-8 h-8 rounded-app flex items-center justify-center" style={{ background: '#ecfeff' }}>
                         <CreditCard className="w-4 h-4" style={{ color: '#0891b2' }} />
                       </div>
                       <div>
@@ -708,7 +708,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                     </div>
                     <button onClick={() => openForm('receivable')}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-app text-xs font-bold text-white"
                       style={{ background: '#0891b2' }}>
                       <Plus className="w-3.5 h-3.5" /> Tambah
                     </button>
@@ -768,16 +768,16 @@ const OwnerFinanceDashboard = () => {
 
         {/* --- ADMIN SECTION --- */}
         {activeTab === 'admin' && <motion.div key="admin" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-xl overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
+            <div className="flex gap-1.5 p-1 w-fit max-w-full rounded-app overflow-x-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', scrollbarWidth: 'none' }}>
               <SubTabButton isActive={activeAdminTab === 'expenses'} onClick={() => setActiveAdminTab('expenses')} label="Pengeluaran Admin" icon={TrendingDown} color="rose" />
               <SubTabButton isActive={activeAdminTab === 'income'} onClick={() => setActiveAdminTab('income')} label="Pemasukan Admin" icon={TrendingUp} color="emerald" />
             </div>
 
-            <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+            <div className="rounded-app-lg bg-white overflow-hidden" style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
               {activeAdminTab === 'expenses' && (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#fff1f2' }}>
+                    <div className="w-8 h-8 rounded-app flex items-center justify-center" style={{ background: '#fff1f2' }}>
                       <TrendingDown className="w-4 h-4" style={{ color: '#e11d48' }} />
                     </div>
                     <div>
@@ -819,7 +819,7 @@ const OwnerFinanceDashboard = () => {
               {activeAdminTab === 'income' && (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                    <div className="w-8 h-8 rounded-app flex items-center justify-center" style={{ background: '#f0fdf4' }}>
                       <TrendingUp className="w-4 h-4" style={{ color: '#059669' }} />
                     </div>
                     <div>
@@ -863,8 +863,8 @@ const OwnerFinanceDashboard = () => {
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}
   >
-    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-1 border border-cyan-100 shadow-lg">
-      <div className="bg-white/90 backdrop-blur rounded-xl p-6">
+    <div className="bg-gradient-to-br from-cyan-50 to-app-soft rounded-app-lg p-1 border border-cyan-100 shadow-lg">
+      <div className="bg-white/90 backdrop-blur rounded-app p-6">
         <PackageFunds />
       </div>
     </div>

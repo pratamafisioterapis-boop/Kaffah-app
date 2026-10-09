@@ -17,7 +17,7 @@ const AdminPhysiotherapistManagementPage = () => {
     <div className="space-y-6">
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-[#DCE8F2] shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
+      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
         <img
           src="/hero/clinara-physio-hero.webp"
           alt="Kaffah Physiotherapy"
@@ -26,17 +26,17 @@ const AdminPhysiotherapistManagementPage = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
         <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
           <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-[#5B6B7D] text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
+            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
             <h1
               style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#102F52] leading-[0.85]"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
             >
               Kelola<br />
-              <span className="text-[#2F8CFF] underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
+              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
                 Terapis
               </span>
             </h1>
-            <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               Kelola terapis, jadwal, dan cuti.
             </p>
           </div>
@@ -46,7 +46,7 @@ const AdminPhysiotherapistManagementPage = () => {
       {/* Tabs */}
       <Tabs defaultValue="schedule" className="w-full space-y-6">
         
-        <TabsList className="grid w-full md:w-[700px] grid-cols-3 bg-slate-100 p-1 rounded-lg">
+        <TabsList className="grid w-full md:w-[700px] grid-cols-3 bg-slate-100 p-1 rounded-app-sm">
 
           <TabsTrigger
             value="schedule"
@@ -79,7 +79,7 @@ const AdminPhysiotherapistManagementPage = () => {
           value="schedule"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+          <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
             <div className="relative z-10">
               <TherapistScheduleManager />
@@ -92,7 +92,7 @@ const AdminPhysiotherapistManagementPage = () => {
           value="overrides"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+          <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
             <div className="relative z-10">
               <TherapistScheduleOverrideManager />
@@ -105,7 +105,7 @@ const AdminPhysiotherapistManagementPage = () => {
           value="timeoff"
           className="outline-none animate-in fade-in-50 duration-500"
         >
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+          <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
             <div className="relative z-10">
               <TherapistTimeOffManager readOnly={isKaffah} />

@@ -123,7 +123,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
               />
             </div>
 
-            <Button onClick={fetchHistory} className="bg-blue-600 hover:bg-blue-700 h-9">
+            <Button onClick={fetchHistory} className="bg-app-accent hover:bg-app-accent-hover h-9">
                Filter
             </Button>
           </div>
@@ -133,14 +133,14 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
         <div className="flex-1 overflow-auto min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center py-12 h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-app-accent-bright" />
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mx-1">
+            <div className="bg-red-50 border border-red-200 rounded-app-sm p-4 text-red-700 mx-1">
               {error}
             </div>
           ) : history.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 bg-slate-50 rounded-lg border border-dashed border-slate-200 m-1">
+            <div className="text-center py-12 text-gray-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200 m-1">
               Belum ada riwayat penggunaan
             </div>
           ) : (
@@ -155,7 +155,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
                       <div className="flex items-center gap-1 font-semibold text-slate-700">
                         <Calendar className="w-4 h-4 mr-1" />
                         Tanggal
-                        {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-blue-600"/> : <ArrowDown className="w-3.5 h-3.5 ml-1 text-blue-600"/>}
+                        {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-app-accent"/> : <ArrowDown className="w-3.5 h-3.5 ml-1 text-app-accent"/>}
                       </div>
                     </TableHead>
                     <TableHead className="font-semibold text-slate-700">Pasien Pengguna</TableHead>

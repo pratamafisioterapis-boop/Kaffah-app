@@ -12,7 +12,7 @@ const getItemVisual = (title = '') => {
     return { Icon: MessageCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' };
   }
   if (t.includes('recap') || t.includes('pembukuan') || t.includes('cocokkan') || t.includes('bank')) {
-    return { Icon: Landmark, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' };
+    return { Icon: Landmark, iconBg: 'bg-app-accent/15', iconColor: 'text-app-accent' };
   }
   if (t.includes('pembayaran') || t.includes('cash')) {
     return { Icon: Camera, iconBg: 'bg-red-100', iconColor: 'text-red-500' };
@@ -76,7 +76,7 @@ const NoteField = ({ item, onSave }) => {
           onClick={(e) => e.stopPropagation()}
           placeholder="Catatan / laporan singkat (opsional)... contoh: 12 pasien di-follow up, kunjungan kemarin 34 pasien"
           rows={2}
-          className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 focus:border-blue-400 focus:bg-white rounded-xl px-3.5 py-2.5 text-slate-700 placeholder:text-slate-400 outline-none resize-none transition-colors"
+          className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 focus:border-app-accent-bright focus:bg-white rounded-app px-3.5 py-2.5 text-slate-700 placeholder:text-slate-400 outline-none resize-none transition-colors"
         />
         <AnimatePresence>
           {saved && (
@@ -149,7 +149,7 @@ const AdminDailyChecklistWidget = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-6">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+            <div className="w-12 h-12 rounded-app-lg bg-gradient-to-br from-app-accent-bright to-app-accent flex items-center justify-center shadow-lg shadow-app-accent-bright/20 shrink-0">
               <ClipboardList className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -169,18 +169,18 @@ const AdminDailyChecklistWidget = () => {
                   initial={{ width: 0 }}
                   animate={{ width: `${percent}%` }}
                   transition={{ duration: 0.6, ease: 'easeOut' }}
-                  className={`h-full rounded-full ${allDone ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-blue-400'}`}
+                  className={`h-full rounded-full ${allDone ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-app-accent-bright to-app-accent-bright'}`}
                 />
               </div>
             </div>
 
             <div className="text-3xl sm:text-4xl font-black text-slate-900 leading-none">{percent}%</div>
 
-            <div className="flex items-center gap-2.5 bg-blue-50 rounded-2xl px-4 py-2.5">
+            <div className="flex items-center gap-2.5 bg-app-soft rounded-app-lg px-4 py-2.5">
               <span className="text-xl leading-none">{allDone ? '🎉' : '☀️'}</span>
               <div className="leading-tight">
-                <p className="text-blue-600 font-bold text-xs sm:text-sm">{allDone ? 'Semua beres!' : 'Sedikit lagi!'}</p>
-                <p className="text-blue-500/80 text-[11px] sm:text-xs font-medium">Tetap semangat 🙌</p>
+                <p className="text-app-accent font-bold text-xs sm:text-sm">{allDone ? 'Semua beres!' : 'Sedikit lagi!'}</p>
+                <p className="text-app-accent-bright/80 text-[11px] sm:text-xs font-medium">Tetap semangat 🙌</p>
               </div>
             </div>
           </div>
@@ -208,15 +208,15 @@ const AdminDailyChecklistWidget = () => {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="w-full rounded-2xl border border-slate-100 bg-white hover:bg-slate-50/70 transition-colors duration-200"
+                    className="w-full rounded-app-lg border border-slate-100 bg-white hover:bg-slate-50/70 transition-colors duration-200"
                   >
                     <div className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-4">
                       <button
                         onClick={() => handleToggle(item)}
                         disabled={togglingId === item.id}
-                        className={`flex items-center justify-center w-6 h-6 rounded-lg border-2 shrink-0 transition-all duration-200 ${
+                        className={`flex items-center justify-center w-6 h-6 rounded-app-sm border-2 shrink-0 transition-all duration-200 ${
                           item.is_done
-                            ? 'bg-blue-500 border-blue-500'
+                            ? 'bg-app-accent-bright border-app-accent-bright'
                             : 'border-slate-300 bg-white'
                         }`}
                       >
@@ -244,7 +244,7 @@ const AdminDailyChecklistWidget = () => {
                           </p>
                         )}
                         {!isExpanded && item.note && (
-                          <p className="text-xs text-blue-500 mt-1.5 italic line-clamp-1">"{item.note}"</p>
+                          <p className="text-xs text-app-accent-bright mt-1.5 italic line-clamp-1">"{item.note}"</p>
                         )}
                       </div>
 
@@ -266,7 +266,7 @@ const AdminDailyChecklistWidget = () => {
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleExpand(item.id); }}
                         title="Tambah catatan"
-                        className="shrink-0 p-1.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                        className="shrink-0 p-1.5 rounded-app-sm text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
                       >
                         <MoreVertical className="w-4.5 h-4.5" />
                       </button>

@@ -18,13 +18,13 @@ const TherapistSession = () => {
       .then(({ data }) => { setTherapist(data); setLoading(false); });
   }, [therapistId]);
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-blue-600" /></div>;
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-app-accent" /></div>;
   if (!therapist || !therapist.admin_soap_enabled) return <p className="text-red-600">Terapis tidak tersedia untuk mode admin.</p>;
 
   const basePath = `/admin/as-therapist/${therapistId}/records`;
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 rounded-app-sm bg-amber-50 border border-amber-200 text-amber-800 text-sm">
         <span>Mode admin: bertindak sebagai <strong>{therapist.name}</strong>. Pengisian SOAP ditandai "Diisi via Admin".</span>
         <Link to="/admin" className="underline font-medium">Kembali ke Admin</Link>
       </div>

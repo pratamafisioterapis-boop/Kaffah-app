@@ -244,7 +244,7 @@ const OwnerPackageStatusManagement = () => {
         case 'aktif': return <Badge className="bg-green-600 hover:bg-green-700">Aktif</Badge>;
         case 'selesai': return <Badge variant="secondary">Selesai</Badge>;
         case 'expired': return <Badge variant="destructive">Expired</Badge>;
-        case 'diperpanjang': return <Badge className="bg-blue-600 hover:bg-blue-700">Diperpanjang</Badge>;
+        case 'diperpanjang': return <Badge className="bg-app-accent hover:bg-app-accent-hover">Diperpanjang</Badge>;
         case 'belum dimulai': return <Badge variant="outline" className="border-slate-400 text-slate-500">Belum Dimulai</Badge>;
         default: return <Badge variant="outline">{status}</Badge>;
     }
@@ -260,7 +260,7 @@ const OwnerPackageStatusManagement = () => {
   return (
     <div className="space-y-4">
       {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-app-sm border shadow-sm">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input 
@@ -271,11 +271,11 @@ const OwnerPackageStatusManagement = () => {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={fetchData} disabled={loading} className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-[#102F52] hover:bg-[#E4EFFA]">
+          <Button variant="outline" onClick={fetchData} disabled={loading} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-xl gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-[#102F52] hover:bg-[#F5F9FC]">
+          <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
@@ -284,7 +284,7 @@ const OwnerPackageStatusManagement = () => {
 
       {/* Bulk Actions Bar */}
       {selectedIds.length > 0 && (
-        <div className="bg-slate-900 text-white p-3 rounded-lg flex items-center justify-between animate-in slide-in-from-top-2">
+        <div className="bg-slate-900 text-white p-3 rounded-app-sm flex items-center justify-between animate-in slide-in-from-top-2">
             <span className="text-sm font-medium pl-2">{selectedIds.length} paket dipilih</span>
             <div className="flex gap-2">
                 <Button 
@@ -329,7 +329,7 @@ const OwnerPackageStatusManagement = () => {
               : pkg.end_date;
 
             return (
-              <div key={pkg.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+              <div key={pkg.id} className="bg-white rounded-app border border-slate-200 shadow-sm p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 min-w-0">
                     <Checkbox

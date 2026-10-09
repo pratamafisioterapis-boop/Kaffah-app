@@ -57,7 +57,7 @@ const WaApiKeySection = () => {
     };
 
     return (
-        <div className="bg-white p-4 rounded-lg border border-slate-200 mb-6">
+        <div className="bg-white p-4 rounded-app-sm border border-slate-200 mb-6">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <KeyRound className="w-5 h-5 text-indigo-600" />
@@ -377,7 +377,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg border border-slate-200">
+                <div className="bg-white p-4 rounded-app-sm border border-slate-200">
                     <div className="flex justify-between items-center mb-4">
                         <Label className="text-base">Editor Template</Label>
                         <div className="flex items-center gap-2">
@@ -393,9 +393,9 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                     />
                     
                     {/* Variables Reference Section */}
-                    <div className="mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+                    <div className="mt-4 bg-slate-50 p-4 rounded-app-sm border border-slate-200 space-y-3">
                         <div className="flex items-center gap-2 text-slate-800 font-semibold text-sm">
-                            <Info className="w-4 h-4 text-blue-500" />
+                            <Info className="w-4 h-4 text-app-accent-bright" />
                             Daftar Variabel Tersedia
                         </div>
                         
@@ -507,7 +507,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
                         </div>
                     </div>
 
-                    <Button onClick={handleSave} disabled={saving} className="mt-4 w-full bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={handleSave} disabled={saving} className="mt-4 w-full bg-app-accent hover:bg-app-accent-hover">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                         Simpan Template
                     </Button>
@@ -520,7 +520,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
             </div>
 
             <div className="space-y-4">
-                 <div className="bg-white p-4 rounded-lg border border-slate-200 h-full flex flex-col items-center">
+                 <div className="bg-white p-4 rounded-app-sm border border-slate-200 h-full flex flex-col items-center">
                     <Label className="self-start mb-4 text-slate-500">Live Preview</Label>
                      <div className="flex items-center gap-2 mb-3">
   <Switch
@@ -531,7 +531,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
     Simulasi ada nickname
   </span>
 </div>
-                     <div className="flex-1 w-full flex items-center justify-center bg-slate-50 rounded-lg border border-slate-100 p-4">
+                     <div className="flex-1 w-full flex items-center justify-center bg-slate-50 rounded-app-sm border border-slate-100 p-4">
                         {/* 
                             We pass a sample patient object to simulate behavior.
                             Passing nickname will trigger Priority 1 (Nickname only).
@@ -560,7 +560,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
 const WhatsAppSettings = ({ hideApiKey = false }) => {
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                     <MessageCircle className="w-6 h-6 text-green-600" />
                     WhatsApp Automation
@@ -571,18 +571,18 @@ const WhatsAppSettings = ({ hideApiKey = false }) => {
             {!hideApiKey && <WaApiKeySection />}
 
             <Tabs defaultValue="booking_appointment" className="w-full">
-                <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto flex flex-wrap items-center gap-1 mb-6">
+                <TabsList className="bg-white border border-slate-200 p-1 rounded-app h-auto flex flex-wrap items-center gap-1 mb-6">
                     {CATEGORIES.map(cat => (
                         <TabsTrigger
                             key={cat.id}
                             value={cat.id}
-                            className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 px-4 py-2 rounded-lg"
+                            className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 px-4 py-2 rounded-app-sm"
                         >
                             {cat.label}
                         </TabsTrigger>
                     ))}
                     <div className="w-px self-stretch bg-slate-200 mx-1" />
-                    <TabsTrigger value="logs" className="data-[state=active]:bg-slate-100 px-4 py-2 rounded-lg gap-2">
+                    <TabsTrigger value="logs" className="data-[state=active]:bg-slate-100 px-4 py-2 rounded-app-sm gap-2">
                         <History className="w-3 h-3" /> Riwayat
                     </TabsTrigger>
                 </TabsList>

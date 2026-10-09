@@ -8,7 +8,7 @@ const GrowthCard = ({ label, growthData }) => {
   const growth = growthData?.growth ?? 0;
   const Icon = growth >= 0 ? TrendingUp : TrendingDown;
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col gap-2">
+    <div className="rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col gap-2">
       <p className="text-slate-300 text-xs md:text-sm font-semibold uppercase tracking-wide">{label}</p>
       <div className="flex items-end gap-3">
         <p className={`text-3xl md:text-5xl font-black leading-none ${growth >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>

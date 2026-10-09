@@ -91,8 +91,8 @@ const patientName =
       return {
         label: 'Konfirmasi Booking',
         icon: <CalendarCheck className="w-3 h-3" />,
-        header: 'from-blue-50 to-white',
-        avatar: 'bg-blue-100 text-blue-700',
+        header: 'from-app-soft to-white',
+        avatar: 'bg-app-accent/15 text-app-accent-hover',
         badge: 'bg-blue-100 text-blue-700 border-blue-200'
       };
 
@@ -274,7 +274,7 @@ const getPackageRisk = () => {
 
 const packageRisk = getPackageRisk();
   return (
-    <Card className="rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
+    <Card className="rounded-app sm:rounded-app-lg border border-slate-200 bg-white shadow-sm hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
 
       {/* ===== Premium Header ===== */}
       <div className={`bg-gradient-to-r ${typeConfig.header} p-3 sm:p-5`}>
@@ -420,7 +420,7 @@ const packageRisk = getPackageRisk();
           font-semibold
           px-2
           py-1
-          rounded-lg
+          rounded-app-sm
           inline-flex
           mb-1.5 sm:mb-2
           ${colorConfig.bg}
@@ -434,7 +434,7 @@ const packageRisk = getPackageRisk();
 
         <div
           className={`
-            rounded-lg sm:rounded-xl
+            rounded-app-sm sm:rounded-app
             border
             px-2.5 sm:px-3
             py-1.5 sm:py-2
@@ -459,7 +459,7 @@ const packageRisk = getPackageRisk();
 
         <div
           className="
-            rounded-lg sm:rounded-xl
+            rounded-app-sm sm:rounded-app
             border
             border-slate-200
             bg-slate-50
@@ -494,7 +494,7 @@ const packageRisk = getPackageRisk();
       {/* ===== Message Section ===== */}
       <div className="p-3 sm:p-5 flex-grow">
 
-        <div className="bg-white rounded-lg sm:rounded-xl border border-slate-200 p-3 sm:p-4 text-xs sm:text-sm text-slate-700 leading-relaxed shadow-sm">
+        <div className="bg-white rounded-app-sm sm:rounded-app border border-slate-200 p-3 sm:p-4 text-xs sm:text-sm text-slate-700 leading-relaxed shadow-sm">
 
           <div className={expanded ? '' : 'line-clamp-4'}>
             {displayMessage || 'No message content'}
@@ -503,7 +503,7 @@ const packageRisk = getPackageRisk();
           {shouldShowToggle && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-xs text-blue-600 hover:text-blue-700 mt-2 font-medium"
+              className="text-xs text-app-accent hover:text-app-accent-hover mt-2 font-medium"
             >
               {expanded ? 'Tutup Pesan' : 'Lihat Selengkapnya'}
             </button>
@@ -517,7 +517,7 @@ const packageRisk = getPackageRisk();
 
   <Button
     size="sm"
-    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
+    className="flex-1 min-w-[90px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-app-sm sm:rounded-app gap-1 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={handleSendWhatsApp}
     disabled={isProcessing || isLocked}
   >
@@ -530,7 +530,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="outline"
-    className="flex-1 min-w-[90px] rounded-lg sm:rounded-xl h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
+    className="flex-1 min-w-[90px] rounded-app-sm sm:rounded-app h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-3 disabled:opacity-50"
     onClick={() => handleAction(onComplete)}
     disabled={isProcessing || isLocked}
   >
@@ -542,7 +542,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="ghost"
-    className="rounded-lg sm:rounded-xl h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+    className="rounded-app-sm sm:rounded-app h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-app-accent hover:bg-app-soft"
     onClick={handleCopyMessage}
     title="Salin pesan"
   >
@@ -552,7 +552,7 @@ const packageRisk = getPackageRisk();
   <Button
     size="sm"
     variant="ghost"
-    className="rounded-lg sm:rounded-xl h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
+    className="rounded-app-sm sm:rounded-app h-8 w-8 sm:h-9 sm:w-9 p-0 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
     onClick={() => handleAction(onDelete)}
     disabled={isProcessing}
   >

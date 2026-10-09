@@ -56,14 +56,14 @@ const AdminChecklistHistory = () => {
   return (
     <div className="space-y-5">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0f1e3d] via-[#132348] to-[#0f1e3d] border border-white/5 shadow-[0_25px_60px_-25px_rgba(15,30,61,0.5)]">
+      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-app-ink via-[#132348] to-app-ink border border-white/5 shadow-[0_25px_60px_-25px_rgba(15,30,61,0.5)]">
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#b8935f]/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[#1e3a8a]/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-app-ink/20 rounded-full blur-3xl" />
         <div className="relative z-10 p-5 sm:p-7">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#b8935f] to-[#d4b378] flex items-center justify-center shadow-lg shadow-[#b8935f]/20 shrink-0">
-                <CalendarDays className="w-5 h-5 text-[#0f1e3d]" />
+              <div className="w-11 h-11 rounded-app-lg bg-gradient-to-br from-[#b8935f] to-[#d4b378] flex items-center justify-center shadow-lg shadow-[#b8935f]/20 shrink-0">
+                <CalendarDays className="w-5 h-5 text-app-ink" />
               </div>
               <div>
                 <h3 className="text-white font-bold text-base sm:text-lg tracking-tight">Riwayat & Catatan Checklist Admin</h3>
@@ -107,9 +107,9 @@ const AdminChecklistHistory = () => {
               type="button"
               onClick={() => setScope(null)}
               className={cn(
-                "shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium border transition-colors",
+                "shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-app text-xs sm:text-sm font-medium border transition-colors",
                 scope === null
-                  ? "bg-gradient-to-br from-[#b8935f] to-[#d4b378] text-[#0f1e3d] border-transparent"
+                  ? "bg-gradient-to-br from-[#b8935f] to-[#d4b378] text-app-ink border-transparent"
                   : "bg-white/[0.06] text-slate-300 border-white/10 hover:bg-white/[0.09]"
               )}
             >
@@ -121,9 +121,9 @@ const AdminChecklistHistory = () => {
                 type="button"
                 onClick={() => setScope(admin.id)}
                 className={cn(
-                  "shrink-0 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium border transition-colors",
+                  "shrink-0 px-3.5 py-1.5 rounded-app text-xs sm:text-sm font-medium border transition-colors",
                   scope === admin.id
-                    ? "bg-gradient-to-br from-[#b8935f] to-[#d4b378] text-[#0f1e3d] border-transparent"
+                    ? "bg-gradient-to-br from-[#b8935f] to-[#d4b378] text-app-ink border-transparent"
                     : "bg-white/[0.06] text-slate-300 border-white/10 hover:bg-white/[0.09]"
                 )}
               >
@@ -139,7 +139,7 @@ const AdminChecklistHistory = () => {
           <Loader2 className="w-7 h-7 animate-spin text-slate-300" />
         </div>
       ) : history.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200 text-center">
+        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200 text-center">
           <ListChecks className="w-10 h-10 text-slate-300 mb-3" />
           <p className="text-slate-500 font-medium">Belum ada riwayat pada rentang tanggal ini</p>
         </div>
@@ -149,8 +149,8 @@ const AdminChecklistHistory = () => {
             const doneCount = entries.filter(e => e.is_done).length;
             const datePercent = entries.length > 0 ? Math.round((doneCount / entries.length) * 100) : 0;
             return (
-              <div key={date} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-3.5 bg-gradient-to-r from-[#0f1e3d] to-[#132348] flex items-center justify-between">
+              <div key={date} className="bg-white rounded-app-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3.5 bg-gradient-to-r from-app-ink to-[#132348] flex items-center justify-between">
                   <p className="font-semibold text-white text-sm capitalize">{formatDateLabel(date)}</p>
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-16 bg-white/15 rounded-full overflow-hidden hidden sm:block">
@@ -177,7 +177,7 @@ const AdminChecklistHistory = () => {
                               {entry.item_title}
                             </p>
                             {scope === null && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#0f1e3d]/5 text-[#0f1e3d] border border-[#0f1e3d]/10">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-app-ink/5 text-app-ink border border-app-ink/10">
                                 {entry.assigned_admin_name ? initials(entry.assigned_admin_name) : 'UMUM'}
                               </span>
                             )}
@@ -187,7 +187,7 @@ const AdminChecklistHistory = () => {
                           )}
                           {entry.is_done && (
                             <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
-                              <div className="w-4 h-4 rounded-full bg-[#0f1e3d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                              <div className="w-4 h-4 rounded-full bg-app-ink text-white flex items-center justify-center text-[8px] font-bold shrink-0">
                                 {initials(entry.completed_by_name)}
                               </div>
                               <span>{entry.completed_by_name || 'Admin'}</span>
@@ -198,7 +198,7 @@ const AdminChecklistHistory = () => {
                         </div>
                       </div>
                       {entry.note && (
-                        <div className="ml-8 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                        <div className="ml-8 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-app-sm px-3 py-2">
                           <StickyNote className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                           <p className="text-sm text-amber-800 whitespace-pre-wrap">{entry.note}</p>
                         </div>

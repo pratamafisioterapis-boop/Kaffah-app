@@ -3,7 +3,7 @@ import { Boxes, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const InventoryStockOverview = ({ items = [] }) => {
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
+    <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-10 text-center bg-slate-50/50">
           <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>

@@ -82,7 +82,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
   return (
     <div 
       ref={calendarRef}
-      className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 w-80 p-4 animate-in fade-in zoom-in-95 duration-100"
+      className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-app-sm shadow-xl z-50 w-80 p-4 animate-in fade-in zoom-in-95 duration-100"
     >
       <div className="flex items-center justify-between mb-4">
         <button 
@@ -108,7 +108,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
                 setCurrentMonth(prev => setYear(prev, year));
               }
             }}
-            className="w-20 text-center text-sm font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-20 text-center text-sm font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright"
           />
               </div>
 
@@ -144,8 +144,8 @@ const DatePicker = ({ value, onChange, onClose }) => {
                 "h-9 w-9 text-xs rounded-full flex items-center justify-center transition-all",
                 !isCurrentMonth && "text-slate-300",
                 isCurrentMonth && "text-slate-700 hover:bg-slate-100",
-                isSelected && "bg-blue-600 text-white hover:bg-blue-700 shadow-md font-medium",
-                !isSelected && isToday && "border border-blue-600 text-blue-600 font-medium"
+                isSelected && "bg-app-accent text-white hover:bg-app-accent-hover shadow-md font-medium",
+                !isSelected && isToday && "border border-app-accent text-app-accent font-medium"
               )}
             >
               {format(day, 'd')}

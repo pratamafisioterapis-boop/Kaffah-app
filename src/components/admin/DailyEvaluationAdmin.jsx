@@ -78,7 +78,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-app-accent mb-4" />
         <p className="text-slate-500 font-medium">Memuat data evaluasi harian...</p>
       </div>
     );
@@ -89,7 +89,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-blue-600" />
+            <ClipboardList className="w-6 h-6 text-app-accent" />
             Evaluasi Harian (SOAP)
           </h2>
           <p className="text-sm text-slate-500 mt-1">
@@ -102,14 +102,14 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
             placeholder="Cari nama pasien atau No RM..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+            className="pl-9 bg-white border-slate-200 focus:border-app-accent-bright focus:ring-app-accent-bright"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredGroups.length === 0 ? (
-          <div className="col-span-full text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <div className="col-span-full text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-200">
             <div className="mx-auto h-12 w-12 text-slate-300 mb-3">
               <ClipboardList className="h-full w-full" />
             </div>
@@ -125,7 +125,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
               className="hover:shadow-lg transition-all duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white"
               onClick={() => handlePatientClick(group)}
             >
-              <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400 w-full" />
+              <div className="h-1 bg-gradient-to-r from-app-accent-bright to-cyan-400 w-full" />
               <CardContent className="p-5">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
                   </Badge>
                 </div>
                 
-                <div className="space-y-2.5 text-sm text-slate-600 mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="space-y-2.5 text-sm text-slate-600 mb-5 bg-slate-50 p-3 rounded-app-sm border border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
                     <span className="truncate">

@@ -58,26 +58,26 @@ const AmbiguousPatientMatchModal = ({
         <div className="py-4">
             <RadioGroup value={selectedId} onValueChange={setSelectedId} className="space-y-3">
                 {candidates && candidates.map((patient) => (
-                    <div key={patient.id} className="flex items-center space-x-3 space-y-0 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer">
+                    <div key={patient.id} className="flex items-center space-x-3 space-y-0 border rounded-app-sm p-3 hover:bg-slate-50 cursor-pointer">
                         <RadioGroupItem value={patient.id} id={patient.id} />
                         <Label htmlFor={patient.id} className="flex-1 cursor-pointer">
                             <div className="font-semibold text-slate-900">{patient.full_name}</div>
                             <div className="text-xs text-slate-500">RM: {patient.rm_number || '-'}</div>
                         </Label>
-                        <User className="w-4 h-4 text-blue-500" />
+                        <User className="w-4 h-4 text-app-accent-bright" />
                     </div>
                 ))}
                 
-                <div className="flex items-center space-x-3 space-y-0 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer border-blue-200 bg-blue-50/50">
+                <div className="flex items-center space-x-3 space-y-0 border rounded-app-sm p-3 hover:bg-slate-50 cursor-pointer border-app-accent/25 bg-app-soft/50">
                     <RadioGroupItem value="new" id="option-new" />
                     <Label htmlFor="option-new" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-blue-900">Buat Pasien Baru</div>
-                        <div className="text-xs text-blue-600">"{nameToDisplay}" akan didaftarkan sebagai pasien baru.</div>
+                        <div className="font-semibold text-app-ink">Buat Pasien Baru</div>
+                        <div className="text-xs text-app-accent">"{nameToDisplay}" akan didaftarkan sebagai pasien baru.</div>
                     </Label>
-                    <UserPlus className="w-4 h-4 text-blue-600" />
+                    <UserPlus className="w-4 h-4 text-app-accent" />
                 </div>
                  
-                 <div className="flex items-center space-x-3 space-y-0 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer border-red-100 bg-red-50/50">
+                 <div className="flex items-center space-x-3 space-y-0 border rounded-app-sm p-3 hover:bg-slate-50 cursor-pointer border-red-100 bg-red-50/50">
                     <RadioGroupItem value="skip" id="option-skip" />
                     <Label htmlFor="option-skip" className="flex-1 cursor-pointer">
                         <div className="font-semibold text-red-900">Lewati Baris Ini</div>

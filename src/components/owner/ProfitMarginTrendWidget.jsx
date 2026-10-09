@@ -152,7 +152,7 @@ const ProfitMarginTrendWidget = () => {
     if (!active || !payload || payload.length === 0) return null;
     const point = payload[0]?.payload;
     return (
-      <div className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-lg text-xs">
+      <div className="rounded-app border border-slate-100 bg-white px-3 py-2 shadow-lg text-xs">
         <p className="font-bold text-slate-700 mb-1.5">{label}</p>
         <p className="text-emerald-600">Revenue: <span className="font-semibold">{formatCurrency(point?.revenue)}</span></p>
         <p className="text-rose-600">Pengeluaran: <span className="font-semibold">{formatCurrency(point?.expense)}</span></p>
@@ -163,10 +163,10 @@ const ProfitMarginTrendWidget = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
       <div className={cn("flex gap-3 mb-5", isPWA ? "flex-col" : "items-start justify-between")}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm shrink-0">
+          <div className="w-11 h-11 rounded-app flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm shrink-0">
             <LineChartIcon className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
@@ -174,13 +174,13 @@ const ProfitMarginTrendWidget = () => {
             <p className="text-xs text-slate-400 mt-0.5">Analisa margin keuntungan bulan ke bulan</p>
           </div>
         </div>
-        <div className={cn("flex items-center gap-1.5 rounded-xl bg-slate-50 p-1 shrink-0", isPWA && "w-full")}>
+        <div className={cn("flex items-center gap-1.5 rounded-app bg-slate-50 p-1 shrink-0", isPWA && "w-full")}>
           {MONTH_OPTIONS.map(opt => (
             <button
               key={opt}
               onClick={() => setMonthsToShow(opt)}
               className={cn(
-                "flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                "flex-1 px-3 py-1.5 rounded-app-sm text-xs font-semibold transition-colors",
                 monthsToShow === opt
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-slate-500 hover:bg-slate-100"
@@ -197,7 +197,7 @@ const ProfitMarginTrendWidget = () => {
           <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
         </div>
       ) : !hasAnyData ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+        <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
           <Info className="w-5 h-5 text-slate-400 mx-auto mb-2" />
           <p className="text-sm text-slate-500">Belum ada data pemasukan/pengeluaran pada periode ini.</p>
         </div>
@@ -206,7 +206,7 @@ const ProfitMarginTrendWidget = () => {
           {/* ── KPI Cards ── */}
           <div className={cn("grid gap-3 mb-5", isPWA ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
             <div className={cn(
-              "rounded-xl border p-3.5",
+              "rounded-app border p-3.5",
               (summary.current?.margin ?? 0) >= 0 ? "bg-indigo-50/60 border-indigo-100" : "bg-rose-50/60 border-rose-100"
             )}>
               <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Margin Bulan Ini</p>
@@ -233,13 +233,13 @@ const ProfitMarginTrendWidget = () => {
               <p className="text-[11px] text-slate-400 mt-1">vs bulan lalu</p>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+            <div className="rounded-app border border-slate-100 bg-slate-50/60 p-3.5">
               <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Rata-rata Margin</p>
               <p className="text-xl font-black leading-none text-slate-700">{summary.avgMargin}%</p>
               <p className="text-[11px] text-slate-400 mt-1">{monthsToShow} bulan terakhir</p>
             </div>
 
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5">
+            <div className="rounded-app border border-emerald-100 bg-emerald-50/60 p-3.5">
               <p className="text-[10px] font-bold tracking-widest text-emerald-600/70 uppercase mb-1 flex items-center gap-1">
                 <Trophy className="w-3 h-3" /> Bulan Terbaik
               </p>
@@ -247,7 +247,7 @@ const ProfitMarginTrendWidget = () => {
               <p className="text-[11px] text-slate-400 mt-1 truncate">{summary.best?.monthLabel ?? '-'}</p>
             </div>
 
-            <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3.5">
+            <div className="rounded-app border border-amber-100 bg-amber-50/60 p-3.5">
               <p className="text-[10px] font-bold tracking-widest text-amber-600/70 uppercase mb-1 flex items-center gap-1">
                 <TrendingDownIcon className="w-3 h-3" /> Bulan Terlemah
               </p>
@@ -305,7 +305,7 @@ const ProfitMarginTrendWidget = () => {
               return (
                 <div
                   key={m.monthKey}
-                  className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 transition-colors"
+                  className="flex items-center justify-between gap-3 rounded-app px-3 py-2.5 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="text-xs font-bold text-slate-600 w-16 shrink-0">{m.monthLabel}</span>

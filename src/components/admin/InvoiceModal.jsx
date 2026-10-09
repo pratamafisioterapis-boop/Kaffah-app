@@ -635,7 +635,7 @@ const handleSendManualWA = async () => {
               size="sm"
               onClick={handleDownloadPDF}
               disabled={isGenerating || isPreviewLoading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-app-accent hover:bg-app-accent-hover"
             >
               {isGenerating
                 ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />

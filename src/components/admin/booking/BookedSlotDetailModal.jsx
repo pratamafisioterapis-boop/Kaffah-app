@@ -195,7 +195,7 @@ useEffect(() => {
   </div>
 )}
       <div className="text-center space-y-2 border-b pb-4 animate-in fade-in zoom-in-95 duration-300">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-500/5 text-blue-600 shadow-sm mb-2">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-app-accent-bright/10 to-app-accent-bright/5 text-app-accent shadow-sm mb-2">
   <CheckCircle2 className="w-7 h-7" />
 </div>
 
@@ -211,7 +211,7 @@ useEffect(() => {
 </Badge>
       </div>
 {isRescheduleMode && (
-  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+  <div className="bg-white p-4 sm:p-5 rounded-app-lg border border-slate-200 shadow-sm space-y-4">
 
     {/* TERAPIS */}
     <div className="space-y-1">
@@ -222,7 +222,7 @@ useEffect(() => {
   setSelectedTherapist(e.target.value);
   setSelectedTime("");
 }}
-  className="w-full border rounded-xl px-3 py-2 text-sm bg-white"
+  className="w-full border rounded-app px-3 py-2 text-sm bg-white"
 >
   <option value="">Pilih Terapis</option>
 
@@ -244,7 +244,7 @@ useEffect(() => {
   setNewDate(e.target.value);
   setSelectedTime("");
 }}
-        className="rounded-xl border-slate-200 focus:ring-2 focus:ring-blue-500"
+        className="rounded-app border-slate-200 focus:ring-2 focus:ring-app-accent-bright"
       />
     </div>
 
@@ -260,11 +260,11 @@ useEffect(() => {
           variant="outline"
           onClick={() => setSelectedTime(slot.time)}
           className={`
-  text-xs sm:text-sm px-4 py-2 rounded-xl border transition-all
+  text-xs sm:text-sm px-4 py-2 rounded-app border transition-all
   min-w-[70px] text-center font-medium
   ${selectedTime === slot.time
-    ? "bg-blue-600 text-white shadow-md scale-105"
-    : "bg-white text-slate-700 hover:bg-blue-50 hover:border-blue-300 active:scale-95"}
+    ? "bg-app-accent text-white shadow-md scale-105"
+    : "bg-white text-slate-700 hover:bg-app-soft hover:border-app-accent/40 active:scale-95"}
 `}
         >
           {slot.time}
@@ -312,7 +312,7 @@ useEffect(() => {
           <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
           <div className="w-full">
             <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Catatan</p>
-            <div className="mt-1 p-3 bg-slate-50 rounded-lg text-sm text-slate-700 border border-slate-100">
+            <div className="mt-1 p-3 bg-slate-50 rounded-app-sm text-sm text-slate-700 border border-slate-100">
               {appointment.notes || <span className="text-slate-400 italic">Tidak ada catatan</span>}
             </div>
           </div>

@@ -49,7 +49,7 @@ const OperationalSlide = ({ data, dateRange }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 flex-1 min-h-[220px]">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
+          <div className="rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
             <p className="text-white font-bold text-sm md:text-base mb-3 md:mb-4">Tren Jumlah Sesi</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -74,7 +74,7 @@ const OperationalSlide = ({ data, dateRange }) => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
+          <div className="rounded-app-lg border border-white/10 bg-white/5 p-4 md:p-6 flex flex-col">
             <div className="flex items-center justify-between mb-3 md:mb-4">
               <p className="text-white font-bold text-sm md:text-base">Kapasitas vs Permintaan</p>
               <p className="text-emerald-300 text-sm font-bold">{op.avgUtilization ?? 0}% avg</p>

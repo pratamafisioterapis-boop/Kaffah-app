@@ -63,9 +63,9 @@ const TherapistPatients = ({ therapist }) => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>
+        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+        <div className="text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-300">
            <User className="w-12 h-12 text-slate-300 mx-auto mb-3" />
            <p className="text-slate-500 font-medium">Belum ada pasien yang ditemukan.</p>
            <p className="text-xs text-slate-400">Pasien akan muncul di sini setelah Anda memiliki riwayat pelayanan (Recap) dengan mereka.</p>
@@ -141,7 +141,7 @@ const TherapistPatients = ({ therapist }) => {
                     <FileText className="w-3.5 h-3.5 mr-2" /> Lihat Rekam Medis
                  </Button>
                  <Button 
-                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs" 
+                   className="flex-1 bg-app-accent hover:bg-app-accent-hover text-white h-9 text-xs" 
                    size="sm"
                    onClick={() => handleCreateRecord(patient.id)}
                  >

@@ -13,29 +13,29 @@ const OwnerDatabasePatientsPage = () => {
       </div>
 
       <Tabs defaultValue="patients" className="w-full space-y-6">
-        <TabsList className="grid w-full md:w-[400px] grid-cols-2 p-1 bg-slate-100/80 rounded-xl">
+        <TabsList className="grid w-full md:w-[400px] grid-cols-2 p-1 bg-slate-100/80 rounded-app">
           <TabsTrigger 
             value="patients" 
-            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
           >
             <Users className="w-4 h-4" /> Pasien
           </TabsTrigger>
           <TabsTrigger 
             value="packages" 
-            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
           >
             <Package className="w-4 h-4" /> Riwayat Paket
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="patients" className="mt-0 outline-none">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-app border border-slate-200 shadow-sm p-6">
             <OwnerPatientManagement />
           </div>
         </TabsContent>
         
         <TabsContent value="packages" className="mt-0 outline-none">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-app border border-slate-200 shadow-sm p-6">
             <OwnerPackageRecap />
           </div>
         </TabsContent>

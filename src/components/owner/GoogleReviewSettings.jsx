@@ -56,18 +56,18 @@ const GoogleReviewSettings = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-app-accent" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3 max-w-xl">
+    <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3 max-w-xl">
       <h3 className="font-semibold text-slate-800 flex items-center gap-2"><MapPin className="w-4 h-4" /> Google Place ID</h3>
       <p className="text-sm text-slate-500">
         Dipakai untuk mengarahkan feedback pasien dengan rating 4-5 bintang ke halaman "Tulis Ulasan Google" klinik.
       </p>
-      <div className="flex items-start gap-2 bg-blue-50 text-blue-700 text-xs p-3 rounded-lg">
+      <div className="flex items-start gap-2 bg-app-soft text-app-accent-hover text-xs p-3 rounded-app-sm">
         <Info className="w-4 h-4 mt-0.5 shrink-0" />
         <span>
           Wajib diisi supaya redirect ke Google Review berfungsi. Cari lewat{' '}
@@ -79,7 +79,7 @@ const GoogleReviewSettings = () => {
       </div>
       <div className="flex gap-2">
         <Input placeholder="ChIJ..." value={placeIdInput} onChange={(e) => setPlaceIdInput(e.target.value)} />
-        <Button onClick={handleSave} disabled={saving} className="bg-blue-600 shrink-0">
+        <Button onClick={handleSave} disabled={saving} className="bg-app-accent shrink-0">
           {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
         </Button>
       </div>

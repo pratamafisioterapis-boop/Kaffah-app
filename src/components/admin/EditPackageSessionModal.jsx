@@ -150,7 +150,7 @@ const EditPackageSessionModal = ({ isOpen, onClose, packageData, onSuccess }) =>
           <Button variant="outline" onClick={() => onClose()} disabled={loading}>
             Batal
           </Button>
-          <Button onClick={handleSave} disabled={loading || !!error} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} disabled={loading || !!error} className="bg-app-accent hover:bg-app-accent-hover">
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Simpan Perubahan
           </Button>

@@ -103,10 +103,10 @@ const formatTanggal = (date) => {
   });
 };
    return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
+        <div className="bg-white rounded-app shadow-sm border border-slate-200 flex flex-col h-full">
 
             {/* Toolbar */}
-            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center bg-white rounded-t-xl">
+            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center bg-white rounded-t-app">
                 <div className="flex flex-wrap items-center gap-2 w-full">
                     <div className="relative flex-1 min-w-[160px]">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -278,7 +278,7 @@ const formatTanggal = (date) => {
             </div>
 
             {/* Pagination */}
-            <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white rounded-b-xl">
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white rounded-b-app">
                 <div className="text-xs text-slate-500">
                     Hal <span className="font-medium">{page}</span> dari <span className="font-medium">{totalPages}</span>
                 </div>
@@ -295,7 +295,7 @@ const formatTanggal = (date) => {
             {/* Modal Riwayat */}
             {isOpen && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-                    <div className={cn("bg-white rounded-xl shadow-xl overflow-y-auto", isPWA ? "w-full max-h-[90vh]" : "w-[900px] max-h-[80vh]")}>
+                    <div className={cn("bg-white rounded-app shadow-xl overflow-y-auto", isPWA ? "w-full max-h-[90vh]" : "w-[900px] max-h-[80vh]")}>
                         <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
                             <div>
                                 <h2 className="text-base font-bold text-slate-900">Riwayat Kunjungan</h2>
@@ -313,7 +313,7 @@ const formatTanggal = (date) => {
                                     <p className="text-xs text-slate-500 mb-3">Total Kunjungan: <span className="font-semibold">{historyData.length}</span></p>
                                         <div className="sm:hidden space-y-3">
                                             {historyData.map((item, i) => (
-                                                <div key={i} className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                                                <div key={i} className="bg-slate-50 rounded-app p-3 border border-slate-100 space-y-2">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-xs font-semibold text-slate-700">{formatTanggal(item.recap_date)}</p>
                                                         <span className="text-xs font-bold text-slate-800">{item.amount ? `Rp ${item.amount.toLocaleString('id-ID')}` : '-'}</span>
@@ -327,7 +327,7 @@ const formatTanggal = (date) => {
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="hidden sm:block border rounded-lg overflow-hidden">
+                                        <div className="hidden sm:block border rounded-app-sm overflow-hidden">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-slate-100 text-xs text-slate-600 sticky top-0">
                                                     <tr>

@@ -162,7 +162,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
 
       {/* ── Header Desktop (sembunyikan di PWA) ── */}
       {!isPWA && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
+        <div className="bg-white rounded-app shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Booking Calendar Saya</h1>
             <p className="text-slate-500 text-sm">Kelola jadwal dan booking pasien</p>
@@ -174,7 +174,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
             <Button variant="outline" size="icon" onClick={() => fetchDayData(date)} disabled={isRefreshing} className={cn("mr-2", isRefreshing && "animate-spin")}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-app-sm border border-slate-200">
               <Button variant="ghost" size="icon" onClick={() => setDate(addDays(date, -1))}><ChevronLeft className="w-4 h-4" /></Button>
               <Popover>
                 <PopoverTrigger asChild>
@@ -195,14 +195,14 @@ const [historyLoading, setHistoryLoading] = useState(false);
 
       {/* ── Navigasi Tanggal PWA (compact) ── */}
       {isPWA && (
-        <div className="flex items-center gap-2 bg-white rounded-2xl border border-slate-100 shadow-sm px-3 py-2.5">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setDate(addDays(date, -1))}>
+        <div className="flex items-center gap-2 bg-white rounded-app-lg border border-slate-100 shadow-sm px-3 py-2.5">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-app" onClick={() => setDate(addDays(date, -1))}>
             <ChevronLeft className="w-4 h-4 text-slate-600" />
           </Button>
           <Popover>
             <PopoverTrigger asChild>
               <button className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold text-slate-700">
-                <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                <CalendarIcon className="w-4 h-4 text-app-accent-bright" />
                 {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
               </button>
             </PopoverTrigger>
@@ -210,13 +210,13 @@ const [historyLoading, setHistoryLoading] = useState(false);
               <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus />
             </PopoverContent>
           </Popover>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setDate(addDays(date, 1))}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-app" onClick={() => setDate(addDays(date, 1))}>
             <ChevronRight className="w-4 h-4 text-slate-600" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-app" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
             <ClipboardList className="w-4 h-4 text-slate-400" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", isRefreshing && "animate-spin")} onClick={() => fetchDayData(date)} disabled={isRefreshing}>
+          <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-app", isRefreshing && "animate-spin")} onClick={() => fetchDayData(date)} disabled={isRefreshing}>
             <RefreshCw className="w-4 h-4 text-slate-400" />
           </Button>
         </div>
@@ -225,7 +225,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
       {/* Content Grid */}
       {loading ? (
          <div className="flex flex-col justify-center items-center h-64 gap-4">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+            <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
             <p className="text-slate-400">Memuat jadwal...</p>
          </div>
       ) : (
@@ -234,8 +234,8 @@ const [historyLoading, setHistoryLoading] = useState(false);
               
               {/* Overlay if On Leave */}
               {leaveStatus && (
-                  <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300">
-                      <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 text-center max-w-sm">
+                  <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-app-sm border-2 border-dashed border-slate-300">
+                      <div className="bg-white p-6 rounded-app shadow-lg border border-slate-200 text-center max-w-sm">
                           <CalendarOff className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                           <h3 className="text-lg font-bold text-slate-800">Sedang Cuti</h3>
                           <p className="text-slate-500 mt-1">Anda tidak dapat menerima booking pada tanggal ini.</p>
@@ -321,7 +321,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
         {patientHistory.map((item) => (
           <div
             key={item.id}
-            className="border rounded-xl p-4 bg-slate-50"
+            className="border rounded-app p-4 bg-slate-50"
           >
             <div className="font-semibold text-slate-800">
               {item.patient?.full_name}

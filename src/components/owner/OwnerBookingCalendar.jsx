@@ -347,13 +347,13 @@ const OwnerBookingCalendar = () => {
 
   return (
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-4 z-20 overflow-hidden space-y-4">
+      <div className="bg-white rounded-app shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-4 z-20 overflow-hidden space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Booking Calendar</h1>
           <p className="text-slate-500 text-sm">Owner View: Manage Appointments</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 sm:inline-grid sm:w-auto">
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-app bg-slate-100 sm:inline-grid sm:w-auto">
           {[
             { key: 'day', label: 'Jadwal Harian', icon: CalendarIcon },
             { key: 'week', label: 'Jadwal Mingguan', icon: CalendarRange },
@@ -362,7 +362,7 @@ const OwnerBookingCalendar = () => {
               key={key}
               type="button"
               onClick={() => setViewMode(key)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-all ${
                 viewMode === key
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -375,7 +375,7 @@ const OwnerBookingCalendar = () => {
         </div>
 
         {hasWaApiKey && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 space-y-0.5">
+        <div className="bg-slate-50 border border-slate-200 rounded-app px-3.5 py-2 space-y-0.5">
           <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
@@ -428,7 +428,7 @@ const OwnerBookingCalendar = () => {
               }
             }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${
-              isBablastEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              isBablastEnabled ? 'bg-app-accent' : 'bg-gray-300'
             }`}
           >
             <span
@@ -443,7 +443,7 @@ const OwnerBookingCalendar = () => {
         )}
 
         <div className={`items-center gap-1.5 w-full min-w-0 ${viewMode === 'day' ? 'flex' : 'hidden'}`}>
-            <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-0.5 min-w-0 flex-1 h-9 overflow-hidden bg-slate-50 p-0.5 rounded-app-sm border border-slate-200">
             <Button
   variant="ghost"
   size="icon"
@@ -509,7 +509,7 @@ const OwnerBookingCalendar = () => {
         )
       ) : loading ? (
          <div className="flex flex-col justify-center items-center h-64 gap-4">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+            <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
             <p className="text-slate-400">Loading schedules...</p>
          </div>
       ) : (
@@ -652,7 +652,7 @@ const OwnerBookingCalendar = () => {
                   const isCancelled = item.status?.toLowerCase() === 'cancelled';
                   const isUpcoming = !isCancelled && new Date(item.appointment_date) > new Date();
                   return (
-                    <div key={item.id} className={`border rounded-xl p-4 ${isCancelled ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
+                    <div key={item.id} className={`border rounded-app p-4 ${isCancelled ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800">

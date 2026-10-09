@@ -45,7 +45,7 @@ const InventoryTakeOutForm = ({ items = [], onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl border border-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-app border border-slate-200">
       <h3 className="text-lg font-semibold text-slate-900 mb-2">Ambil Barang Gudang</h3>
       <div className="space-y-2">
         <Label>Pilih Barang</Label>
@@ -84,7 +84,7 @@ const InventoryTakeOutForm = ({ items = [], onSuccess }) => {
         <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Misal: isi ulang botol dispenser" />
       </div>
       {selectedItem && form.quantity && (
-        <div className="text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-600">
+        <div className="text-sm bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2 text-slate-600">
           Estimasi nilai pengeluaran: <span className="font-semibold text-slate-900">Rp {estimatedCost.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
           <br />Otomatis tercatat di Accounting {'>'} Pengeluaran.
         </div>

@@ -124,8 +124,8 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, kind }))}
                   className={cn(
-                    'flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors',
-                    form.kind === kind ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 hover:border-blue-300'
+                    'flex items-center gap-2 rounded-app border px-3 py-2 text-left text-sm transition-colors',
+                    form.kind === kind ? 'border-app-accent bg-app-soft text-app-accent-hover' : 'border-slate-200 hover:border-app-accent/40'
                   )}
                 >
                   <meta.icon className="h-4 w-4 shrink-0" />
@@ -146,7 +146,7 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
                   onChange={(e) => setForm((f) => ({ ...f, optionsText: e.target.value }))}
                 />
               </div>
-              <label className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+              <label className="flex items-center justify-between rounded-app border border-slate-200 px-3 py-2 text-sm">
                 <span>Boleh pilih lebih dari satu</span>
                 <Switch checked={form.multi} onCheckedChange={(v) => setForm((f) => ({ ...f, multi: v }))} />
               </label>
@@ -155,7 +155,7 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={submit} disabled={!valid || saving} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={submit} disabled={!valid || saving} className="bg-app-accent hover:bg-app-accent-hover">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
           </Button>
         </DialogFooter>
@@ -188,7 +188,7 @@ const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+    <div className="space-y-3 rounded-app-lg border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
       <div>
         <div className="text-sm font-semibold text-amber-900">Pengajuan dari Terapis ({pending.length})</div>
         <div className="text-xs text-amber-800/80">Template baru berlaku untuk semua terapis setelah Anda setujui.</div>
@@ -197,7 +197,7 @@ const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
         const diagnosis = diagnoses.find((d) => d.id === r.diagnosis_id);
         const before = diagnosis ? diagnosis[r.field] : r.previous_template;
         return (
-          <div key={r.id} className="space-y-2 rounded-xl border border-amber-200 bg-white p-3">
+          <div key={r.id} className="space-y-2 rounded-app border border-amber-200 bg-white p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-slate-900">{diagnosis?.label || 'Diagnosa'}</span>
               <Badge variant="outline" className="text-[10px]">{FIELD_LABEL[r.field]}</Badge>
@@ -208,11 +208,11 @@ const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
             <div className="grid gap-2 md:grid-cols-2">
               <div>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Saat ini</div>
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-xs text-slate-600">{before || '(kosong)'}</pre>
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-app-sm bg-slate-50 p-2 text-xs text-slate-600">{before || '(kosong)'}</pre>
               </div>
               <div>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Usulan</div>
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-emerald-50 p-2 text-xs text-slate-700">{r.proposed_template || '(dihapus / kosong)'}</pre>
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-app-sm bg-emerald-50 p-2 text-xs text-slate-700">{r.proposed_template || '(dihapus / kosong)'}</pre>
               </div>
             </div>
             <Input
@@ -222,10 +222,10 @@ const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
               className="text-sm"
             />
             <div className="flex justify-end gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5 rounded-xl text-rose-600" disabled={busyId === r.id} onClick={() => review(r, false)}>
+              <Button size="sm" variant="outline" className="gap-1.5 rounded-app text-rose-600" disabled={busyId === r.id} onClick={() => review(r, false)}>
                 <X className="h-4 w-4" /> Tolak
               </Button>
-              <Button size="sm" className="gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700" disabled={busyId === r.id} onClick={() => review(r, true)}>
+              <Button size="sm" className="gap-1.5 rounded-app bg-emerald-600 hover:bg-emerald-700" disabled={busyId === r.id} onClick={() => review(r, true)}>
                 {busyId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Setujui
               </Button>
             </div>
@@ -406,12 +406,12 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
   );
   const hasSections = /^\*\*.+:\*\*/m.test(draft);
 
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-app-accent" /></div>;
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-blue-600" /> Template SOAP</h3>
+        <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-app-accent" /> Template SOAP</h3>
         <p className="text-sm text-slate-500">
           {requestMode
             ? 'Usulkan perubahan template Subjective dan Objective. Perubahan baru berlaku setelah disetujui owner.'
@@ -425,7 +425,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
       )}
 
       {requestMode && requests.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-2 text-sm font-semibold text-slate-800">Pengajuan Saya</div>
           <div className="max-h-48 divide-y overflow-y-auto">
             {requests.slice(0, 20).map((r) => {
@@ -444,13 +444,13 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
         </div>
       )}
 
-      <div className="inline-flex rounded-xl bg-slate-100 p-1">
+      <div className="inline-flex rounded-app bg-slate-100 p-1">
         {[['subjective_template', 'Subjective'], ['objective_template', 'Objective']].map(([f, label]) => (
           <button
             key={f}
             type="button"
             onClick={() => switchField(f)}
-            className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors', field === f ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('rounded-app-sm px-4 py-1.5 text-sm font-medium transition-colors', field === f ? 'bg-white text-app-accent-hover shadow-sm' : 'text-slate-500 hover:text-slate-700')}
           >
             {label}
           </button>
@@ -458,20 +458,20 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
       </div>
 
       {/* Variabel */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-800">Variabel</div>
             <div className="text-xs text-slate-500">Isian yang bisa dipakai ulang di banyak template.</div>
           </div>
           {!requestMode && (
-            <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" onClick={() => setVarDialog({ open: true, variable: null })}>
+            <Button size="sm" className="gap-1.5 rounded-app bg-app-accent hover:bg-app-accent-hover" onClick={() => setVarDialog({ open: true, variable: null })}>
               <Plus className="h-4 w-4" /> Variabel
             </Button>
           )}
         </div>
         {variables.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+          <p className="rounded-app border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
             {requestMode ? 'Belum ada variabel.' : <>Belum ada variabel. Contoh: &quot;Sifat nyeri&quot; dengan pilihan tajam / tumpul / terbakar.</>}
           </p>
         ) : (
@@ -479,8 +479,8 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
             {variables.map((v) => {
               const Meta = KIND_META[v.kind] || KIND_META.free;
               return (
-                <div key={v.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                  <Meta.icon className="h-4 w-4 shrink-0 text-blue-600" />
+                <div key={v.id} className="flex items-center gap-2 rounded-app border border-slate-200 px-3 py-2">
+                  <Meta.icon className="h-4 w-4 shrink-0 text-app-accent" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-slate-800">{v.label}</div>
                     <div className="truncate text-[11px] text-slate-400">
@@ -489,10 +489,10 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   </div>
                   {!requestMode && (
                     <>
-                      <button type="button" aria-label="Edit" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-600" onClick={() => setVarDialog({ open: true, variable: v })}>
+                      <button type="button" aria-label="Edit" className="rounded-app-sm p-1.5 text-slate-400 hover:bg-slate-100 hover:text-app-accent" onClick={() => setVarDialog({ open: true, variable: v })}>
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button type="button" aria-label="Hapus" className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
+                      <button type="button" aria-label="Hapus" className="rounded-app-sm p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
@@ -506,16 +506,16 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
 
       {/* Daftar diagnosa + editor */}
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        <div className={cn('rounded-2xl border border-slate-200 bg-white shadow-sm', selected && 'hidden lg:block')}>
+        <div className={cn('rounded-app-lg border border-slate-200 bg-white shadow-sm', selected && 'hidden lg:block')}>
           <div className="space-y-2 border-b p-3">
             {requestMode && (
-              <div className="inline-flex w-full rounded-xl bg-slate-100 p-1">
+              <div className="inline-flex w-full rounded-app bg-slate-100 p-1">
                 {[['mine', `Sering saya pakai (${mineCount})`], ['all', 'Semua diagnosa']].map(([tab, label]) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setListTab(tab)}
-                    className={cn('flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors', listTab === tab ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                    className={cn('flex-1 rounded-app-sm px-2 py-1.5 text-xs font-medium transition-colors', listTab === tab ? 'bg-white text-app-accent-hover shadow-sm' : 'text-slate-500 hover:text-slate-700')}
                   >
                     {label}
                   </button>
@@ -545,8 +545,8 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 type="button"
                 onClick={() => select(d)}
                 className={cn(
-                  'flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-blue-50',
-                  d.id === selectedId && 'bg-blue-50 font-medium text-blue-700'
+                  'flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-app-soft',
+                  d.id === selectedId && 'bg-app-soft font-medium text-app-accent-hover'
                 )}
               >
                 <span className="min-w-0 truncate">
@@ -565,15 +565,15 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
 
         <div className={cn('space-y-3', !selected && 'hidden lg:block')}>
           {!selected ? (
-            <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-400">
+            <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 rounded-app-lg border border-dashed border-slate-200 p-8 text-center text-slate-400">
               <FileText className="h-8 w-8" />
               <p className="text-sm">Pilih diagnosa di sebelah kiri untuk mengedit template-nya.</p>
             </div>
           ) : (
             <>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
-                  <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" onClick={() => setSelectedId(null)} aria-label="Kembali">
+                  <button type="button" className="rounded-app-sm p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" onClick={() => setSelectedId(null)} aria-label="Kembali">
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <div className="min-w-0 flex-1">
@@ -583,7 +583,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 </div>
 
                 {requestMode && pendingRequest && (
-                  <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <p className="mb-2 rounded-app-sm bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     Pengajuan Anda untuk template ini sedang menunggu persetujuan owner. Mengirim ulang akan memperbarui pengajuan tersebut.
                   </p>
                 )}
@@ -593,7 +593,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                       key={sn.label}
                       type="button"
                       onClick={() => insert(sn.text, sn.select)}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50"
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-app-accent/40 hover:bg-app-soft"
                     >
                       + {sn.label}
                     </button>
@@ -645,31 +645,31 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   <li><code className="rounded bg-slate-100 px-1">(.....)</code> isian teks · <code className="rounded bg-slate-100 px-1">(a/b/c)</code> pilihan · <code className="rounded bg-slate-100 px-1">(ada/tidak)</code> ya/tidak · <code className="rounded bg-slate-100 px-1">hari/minggu/bulan</code> durasi · <code className="rounded bg-slate-100 px-1">{'{{kode}}'}</code> variabel</li>
                 </ul>
                 {draft.trim() && !hasSections && (
-                  <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">Belum ada judul bagian. Awali baris dengan **Keluhan Utama:** agar template terbaca.</p>
+                  <p className="mt-2 rounded-app-sm bg-amber-50 px-3 py-2 text-xs text-amber-700">Belum ada judul bagian. Awali baris dengan **Keluhan Utama:** agar template terbaca.</p>
                 )}
                 {missingKeys.length > 0 && (
-                  <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <p className="mt-2 rounded-app-sm bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     Variabel belum dibuat: {missingKeys.map((k) => `{{${k}}}`).join(', ')}. Sementara tampil sebagai isian teks.
                   </p>
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                   {requestMode && pendingRequest && (
-                    <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-rose-600" onClick={cancelRequest}>
+                    <Button variant="outline" size="sm" className="gap-1.5 rounded-app text-rose-600" onClick={cancelRequest}>
                       <X className="h-4 w-4" /> Batalkan Pengajuan
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" disabled={!dirty} onClick={() => setDraft(current)}>
+                  <Button variant="outline" size="sm" className="gap-1.5 rounded-app" disabled={!dirty} onClick={() => setDraft(current)}>
                     <Undo2 className="h-4 w-4" /> Batalkan
                   </Button>
-                  <Button size="sm" className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700" disabled={!dirty || saving} onClick={save}>
+                  <Button size="sm" className="gap-1.5 rounded-app bg-app-accent hover:bg-app-accent-hover" disabled={!dirty || saving} onClick={save}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : requestMode ? <Send className="h-4 w-4" /> : <Save className="h-4 w-4" />}
                     {requestMode ? 'Ajukan Perubahan' : 'Simpan'}
                   </Button>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-app-lg border border-slate-200 bg-white shadow-sm">
                 <div className="border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Pratinjau (tampilan terapis)</div>
                 {draft.trim() ? (
                   <SubjectiveTemplateBuilder

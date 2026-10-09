@@ -47,11 +47,11 @@ const ClinicOperatingHoursSettings = () => {
   };
 
   if (loading || !hours) {
-    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>;
+    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>;
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4 max-w-xl">
+    <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4 max-w-xl">
       <div>
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Clock className="w-4 h-4" /> Jam Buka Klinik</h3>
         <p className="text-xs text-slate-500 mt-1">
@@ -64,7 +64,7 @@ const ClinicOperatingHoursSettings = () => {
           const day = hours[d];
           const bad = day.enabled && timeToMinutes(day.end) <= timeToMinutes(day.start);
           return (
-            <div key={d} className={`flex items-center gap-3 rounded-lg border p-2.5 ${bad ? 'border-red-200 bg-red-50/50' : 'border-slate-200'}`}>
+            <div key={d} className={`flex items-center gap-3 rounded-app-sm border p-2.5 ${bad ? 'border-red-200 bg-red-50/50' : 'border-slate-200'}`}>
               <Switch checked={day.enabled} onCheckedChange={(v) => update(d, { enabled: v })} aria-label={`Buka hari ${OPERATING_DAY_NAMES[d]}`} />
               <span className="w-16 text-sm font-medium text-slate-800">{OPERATING_DAY_NAMES[d]}</span>
               {day.enabled ? (
@@ -88,7 +88,7 @@ const ClinicOperatingHoursSettings = () => {
         </p>
       )}
 
-      <Button onClick={handleSave} disabled={saving || invalidDay !== undefined} className="bg-blue-600 hover:bg-blue-700">
+      <Button onClick={handleSave} disabled={saving || invalidDay !== undefined} className="bg-app-accent hover:bg-app-accent-hover">
         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
         Simpan Jam Buka
       </Button>

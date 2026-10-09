@@ -62,12 +62,12 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white shadow-xl border border-slate-700/50"
+      className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-slate-900 via-slate-800 to-app-ink text-white shadow-xl border border-slate-700/50"
     >
       {/* Premium texture + glow accents */}
       <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
       <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-app-accent-bright/20 blur-2xl pointer-events-none" />
 
       {/* Gold hairline accent */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
@@ -77,7 +77,7 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
 
           {/* Left: Greeting */}
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm flex items-center justify-center shadow-inner border border-amber-300/30 shrink-0">
+            <div className="w-14 h-14 rounded-app-lg bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm flex items-center justify-center shadow-inner border border-amber-300/30 shrink-0">
               <GreetingIcon className="w-7 h-7 text-amber-300 drop-shadow" />
             </div>
             <div className="min-w-0">
@@ -104,7 +104,7 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="relative flex items-start gap-3 bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-amber-300/20 max-w-md shadow-lg"
+            className="relative flex items-start gap-3 bg-white/5 backdrop-blur-sm p-4 rounded-app border border-amber-300/20 max-w-md shadow-lg"
           >
             <Sparkles className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5 drop-shadow" />
             <p className="text-sm font-medium leading-relaxed text-white/90 italic min-w-0">
