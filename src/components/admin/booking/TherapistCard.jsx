@@ -24,6 +24,7 @@ const TherapistCard = ({
   date,
   leaveStatus = 'aktif',
   leaveReason = '',
+  replacement = false, // hari libur mingguan yang diganti jadwal pengganti izin
   soapStatus = null // { unfilled_count, threshold_count, period_start, period_end, locked }
 }) => {
   
@@ -162,6 +163,12 @@ const TherapistCard = ({
         <CardTitle className="text-sm md:text-lg font-semibold text-white leading-tight break-words">
           {therapist.name || 'Unnamed Therapist'}
         </CardTitle>
+
+                {replacement && !isLeave && (
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border bg-blue-100 text-blue-700 border-blue-200">
+            Pengganti izin
+          </span>
+        )}
 
                 {(isLeave || isFullBooked) && (
           <span className={cn(

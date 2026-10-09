@@ -195,6 +195,20 @@ const WeeklyScheduleView = ({
     return off;
   }, [rawOff, rawSlots, selectedIds, days]);
 
+  // Hari libur mingguan yang diganti jadwal pengganti izin (ditandai di header hari).
+  const replacedDays = useMemo(() => {
+    const out = {};
+    if (selectedIds.length !== 1) return out;
+    rawOff.filter((r) => r.therapist_id === selectedIds[0] && r.leave_type === 'weekly_off').forEach((row) => {
+      days.forEach((d) => {
+        const k = toKey(d);
+        if (k >= row.start_date && k <= row.end_date
+          && (rawSlots[k] || []).some((sl) => sl.therapist_id === row.therapist_id && (sl.status === 'aktif' || sl.status === 'terisi'))) out[k] = true;
+      });
+    });
+    return out;
+  }, [rawOff, rawSlots, selectedIds, days]);
+
   // Baris = jam mulai yang benar-benar ada (tanpa duplikat, tanpa jam yang tidak punya slot).
   // Tiap kartu membentang dari baris jam mulainya sampai sebelum jam selesainya.
   const timeRows = useMemo(() => {
@@ -455,7 +469,7 @@ const WeeklyScheduleView = ({
                       {format(d, 'd')}
                     </p>
                     <p className="text-[10px] mt-0.5 text-sky-200/70">
-                      {offDays[k] ? offDays[k] : `${freeCount(k)} kosong · ${bookedCount(k)} isi`}
+                      {offDays[k] ? offDays[k] : `${replacedDays[k] ? 'pengganti izin · ' : ''}${freeCount(k)} kosong · ${bookedCount(k)} isi`}
                     </p>
                   </button>
                 );

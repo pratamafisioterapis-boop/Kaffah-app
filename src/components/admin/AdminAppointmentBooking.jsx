@@ -56,6 +56,7 @@ const AdminAppointmentBooking = () => {
   const [therapists, setTherapists] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
+  const [therapistReplacement, setTherapistReplacement] = useState({});
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
@@ -249,6 +250,7 @@ const formattedDateFull = date
       // Cek langsung therapist_time_off agar hari tanpa slot (libur mingguan/cuti)
       // tetap terdeteksi dan badge-nya tampil di kartu terapis.
       const reasonMap = {};
+      const replacementMap = {};
       const { data: timeOffRows } = await supabase
         .from('therapist_time_off')
         .select('therapist_id, reason, leave_type')
@@ -268,7 +270,10 @@ const formattedDateFull = date
           : category.includes('libur') ? 'Libur'
           : 'Lainnya';
         // Libur mingguan tidak menutup hari itu bila terapis punya slot aktif dari jadwal pengganti.
-        if (row.leave_type === 'weekly_off' && ['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id])) return;
+        if (row.leave_type === 'weekly_off' && ['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id])) {
+          replacementMap[row.therapist_id] = true;
+          return;
+        }
         statusMap[row.therapist_id] = 'cuti';
         reasonMap[row.therapist_id] = label;
       });
@@ -279,6 +284,7 @@ const formattedDateFull = date
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
+      setTherapistReplacement(replacementMap);
 
     } catch (err) {
       setError("Gagal memuat jadwal.");
@@ -650,6 +656,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 date={date}
                 leaveStatus={leaveStatus}
                 leaveReason={therapistLeaveReason[therapist.id]}
+                replacement={!!therapistReplacement[therapist.id]}
                 soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
