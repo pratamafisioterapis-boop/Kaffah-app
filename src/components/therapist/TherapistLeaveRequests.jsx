@@ -19,7 +19,7 @@ import {
   getTherapistAnnualLeaveBalance,
 } from '@/lib/api';
 import {
-  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
+  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote, isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -136,7 +136,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   // (3 jam pertama), supaya terapis tinggal menyesuaikan.
   const handleLeaveDateChange = (value) => {
     setForm((f) => {
-      const next = { ...f, leaveDate: value, shifts: f.shifts.filter((s) => s.date !== value) };
+      const sundayOnly = isWeekendDate(value);
+      const next = {
+        ...f,
+        leaveDate: value,
+        shifts: f.shifts.filter((s) => s.date !== value && (!sundayOnly || isSundayDate(s.date))),
+      };
       const hours = value ? hoursOn(value) : [];
       if (hours.length) {
         const start = Math.min(...hours.map((s) => timeToMinutes(s.start_time)));
@@ -197,6 +202,8 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   const isOrg = form.leaveType === 'organization';
 
   // Alasan tombol kirim belum aktif — ditampilkan agar terapis tahu apa yang kurang.
+  const sundayOnly = isWeekendDate(form.leaveDate);
+
   const blocker = (() => {
     if (!form.leaveDate) return 'Pilih tanggal izin dulu.';
     if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
@@ -212,6 +219,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
       }
     }
     if (form.shifts.length === 0 && !isOrg) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
+    if (sundayOnly && sortedShifts.some((s) => !isSundayDate(s.date))) return WEEKEND_REPLACEMENT_NOTE;
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
     if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
     if (!isOrg && missedMinutes > 0 && replacedMinutes < missedMinutes) {
@@ -441,6 +449,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>{attendanceImpactNote(form.partial)}</span>
         </p>
+        {sundayOnly && (
+          <p className="text-xs rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 flex items-start gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{WEEKEND_REPLACEMENT_NOTE} Hanya tanggal hari Minggu yang bisa dipilih di kalender.</span>
+          </p>
+        )}
 
         <div className="flex items-center justify-between">
           <Button type="button" variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan sebelumnya" disabled={monthOffset <= 0} onClick={() => setMonthOffset((m) => m - 1)}>
@@ -460,7 +474,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           {candidates.map((day) => {
             const selected = form.shifts.some((s) => s.date === day.key);
             const isLeaveDay = day.key === form.leaveDate;
-            const disabled = day.past || isLeaveDay || blockedDates.has(day.key);
+            const disabled = day.past || isLeaveDay || blockedDates.has(day.key) || (sundayOnly && day.date.getDay() !== 0);
             const off = day.sched.length === 0;
             return (
               <button
