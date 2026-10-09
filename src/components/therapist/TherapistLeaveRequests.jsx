@@ -32,7 +32,7 @@ import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 const DAY_KEY = 'yyyy-MM-dd';
 // Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
 const MAX_BACKDATE_DAYS = 60;
-const MAX_MONTHS_AHEAD = 12;
+const MAX_MONTHS_AHEAD = 1;
 
 const minutesToTime = (min) => {
   const m = Math.min(Math.max(0, min), 23 * 60 + 59);
