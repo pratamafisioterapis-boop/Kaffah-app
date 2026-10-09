@@ -17,8 +17,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Plus, Pencil, Trash2, Target, Calendar } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Calendar } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import PageHero from '@/components/shared/PageHero';
 
 const TherapistTargetManagement = () => {
     const { toast } = useToast();
@@ -55,7 +56,7 @@ const TherapistTargetManagement = () => {
             setTherapists(therapistList || []);
 
             // 3. Get Targets
-            await loadTargets(clinic.id);
+            await loadTargets();
             
         } catch (error) {
             console.error("Error loading data:", error);
@@ -65,12 +66,21 @@ const TherapistTargetManagement = () => {
         }
     };
 
-    const loadTargets = async (cId) => {
-        const { data } = await getAllTherapistTargets();
+    // API helpers resolve with { error } instead of throwing; turn that into a throw so the
+    // surrounding try/catch shows an error instead of a false "success".
+    const unwrap = (result) => {
+        if (result?.error) throw result.error;
+        return result;
+    };
+
+    const loadTargets = async () => {
+        const { data, error } = await getAllTherapistTargets();
+        if (error) throw error;
         
         // Enrich with progress
         if (data && data.length > 0) {
             const enriched = await Promise.all(data.map(async (t) => {
+                // A failed progress lookup should not hide the target itself.
                 const { data: progress } = await getTherapistTargetProgress(t.therapist_id, t.start_date, t.end_date);
                 return { ...t, progress };
             }));
@@ -116,7 +126,7 @@ const TherapistTargetManagement = () => {
                 excludedTypes: ''
             });
         }
-        etIsDialogOpen(true);
+        setIsDialogOpen(true);
     };
 
     const handleDeleteClick = (target) => {
@@ -127,6 +137,20 @@ const TherapistTargetManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!clinicId) return;
+
+        const visits = parseInt(formData.targetVisits, 10);
+        if (!selectedTarget && !formData.therapistId) {
+            toast({ variant: "destructive", title: "Data belum lengkap", description: "Pilih fisioterapis terlebih dahulu." });
+            return;
+        }
+        if (!Number.isFinite(visits) || visits < 1) {
+            toast({ variant: "destructive", title: "Target tidak valid", description: "Target kunjungan minimal 1." });
+            return;
+        }
+        if (formData.startDate > formData.endDate) {
+            toast({ variant: "destructive", title: "Periode tidak valid", description: "Tanggal mulai tidak boleh setelah tanggal selesai." });
+            return;
+        }
         setSubmitting(true);
         
         // Process excluded types from string to array
@@ -137,29 +161,29 @@ const TherapistTargetManagement = () => {
 
         try {
             if (selectedTarget) {
-                await updateTherapistTarget(selectedTarget.id, {
-                    target_visits: formData.targetVisits,
+                unwrap(await updateTherapistTarget(selectedTarget.id, {
+                    target_visits: visits,
                     start_date: formData.startDate,
                     end_date: formData.endDate,
                     excluded_patient_types: excludedArray
-                });
-                toast({ title: "Success", description: "Target berhasil diperbarui." });
+                }));
+                toast({ title: "Berhasil", description: "Target berhasil diperbarui." });
             } else {
-                await createTherapistTarget({
+                unwrap(await createTherapistTarget({
                     clinic_id: clinicId,
                     therapist_id: formData.therapistId,
                     start_date: formData.startDate,
                     end_date: formData.endDate,
-                    target_visits: parseInt(formData.targetVisits),
+                    target_visits: visits,
                     excluded_patient_types: excludedArray
-                });
-                toast({ title: "Success", description: "Target berhasil dibuat." });
+                }));
+                toast({ title: "Berhasil", description: "Target berhasil dibuat." });
             }
-            await loadTargets(clinicId);
+            await loadTargets();
             setIsDialogOpen(false);
         } catch (error) {
             console.error(error);
-            toast({ variant: "destructive", title: "Error", description: error.message || "Gagal menyimpan target." });
+            toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal menyimpan target." });
         } finally {
             setSubmitting(false);
         }
@@ -169,12 +193,13 @@ const TherapistTargetManagement = () => {
         if (!selectedTarget) return;
         setSubmitting(true);
         try {
-            await deleteTherapistTarget(selectedTarget.id);
-            toast({ title: "Success", description: "Target berhasil dihapus." });
-            await loadTargets(clinicId);
+            unwrap(await deleteTherapistTarget(selectedTarget.id));
+            toast({ title: "Berhasil", description: "Target berhasil dihapus." });
+            await loadTargets();
             setIsDeleteDialogOpen(false);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Gagal menghapus target." });
+            console.error(error);
+            toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal menghapus target." });
         } finally {
             setSubmitting(false);
         }
@@ -194,16 +219,16 @@ const TherapistTargetManagement = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <Target className="w-6 h-6 text-indigo-600" />
-                        Manajemen Target Terapis
-                    </h2>
-                    <p className="text-slate-500">Atur target kunjungan bulanan untuk setiap terapis.</p>
-                </div>
-                <Button onClick={() => handleOpenDialog()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <div className="space-y-6 animate-in fade-in duration-200 ease-out">
+            <PageHero
+                image="/hero/clinara-physio-hero.webp"
+                title="Target"
+                highlight="Terapis"
+                description="Atur target kunjungan untuk setiap terapis."
+            />
+
+            <div className="flex justify-end">
+                <Button onClick={() => handleOpenDialog()} className="bg-app-accent hover:bg-app-accent-hover text-white">
                     <Plus className="w-4 h-4 mr-2" /> Target Baru
                 </Button>
             </div>
@@ -215,7 +240,7 @@ const TherapistTargetManagement = () => {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-600" /></div>
+                        <div className="flex justify-center py-8"><Loader2 className="animate-spin text-app-accent" /></div>
                     ) : targets.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 border-2 border-dashed rounded-app-sm">Belum ada target yang dibuat.</div>
                     ) : (
@@ -261,10 +286,10 @@ const TherapistTargetManagement = () => {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)} className="h-8 w-8 text-slate-500 hover:text-indigo-600">
+                                                    <Button variant="ghost" size="icon" aria-label={`Ubah target ${item.therapist?.name || 'terapis'}`} onClick={() => handleOpenDialog(item)} className="tap-target h-8 w-8 text-slate-500 hover:text-app-accent">
                                                         <Pencil className="w-4 h-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} className="h-8 w-8 text-slate-500 hover:text-rose-600">
+                                                    <Button variant="ghost" size="icon" aria-label={`Hapus target ${item.therapist?.name || 'terapis'}`} onClick={() => handleDeleteClick(item)} className="tap-target h-8 w-8 text-slate-500 hover:text-rose-600">
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </div>
@@ -287,13 +312,13 @@ const TherapistTargetManagement = () => {
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label>Fisioterapis</Label>
+                            <Label htmlFor="target-therapist">Fisioterapis</Label>
                             <Select 
                                 value={formData.therapistId} 
                                 onValueChange={(val) => setFormData({...formData, therapistId: val})}
                                 disabled={!!selectedTarget} // Lock therapist on edit
                             >
-                                <SelectTrigger>
+                                <SelectTrigger id="target-therapist">
                                     <SelectValue placeholder="Pilih Terapis" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -306,8 +331,9 @@ const TherapistTargetManagement = () => {
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Tanggal Mulai</Label>
+                                <Label htmlFor="target-start">Tanggal Mulai</Label>
                                 <Input 
+                                    id="target-start"
                                     type="date" 
                                     value={formData.startDate} 
                                     onChange={(e) => setFormData({...formData, startDate: e.target.value})}
@@ -315,8 +341,9 @@ const TherapistTargetManagement = () => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Tanggal Selesai</Label>
+                                <Label htmlFor="target-end">Tanggal Selesai</Label>
                                 <Input 
+                                    id="target-end"
                                     type="date" 
                                     value={formData.endDate} 
                                     onChange={(e) => setFormData({...formData, endDate: e.target.value})}
@@ -326,8 +353,9 @@ const TherapistTargetManagement = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Target Kunjungan (Visits)</Label>
+                            <Label htmlFor="target-visits">Target Kunjungan (Visits)</Label>
                             <Input 
+                                id="target-visits"
                                 type="number" 
                                 min="1"
                                 value={formData.targetVisits} 
@@ -339,8 +367,9 @@ const TherapistTargetManagement = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Exclude Patient Types (Opsional)</Label>
+                            <Label htmlFor="target-excluded">Exclude Patient Types (Opsional)</Label>
                             <Input 
+                                id="target-excluded"
                                 value={formData.excludedTypes} 
                                 onChange={(e) => setFormData({...formData, excludedTypes: e.target.value})}
                                 placeholder="Pisahkan dengan koma, contoh: Asuransi, Umum"
@@ -350,7 +379,7 @@ const TherapistTargetManagement = () => {
                         
                         <div className="pt-4 flex justify-end gap-2">
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-                            <Button type="submit" disabled={submitting} className="bg-indigo-600 text-white hover:bg-indigo-700">
+                            <Button type="submit" disabled={submitting} className="bg-app-accent text-white hover:bg-app-accent-hover">
                                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                 Simpan
                             </Button>

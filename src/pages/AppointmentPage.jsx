@@ -1,61 +1,49 @@
 import React from 'react';
+import { Calendar, List } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OwnerBookingCalendar from '@/components/owner/OwnerBookingCalendar';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import OwnerAppointmentList from '@/components/owner/OwnerAppointmentList';
+import PageHero from '@/components/shared/PageHero';
 
+// Calendar + list view of appointments in one page (tabs). The routed owner page is
+// OwnerAppointmentsPage; this page is kept for the tabbed layout.
 const AppointmentPage = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200 ease-out">
-
-      {/* Hero Banner */}
-      <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-7 sm:py-6">
-          <div className="flex-shrink-0 w-12 h-12 rounded-app bg-gradient-to-br from-amber-400/20 to-amber-600/10 backdrop-blur-sm border border-amber-300/30 flex items-center justify-center shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
-            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Appointment Center</h2>
-            <p className="text-sm text-slate-500 mt-0.5">Manage bookings, schedules, and appointment lists</p>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="/hero/clinara-appointment-hero.webp"
+        title="Kelola"
+        highlight="Appointment"
+        description="Kelola booking, jadwal, dan daftar janji pasien."
+      />
 
       <Tabs defaultValue="calendar" className="w-full space-y-6">
-
-        {/* Tabs Menu */}
-        <TabsList className="grid w-full md:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-app">
+        <TabsList className="grid w-full grid-cols-2 rounded-app bg-slate-100 p-1 md:w-[420px]">
           <TabsTrigger
             value="calendar"
-            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
-            <Calendar className="w-4 h-4" /> Booking Calendar
+            <Calendar className="h-4 w-4" /> Booking Calendar
           </TabsTrigger>
-
           <TabsTrigger
             value="list"
-            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
-            <List className="w-4 h-4" /> Daftar Janji
+            <List className="h-4 w-4" /> Daftar Janji
           </TabsTrigger>
         </TabsList>
 
-        {/* ================= CALENDAR ================= */}
         <TabsContent value="calendar" className="outline-none">
-          <div className="bg-white rounded-app-lg border border-slate-200 shadow-md p-6">
+          <div className="rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <OwnerBookingCalendar />
           </div>
         </TabsContent>
 
-        {/* ================= LIST ================= */}
         <TabsContent value="list" className="outline-none">
-          <div className="bg-white rounded-app-lg border border-slate-200 shadow-md p-6">
+          <div className="rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <OwnerAppointmentList />
           </div>
         </TabsContent>
-
       </Tabs>
     </div>
   );
