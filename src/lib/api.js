@@ -1464,7 +1464,7 @@ export const reviewSoapTemplateRequest = async (id, approve, note = null) => {
 };
 
 // ── Pengajuan izin terapis (disetujui owner / terapis kepala) ──
-const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, proof_path, physiotherapists(work_shift_name, work_start_time, work_end_time)';
+const LEAVE_REQUEST_COLUMNS = 'id, therapist_id, therapist_name, leave_date, is_partial, start_time, end_time, leave_type, notes, replacement_shifts, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, proof_path, revoked_at, revoked_by_name, revoke_note, physiotherapists(work_shift_name, work_start_time, work_end_time)';
 
 // RLS yang membatasi baris: terapis hanya melihat miliknya, owner / terapis kepala
 // melihat seluruh pengajuan klinik.
@@ -1512,6 +1512,15 @@ export const reviewLeaveRequest = async (id, approve, note = null) => {
     p_request_id: id, p_approve: approve, p_note: note,
   });
   return { error };
+};
+
+// Batalkan izin yang sudah disetujui: libur dan jadwal masuk pengganti dikembalikan.
+// data = jumlah booking aktif yang masih ada di tanggal pengganti.
+export const revokeLeaveRequest = async (id, note = null) => {
+  const { data, error } = await supabase.rpc('revoke_therapist_leave_request', {
+    p_request_id: id, p_note: note,
+  });
+  return { data: data ?? 0, error };
 };
 
 // ── Tukar shift terapis (tanggal yang sama; disetujui owner / terapis kepala) ──

@@ -3,7 +3,7 @@ import { CalendarOff, Repeat, Clock, MessageSquare, Paperclip } from 'lucide-rea
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import {
-  STATUS_META, leaveTypeLabel, formatLongDate, formatShortDate, leaveScopeLabel,
+  requestStatusMeta, leaveTypeLabel, formatLongDate, formatShortDate, leaveScopeLabel,
   hhmm, formatDuration, totalShiftMinutes, attendanceImpactNote,
 } from '@/lib/leaveRequestUtils';
 
@@ -14,7 +14,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
     if (error || !data?.signedUrl) { window.alert('Gagal membuka surat dokter.'); return; }
     window.open(data.signedUrl, '_blank', 'noopener');
   };
-  const status = STATUS_META[request.status] || STATUS_META.pending;
+  const status = requestStatusMeta(request);
   const work = request.physiotherapists;
   const workShift = work?.work_start_time && work?.work_end_time
     ? `${work.work_shift_name ? `${work.work_shift_name} ` : ''}${hhmm(work.work_start_time)}–${hhmm(work.work_end_time)}`
@@ -88,7 +88,14 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
           </p>
         )}
 
-        {request.status !== 'pending' && (request.review_note || request.reviewed_by_name) && (
+        {request.revoked_at && (
+          <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            Persetujuan dibatalkan{request.revoked_by_name ? ` oleh ${request.revoked_by_name}` : ''}
+            {request.revoke_note ? `: ${request.revoke_note}` : ''}. Libur dan jadwal pengganti sudah dikembalikan.
+          </p>
+        )}
+
+        {request.status !== 'pending' && !request.revoked_at && (request.review_note || request.reviewed_by_name) && (
           <p className="text-xs text-slate-500 flex items-start gap-1.5">
             <MessageSquare className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
