@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -7,20 +7,23 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { getLeaveRequests, reviewLeaveRequest } from '@/lib/api';
+import { getLeaveRequests, reviewLeaveRequest, revokeLeaveRequest } from '@/lib/api';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 
 // Daftar pengajuan izin untuk owner / terapis kepala: setujui atau tolak,
 // beserta jadwal pengganti yang diajukan terapis.
 const LeaveRequestReview = ({ onChanged, className = '' }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canRevoke = role === 'owner' || role === 'super_admin';
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [rejectNote, setRejectNote] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [revoking, setRevoking] = useState(null);
+  const [revokeNote, setRevokeNote] = useState('');
 
   const load = useCallback(async () => {
     const { data, error } = await getLeaveRequests();
@@ -59,6 +62,26 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
     if (!rejecting) return;
     const ok = await review(rejecting, false, rejectNote);
     if (ok) { setRejecting(null); setRejectNote(''); }
+  };
+
+  const confirmRevoke = async () => {
+    if (!revoking) return;
+    setBusyId(revoking.id);
+    const { data: stillBooked, error } = await revokeLeaveRequest(revoking.id, revokeNote);
+    setBusyId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal membatalkan izin', description: error.message });
+      return;
+    }
+    toast({
+      title: 'Persetujuan izin dibatalkan',
+      description: `Libur dan jadwal pengganti ${revoking.therapist_name || 'terapis'} sudah dikembalikan.`
+        + (stillBooked > 0 ? ` Perhatian: ${stillBooked} booking di tanggal pengganti masih aktif, mohon dijadwalkan ulang.` : ''),
+    });
+    setRevoking(null);
+    setRevokeNote('');
+    await load();
+    if (onChanged) onChanged();
   };
 
   if (loading) {
@@ -128,11 +151,52 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
           </button>
           {showHistory && (
             <div className="grid gap-3 lg:grid-cols-2 mt-3">
-              {history.map((r) => <LeaveRequestCard key={r.id} request={r} showTherapist />)}
+              {history.map((r) => (
+                <LeaveRequestCard
+                  key={r.id}
+                  request={r}
+                  showTherapist
+                  footer={canRevoke && r.status === 'approved' && !r.revoked_at ? (
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={busyId === r.id}
+                      onClick={() => { setRevoking(r); setRevokeNote(''); }}
+                    >
+                      <Undo2 className="w-4 h-4 mr-1.5" /> Batalkan Persetujuan
+                    </Button>
+                  ) : null}
+                />
+              ))}
             </div>
           )}
         </div>
       )}
+
+      <Dialog open={!!revoking} onOpenChange={(open) => { if (!open) setRevoking(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Batalkan izin yang sudah disetujui?</DialogTitle>
+            <DialogDescription>
+              Hari libur {revoking?.therapist_name || 'terapis'} akan dihapus dan jadwal masuk pengganti
+              yang terlanjur dibuka akan ditutup, sehingga jadwalnya kembali seperti semula. Terapis akan diberi tahu.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={revokeNote}
+            onChange={(e) => setRevokeNote(e.target.value)}
+            placeholder="Alasan pembatalan (opsional)"
+            className="resize-none h-24"
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRevoking(null)}>Kembali</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={busyId === revoking?.id} onClick={confirmRevoke}>
+              {busyId === revoking?.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              Ya, Batalkan Izin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!rejecting} onOpenChange={(open) => { if (!open) setRejecting(null); }}>
         <DialogContent>

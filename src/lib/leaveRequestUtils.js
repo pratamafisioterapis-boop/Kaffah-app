@@ -18,6 +18,11 @@ export const STATUS_META = {
   rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
+// Izin yang disetujui lalu dibatalkan owner disimpan sebagai rejected + revoked_at.
+export const requestStatusMeta = (req) => (req.revoked_at
+  ? { label: 'Dibatalkan', className: 'bg-slate-100 text-slate-600 border-slate-300' }
+  : (STATUS_META[req.status] || STATUS_META.pending));
+
 export const hhmm = (t) => (t ? String(t).slice(0, 5) : '');
 
 export const timeToMinutes = (t) => {
