@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { 
   getAllPhysiotherapists, getActivePhysiotherapists, getDailyRecaps, getTherapistSchedules, 
-  getTherapistTimeOff, getOperationalOptions 
+  getTherapistTimeOff, getTherapistExtraShifts, getOperationalOptions 
 } from '@/lib/api';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary,
@@ -103,7 +103,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       const { startDateStr, endDateStr } = getEffectiveRange(therapist);
 
       // Fetch Data
-      const [recapsRes, scheduleRes, timeOffRes] = await Promise.all([
+      const [recapsRes, scheduleRes, timeOffRes, extraShiftRes] = await Promise.all([
   getDailyRecaps({
     startDate: startDateStr,
     endDate: endDateStr,
@@ -111,7 +111,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     limit: 'all'
   }),
   getTherapistSchedules(selectedTherapistId),
-  getTherapistTimeOff(selectedTherapistId)
+  getTherapistTimeOff(selectedTherapistId),
+  getTherapistExtraShifts(selectedTherapistId)
 ]);
 
       // Filter recaps for this therapist specifically
@@ -121,7 +122,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       console.log("RECAPS DATA:", therapistRecaps);
       
       // 1. Calculate Attendance
-      const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
+      const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
       
       // 2. Base Salary & Transport
       const baseSalary = parseFloat(therapist.base_salary) || 0; // Monthly
@@ -222,9 +223,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       .lte('recap_date', endDateStr)
       .order('recap_date', { ascending: true });
 
-    const [scheduleRes, timeOffRes, optionsRes] = await Promise.all([
+    const [scheduleRes, timeOffRes, extraShiftRes, optionsRes] = await Promise.all([
       getTherapistSchedules(therapist.id),
       getTherapistTimeOff(therapist.id),
+      getTherapistExtraShifts(therapist.id),
       supabase.from('operational_options').select('id, label').eq('is_active', true)
     ]);
 
@@ -233,7 +235,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     const therapistRates = buildPatientTypeRateIndex(serviceRateRows, therapist.id);
     console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, therapistRecaps[0]?.patient_type_ids, 'customRates byName keys:', Object.keys(therapistRates?.byName || {}));
 
-    const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
+    const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
     const transportPerDay = parseFloat(therapist.transport_per_day) || 0;
     const salaryType = therapist.salary_scheme || 'full_salary';
