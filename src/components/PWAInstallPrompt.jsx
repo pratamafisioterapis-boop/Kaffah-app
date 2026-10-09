@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import { Button } from '@/components/ui/button';
 import { Download, Bell } from 'lucide-react';
-import { registerPushNotifications } from '@/lib/pushNotifications';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -46,6 +45,7 @@ const PWAInstallPrompt = () => {
   };
 
   const handleEnableNotifications = async () => {
+    const { registerPushNotifications } = await import('@/lib/pushNotifications');
     const token = await registerPushNotifications(user?.id);
     if (token) {
       toast({

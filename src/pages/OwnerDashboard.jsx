@@ -58,6 +58,8 @@ const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therap
 import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId } from '@/lib/api';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 import PageHero from '@/components/shared/PageHero';
+import HeroClock from '@/components/shared/HeroClock';
+import PageSkeleton from '@/components/shared/PageSkeleton';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -68,33 +70,6 @@ const BSIMutasiReconciliation = React.lazy(() =>
     )
   }))
 );
-// Jam di hero hanya menampilkan HH:mm, jadi cukup update di pergantian menit
-// dan hanya komponen ini yang re-render (bukan seluruh dashboard tiap detik).
-const HeroClock = () => {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    let timer;
-    const schedule = () => {
-      const d = new Date();
-      timer = setTimeout(() => {
-        setNow(new Date());
-        schedule();
-      }, (60 - d.getSeconds()) * 1000 - d.getMilliseconds() + 50);
-    };
-    schedule();
-    return () => clearTimeout(timer);
-  }, []);
-
-  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now);
-  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-  return (
-    <>
-      {todayLabel} <span className="text-app-border">•</span> <span className="font-mono tabular-nums">{heroTime}</span>
-    </>
-  );
-};
-
 // Helper to safely extract numeric values
 const safeExtractNumber = (response) => {
   if (typeof response === 'number') return response;
@@ -563,7 +538,7 @@ const OwnerDashboard = () => {
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
       <OnboardingChecklist />
       {location.pathname === '/owner/dashboard' && <TargetFillReminder />}
-      <React.Suspense fallback={<div role="status" className="p-6 text-sm text-slate-500">Memuat halaman…</div>}>
+      <React.Suspense fallback={<PageSkeleton />}>
       <Routes>
         {/* Redirect root /owner to dashboard */}
         <Route path="/" element={<Navigate to="/owner/dashboard" replace />} />

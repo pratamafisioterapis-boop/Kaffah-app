@@ -12,6 +12,14 @@
        to render. Preloading it here means it starts downloading as soon as
        the HTML is parsed instead of only once React mounts the fallback. -->
   <link rel="preload" as="image" href="/loading-bg.jpg" fetchpriority="high" />
+  <!-- Web fonts: connect early and load the stylesheet without blocking first paint
+       (display=swap shows the fallback font until each face arrives). Fonts used only
+       by non-default clinic themes (Nunito, Manrope) are loaded on demand by ThemeContext. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" /></noscript>
+
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1e3a5f" />
   <meta name="facebook-domain-verification" content="mbetron48yku8aj5ixdi8u68irh8sf" />

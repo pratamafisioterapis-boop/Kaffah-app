@@ -2,21 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
-import TherapistPatients from '@/components/therapist/TherapistPatients';
-import TherapistPatientHistory from '@/components/therapist/TherapistPatientHistory';
-import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
-import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagement';
+const TherapistPatients = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistPatients'), 'TherapistPatients'));
+const TherapistPatientHistory = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistPatientHistory'), 'TherapistPatientHistory'));
+const TherapistMedicalRecords = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistMedicalRecords'), 'TherapistMedicalRecords'));
+const MedicalRecordsManagement = React.lazy(lazyRetry(() => import('@/components/admin/MedicalRecordsManagement'), 'MedicalRecordsManagement'));
 import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
 import { useTherapistSoapTemplateEdit } from '@/hooks/useTherapistSoapTemplateEdit';
-import SubjectiveTemplateManager from '@/components/owner/SubjectiveTemplateManager';
-import TherapistLeaveRequests from '@/components/therapist/TherapistLeaveRequests';
+const SubjectiveTemplateManager = React.lazy(lazyRetry(() => import('@/components/owner/SubjectiveTemplateManager'), 'SubjectiveTemplateManager'));
+const TherapistLeaveRequests = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistLeaveRequests'), 'TherapistLeaveRequests'));
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
-import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
-import TherapistAppointmentScheduler from '@/components/therapist/TherapistAppointmentScheduler';
-import TherapistBookingCalendar from '@/components/therapist/TherapistBookingCalendar';
+const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therapist/MedicalRecordForm'), 'MedicalRecordForm'));
+const TherapistAppointmentScheduler = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistAppointmentScheduler'), 'TherapistAppointmentScheduler'));
+const TherapistBookingCalendar = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistBookingCalendar'), 'TherapistBookingCalendar'));
 import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardWidget';
-import TherapistRemuneration from '@/components/therapist/TherapistRemuneration';
-import TherapistDocuments from '@/components/therapist/TherapistDocuments';
+const TherapistRemuneration = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistRemuneration'), 'TherapistRemuneration'));
+const TherapistDocuments = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistDocuments'), 'TherapistDocuments'));
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getPhysiotherapistByUserId } from '@/lib/api';
@@ -24,6 +24,8 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Settings } from 'lucide-react';
 import TherapistSettingsDrawer from '@/components/therapist/TherapistSettingsDrawer';
+import { lazyRetry } from '@/lib/lazyRetry';
+import PageSkeleton from '@/components/shared/PageSkeleton';
 
 const TherapistDashboard = () => {
   const { user, signOut } = useAuth();
@@ -145,6 +147,7 @@ const TherapistDashboard = () => {
         <meta name="description" content="Therapist dashboard" />
       </Helmet>
       <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name}>
+        <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Grid Layout for Home */}
           <Route path="/" element={<DashboardHome />} />
@@ -162,6 +165,7 @@ const TherapistDashboard = () => {
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
         </Routes>
+        </React.Suspense>
       </DashboardLayout>
     <TherapistSettingsDrawer
         open={settingsOpen}

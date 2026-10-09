@@ -67,6 +67,25 @@ const readableOn = (hex) => {
   return luminance > 0.5 ? '0 0% 9%' : '0 0% 100%';
 };
 
+// Inter and Poppins ship with index.html; the other theme fonts are fetched only when
+// that theme is actually in use, so clinics on the default theme never download them.
+const ON_DEMAND_FONTS = {
+  Nunito: 'family=Nunito:wght@400;600;700;800',
+  Manrope: 'family=Manrope:wght@400;600;700;800',
+};
+
+const ensureThemeFont = (fontStack) => {
+  const name = Object.keys(ON_DEMAND_FONTS).find((n) => String(fontStack).includes(n));
+  if (!name || typeof document === 'undefined') return;
+  const id = `theme-font-${name.toLowerCase()}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?${ON_DEMAND_FONTS[name]}&display=swap`;
+  document.head.appendChild(link);
+};
+
 const applyThemeVars = (themeKey) => {
   const theme = DESIGN_THEMES[themeKey] || DESIGN_THEMES[DEFAULT_THEME_KEY];
   const root = document.documentElement;
@@ -75,6 +94,7 @@ const applyThemeVars = (themeKey) => {
   // instead of falling back to the default theme's light blue.
   const accentSoft = theme.accentSoft || tint(theme.accent, 0.9);
 
+  ensureThemeFont(theme.font);
   root.style.setProperty('--app-font', theme.font);
   root.style.setProperty('--app-radius', theme.radius);
   root.style.setProperty('--app-sidebar-bg', theme.sidebarBg);

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import OwnerPackageRecap from '@/pages/owner/PackageRecaps';
-import AdminCheckTransaksi from '@/pages/admin/AdminCheckTransaksi';
+const OwnerPackageRecap = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'OwnerPackageRecap'));
+const AdminCheckTransaksi = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCheckTransaksi'), 'AdminCheckTransaksi'));
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -17,41 +17,33 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
 // Import Pages/Components
-import DailyRecap from '@/components/admin/DailyRecap';
-import FollowUpManagementPage from '@/components/admin/FollowUpManagementPage'; 
-import AdminAccountingDashboard from '@/components/admin/AdminAccountingDashboard';
+const DailyRecap = React.lazy(lazyRetry(() => import('@/components/admin/DailyRecap'), 'DailyRecap'));
+const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
+const AdminAccountingDashboard = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountingDashboard'), 'AdminAccountingDashboard'));
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 // Consolidated Pages
-import AdminDatabasePatients from '@/pages/admin/DatabasePatients'; 
-import AppointmentsPage from '@/pages/AppointmentsPage';
-import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
-import ClinicalDocuments from '@/pages/admin/ClinicalDocuments'; 
-import AdminPhysiotherapistManagementPage from '@/pages/admin/AdminPhysiotherapistManagementPage';
-import AdminAccountSettings from '@/components/admin/AdminAccountSettings';
-import AttendanceManagement from '@/pages/admin/AttendanceManagement';
+const AdminDatabasePatients = React.lazy(lazyRetry(() => import('@/pages/admin/DatabasePatients'), 'AdminDatabasePatients'));
+const AppointmentsPage = React.lazy(lazyRetry(() => import('@/pages/AppointmentsPage'), 'AppointmentsPage'));
+const MedicalRecordsPage = React.lazy(lazyRetry(() => import('@/pages/MedicalRecordsPage'), 'MedicalRecordsPage'));
+const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/ClinicalDocuments'), 'ClinicalDocuments'));
+const AdminPhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/AdminPhysiotherapistManagementPage'), 'AdminPhysiotherapistManagementPage'));
+const AdminAccountSettings = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountSettings'), 'AdminAccountSettings'));
+const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { getCachedClinicId } from '@/lib/api';
 import PageHero from '@/components/shared/PageHero';
-const useNow = () => {
-  const [now, setNow] = React.useState(new Date());
-  React.useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
-};
+import HeroClock from '@/components/shared/HeroClock';
+import { lazyRetry } from '@/lib/lazyRetry';
+import PageSkeleton from '@/components/shared/PageSkeleton';
 const AdminDashboardHome = () => {
   const location = useLocation();
   const { clinicName } = useAuth();
-  const now = useNow();
   const today = new Date().toISOString().split('T')[0];
-  const todayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  const heroTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
@@ -88,6 +80,19 @@ const [topServices, setTopServices] = useState([]);
   useEffect(() => {
     localStorage.setItem('adminDashboardDateRange', JSON.stringify(dateRange));
   }, [dateRange]);
+
+  // What the date inputs show. `dateRange` (used by every query) only follows after a
+  // short pause and only for a valid range, so picking dates does not fire a burst of
+  // requests for each intermediate value.
+  const [rangeInput, setRangeInput] = useState(dateRange);
+  useEffect(() => {
+    const { startDate, endDate } = rangeInput;
+    if (!startDate || !endDate || startDate > endDate) return undefined;
+    const timer = setTimeout(() => {
+      setDateRange((prev) => (prev.startDate === startDate && prev.endDate === endDate ? prev : { startDate, endDate }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [rangeInput]);
   useEffect(() => {
   const fetchSlotData = async (range) => {
   const todayDate = new Date();
@@ -413,25 +418,29 @@ setTrendPatients(trendArray);
       <div className="space-y-6 animate-in fade-in duration-200 ease-out pb-20">
 
         {/* ── Hero Banner ── */}
-        <PageHero image="/hero/clinara-owner-hero.webp" objectPosition="36% center" kicker={<>{todayLabel} <span className="text-app-border">•</span> <span className="font-mono">{heroTime}</span></>} title="Selamat datang," highlight={<>Admin {clinicName || ''}!</>} description="Pusat kendali operasional dan manajemen klinik." wide />
+        <PageHero image="/hero/clinara-owner-hero.webp" objectPosition="36% center" kicker={<HeroClock />} title="Selamat datang," highlight={<>Admin {clinicName || ''}!</>} description="Pusat kendali operasional dan manajemen klinik." wide />
 
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm">
-              <span className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
+            <div role="group" aria-labelledby="admin-period-label" className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-app-accent/40">
+              <span id="admin-period-label" className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
                 <input
                   type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                  aria-label="Tanggal mulai periode"
+                  value={rangeInput.startDate}
+                  max={rangeInput.endDate || undefined}
+                  onChange={(e) => setRangeInput((prev) => ({ ...prev, startDate: e.target.value }))}
                   className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
                 />
-                <span className="text-app-border shrink-0">–</span>
+                <span className="text-app-muted shrink-0" aria-hidden="true">–</span>
                 <input
                   type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                  aria-label="Tanggal akhir periode"
+                  value={rangeInput.endDate}
+                  min={rangeInput.startDate || undefined}
+                  onChange={(e) => setRangeInput((prev) => ({ ...prev, endDate: e.target.value }))}
                   className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
                 />
               </div>
@@ -790,7 +799,8 @@ const AdminDashboard = () => {
   const navItems = ADMIN_NAV_ITEMS;
 return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
-      <Routes>
+      <React.Suspense fallback={<PageSkeleton />}>
+        <Routes>
         <Route path="/" element={isLightLoadModeEnabled() ? <Navigate to="/admin/appointments" replace /> : <AdminDashboardHome />} />
         
         {/* Consolidated Routes */}
@@ -825,6 +835,7 @@ return (
         {/* Catch-all for sub-dashboard routes if someone tries to access directly */}
         <Route path="/dashboard/*" element={<Navigate to="/admin" replace />} />
       </Routes>
+        </React.Suspense>
     </DashboardLayout>
   );
 };
