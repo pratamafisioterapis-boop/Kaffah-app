@@ -251,7 +251,7 @@ const formattedDateFull = date
       const reasonMap = {};
       const { data: timeOffRows } = await supabase
         .from('therapist_time_off')
-        .select('therapist_id, reason')
+        .select('therapist_id, reason, leave_type')
         .lte('start_date', dateStr)
         .gte('end_date', dateStr);
 
@@ -267,6 +267,8 @@ const formattedDateFull = date
           : category.includes('izin') ? 'Izin Pribadi'
           : category.includes('libur') ? 'Libur'
           : 'Lainnya';
+        // Libur mingguan tidak menutup hari itu bila terapis punya slot aktif dari jadwal pengganti.
+        if (row.leave_type === 'weekly_off' && ['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id])) return;
         statusMap[row.therapist_id] = 'cuti';
         reasonMap[row.therapist_id] = label;
       });

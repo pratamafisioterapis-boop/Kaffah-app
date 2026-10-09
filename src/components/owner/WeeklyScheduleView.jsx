@@ -105,7 +105,7 @@ const WeeklyScheduleView = ({
         getAppointments({ startDate: `${startStr}T00:00:00`, endDate: `${endStr}T23:59:59` }),
         supabase
           .from('therapist_time_off')
-          .select('therapist_id, start_date, end_date, reason')
+          .select('therapist_id, start_date, end_date, reason, leave_type')
           .lte('start_date', endStr)
           .gte('end_date', startStr),
       ]);
@@ -185,12 +185,15 @@ const WeeklyScheduleView = ({
       days.forEach((d) => {
         const k = toKey(d);
         if (k >= row.start_date && k <= row.end_date) {
+          // Libur mingguan yang diganti jadwal pengganti (ada slot aktif) bukan hari cuti.
+          if (row.leave_type === 'weekly_off'
+            && (rawSlots[k] || []).some((sl) => sl.therapist_id === row.therapist_id && (sl.status === 'aktif' || sl.status === 'terisi'))) return;
           off[k] = (row.reason || 'Cuti').split(' - ')[0].trim() || 'Cuti';
         }
       });
     });
     return off;
-  }, [rawOff, selectedIds, days]);
+  }, [rawOff, rawSlots, selectedIds, days]);
 
   // Baris = jam mulai yang benar-benar ada (tanpa duplikat, tanpa jam yang tidak punya slot).
   // Tiap kartu membentang dari baris jam mulainya sampai sebelum jam selesainya.
