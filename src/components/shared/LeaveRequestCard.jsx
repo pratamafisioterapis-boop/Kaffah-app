@@ -4,7 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import {
   STATUS_META, leaveTypeLabel, formatLongDate, formatShortDate, leaveScopeLabel,
-  hhmm, formatDuration, totalShiftMinutes,
+  hhmm, formatDuration, totalShiftMinutes, attendanceImpactNote,
 } from '@/lib/leaveRequestUtils';
 
 // Ringkasan satu pengajuan izin + jadwal penggantinya. `footer` untuk tombol aksi.
@@ -80,6 +80,12 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
             ))}
           </div>
         </div>
+        )}
+
+        {shifts.length > 0 && (
+          <p className="text-[11px] text-sky-800 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
+            {attendanceImpactNote(request.is_partial)}
+          </p>
         )}
 
         {request.status !== 'pending' && (request.review_note || request.reviewed_by_name) && (

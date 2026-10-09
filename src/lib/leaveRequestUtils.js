@@ -49,6 +49,11 @@ export const formatShortDate = (dateStr) => {
 export const leaveScopeLabel = (req) =>
   req.is_partial ? `${hhmm(req.start_time)} – ${hhmm(req.end_time)}` : 'Seharian penuh';
 
+// Dampak izin ke hari masuk (gaji & hari kerja), untuk dijelaskan ke terapis dan owner.
+export const attendanceImpactNote = (isPartial) => (isPartial
+  ? 'Izin sebagian jam: hari izin ini tetap dihitung masuk (gaji & hari kerja). Tanggal pengganti hanya menambah jam kerja, tidak dihitung sebagai hari masuk lagi.'
+  : 'Izin seharian: hari izin ini tidak dihitung masuk. Tanggal pengganti dihitung sebagai hari masuk (gaji & hari kerja).');
+
 export const shiftMinutes = (shift) => Math.max(0, timeToMinutes(shift.end_time) - timeToMinutes(shift.start_time));
 
 export const totalShiftMinutes = (shifts) => (shifts || []).reduce((sum, s) => sum + shiftMinutes(s), 0);

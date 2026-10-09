@@ -19,7 +19,7 @@ import {
   getTherapistAnnualLeaveBalance,
 } from '@/lib/api';
 import {
-  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes,
+  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -436,6 +436,11 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah; bila jam bulan ini belum cukup, lanjut ke bulan berikutnya dengan tombol panah. Hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
         </div>
+
+        <p className="text-xs rounded-lg bg-sky-50 text-sky-800 border border-sky-100 px-3 py-2 flex items-start gap-1.5">
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>{attendanceImpactNote(form.partial)}</span>
+        </p>
 
         <div className="flex items-center justify-between">
           <Button type="button" variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan sebelumnya" disabled={monthOffset <= 0} onClick={() => setMonthOffset((m) => m - 1)}>

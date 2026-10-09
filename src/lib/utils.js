@@ -428,7 +428,10 @@ export function formatTherapistPeriodLabel(therapist) {
 export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate, extraShifts = []) {
   if (!startDate || !endDate) return 0;
 
-  const extraDates = new Set((extraShifts || []).map(e => (typeof e === 'string' ? e : e.shift_date)));
+  // Pengganti izin parsial tidak dihitung masuk: hari izin parsialnya yang sudah dihitung masuk.
+  const extraDates = new Set((extraShifts || [])
+    .filter(e => typeof e === 'string' || !e.replaces_partial_leave)
+    .map(e => (typeof e === 'string' ? e : e.shift_date)));
   const dateKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 
   const start = new Date(startDate);
@@ -442,7 +445,7 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate,
     // 0. hari pengganti izin: dihitung masuk selama tidak tertutup cuti/izin selain libur mingguan
     if (extraDates.has(dateKey(d))) {
       const blockedByLeave = (timeOffs || []).some(t => {
-        if (t.leave_type === 'weekly_off') return false;
+        if (t.leave_type === 'weekly_off' || t.start_time) return false;
         return d >= new Date(t.start_date) && d <= new Date(t.end_date);
       });
       if (!blockedByLeave) totalDays++;
@@ -456,8 +459,9 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate,
 
     if (!hasSchedule) continue;
 
-    // 2. cek apakah lagi cuti
+    // 2. cek apakah lagi cuti (izin parsial / jam tertentu tidak menghilangkan hari masuk)
     const isOnLeave = (timeOffs || []).some(t => {
+      if (t.start_time) return false;
       const startOff = new Date(t.start_date);
       const endOff = new Date(t.end_date);
 

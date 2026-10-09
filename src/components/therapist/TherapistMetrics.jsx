@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff, getTherapistExtraShifts } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -92,7 +92,8 @@ const [
   patientTypeRes,
   todayAppointmentsRes,
   leaveBalanceRes,
-  timeOffRes
+  timeOffRes,
+  extraShiftRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
@@ -100,7 +101,8 @@ const [
   getTherapistRecaps(therapist.id, { startDate: startCustom, endDate: endCustom }),
   getAppointments({ date: todayISO, therapistId: therapist.id }),
   getTherapistAnnualLeaveBalance(therapist.id),
-  getTherapistTimeOff(therapist.id)
+  getTherapistTimeOff(therapist.id),
+  getTherapistExtraShifts(therapist.id)
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -156,6 +158,11 @@ const rawMonthlyRecaps = recapsRes.data || [];
         });
       });
       Object.values(absentByCategory).forEach(set => set.forEach(k => liburDates.delete(k)));
+      // Hari libur yang diganti kerja (pengganti izin seharian) dihitung hari kerja.
+      // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
+      (extraShiftRes?.data || []).forEach(e => {
+        if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
+      });
       const workDays = periodDays.length - liburDates.size;
 
       setMetrics({

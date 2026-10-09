@@ -6561,10 +6561,13 @@ export const getTherapistSchedules = async (therapistId) => {
 export const getTherapistExtraShifts = async (therapistId) => {
   const { data, error } = await supabase
     .from('therapist_extra_shifts')
-    .select('shift_date, start_time, end_time')
+    .select('shift_date, start_time, end_time, leave_request_id, therapist_leave_requests(is_partial)')
     .eq('therapist_id', therapistId)
     .order('shift_date', { ascending: true });
-  return { data: data || [], error };
+  // `replaces_partial_leave`: pengganti dari izin parsial. Hari pengganti itu tidak dihitung hari masuk
+  // (hari izin parsialnya yang dihitung masuk); pengganti izin seharian dihitung masuk.
+  const rows = (data || []).map(({ therapist_leave_requests: req, ...e }) => ({ ...e, replaces_partial_leave: req?.is_partial === true }));
+  return { data: rows, error };
 };
 
 export const getTherapistTimeOff = async (therapistId) => {
