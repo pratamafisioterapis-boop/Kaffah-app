@@ -54,6 +54,17 @@ export const attendanceImpactNote = (isPartial) => (isPartial
   ? 'Izin sebagian jam: hari izin ini tetap dihitung masuk (gaji & hari kerja). Tanggal pengganti hanya menambah jam kerja, tidak dihitung sebagai hari masuk lagi.'
   : 'Izin seharian: hari izin ini tidak dihitung masuk. Tanggal pengganti dihitung sebagai hari masuk (gaji & hari kerja).');
 
+// Izin di hari Sabtu/Minggu (seharian maupun jam tertentu): hari pengganti hanya boleh hari Minggu.
+export const isWeekendDate = (dateStr) => {
+  if (!dateStr) return false;
+  const dow = parseISO(dateStr).getDay();
+  return dow === 0 || dow === 6;
+};
+
+export const isSundayDate = (dateStr) => !!dateStr && parseISO(dateStr).getDay() === 0;
+
+export const WEEKEND_REPLACEMENT_NOTE = 'Izin di hari Sabtu/Minggu wajib diganti di hari Minggu. Hari lain tidak bisa dipilih.';
+
 export const shiftMinutes = (shift) => Math.max(0, timeToMinutes(shift.end_time) - timeToMinutes(shift.start_time));
 
 export const totalShiftMinutes = (shifts) => (shifts || []).reduce((sum, s) => sum + shiftMinutes(s), 0);
