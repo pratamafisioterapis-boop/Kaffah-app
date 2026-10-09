@@ -33,6 +33,8 @@ const DAY_KEY = 'yyyy-MM-dd';
 // Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
 const MAX_BACKDATE_DAYS = 60;
 const MAX_MONTHS_AHEAD = 1;
+// Batas jam kerja per hari: hari pengganti yang jam kerjanya belum 8 jam bisa diisi sisa utang jam.
+const DAY_TARGET_MINUTES = 8 * 60;
 
 const minutesToTime = (min) => {
   const m = Math.min(Math.max(0, min), 23 * 60 + 59);
@@ -153,11 +155,17 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
       }
       // Hari kerja: default setelah jam kerja normal. Hari libur: default mulai jam shift (atau 09:00).
       const lastEnd = day.sched.reduce((mx, s) => Math.max(mx, timeToMinutes(s.end_time)), 0);
+      const normalOnDay = day.sched.reduce((sum, s) => sum + timeToMinutes(s.end_time) - timeToMinutes(s.start_time), 0);
+      const dayRoom = Math.max(0, DAY_TARGET_MINUTES - normalOnDay);
       const shiftStart = workShift ? timeToMinutes(workShift.start_time) : 9 * 60;
       const start = day.sched.length ? lastEnd : shiftStart;
       // Default = jam yang ditinggalkan; kalau belum ada tanggal izin, satu shift penuh.
       const shiftLength = workShift ? timeToMinutes(workShift.end_time) - shiftStart : 3 * 60;
-      const wanted = missedMinutes > 0 ? Math.min(missedMinutes, 8 * 60) : shiftLength;
+      // Utang yang tersisa (jam izin dikurangi pengganti yang sudah dipilih), dibatasi sisa ruang 8 jam hari itu.
+      const debtLeft = missedMinutes - totalShiftMinutes(f.shifts);
+      const wanted = missedMinutes > 0
+        ? Math.max(Math.min(debtLeft > 0 ? debtLeft : missedMinutes, dayRoom || DAY_TARGET_MINUTES), slotMinutes)
+        : shiftLength;
       return {
         ...f,
         shifts: [...f.shifts, { date: day.key, start_time: minutesToTime(start), end_time: minutesToTime(start + wanted) }],
@@ -173,6 +181,13 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     const overlap = hoursOn(shift.date).find((s) =>
       timeToMinutes(shift.start_time) < timeToMinutes(s.end_time) && timeToMinutes(shift.end_time) > timeToMinutes(s.start_time));
     if (overlap) return `Bentrok dengan jam kerja normal (${hhmm(overlap.start_time)}–${hhmm(overlap.end_time)}). Pilih jam di luar itu.`;
+    const normalOnDay = hoursOn(shift.date).reduce((sum, s) => sum + timeToMinutes(s.end_time) - timeToMinutes(s.start_time), 0);
+    if (normalOnDay + shiftMinutes(shift) > DAY_TARGET_MINUTES) {
+      const room = Math.max(0, DAY_TARGET_MINUTES - normalOnDay);
+      return room > 0
+        ? `Total jam kerja hari itu maksimal 8 jam. Jam normal ${formatDuration(normalOnDay)}, jadi pengganti maksimal ${formatDuration(room)}.`
+        : 'Hari itu sudah 8 jam kerja normal. Pilih hari lain.';
+    }
     return null;
   };
 
@@ -475,7 +490,11 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">{formatLongDate(shift.date)}</p>
-                      <p className="text-[11px] text-slate-500">{normal ? `Jadwal normal ${normal}` : 'Hari libur Anda'}</p>
+                      <p className="text-[11px] text-slate-500">{normal ? `Jadwal normal ${normal}` : 'Hari libur Anda'}
+                        {(() => {
+                          const n = hoursOn(shift.date).reduce((sum, s) => sum + timeToMinutes(s.end_time) - timeToMinutes(s.start_time), 0);
+                          return n > 0 && n < DAY_TARGET_MINUTES ? ` · baru ${formatDuration(n)}, masih bisa tambah ${formatDuration(DAY_TARGET_MINUTES - n)}` : '';
+                        })()}</p>
                     </div>
                     <button type="button" aria-label="Hapus hari pengganti" onClick={() => toggleShift({ key: shift.date, sched: [] })} className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-white">
                       <X className="w-4 h-4" />
