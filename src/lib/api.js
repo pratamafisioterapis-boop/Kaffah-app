@@ -6591,6 +6591,35 @@ export const getTherapistExtraShifts = async (therapistId) => {
   return { data: rows, error };
 };
 
+// Jatah libur mingguan (hari Senin) yang diabaikan karena izin / libur nasional di hari Minggu sebelumnya.
+export const getWeeklyOffWaivers = async (therapistId) => {
+  const { data, error } = await supabase
+    .from('therapist_weekly_off_waivers')
+    .select('id, sunday_date, off_date, reason, original_reason')
+    .eq('therapist_id', therapistId)
+    .order('off_date', { ascending: false });
+  return { data: data || [], error };
+};
+
+// Hari libur nasional klinik (dikelola owner). Yang jatuh di hari Minggu membatalkan libur mingguan hari Senin.
+export const getNationalHolidays = async () => {
+  const { data, error } = await supabase
+    .from('national_holidays')
+    .select('id, holiday_date, name')
+    .order('holiday_date', { ascending: true });
+  return { data: data || [], error };
+};
+
+export const addNationalHoliday = async ({ holidayDate, name }) => {
+  const { error } = await supabase.from('national_holidays').insert({ holiday_date: holidayDate, name: name.trim() });
+  return { error };
+};
+
+export const deleteNationalHoliday = async (id) => {
+  const { error } = await supabase.from('national_holidays').delete().eq('id', id);
+  return { error };
+};
+
 export const getTherapistTimeOff = async (therapistId) => {
   return safeQuery(async () => {
 

@@ -19,7 +19,8 @@ import {
   getTherapistAnnualLeaveBalance,
 } from '@/lib/api';
 import {
-  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote, isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE,
+  LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
+  isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE, isReplacementOptionalType, SUNDAY_RULE_NOTE,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -198,8 +199,10 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
 
   const sortedShifts = [...form.shifts].sort((a, b) => a.date.localeCompare(b.date));
   const hasShiftError = sortedShifts.some((s) => shiftError(s));
-  // Kegiatan organisasi: jadwal pengganti tidak wajib (ditentukan peninjau); boleh diisi sukarela.
+  // Kegiatan organisasi / Event: jadwal pengganti tidak wajib (ditentukan peninjau); boleh diisi sukarela.
   const isOrg = form.leaveType === 'organization';
+  const isEvent = form.leaveType === 'event';
+  const replacementOptional = isReplacementOptionalType(form.leaveType);
 
   // Alasan tombol kirim belum aktif — ditampilkan agar terapis tahu apa yang kurang.
   const sundayOnly = isWeekendDate(form.leaveDate);
@@ -211,6 +214,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
     if (form.leaveType === 'sick' && !form.proofFile) return 'Izin sakit wajib melampirkan foto / PDF surat dokter.';
     if (isOrg && !form.notes.trim()) return 'Cantumkan nama kegiatan, penyelenggara, dan statusnya (penugasan klinik atau pribadi) pada kolom catatan.';
+    if (isEvent && !form.notes.trim()) return 'Cantumkan nama event dan penyelenggaranya pada kolom catatan.';
     if (form.partial && leaveDayHours.length) {
       const dayStart = Math.min(...leaveDayHours.map((s) => timeToMinutes(s.start_time)));
       const dayEnd = Math.max(...leaveDayHours.map((s) => timeToMinutes(s.end_time)));
@@ -218,11 +222,11 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
         return `Jam izin harus di dalam jam kerja ${scheduleLabel(leaveDayHours)}.`;
       }
     }
-    if (form.shifts.length === 0 && !isOrg) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
+    if (form.shifts.length === 0 && !replacementOptional) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (sundayOnly && sortedShifts.some((s) => !isSundayDate(s.date))) return WEEKEND_REPLACEMENT_NOTE;
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
     if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
-    if (!isOrg && missedMinutes > 0 && replacedMinutes < missedMinutes) {
+    if (!replacementOptional && missedMinutes > 0 && replacedMinutes < missedMinutes) {
       return `Jam pengganti kurang ${formatDuration(missedMinutes - replacedMinutes)} dari jam izin (${formatDuration(missedMinutes)}). Tambah jam pengganti sampai cukup.`;
     }
     return null;
@@ -371,6 +375,24 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           )}
         </div>
 
+        {isEvent && (
+          <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 space-y-1 text-xs text-violet-900">
+            <p className="font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Ketentuan izin Event</p>
+            <p>
+              Cantumkan nama event dan penyelenggaranya pada kolom catatan. Jadwal pengganti tidak wajib; owner / terapis kepala menentukan saat peninjauan. Bila jadwal pengganti diperlukan, pengajuan akan dikembalikan beserta catatan agar Anda mengajukannya kembali dengan jadwal pengganti.
+            </p>
+          </div>
+        )}
+
+        {isSundayDate(form.leaveDate) && !form.partial && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <p>
+              <b>Izin hari Minggu.</b> {SUNDAY_RULE_NOTE} Berlaku untuk semua alasan izin.
+            </p>
+          </div>
+        )}
+
         {isOrg && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
             <p className="font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Ketentuan izin kegiatan organisasi</p>
@@ -438,10 +460,10 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
         <div>
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">2</span>
-            {isOrg ? 'Jadwal pengganti (opsional)' : 'Ganti jam kerjanya kapan?'}
+            {replacementOptional ? 'Jadwal pengganti (opsional)' : 'Ganti jam kerjanya kapan?'}
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah; bila jam bulan ini belum cukup, lanjut ke bulan berikutnya dengan tombol panah. Hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
+            {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : isEvent ? 'Dapat dikosongkan; peninjau menentukan apakah event ini perlu jadwal pengganti. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah; bila jam bulan ini belum cukup, lanjut ke bulan berikutnya dengan tombol panah. Hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
         </div>
 
@@ -524,7 +546,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
                     <Input type="time" aria-label="Jam selesai pengganti" value={shift.end_time} onChange={(e) => updateShift(shift.date, { end_time: e.target.value })} />
                   </div>
                   {err && <p className="text-xs text-red-600 mt-2 flex items-start gap-1"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{err}</p>}
-                  {!err && !isOrg && missedMinutes > 0 && replacedMinutes < missedMinutes && (() => {
+                  {!err && !replacementOptional && missedMinutes > 0 && replacedMinutes < missedMinutes && (() => {
                     // Jam selesai yang pas agar total jam pengganti = jam yang ditinggalkan
                     // (hari pengganti lain dianggap tetap).
                     const needed = missedMinutes - (replacedMinutes - shiftMinutes(shift));
@@ -559,7 +581,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           </div>
         )}
 
-        {form.leaveDate && !isOrg && (
+        {form.leaveDate && !replacementOptional && (
           <div className={cn(
             'rounded-lg px-3 py-2 text-xs flex items-start gap-2',
             replacedMinutes >= missedMinutes && replacedMinutes > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800',

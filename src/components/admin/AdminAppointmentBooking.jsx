@@ -269,6 +269,7 @@ const formattedDateFull = date
           : category.includes('izin') ? 'Izin Pribadi'
           : category.includes('libur') ? 'Libur'
           : category.includes('organisasi') ? 'Kegiatan Organisasi'
+          : category === 'event' ? 'Event'
           : (row.reason || '').split(' - ')[0].trim() || 'Lainnya';
         // Libur mingguan tidak menutup hari itu bila terapis punya slot aktif dari jadwal pengganti.
         if (row.leave_type === 'weekly_off' && ['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id])) {

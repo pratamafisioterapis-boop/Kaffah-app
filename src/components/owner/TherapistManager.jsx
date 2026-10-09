@@ -48,10 +48,10 @@ const SectionCard = ({ icon: Icon, iconClass, title, description, children }) =>
   </div>
 );
 
-const TIME_OFF_REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const TIME_OFF_REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Event', 'Lainnya'];
 const TIME_OFF_LEAVE_TYPE = {
   'Cuti': 'annual', 'Sakit': 'sick', 'Libur': 'weekly_off',
-  'Training': 'training', 'Izin Pribadi': 'personal', 'Lainnya': 'other'
+  'Training': 'training', 'Izin Pribadi': 'personal', 'Event': 'other', 'Lainnya': 'other'
 };
 // reason disimpan sebagai "Jenis - catatan"
 const parseTimeOffReason = (reason) => {

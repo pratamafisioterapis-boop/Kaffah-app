@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  getTherapistTimeOff, getTherapistExtraShifts, 
+  getTherapistTimeOff, getTherapistExtraShifts, getWeeklyOffWaivers,
   deleteTherapistTimeOff,
   updateTherapistTimeOff
 } from '@/lib/api';
@@ -13,11 +13,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, CalendarDays, Clock, Pencil, Loader2 } from 'lucide-react';
+import { Trash2, CalendarDays, Clock, Pencil, Loader2, CalendarCheck } from 'lucide-react';
+import { WAIVER_REASON_LABEL } from '@/lib/leaveRequestUtils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Lainnya'];
+const REASONS = ['Cuti', 'Sakit', 'Libur', 'Training', 'Izin Pribadi', 'Event', 'Lainnya'];
 
 const REASON_TO_LEAVE_TYPE = {
   'Cuti': 'annual',
@@ -25,6 +26,7 @@ const REASON_TO_LEAVE_TYPE = {
   'Libur': 'weekly_off',
   'Training': 'training',
   'Izin Pribadi': 'personal',
+  'Event': 'other',
   'Lainnya': 'other'
 };
 
@@ -41,6 +43,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
   const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState([]);
   const [extraShifts, setExtraShifts] = useState([]);
+  const [waivers, setWaivers] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({ reason: 'Libur', notes: '' });
@@ -54,9 +57,12 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const [{ data }, extraRes] = await Promise.all([getTherapistTimeOff(therapist.id), getTherapistExtraShifts(therapist.id)]);
+    const [{ data }, extraRes, waiverRes] = await Promise.all([
+      getTherapistTimeOff(therapist.id), getTherapistExtraShifts(therapist.id), getWeeklyOffWaivers(therapist.id),
+    ]);
     if (data) setTimeOffs(data);
     setExtraShifts(extraRes.data || []);
+    setWaivers(waiverRes.data || []);
     setLoading(false);
   };
 
@@ -104,6 +110,23 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
          <Badge variant="outline">{timeOffs.length}</Badge>
       </h3>
       
+      {waivers.length > 0 && (
+         <div className="space-y-2">
+            {waivers.map(w => (
+               <div key={w.id} className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                  <CalendarCheck className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+                  <div className="text-sm text-rose-900">
+                     <span className="font-semibold">{format(new Date(`${w.off_date}T00:00:00`), 'EEEE, dd MMM yyyy', { locale: id })}</span>
+                     {' '}— jatah libur mingguan dibatalkan, terapis tetap masuk.
+                     <span className="block text-xs text-rose-700 mt-0.5">
+                        {WAIVER_REASON_LABEL[w.reason] || w.reason} ({format(new Date(`${w.sunday_date}T00:00:00`), 'dd MMM yyyy', { locale: id })}). Jatah libur dikembalikan otomatis bila izin / libur nasional itu dihapus.
+                     </span>
+                  </div>
+               </div>
+            ))}
+         </div>
+      )}
+
       {loading ? (
          <div className="space-y-3">
             {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />)}
