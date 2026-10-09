@@ -38,6 +38,7 @@ import DiagnosisServiceManager from '@/components/owner/DiagnosisServiceManager'
 import SubjectiveTemplateManager from '@/components/owner/SubjectiveTemplateManager';
 import AccountClinicManager from '@/components/owner/AccountClinicManager';
 import DomainSettingsManager from '@/components/owner/DomainSettingsManager';
+import ClinicOperatingHoursSettings from '@/components/owner/ClinicOperatingHoursSettings';
 import LandingPageManager from '@/components/owner/LandingPageManager';
 import OwnerBankAccountManager from '@/components/owner/OwnerBankAccountManager';
 import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
@@ -1060,6 +1061,7 @@ const SETTINGS_TAB_GROUPS = [
     label: 'Akun & Tim',
     items: [
       { value: 'account_clinic', icon: UserCog, label: 'Akun & Klinik' },
+      { value: 'operating_hours', icon: Clock, label: 'Jam Buka Klinik' },
       { value: 'domain', icon: Globe, label: 'Domain Klinik' },
       { value: 'landing_page', icon: LayoutTemplate, label: 'Landing Page' },
       { value: 'notifications', icon: Bell, label: 'Notifikasi' },
@@ -1228,6 +1230,9 @@ const SettingsPage = () => {
         <div className="mt-6">
           <TabsContent value="account_clinic">
             <AccountClinicManager hideOwnerIdentity={disabledFeatures.includes('owner_identity')} />
+          </TabsContent>
+          <TabsContent value="operating_hours">
+            <ClinicOperatingHoursSettings />
           </TabsContent>
           <TabsContent value="domain">
             <DomainSettingsManager />
