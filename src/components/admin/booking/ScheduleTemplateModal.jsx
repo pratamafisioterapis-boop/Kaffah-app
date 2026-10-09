@@ -125,7 +125,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => setTemplateMode('named')}
-              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-xs font-semibold leading-tight transition-colors ${
                 templateMode === 'named'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -136,7 +136,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => setTemplateMode('global')}
-              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-xs font-semibold leading-tight transition-colors ${
                 templateMode === 'global'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -151,7 +151,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => handleGenderFilterChange('all')}
-              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -162,7 +162,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => handleGenderFilterChange('male')}
-              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'male'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -173,7 +173,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
             <button
               type="button"
               onClick={() => handleGenderFilterChange('female')}
-              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-[11px] sm:text-xs font-semibold leading-tight transition-colors ${
+              className={`flex items-center justify-center text-center px-2 sm:px-3 py-2 rounded-md text-xs font-semibold leading-tight transition-colors ${
                 genderFilter === 'female'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -184,7 +184,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
           </div>
 
           {/* Legenda warna */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-[11px] text-slate-500 px-0.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 px-0.5">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" /> Masih ada jadwal
             </span>
@@ -197,20 +197,20 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
           </div>
 
           {genderFilter !== 'all' && sortedTherapists.length === 0 && (
-            <p className="text-[11px] sm:text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-app-sm px-3 py-2">
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-app-sm px-3 py-2">
               Belum ada terapis dengan jenis kelamin {genderFilter === 'male' ? 'laki-laki' : 'perempuan'} yang terdaftar. Lengkapi data jenis kelamin terapis di menu Physiotherapist Management.
             </p>
           )}
 
           {/* Filter Terapis: pilih Semua, atau centang satu/lebih terapis tertentu */}
-          <p className="text-[10px] sm:text-[11px] text-slate-400 px-0.5 -mb-1">
+          <p className="text-xs text-slate-500 px-0.5 -mb-1">
             Pilih "Semua Terapis" atau centang terapis tertentu (bisa lebih dari satu).
           </p>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setSelectedTherapistIds('all')}
-              className={`col-span-2 px-2.5 sm:px-3 py-2 rounded-app-sm text-[11px] sm:text-xs font-medium border transition-colors ${
+              className={`col-span-2 px-2.5 sm:px-3 py-2 rounded-app-sm text-xs font-medium border transition-colors ${
                 selectedTherapistIds === 'all'
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -229,7 +229,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
                   type="button"
                   onClick={() => toggleTherapistSelection(t.id)}
                   aria-pressed={isActive}
-                  className={`flex items-center gap-1.5 min-w-0 px-2.5 sm:px-3 py-2 rounded-app-sm text-[11px] sm:text-xs font-medium border transition-colors ${
+                  className={`flex items-center gap-1.5 min-w-0 px-2.5 sm:px-3 py-2 rounded-app-sm text-xs font-medium border transition-colors ${
                     isActive
                       ? 'bg-slate-900 text-white border-slate-900'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'

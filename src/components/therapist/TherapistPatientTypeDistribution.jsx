@@ -81,7 +81,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
           </div>
           <h3 className="text-sm font-bold text-slate-700">Distribusi Tipe Pasien</h3>
         </div>
-        <span className="text-xs text-slate-400 font-medium">{total} total</span>
+        <span className="text-xs text-slate-500 font-medium">{total} total</span>
       </div>
 
       {/* Divider */}
@@ -93,14 +93,14 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
           <div className="w-10 h-10 rounded-app bg-slate-50 flex items-center justify-center mb-3 animate-pulse">
             <Users className="w-5 h-5 text-slate-300" />
           </div>
-          <p className="text-xs font-medium text-slate-400">Memuat data...</p>
+          <p className="text-xs font-medium text-slate-500">Memuat data...</p>
         </div>
       ) : sortedTypes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-10 h-10 rounded-app bg-slate-50 flex items-center justify-center mb-3">
             <Users className="w-5 h-5 text-slate-300" />
           </div>
-          <p className="text-xs font-medium text-slate-400">Belum ada data periode ini</p>
+          <p className="text-xs font-medium text-slate-500">Belum ada data periode ini</p>
         </div>
       ) : (
         <div className="px-5 pt-4 pb-3 space-y-3">
@@ -123,7 +123,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                   {/* Bar */}
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${color.bar}`}
+                      className={`h-full rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 ${color.bar}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -132,11 +132,11 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                     {count}
                   </span>
                   {/* Click affordance */}
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 group-hover:text-app-accent-bright group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 group-hover:text-app-accent-bright group-hover:translate-x-0.5 transition-[color,background-color,border-color,box-shadow,transform,opacity]" />
                 </button>
               );
             })}
-          <p className="text-[11px] text-slate-400 pt-1">
+          <p className="text-xs text-slate-500 pt-1">
             Ketuk tipe pasien untuk lihat detail kunjungan
           </p>
         </div>
@@ -149,7 +149,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
             <DialogTitle className="flex items-center gap-2 capitalize">
               <Users className="w-5 h-5 text-app-accent-bright" />
               {selectedType ? selectedType.toLowerCase() : ''}
-              <span className="text-xs font-normal text-slate-400 normal-case">
+              <span className="text-xs font-normal text-slate-500 normal-case">
                 ({selectedRecaps.length} kunjungan)
               </span>
             </DialogTitle>
@@ -160,7 +160,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
 
           <div className="flex-1 overflow-y-auto pr-1 mt-2 space-y-2.5">
             {selectedRecaps.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-sm">
+              <div className="text-center py-12 text-slate-500 text-sm">
                 Tidak ada data.
               </div>
             ) : (
@@ -179,14 +179,14 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                         <p className="text-sm font-bold text-slate-700 truncate">
                           {item.patients?.full_name || 'Pasien tidak diketahui'}
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {item.recap_date
                             ? format(new Date(item.recap_date), 'dd MMMM yyyy', { locale: idLocale })
                             : '-'}
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
+                        className={`shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
                           isFilled
                             ? 'bg-emerald-50 text-emerald-600'
                             : 'bg-rose-50 text-rose-600'
@@ -203,13 +203,13 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
 
                     <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                       <div>
-                        <span className="text-slate-400">Diagnosa: </span>
+                        <span className="text-slate-500">Diagnosa: </span>
                         <span className="text-slate-600 font-medium">
                           {diagnosisText || '-'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400">Tipe paket: </span>
+                        <span className="text-slate-500">Tipe paket: </span>
                         <span className="text-slate-600 font-medium">
                           {item.service_type || '-'}
                         </span>

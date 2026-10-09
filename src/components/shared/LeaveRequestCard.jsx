@@ -7,12 +7,13 @@ import {
   hhmm, formatDuration, totalShiftMinutes, attendanceImpactNote,
   isSundayDate,
 } from '@/lib/leaveRequestUtils';
+import { toast } from '@/components/ui/use-toast';
 
 // Ringkasan satu pengajuan izin + jadwal penggantinya. `footer` untuk tombol aksi.
 const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => {
   const openProof = async () => {
     const { data, error } = await supabase.storage.from('leave-proofs').createSignedUrl(request.proof_path, 600);
-    if (error || !data?.signedUrl) { window.alert('Gagal membuka surat dokter.'); return; }
+    if (error || !data?.signedUrl) { toast({ title: 'Gagal membuka surat dokter', variant: 'destructive' }); return; }
     window.open(data.signedUrl, '_blank', 'noopener');
   };
   const status = requestStatusMeta(request);
@@ -44,7 +45,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
               </p>
             )}
           </div>
-          <span className={cn('text-[11px] font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
+          <span className={cn('text-xs font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
             {status.label}
           </span>
         </div>
@@ -96,7 +97,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
         )}
 
         {shifts.length > 0 && (
-          <p className="text-[11px] text-sky-800 bg-sky-50 border border-sky-100 rounded-app-sm px-3 py-2">
+          <p className="text-xs text-sky-800 bg-sky-50 border border-sky-100 rounded-app-sm px-3 py-2">
             {attendanceImpactNote(request.is_partial)}
           </p>
         )}

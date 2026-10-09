@@ -203,7 +203,7 @@ const AccountingCategoryManager = () => {
           <div key={cat.id} className="border border-slate-200 rounded-app-sm overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-slate-50 hover:bg-slate-100 transition-colors">
               <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpand(cat.id)}>
-                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />}
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-500 shrink-0 mt-0.5 sm:mt-0" /> : <ChevronRight className="w-4 h-4 text-slate-500 shrink-0 mt-0.5 sm:mt-0" />}
                 <span className="font-medium text-slate-700 break-words min-w-0">{cat.category_name}</span>
                 <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full shrink-0">{catSubs.length} Sub</span>
               </div>
@@ -223,7 +223,7 @@ const AccountingCategoryManager = () => {
             {isExpanded && (
               <div className="bg-white p-2 space-y-1 border-t border-slate-100">
                 {catSubs.length === 0 ? (
-                  <p className="text-xs text-slate-400 pl-9 py-2 italic">Belum ada sub-kategori.</p>
+                  <p className="text-xs text-slate-500 pl-9 py-2 italic">Belum ada sub-kategori.</p>
                 ) : (
                   catSubs.map(sub => (
                     <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pl-9 pr-2 py-2 rounded hover:bg-slate-50 group">
@@ -232,13 +232,13 @@ const AccountingCategoryManager = () => {
                         <span className="text-sm text-slate-600 break-words">{sub.subcategory_name}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-purple-600" title="Gabungkan ke sub-kategori lain (transaksi lama ikut pindah, ini terhapus)">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenMergeSubCat(sub)} className="h-6 w-6 text-slate-500 hover:text-purple-600" title="Gabungkan ke sub-kategori lain (transaksi lama ikut pindah, ini terhapus)">
                           <GitMerge className="w-3 h-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-400 hover:text-app-accent">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditSubCat(sub)} className="h-6 w-6 text-slate-500 hover:text-app-accent">
                           <Edit2 className="w-3 h-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => { setSelectedSubCat(sub); setIsDeleteSubCatOpen(true); }} className="h-6 w-6 text-slate-400 hover:text-red-600">
+                        <Button variant="ghost" size="icon" onClick={() => { setSelectedSubCat(sub); setIsDeleteSubCatOpen(true); }} className="h-6 w-6 text-slate-500 hover:text-red-600">
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
@@ -272,7 +272,7 @@ const AccountingCategoryManager = () => {
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-300" /></div>
         ) : categories.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">Belum ada kategori.</div>
+          <div className="text-center py-12 text-slate-500">Belum ada kategori.</div>
         ) : (
           <div className="space-y-8">
             <div>
@@ -283,7 +283,7 @@ const AccountingCategoryManager = () => {
                 </Button>
               </div>
               {incomeCats.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">Belum ada kategori pemasukan.</p>
+                <p className="text-sm text-slate-500 italic">Belum ada kategori pemasukan.</p>
               ) : renderCategoryList(incomeCats)}
             </div>
 
@@ -295,7 +295,7 @@ const AccountingCategoryManager = () => {
                 </Button>
               </div>
               {expenseCats.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">Belum ada kategori pengeluaran.</p>
+                <p className="text-sm text-slate-500 italic">Belum ada kategori pengeluaran.</p>
               ) : renderCategoryList(expenseCats)}
             </div>
           </div>

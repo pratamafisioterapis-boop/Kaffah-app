@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const AppointmentPage = () => {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
 
       {/* Hero Banner */}
       <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
@@ -18,7 +18,7 @@ const AppointmentPage = () => {
           <div>
             <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
             <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Appointment Center</h2>
-            <p className="text-sm text-slate-400 mt-0.5">Manage bookings, schedules, and appointment lists</p>
+            <p className="text-sm text-slate-500 mt-0.5">Manage bookings, schedules, and appointment lists</p>
           </div>
         </div>
       </div>
@@ -29,14 +29,14 @@ const AppointmentPage = () => {
         <TabsList className="grid w-full md:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-app">
           <TabsTrigger
             value="calendar"
-            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
           >
             <Calendar className="w-4 h-4" /> Booking Calendar
           </TabsTrigger>
 
           <TabsTrigger
             value="list"
-            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+            className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
           >
             <List className="w-4 h-4" /> Daftar Janji
           </TabsTrigger>

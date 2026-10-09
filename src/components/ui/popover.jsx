@@ -10,7 +10,6 @@ const PopoverTrigger = React.forwardRef(({ className, onClick, ...props }, ref) 
     className={className}
     onClick={(e) => {
       // Ensure click propagates but doesn't get blocked
-      console.log("[Popover] Trigger clicked");
       if (onClick) onClick(e);
     }}
     {...props}

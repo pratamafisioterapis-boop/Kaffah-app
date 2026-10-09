@@ -124,7 +124,7 @@ const AdminAccountSettings = () => {
           <p className="text-sm text-slate-500">Foto ini hanya tampil di splash screen saat Anda membuka aplikasi. Jika tidak diganti, splash screen akan memakai logo klinik.</p>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border">
-              {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 text-slate-400" />}
+              {avatarUrl ? <img src={avatarUrl} alt="Foto Profil" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <UserCircle className="w-6 h-6 text-slate-500" />}
             </div>
             <label className="cursor-pointer">
               <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-app-sm hover:bg-slate-50">
@@ -140,7 +140,7 @@ const AdminAccountSettings = () => {
           <p className="text-sm text-slate-500">Dipakai di invoice pasien jika klinik diatur dengan penanda tangan admin. Invoice yang Anda buat akan memuat nama dan tanda tangan ini.</p>
           <div className="flex items-center gap-4">
             <div className="w-32 h-16 rounded-app-sm overflow-hidden bg-slate-50 flex items-center justify-center border">
-              {signatureUrl ? <img src={signatureUrl} alt="Tanda Tangan" className="w-full h-full object-contain" /> : <span className="text-xs text-slate-400">Belum ada</span>}
+              {signatureUrl ? <img src={signatureUrl} alt="Tanda Tangan" className="w-full h-full object-contain" loading="lazy" decoding="async" /> : <span className="text-xs text-slate-500">Belum ada</span>}
             </div>
             <label className="cursor-pointer">
               <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-app-sm hover:bg-slate-50">

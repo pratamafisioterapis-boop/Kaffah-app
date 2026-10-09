@@ -77,11 +77,11 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
             const note = idx === 0 || form.items[idx - 1]?.scale !== item.scale ? itemNote(item) : null;
             return (
               <React.Fragment key={idx}>
-                {groupHeader && <div className="pt-1 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">{groupHeader}</div>}
-                {note && <p className="rounded-app-sm bg-slate-50 px-3 py-1.5 text-[11px] leading-snug text-slate-500">{note}</p>}
+                {groupHeader && <div className="pt-1 text-xs font-semibold uppercase tracking-wider text-app-accent-hover">{groupHeader}</div>}
+                {note && <p className="rounded-app-sm bg-slate-50 px-3 py-1.5 text-xs leading-snug text-slate-500">{note}</p>}
                 <div className={cn('rounded-app border p-3 transition-colors', answers[idx] !== undefined ? 'border-app-accent/25 bg-app-soft/40' : 'border-slate-200 bg-white')}>
                   <div className="mb-2 flex gap-2 text-sm font-medium text-slate-800">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] text-slate-500">{idx + 1}</span>
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-500">{idx + 1}</span>
                     {item.label}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -95,7 +95,7 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
                           aria-pressed={active}
                           onClick={() => pick(idx, opt.value)}
                           className={cn(
-                            'rounded-full border px-3 py-1.5 text-left text-[13px] leading-tight transition-all active:scale-95',
+                            'rounded-full border px-3 py-1.5 text-left text-[13px] leading-tight transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
                             active ? 'border-app-accent bg-app-accent font-medium text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40',
                             !wide && 'min-w-[38px] text-center'
                           )}
@@ -128,17 +128,17 @@ const FunctionalFormDialog = ({ formId, open, initial, onClose, onApply }) => {
                   <button type="button" onClick={() => setManual('')} className="shrink-0 text-xs text-slate-500 hover:text-rose-600">Hapus</button>
                 )}
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">Jika diisi, skor ini dipakai menggantikan jawaban per item.</p>
+              <p className="mt-1 text-xs text-slate-500">Jika diisi, skor ini dipakai menggantikan jawaban per item.</p>
             </div>
           )}
         </div>
 
         <div className="space-y-2 border-t bg-white px-5 py-3">
-          <div className={cn('rounded-app px-3 py-2 text-sm', result ? 'bg-app-soft text-app-ink' : 'bg-slate-50 text-slate-400')}>
+          <div className={cn('rounded-app px-3 py-2 text-sm', result ? 'bg-app-soft text-app-ink' : 'bg-slate-50 text-slate-500')}>
             {result ? <><span className="font-semibold">{result.text}</span></> : 'Skor akan muncul setelah Anda memilih jawaban.'}
           </div>
           {!enough && done > 0 && (
-            <p className="text-[11px] text-amber-600">Lengkapi minimal {form.minAnswered} item ({missing} lagi) agar skor valid.</p>
+            <p className="text-xs text-amber-600">Lengkapi minimal {form.minAnswered} item ({missing} lagi) agar skor valid.</p>
           )}
           <div className="flex items-center justify-between gap-2">
             <button

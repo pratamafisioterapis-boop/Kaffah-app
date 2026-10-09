@@ -10,7 +10,7 @@ import { formatOnsetDuration, classifyOnsetPhase } from '@/lib/onsetHelpers';
 
 const Field = ({ label, value, full = false }) => (
   <div className={full ? 'col-span-2' : ''}>
-    <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</div>
+    <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</div>
     <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
       {value || <span className="text-slate-300 italic text-xs">—</span>}
     </div>
@@ -91,13 +91,13 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
           <div className="flex items-center gap-2">
             {onEdit && (
               <button onClick={() => { onClose(); onEdit(record); }}
-                className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                 style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
             )}
-            <button onClick={onClose}
-              className="w-8 h-8 rounded-app flex items-center justify-center transition-all"
+            <button aria-label="Tutup" onClick={onClose}
+              className="tap-target w-8 h-8 rounded-app flex items-center justify-center transition-[color,background-color,border-color,box-shadow,transform,opacity]"
               style={{ background: 'rgba(255,255,255,0.1)', color: '#94a3b8' }}>
               <X className="w-4 h-4" />
             </button>
@@ -113,14 +113,14 @@ const MedicalRecordViewSheet = ({ isOpen, onClose, record, onEdit, diagnoses = [
             <Field label="Diagnosis Medis" value={resolveDiagnosis(record.medical_diagnosis)} />
             {record.complaint_onset_date && (
               <div className="col-span-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Onset Keluhan</div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Onset Keluhan</div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-slate-700">
                     Sejak {fmt(record.complaint_onset_date)} — sudah <strong>{onsetDuration}</strong>
                   </span>
                   {onsetPhase && (
                     <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                      className="text-xs font-bold px-2 py-0.5 rounded-full border"
                       style={{
                         background: phaseColorMap[onsetPhase.color].bg,
                         color: phaseColorMap[onsetPhase.color].text,

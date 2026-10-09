@@ -4,7 +4,7 @@ import PageHero from '@/components/shared/PageHero';
 
 const AppointmentsPage = () => {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
 
       {/* Hero Banner */}
       <PageHero image="/hero/clinara-appointment-hero.webp" title="Kelola" highlight="Appointment" description="Kelola jadwal booking kalender pasien." />

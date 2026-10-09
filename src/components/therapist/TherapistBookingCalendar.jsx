@@ -218,10 +218,10 @@ const [historyLoading, setHistoryLoading] = useState(false);
             <ChevronRight className="w-4 h-4 text-slate-600" />
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-app" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
-            <ClipboardList className="w-4 h-4 text-slate-400" />
+            <ClipboardList className="w-4 h-4 text-slate-500" />
           </Button>
           <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-app", isRefreshing && "animate-spin")} onClick={() => fetchDayData(date)} disabled={isRefreshing}>
-            <RefreshCw className="w-4 h-4 text-slate-400" />
+            <RefreshCw className="w-4 h-4 text-slate-500" />
           </Button>
         </div>
       )}
@@ -230,7 +230,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
       {loading ? (
          <div className="flex flex-col justify-center items-center h-64 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
-            <p className="text-slate-400">Memuat jadwal...</p>
+            <p className="text-slate-500">Memuat jadwal...</p>
          </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -240,11 +240,11 @@ const [historyLoading, setHistoryLoading] = useState(false);
               {leaveStatus && (
                   <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-app-sm border-2 border-dashed border-slate-300">
                       <div className="bg-white p-6 rounded-app shadow-lg border border-slate-200 text-center max-w-sm">
-                          <CalendarOff className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                          <CalendarOff className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                           <h3 className="text-lg font-bold text-slate-800">Sedang Cuti</h3>
                           <p className="text-slate-500 mt-1">Anda tidak dapat menerima booking pada tanggal ini.</p>
                           {leaveStatus.reason && (
-                             <p className="text-xs text-slate-400 mt-2 italic">"{leaveStatus.reason}"</p>
+                             <p className="text-xs text-slate-500 mt-2 italic">"{leaveStatus.reason}"</p>
                           )}
                       </div>
                   </div>
@@ -339,7 +339,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
               Terapis: {item.therapist?.name}
             </div>
 
-            <div className="text-xs mt-2 uppercase text-slate-400">
+            <div className="text-xs mt-2 uppercase text-slate-500">
               {item.status}
             </div>
           </div>

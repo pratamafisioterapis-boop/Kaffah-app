@@ -34,6 +34,7 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
+import { confirmAction } from '@/lib/confirmAction';
 
 const FinanceInput = ({ role }) => {
   const { user } = useAuth();
@@ -201,7 +202,7 @@ const FinanceInput = ({ role }) => {
   };
 
   const handleDeleteBank = async (id) => {
-    if(!window.confirm("Hapus akun bank ini?")) return;
+    if(!await confirmAction("Hapus akun bank ini?")) return;
     const { error } = await deleteBankAccount(id);
     if (!error) {
       toast({ title: "Terhapus" });
@@ -288,7 +289,7 @@ const FinanceInput = ({ role }) => {
                       <p className="text-xs text-slate-500 truncate">{ex.sub_category}</p>
                     </div>
                     {ex.description && <p className="text-sm text-slate-600 truncate">{ex.description}</p>}
-                    <p className="text-xs text-slate-400">{ex.bank_account?.bank_name || 'Cash'}</p>
+                    <p className="text-xs text-slate-500">{ex.bank_account?.bank_name || 'Cash'}</p>
                   </div>
                 ))
               )}
@@ -350,7 +351,7 @@ const FinanceInput = ({ role }) => {
                     </div>
                     <p className="font-medium truncate">{inc.source}</p>
                     {inc.description && <p className="text-sm text-slate-600 truncate">{inc.description}</p>}
-                    <p className="text-xs text-slate-400">{inc.bank_account?.bank_name || 'Cash'}</p>
+                    <p className="text-xs text-slate-500">{inc.bank_account?.bank_name || 'Cash'}</p>
                   </div>
                 ))
               )}
@@ -416,7 +417,7 @@ const FinanceInput = ({ role }) => {
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-slate-600">{bank.account_number}</p>
-                      <p className="text-xs text-slate-400">{bank.holder_name}</p>
+                      <p className="text-xs text-slate-500">{bank.holder_name}</p>
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <p className="text-xs text-slate-500 mb-1">Saldo Saat Ini</p>
@@ -461,7 +462,7 @@ const FinanceInput = ({ role }) => {
                         <span className="text-slate-500">Total: Rp {parseFloat(rec.total_amount).toLocaleString('id-ID')}</span>
                         <span className="font-bold text-red-600 whitespace-nowrap">Sisa: Rp {parseFloat(rec.outstanding_amount).toLocaleString('id-ID')}</span>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
                         <span>Jatuh tempo: {rec.due_date ? format(new Date(rec.due_date), 'dd/MM/yyyy') : '-'}</span>
                         {rec.status !== 'Paid' && (
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUpdateReceivableStatus(rec.id, 'Paid')}>

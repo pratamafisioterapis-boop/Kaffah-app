@@ -26,8 +26,8 @@ const cardEntrance = (index, offset, reduceMotion) => ({
 });
 
 // Hover hanya di perangkat dengan mouse; di layar sentuh hover "menempel" setelah tap
-const HOVER_LIFT = '[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg';
-const HOVER_LIFT_SM = '[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md';
+const HOVER_LIFT = '[@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg';
+const HOVER_LIFT_SM = '[@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md';
 
 // Skeleton
 const KPISkeleton = ({ large }) => (

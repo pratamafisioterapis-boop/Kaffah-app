@@ -50,7 +50,7 @@ const renderPatientName = (recap) => {
         <div className="flex flex-col items-center justify-center">
             <span className="font-bold text-slate-900">{mainName}</span>
             {isDifferent && ownerName && (
-                <span className="text-[10px] text-slate-500 font-medium mt-0.5">
+                <span className="text-xs text-slate-500 font-medium mt-0.5">
                     (Paket: {ownerName})
                 </span>
             )}
@@ -317,7 +317,6 @@ const OwnerDailyRecap = () => {
   };
 
   const handleAddClick = () => {
-      console.log("Adding new owner recap - opening modal");
       setSelectedRecap(null);
       setModalMode('add');
       setIsAddModalOpen(true);
@@ -343,8 +342,8 @@ const OwnerDailyRecap = () => {
 
       return (
           <div className="flex flex-wrap gap-1 justify-center">
-              {mappedDiagnoses.slice(0, 3).map((d, i) => <Badge key={i} variant="outline" className="text-[10px] font-normal">{d}</Badge>)}
-              {mappedDiagnoses.length > 3 && <span className="text-[10px] text-slate-400">+{mappedDiagnoses.length - 3}</span>}
+              {mappedDiagnoses.slice(0, 3).map((d, i) => <Badge key={i} variant="outline" className="text-xs font-normal">{d}</Badge>)}
+              {mappedDiagnoses.length > 3 && <span className="text-xs text-slate-500">+{mappedDiagnoses.length - 3}</span>}
           </div>
       );
   };
@@ -361,41 +360,41 @@ const OwnerDailyRecap = () => {
             </svg>
           </div>
           <div>
-            <p className={`${isPWA ? 'text-[10px]' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{useAuth().clinicName || ''}</p>
+            <p className={`${isPWA ? 'text-xs' : 'text-xs'} font-bold tracking-widest text-amber-300/80 uppercase mb-1`}>{useAuth().clinicName || ''}</p>
             <h2 className={`${isPWA ? 'text-base' : 'text-lg sm:text-xl'} font-bold text-white leading-tight`}>Rekap Harian</h2>
-            <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-400 mt-0.5`}>Kelola data kunjungan dan pendapatan harian klinik</p>
+            <p className={`${isPWA ? 'text-xs' : 'text-sm'} text-slate-500 mt-0.5`}>Kelola data kunjungan dan pendapatan harian klinik</p>
           </div>
         </div>
       </div>
       <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
         <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian (Owner)</h1></div>
         <div className="grid grid-cols-4 gap-1.5">
-            <button type="button" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'today' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const today = new Date(now.getTime() + (8 * 60 * 60 * 1000)).toISOString().split('T')[0]; setActiveFilter('today'); setDateRange({ start: today, end: today }); setDateRangeDisplay({ start: displayDateID(today), end: displayDateID(today) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1 ${activeFilter === 'today' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Hari Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Hari Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'week' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const day = now.getDay(); const diffToMonday = (day + 6) % 7; const monday = new Date(now); monday.setDate(now.getDate() - diffToMonday); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); const start = monday.toISOString().split('T')[0]; const end = sunday.toISOString().split('T')[0]; setActiveFilter('week'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1 ${activeFilter === 'week' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Minggu Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Minggu Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'month' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const base = new Date(now.getTime() + (8 * 60 * 60 * 1000)); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const start = formatLocal(new Date(base.getFullYear(), base.getMonth(), 1)); const end = formatLocal(new Date(base.getFullYear(), base.getMonth()+1, 0)); setActiveFilter('month'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1 ${activeFilter === 'month' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Bulan Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Bulan Ini</span>
             </button>
-            <button type="button" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1 ${activeFilter === 'period' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
+            <button type="button" onClick={() => { const now = new Date(); const formatLocal = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; let start, end; if (now.getDate() >= 28) { start = formatLocal(new Date(now.getFullYear(), now.getMonth(), 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth()+1, 27)); } else { start = formatLocal(new Date(now.getFullYear(), now.getMonth()-1, 28)); end = formatLocal(new Date(now.getFullYear(), now.getMonth(), 27)); } setActiveFilter('period'); setDateRange({ start, end }); setDateRangeDisplay({ start: displayDateID(start), end: displayDateID(end) }); }} className={`flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1 ${activeFilter === 'period' ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25' : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'}`}>
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Periode Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Periode Ini</span>
             </button>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1 min-w-0">
-            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             <Input value={dateRangeDisplay.start} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, start: e.target.value})); }} onClick={() => setShowStartCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
             {showStartCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.start)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, start: val})); setDateRangeDisplay(p => ({...p, start: displayDateID(val)})); setShowStartCalendar(false); }} onClose={() => setShowStartCalendar(false)} /></div>)}
           </div>
-          <span className="text-slate-400 font-medium shrink-0 -mx-0.5">-</span>
+          <span className="text-slate-500 font-medium shrink-0 -mx-0.5">-</span>
           <div className="relative flex-1 min-w-0">
-            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             <Input value={dateRangeDisplay.end} onChange={(e) => { setActiveFilter(null); setDateRangeDisplay(p=>({...p, end: e.target.value})); }} onClick={() => setShowEndCalendar(true)} className="h-9 sm:h-10 w-full pl-7 pr-1 text-sm rounded-app border border-[#D8E2EB]" placeholder="dd/MM/yyyy" />
             {showEndCalendar && (<div className="absolute top-full left-0 z-50 mt-1"><DatePicker value={parseDateFromDisplay(dateRangeDisplay.end)} onChange={(val) => { setActiveFilter(null); setDateRange(p => ({...p, end: val})); setDateRangeDisplay(p => ({...p, end: displayDateID(val)})); setShowEndCalendar(false); }} onClose={() => setShowEndCalendar(false)} /></div>)}
           </div>
@@ -403,7 +402,7 @@ const OwnerDailyRecap = () => {
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
-            <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+            <CreditCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 z-10 pointer-events-none" />
             <select
               value={selectedPaymentMethod}
               onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
@@ -416,7 +415,7 @@ const OwnerDailyRecap = () => {
             </select>
             <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
-          <div className="relative flex-1 min-w-0"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-9 sm:h-10 pl-9 text-sm rounded-app border border-[#D8E2EB]" /></div>
+          <div className="relative flex-1 min-w-0"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" /><Input placeholder="Cari Pasien..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-9 sm:h-10 pl-9 text-sm rounded-app border border-[#D8E2EB]" /></div>
         </div>
         <div className="flex gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
@@ -448,7 +447,7 @@ const OwnerDailyRecap = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       {renderPatientName(recap)}
-                      <p className="text-[11px] text-slate-500 mt-0.5">{recap.date ? formatDateIndonesian(recap.date) : '-'}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{recap.date ? formatDateIndonesian(recap.date) : '-'}</p>
                     </div>
                     {recap.end_time ? <Badge className="bg-green-100 text-green-800 border-0 shrink-0">Selesai</Badge> :
                      recap.start_time ? <Badge className="bg-app-accent/15 text-app-accent-hover border-0 shrink-0">Berlangsung</Badge> :
@@ -459,51 +458,51 @@ const OwnerDailyRecap = () => {
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Layanan</p>
-                      <Badge variant="outline" className="font-normal text-[10px]">{serviceLabel}</Badge>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Layanan</p>
+                      <Badge variant="outline" className="font-normal text-xs">{serviceLabel}</Badge>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tipe Pasien</p>
-                      <Badge variant="outline" className="text-[10px] font-normal">{patientTypeLabel}</Badge>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Tipe Pasien</p>
+                      <Badge variant="outline" className="text-xs font-normal">{patientTypeLabel}</Badge>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Paket</p>
                       <p className="font-medium text-app-accent">{packageLabel}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Terapis</p>
                       <p className="text-slate-700">{recap.display_therapist_name}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nominal</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nominal</p>
                       <p className="font-medium text-slate-800 text-sm">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</p>
                       {recap.payment_method && (
-                        <p className="text-[10px] text-slate-400 font-normal capitalize">{recap.payment_method}</p>
+                        <p className="text-xs text-slate-500 font-normal capitalize">{recap.payment_method}</p>
                       )}
                     </div>
                     <div onClick={(e) => e.stopPropagation()} className="text-right">
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Waktu Sesi</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-1">Waktu Sesi</p>
                       {!recap.start_time ? (
-                        <Button size="sm" className="h-7 text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
+                        <Button size="sm" className="h-7 text-xs bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
                           {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>
                       ) : !recap.end_time ? (
                         <div className="flex flex-col items-end gap-1">
-                          <div className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                          <div className="font-mono text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                             {formatTime(new Date(recap.start_time))}
                           </div>
-                          <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
+                          <Button size="sm" className="h-6 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
                             {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
                           </Button>
                         </div>
                       ) : (
                         <div className="flex flex-col items-end bg-slate-100 px-2 py-1 rounded border border-slate-200">
-                          <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.start_time))}</span>
-                          <span className="text-slate-400 text-[8px] leading-none">↓</span>
-                          <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.end_time))}</span>
+                          <span className="font-mono text-slate-700 text-xs font-medium">{formatTime(new Date(recap.start_time))}</span>
+                          <span className="text-slate-500 text-xs leading-none">↓</span>
+                          <span className="font-mono text-slate-700 text-xs font-medium">{formatTime(new Date(recap.end_time))}</span>
                         </div>
                       )}
                     </div>
@@ -530,7 +529,7 @@ const OwnerDailyRecap = () => {
                           ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
                           : 'Invoice belum pernah dikirim ke WhatsApp pasien'
                       }
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                      className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                         recap.invoice_wa_status === 'gagal'
                           ? 'bg-red-50 text-red-600'
                           : recap.invoice_wa_status
@@ -597,9 +596,9 @@ const OwnerDailyRecap = () => {
                         </td>
 
                         <td className="px-4 py-3 text-center max-w-[200px] whitespace-normal">{renderDiagnoses(recap.diagnosis)}</td>
-                        <td className="px-4 py-3 text-center"><Badge variant="outline" className="font-normal text-[10px]">{serviceLabel}</Badge></td>
+                        <td className="px-4 py-3 text-center"><Badge variant="outline" className="font-normal text-xs">{serviceLabel}</Badge></td>
                         <td className="px-4 py-3 text-center">
-                          <Badge variant="outline" className="text-[10px] font-normal">{patientTypeLabel}</Badge>
+                          <Badge variant="outline" className="text-xs font-normal">{patientTypeLabel}</Badge>
                         </td>
                         <td className="px-4 py-3 text-center font-medium text-app-accent">{packageLabel}</td>
                         
@@ -610,7 +609,7 @@ const OwnerDailyRecap = () => {
                         <td className="px-4 py-3 text-center">
                           <div className="font-medium text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
                           {recap.payment_method && (
-                            <div className="text-[10px] text-slate-400 font-normal mt-0.5 capitalize">{recap.payment_method}</div>
+                            <div className="text-xs text-slate-500 font-normal mt-0.5 capitalize">{recap.payment_method}</div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -620,23 +619,23 @@ const OwnerDailyRecap = () => {
                         </td>
                         <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             {!recap.start_time ? (
-                                <Button size="sm" className="h-7 text-[10px] bg-app-accent hover:bg-app-accent-hover w-full" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
+                                <Button size="sm" className="h-7 text-xs bg-app-accent hover:bg-app-accent-hover w-full" onClick={(e) => handleStartTime(e, recap.id)} disabled={loadingRecaps}>
                                     {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                                 </Button>
                             ) : !recap.end_time ? (
                                 <div className="flex flex-col w-full gap-1">
-                                    <div className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 w-full text-center">
+                                    <div className="font-mono text-xs text-blue-700 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 w-full text-center">
                                         {formatTime(new Date(recap.start_time))}
                                     </div>
-                                    <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white w-full" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
+                                    <Button size="sm" className="h-6 text-xs bg-green-600 hover:bg-green-700 text-white w-full" onClick={(e) => handleEndTime(e, recap.id)} disabled={loadingRecaps}>
                                         {loadingRecaps ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
                                     </Button>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center bg-slate-100 px-2 py-1 rounded border border-slate-200 w-full">
-                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.start_time))}</span>
-                                    <span className="text-slate-400 text-[8px] leading-none">↓</span>
-                                    <span className="font-mono text-slate-700 text-[10px] font-medium">{formatTime(new Date(recap.end_time))}</span>
+                                    <span className="font-mono text-slate-700 text-xs font-medium">{formatTime(new Date(recap.start_time))}</span>
+                                    <span className="text-slate-500 text-xs leading-none">↓</span>
+                                    <span className="font-mono text-slate-700 text-xs font-medium">{formatTime(new Date(recap.end_time))}</span>
                                 </div>
                             )}
                         </td>
@@ -662,7 +661,7 @@ const OwnerDailyRecap = () => {
                                   ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
                                   : 'Invoice belum pernah dikirim ke WhatsApp pasien'
                               }
-                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                                 recap.invoice_wa_status === 'gagal'
                                   ? 'bg-red-50 text-red-600'
                                   : recap.invoice_wa_status

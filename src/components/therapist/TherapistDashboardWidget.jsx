@@ -21,7 +21,6 @@ const TherapistDashboardWidget = () => {
   const loadData = async () => {
     if (!user?.id) return;
     try {
-      console.log(`🔄 [TherapistDashboardWidget] Loading dashboard data for user: ${user.id}`);
       setLoading(true);
       setError(null);
       
@@ -38,7 +37,6 @@ const TherapistDashboardWidget = () => {
           throw new Error("Profil terapis tidak ditemukan.");
       }
 
-      console.log(`✅ [TherapistDashboardWidget] Profile loaded:`, profileData.name);
       setTherapistProfile(profileData);
 
       // 2. Fetch Today's Stats from Daily Recaps (Not Target Progress)
@@ -53,7 +51,6 @@ const TherapistDashboardWidget = () => {
           console.error(`❌ [TherapistDashboardWidget] Error fetching daily recaps:`, recapsError);
           // Don't block whole dashboard if just stats fail
       } else {
-          console.log(`✅ [TherapistDashboardWidget] Today's recaps fetched:`, recapsData?.length || 0);
           setTodayRecapsCount(recapsData?.length || 0);
       }
 
@@ -94,7 +91,7 @@ const TherapistDashboardWidget = () => {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />

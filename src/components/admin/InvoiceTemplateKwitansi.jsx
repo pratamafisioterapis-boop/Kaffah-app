@@ -113,7 +113,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
         {clinic.logo_url
           ? (
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ display: 'block', height: '104px', width: 'auto', maxWidth: '380px', objectFit: 'contain' }} />
+              <img src={clinic.logo_url} alt="logo" crossOrigin="anonymous" style={{ display: 'block', height: '104px', width: 'auto', maxWidth: '380px', objectFit: 'contain' }} loading="lazy" decoding="async" />
             </div>
           )
           : <p style={{ fontSize: '22px', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>{(clinic.name || '').toUpperCase()}</p>}
@@ -223,7 +223,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
       <div style={{ marginTop: '34px', marginLeft: 'auto', textAlign: 'center', width: '170px' }}>
         <p style={{ fontWeight: 600, margin: 0, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: MUTED }}>Cashier</p>
         <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {signatureUrl && <img src={signatureUrl} alt="" crossOrigin="anonymous" style={{ maxHeight: '66px', maxWidth: '130px' }} />}
+          {signatureUrl && <img src={signatureUrl} alt="" crossOrigin="anonymous" style={{ maxHeight: '66px', maxWidth: '130px' }} loading="lazy" decoding="async" />}
         </div>
         <p style={{ fontWeight: 700, margin: 0, paddingTop: '6px', borderTop: `1px solid ${INK}` }}>{cashier}</p>
       </div>

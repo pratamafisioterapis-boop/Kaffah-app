@@ -46,6 +46,7 @@ import { formatPackageData, downloadCSV } from '@/lib/utils';
 import { format, isBefore, startOfDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import EditPackageStatusModal from '@/components/admin/EditPackageStatusModal';
+import { confirmAction } from '@/lib/confirmAction';
 
 const OwnerPackageStatusManagement = () => {
   const { toast } = useToast();
@@ -167,7 +168,7 @@ const OwnerPackageStatusManagement = () => {
     if (!idsToDelete.length) return;
     
     // If single delete, confirm
-    if (idsToDelete.length === 1 && !window.confirm("Are you sure you want to delete this package record?")) return;
+    if (idsToDelete.length === 1 && !await confirmAction("Are you sure you want to delete this package record?")) return;
 
     setProcessingBulk(true);
     try {
@@ -262,7 +263,7 @@ const OwnerPackageStatusManagement = () => {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-app-sm border shadow-sm">
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <Input 
             placeholder="Cari pasien atau paket..." 
             value={searchTerm}
@@ -271,11 +272,11 @@ const OwnerPackageStatusManagement = () => {
           />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={fetchData} disabled={loading} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
+          <Button variant="outline" onClick={fetchData} disabled={loading} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
+          <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
@@ -471,7 +472,7 @@ const OwnerPackageStatusManagement = () => {
                                         <Calendar className="w-3 h-3 mr-1" /> 
                                         {pkg.formatted_start_date}
                                     </div>
-                                    <div className="flex items-center text-slate-400">
+                                    <div className="flex items-center text-slate-500">
                                         <Clock className="w-3 h-3 mr-1" /> 
                                         {displayEndDate ? format(new Date(displayEndDate), 'dd MMM yyyy', { locale: id }) : '-'}
                                     </div>

@@ -60,7 +60,6 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
             description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`,
             categoryName: sub.parent_category?.category_name
           }));
-        console.log("[AdminExpenseForm] Loaded Subcategories:", mappedSubcats.length);
         setSubcategories(mappedSubcats);
       }
     } catch (err) {

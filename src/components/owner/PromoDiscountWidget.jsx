@@ -137,7 +137,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
   }, [dateRange]);
 
   return (
-    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
+    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
       {/* Header */}
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">

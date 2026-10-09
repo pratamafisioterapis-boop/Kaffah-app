@@ -265,16 +265,16 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
         {kpis.map((k, i) => (
-          <div key={i} className={`bg-white rounded-app-lg border ${k.border} border-l-4 ${k.accent} shadow-sm hover:shadow-md transition-all p-4 md:p-5`}>
+          <div key={i} className={`bg-white rounded-app-lg border ${k.border} border-l-4 ${k.accent} shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] p-4 md:p-5`}>
             <div className="flex items-start justify-between mb-3">
               <div className={`w-10 h-10 rounded-app ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`w-5 h-5 ${k.color}`} />
               </div>
-              {k.sub && <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${k.bg} ${k.color}`}>{k.sub}</span>}
+              {k.sub && <span className={`text-xs font-bold px-2 py-1 rounded-full ${k.bg} ${k.color}`}>{k.sub}</span>}
             </div>
             <p className={`text-2xl md:text-3xl font-black leading-none ${k.color}`}>{fmtShort(k.value)}</p>
-            <p className="text-xs text-slate-400 font-medium mt-1.5">{k.label}</p>
-            <p className="text-[10px] text-slate-300 mt-0.5">{fmt(k.value)}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1.5">{k.label}</p>
+            <p className="text-xs text-slate-300 mt-0.5">{fmt(k.value)}</p>
           </div>
         ))}
       </div>
@@ -286,10 +286,10 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Breakdown Revenue</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Sumber pendapatan periode ini</p>
+              <p className="text-xs text-slate-500 mt-0.5">Sumber pendapatan periode ini</p>
             </div>
-            <button onClick={fetchData} className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100">
-              <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+            <button aria-label="Muat ulang" onClick={fetchData} className="tap-target w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100">
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
             </button>
           </div>
           <div className="space-y-3">
@@ -302,7 +302,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-slate-800">{fmtShort(r.value)}</span>
-                    <span className="text-[10px] text-slate-400 w-8 text-right">{r.pct}%</span>
+                    <span className="text-xs text-slate-500 w-8 text-right">{r.pct}%</span>
                   </div>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -321,11 +321,11 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <div className="mb-3">
             <h3 className="text-sm font-bold text-slate-800">Tren Harian</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Revenue & pengeluaran per hari</p>
+            <p className="text-xs text-slate-500 mt-0.5">Revenue & pengeluaran per hari</p>
           </div>
           <div className="flex items-center gap-4 mb-3">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full bg-emerald-500" /><span className="text-[11px] text-slate-400 font-medium">Revenue</span></div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full bg-rose-400" /><span className="text-[11px] text-slate-400 font-medium">Pengeluaran</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full bg-emerald-500" /><span className="text-xs text-slate-500 font-medium">Revenue</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full bg-rose-400" /><span className="text-xs text-slate-500 font-medium">Pengeluaran</span></div>
           </div>
           <div className="h-[180px] md:h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -363,11 +363,11 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">Revenue per Terapis</h3>
-              <p className="text-xs text-slate-400">Kontribusi revenue per terapis</p>
+              <p className="text-xs text-slate-500">Kontribusi revenue per terapis</p>
             </div>
           </div>
           {therapistRevenue.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">Belum ada data</p>
+            <p className="text-slate-500 text-sm text-center py-8">Belum ada data</p>
           ) : (
             <div className="space-y-3">
               {therapistRevenue.map((t, i) => {
@@ -378,7 +378,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                   <div key={t.fullName} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-black text-slate-400 w-4 shrink-0">#{i + 1}</span>
+                        <span className="text-xs font-black text-slate-500 w-4 shrink-0">#{i + 1}</span>
                         <span className="text-xs font-semibold text-slate-700 truncate">{t.name}</span>
                       </div>
                       <span className="text-xs font-black text-slate-800 shrink-0">{fmtShort(t.revenue)}</span>
@@ -401,11 +401,11 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">Revenue per Tipe Pasien</h3>
-              <p className="text-xs text-slate-400">Breakdown berdasarkan jenis kunjungan</p>
+              <p className="text-xs text-slate-500">Breakdown berdasarkan jenis kunjungan</p>
             </div>
           </div>
           {patientTypeRevenue.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">Belum ada data</p>
+            <p className="text-slate-500 text-sm text-center py-8">Belum ada data</p>
           ) : (
             <div className="space-y-3">
               {patientTypeRevenue.map((p, i) => {
@@ -419,7 +419,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs font-black text-slate-800">{fmtShort(p.revenue)}</span>
-                        <span className="text-[10px] text-slate-400 w-7 text-right">{p.pct}%</span>
+                        <span className="text-xs text-slate-500 w-7 text-right">{p.pct}%</span>
                       </div>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -440,7 +440,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5">
           <h3 className="text-sm font-bold text-slate-800 mb-4">Transaksi Terbaru</h3>
           {recentTransactions.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">Belum ada transaksi</p>
+            <p className="text-slate-500 text-sm text-center py-8">Belum ada transaksi</p>
           ) : (
             <div className="space-y-2">
               {recentTransactions.map((tx, i) => (
@@ -453,7 +453,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{tx.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{format(parseISO(tx.date), 'dd MMM yyyy', { locale: idLocale })}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{format(parseISO(tx.date), 'dd MMM yyyy', { locale: idLocale })}</p>
                   </div>
                   <p className={`text-xs font-black shrink-0 ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {tx.type === 'income' ? '+' : '-'}{fmtShort(tx.amount)}
@@ -469,17 +469,17 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Breakdown Pengeluaran</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Per kategori</p>
+              <p className="text-xs text-slate-500 mt-0.5">Per kategori</p>
             </div>
             {data.totalExpenses > 0 && (
               <div className="text-right">
                 <p className="text-base font-black text-rose-600 leading-none">{fmtShort(data.totalExpenses)}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Total</p>
+                <p className="text-xs text-slate-500 mt-0.5">Total</p>
               </div>
             )}
           </div>
           {expenseBreakdown.length === 0 ? (
-            <div className="h-32 flex items-center justify-center text-slate-400 text-sm">
+            <div className="h-32 flex items-center justify-center text-slate-500 text-sm">
               Belum ada pengeluaran di periode ini.
             </div>
           ) : (
@@ -493,7 +493,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-black text-slate-800">{fmtShort(e.amt)}</span>
-                      <span className="text-[10px] text-slate-400 w-7 text-right">{e.pct}%</span>
+                      <span className="text-xs text-slate-500 w-7 text-right">{e.pct}%</span>
                     </div>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">

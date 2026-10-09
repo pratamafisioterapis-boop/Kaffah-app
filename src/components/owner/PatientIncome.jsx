@@ -84,7 +84,6 @@ package_tracking_id,
 
         if (fetchError) throw fetchError;
 
-        console.log("📦 Raw Data Fetched:", rawData?.length, "records");
 
         if (!rawData || rawData.length === 0) {
   setIncomeData([]);
@@ -166,7 +165,6 @@ const paymentMethod =
   }))
   .sort((a, b) => new Date(b.recapDate) - new Date(a.recapDate));
 
-        console.log("📊 Processed Patient List:", groupedList);
 
         // 4. Calculate Summary
         setIncomeData(groupedList);
@@ -314,7 +312,7 @@ const realIncome = filteredIncomeData.reduce(
   
 
 
-<Button variant="outline" size="icon" onClick={handleDownload} disabled={loading || incomeData.length === 0}>
+<Button aria-label="Unduh" variant="outline" size="icon" onClick={handleDownload} disabled={loading || incomeData.length === 0}>
             <Download className="h-4 w-4" />
           </Button>
         </div>

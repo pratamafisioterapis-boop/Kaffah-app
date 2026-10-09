@@ -124,7 +124,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
   return (
     <div className="space-y-6">
       <div className="relative">
-         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
          <Input 
             placeholder="Cari nama, RM, atau no HP..." 
             className="pl-10 h-11"
@@ -212,20 +212,20 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
               <TableHeader className="bg-slate-100 border-b border-slate-300">
                   <TableRow>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('medical_record_number')}>
-                          No. RM {sortBy === 'medical_record_number' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+                          No. RM {sortBy === 'medical_record_number' && <span className="ml-1 text-slate-500">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                       </TableHead>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('full_name')}>
-                          Nama Pasien {sortBy === 'full_name' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+                          Nama Pasien {sortBy === 'full_name' && <span className="ml-1 text-slate-500">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                       </TableHead>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('age')}>
-                          Usia {sortBy === 'age' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+                          Usia {sortBy === 'age' && <span className="ml-1 text-slate-500">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900">Tgl Lahir</TableHead>
                       <TableHead className="font-semibold text-slate-900">Gender</TableHead>
                       <TableHead className="font-semibold text-slate-900">No. HP</TableHead>
                       <TableHead className="font-semibold text-slate-900">Kelengkapan</TableHead>
                       <TableHead className="cursor-pointer select-none font-semibold text-slate-900" onClick={() => handleSort('status')}>
-                          Status {sortBy === 'status' && <span className="ml-1 text-slate-400">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
+                          Status {sortBy === 'status' && <span className="ml-1 text-slate-500">{sortOrder === 'asc' ? '▲' : '▼'}</span>}
                       </TableHead>
                       <TableHead className="text-right font-semibold text-slate-900">Aksi</TableHead>
                   </TableRow>

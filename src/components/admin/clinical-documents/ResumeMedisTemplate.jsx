@@ -65,7 +65,7 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
-            <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} />
+            <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} loading="lazy" decoding="async" />
           </div>
           <div>
             <p style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px', margin: 0 }}>
@@ -203,13 +203,12 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
             <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
             <div style={{ position: 'relative', height: '70px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
               {signatureUrl && (
-                <img src={signatureUrl} style={{ maxHeight: '65px', maxWidth: '160px' }} />
+                <img src={signatureUrl} style={{ maxHeight: '65px', maxWidth: '160px' }} loading="lazy" decoding="async" />
               )}
               {clinic?.stamp_url && (
                 <img
                   src={clinic.stamp_url}
-                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '65px', maxWidth: '65px', objectFit: 'contain' }}
-                />
+                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '65px', maxWidth: '65px', objectFit: 'contain' }} loading="lazy" decoding="async" />
               )}
             </div>
             <div style={{ borderTop: '1px solid #0f172a', width: '180px', margin: '4px auto 0' }} />

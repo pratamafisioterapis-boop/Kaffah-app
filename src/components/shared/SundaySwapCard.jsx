@@ -25,7 +25,7 @@ const SundaySwapCard = ({ request, footer = null }) => {
             <CalendarClock className="w-4 h-4 text-app-accent-bright shrink-0" />
             {formatLongDate(request.swap_date)}
           </p>
-          <span className={cn('text-[11px] font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
+          <span className={cn('text-xs font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
             {rejectedBySub ? 'Ditolak terapis pengganti' : status.label}
           </span>
         </div>

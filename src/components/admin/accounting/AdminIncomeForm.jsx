@@ -77,7 +77,6 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
             description: `Kategori: ${sub.parent_category?.category_name || 'N/A'}`,
             categoryName: sub.parent_category?.category_name
           }));
-        console.log("[AdminIncomeForm] Loaded Subcategories:", mappedSubcats.length);
         setSubcategories(mappedSubcats);
       }
     } catch (err) {

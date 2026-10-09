@@ -18,7 +18,7 @@ const SlideShell = ({ eyebrow, title, dateRange, children }) => {
         </div>
         {periodLabel && (
           <div className="shrink-0 bg-white/10 border border-white/10 rounded-app px-3 py-2 md:px-4 md:py-2.5 text-right">
-            <p className="text-[10px] md:text-xs text-amber-300/80 font-bold uppercase tracking-wider">Periode</p>
+            <p className="text-xs text-amber-300/80 font-bold uppercase tracking-wider">Periode</p>
             <p className="text-xs md:text-sm text-white font-semibold">{periodLabel}</p>
           </div>
         )}

@@ -85,7 +85,6 @@ const TherapistDashboard = () => {
     const fetchProfile = async () => {
       if (!user?.id) return;
       try {
-        console.log(`🔄 [TherapistDashboard] Initializing dashboard for user: ${user.id}`);
         setLoading(true);
         const { data, error } = await getPhysiotherapistByUserId(user.id);
         
@@ -93,7 +92,6 @@ const TherapistDashboard = () => {
           console.error("❌ [TherapistDashboard] Failed to fetch therapist profile:", error);
           toast({ variant: "destructive", title: "Profile Fetch Error", description: "Could not load therapist profile." });
         } else {
-          console.log(`✅ [TherapistDashboard] Therapist profile loaded:`, data?.name);
           setTherapistProfile(data);
         }
       } catch (err) {

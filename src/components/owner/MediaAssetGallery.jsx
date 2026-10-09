@@ -151,7 +151,7 @@ const MediaAssetGallery = () => {
             return (
               <div
                 key={asset.id}
-                className="group bg-white border border-slate-200 rounded-app-sm overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full"
+                className="group bg-white border border-slate-200 rounded-app-sm overflow-hidden [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 flex flex-col h-full"
               >
                 <div className="relative aspect-video bg-slate-100 border-b border-slate-100 overflow-hidden">
                   <img
@@ -181,11 +181,11 @@ const MediaAssetGallery = () => {
                     </Button>
                   </div>
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-semibold text-slate-700 shadow-sm border border-slate-200 uppercase tracking-wide">
+                    <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-xs font-semibold text-slate-700 shadow-sm border border-slate-200 uppercase tracking-wide">
                       {asset.category}
                     </span>
                     {restricted && (
-                      <span className="px-2 py-1 bg-amber-50/90 backdrop-blur-sm rounded text-[10px] font-semibold text-amber-700 shadow-sm border border-amber-200 flex items-center gap-1">
+                      <span className="px-2 py-1 bg-amber-50/90 backdrop-blur-sm rounded text-xs font-semibold text-amber-700 shadow-sm border border-amber-200 flex items-center gap-1">
                         <Users className="w-2.5 h-2.5" /> {restricted} diblokir
                       </span>
                     )}
@@ -199,13 +199,13 @@ const MediaAssetGallery = () => {
 
                   <div className="space-y-2 mt-auto">
                     <div className="flex items-center text-xs text-slate-500 gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
                       <span>
                         {asset.created_at ? format(new Date(asset.created_at), 'dd MMM yyyy, HH:mm', { locale: idLocale }) : '-'}
                       </span>
                     </div>
                     <div className="flex items-center text-xs text-slate-500 gap-2">
-                      <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+                      <HardDrive className="w-3.5 h-3.5 text-slate-500" />
                       <span>{formatFileSize(asset.file_size)}</span>
                     </div>
                   </div>
@@ -227,7 +227,7 @@ const MediaAssetGallery = () => {
         </div>
       ) : (
         <div className="text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-200">
-          <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-medium text-slate-900">Belum ada media</h3>
@@ -281,7 +281,7 @@ const MediaAssetGallery = () => {
 
           <div className="flex-1 overflow-y-auto space-y-1 py-2 max-h-[300px]">
             {physiotherapists.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">Belum ada terapis aktif.</p>
+              <p className="text-sm text-slate-500 text-center py-4">Belum ada terapis aktif.</p>
             ) : (
               physiotherapists.map((p) => {
                 const checked = accessSelected.includes(p.id);
@@ -299,7 +299,7 @@ const MediaAssetGallery = () => {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
                       {p.specialization && (
-                        <p className="text-xs text-slate-400 truncate">{p.specialization}</p>
+                        <p className="text-xs text-slate-500 truncate">{p.specialization}</p>
                       )}
                     </div>
                   </button>
@@ -308,7 +308,7 @@ const MediaAssetGallery = () => {
             )}
           </div>
 
-          <div className="text-xs text-slate-400 pt-2 border-t border-slate-100">
+          <div className="text-xs text-slate-500 pt-2 border-t border-slate-100">
             {accessSelected.length === 0
               ? 'Semua terapis aktif dapat melihat file ini.'
               : `${accessSelected.length} dari ${physiotherapists.length} terapis diblokir (tidak dapat melihat file ini).`}

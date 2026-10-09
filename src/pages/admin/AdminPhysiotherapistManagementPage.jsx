@@ -27,7 +27,7 @@ const AdminPhysiotherapistManagementPage = () => {
 
           <TabsTrigger
             value="schedule"
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
           >
             <CalendarClock className="w-4 h-4" />
             Jadwal
@@ -35,7 +35,7 @@ const AdminPhysiotherapistManagementPage = () => {
 
           <TabsTrigger
             value="overrides"
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
           >
             <CalendarRange className="w-4 h-4" />
             Jadwal Pengganti
@@ -43,7 +43,7 @@ const AdminPhysiotherapistManagementPage = () => {
 
           <TabsTrigger
             value="timeoff"
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
           >
             <CalendarOff className="w-4 h-4" />
             Cuti / Izin
@@ -54,7 +54,7 @@ const AdminPhysiotherapistManagementPage = () => {
         {/* JADWAL */}
         <TabsContent
           value="schedule"
-          className="outline-none animate-in fade-in-50 duration-500"
+          className="outline-none animate-in fade-in duration-200 ease-out"
         >
           <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
@@ -67,7 +67,7 @@ const AdminPhysiotherapistManagementPage = () => {
         {/* JADWAL PENGGANTI */}
         <TabsContent
           value="overrides"
-          className="outline-none animate-in fade-in-50 duration-500"
+          className="outline-none animate-in fade-in duration-200 ease-out"
         >
           <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
@@ -80,7 +80,7 @@ const AdminPhysiotherapistManagementPage = () => {
         {/* CUTI / IZIN */}
         <TabsContent
           value="timeoff"
-          className="outline-none animate-in fade-in-50 duration-500"
+          className="outline-none animate-in fade-in duration-200 ease-out"
         >
           <div className="relative overflow-hidden rounded-app border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />

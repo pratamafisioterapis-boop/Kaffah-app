@@ -163,7 +163,7 @@ export const FeedbackManagementContent = () => {
 
       <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800">Feedback Masuk</h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Badge "Diarahkan ke Google" berarti pasien klik tombol menuju halaman Google Review -- Google tidak
           menyediakan cara untuk memastikan review-nya benar-benar terkirim di sana.
         </p>
@@ -198,7 +198,7 @@ export const FeedbackManagementContent = () => {
                 </div>
               </div>
               {response.comment && <p className="text-sm text-slate-600">{response.comment}</p>}
-              <p className="text-xs text-slate-400">{formatDateIndonesian(response.created_at)}</p>
+              <p className="text-xs text-slate-500">{formatDateIndonesian(response.created_at)}</p>
             </div>
           ))}
         </div>

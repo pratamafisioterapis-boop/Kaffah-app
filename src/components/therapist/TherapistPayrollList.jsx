@@ -64,7 +64,7 @@ const TherapistPayrollList = ({ therapist }) => {
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
         ) : records.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
             Belum ada slip gaji yang diterbitkan.
           </div>
         ) : (
@@ -80,7 +80,7 @@ const TherapistPayrollList = ({ therapist }) => {
                   <p className="text-sm font-medium text-slate-700">
                     {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                   </p>
-                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
                     {STATUS_LABEL[r.status] || STATUS_LABEL.paid}
                   </span>
                 </div>

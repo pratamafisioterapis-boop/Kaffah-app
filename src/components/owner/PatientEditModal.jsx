@@ -22,6 +22,7 @@ import {
     autoFillNickname
 } from '@/lib/patientFormHelpers';
 import { deletePatient, getCachedClinicId } from '@/lib/api';
+import { confirmAction } from '@/lib/confirmAction';
 
 const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
     const { toast } = useToast();
@@ -179,7 +180,7 @@ const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
     };
 
     const handleDelete = async () => {
-        if (!confirm(`Yakin ingin menghapus data pasien ${formData.full_name}? Tindakan ini tidak dapat dibatalkan.`)) return;
+        if (!await confirmAction(`Yakin ingin menghapus data pasien ${formData.full_name}? Tindakan ini tidak dapat dibatalkan.`)) return;
         
         setLoading(true);
         try {
@@ -226,7 +227,7 @@ const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
                                 disabled
                                 className="bg-slate-100 font-mono text-slate-500 cursor-not-allowed"
                             />
-                            <span className="text-[10px] text-slate-400">Tidak dapat diubah</span>
+                            <span className="text-xs text-slate-500">Tidak dapat diubah</span>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="full_name" className={errors.full_name ? "text-red-500" : ""}>

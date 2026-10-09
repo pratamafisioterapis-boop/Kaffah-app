@@ -56,7 +56,7 @@ const OwnerTherapistMedicalRecords = () => {
        {selectedTherapist && isValidUUID(selectedTherapist.id) ? (
           <TherapistMedicalRecords therapist={selectedTherapist} isOwnerView={true} />
        ) : (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-slate-500">
              Silakan pilih terapis terlebih dahulu.
           </div>
        )}

@@ -230,7 +230,7 @@ const ModalAwalManagement = () => {
         <meta name="description" content="Kelola pencatatan modal awal klinik." />
       </Helmet>
 
-      <div className="space-y-5 pb-24 md:pb-8 animate-in fade-in duration-500">
+      <div className="space-y-5 pb-24 md:pb-8 animate-in fade-in duration-200 ease-out">
         {/* ── Hero Header ── */}
         <div className="relative overflow-hidden rounded-app-lg bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white p-5 md:p-7 shadow-xl">
           <div className="absolute -top-10 -right-10 w-44 h-44 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -246,13 +246,13 @@ const ModalAwalManagement = () => {
                   Manajemen Keuangan
                 </p>
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight">Modal Awal</h1>
-                <p className="text-slate-400 text-xs mt-1">Pencatatan suntikan modal & investasi awal klinik.</p>
+                <p className="text-slate-500 text-xs mt-1">Pencatatan suntikan modal & investasi awal klinik.</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex flex-col gap-1 bg-white/10 backdrop-blur-sm border border-white/15 rounded-app px-4 py-2.5">
-                <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Total Modal Awal</span>
+                <span className="text-emerald-300 text-xs font-bold uppercase tracking-wider">Total Modal Awal</span>
                 <span className="text-lg md:text-xl font-bold tabular-nums">{formatCurrency(totalModal)}</span>
               </div>
               <Button
@@ -291,7 +291,7 @@ const ModalAwalManagement = () => {
                     >
                       <Landmark className="w-3.5 h-3.5" style={{ color: style.color }} />
                     </div>
-                    <span className="text-[11px] font-bold text-slate-500 truncate">{opt.label}</span>
+                    <span className="text-xs font-bold text-slate-500 truncate">{opt.label}</span>
                   </div>
                   <p className="text-sm md:text-base font-bold tabular-nums text-slate-800 break-words">
                     {formatCurrency(value)}
@@ -311,7 +311,7 @@ const ModalAwalManagement = () => {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-800">Riwayat Modal Awal</h3>
-                <p className="text-xs text-slate-400">{items.length} catatan modal</p>
+                <p className="text-xs text-slate-500">{items.length} catatan modal</p>
               </div>
             </div>
           </div>
@@ -320,14 +320,14 @@ const ModalAwalManagement = () => {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                 <Loader2 className="w-6 h-6 animate-spin mb-2 text-emerald-500" />
-                <p className="text-xs text-slate-400 font-medium">Memuat data...</p>
+                <p className="text-xs text-slate-500 font-medium">Memuat data...</p>
               </div>
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px dashed #e2e8f0' }}>
                 <div className="w-11 h-11 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
                   <AlertCircle className="w-5 h-5 text-slate-300" />
                 </div>
-                <p className="text-sm font-semibold text-slate-400 mb-2">Belum ada data modal awal.</p>
+                <p className="text-sm font-semibold text-slate-500 mb-2">Belum ada data modal awal.</p>
                 <Button variant="link" onClick={openAddForm} className="text-emerald-600">
                   Tambahkan modal awal pertama
                 </Button>
@@ -348,7 +348,7 @@ const ModalAwalManagement = () => {
                         <span className="text-sm font-bold text-slate-800 tabular-nums">
                           {formatCurrency(item.amount)}
                           {Number(item.quantity) > 1 && (
-                            <span className="ml-1 text-[11px] font-semibold text-slate-400">× {item.quantity}</span>
+                            <span className="ml-1 text-xs font-semibold text-slate-500">× {item.quantity}</span>
                           )}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -369,24 +369,24 @@ const ModalAwalManagement = () => {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                        <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                           {formatDate(item.date)}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
+                        <span className="text-xs px-2 py-0.5 rounded-md font-bold" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
                           {item.source}
                         </span>
                         {item.is_fixed_asset && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
                             Aset Tetap
                           </span>
                         )}
                         {item.bank_account && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                             {item.bank_account.bank_name}
                           </span>
                         )}
                         {item.description && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md truncate max-w-[200px]" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md truncate max-w-[200px]" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                             {item.description}
                           </span>
                         )}
@@ -427,7 +427,7 @@ const ModalAwalManagement = () => {
                             <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">{formatDate(item.date)}</td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
                               <span
-                                className="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                                className="px-2 py-0.5 rounded-md text-xs font-bold"
                                 style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}
                               >
                                 {item.source}
@@ -435,12 +435,12 @@ const ModalAwalManagement = () => {
                             </td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
                               {item.is_fixed_asset ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
+                                <span className="text-xs px-2 py-0.5 rounded-md font-bold" style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a' }}>
                                   Aset Tetap
                                   {item.estimated_resale_value ? ` · ${formatCurrency(item.estimated_resale_value)}` : ''}
                                 </span>
                               ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded-md text-slate-400" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                <span className="text-xs px-2 py-0.5 rounded-md text-slate-500" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                                   Consumable
                                 </span>
                               )}
@@ -508,7 +508,7 @@ const ModalAwalManagement = () => {
                   value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                 />
-                {formErrors.date && <p className="text-[11px] text-rose-500">{formErrors.date}</p>}
+                {formErrors.date && <p className="text-xs text-rose-500">{formErrors.date}</p>}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
@@ -522,7 +522,7 @@ const ModalAwalManagement = () => {
                   value={form.quantity}
                   onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
                 />
-                {formErrors.quantity && <p className="text-[11px] text-rose-500">{formErrors.quantity}</p>}
+                {formErrors.quantity && <p className="text-xs text-rose-500">{formErrors.quantity}</p>}
               </div>
             </div>
 
@@ -535,7 +535,7 @@ const ModalAwalManagement = () => {
                 value={form.amount}
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
               />
-              {formErrors.amount && <p className="text-[11px] text-rose-500">{formErrors.amount}</p>}
+              {formErrors.amount && <p className="text-xs text-rose-500">{formErrors.amount}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -552,7 +552,7 @@ const ModalAwalManagement = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {formErrors.source && <p className="text-[11px] text-rose-500">{formErrors.source}</p>}
+              {formErrors.source && <p className="text-xs text-rose-500">{formErrors.source}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -595,7 +595,7 @@ const ModalAwalManagement = () => {
                   <Tag className="w-3.5 h-3.5 mt-0.5 text-slate-500 shrink-0" />
                   <div>
                     <p className="text-xs font-semibold text-slate-700">Aset Tetap (Ada Nilai Jual Kembali)</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Aktifkan jika barang ini masih bisa dijual di kemudian hari, bukan habis pakai/consumable.
                     </p>
                   </div>

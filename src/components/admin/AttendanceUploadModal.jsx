@@ -186,7 +186,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                 className="border-2 border-dashed border-slate-300 rounded-app p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <FileSpreadsheet className="w-12 h-12 text-slate-400 mb-4" />
+                <FileSpreadsheet className="w-12 h-12 text-slate-500 mb-4" />
                 <h3 className="font-semibold text-lg text-slate-700">Klik untuk upload file absensi</h3>
                 <p className="text-slate-500 text-sm mt-1">Format .xls atau .xlsx</p>
                 <input
@@ -229,7 +229,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                       {unmatchedEmployeeNames.map(({ employee_name, department }) => (
                         <div key={employee_name} className="flex items-center gap-2 bg-white border border-slate-200 rounded-app-sm p-2">
                           <span className="font-medium text-slate-700 w-28 truncate">{employee_name}</span>
-                          <span className="text-slate-400 w-24 truncate">{department || '-'}</span>
+                          <span className="text-slate-500 w-24 truncate">{department || '-'}</span>
                           <Select
                             value={linkingPick[employee_name] || ''}
                             onValueChange={(v) => setLinkingPick((prev) => ({ ...prev, [employee_name]: v }))}
@@ -290,7 +290,7 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                           <TableCell className="font-medium">
                             {r.employee_name}
                             {r.matched_therapist_name && (
-                              <div className="text-[11px] text-slate-400 font-normal">↳ {r.matched_therapist_name}</div>
+                              <div className="text-xs text-slate-500 font-normal">↳ {r.matched_therapist_name}</div>
                             )}
                           </TableCell>
                           <TableCell>{r.department || '-'}</TableCell>

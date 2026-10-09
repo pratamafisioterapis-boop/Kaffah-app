@@ -236,12 +236,12 @@ const OnboardingChecklist = () => {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <Icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span className={cn('text-sm font-semibold', done ? 'text-emerald-700 line-through decoration-emerald-300' : 'text-slate-800')}>
                       {step.label}
                     </span>
                     {!step.required && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Opsional</span>
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Opsional</span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 leading-snug">{step.desc}</p>

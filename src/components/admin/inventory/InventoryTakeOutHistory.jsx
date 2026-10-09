@@ -4,6 +4,7 @@ import { Boxes, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { deleteInventoryStockOut } from '@/lib/api';
+import { confirmAction } from '@/lib/confirmAction';
 
 const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
   const { toast } = useToast();
@@ -17,7 +18,7 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
 
   const handleDelete = async (row) => {
     const itemName = row.inventory_items?.item_name || 'barang ini';
-    if (!window.confirm(`Hapus riwayat pengambilan "${itemName}"? Stok akan dikembalikan dan pengeluaran terkait akan dihapus.`)) return;
+    if (!await confirmAction(`Hapus riwayat pengambilan "${itemName}"? Stok akan dikembalikan dan pengeluaran terkait akan dihapus.`)) return;
     setDeletingId(row.id);
     try {
       const { error } = await deleteInventoryStockOut(row.id);
@@ -47,7 +48,7 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
     <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
       {history.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
-          <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>
+          <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-500" /></div>
           <h3 className="text-lg font-medium text-slate-900">Belum ada riwayat pengambilan</h3>
         </div>
       ) : (
@@ -62,25 +63,25 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jumlah</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Jumlah</p>
                     <p className="font-mono text-slate-700">{Number(row.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {row.unit}</p>
                   </div>
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nilai (Rp)</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nilai (Rp)</p>
                     <p className="font-mono font-bold text-rose-600">Rp {Number(row.total_cost).toLocaleString('id-ID')}</p>
                   </div>
                 </div>
                 {row.notes && (
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Catatan</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Catatan</p>
                     <p className="text-slate-500 text-xs">{row.notes}</p>
                   </div>
                 )}
                 <div className="flex items-center justify-end gap-1 pt-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -91,7 +92,7 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
           {/* Desktop: tabel */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
+              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-xs tracking-wider">
                 <tr>
                   <th className="px-6 py-3.5 font-semibold">Tanggal</th>
                   <th className="px-6 py-3.5 font-semibold">Nama Barang</th>
@@ -111,10 +112,10 @@ const InventoryTakeOutHistory = ({ history = [], onEdit, onRefresh }) => {
                     <td className="px-6 py-4 text-slate-500">{row.notes || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-all hover:scale-105" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105" onClick={() => onEdit && onEdit(row)} title="Edit Riwayat">
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-all hover:scale-105" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

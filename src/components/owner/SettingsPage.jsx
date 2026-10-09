@@ -70,7 +70,6 @@ const DiscountTypeManager = () => {
 
   const fetchDiscountTypes = async () => {
     setLoading(true);
-    console.log("🔄 Fetching discount types...");
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
@@ -85,7 +84,6 @@ const DiscountTypeManager = () => {
 
       if (error) throw error;
 
-      console.log(`✅ Fetched ${data?.length || 0} discount types`);
       setDiscountTypes(data || []);
     } catch (error) {
       console.error("❌ Error fetching discount types:", error);
@@ -113,7 +111,6 @@ const DiscountTypeManager = () => {
     }
 
     setIsProcessing(true);
-    console.log(`💾 Saving discount type: "${labelTrimmed}"...`);
 
     const payload = {
       category: 'discount_type',
@@ -126,8 +123,6 @@ const DiscountTypeManager = () => {
     try {
       if (editingDiscountType) {
         // UPDATE
-        console.log("🔄 Operation: UPDATE", editingDiscountType.id);
-        console.log("📦 Payload:", payload);
         
         const { data, error } = await supabase
           .from('operational_options')
@@ -138,13 +133,10 @@ const DiscountTypeManager = () => {
 
         if (error) throw error;
         
-        console.log("✅ Update success:", data);
         toast({ title: "Berhasil", description: "Jenis diskon diperbarui." });
         setDiscountTypes(prev => prev.map(item => item.id === editingDiscountType.id ? data : item));
       } else {
         // INSERT
-        console.log("🔄 Operation: INSERT");
-        console.log("📦 Payload:", payload);
 
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
@@ -158,7 +150,6 @@ const DiscountTypeManager = () => {
 
         if (error) throw error;
 
-        console.log("✅ Insert success:", data);
         toast({ title: "Berhasil", description: "Jenis diskon ditambahkan." });
         setDiscountTypes(prev => [...prev, data]);
       }
@@ -177,7 +168,6 @@ const DiscountTypeManager = () => {
     if (!editingDiscountType) return;
     
     setIsProcessing(true);
-    console.log("🗑️ Deleting discount type:", editingDiscountType.id);
 
     try {
       const { error } = await supabase
@@ -187,7 +177,6 @@ const DiscountTypeManager = () => {
 
       if (error) throw error;
 
-      console.log("✅ Delete success");
       toast({ title: "Terhapus", description: "Jenis diskon dihapus." });
       setDiscountTypes(prev => prev.filter(item => item.id !== editingDiscountType.id));
       setIsDeleteOpen(false);
@@ -239,7 +228,7 @@ const DiscountTypeManager = () => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : discountTypes.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada opsi diskon yang tersedia.</p>
               <Button variant="link" onClick={openAdd} className="text-app-accent mt-2">Tambahkan opsi pertama</Button>
             </div>
@@ -249,7 +238,7 @@ const DiscountTypeManager = () => {
                 key={opt.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
@@ -628,7 +617,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : options.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada opsi yang tersedia.</p>
               <Button variant="link" onClick={openAddDialog} className="text-app-accent mt-2">Tambahkan opsi pertama</Button>
             </div>
@@ -707,7 +696,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
       key={opt.id}
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+      className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
     >
       <div className="flex flex-col">
         <span className="font-medium text-slate-700 ml-2">{opt.label}</span>
@@ -1170,7 +1159,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
 
       {/* Hero Banner */}
       <PageHero image="/hero/clinara-setup-hero.webp" title="Pengaturan" highlight="Sistem" description="Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi." />
@@ -1186,10 +1175,10 @@ const SettingsPage = () => {
                   onClick={() => toggleGroup(group.label)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left"
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{group.label}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{group.label}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-slate-400">{group.items.length}</span>
-                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                    <span className="text-xs font-semibold text-slate-500">{group.items.length}</span>
+                    <ChevronRight className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                   </div>
                 </button>
                 <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>

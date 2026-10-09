@@ -99,7 +99,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                  <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-500">Cari Pasien</label>
                     <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
                         <Input 
                             placeholder="Nama pasien..." 
                             className="h-9 w-40 pl-8 text-xs bg-white" 
@@ -164,7 +164,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                              </TableRow>
                          ) : data.length === 0 ? (
                              <TableRow>
-                                 <TableCell colSpan={3} className="h-32 text-center text-slate-400 italic text-sm">
+                                 <TableCell colSpan={3} className="h-32 text-center text-slate-500 italic text-sm">
                                      Tidak ada riwayat penggunaan ditemukan.
                                  </TableCell>
                              </TableRow>
@@ -187,7 +187,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                                              <div className="flex flex-col">
                                                  <span className="font-medium text-sm text-slate-800">{displayName}</span>
                                                  {isDifferent && (
-                                                     <span className="text-[10px] text-slate-400">
+                                                     <span className="text-xs text-slate-500">
                                                          Owner: {ownerName}
                                                      </span>
                                                  )}
@@ -205,7 +205,7 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                                                          ? row.diagnosis.join(', ') 
                                                          : (row.diagnosis || '-')}
                                                  </span>
-                                                 <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                                 <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                                                      <span>{row.therapist_name}</span>
                                                      {row.service_type && <span>• {row.service_type}</span>}
                                                  </div>

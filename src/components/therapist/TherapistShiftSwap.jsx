@@ -14,6 +14,7 @@ import {
 } from '@/lib/api';
 import { buildShiftOptions, hhmm, timeToMinutes, formatDuration, formatLongDate } from '@/lib/leaveRequestUtils';
 import ShiftSwapCard from '@/components/shared/ShiftSwapCard';
+import { confirmAction } from '@/lib/confirmAction';
 
 const DAY_KEY = 'yyyy-MM-dd';
 
@@ -132,7 +133,7 @@ const TherapistShiftSwap = ({ therapist }) => {
   };
 
   const handleCancel = async (request) => {
-    if (!window.confirm('Batalkan pengajuan tukar shift ini?')) return;
+    if (!await confirmAction('Batalkan pengajuan tukar shift ini?')) return;
     setCancellingId(request.id);
     const { error } = await cancelShiftSwapRequest(request.id);
     setCancellingId(null);
@@ -186,7 +187,7 @@ const TherapistShiftSwap = ({ therapist }) => {
                     disabled={same}
                     onClick={() => setTarget(opt)}
                     className={cn(
-                      'text-left rounded-app border-2 p-3 transition-all',
+                      'text-left rounded-app border-2 p-3 transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                       selected ? 'border-app-accent bg-app-soft' : 'border-slate-200 bg-white hover:border-app-accent/40',
                       same && 'opacity-50 cursor-not-allowed hover:border-slate-200',
                     )}
@@ -196,10 +197,10 @@ const TherapistShiftSwap = ({ therapist }) => {
                       {selected && <Check className="w-4 h-4 text-app-accent" />}
                     </div>
                     <p className="text-sm text-slate-700 flex items-center gap-1.5 mt-0.5">
-                      <Clock3 className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock3 className="w-3.5 h-3.5 text-slate-500" />
                       Jam kerja {opt.start}–{opt.end}
                     </p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       {formatDuration(timeToMinutes(opt.end) - timeToMinutes(opt.start))}{same ? ' · shift Anda saat ini' : ''}
                     </p>
                   </button>
@@ -241,7 +242,7 @@ const TherapistShiftSwap = ({ therapist }) => {
       <div className="lg:col-span-2 space-y-3">
         <h3 className="font-bold text-slate-800">Pengajuan Saya</h3>
         {requests.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
+          <div className="text-center py-8 text-slate-500 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
             <Repeat className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm font-medium">Belum ada pengajuan tukar shift</p>
           </div>

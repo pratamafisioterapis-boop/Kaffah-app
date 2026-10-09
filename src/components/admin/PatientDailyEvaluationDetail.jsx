@@ -52,7 +52,7 @@ const PatientDailyEvaluationDetail = ({ isOpen, onClose, patientData }) => {
                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 </div>
 
-                <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                   {/* Record Header */}
                   <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex flex-wrap gap-y-2 justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -66,7 +66,7 @@ const PatientDailyEvaluationDetail = ({ isOpen, onClose, patientData }) => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-medium bg-white px-3 py-1 rounded-full border border-slate-200 text-slate-600 shadow-sm">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <User className="w-3.5 h-3.5 text-slate-500" />
                       {record.therapist?.full_name || 'Terapis Tidak Diketahui'}
                     </div>
                   </div>
@@ -75,42 +75,42 @@ const PatientDailyEvaluationDetail = ({ isOpen, onClose, patientData }) => {
                   <div className="p-5 grid gap-5">
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-md bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">S</span>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-md bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center text-xs font-extrabold shadow-sm">S</span>
                           Subjective
                         </h4>
                         <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
-                          {record.subjective || <span className="text-slate-400 italic">Tidak ada catatan</span>}
+                          {record.subjective || <span className="text-slate-500 italic">Tidak ada catatan</span>}
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">O</span>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-xs font-extrabold shadow-sm">O</span>
                           Objective
                         </h4>
                         <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
-                          {record.objective || <span className="text-slate-400 italic">Tidak ada catatan</span>}
+                          {record.objective || <span className="text-slate-500 italic">Tidak ada catatan</span>}
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">A</span>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-xs font-extrabold shadow-sm">A</span>
                           Assessment
                         </h4>
                         <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
-                          {record.assessment || <span className="text-slate-400 italic">Tidak ada catatan</span>}
+                          {record.assessment || <span className="text-slate-500 italic">Tidak ada catatan</span>}
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-[10px] font-extrabold shadow-sm">P</span>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-xs font-extrabold shadow-sm">P</span>
                           Plan
                         </h4>
                         <div className="text-sm text-slate-700 bg-slate-50 p-3.5 rounded-app-sm border border-slate-100 whitespace-pre-wrap leading-relaxed min-h-[80px]">
-                          {record.plan || <span className="text-slate-400 italic">Tidak ada catatan</span>}
+                          {record.plan || <span className="text-slate-500 italic">Tidak ada catatan</span>}
                         </div>
                       </div>
                     </div>

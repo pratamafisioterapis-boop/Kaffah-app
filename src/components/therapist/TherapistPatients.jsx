@@ -50,7 +50,7 @@ const TherapistPatients = ({ therapist }) => {
         description={loading ? 'Memuat data pasien...' : `Daftar ${patients.length} pasien yang pernah Anda tangani.`}
         actions={
           <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
           <Input 
             placeholder="Cari nama atau No. RM..." 
             value={search}
@@ -67,12 +67,12 @@ const TherapistPatients = ({ therapist }) => {
         <div className="text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-300">
            <User className="w-12 h-12 text-slate-300 mx-auto mb-3" />
            <p className="text-slate-500 font-medium">Belum ada pasien yang ditemukan.</p>
-           <p className="text-xs text-slate-400">Pasien akan muncul di sini setelah Anda memiliki riwayat pelayanan (Recap) dengan mereka.</p>
+           <p className="text-xs text-slate-500">Pasien akan muncul di sini setelah Anda memiliki riwayat pelayanan (Recap) dengan mereka.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(patient => (
-            <Card key={patient.id} className="hover:shadow-md transition-shadow group flex flex-col h-full border-slate-200">
+            <Card key={patient.id} className="[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow group flex flex-col h-full border-slate-200">
               <CardHeader className="pb-3 relative">
                  <div className="absolute right-4 top-4">
                     {patient.isComplete ? (
@@ -96,7 +96,7 @@ const TherapistPatients = ({ therapist }) => {
                              <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                                 {patient.medical_record_number || 'No RM'}
                              </span>
-                             <span className="text-xs text-slate-400">•</span>
+                             <span className="text-xs text-slate-500">•</span>
                              <span className="text-xs text-slate-600">{patient.formattedAge}</span>
                           </div>
                        </div>
@@ -107,18 +107,18 @@ const TherapistPatients = ({ therapist }) => {
               <CardContent className="space-y-3 text-sm flex-1">
                  <div className="space-y-2">
                     <div className="flex items-center gap-2 text-slate-600">
-                         <Phone className="w-3.5 h-3.5 text-slate-400" /> 
+                         <Phone className="w-3.5 h-3.5 text-slate-500" /> 
                          <span>{patient.formattedPhone}</span>
                     </div>
                     
                     <div className="flex items-center gap-2 text-slate-600">
-                         <Calendar className="w-3.5 h-3.5 text-slate-400" /> 
+                         <Calendar className="w-3.5 h-3.5 text-slate-500" /> 
                          <span>Lahir: {patient.formattedBirthDate}</span>
                     </div>
 
                     {patient.address && (
                       <div className="flex items-start gap-2 text-slate-600">
-                         <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" /> 
+                         <MapPin className="w-3.5 h-3.5 text-slate-500 mt-0.5 shrink-0" /> 
                          <span className="line-clamp-2">{patient.address}</span>
                       </div>
                     )}

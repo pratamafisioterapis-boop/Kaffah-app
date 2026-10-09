@@ -180,7 +180,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                     </div>
                   </div>
                   <div className="text-xs">
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Telepon</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Telepon</p>
                     <p className="text-slate-600">{patient?.phone || '-'}</p>
                   </div>
                 </div>

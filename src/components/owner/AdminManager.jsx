@@ -15,6 +15,7 @@ import { prepareImageForUpload } from '@/lib/imageUpload';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
+import { confirmAction } from '@/lib/confirmAction';
 
 const AdminManager = () => {
   const { toast } = useToast();
@@ -227,7 +228,7 @@ const AdminManager = () => {
   // For simplicity in this demo environment, we will soft delete from public.users which effectively hides them from this list,
   // though they might still technically be in Auth. 
   const handleDelete = async (id) => {
-    if (!window.confirm("Nonaktifkan admin ini? Mereka tidak akan bisa mengakses dashboard.")) return;
+    if (!await confirmAction("Nonaktifkan admin ini? Mereka tidak akan bisa mengakses dashboard.")) return;
     
     const { error } = await supabase.from('users').update({ is_active: false }).eq('id', id);
     
@@ -265,7 +266,7 @@ const AdminManager = () => {
               <div className="h-20 bg-slate-900 relative flex items-center justify-center">
                   <ShieldAlert className="text-slate-700 w-24 h-24 absolute -bottom-8 -right-8 opacity-20" />
                   <div className="z-10 flex flex-col items-center">
-                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{admin.role.replace('_', ' ')}</span>
+                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{admin.role.replace('_', ' ')}</span>
                   </div>
               </div>
               
@@ -274,8 +275,8 @@ const AdminManager = () => {
                     <div className="w-16 h-16 rounded-full bg-white p-1 shadow-lg">
                         <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
                             {admin.avatar_url
-                              ? <img src={admin.avatar_url} alt={admin.full_name} className="w-full h-full object-cover" />
-                              : <User className="w-8 h-8 text-slate-400" />}
+                              ? <img src={admin.avatar_url} alt={admin.full_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                              : <User className="w-8 h-8 text-slate-500" />}
                         </div>
                     </div>
                 </div>
@@ -322,8 +323,8 @@ const AdminManager = () => {
             <div className="flex flex-col items-center gap-2">
                <label className="relative w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-app-accent-bright">
                   {avatarPreview
-                    ? <img src={avatarPreview} alt="Foto profil" className="w-full h-full object-cover" />
-                    : <User className="w-10 h-10 text-slate-400" />}
+                    ? <img src={avatarPreview} alt="Foto profil" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    : <User className="w-10 h-10 text-slate-500" />}
                   <span className="absolute bottom-0 inset-x-0 bg-black/50 text-white flex justify-center py-1">
                     <Camera className="w-4 h-4" />
                   </span>
@@ -399,7 +400,7 @@ const AdminManager = () => {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                 aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
               >
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

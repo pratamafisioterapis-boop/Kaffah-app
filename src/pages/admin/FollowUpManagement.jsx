@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { confirmAction } from '@/lib/confirmAction';
 
 
 const FollowUpManagement = () => {
@@ -39,7 +40,6 @@ const FollowUpManagement = () => {
   // Debug logging
   useEffect(() => {
     if (queueData.length > 0) {
-        console.log('🔍 [FollowUpManagement] queueData updated:', queueData);
     }
   }, [queueData]);
 
@@ -54,7 +54,6 @@ const FollowUpManagement = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'follow_up_queue' },
         (payload) => {
-          console.log('📡 [Realtime] Change received:', payload);
           if (payload.eventType === 'INSERT') {
              toast({ title: "New Item", description: `New ${payload.new.follow_up_type} queue added.` });
              fetchQueue(); 
@@ -98,11 +97,9 @@ const FollowUpManagement = () => {
     setLoading(true);
     try {
       const { data, error } = await getFollowUpQueue(); 
-      console.log('FETCH RESULT:', { data, error });
       if (error) throw error;
       
       const filtered = (data || []);
-      console.log(`✅ [Fetch] Loaded ${filtered.length} valid items after auto-expire`);
       
       console.log(
   'FAILED ITEMS:',
@@ -154,7 +151,6 @@ const FollowUpManagement = () => {
                 throw new Error(`Unknown follow up type: ${type}`);
         }
 
-        console.log('🚀 GENERATE FUNCTION:', functionName);
 
         const { error } = await supabase.rpc(functionName);
 
@@ -238,7 +234,7 @@ const FollowUpManagement = () => {
   };
 
   const handleDelete = async (id) => {
-      if (!confirm("Are you sure you want to delete this item?")) return;
+      if (!await confirmAction("Are you sure you want to delete this item?")) return;
       setProcessingId(id);
       try {
           const { error } = await deleteFollowUpQueue(id);
@@ -306,7 +302,7 @@ const FollowUpManagement = () => {
         return;
     }
 
-    if (!confirm(`Yakin ingin menghapus ${idsToDelete.length} data pada section ini?`)) {
+    if (!await confirmAction(`Yakin ingin menghapus ${idsToDelete.length} data pada section ini?`)) {
         return;
     }
 
@@ -402,7 +398,7 @@ console.log({
   birthday: birthdayQueue.length,
 });
       return (
-          <div className={`border rounded-app p-5 hover:shadow-lg transition-all flex flex-col h-full relative overflow-hidden group ${isSelected ? 'bg-app-soft border-app-accent/25 shadow-md' : 'bg-white border-slate-200'}`}>
+          <div className={`border rounded-app p-5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] flex flex-col h-full relative overflow-hidden group ${isSelected ? 'bg-app-soft border-app-accent/25 shadow-md' : 'bg-white border-slate-200'}`}>
               <div className={`absolute top-0 left-0 w-1 h-full ${
                   item.status === 'sent' ? 'bg-green-500' : 
                   item.status === 'failed' ? 'bg-red-500' : 
@@ -437,7 +433,7 @@ console.log({
                   {item.message_content}
               </div>
               
-              <div className="flex items-center gap-4 text-xs text-slate-400 mb-4 pl-2 border-t border-slate-50 pt-3">
+              <div className="flex items-center gap-4 text-xs text-slate-500 mb-4 pl-2 border-t border-slate-50 pt-3">
                  <div className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-slate-300" />
                     <span>{item.scheduled_date ? format(new Date(item.scheduled_date), 'dd MMM yyyy') : '-'}</span>
@@ -501,7 +497,7 @@ console.log({
   <Button
     size="sm"
     variant="ghost"
-    className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm"
+    className="h-9 w-9 p-0 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm"
     onClick={() => handleDelete(item.id)}
     disabled={processingId === item.id}
   >
@@ -562,7 +558,7 @@ console.log({
                     <MessageCircle className="w-8 h-8 text-slate-300" />
                  </div>
                  <h3 className="text-lg font-medium text-slate-700">Tidak ada data antrian</h3>
-                 <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">Data yang sudah kedaluwarsa atau tidak ada dalam jadwal hari ini tidak ditampilkan.</p>
+                 <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Data yang sudah kedaluwarsa atau tidak ada dalam jadwal hari ini tidak ditampilkan.</p>
                  {typeForGen && (
                     <Button variant="link" onClick={() => handleGenerate(typeForGen)} className="mt-4 text-app-accent">
                         Generate Data Sekarang
@@ -579,7 +575,7 @@ console.log({
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-500 p-6 max-w-[1600px] mx-auto">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200 ease-out p-6 max-w-[1600px] mx-auto">
       {/* Hero Banner */}
       <div className="w-full rounded-app-lg overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-xl border border-slate-700/50 relative">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #d4af6a 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
@@ -594,7 +590,7 @@ console.log({
                 Follow Up Management
                 <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" title="Live Updates Active" />
               </h2>
-              <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan otomatis, pengingat jadwal, dan notifikasi paket</p>
+              <p className="text-sm text-slate-500 mt-0.5">Kelola antrian pesan otomatis, pengingat jadwal, dan notifikasi paket</p>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -654,25 +650,25 @@ console.log({
   className="w-full space-y-6"
 >
         <TabsList className="bg-white p-1.5 border border-slate-200 rounded-app shadow-sm grid grid-cols-2 lg:grid-cols-5 h-auto gap-1">
-          <TabsTrigger value="booking_confirmation" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="booking_confirmation" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] gap-2">
             <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Booking ({bookingQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="post_treatment_follow_up" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="post_treatment_follow_up" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] gap-2">
             <MessageCircle className="w-4 h-4" /> <span className="hidden sm:inline">Follow Up ({postTreatmentQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="expiry_package" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="expiry_package" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] gap-2">
             <Package className="w-4 h-4" /> <span className="hidden sm:inline">Paket ({expiryQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="appointment_reminder" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="appointment_reminder" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] gap-2">
             <Clock className="w-4 h-4" /> <span className="hidden sm:inline">Jadwal ({reminderQueue.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="birthday_greeting" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-all gap-2">
+          <TabsTrigger value="birthday_greeting" className="py-3 rounded-app-sm data-[state=active]:bg-app-soft data-[state=active]:text-app-accent-hover data-[state=active]:font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] gap-2">
             <Gift className="w-4 h-4" /> <span className="hidden sm:inline">Ultah ({birthdayQueue.length})</span>
           </TabsTrigger>
         </TabsList>
 
         <div className="min-h-[500px]">
-            <TabsContent value="booking_confirmation" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TabsContent value="booking_confirmation" className="mt-0 focus-visible:outline-none animate-in fade-in duration-200 ease-out">
                 <QueueSection 
                     data={bookingQueue} 
                     title="Booking Confirmation" 
@@ -680,7 +676,7 @@ console.log({
                     description="Konfirmasi booking appointment yang baru dibuat."
                 />
             </TabsContent>
-            <TabsContent value="post_treatment_follow_up" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TabsContent value="post_treatment_follow_up" className="mt-0 focus-visible:outline-none animate-in fade-in duration-200 ease-out">
                 <QueueSection 
                     data={postTreatmentQueue} 
                     title="Post Treatment & Recap" 
@@ -688,7 +684,7 @@ console.log({
                     description="Follow up H+1/H+3 setelah terapi untuk menanyakan kondisi pasien."
                 />
             </TabsContent>
-            <TabsContent value="expiry_package" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TabsContent value="expiry_package" className="mt-0 focus-visible:outline-none animate-in fade-in duration-200 ease-out">
                 <QueueSection 
                     data={expiryQueue} 
                     title="Package Expiry" 
@@ -696,7 +692,7 @@ console.log({
                     description="Pengingat paket yang akan segera kadaluarsa (H-7, H-3, H-1)."
                 />
             </TabsContent>
-            <TabsContent value="appointment_reminder" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TabsContent value="appointment_reminder" className="mt-0 focus-visible:outline-none animate-in fade-in duration-200 ease-out">
                 <QueueSection 
                     data={reminderQueue} 
                     title="Today's Therapy Schedule" 
@@ -704,7 +700,7 @@ console.log({
                     description="Pengingat jadwal terapi untuk hari ini."
                 />
             </TabsContent>
-            <TabsContent value="birthday_greeting" className="mt-0 focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TabsContent value="birthday_greeting" className="mt-0 focus-visible:outline-none animate-in fade-in duration-200 ease-out">
                 <QueueSection 
                     data={birthdayQueue} 
                     title="Birthday Greetings" 

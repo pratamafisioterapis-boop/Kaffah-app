@@ -125,7 +125,7 @@ const PresentationFullscreen = ({ slides, onClose }) => {
             <button
               key={idx}
               onClick={() => api?.scrollTo(idx)}
-              className={`h-1.5 md:h-2 rounded-full transition-all ${idx === currentIndex ? 'w-6 md:w-8 bg-amber-300' : 'w-1.5 md:w-2 bg-white/30'}`}
+              className={`h-1.5 md:h-2 rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] ${idx === currentIndex ? 'w-6 md:w-8 bg-amber-300' : 'w-1.5 md:w-2 bg-white/30'}`}
             />
           ))}
         </div>

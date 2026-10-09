@@ -304,7 +304,7 @@ setExpandedServices({});
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input 
               placeholder="Cari layanan atau diagnosa..." 
               value={searchQuery}
@@ -336,7 +336,7 @@ setExpandedServices({});
             <Loader2 className="w-10 h-10 animate-spin text-app-accent-bright" />
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 border-2 border-dashed border-slate-200 rounded-app bg-white">
+          <div className="text-center py-20 text-slate-500 border-2 border-dashed border-slate-200 rounded-app bg-white">
             <p>Belum ada layanan yang ditemukan.</p>
             <Button variant="link" onClick={() => handleOpenServiceModal()} className="text-app-accent mt-2">
               Tambah layanan pertama
@@ -367,7 +367,7 @@ setExpandedServices({});
                       onClick={() => toggleService(service.id)}
                     >
                       <div className={`p-1 rounded-md transition-transform duration-200 ${isExpanded ? 'rotate-90 bg-slate-100' : ''}`}>
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
+                        <ChevronRight className="w-5 h-5 text-slate-500" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-800">{service.label}</h3>
@@ -416,7 +416,7 @@ setExpandedServices({});
                       >
                          <div className="p-4 bg-slate-50/50">
                             {serviceDiagnoses.length === 0 ? (
-                               <div className="text-center py-6 text-sm text-slate-400 italic">
+                               <div className="text-center py-6 text-sm text-slate-500 italic">
                                   Belum ada diagnosa untuk layanan ini.
                                   <div className="mt-2 flex justify-center gap-2">
                                      <Button size="sm" variant="outline" onClick={() => handleOpenDiagnosisModal(service.id)}>
@@ -430,23 +430,23 @@ setExpandedServices({});
                             ) : (
                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                   {serviceDiagnoses.map(diagnosis => (
-                                    <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-app-sm hover:border-app-accent/40 hover:shadow-sm transition-all">
+                                    <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-app-sm hover:border-app-accent/40 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]">
                                        <span className="text-sm text-slate-700 font-medium truncate pr-2" title={diagnosis.label}>
                                           {diagnosis.label}
                                           {diagnosis.is_active === false && (
-                                            <Badge variant="outline" className="ml-2 text-[10px] text-slate-400 border-slate-200">Nonaktif</Badge>
+                                            <Badge variant="outline" className="ml-2 text-xs text-slate-500 border-slate-200">Nonaktif</Badge>
                                           )}
                                        </span>
                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button 
                                             onClick={() => handleOpenDiagnosisModal(service.id, diagnosis)}
-                                            className="p-1.5 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-colors"
+                                            className="p-1.5 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-md transition-colors"
                                           >
                                              <Edit2 className="w-3.5 h-3.5" />
                                           </button>
                                           <button 
                                             onClick={() => handleOpenDelete(diagnosis, 'diagnosis')}
-                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                           >
                                              <Trash2 className="w-3.5 h-3.5" />
                                           </button>
@@ -455,7 +455,7 @@ setExpandedServices({});
                                   ))}
                                   <button 
                                     onClick={() => handleOpenDiagnosisModal(service.id)}
-                                    className="flex items-center justify-center p-3 border border-dashed border-slate-300 rounded-app-sm text-sm text-slate-500 hover:text-app-accent hover:border-app-accent/40 hover:bg-app-soft transition-all"
+                                    className="flex items-center justify-center p-3 border border-dashed border-slate-300 rounded-app-sm text-sm text-slate-500 hover:text-app-accent hover:border-app-accent/40 hover:bg-app-soft transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                                   >
                                      <Plus className="w-4 h-4 mr-2" /> Tambah Diagnosa
                                   </button>

@@ -83,15 +83,15 @@ const SetDailyRecapTimeModal = ({
 
                 <div className="bg-slate-50 p-4 rounded-app-sm space-y-3 mb-4 border border-slate-100">
                     <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <Calendar className="w-4 h-4 text-slate-400" />
+                        <Calendar className="w-4 h-4 text-slate-500" />
                         <span className="font-medium">{format(new Date(recap.recap_date), 'dd MMMM yyyy')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <User className="w-4 h-4 text-slate-400" />
+                        <User className="w-4 h-4 text-slate-500" />
                         <span>{recap.patients?.full_name || recap.guest_name || 'Pasien'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <span className="text-slate-400 w-4 text-center font-bold text-xs">Th</span>
+                        <span className="text-slate-500 w-4 text-center font-bold text-xs">Th</span>
                         <span>{recap.therapist_name || '-'}</span>
                     </div>
                 </div>
@@ -100,7 +100,7 @@ const SetDailyRecapTimeModal = ({
                     <div className="space-y-2">
                         <Label htmlFor="start-time">Jam Mulai</Label>
                         <div className="relative">
-                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                             <Input 
                                 id="start-time" 
                                 type="time" 
@@ -113,7 +113,7 @@ const SetDailyRecapTimeModal = ({
                     <div className="space-y-2">
                         <Label htmlFor="end-time">Jam Selesai</Label>
                         <div className="relative">
-                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                             <Input 
                                 id="end-time" 
                                 type="time" 

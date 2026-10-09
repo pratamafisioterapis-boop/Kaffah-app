@@ -111,7 +111,7 @@ const UnfilledMedicalRecords = () => {
          ) : (
             <div className="space-y-4">
               {unfilledData.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-app-sm shadow-sm hover:shadow-md transition-shadow">
+                <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-app-sm shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
                          {item.count}

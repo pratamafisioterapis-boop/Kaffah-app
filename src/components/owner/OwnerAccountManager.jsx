@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
+import { confirmAction } from '@/lib/confirmAction';
 
 const OwnerAccountManager = () => {
   const { toast } = useToast();
@@ -83,7 +84,7 @@ const OwnerAccountManager = () => {
       toast({ variant: "destructive", title: "Tidak Diizinkan", description: "Anda tidak bisa menonaktifkan akun Anda sendiri." });
       return;
     }
-    if (!window.confirm("Nonaktifkan akun owner ini? Mereka tidak akan bisa mengakses dashboard.")) return;
+    if (!await confirmAction("Nonaktifkan akun owner ini? Mereka tidak akan bisa mengakses dashboard.")) return;
 
     const { error } = await supabase.from('users').update({ is_active: false }).eq('id', id);
 
@@ -129,7 +130,7 @@ const OwnerAccountManager = () => {
                 <div className="-mt-12 mb-2 flex justify-center">
                   <div className="w-16 h-16 rounded-full bg-white p-1 shadow-lg">
                     <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center">
-                      <User className="w-8 h-8 text-slate-400" />
+                      <User className="w-8 h-8 text-slate-500" />
                     </div>
                   </div>
                 </div>

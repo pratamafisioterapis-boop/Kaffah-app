@@ -18,7 +18,7 @@ const AdminManagementPage = () => {
   const initialTab = new URLSearchParams(window.location.search).get('tab') || 'admin_staff';
 
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
       {/* Hero Banner */}
       <PageHero image="/hero/clinara-physio-hero.webp" title="Admin" highlight="Management" description="Kelola akun admin, checklist tugas harian, dan riwayat pengerjaannya." />
 

@@ -97,7 +97,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
           </p>
         </div>
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <Input
             placeholder="Cari nama pasien atau No RM..."
             value={searchTerm}
@@ -122,7 +122,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
           filteredGroups.map((group) => (
             <Card 
               key={group.patient.id} 
-              className="hover:shadow-lg transition-all duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white"
+              className="[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white"
               onClick={() => handlePatientClick(group)}
             >
               <div className="h-1 bg-gradient-to-r from-app-accent-bright to-cyan-400 w-full" />
@@ -148,13 +148,13 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
                 
                 <div className="space-y-2.5 text-sm text-slate-600 mb-5 bg-slate-50 p-3 rounded-app-sm border border-slate-100">
                   <div className="flex items-center gap-2.5">
-                    <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
                     <span className="truncate">
                       Terakhir: <span className="font-medium text-slate-900">{format(new Date(group.lastDate), 'dd MMM yyyy', { locale: id })}</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <User className="w-4 h-4 text-slate-500 flex-shrink-0" />
                     <span className="truncate">
                       Oleh: {group.records[0]?.therapist?.full_name || 'Terapis'}
                     </span>
@@ -162,7 +162,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
                 </div>
 
                 <Button 
-                  className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 justify-between group-hover:shadow-sm transition-all"
+                  className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 justify-between group-hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                   variant="outline"
                   size="sm"
                 >

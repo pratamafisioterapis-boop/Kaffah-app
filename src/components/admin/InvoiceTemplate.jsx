@@ -75,7 +75,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
           boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
           marginBottom: '30px'
         }}>
-          <img src={data?.clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '85px' }} />
+          <img src={data?.clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '85px' }} loading="lazy" decoding="async" />
         </div>
 
         <div style={{ textAlign: 'center', color: '#fff', padding: '0 18px' }}>
@@ -303,8 +303,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     {(adminSigner ? adminSignatureUrl : data?.therapist?.signature_url) && (
       <img
         src={adminSigner ? adminSignatureUrl : data.therapist.signature_url}
-        style={{ maxWidth: '110px', maxHeight: '78px', width: 'auto', height: 'auto' }}
-      />
+        style={{ maxWidth: '110px', maxHeight: '78px', width: 'auto', height: 'auto' }} loading="lazy" decoding="async" />
     )}
   </div>
 
@@ -328,8 +327,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
 ) : data?.therapist?.stamp_url ? (
   <img
     src={data.therapist.stamp_url}
-    style={{ width: '120px', marginTop: '5px' }}
-  />
+    style={{ width: '120px', marginTop: '5px' }} loading="lazy" decoding="async" />
 ) : data?.therapist?.license_number ? (
   // Belum ada gambar stempel yang diunggah — tampilkan nama + No. STR/SIP
   // sebagai teks bergaya stempel supaya kwitansi tetap terlihat resmi.
@@ -378,8 +376,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     style={{ 
       width: '110px',
       opacity: 0.25
-    }}
-  />
+    }} loading="lazy" decoding="async" />
 </div>
   {showPatientSignature ? (
   <div style={{ 

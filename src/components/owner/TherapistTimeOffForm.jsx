@@ -75,7 +75,6 @@ const TherapistTimeOffForm = ({ therapist, onSuccess, onCancel }) => {
       leave_type: REASON_TO_LEAVE_TYPE[formData.reason] || 'other'
     };
 
-    console.log("Submitting Time Off Payload:", payload);
 
     // 1. Centralized Validation
     const validation = validateTherapistTimeOff(payload);

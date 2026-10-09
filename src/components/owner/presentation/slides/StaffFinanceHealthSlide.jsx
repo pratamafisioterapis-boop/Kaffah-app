@@ -23,13 +23,13 @@ const StaffFinanceHealthSlide = ({ data, dateRange }) => {
             <ShieldCheck className="h-7 w-7 text-emerald-300" />
             <p className="text-4xl md:text-6xl font-black text-white">{staff?.attendanceRate ?? 100}%</p>
             <p className="text-slate-300 text-sm font-semibold">Kedisiplinan Kehadiran Terapis</p>
-            <p className="text-slate-400 text-xs">Rata-rata seluruh terapis aktif klinik</p>
+            <p className="text-slate-500 text-xs">Rata-rata seluruh terapis aktif klinik</p>
           </div>
           <div className="rounded-app-lg border border-white/10 bg-white/5 p-5 md:p-7 flex flex-col items-center text-center gap-2">
             <ClipboardCheck className="h-7 w-7 text-sky-300" />
             <p className="text-4xl md:text-6xl font-black text-white">{staff?.soapCompletenessRate ?? 100}%</p>
             <p className="text-slate-300 text-sm font-semibold">Kelengkapan Dokumentasi SOAP</p>
-            <p className="text-slate-400 text-xs">Rata-rata seluruh terapis aktif klinik</p>
+            <p className="text-slate-500 text-xs">Rata-rata seluruh terapis aktif klinik</p>
           </div>
         </div>
 
@@ -51,7 +51,7 @@ const StaffFinanceHealthSlide = ({ data, dateRange }) => {
             <p className="font-bold text-sm md:text-base text-white">Ranking Terapis (Jumlah Sesi)</p>
           </div>
           {sessionsByTherapist.length === 0 ? (
-            <p className="text-slate-400 text-sm">Belum ada data pada periode ini.</p>
+            <p className="text-slate-500 text-sm">Belum ada data pada periode ini.</p>
           ) : (
             <div className="flex-1 overflow-y-auto space-y-1.5">
               {sessionsByTherapist.map((t, idx) => (

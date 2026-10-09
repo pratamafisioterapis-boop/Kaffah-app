@@ -34,7 +34,7 @@ const MedicalRecordsPage = () => {
   const basePath = role === 'owner' ? '/owner' : '/admin';
 
   return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-5 animate-in fade-in duration-200 ease-out">
 
       {/* Hero Banner */}
       <PageHero image="/hero/clinara-medrec-hero.webp" title="Rekam" highlight="Medis" description="Pusat data rekam medis pasien dan evaluasi SOAP." />
@@ -43,12 +43,12 @@ const MedicalRecordsPage = () => {
       <Tabs defaultValue="records" className="w-full space-y-5">
         <TabsList className="flex gap-1.5 p-1 w-fit rounded-app h-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
           <TabsTrigger value="records"
-            className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-400">
+            className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-500">
             <FileText className="w-3.5 h-3.5" />
             Rekam Medis
           </TabsTrigger>
           <TabsTrigger value="evaluasi-harian"
-            className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-400">
+            className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-500">
             <Stethoscope className="w-3.5 h-3.5" />
             Evaluasi Harian
           </TabsTrigger>

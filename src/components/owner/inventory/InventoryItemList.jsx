@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, ArrowUpDown, Pencil } from 'lucide-react';
 import { deleteInventoryItem } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { confirmAction } from '@/lib/confirmAction';
 
 const PAGE_SIZE = 8;
 
@@ -20,7 +21,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
   const [sortBy, setSortBy] = useState('name');
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Hapus barang "${item.item_name}" dari daftar? Riwayat pengambilan sebelumnya tidak akan terhapus.`)) return;
+    if (!await confirmAction(`Hapus barang "${item.item_name}" dari daftar? Riwayat pengambilan sebelumnya tidak akan terhapus.`)) return;
     setDeletingId(item.id);
     try {
       const { error } = await deleteInventoryItem(item.id);
@@ -67,7 +68,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
       {items.length > 0 && (
         <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
             <Input
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -78,14 +79,14 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
               <button
                 type="button"
                 onClick={() => handleSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
           <div className="relative sm:w-56">
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value)}
@@ -101,13 +102,13 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
-          <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>
+          <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-500" /></div>
           <h3 className="text-lg font-medium text-slate-900">Belum ada barang di gudang</h3>
           <p className="text-slate-500 max-w-sm mt-1">Tambahkan barang baru melalui formulir di samping.</p>
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
-          <div className="bg-slate-100 p-4 rounded-full mb-3"><Search className="w-8 h-8 text-slate-400" /></div>
+          <div className="bg-slate-100 p-4 rounded-full mb-3"><Search className="w-8 h-8 text-slate-500" /></div>
           <h3 className="text-lg font-medium text-slate-900">Barang tidak ditemukan</h3>
           <p className="text-slate-500 max-w-sm mt-1">Coba kata kunci lain.</p>
         </div>
@@ -128,48 +129,48 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
                       <span className="font-medium text-slate-900">{item.item_name}</span>
                       {isEmpty && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 shrink-0">
                           <AlertTriangle className="w-3 h-3" /> Habis
                         </span>
                       )}
                       {!isEmpty && isLow && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
                           <AlertTriangle className="w-3 h-3" /> Menipis
                         </span>
                       )}
                       {item.subcategory?.subcategory_name ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
                           {item.category?.category_name}: {item.subcategory.subcategory_name}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200 shrink-0">
                           Belum ada kategori
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm" onClick={() => onRestock(item)} title="Tambah Stok">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm" onClick={() => onRestock(item)} title="Tambah Stok">
                         <PackagePlus className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Stok</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Stok</p>
                       <p className="font-mono text-slate-700">{Number(item.current_stock).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item.unit}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Harga/Satuan</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Harga/Satuan</p>
                       <p className="font-mono text-slate-500">Rp {Number(item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nilai Stok</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nilai Stok</p>
                       <p className="font-mono font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
                     </div>
                   </div>
@@ -181,7 +182,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
           {/* Desktop: tabel */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
+              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-xs tracking-wider">
                 <tr>
                   <th className="px-6 py-3.5 font-semibold">Nama Barang</th>
                   <th className="px-6 py-3.5 font-semibold text-right">Stok</th>
@@ -204,21 +205,21 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                         <div className="flex items-center gap-2 flex-wrap">
                           {item.item_name}
                           {isEmpty && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                               <AlertTriangle className="w-3 h-3" /> Habis
                             </span>
                           )}
                           {!isEmpty && isLow && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                               <AlertTriangle className="w-3 h-3" /> Menipis
                             </span>
                           )}
                           {item.subcategory?.subcategory_name ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
                               {item.category?.category_name}: {item.subcategory.subcategory_name}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full border border-dashed border-slate-200">
                               Belum ada kategori
                             </span>
                           )}
@@ -229,13 +230,13 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                       <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-all hover:scale-105" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-app-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105" onClick={() => onEdit && onEdit(item)} title="Edit Barang">
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm transition-all hover:scale-105" onClick={() => onRestock(item)} title="Tambah Stok">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-app-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105" onClick={() => onRestock(item)} title="Tambah Stok">
                             <PackagePlus className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-all hover:scale-105" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105" onClick={() => handleDelete(item)} disabled={deletingId === item.id} title="Hapus Barang">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -251,7 +252,7 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
           {totalPages > 1 && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 bg-slate-50/50">
               <p className="text-xs text-slate-500">
-                Halaman {currentPage} dari {totalPages} <span className="text-slate-400">({filteredItems.length} barang)</span>
+                Halaman {currentPage} dari {totalPages} <span className="text-slate-500">({filteredItems.length} barang)</span>
               </p>
               <div className="flex items-center gap-1.5">
                 <Button

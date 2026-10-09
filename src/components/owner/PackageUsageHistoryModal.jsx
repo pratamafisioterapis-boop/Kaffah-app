@@ -93,7 +93,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
             <div className="space-y-1">
                <span className="text-xs font-medium text-slate-500">Cari Pasien</span>
                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     placeholder="Nama pasien..."
                     value={searchTerm}
@@ -179,7 +179,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
                              <div className="flex flex-col">
                                 <span className="font-semibold text-slate-900">{displayedName}</span>
                                 {isDifferent && (
-                                   <span className="text-[10px] text-slate-400">
+                                   <span className="text-xs text-slate-500">
                                       Owner: {ownerName}
                                    </span>
                                 )}

@@ -53,7 +53,7 @@ const renderPatientName = (recap) => {
     <div className="flex flex-col items-center justify-center">
       <span className="font-bold text-slate-900">{mainName}</span>
       {isDifferent && ownerName && (
-        <span className="text-[10px] text-slate-500 font-medium mt-0.5">
+        <span className="text-xs text-slate-500 font-medium mt-0.5">
           (Paket: {ownerName})
         </span>
       )}
@@ -253,7 +253,6 @@ const DailyRecap = ({ hideControls = false }) => {
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const timeString = `${hours}:${minutes}:${seconds}`;
 
-    console.log(`[UI] Starting recap ${recapId} at ${timeString}`);
 
     setActionLoadingId(recapId);
     try {
@@ -374,7 +373,7 @@ const getPremiumPastelBadge = (text) => {
 
       ))}
       {mappedDiagnoses.length > 3 && (
-        <span className="text-[10px] text-slate-400">
+        <span className="text-xs text-slate-500">
           +{mappedDiagnoses.length - 3}
         </span>
       )}
@@ -400,7 +399,7 @@ const getPremiumPastelBadge = (text) => {
             <div>
               <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-widest mb-1">{clinicName || ''}</p>
               <h1 className="text-lg md:text-2xl font-bold tracking-tight">Rekap Harian</h1>
-              <p className="text-slate-400 text-xs mt-1">Kelola data kunjungan dan pendapatan.</p>
+              <p className="text-slate-500 text-xs mt-1">Kelola data kunjungan dan pendapatan.</p>
             </div>
           </div>
         </div>
@@ -466,7 +465,7 @@ const getPremiumPastelBadge = (text) => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       {renderPatientName(recap)}
-                      <p className="text-[11px] text-slate-500 mt-0.5">{formatDateIndonesian(recap.date)}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{formatDateIndonesian(recap.date)}</p>
                     </div>
                     <div className="shrink-0">
                       {recap.end_time ? (
@@ -480,17 +479,17 @@ const getPremiumPastelBadge = (text) => {
                   </div>
 
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Diagnosa</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-1">Diagnosa</p>
                     <div className="text-slate-600">{renderDiagnoses(recap.diagnosis)}</div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Layanan</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Layanan</p>
                       <p className="text-slate-600">{serviceLabel}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tipe Pasien</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Tipe Pasien</p>
                       <div onClick={(e) => e.stopPropagation()}>
                         <Badge className={cn("text-xs font-medium px-2.5 py-0.5 rounded-md border-0 transition-none", getPremiumPastelBadge(patientTypeLabel))}>
                           {patientTypeLabel}
@@ -498,37 +497,37 @@ const getPremiumPastelBadge = (text) => {
                       </div>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Paket</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Paket</p>
                       <p className="text-app-accent font-semibold">{packageLabel}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Terapis</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Terapis</p>
                       <p className="text-slate-600">{recap.display_therapist_name}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nominal</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nominal</p>
                       <p className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</p>
                       {recap.payment_method && (
-                        <p className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</p>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</p>
                       )}
                     </div>
                   </div>
 
                   <div className="pt-1 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1 mt-2">Waktu Sesi</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-1 mt-2">Waktu Sesi</p>
                     {!recap.start_time ? (
-                      <Button size="sm" className="h-7 w-full text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                      <Button size="sm" className="h-7 w-full text-xs bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                         {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                       </Button>
                     ) : !recap.end_time ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-blue-600 bg-blue-50 rounded px-1.5 py-1">{formatTime(new Date(recap.start_time))}</span>
-                        <Button size="sm" className="h-7 flex-1 text-[10px] bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        <span className="text-xs font-mono text-blue-600 bg-blue-50 rounded px-1.5 py-1">{formatTime(new Date(recap.start_time))}</span>
+                        <Button size="sm" className="h-7 flex-1 text-xs bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
                         </Button>
                       </div>
                     ) : (
-                      <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
+                      <div className="text-xs font-mono text-slate-500 flex items-center gap-1.5">
                         <span>{formatTime(new Date(recap.start_time))}</span>
                         <span className="opacity-50">→</span>
                         <span>{formatTime(new Date(recap.end_time))}</span>
@@ -576,7 +575,7 @@ const getPremiumPastelBadge = (text) => {
                     key={recap.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-all duration-200 cursor-pointer hover:bg-transparent")}
+                    className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 cursor-pointer hover:bg-transparent")}
                     onClick={() => handleRowClick(recap)}
                   >
                      <td className="px-5 py-4 text-center font-medium text-slate-700 whitespace-nowrap">{formatDateIndonesian(recap.date)}</td>
@@ -595,7 +594,7 @@ const getPremiumPastelBadge = (text) => {
                      <td className="px-5 py-4 text-center whitespace-nowrap">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
                        {recap.payment_method && (
-                         <div className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
+                         <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
                      </td>
                      <td className="px-5 py-4 text-center">
@@ -609,20 +608,20 @@ const getPremiumPastelBadge = (text) => {
                      </td>
                      <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {!recap.start_time ? (
-                        <Button size="sm" className="h-7 w-full text-[10px] bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        <Button size="sm" className="h-7 w-full text-xs bg-app-accent hover:bg-app-accent-hover" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                           {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mulai"}
                         </Button>
                       ) : !recap.end_time ? (
                         <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-mono text-blue-600 bg-blue-50 rounded px-1">{formatTime(new Date(recap.start_time))}</span>
-                          <Button size="sm" className="h-6 w-full text-[10px] bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                          <span className="text-xs font-mono text-blue-600 bg-blue-50 rounded px-1">{formatTime(new Date(recap.start_time))}</span>
+                          <Button size="sm" className="h-6 w-full text-xs bg-green-600 hover:bg-green-700" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
                             {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Selesai"}
                           </Button>
                         </div>
                       ) : (
-                        <div className="text-[10px] font-mono text-slate-500 flex flex-col items-center leading-tight">
+                        <div className="text-xs font-mono text-slate-500 flex flex-col items-center leading-tight">
                           <span>{formatTime(new Date(recap.start_time))}</span>
-                          <span className="text-[8px] opacity-50">↓</span>
+                          <span className="text-xs opacity-50">↓</span>
                           <span>{formatTime(new Date(recap.end_time))}</span>
                         </div>
                       )}

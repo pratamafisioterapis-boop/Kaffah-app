@@ -88,7 +88,7 @@ const PatientTable = ({
                 {/* Search & Filters */}
                 <div className="flex-1 w-full bg-white p-2 rounded-app border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                         <Input 
                             placeholder="Cari No RM, Nama, atau No HP..." 
                             value={filters.search}

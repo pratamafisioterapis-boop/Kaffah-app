@@ -74,7 +74,7 @@ const TherapistTimeOffManager = ({ readOnly = false }) => {
       />
 
       {!selectedTherapist ? (
-         <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
+         <div className="flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
             <User className="w-16 h-16 mb-4 opacity-30" />
             <p className="font-medium">Silakan pilih salah satu card terapis di atas untuk melihat{readOnly ? '' : ' dan menambah'} cuti</p>
          </div>

@@ -370,7 +370,7 @@ const handleViewRecord = (record) => {
 
         <div className="relative flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="relative w-full sm:w-52">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
             <input
               placeholder="Cari nama atau RM..."
               value={searchTerm}
@@ -381,16 +381,16 @@ const handleViewRecord = (record) => {
           <div className="flex items-center gap-2">
             {!readOnly && (<>
             <button onClick={handleOpenCreateModal}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25">
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
             <button onClick={() => setImportDialogOpen(true)}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
               <Upload className="w-3.5 h-3.5" /> Import
             </button>
             </>)}
             <button onClick={handleExportCSV}
-              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
+              className="flex flex-1 sm:flex-none items-center justify-center h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]">
               <Download className="w-3.5 h-3.5" /> Export
             </button>
           </div>
@@ -422,7 +422,7 @@ const handleViewRecord = (record) => {
               <div className="w-12 h-12 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
                 <FileText className="w-5 h-5 text-slate-300" />
               </div>
-              <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
+              <p className="text-sm font-semibold text-slate-500">Belum ada data rekam medis</p>
               {!readOnly && (
               <button onClick={handleOpenCreateModal} className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-app-sm" style={{ background: '#eef2ff', color: '#4f46e5' }}>
                 Buat sekarang
@@ -448,7 +448,7 @@ const handleViewRecord = (record) => {
                         <p className="text-xs font-mono text-indigo-500 mt-0.5">{record.patient?.medical_record_number || '-'}</p>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0" style={{
+                    <span className="px-2 py-0.5 rounded-md text-xs font-bold shrink-0" style={{
                       background: isCompleted ? '#f0fdf4' : '#fffbeb',
                       color: isCompleted ? '#059669' : '#d97706',
                       border: `1px solid ${isCompleted ? '#bbf7d0' : '#fde68a'}`
@@ -462,7 +462,7 @@ const handleViewRecord = (record) => {
                     <span>{format(new Date(record.record_date), 'dd MMM yyyy')}</span>
                     {record.therapist_name && (
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                           style={{ background: '#f0fdf4', color: '#059669' }}>
                           {record.therapist_name.charAt(0).toUpperCase()}
                         </div>
@@ -534,7 +534,7 @@ const handleViewRecord = (record) => {
                       <div className="w-12 h-12 rounded-app-lg flex items-center justify-center" style={{ background: '#f1f5f9' }}>
                         <FileText className="w-5 h-5 text-slate-300" />
                       </div>
-                      <p className="text-sm font-semibold text-slate-400">Belum ada data rekam medis</p>
+                      <p className="text-sm font-semibold text-slate-500">Belum ada data rekam medis</p>
                       {!readOnly && (
                       <button onClick={handleOpenCreateModal}
                         className="text-xs font-semibold px-3 py-1.5 rounded-app-sm"
@@ -561,7 +561,7 @@ const handleViewRecord = (record) => {
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                             style={{ background: '#eef2ff', color: '#4f46e5' }}>
                             {(record.patient?.full_name || '?').charAt(0).toUpperCase()}
                           </div>
@@ -572,7 +572,7 @@ const handleViewRecord = (record) => {
                         {format(new Date(record.record_date), 'dd MMM yyyy')}
                       </td>
                       <td className="py-3">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{
+                        <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{
                           background: isCompleted ? '#f0fdf4' : '#fffbeb',
                           color: isCompleted ? '#059669' : '#d97706',
                           border: `1px solid ${isCompleted ? '#bbf7d0' : '#fde68a'}`
@@ -583,7 +583,7 @@ const handleViewRecord = (record) => {
                       <td className="py-3">
                         {record.therapist_name
                           ? <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold"
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                                 style={{ background: '#f0fdf4', color: '#059669' }}>
                                 {record.therapist_name.charAt(0).toUpperCase()}
                               </div>
@@ -597,7 +597,7 @@ const handleViewRecord = (record) => {
                       <td className="py-3" onClick={e => e.stopPropagation()}>
                         {!readOnly && (<DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 transition-all w-7 h-7 rounded-app-sm flex items-center justify-center"
+                            <button aria-label="Opsi lainnya" className="tap-target opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,box-shadow,transform,opacity] w-7 h-7 rounded-app-sm flex items-center justify-center"
                               style={{ background: '#f1f5f9', color: '#64748b' }}>
                               <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
@@ -661,12 +661,12 @@ const handleViewRecord = (record) => {
           </div>
           <div className="flex gap-2 px-5 pb-5">
             <button onClick={() => setDeleteDialogOpen(false)}
-              className="flex-1 h-9 rounded-app text-xs font-semibold transition-all"
+              className="flex-1 h-9 rounded-app text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
               style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
               Batal
             </button>
             <button onClick={confirmDelete}
-              className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-all"
+              className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-[color,background-color,border-color,box-shadow,transform,opacity]"
               style={{ background: '#e11d48' }}>
               Hapus Permanen
             </button>
@@ -698,7 +698,7 @@ const handleViewRecord = (record) => {
                   <div className="flex items-center justify-center w-full">
                       <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-app-sm cursor-pointer bg-slate-50 hover:bg-slate-100">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                              <Upload className="w-8 h-8 mb-2 text-slate-400" />
+                              <Upload className="w-8 h-8 mb-2 text-slate-500" />
                               <p className="mb-2 text-sm text-slate-500"><span className="font-semibold">Klik upload</span> atau drag and drop</p>
                               <p className="text-xs text-slate-500">Hanya file CSV</p>
                           </div>

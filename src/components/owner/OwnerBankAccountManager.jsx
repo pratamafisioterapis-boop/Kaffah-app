@@ -26,6 +26,7 @@ import {
 } from '@/lib/api';
 import { motion } from 'framer-motion';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { confirmAction } from '@/lib/confirmAction';
 
 const formatIDR = (amount) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount || 0);
@@ -101,7 +102,7 @@ const BankAccountForm = ({ initialData, onSuccess, onCancel }) => {
             onChange={e => setFormData({...formData, balance: e.target.value})}
             className="rounded-app border-slate-200 focus:border-cyan-500 focus:ring-cyan-200 font-medium"
           />
-          <p className="text-xs text-slate-400">Saldo sebelum sistem mulai mencatat transaksi. Saldo saat ini dihitung otomatis dari transaksi yang terhubung ke akun ini.</p>
+          <p className="text-xs text-slate-500">Saldo sebelum sistem mulai mencatat transaksi. Saldo saat ini dihitung otomatis dari transaksi yang terhubung ke akun ini.</p>
        </div>
        <div className="flex justify-end gap-3 mt-6 pt-2 border-t border-slate-100">
           <Button type="button" variant="outline" onClick={onCancel} className="rounded-app hover:bg-slate-50">Cancel</Button>
@@ -167,7 +168,7 @@ const FeeForm = ({ bankAccountId, initialData, paymentMethodOptions, onSuccess, 
           placeholder="Contoh: Qris"
           allowCreate={true}
         />
-        <p className="text-xs text-slate-400">Misal: pasien bayar dengan QRIS, bank memotong biaya transaksi.</p>
+        <p className="text-xs text-slate-500">Misal: pasien bayar dengan QRIS, bank memotong biaya transaksi.</p>
       </div>
 
       <div className="space-y-2">
@@ -227,7 +228,7 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
   }, [open, account?.bank_account_id]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Hapus aturan potongan ini?")) return;
+    if (!await confirmAction("Hapus aturan potongan ini?")) return;
     const { error } = await deleteBankAccountFee(id);
     if (error) {
       toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus aturan." });
@@ -265,7 +266,7 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>
             ) : fees.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada aturan potongan untuk akun ini.
               </div>
             ) : (
@@ -280,10 +281,10 @@ const FeeManagerDialog = ({ account, open, onOpenChange, paymentMethodOptions })
                       </p>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-amber-600" onClick={() => { setEditingFee(fee); setIsFormOpen(true); }}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-amber-600" onClick={() => { setEditingFee(fee); setIsFormOpen(true); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(fee.id)}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600" onClick={() => handleDelete(fee.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -398,7 +399,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
   }, [open, account?.bank_account_id]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Hapus penyesuaian saldo ini?")) return;
+    if (!await confirmAction("Hapus penyesuaian saldo ini?")) return;
     const { error } = await deleteBankAccountAdjustment(id);
     if (error) {
       toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus." });
@@ -434,7 +435,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>
             ) : adjustments.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada penyesuaian saldo untuk akun ini.
               </div>
             ) : (
@@ -447,7 +448,7 @@ const AdjustmentManagerDialog = ({ account, open, onOpenChange }) => {
                       </p>
                       <p className="text-xs text-slate-500">{adj.date} {adj.description ? `• ${adj.description}` : ''}</p>
                     </div>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(adj.id)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600" onClick={() => handleDelete(adj.id)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -578,7 +579,7 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
   }, [open]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Hapus transfer ini?")) return;
+    if (!await confirmAction("Hapus transfer ini?")) return;
     const { error } = await deleteBankTransfer(id);
     if (error) {
       toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus." });
@@ -610,7 +611,7 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-violet-500" /></div>
             ) : transfers.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-app border border-dashed border-slate-200 text-sm">
                 Belum ada transfer antar akun.
               </div>
             ) : (
@@ -619,11 +620,11 @@ const TransferManagerDialog = ({ accounts, open, onOpenChange, onTransferDone })
                   <div key={tr.id} className="flex items-center justify-between p-3 rounded-app border border-slate-200 bg-white">
                     <div>
                       <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                        {tr.from_account?.bank_name || '-'} <ArrowLeftRight className="w-3 h-3 text-slate-400" /> {tr.to_account?.bank_name || '-'}
+                        {tr.from_account?.bank_name || '-'} <ArrowLeftRight className="w-3 h-3 text-slate-500" /> {tr.to_account?.bank_name || '-'}
                       </p>
                       <p className="text-xs text-slate-500">{tr.date} &bull; {formatIDR(tr.amount)}{tr.description ? ` • ${tr.description}` : ''}</p>
                     </div>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(tr.id)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600" onClick={() => handleDelete(tr.id)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -672,7 +673,7 @@ const OwnerBankAccountManager = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this bank account?")) return;
+    if (!await confirmAction("Delete this bank account?")) return;
     try {
       const { error } = await deleteBankAccount(id);
       if (error) throw error;
@@ -700,7 +701,7 @@ const OwnerBankAccountManager = () => {
            </Button>
            <Button
               onClick={() => { setEditingAccount(null); setIsDialogOpen(true); }}
-              className="bg-teal-600 hover:bg-teal-700 text-white rounded-app shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 w-full sm:w-auto justify-center whitespace-nowrap"
+              className="bg-teal-600 hover:bg-teal-700 text-white rounded-app shadow-lg shadow-teal-200 transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 w-full sm:w-auto justify-center whitespace-nowrap"
            >
              <Plus className="w-4 h-4 mr-2 shrink-0" /> Add Account
            </Button>
@@ -771,16 +772,16 @@ const OwnerBankAccountManager = () => {
                            <Building className="w-5 h-5" />
                         </div>
                         <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-app-sm" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 rounded-app-sm" title="Sesuaikan Saldo" onClick={() => { setAdjustmentAccount(acc); setIsAdjustmentDialogOpen(true); }}>
                               <SlidersHorizontal className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-app-sm" title="Potongan Bank" onClick={() => { setFeeAccount(acc); setIsFeeDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-amber-50 text-slate-500 hover:text-amber-600 rounded-app-sm" title="Potongan Bank" onClick={() => { setFeeAccount(acc); setIsFeeDialogOpen(true); }}>
                               <Percent className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-teal-50 text-slate-400 hover:text-teal-600 rounded-app-sm" onClick={() => { setEditingAccount({ ...acc, id: acc.bank_account_id, balance: acc.opening_balance }); setIsDialogOpen(true); }}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-teal-50 text-slate-500 hover:text-teal-600 rounded-app-sm" onClick={() => { setEditingAccount({ ...acc, id: acc.bank_account_id, balance: acc.opening_balance }); setIsDialogOpen(true); }}>
                               <Pencil className="w-4 h-4" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-app-sm" onClick={() => handleDelete(acc.bank_account_id)}>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-app-sm" onClick={() => handleDelete(acc.bank_account_id)}>
                               <Trash2 className="w-4 h-4" />
                            </Button>
                         </div>
@@ -792,20 +793,20 @@ const OwnerBankAccountManager = () => {
                          {acc.account_number}
                        </p>
                      ) : (
-                       <p className="text-slate-400 text-xs italic mb-3">Nomor rekening belum diisi</p>
+                       <p className="text-slate-500 text-xs italic mb-3">Nomor rekening belum diisi</p>
                      )}
 
                      <div className="flex justify-between items-end pt-3 border-t border-slate-50">
                         <div className="min-w-0">
-                          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Holder</p>
+                          <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Holder</p>
                           {acc.holder_name ? (
                             <p className="font-medium text-sm text-slate-700 truncate max-w-[120px]" title={acc.holder_name}>{acc.holder_name}</p>
                           ) : (
-                            <p className="text-xs text-slate-400 italic">Belum diisi</p>
+                            <p className="text-xs text-slate-500 italic">Belum diisi</p>
                           )}
                         </div>
                         <div className="text-right shrink-0">
-                           <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Saldo Saat Ini</p>
+                           <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Saldo Saat Ini</p>
                            <p className={`font-bold text-lg tracking-tight ${acc.current_balance < 0 ? 'text-rose-600' : 'text-teal-600'}`}>
                              {formatIDR(acc.current_balance)}
                            </p>

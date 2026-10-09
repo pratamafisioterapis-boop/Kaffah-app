@@ -132,7 +132,7 @@ const TherapistStatusCards = ({
                   navigate('/owner/appointments');
                 }
               }}
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent-bright focus-visible:ring-offset-2 bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[box-shadow,transform] duration-200 ease-out overflow-hidden cursor-pointer active:scale-[0.98]"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-accent-bright focus-visible:ring-offset-2 bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[box-shadow,transform] duration-200 ease-out overflow-hidden cursor-pointer active:scale-[0.98]"
             >
               {/* ── Desktop: layout vertikal lebih besar ── */}
               {!isPWA ? (
@@ -143,7 +143,7 @@ const TherapistStatusCards = ({
                     <div className={`relative shrink-0`}>
                       <div className={`w-16 h-16 rounded-app-lg overflow-hidden ring-2 ${ring}`}>
                         {therapist.avatar_url ? (
-                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center font-bold text-lg text-white ${color}`}>
                             {getInitials(therapist.name)}
@@ -256,7 +256,7 @@ const TherapistStatusCards = ({
                     <div className={`relative shrink-0 ring-2 ${ring} rounded-app`}>
                       <div className="w-12 h-12 rounded-app overflow-hidden bg-slate-100">
                         {therapist.avatar_url ? (
-                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                          <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center font-bold text-sm text-white ${color}`}>
                             {getInitials(therapist.name)}

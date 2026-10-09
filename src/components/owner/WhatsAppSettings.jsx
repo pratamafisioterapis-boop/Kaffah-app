@@ -96,7 +96,7 @@ const WaApiKeySection = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowKey(v => !v)}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                             >
                                 {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -109,7 +109,7 @@ const WaApiKeySection = () => {
                             onChange={(e) => setNumberKey(e.target.value)}
                             placeholder="Isi 'ALL' jika hanya punya 1 nomor terhubung"
                         />
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-500">
                             Wajib diisi agar pesan WhatsApp benar-benar terkirim. Ambil dari menu WhatsApp → API → Number Key di dashboard Watzap, atau isi <code className="px-1 bg-slate-100 rounded">ALL</code> jika klinik hanya punya satu nomor terhubung.
                         </p>
                     </div>
@@ -548,7 +548,7 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
 }}
                         />
                      </div>
-                     <p className="text-xs text-slate-400 mt-4 text-center px-4">
+                     <p className="text-xs text-slate-500 mt-4 text-center px-4">
                         Preview menggunakan data contoh. Tampilan pesan asli akan menyesuaikan data pasien.
                      </p>
                  </div>

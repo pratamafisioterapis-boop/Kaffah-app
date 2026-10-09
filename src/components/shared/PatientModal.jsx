@@ -679,7 +679,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                             {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
                                         </span>
                                     ) : (
-                                        <span className="text-slate-400">Cari nama / no. HP pasien lama...</span>
+                                        <span className="text-slate-500">Cari nama / no. HP pasien lama...</span>
                                     )}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -694,11 +694,11 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                     <CommandList>
                                         {referrerSearching && (
                                             <div className="py-4 flex justify-center">
-                                                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                                <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
                                             </div>
                                         )}
                                         {!referrerSearching && referrerQuery.trim().length < 2 && (
-                                            <div className="py-4 px-3 text-xs text-slate-400 text-center">
+                                            <div className="py-4 px-3 text-xs text-slate-500 text-center">
                                                 Ketik minimal 2 huruf untuk mencari
                                             </div>
                                         )}
@@ -710,7 +710,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                                 <CommandItem key={p.id} value={p.id} onSelect={() => handleSelectReferrer(p)}>
                                                     <div className="flex flex-col">
                                                         <span className="text-sm">{p.full_name}</span>
-                                                        <span className="text-xs text-slate-400">
+                                                        <span className="text-xs text-slate-500">
                                                             {p.phone || '-'}{p.medical_record_number ? ` · ${p.medical_record_number}` : ''}
                                                         </span>
                                                     </div>
@@ -725,12 +725,12 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                             <button
                                 type="button"
                                 onClick={handleClearReferrer}
-                                className="text-[11px] text-red-500 hover:underline flex items-center gap-0.5"
+                                className="text-xs text-red-500 hover:underline flex items-center gap-0.5"
                             >
                                 <X className="w-3 h-3" /> Hapus pilihan referral
                             </button>
                         )}
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-500">
                             Jika pasien ini direferensikan oleh pasien lama, cari &amp; pilih nama pasien tersebut agar reward WhatsApp otomatis terkirim ke pasien lama saat terapi pertama pasien ini selesai.
                         </p>
                     </div>
@@ -785,9 +785,9 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                             <div className="flex items-start gap-3">
                                 <div className="relative w-full max-w-xs">
                                     {ktpPreview ? (
-                                        <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" />
+                                        <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" loading="lazy" decoding="async" />
                                     ) : (
-                                        <div className="flex items-center justify-center h-24 rounded-md border text-slate-400">
+                                        <div className="flex items-center justify-center h-24 rounded-md border text-slate-500">
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         </div>
                                     )}

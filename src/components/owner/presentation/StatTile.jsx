@@ -24,7 +24,7 @@ const StatTile = ({ icon: Icon, label, value, sublabel, accent = 'amber', classN
         <p className="text-slate-300 text-xs md:text-sm font-semibold uppercase tracking-wide">{label}</p>
       </div>
       <p className="text-2xl md:text-4xl font-black text-white leading-none">{value}</p>
-      {sublabel && <p className="text-slate-400 text-xs md:text-sm">{sublabel}</p>}
+      {sublabel && <p className="text-slate-500 text-xs md:text-sm">{sublabel}</p>}
     </div>
   );
 };

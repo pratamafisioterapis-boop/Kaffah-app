@@ -594,7 +594,7 @@ const handleSendManualWA = async () => {
             </style>
           </head>
           <body>
-            <img src="${imgData}" />
+            <img src="${imgData}" loading="lazy" decoding="async" />
           </body>
         </html>
       `);
@@ -673,7 +673,7 @@ const handleSendManualWA = async () => {
 </Button>
 
             <DialogClose asChild>
-              <Button variant="ghost" size="icon">
+              <Button aria-label="Tutup" variant="ghost" size="icon">
                 <X className="w-4 h-4" />
               </Button>
             </DialogClose>
@@ -688,7 +688,7 @@ const handleSendManualWA = async () => {
                 className="flex items-center justify-center bg-white shadow-2xl shrink-0"
                 style={{ width: INVOICE_BASE_WIDTH * previewScale, height: INVOICE_BASE_HEIGHT * previewScale }}
               >
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
               </div>
             ) : (
               <div

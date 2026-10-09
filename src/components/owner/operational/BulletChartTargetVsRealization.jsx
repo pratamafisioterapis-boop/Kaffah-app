@@ -237,7 +237,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
          <CardHeader className="flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-bold text-slate-800">Target vs Realisasi</CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
+            <Button aria-label="Muat ulang" variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
          </CardHeader>
          <CardContent className="flex-1 flex flex-col items-center justify-center text-red-500 text-sm p-6 text-center">
             <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
@@ -249,7 +249,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
   }
 
   return (
-    <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-slate-800">Target vs Realisasi</h2>
@@ -265,7 +265,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
             onClick={fetchData}
             disabled={loading}
             aria-label="Muat ulang target dan realisasi"
-            className="relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
+            className="tap-target relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]"
           >
             <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
           </button>

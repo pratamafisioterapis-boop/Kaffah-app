@@ -18,13 +18,12 @@ const SlotGrid = ({
 
   // Debug log for Task 2 verification
   if (slots.length > 0 && isCutiOrSakit) {
-      console.log(`[SlotGrid] Rendering ${slots.length} slots in DISABLED state due to status: ${leaveStatus}`);
   }
 
   if (!slots || slots.length === 0) {
     return (
       <div className="w-full py-8 text-center bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
-        <span className="text-sm text-slate-400 italic">
+        <span className="text-sm text-slate-500 italic">
            {isSoapLocked ? 'Terapis terkunci: SOAP belum lengkap.' : isCutiOrSakit ? 'Therapist tidak tersedia.' : 'Tidak ada slot tersedia.'}
         </span>
       </div>
@@ -51,10 +50,10 @@ const SlotGrid = ({
               aria-disabled={isDisabled}
               type="button"
               className={cn(
-                "relative px-2 py-2 rounded-md text-xs font-semibold transition-all border shadow-sm flex flex-col items-center justify-center gap-0.5 w-full",
+                "relative px-2 py-2 rounded-md text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] border shadow-sm flex flex-col items-center justify-center gap-0.5 w-full",
                 isDisabled 
                   ? "slot-leave-disabled bg-gray-300 text-gray-600 border-gray-400 cursor-not-allowed opacity-70"
-                  : "bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border-slate-200 hover:border-emerald-200 active:scale-95 cursor-pointer"
+                  : "bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border-slate-200 hover:border-emerald-200 active:scale-[0.97] cursor-pointer"
               )}
             >
               {isDisabled ? (
@@ -64,7 +63,7 @@ const SlotGrid = ({
               ) : (
                  <>
                    <span>{startTime}</span>
-                   <span className="text-[9px] text-slate-400 font-normal">s.d {endTime}</span>
+                   <span className="text-[9px] text-slate-500 font-normal">s.d {endTime}</span>
                  </>
               )}
             </button>

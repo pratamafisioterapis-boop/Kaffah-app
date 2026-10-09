@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import DailyRecap from '@/components/admin/DailyRecap';
+import { confirmAction } from '@/lib/confirmAction';
 
 const OwnerDailyRecap = () => {
   const { toast } = useToast();
@@ -48,7 +49,7 @@ const OwnerDailyRecap = () => {
       return;
     }
 
-    if (!window.confirm(`PERINGATAN: Anda akan menghapus SEMUA data rekap harian dari tanggal ${deleteDateRange.startDate} sampai ${deleteDateRange.endDate}. Tindakan ini tidak dapat dibatalkan. Lanjutkan?`)) {
+    if (!await confirmAction(`PERINGATAN: Anda akan menghapus SEMUA data rekap harian dari tanggal ${deleteDateRange.startDate} sampai ${deleteDateRange.endDate}. Tindakan ini tidak dapat dibatalkan. Lanjutkan?`)) {
         return;
     }
 

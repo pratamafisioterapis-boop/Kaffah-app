@@ -219,7 +219,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
               {activePeriod.start ? format(activePeriod.start, 'dd MMM yyyy', { locale: idLocale }) : '...'} – {activePeriod.end ? format(activePeriod.end, 'dd MMM yyyy', { locale: idLocale }) : '...'}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">Data diperbarui otomatis dari rekap harian 💙</p>
+          <p className="text-xs text-slate-500 mt-0.5">Data diperbarui otomatis dari rekap harian 💙</p>
         </div>
         <Button
           variant="outline"
@@ -237,16 +237,16 @@ const rawMonthlyRecaps = recapsRes.data || [];
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
 
         {/* Card: Jadwal Hari Ini */}
-        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hari Ini</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hari Ini</span>
             <div className="w-8 h-8 rounded-app bg-emerald-50 flex items-center justify-center">
               <Calendar className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
           <div>
             <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.todayAppointments}</p>
-            <p className="text-xs text-slate-400 mt-1">Sesi terapi hari ini</p>
+            <p className="text-xs text-slate-500 mt-1">Sesi terapi hari ini</p>
           </div>
           <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(metrics.todayAppointments * 10, 100)}%` }} />
@@ -254,16 +254,16 @@ const rawMonthlyRecaps = recapsRes.data || [];
         </div>
 
         {/* Card: Total Pasien */}
-        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pasien</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pasien</span>
             <div className="w-8 h-8 rounded-app bg-app-soft flex items-center justify-center">
               <Users className="w-4 h-4 text-app-accent" />
             </div>
           </div>
           <div>
             <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.totalPatients}</p>
-            <p className="text-xs text-slate-400 mt-1">Kunjungan periode ini</p>
+            <p className="text-xs text-slate-500 mt-1">Kunjungan periode ini</p>
           </div>
           <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-app-accent-bright rounded-full" style={{ width: `${Math.min(metrics.totalPatients * 2, 100)}%` }} />
@@ -274,25 +274,25 @@ const rawMonthlyRecaps = recapsRes.data || [];
         <div
           onClick={() => navigate('/therapist/records')}
           className={cn(
-            "rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow",
+            "rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 cursor-pointer [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow",
             metrics.unfilledSoapCount > 0
               ? "bg-rose-50 border-rose-200"
               : "bg-white border-slate-100"
           )}
         >
           <div className="flex items-center justify-between">
-            <span className={cn("text-xs font-semibold uppercase tracking-wider", metrics.unfilledSoapCount > 0 ? "text-rose-400" : "text-slate-400")}>
+            <span className={cn("text-xs font-semibold uppercase tracking-wider", metrics.unfilledSoapCount > 0 ? "text-rose-400" : "text-slate-500")}>
               SOAP
             </span>
             <div className={cn("w-8 h-8 rounded-app flex items-center justify-center", metrics.unfilledSoapCount > 0 ? "bg-rose-100" : "bg-slate-50")}>
-              <AlertCircle className={cn("w-4 h-4", metrics.unfilledSoapCount > 0 ? "text-rose-600" : "text-slate-400")} />
+              <AlertCircle className={cn("w-4 h-4", metrics.unfilledSoapCount > 0 ? "text-rose-600" : "text-slate-500")} />
             </div>
           </div>
           <div>
             <p className={cn("text-3xl font-bold leading-none", metrics.unfilledSoapCount > 0 ? "text-rose-700" : "text-slate-900")}>
               {metrics.unfilledSoapCount}
             </p>
-            <p className={cn("text-xs mt-1", metrics.unfilledSoapCount > 0 ? "text-rose-500" : "text-slate-400")}>
+            <p className={cn("text-xs mt-1", metrics.unfilledSoapCount > 0 ? "text-rose-500" : "text-slate-500")}>
               {metrics.unfilledSoapCount > 0 ? "Kunjungan belum tercatat →" : "Semua sudah tercatat ✓"}
             </p>
           </div>
@@ -305,7 +305,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
         </div>
 
         {/* Card: Target Progress */}
-        <div className={cn("rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow", progressColors.bg, progressColors.border)}>
+        <div className={cn("rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow", progressColors.bg, progressColors.border)}>
           <div className="flex items-center justify-between">
             <span className={cn("text-xs font-semibold uppercase tracking-wider", progressColors.text)}>Target</span>
             <div className={cn("w-8 h-8 rounded-app bg-white/60 flex items-center justify-center")}>
@@ -320,7 +320,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
           </div>
           <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden">
             <div
-              className={cn("h-full rounded-full transition-all duration-700", progressColors.bar)}
+              className={cn("h-full rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200", progressColors.bar)}
               style={{ width: `${progressCapped}%` }}
             />
           </div>
@@ -332,17 +332,17 @@ const rawMonthlyRecaps = recapsRes.data || [];
           tabIndex={0}
           onClick={() => setLeaveDialogOpen(true)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setLeaveDialogOpen(true); }}
-          className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 cursor-pointer [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cuti Tahunan</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cuti Tahunan</span>
             <div className="w-8 h-8 rounded-app bg-teal-50 flex items-center justify-center">
               <Umbrella className="w-4 h-4 text-teal-600" />
             </div>
           </div>
           <div>
             <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.annualLeaveRemaining}</p>
-            <p className="text-xs text-slate-400 mt-1">dari {metrics.annualLeaveQuota} hari tersisa</p>
+            <p className="text-xs text-slate-500 mt-1">dari {metrics.annualLeaveQuota} hari tersisa</p>
           </div>
           <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
             <div
@@ -364,16 +364,16 @@ const rawMonthlyRecaps = recapsRes.data || [];
           { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
           { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
         ].filter(c => c.always || c.value > 0).map(({ key, label, value, sub, Icon, box, icon }) => (
-          <div key={key} className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div key={key} className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
               <div className={cn("w-8 h-8 rounded-app flex items-center justify-center", box)}>
                 <Icon className={cn("w-4 h-4", icon)} />
               </div>
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 leading-none">{value}</p>
-              <p className="text-xs text-slate-400 mt-1">{sub}</p>
+              <p className="text-xs text-slate-500 mt-1">{sub}</p>
             </div>
           </div>
         ))}
@@ -390,7 +390,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto space-y-2">
             {metrics.annualLeaveEntries.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">Belum ada cuti tahunan yang diambil.</p>
+              <p className="text-sm text-slate-500 text-center py-6">Belum ada cuti tahunan yang diambil.</p>
             ) : (
               metrics.annualLeaveEntries.map((entry) => {
                 const sameDay = entry.start_date === entry.end_date;

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PageHero from '@/components/shared/PageHero';
+import { confirmAction } from '@/lib/confirmAction';
 
 // Setiap tab bisa mewakili lebih dari satu follow_up_type — mis. "Pengingat
 // Terapi" juga harus menghitung reminder homecare (therapy_reminder_homecare),
@@ -146,7 +147,7 @@ const FollowUpManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus item ini?')) return;
+    if (!await confirmAction('Yakin ingin menghapus item ini?')) return;
 
     const { error } = await deleteFollowUp(id);
     if (!error) {
@@ -248,7 +249,7 @@ const getCount = (types) => {
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="sm:hidden">{tab.shortLabel}</span>
                 <span className="hidden sm:inline">{tab.label}</span>
-                <span className="text-[10px] sm:text-xs font-bold opacity-60">({count})</span>
+                <span className="text-xs font-bold opacity-60">({count})</span>
               </TabsTrigger>
             );
           })}
@@ -259,7 +260,7 @@ const getCount = (types) => {
         <TabsContent value={activeTab} className="mt-4 sm:mt-6">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-slate-50 rounded-app-lg border border-slate-200 px-4 text-center">

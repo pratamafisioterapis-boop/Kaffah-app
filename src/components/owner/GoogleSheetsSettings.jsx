@@ -212,7 +212,7 @@ const GoogleSheetsSettings = () => {
                     />
                     <div>
                       <p className="text-sm font-medium text-slate-700">{domain.label}</p>
-                      <p className="text-xs text-slate-400">{domain.description}</p>
+                      <p className="text-xs text-slate-500">{domain.description}</p>
                     </div>
                   </label>
                 ))}

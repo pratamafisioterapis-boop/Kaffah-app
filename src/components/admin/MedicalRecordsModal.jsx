@@ -81,8 +81,8 @@ const SectionHeader = ({ title, icon: Icon, isExpanded, onToggle, color = '#4f46
     </div>
     <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#f1f5f9' }}>
       {isExpanded
-        ? <ChevronUp className="w-3 h-3 text-slate-400" />
-        : <ChevronDown className="w-3 h-3 text-slate-400" />}
+        ? <ChevronUp className="w-3 h-3 text-slate-500" />
+        : <ChevronDown className="w-3 h-3 text-slate-500" />}
     </div>
   </button>
 );
@@ -115,7 +115,6 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
       fetchDropdownData();
       if (recordData) {
 
-  console.log('MODAL RECORD DATA:', recordData);
 
   setFormData({
     ...initialFormState,
@@ -147,7 +146,6 @@ const MedicalRecordsModal = ({ isOpen, onClose, onSave, recordData }) => {
   supabase.from('physiotherapists').select('id, name').order('name', { ascending: true }),
   getDiagnosisOptions()
 ]);
-console.log('DIAGNOSES RES:', diagnosesRes);
 
 const diagnosesList = diagnosesRes?.data || [];
 
@@ -168,7 +166,6 @@ const diagnosesList = diagnosesRes?.data || [];
   label: d.label,
   usage: d.usage
 }));
-console.log('DIAGNOSIS OPTIONS:', diagnosisOptions);
       setDiagnoses([...diagnosisOptions]);
 
     } catch (err) {
@@ -313,7 +310,7 @@ onClose();
                 <DialogTitle className="text-sm font-bold text-slate-800">
                   {recordData ? 'Edit Rekam Medis' : 'Input Rekam Medis'}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-slate-400 mt-0.5">
+                <DialogDescription className="text-xs text-slate-500 mt-0.5">
                   Lengkapi data rekam medis pasien di bawah ini
                 </DialogDescription>
               </div>
@@ -344,7 +341,7 @@ onClose();
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Tanggal Pemeriksaan <span className="text-red-500">*</span></label>
                       <div className="relative">
-                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                         <Input 
                           type="date" 
                           name="record_date"
@@ -388,7 +385,7 @@ onClose();
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Sejak Kapan Keluhan Dirasakan (Onset)</label>
                       <div className="relative">
-                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                         <Input
                           type="date"
                           name="complaint_onset_date"
@@ -563,12 +560,12 @@ onClose();
         <div className="px-5 py-3.5 flex justify-end gap-2 flex-shrink-0"
           style={{ borderTop: '1px solid #e2e8f0', background: 'white' }}>
           <button type="button" onClick={onClose} disabled={saving}
-            className="px-4 h-9 rounded-app text-xs font-semibold transition-all"
+            className="px-4 h-9 rounded-app text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
             style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
             Batal
           </button>
           <button type="submit" form="medical-record-form" disabled={saving || loading}
-            className="flex items-center gap-2 px-5 h-9 rounded-app text-xs font-bold text-white transition-all min-w-[120px] justify-center"
+            className="flex items-center gap-2 px-5 h-9 rounded-app text-xs font-bold text-white transition-[color,background-color,border-color,box-shadow,transform,opacity] min-w-[120px] justify-center"
             style={{ background: saving ? '#818cf8' : '#4f46e5' }}>
             {saving ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan...</>

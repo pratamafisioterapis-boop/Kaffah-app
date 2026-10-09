@@ -81,7 +81,7 @@ const TherapistWarningLetterList = ({ therapist }) => {
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
         ) : records.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
             Tidak ada Surat Peringatan.
           </div>
         ) : (
@@ -97,7 +97,7 @@ const TherapistWarningLetterList = ({ therapist }) => {
                   <p className="text-sm font-medium text-slate-700 truncate">
                     {r.letter_number} · {format(new Date(r.letter_date), 'dd MMM yyyy', { locale: idLocale })}
                   </p>
-                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>
                     {r.level}
                   </span>
                 </div>

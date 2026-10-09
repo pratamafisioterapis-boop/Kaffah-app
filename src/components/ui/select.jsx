@@ -18,7 +18,6 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
     )}
     {...props}
     onClick={(e) => {
-      console.log("[Select] Trigger clicked");
       if (props.onClick) props.onClick(e);
     }}
   >
@@ -76,7 +75,6 @@ const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => 
     )}
     {...props}
     onPointerUp={(e) => {
-        console.log("[Select] Item selected");
         if(props.onPointerUp) props.onPointerUp(e);
     }}
   >

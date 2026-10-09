@@ -81,7 +81,6 @@ useEffect(() => {
     if (!isSilent) setLoading(true);
     
     try {
-      console.log("Fetching recaps for therapist:", therapist.id);
 
       let startDate = null;
       let endDate = null;
@@ -310,7 +309,7 @@ const paginatedList = sortedList.slice(
             ? 'Mode pencarian: menampilkan hasil dari semua periode.'
             : `Menampilkan kunjungan ${periodRange ? `${format(periodRange.startDate, 'dd MMM yyyy')} - ${format(periodRange.endDate, 'dd MMM yyyy')}` : '...'}.`}
         </span>
-        {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400 md:ml-auto" />}
+        {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-500 md:ml-auto" />}
         <div className={cn("flex items-center gap-1 shrink-0 flex-wrap", !loading && "md:ml-auto")}>
           <Input
             type="date"
@@ -359,7 +358,7 @@ const paginatedList = sortedList.slice(
 
       <div className={cn("bg-white rounded-app-sm border shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end", isOwnerView ? "p-2" : "p-4")}>
          <div className="w-full sm:w-48 space-y-1"><label className="text-xs font-semibold text-slate-500">Status Kelengkapan</label><Select value={statusFilter} onValueChange={handleFilterChange}><SelectTrigger><SelectValue placeholder="Filter Status" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Pasien</SelectItem><SelectItem value="unfilled">Belum Diisi + Belum Lengkap</SelectItem><SelectItem value="empty">Belum Diisi</SelectItem><SelectItem value="incomplete">Belum Lengkap</SelectItem><SelectItem value="complete">Sudah Lengkap</SelectItem></SelectContent></Select></div>
-         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
+         <div className="flex-1 w-full space-y-1"><label className="text-xs font-semibold text-slate-500">Cari Pasien</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" /><Input placeholder="Ketik nama pasien untuk cari di semua periode..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div></div>
       </div>
 
       {/* ── Tampilan Mobile (narrow) ── */}
@@ -369,7 +368,7 @@ const paginatedList = sortedList.slice(
               <Loader2 className="animate-spin w-6 h-6 text-app-accent" />
             </div>
           ) : paginatedList.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
+            <div className="text-center py-12 text-slate-500 text-sm">
               {patients.length === 0 ? "Belum ada riwayat kunjungan." : "Tidak ada pasien yang cocok."}
             </div>
           ) : paginatedList.map((item) => {
@@ -383,7 +382,7 @@ const paginatedList = sortedList.slice(
                 key={item.id}
                 onClick={() => handlePatientClick(item)}
                 className={cn(
-                  "bg-white rounded-app-lg border p-4 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all shadow-sm",
+                  "bg-white rounded-app-lg border p-4 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-[color,background-color,border-color,box-shadow,transform,opacity] shadow-sm",
                   item.status === 'empty' ? "border-rose-200 bg-rose-50/40" :
                   item.status === 'incomplete' ? "border-amber-200 bg-amber-50/40" :
                   "border-slate-100"
@@ -393,22 +392,22 @@ const paginatedList = sortedList.slice(
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <p className="font-bold text-slate-800 text-sm truncate">{item.full_name || 'Tanpa Nama'}</p>
                     {item.status === 'empty' && (
-                      <span className="shrink-0 text-[10px] font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 text-xs font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
                         {item.missingCount} belum diisi
                       </span>
                     )}
                     {item.status === 'incomplete' && (
-                      <span className="shrink-0 text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 text-xs font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full">
                         {item.missingCount} belum lengkap
                       </span>
                     )}
                     {item.status === 'complete' && (
-                      <span className="shrink-0 text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 text-xs font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
                         Lengkap ✓
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400">{item.medical_record_number || '-'}</p>
+                  <p className="text-xs text-slate-500">{item.medical_record_number || '-'}</p>
                   {latestVisit && (
                     <p className="text-xs text-slate-500 mt-1">
                       Kunjungan terakhir: <span className="font-medium">{format(new Date(latestVisit), 'dd MMM yyyy')}</span>

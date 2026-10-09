@@ -88,7 +88,7 @@ const ManualMetricUploader = ({ row, draft, onChange, onSave, saving }) => {
       {(draft.files || []).length > 0 && (
         <ul className="space-y-1">
           {draft.files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-1.5 text-[11px] text-app-accent bg-app-soft/60 rounded-app-sm px-2 py-1">
+            <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-1.5 text-xs text-app-accent bg-app-soft/60 rounded-app-sm px-2 py-1">
               <span className="flex items-center gap-1 min-w-0 truncate">
                 <ImageIcon className="w-3 h-3 shrink-0" /> <span className="truncate">{f.name}</span>
               </span>
@@ -108,7 +108,7 @@ const ManualMetricUploader = ({ row, draft, onChange, onSave, saving }) => {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-app-accent hover:underline"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-app-accent hover:underline"
             >
               <ImageIcon className="w-3 h-3" /> Lihat bukti tersimpan {storedProofs.length > 1 ? `#${i + 1}` : ''}
             </a>
@@ -210,12 +210,12 @@ const TherapistRemuneration = ({ therapist }) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-slate-400" /></div>;
+    return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>;
   }
 
   if (therapist && therapist.remuneration_enabled === false) {
     return (
-      <div className="bg-white rounded-app-lg border border-slate-200 p-10 text-center text-slate-400 text-sm max-w-md mx-auto">
+      <div className="bg-white rounded-app-lg border border-slate-200 p-10 text-center text-slate-500 text-sm max-w-md mx-auto">
         Program remunerasi belum diaktifkan untuk akun Anda. Hubungi owner klinik untuk informasi lebih lanjut.
       </div>
     );
@@ -223,7 +223,7 @@ const TherapistRemuneration = ({ therapist }) => {
 
   if (!report || (report.rows || []).length === 0) {
     return (
-      <div className="bg-white rounded-app-lg border border-slate-200 p-10 text-center text-slate-400 text-sm">
+      <div className="bg-white rounded-app-lg border border-slate-200 p-10 text-center text-slate-500 text-sm">
         Belum ada program kerja remunerasi yang diatur oleh owner.
       </div>
     );
@@ -239,7 +239,7 @@ const TherapistRemuneration = ({ therapist }) => {
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-app-lg p-3">
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-amber-800">Hari terakhir mengisi realisasi periode sebelumnya</p>
-            <p className="text-[11px] text-amber-600">
+            <p className="text-xs text-amber-600">
               Periode {format(new Date(previousPeriod.start), 'dd MMM')} - {format(new Date(previousPeriod.end), 'dd MMM yyyy')} bisa diisi sampai hari ini saja.
             </p>
           </div>
@@ -248,7 +248,7 @@ const TherapistRemuneration = ({ therapist }) => {
               type="button"
               onClick={() => setViewingPrevious(false)}
               className={cn(
-                "px-3 py-1.5 rounded-app-sm text-[11px] font-semibold transition-colors",
+                "px-3 py-1.5 rounded-app-sm text-xs font-semibold transition-colors",
                 !viewingPrevious ? "bg-amber-600 text-white" : "text-amber-700"
               )}
             >
@@ -258,7 +258,7 @@ const TherapistRemuneration = ({ therapist }) => {
               type="button"
               onClick={() => setViewingPrevious(true)}
               className={cn(
-                "px-3 py-1.5 rounded-app-sm text-[11px] font-semibold transition-colors",
+                "px-3 py-1.5 rounded-app-sm text-xs font-semibold transition-colors",
                 viewingPrevious ? "bg-amber-600 text-white" : "text-amber-700"
               )}
             >
@@ -278,8 +278,8 @@ const TherapistRemuneration = ({ therapist }) => {
             <Sparkles className="w-4.5 h-4.5 text-app-soft/60" />
           </div>
           <div>
-            <p className="text-[11px] font-semibold tracking-widest text-app-soft/60 uppercase">Remunerasi Saya</p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs font-semibold tracking-widest text-app-soft/60 uppercase">Remunerasi Saya</p>
+            <p className="text-xs text-slate-500">
               Periode {format(new Date(period.start), 'dd MMM yyyy')} - {format(new Date(period.end), 'dd MMM yyyy')}
             </p>
           </div>
@@ -297,7 +297,7 @@ const TherapistRemuneration = ({ therapist }) => {
                 <XCircle className="w-3.5 h-3.5" /> Belum Aktif
               </Badge>
             )}
-            <p className="text-xs text-slate-400 max-w-xs">
+            <p className="text-xs text-slate-500 max-w-xs">
               Remunerasi aktif otomatis setiap bulan jika target pasien tercapai.
             </p>
           </div>
@@ -314,7 +314,7 @@ const TherapistRemuneration = ({ therapist }) => {
           return (
             <div
               key={row.id}
-              className="group relative bg-white rounded-app-lg border border-slate-200/80 shadow-sm hover:shadow-lg transition-shadow duration-300 p-4 space-y-1 overflow-hidden"
+              className="group relative bg-white rounded-app-lg border border-slate-200/80 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-300 p-4 space-y-1 overflow-hidden"
             >
               <div className={cn(
                 "absolute top-0 left-0 h-1 w-full",
@@ -324,7 +324,7 @@ const TherapistRemuneration = ({ therapist }) => {
               <div className="flex items-start justify-between pt-1 gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900 text-sm truncate">{row.name}</p>
-                  <p className="text-[11px] text-slate-400 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</p>
+                  <p className="text-xs text-slate-500 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</p>
                 </div>
                 <span className={cn(
                   "text-xs font-bold px-2 py-1 rounded-app-sm shrink-0",

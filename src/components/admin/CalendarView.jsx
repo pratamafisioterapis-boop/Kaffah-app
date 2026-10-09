@@ -107,7 +107,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
               key={idx}
               className={cn(
                 "bg-white relative p-1 md:p-2 min-h-[80px] hover:bg-slate-50 transition-colors flex flex-col gap-1 overflow-hidden",
-                !isCurrentMonth && "bg-slate-50/50 text-slate-400"
+                !isCurrentMonth && "bg-slate-50/50 text-slate-500"
               )}
               onClick={() => {
                 // Could open a day view or create modal prefilled with date
@@ -133,7 +133,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
                                onEventClick(apt);
                              }}
                              className={cn(
-                               "w-full text-left text-[10px] md:text-xs px-1.5 py-1 rounded border-l-2 shadow-sm truncate transition-all hover:brightness-95",
+                               "w-full text-left text-[10px] md:text-xs px-1.5 py-1 rounded border-l-2 shadow-sm truncate transition-[color,background-color,border-color,box-shadow,transform,opacity] hover:brightness-95",
                                "text-white mb-0.5 block",
                                getTherapistColor(apt.therapist_id)
                              )}
@@ -156,7 +156,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
                     </TooltipProvider>
                  ))}
                  {dayAppointments.length > 4 && (
-                    <div className="text-[10px] text-slate-400 text-center font-medium">
+                    <div className="text-[10px] text-slate-500 text-center font-medium">
                        + {dayAppointments.length - 4} more
                     </div>
                  )}

@@ -27,6 +27,7 @@ import { normalizePatient } from '@/lib/patientHelpers';
 import PatientList from '@/components/admin/patients/PatientList'; 
 import PatientDialog from '@/components/admin/PatientDialog';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { confirmAction } from '@/lib/confirmAction';
 
 const OwnerPatientManagement = () => {
   const { toast } = useToast();
@@ -83,7 +84,7 @@ const OwnerPatientManagement = () => {
       return;
     }
 
-    if (!window.confirm(`PERINGATAN: Anda akan menghapus SEMUA data pasien yang DIDAFTARKAN (created_at) dari tanggal ${deleteDateRange.startDate} sampai ${deleteDateRange.endDate}. \n\nIni akan menghapus SEMUA data terkait (Rekam medis, appointment, paket, dll) secara permanen. \n\nLanjutkan?`)) {
+    if (!await confirmAction(`PERINGATAN: Anda akan menghapus SEMUA data pasien yang DIDAFTARKAN (created_at) dari tanggal ${deleteDateRange.startDate} sampai ${deleteDateRange.endDate}. \n\nIni akan menghapus SEMUA data terkait (Rekam medis, appointment, paket, dll) secara permanen. \n\nLanjutkan?`)) {
         return;
     }
 
@@ -306,7 +307,7 @@ const OwnerPatientManagement = () => {
                 <Button variant="destructive" onClick={handleSingleHardDelete} className="w-full justify-between group">
                     <div className="flex flex-col items-start">
                         <span className="font-medium">Hapus Permanen & Semua Data</span>
-                        <span className="text-[10px] font-normal opacity-90">Menghapus pasien, rekam medis, paket, & transaksi</span>
+                        <span className="text-xs font-normal opacity-90">Menghapus pasien, rekam medis, paket, & transaksi</span>
                     </div>
                     <span className="text-xs bg-red-700 px-2 py-0.5 rounded text-white group-hover:bg-red-800">Hard Delete</span>
                 </Button>

@@ -43,7 +43,6 @@ const normalizePackageStatus = (status) => {
 };
 
 const PackageRecap = ({ hideControls = false }) => {
-  console.log("PACKAGE RECAP RENDER");
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,14 +85,12 @@ const fetchData = async () => {
     setData(processed);
 
   } catch (error) {
-    console.log(error);
   } finally {
     setLoading(false);
   }
 };
 
  useEffect(() => {
-  console.log("USE EFFECT JALAN");
   fetchData();
 }, []);
 
@@ -175,13 +172,13 @@ const fetchData = async () => {
             <div>
               <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{clinicName || ''}</p>
               <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Tracking Paket</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Monitor penggunaan paket pasien secara real-time</p>
+              <p className="text-sm text-slate-500 mt-0.5">Monitor penggunaan paket pasien secara real-time</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-white p-4 rounded-app-lg border border-slate-200 shadow-sm">
           <div className="relative flex-1 md:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input
               className="pl-9 border-slate-300"
               placeholder="Cari pasien / paket..."
@@ -189,7 +186,7 @@ const fetchData = async () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
+          <Button variant="outline" onClick={() => setRefreshTrigger(prev => prev + 1)} className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE7F1] bg-[#F1F6FC] text-app-ink hover:bg-[#E4EFFA]">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -201,7 +198,7 @@ const fetchData = async () => {
       {!hideControls && isPWA && (
         <div className="flex items-center gap-2 bg-white p-3 rounded-app-lg border border-slate-200 shadow-sm">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input
               className="pl-9 border-slate-200 bg-slate-50"
               placeholder="Cari pasien / paket..."
@@ -220,7 +217,7 @@ const fetchData = async () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright mb-3" />
-              <p className="text-sm text-slate-400">Memuat data paket...</p>
+              <p className="text-sm text-slate-500">Memuat data paket...</p>
             </div>
           ) : paginatedData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200">
@@ -244,18 +241,18 @@ const fetchData = async () => {
                   {/* Baris 2: Sesi & Sisa Hari */}
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-slate-50 rounded-app p-3 text-center border border-slate-100">
-                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Sesi</p>
                       <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
-                        {item.computed_sessions_used}<span className="text-slate-400 font-normal">/{item.computed_total_sessions}</span>
+                        {item.computed_sessions_used}<span className="text-slate-500 font-normal">/{item.computed_total_sessions}</span>
                       </p>
                     </div>
                     <div className="flex-1 bg-app-soft rounded-app p-3 text-center border border-app-accent/15">
-                      <p className="text-[10px] text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
+                      <p className="text-xs text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
                       <p className="text-base font-bold text-app-accent mt-0.5">{item.computed_sessions_remaining}</p>
                     </div>
                     {sisaHari !== null && (
                       <div className={`flex-1 rounded-app p-3 text-center border ${getSisaHariColor(sisaHari)}`}>
-                        <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
+                        <p className="text-xs font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
                         <p className="text-base font-bold mt-0.5">{sisaHari}</p>
                       </div>
                     )}
@@ -264,7 +261,7 @@ const fetchData = async () => {
                   {/* Baris 3: Tgl Selesai */}
                   {item.end_date && (
                     <div className="flex items-center gap-2 text-xs text-slate-500 border-t border-slate-100 pt-2">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
                       <span>Selesai: <span className="font-semibold text-slate-700">{format(new Date(item.end_date), 'dd MMM yyyy', { locale: id })}</span></span>
                     </div>
                   )}
@@ -332,7 +329,7 @@ const fetchData = async () => {
                       {getStatusBadge(item.computed_status)}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">
-                      <Button variant="ghost" className="h-10 w-10 rounded-app">
+                      <Button aria-label="Opsi lainnya" variant="ghost" className="h-10 w-10 rounded-app">
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                       </Button>
                     </TableCell>

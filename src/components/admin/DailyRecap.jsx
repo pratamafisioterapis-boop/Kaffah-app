@@ -398,7 +398,6 @@ end_time: r.end_time,
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const timeString = `${hours}:${minutes}:${seconds}`;
 
-    console.log(`[UI] Starting recap ${recapId} at ${timeString}`);
 
     setActionLoadingId(recapId);
     try {
@@ -520,7 +519,7 @@ const getPremiumPastelBadge = (text) => {
           </Badge>
         ))}
         {mappedDiagnoses.length > 3 && (
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-slate-500">
             +{mappedDiagnoses.length - 3}
           </span>
         )}
@@ -542,7 +541,7 @@ const getPremiumPastelBadge = (text) => {
           <div className="grid grid-cols-4 gap-1.5">
             <div
               className={cn(
-                'relative flex items-center justify-center h-[46px] sm:h-[52px] rounded-app border transition-all',
+                'relative flex items-center justify-center h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                 activeFilter === 'today'
                   ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
@@ -591,7 +590,7 @@ const getPremiumPastelBadge = (text) => {
                 <span
                   className={cn(
                     'font-semibold leading-tight text-center whitespace-nowrap',
-                    todayOffset === 0 ? 'text-[11px] sm:text-sm' : 'text-[9px] sm:text-[11px]'
+                    todayOffset === 0 ? 'text-xs sm:text-sm' : 'text-xs'
                   )}
                 >
                   {todayOffset === 0
@@ -658,14 +657,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1',
                 activeFilter === 'week'
                   ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Minggu Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Minggu Ini</span>
             </button>
 
             <button
@@ -697,14 +696,14 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1',
                 activeFilter === 'month'
                   ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Bulan Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Bulan Ini</span>
             </button>
 
             <button
@@ -733,21 +732,21 @@ const getPremiumPastelBadge = (text) => {
                 });
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-all px-1',
+                'flex flex-col items-center justify-center gap-0.5 h-[46px] sm:h-[52px] rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity] px-1',
                 activeFilter === 'period'
                   ? 'bg-app-accent border-app-accent text-white shadow-sm shadow-app-accent/25'
                   : 'bg-[#EEF5FC] border-[#DCE8F5] text-[#0F2A4A] hover:bg-[#E3EFFB]'
               )}
             >
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-              <span className="text-[11px] sm:text-xs font-semibold leading-tight text-center">Periode Ini</span>
+              <span className="text-xs font-semibold leading-tight text-center">Periode Ini</span>
             </button>
           </div>
 
           {/* Filter Tanggal */}
           <div className="flex items-center gap-1.5">
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.start}
                 onChange={(e) => {
@@ -772,10 +771,10 @@ const getPremiumPastelBadge = (text) => {
               )}
             </div>
 
-            <span className="text-slate-400 font-medium shrink-0 -mx-0.5">-</span>
+            <span className="text-slate-500 font-medium shrink-0 -mx-0.5">-</span>
 
             <div className="relative flex-1 min-w-0">
-              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <Input
                 value={dateRangeDisplay.end}
                 onChange={(e) => {
@@ -804,14 +803,14 @@ const getPremiumPastelBadge = (text) => {
           {/* Terapis + Cari Pasien (satu baris di tablet/desktop), atau Terapis + Metode Pembayaran (satu baris di semua ukuran) */}
           <div className={cn('flex gap-2', showPaymentFilter ? 'flex-row' : 'flex-col sm:flex-row')}>
             <div className={cn('relative', showPaymentFilter ? 'flex-1 min-w-0' : 'sm:flex-1')}>
-              <Users className={cn('w-4 h-4 absolute top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10', showPaymentFilter ? 'left-2 sm:left-3' : 'left-3')} />
+              <Users className={cn('w-4 h-4 absolute top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10', showPaymentFilter ? 'left-2 sm:left-3' : 'left-3')} />
               <select
                 value={selectedTherapist}
                 onChange={(e) => {
                   setSelectedTherapist(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={cn('w-full h-9 sm:h-10 rounded-app transition-all appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm' : 'pl-9 pr-9 text-sm')}
+                className={cn('w-full h-9 sm:h-10 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity] appearance-none cursor-pointer bg-white text-slate-700 border border-[#D8E2EB] hover:bg-slate-50', showPaymentFilter ? 'pl-7 pr-6 sm:pl-9 sm:pr-9 text-xs sm:text-sm' : 'pl-9 pr-9 text-sm')}
               >
                 <option value="">Semua Terapis</option>
 
@@ -827,7 +826,7 @@ const getPremiumPastelBadge = (text) => {
 
             {!showPaymentFilter && (
               <div className="relative sm:flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 <Input
                   placeholder="Cari Pasien..."
                   value={searchTerm}
@@ -839,11 +838,11 @@ const getPremiumPastelBadge = (text) => {
 
             {showPaymentFilter && (
               <div className="relative flex-1 min-w-0">
-                <CreditCard className="w-4 h-4 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none" />
+                <CreditCard className="w-4 h-4 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-500 z-10 pointer-events-none" />
                 <select
                   value={selectedPaymentMethod}
                   onChange={(e) => { setSelectedPaymentMethod(e.target.value); setCurrentPage(1); }}
-                  className="w-full h-9 sm:h-10 rounded-app pl-7 pr-6 sm:pl-9 sm:pr-9 text-[11px] sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
+                  className="w-full h-9 sm:h-10 rounded-app pl-7 pr-6 sm:pl-9 sm:pr-9 text-xs sm:text-sm appearance-none cursor-pointer border bg-white text-slate-700 border-[#D8E2EB] hover:bg-slate-50"
                 >
                   <option value="">Semua Metode</option>
                   {paymentMethodOptions.map((pm) => (
@@ -869,7 +868,7 @@ const getPremiumPastelBadge = (text) => {
 
           {showPaymentFilter && (
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <Input
                 placeholder="Cari Pasien..."
                 value={searchTerm}
@@ -908,12 +907,12 @@ const getPremiumPastelBadge = (text) => {
                 >
                   {/* Baris 1: Tanggal + Status */}
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-400 font-medium">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
+                    <span className="text-xs text-slate-500 font-medium">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
                     {recap.end_time
-                      ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-[10px]">Selesai</Badge>
+                      ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs">Selesai</Badge>
                       : recap.start_time
-                      ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-[10px]">Berlangsung</Badge>
-                      : <Badge className="bg-slate-100 text-slate-500 border-0 text-[10px]">Belum</Badge>}
+                      ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-xs">Berlangsung</Badge>
+                      : <Badge className="bg-slate-100 text-slate-500 border-0 text-xs">Belum</Badge>}
                   </div>
 
                   {/* Baris 2: Nama Pasien + Nominal */}
@@ -921,7 +920,7 @@ const getPremiumPastelBadge = (text) => {
                     <div className="flex flex-col">
                       <span className="font-bold text-slate-900 text-sm leading-tight">{mainName}</span>
                       {isDifferent && recap.patients?.full_name && (
-                        <span className="text-[10px] text-slate-400">(Paket: {recap.patients.full_name})</span>
+                        <span className="text-xs text-slate-500">(Paket: {recap.patients.full_name})</span>
                       )}
                     </div>
                     <span className="font-bold text-app-accent text-sm ml-2 shrink-0">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
@@ -931,9 +930,9 @@ const getPremiumPastelBadge = (text) => {
                   <div className="flex items-center gap-1.5 flex-wrap mb-2">
                     <span className="text-xs text-slate-500 font-medium">{recap.display_therapist_name}</span>
                     <span className="text-slate-300 text-xs">·</span>
-                    <Badge className={cn("text-[10px] font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
-                    <Badge variant="outline" className="text-[10px] font-normal py-0 px-1.5">{serviceLabel}</Badge>
-                    {packageLabel !== '-' && <Badge className="text-[10px] py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
+                    <Badge className={cn("text-xs font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
+                    <Badge variant="outline" className="text-xs font-normal py-0 px-1.5">{serviceLabel}</Badge>
+                    {packageLabel !== '-' && <Badge className="text-xs py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
                   </div>
 
                   {/* Baris 4: Tombol Sesi */}
@@ -966,7 +965,7 @@ const getPremiumPastelBadge = (text) => {
                                   ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima.'
                                   : 'Invoice belum pernah dikirim ke WhatsApp pasien'
                               }
-                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                                 recap.invoice_wa_status === 'gagal'
                                   ? 'bg-red-50 text-red-600'
                                   : recap.invoice_wa_status
@@ -1003,7 +1002,7 @@ const getPremiumPastelBadge = (text) => {
           </div>
           {/* ── TABLE LAYOUT (desktop/wide) ── */}
           <div className="hidden sm:block w-full">
-          <table className="w-full text-left table-fixed text-[11px] xl:text-xs 2xl:text-sm [&_.text-sm]:text-[11px] xl:[&_.text-sm]:text-xs 2xl:[&_.text-sm]:text-sm [&_td]:[overflow-wrap:break-word] [&_td]:[word-break:normal]">
+          <table className="w-full text-left table-fixed text-xs xl:text-xs 2xl:text-sm [&_.text-sm]:text-xs xl:[&_.text-sm]:text-xs 2xl:[&_.text-sm]:text-sm [&_td]:[overflow-wrap:break-word] [&_td]:[word-break:normal]">
             <colgroup>
               <col style={{ width: '9%' }} />
               <col style={{ width: '11%' }} />
@@ -1019,27 +1018,27 @@ const getPremiumPastelBadge = (text) => {
             </colgroup>
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
-                <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Tanggal</th>
+                <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Tanggal</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Nama Pasien</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Nama Pasien</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Diagnosa</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Diagnosa</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Layanan</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Layanan</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Tipe</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Tipe</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Paket</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Paket</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Terapis</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Terapis</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Nominal</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Nominal</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Status</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Status</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Sesi</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Sesi</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-[11px] xl:text-xs leading-tight">Invoice</th>
+<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Invoice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -1060,7 +1059,7 @@ const getPremiumPastelBadge = (text) => {
                     key={recap.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-all duration-200 cursor-pointer hover:bg-transparent")}
+                    className={cn(idx % 2 === 0 ? "bg-white" : "bg-slate-50", "transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 cursor-pointer hover:bg-transparent")}
                     onClick={() => handleRowClick(recap)}
                   >
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-black font-normal whitespace-normal">
@@ -1068,7 +1067,7 @@ const getPremiumPastelBadge = (text) => {
     const [dow, ...rest] = formatDateIndonesian(recap.date).split(', ');
     return rest.length ? (
       <>
-        <span className="block text-slate-500 text-[10px] xl:text-[11px] leading-tight">{dow}</span>
+        <span className="block text-slate-500 text-xs xl:text-xs leading-tight">{dow}</span>
         <span className="block font-medium leading-tight">{rest.join(', ').replace(/(\d+) (\w{3})\w* (\d{4})/, '$1 $2 $3')}</span>
       </>
     ) : dow;
@@ -1089,7 +1088,7 @@ const getPremiumPastelBadge = (text) => {
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
                        {recap.payment_method && (
-                         <div className="text-[11px] text-slate-400 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
+                         <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
@@ -1144,7 +1143,7 @@ const getPremiumPastelBadge = (text) => {
           ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
           : 'Invoice belum pernah dikirim ke WhatsApp pasien'
       }
-      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-tight text-center ${
+      className={`text-xs font-semibold px-1.5 py-0.5 rounded-full leading-tight text-center ${
         recap.invoice_wa_status === 'gagal'
           ? 'bg-red-50 text-red-600'
           : recap.invoice_wa_status

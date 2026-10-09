@@ -82,7 +82,7 @@ const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen' }) => {
         <div className="flex-1 min-h-0 overflow-y-auto bg-slate-100 p-4">
           {loading && (
             <div className="flex justify-center py-10">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
             </div>
           )}
           {error && <p className="text-center text-sm text-red-600 py-10">{error}</p>}

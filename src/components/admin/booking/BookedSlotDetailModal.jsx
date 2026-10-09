@@ -151,7 +151,6 @@ useEffect(() => {
     }
 
     setIsDeleting(true);
-    console.log('[BookedSlotDetail] Deleting appointment ID:', appointment.id);
     try {
         const { error } = await deleteAppointment(appointment.id, true); // true = cascade delete
         
@@ -164,7 +163,6 @@ useEffect(() => {
             throw error;
         }
 
-        console.log('[BookedSlotDetail] Delete successful');
         toast({ title: "Jadwal berhasil dihapus", className: "bg-green-50 border-green-200" });
         if (onSuccess) onSuccess();
         onClose();
@@ -215,7 +213,7 @@ useEffect(() => {
 
     {/* TERAPIS */}
     <div className="space-y-1">
-      <label className="text-[11px] tracking-wide font-semibold text-slate-400">TERAPIS</label>
+      <label className="text-[11px] tracking-wide font-semibold text-slate-500">TERAPIS</label>
       <select
   value={selectedTherapist}
   onChange={(e) => {
@@ -236,7 +234,7 @@ useEffect(() => {
 
     {/* TANGGAL */}
     <div className="space-y-1">
-      <label className="text-[11px] tracking-wide font-semibold text-slate-400">TANGGAL</label>
+      <label className="text-[11px] tracking-wide font-semibold text-slate-500">TANGGAL</label>
       <Input
         type="date"
         value={newDate}
@@ -251,7 +249,7 @@ useEffect(() => {
     {/* SLOT */}
     {availableSlots.length > 0 && selectedTherapist && newDate ? (
   <div className="space-y-2">
-    <label className="text-[11px] tracking-wide font-semibold text-slate-400">JAM TERSEDIA</label>
+    <label className="text-[11px] tracking-wide font-semibold text-slate-500">JAM TERSEDIA</label>
 
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
       {availableSlots.map((slot, i) => (
@@ -260,11 +258,11 @@ useEffect(() => {
           variant="outline"
           onClick={() => setSelectedTime(slot.time)}
           className={`
-  text-xs sm:text-sm px-4 py-2 rounded-app border transition-all
+  text-xs sm:text-sm px-4 py-2 rounded-app border transition-[color,background-color,border-color,box-shadow,transform,opacity]
   min-w-[70px] text-center font-medium
   ${selectedTime === slot.time
     ? "bg-app-accent text-white shadow-md scale-105"
-    : "bg-white text-slate-700 hover:bg-app-soft hover:border-app-accent/40 active:scale-95"}
+    : "bg-white text-slate-700 hover:bg-app-soft hover:border-app-accent/40 active:scale-[0.97]"}
 `}
         >
           {slot.time}
@@ -282,9 +280,9 @@ useEffect(() => {
       <div className="space-y-4">
         
 <div className="flex items-start gap-3">
-  <User className="w-5 h-5 text-slate-400 mt-0.5" />
+  <User className="w-5 h-5 text-slate-500 mt-0.5" />
   <div>
-    <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Pasien</p>
+    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Pasien</p>
     <p className="font-medium text-slate-800">
       {appointment.patient?.full_name || appointment.guest_name || 'Tidak diketahui'}
     </p>
@@ -296,9 +294,9 @@ useEffect(() => {
   </div>
 </div>
         <div className="flex items-start gap-3">
-          <User className="w-5 h-5 text-slate-400 mt-0.5" />
+          <User className="w-5 h-5 text-slate-500 mt-0.5" />
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Terapis</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Terapis</p>
             <p className="font-medium text-slate-800">{appointment.therapist?.name || 'Tidak diketahui'}</p>
             {appointment.therapist?.phone && (
               <p className="text-sm text-slate-500 mt-0.5">{appointment.therapist.phone}</p>
@@ -309,11 +307,11 @@ useEffect(() => {
         
 
         <div className="flex items-start gap-3">
-          <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
+          <FileText className="w-5 h-5 text-slate-500 mt-0.5" />
           <div className="w-full">
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Catatan</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan</p>
             <div className="mt-1 p-3 bg-slate-50 rounded-app-sm text-sm text-slate-700 border border-slate-100">
-              {appointment.notes || <span className="text-slate-400 italic">Tidak ada catatan</span>}
+              {appointment.notes || <span className="text-slate-500 italic">Tidak ada catatan</span>}
             </div>
           </div>
         </div>

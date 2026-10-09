@@ -34,7 +34,7 @@ const DesignStyleManager = () => {
             onClick={() => handleSelect(key)}
             disabled={saving === key}
             className={cn(
-              "relative text-left rounded-app-lg border-2 p-4 transition-all hover:shadow-md",
+              "relative text-left rounded-app-lg border-2 p-4 transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md",
               themeKey === key ? "border-indigo-600 shadow-md" : "border-slate-200"
             )}
           >
@@ -48,7 +48,7 @@ const DesignStyleManager = () => {
               style={{ background: theme.sidebarBg, borderRadius: theme.radius }}
             >
               <span
-                className="text-[11px] px-2.5 py-1 inline-block"
+                className="text-xs px-2.5 py-1 inline-block"
                 style={{
                   background: theme.navActive.background,
                   color: theme.navActive.color,

@@ -68,13 +68,13 @@ const SlotGrid = ({
                     <div className="p-4 flex items-center gap-4 border-b border-dashed bg-slate-50/50 sticky left-0 z-10">
                         <Avatar className="h-10 w-10 border">
                             <AvatarImage src={therapist.avatar_url} />
-                            <AvatarFallback><User className="w-5 h-5 text-slate-400" /></AvatarFallback>
+                            <AvatarFallback><User className="w-5 h-5 text-slate-500" /></AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="font-semibold text-slate-800">{therapist.name}</div>
                             <div className="text-xs text-slate-500">{therapist.specialization || 'Physiotherapist'}</div>
                         </div>
-                        <div className="ml-auto text-xs font-medium text-slate-400">
+                        <div className="ml-auto text-xs font-medium text-slate-500">
                             {slots.length} Slots
                         </div>
                     </div>
@@ -82,7 +82,7 @@ const SlotGrid = ({
                     {/* Slots Grid */}
                     <div className="p-4">
                         {slots.length === 0 ? (
-                            <div className="text-center py-6 text-slate-400 text-sm bg-slate-50 rounded-md border border-dashed">
+                            <div className="text-center py-6 text-slate-500 text-sm bg-slate-50 rounded-md border border-dashed">
                                 No slots configured for this day
                             </div>
                         ) : (
@@ -96,7 +96,7 @@ const SlotGrid = ({
                                     
                                     if (status === 'occupied' && format(parseISO(app.appointment_date), 'HH:mm:00') !== slot.slot_start_time) {
                                        return (
-                                           <div key={slot.id} className="opacity-50 grayscale pointer-events-none p-2 border rounded bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                                           <div key={slot.id} className="opacity-50 grayscale pointer-events-none p-2 border rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500">
                                                Occupied
                                            </div>
                                        );
@@ -108,8 +108,8 @@ const SlotGrid = ({
                                             onClick={() => status === 'available' && onSlotClick(therapist, slot)}
                                             disabled={status !== 'available'}
                                             className={`
-                                                relative flex flex-col items-start justify-between p-3 rounded-app-sm border text-left transition-all h-[90px] w-full
-                                                ${status === 'available' ? 'bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300 hover:shadow-sm cursor-pointer group' : ''}
+                                                relative flex flex-col items-start justify-between p-3 rounded-app-sm border text-left transition-[color,background-color,border-color,box-shadow,transform,opacity] h-[90px] w-full
+                                                ${status === 'available' ? 'bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm cursor-pointer group' : ''}
                                                 ${status === 'booked' ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-90' : ''}
                                                 ${status === 'in-progress' ? 'bg-yellow-50 border-yellow-200 cursor-not-allowed' : ''}
                                             `}

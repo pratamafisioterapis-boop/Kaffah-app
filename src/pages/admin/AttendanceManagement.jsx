@@ -322,9 +322,9 @@ const AttendanceManagement = () => {
         <CardHeader><CardTitle className="text-base">Rekap Kedisiplinan per Karyawan</CardTitle></CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
           ) : summary.length === 0 ? (
-            <p className="text-center text-slate-400 py-10 text-sm">Belum ada data absensi pada periode ini.</p>
+            <p className="text-center text-slate-500 py-10 text-sm">Belum ada data absensi pada periode ini.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -387,9 +387,9 @@ const AttendanceManagement = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
           ) : dailyRecords.length === 0 ? (
-            <p className="text-center text-slate-400 py-10 text-sm">Tidak ada data untuk filter yang dipilih.</p>
+            <p className="text-center text-slate-500 py-10 text-sm">Tidak ada data untuk filter yang dipilih.</p>
           ) : (
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
               <Table>
@@ -510,7 +510,7 @@ const ShiftSettingsPanel = ({ shiftSettings, departments, onChanged }) => {
             {shiftSettings.map((s) => (
               <div key={s.id} className="flex items-center justify-between px-3 py-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-slate-400" />
+                  <CheckCircle2 className="w-4 h-4 text-slate-500" />
                   <span className="font-medium">{s.department}</span>
                   <span className="text-slate-500">jam {s.expected_check_in?.slice(0, 5)}, toleransi {s.grace_minutes} menit</span>
                 </div>

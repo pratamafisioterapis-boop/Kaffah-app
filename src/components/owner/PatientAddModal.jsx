@@ -323,7 +323,7 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                                     onChange={handleChange} // Standard change handler sets manual flag
                                     className={errors.nickname ? "border-red-500" : ""}
                                 />
-                                <span className="text-[10px] text-slate-500">
+                                <span className="text-xs text-slate-500">
                                     {nicknameManuallyEdited ? "Custom" : "Auto-fill dari nama, usia & gender"}
                                 </span>
                                 {errors.nickname && <span className="text-xs text-red-500">{errors.nickname}</span>}
@@ -460,7 +460,7 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                         <Label htmlFor="ktp">Foto KTP (Opsional)</Label>
                         {ktpPreview ? (
                             <div className="relative w-full max-w-xs">
-                                <img src={ktpPreview} alt="Preview KTP" className="rounded-md border max-h-48 object-contain" />
+                                <img src={ktpPreview} alt="Preview KTP" className="rounded-md border max-h-48 object-contain" loading="lazy" decoding="async" />
                                 <Button
                                     type="button"
                                     size="icon"

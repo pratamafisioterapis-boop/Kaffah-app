@@ -21,6 +21,7 @@ import { generatePayslipPDF, payslipFileName } from '@/lib/payslipGenerator';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { confirmAction } from '@/lib/confirmAction';
 
 const emptyForm = (therapist) => ({
   payroll_period_start: '',
@@ -275,7 +276,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus slip gaji ini?')) return;
+    if (!await confirmAction('Yakin ingin menghapus slip gaji ini?')) return;
     const { success, error } = await deletePayrollRecord(id);
     if (success) {
       setRecords((prev) => prev.filter((r) => r.id !== id));
@@ -372,9 +373,9 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
                 Uang Transport
-                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
                 {!calculatingAuto && attendanceDays > 0 && (
-                  <span className="text-[10px] font-normal text-slate-400">({attendanceDays} hari kerja)</span>
+                  <span className="text-xs font-normal text-slate-500">({attendanceDays} hari kerja)</span>
                 )}
               </label>
               <Input type="number" value={form.transport_per_day} onChange={(e) => setForm({ ...form, transport_per_day: e.target.value })} />
@@ -383,13 +384,13 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5 justify-between">
                 <span className="flex items-center gap-1.5">
                   Jasa Insentif
-                  {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                  {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
                 </span>
                 {incentiveBreakdown.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowIncentiveDetail((v) => !v)}
-                    className="flex items-center gap-1 text-[10px] font-normal text-emerald-600 hover:text-emerald-700"
+                    className="flex items-center gap-1 text-xs font-normal text-emerald-600 hover:text-emerald-700"
                   >
                     <ListChecks className="w-3 h-3" />
                     Rincian ({incentiveBreakdown.length})
@@ -402,7 +403,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
                 Komisi (dari Remunerasi)
-                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                {calculatingAuto && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
               </label>
               <Input type="number" value={form.custom_commission} onChange={(e) => setForm({ ...form, custom_commission: e.target.value })} />
             </div>
@@ -411,7 +412,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 Tips (Non-Cash yang Masuk Rekening Kaffah)
               </label>
               <Input type="number" value={form.tips} onChange={(e) => setForm({ ...form, tips: e.target.value })} />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-500">
                 Tips dari pasien secara non-tunai (transfer/QRIS) yang masuk ke rekening klinik, diteruskan ke terapis lewat slip gaji ini.
               </p>
             </div>
@@ -420,7 +421,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 Kekurangan Gaji Bulan Lalu
               </label>
               <Input type="number" value={form.prev_month_shortfall} onChange={(e) => setForm({ ...form, prev_month_shortfall: e.target.value })} />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-500">
                 Diisi manual bila ada sisa kekurangan pembayaran gaji dari periode sebelumnya yang perlu dilunasi di slip gaji ini.
               </p>
             </div>
@@ -429,7 +430,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 Bonus / Tunjangan Lain
               </label>
               <Input type="number" value={form.bonus_amount} onChange={(e) => setForm({ ...form, bonus_amount: e.target.value })} />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-500">
                 Diisi manual untuk bonus/tunjangan tambahan di luar Jasa Insentif &amp; Komisi, misalnya THR atau bonus prestasi.
               </p>
             </div>
@@ -447,15 +448,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           </div>
           {showIncentiveDetail && incentiveBreakdown.length > 0 && (
             <div className="rounded-app-sm border border-emerald-200 bg-emerald-50/50 overflow-hidden">
-              <div className="px-3 py-2 text-[11px] font-medium text-emerald-800 border-b border-emerald-200 bg-emerald-50">
+              <div className="px-3 py-2 text-xs font-medium text-emerald-800 border-b border-emerald-200 bg-emerald-50">
                 Rincian Jasa Insentif per Kunjungan
               </div>
               <div className="max-h-56 overflow-y-auto divide-y divide-emerald-100">
                 {incentiveBreakdown.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-1.5 text-[11px]">
+                  <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs">
                     <div className="min-w-0">
                       <div className="font-medium text-slate-700 truncate">{item.name}</div>
-                      <div className="text-slate-400">
+                      <div className="text-slate-500">
                         {item.date ? format(new Date(item.date), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                         {item.type ? ` • ${item.type}` : ''}
                       </div>
@@ -464,18 +465,18 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between px-3 py-2 border-t border-emerald-200 bg-emerald-50 text-[11px] font-semibold text-emerald-800">
+              <div className="flex items-center justify-between px-3 py-2 border-t border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-800">
                 <span>Total ({incentiveBreakdown.length} kunjungan)</span>
                 <span>{formatCurrency(incentiveBreakdown.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0))}</span>
               </div>
             </div>
           )}
 
-          <p className="text-[11px] text-slate-400 -mt-1">
+          <p className="text-xs text-slate-500 -mt-1">
             Uang Transport &amp; Jasa Insentif otomatis dihitung dari periode di atas (mengikuti hari kerja &amp; skema gaji terapis, sama seperti Simulasi Hitung Gaji). Nilainya tetap bisa diubah manual bila perlu.
           </p>
           {commissionBreakdown && (
-            <div className="text-[11px] text-slate-500 rounded-app-sm border border-slate-200 bg-white px-3 py-2 space-y-0.5">
+            <div className="text-xs text-slate-500 rounded-app-sm border border-slate-200 bg-white px-3 py-2 space-y-0.5">
               <div className="flex items-center justify-between">
                 <span>Omzet periode</span>
                 <span className="font-medium text-slate-700">{formatCurrency(commissionBreakdown.revenue)}</span>
@@ -505,14 +506,14 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
 
           {soapStatus && soapStatus.total > 0 && (
             soapStatus.unfilled > 0 ? (
-              <div className="flex items-start gap-2 rounded-app-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+              <div className="flex items-start gap-2 rounded-app-sm border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   <strong>{soapStatus.unfilled}</strong> dari {soapStatus.total} sesi pada periode ini belum memiliki catatan SOAP. Mohon lengkapi sebelum slip gaji difinalisasi.
                 </span>
               </div>
             ) : (
-              <div className="flex items-start gap-2 rounded-app-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
+              <div className="flex items-start gap-2 rounded-app-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
                 <ClipboardCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>Semua {soapStatus.total} sesi pada periode ini sudah memiliki catatan SOAP lengkap.</span>
               </div>
@@ -535,7 +536,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
           ) : records.length === 0 ? (
-            <p className="text-sm text-slate-400 italic text-center py-6">Belum ada slip gaji untuk terapis ini.</p>
+            <p className="text-sm text-slate-500 italic text-center py-6">Belum ada slip gaji untuk terapis ini.</p>
           ) : (
             <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
               {records.map((r) => (
@@ -549,7 +550,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                     <p className="text-sm font-medium text-slate-700">
                       {format(new Date(r.payroll_period_end), 'MMMM yyyy', { locale: idLocale })}
                     </p>
-                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
+                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE_CLASS[r.status] || STATUS_BADGE_CLASS.paid}`}>
                       {STATUS_LABEL[r.status] || STATUS_LABEL.paid}
                     </span>
                   </div>

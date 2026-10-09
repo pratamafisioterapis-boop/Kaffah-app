@@ -111,7 +111,7 @@ const OperationalDashboardUI = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="rounded-app border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300">
+            <Card className="rounded-app border-slate-200 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className={`p-3 rounded-app-sm ${stat.bg} ${stat.color}`}>
@@ -142,7 +142,7 @@ const OperationalDashboardUI = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TODAY_TASKS.map((task, index) => (
-            <Card key={index} className={`rounded-app border-l-4 shadow-sm hover:shadow-md transition-all ${task.borderColor}`}>
+            <Card key={index} className={`rounded-app border-l-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] ${task.borderColor}`}>
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">{task.label}</p>
@@ -185,8 +185,8 @@ const OperationalDashboardUI = () => {
                         return (
                           <div 
                             key={j} 
-                            className={`h-10 rounded-md flex items-center justify-center text-xs font-medium cursor-pointer transition-all hover:scale-105 border ${
-                              status === 'empty' ? 'bg-slate-50 border-slate-200 text-slate-400 border-dashed' :
+                            className={`h-10 rounded-md flex items-center justify-center text-xs font-medium cursor-pointer transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105 border ${
+                              status === 'empty' ? 'bg-slate-50 border-slate-200 text-slate-500 border-dashed' :
                               status === 'filled' ? 'bg-blue-100 border-blue-200 text-blue-700' :
                               'bg-red-100 border-red-200 text-red-700'
                             }`}
@@ -365,7 +365,7 @@ const OperationalDashboardUI = () => {
                        <TableCell>{recap.service}</TableCell>
                        <TableCell>{recap.therapist}</TableCell>
                        <TableCell className="text-right">
-                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                         <Button aria-label="Opsi lainnya" variant="ghost" size="sm" className="tap-target h-8 w-8 p-0">
                            <MoreHorizontal className="w-4 h-4" />
                          </Button>
                        </TableCell>
@@ -397,7 +397,7 @@ const OperationalDashboardUI = () => {
                        <TableCell><Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{patient.status}</Badge></TableCell>
                        <TableCell>{patient.lastVisit}</TableCell>
                        <TableCell className="text-right">
-                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                         <Button aria-label="Opsi lainnya" variant="ghost" size="sm" className="tap-target h-8 w-8 p-0">
                            <MoreHorizontal className="w-4 h-4" />
                          </Button>
                        </TableCell>
@@ -431,7 +431,7 @@ const OperationalDashboardUI = () => {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button size="lg" className="rounded-full h-14 w-14 shadow-xl bg-app-accent hover:bg-app-accent-hover text-white p-0 flex items-center justify-center">
+               <Button aria-label="Tambah" size="lg" className="rounded-full h-14 w-14 shadow-xl bg-app-accent hover:bg-app-accent-hover text-white p-0 flex items-center justify-center">
                   <Plus className="w-6 h-6" />
                </Button>
             </DropdownMenuTrigger>

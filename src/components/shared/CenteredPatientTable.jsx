@@ -109,7 +109,7 @@ const formatTanggal = (date) => {
             <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-3 justify-between items-center bg-white rounded-t-app">
                 <div className="flex flex-wrap items-center gap-2 w-full">
                     <div className="relative flex-1 min-w-[160px]">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <Input 
                             placeholder="Cari nama, RM, atau No HP..." 
                             value={search}
@@ -121,7 +121,7 @@ const formatTanggal = (date) => {
                         <select
                             value={status}
                             onChange={(e) => handleStatusFilter(e.target.value)}
-                            className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                            className="h-9 text-xs border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
                         >
                             <option value="all">Semua Status</option>
                             <option value="aktif">Aktif</option>
@@ -130,7 +130,7 @@ const formatTanggal = (date) => {
                         <select
                              value={completeness}
                              onChange={(e) => handleCompletenessFilter(e.target.value)}
-                             className="h-9 text-[11px] border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
+                             className="h-9 text-xs border border-slate-200 rounded-md px-1.5 bg-white outline-none focus:border-indigo-500 flex-1 min-w-0"
                         >
                             <option value="all">Semua Kelengkapan</option>
                             <option value="complete">Lengkap</option>
@@ -145,7 +145,7 @@ const formatTanggal = (date) => {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16">
                             <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
-                            <p className="text-xs text-slate-400">Memuat data pasien...</p>
+                            <p className="text-xs text-slate-500">Memuat data pasien...</p>
                         </div>
                     ) : patients.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16">
@@ -163,21 +163,21 @@ const formatTanggal = (date) => {
                                 )}
                             >
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="font-mono text-[10px] text-indigo-500 font-semibold">
+                                    <span className="font-mono text-xs text-indigo-500 font-semibold">
                                         {patient.medical_record_number || '-'}
                                     </span>
                                     <div className="flex items-center gap-1.5">
-                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0 border-0", patient.statusClass)}>
+                                        <Badge variant="outline" className={cn("font-normal text-xs px-2 py-0 border-0", patient.statusClass)}>
                                             {patient.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
                                         </Badge>
-                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0 border-0", patient.completenessClass)}>
+                                        <Badge variant="outline" className={cn("font-normal text-xs px-2 py-0 border-0", patient.completenessClass)}>
                                             {patient.isComplete ? 'Lengkap' : 'Belum'}
                                         </Badge>
                                     </div>
                                 </div>
                                 <div className="mb-1">
                                     <p className="font-semibold text-slate-900 text-sm leading-tight">{patient.full_name}</p>
-                                    {patient.nickname && <p className="text-xs text-slate-400">{patient.nickname}</p>}
+                                    {patient.nickname && <p className="text-xs text-slate-500">{patient.nickname}</p>}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-slate-500">
                                     <span>{patient.gender} · {patient.formattedAge}</span>
@@ -247,7 +247,7 @@ const formatTanggal = (date) => {
                                     <TableCell className="text-left">
                                         <div className="flex flex-col">
                                             <span className="font-medium text-slate-800 text-sm">{patient.full_name}</span>
-                                            <span className="text-xs text-slate-400">{patient.nickname || '-'}</span>
+                                            <span className="text-xs text-slate-500">{patient.nickname || '-'}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-slate-600 text-xs text-center font-medium">{patient.gender}</TableCell>
@@ -256,12 +256,12 @@ const formatTanggal = (date) => {
                                     <TableCell className="text-slate-600 text-xs font-mono text-center">{patient.formattedPhone}</TableCell>
                                     <TableCell className="text-slate-600 text-xs text-center">{patient.additionalInfoLabel}</TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.statusClass)}>
+                                        <Badge variant="outline" className={cn("font-normal text-xs px-2 py-0.5 border-0", patient.statusClass)}>
                                             {patient.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline" className={cn("font-normal text-[10px] px-2 py-0.5 border-0", patient.completenessClass)}>
+                                        <Badge variant="outline" className={cn("font-normal text-xs px-2 py-0.5 border-0", patient.completenessClass)}>
                                             {patient.isComplete ? 'Lengkap' : 'Tidak Lengkap'}
                                         </Badge>
                                     </TableCell>
@@ -320,9 +320,9 @@ const formatTanggal = (date) => {
                                                     </div>
                                                     <p className="text-xs text-slate-600">{Array.isArray(item.diagnosis_labels) ? item.diagnosis_labels.join(', ') : item.diagnosis_labels || '-'}</p>
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600">{item.patient_type || '-'}</span>
-                                                        {item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">{item.package_type}</span> : <span className="text-[10px] text-slate-400">Non Paket</span>}
-                                                        <span className="text-[10px] text-slate-500">{item.therapist_name || '-'}</span>
+                                                        <span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-600">{item.patient_type || '-'}</span>
+                                                        {item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{item.package_type}</span> : <span className="text-xs text-slate-500">Non Paket</span>}
+                                                        <span className="text-xs text-slate-500">{item.therapist_name || '-'}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -345,7 +345,7 @@ const formatTanggal = (date) => {
                                                             <td className="p-3 text-slate-700">{formatTanggal(item.recap_date)}</td>
                                                             <td className="p-3 text-xs text-slate-600 max-w-[250px] whitespace-normal break-words">{Array.isArray(item.diagnosis_labels) ? item.diagnosis_labels.join(', ') : item.diagnosis_labels || '-'}</td>
                                                             <td className="p-3 text-xs"><span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">{item.patient_type || '-'}</span></td>
-                                                            <td className="p-3 text-xs">{item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{item.package_type}</span> : <span className="text-slate-400">Non Paket</span>}</td>
+                                                            <td className="p-3 text-xs">{item.package_type ? <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{item.package_type}</span> : <span className="text-slate-500">Non Paket</span>}</td>
                                                             <td className="p-3 text-xs text-slate-600">{item.therapist_name || '-'}</td>
                                                             <td className="p-3 text-right font-semibold text-slate-800">{item.amount ? `Rp ${item.amount.toLocaleString('id-ID')}` : '-'}</td>
                                                         </tr>

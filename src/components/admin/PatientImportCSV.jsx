@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { importPatientsFromCSV, parseCSVForPreview } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { confirmAction } from '@/lib/confirmAction';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PatientImportCSV = ({ onImportSuccess }) => {
@@ -103,7 +104,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
     }
 
     if (invalidCount > 0) {
-       if (!window.confirm(`Terdapat ${invalidCount} baris data tidak valid yang akan dilewati. Lanjutkan import ${validCount} data valid saja?`)) {
+       if (!await confirmAction(`Terdapat ${invalidCount} baris data tidak valid yang akan dilewati. Lanjutkan import ${validCount} data valid saja?`)) {
           return;
        }
     }
@@ -169,7 +170,7 @@ const PatientImportCSV = ({ onImportSuccess }) => {
         { num: 3, label: 'Preview & Validasi' },
         { num: 4, label: 'Import' }
       ].map((step) => (
-        <div key={step.num} className={`flex items-center ${activeStep >= step.num ? 'text-app-accent font-semibold' : 'text-slate-400'}`}>
+        <div key={step.num} className={`flex items-center ${activeStep >= step.num ? 'text-app-accent font-semibold' : 'text-slate-500'}`}>
           <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 border ${activeStep >= step.num ? 'bg-app-accent/15 border-app-accent' : 'bg-slate-50 border-slate-300'}`}>
             {step.num}
           </div>

@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Helmet } from 'react-helmet';
 import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
+import ConfirmHost from '@/components/shared/ConfirmHost';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/customSupabaseClient';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -488,6 +489,7 @@ function App() {
             </Suspense>
           </Router>
           <Toaster />
+          <ConfirmHost />
         </ThemeProvider>
         </AuthProvider>
       </AuthErrorBoundary>

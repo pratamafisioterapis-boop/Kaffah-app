@@ -27,11 +27,11 @@ const BepItemDetailModal = ({ isOpen, onClose, title, icon, iconClassName, perio
             {icon && React.cloneElement(icon, { className: cn('w-5 h-5 shrink-0', iconClassName) })}
             {title}
           </DialogTitle>
-          {periodLabel && <p className="text-xs text-slate-400">{periodLabel}</p>}
+          {periodLabel && <p className="text-xs text-slate-500">{periodLabel}</p>}
         </DialogHeader>
 
         <div className="rounded-app bg-white/5 border border-white/10 px-4 py-3">
-          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Total</p>
+          <p className="text-xs font-bold tracking-widest text-slate-500 uppercase">Total</p>
           <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(totalAmount)}</p>
         </div>
 
@@ -39,7 +39,7 @@ const BepItemDetailModal = ({ isOpen, onClose, title, icon, iconClassName, perio
           {!rows || rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <div className="bg-white/5 p-3 rounded-full mb-3"><Inbox className="w-6 h-6 text-slate-500" /></div>
-              <p className="text-sm text-slate-400">{emptyText || 'Belum ada data.'}</p>
+              <p className="text-sm text-slate-500">{emptyText || 'Belum ada data.'}</p>
             </div>
           ) : (
             <div className="divide-y divide-white/10">
@@ -47,8 +47,8 @@ const BepItemDetailModal = ({ isOpen, onClose, title, icon, iconClassName, perio
                 <div key={row.key} className="py-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-100 truncate">{row.label}</p>
-                    {row.sublabel && <p className="text-xs text-slate-400 mt-0.5">{row.sublabel}</p>}
-                    {row.date && <p className="text-[11px] text-slate-500 mt-0.5">{formatDate(row.date)}</p>}
+                    {row.sublabel && <p className="text-xs text-slate-500 mt-0.5">{row.sublabel}</p>}
+                    {row.date && <p className="text-xs text-slate-500 mt-0.5">{formatDate(row.date)}</p>}
                   </div>
                   <span className="text-sm font-semibold text-slate-100 tabular-nums shrink-0">{formatCurrency(row.amount)}</span>
                 </div>

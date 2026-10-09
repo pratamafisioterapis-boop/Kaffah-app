@@ -45,14 +45,14 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                 <div className="flex items-center gap-2.5">
                     <div className="w-1 h-5 rounded-full" style={{ background: accentColor }} />
                     <div>
-                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>{title}</span>
-                        <span className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: accentPill, color: accentColor }}>
+                        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accentColor }}>{title}</span>
+                        <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded-md" style={{ background: accentPill, color: accentColor }}>
                             {data.length} entri
                         </span>
                     </div>
                 </div>
                 <div className="text-right">
-                    <div className="text-[10px] font-medium" style={{ color: accentColor + 'aa' }}>Subtotal</div>
+                    <div className="text-xs font-medium" style={{ color: accentColor + 'aa' }}>Subtotal</div>
                     <div className="text-sm font-bold tabular-nums" style={{ color: accentColor }}>
                         Rp {fmt(total)}
                     </div>
@@ -87,7 +87,7 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                                         const val = col.render ? col.render(item) : item[col.accessor];
                                         if (!val || val === '-') return null;
                                         return (
-                                            <span key={cIdx} className="text-[10px] px-2 py-0.5 rounded-md"
+                                            <span key={cIdx} className="text-xs px-2 py-0.5 rounded-md"
                                                 style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                                                 {col.header}: {val}
                                             </span>
@@ -470,7 +470,7 @@ combinedExpenses.sort((a, b) => {
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-bold text-slate-800 truncate">Laporan Akuntansi Lengkap</h2>
-            <p className="text-xs text-slate-400 mt-0.5 truncate">
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
               Periode: {formatDate(dateRange.startDate)} s/d {formatDate(dateRange.endDate)}
             </p>
           </div>
@@ -493,11 +493,11 @@ combinedExpenses.sort((a, b) => {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleExportExcel('accrual')} className="flex flex-col items-start gap-0.5 py-2">
                 <span className="text-xs font-semibold">Standar (Akrual per Sesi)</span>
-                <span className="text-[11px] text-slate-400">Nominal paket dibagi rata per sesi terapi</span>
+                <span className="text-xs text-slate-500">Nominal paket dibagi rata per sesi terapi</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExportExcel('cash')} className="flex flex-col items-start gap-0.5 py-2">
                 <span className="text-xs font-semibold">Real-time (Kas Masuk)</span>
-                <span className="text-[11px] text-slate-400">Nominal hanya dicatat saat uang benar-benar diterima; sesi lanjutan tertulis 0</span>
+                <span className="text-xs text-slate-500">Nominal hanya dicatat saat uang benar-benar diterima; sesi lanjutan tertulis 0</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -537,7 +537,7 @@ combinedExpenses.sort((a, b) => {
           <button
             key={key}
             onClick={() => setActiveSection(key)}
-            className="flex items-center gap-2 px-5 py-2 text-xs font-bold transition-all"
+            className="flex items-center gap-2 px-5 py-2 text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
             style={{
               borderRadius: '9px',
               background: activeSection === key ? activeBg : 'transparent',

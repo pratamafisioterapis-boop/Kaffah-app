@@ -216,7 +216,7 @@ const DebugPackagePanel = () => {
                 {!selectedPatient && (
                     <div className="relative max-w-md">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <Input 
                                 placeholder="Search patient name..." 
                                 value={searchQuery}
@@ -224,7 +224,7 @@ const DebugPackagePanel = () => {
                                 className="pl-9 bg-white"
                             />
                             {isSearching && (
-                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
+                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-500" />
                             )}
                         </div>
                         
@@ -238,7 +238,7 @@ const DebugPackagePanel = () => {
                                         className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0 flex justify-between items-center"
                                     >
                                         <span className="font-medium text-slate-700">{patient.full_name}</span>
-                                        <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">{patient.rm_number || 'No RM'}</span>
+                                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">{patient.rm_number || 'No RM'}</span>
                                     </div>
                                 ))}
                             </div>
@@ -248,7 +248,7 @@ const DebugPackagePanel = () => {
 
                 {/* Patient Detail View */}
                 {selectedPatient && (
-                    <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
                         {/* Patient Header */}
                         <div className="flex items-center gap-3 bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm">
                             <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
@@ -290,7 +290,7 @@ const DebugPackagePanel = () => {
                                     <TableBody>
                                         {patientPackages.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-6 text-slate-400 italic">
+                                                <TableCell colSpan={6} className="text-center py-6 text-slate-500 italic">
                                                     No packages found.
                                                 </TableCell>
                                             </TableRow>
@@ -344,7 +344,7 @@ const DebugPackagePanel = () => {
                                     <TableBody>
                                         {patientRecaps.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="text-center py-6 text-slate-400 italic">
+                                                <TableCell colSpan={4} className="text-center py-6 text-slate-500 italic">
                                                     No recaps found.
                                                 </TableCell>
                                             </TableRow>

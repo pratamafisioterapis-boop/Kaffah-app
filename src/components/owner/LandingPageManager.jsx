@@ -60,7 +60,7 @@ const ListEditor = ({ items, onChange, fields, emptyItem }) => {
           <button
             type="button"
             onClick={() => remove(idx)}
-            className="absolute top-2 right-2 text-slate-400 hover:text-red-600"
+            className="absolute top-2 right-2 text-slate-500 hover:text-red-600"
             title="Hapus"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -265,7 +265,7 @@ const LandingPageManager = () => {
               type="button"
               onClick={() => handleSelectTemplate(tpl.id)}
               className={cn(
-                'relative text-left rounded-app border-2 p-3 transition-all hover:shadow-md',
+                'relative text-left rounded-app border-2 p-3 transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md',
                 templateId === tpl.id ? 'border-indigo-600 shadow-md' : 'border-slate-200'
               )}
             >
@@ -314,7 +314,7 @@ const LandingPageManager = () => {
         <h3 className="text-sm font-semibold text-slate-800">Isi Konten</h3>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Hero</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Hero</p>
           <Field label="Label kecil di atas judul" {...field('hero.eyebrow')} />
           <Field label="Judul Utama" {...field('hero.title')} />
           <Field label="Sub-judul" textarea {...field('hero.subtitle')} />
@@ -328,7 +328,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tentang Kami</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Tentang Kami</p>
           <Field label="Judul" {...field('about.title')} />
           <Field label="Deskripsi" textarea {...field('about.body')} />
           <Field
@@ -343,7 +343,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Layanan</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Layanan</p>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Judul bagian" {...field('services.title')} />
             <Field label="Sub-judul bagian" {...field('services.subtitle')} />
@@ -359,7 +359,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Keunggulan</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Keunggulan</p>
           <Field label="Judul bagian" {...field('advantages.title')} />
           <ListEditor
             items={content.advantages?.items}
@@ -370,7 +370,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Testimoni</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Testimoni</p>
           <Field label="Judul bagian" {...field('testimonials.title')} />
           <ListEditor
             items={content.testimonials?.items}
@@ -381,7 +381,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Daftar Harga (teks pengantar)</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar Harga (teks pengantar)</p>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Judul bagian" {...field('pricing.title')} />
             <Field label="Sub-judul bagian" {...field('pricing.subtitle')} />
@@ -391,7 +391,7 @@ const LandingPageManager = () => {
 
         {templateId === 'prestige' && (
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Fasilitas (galeri foto)</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Fasilitas (galeri foto)</p>
             <ListEditor
               items={content.facilities?.images}
               onChange={(items) => setContent((prev) => setPath(prev, 'facilities.images', items))}
@@ -403,7 +403,7 @@ const LandingPageManager = () => {
 
         {templateId === 'prestige' && (
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">FAQ</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">FAQ</p>
             <Field label="Judul bagian" {...field('faq.title')} />
             <ListEditor
               items={content.faq?.items}
@@ -415,7 +415,7 @@ const LandingPageManager = () => {
         )}
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Ajakan Booking (CTA)</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Ajakan Booking (CTA)</p>
           <Field label="Judul" {...field('cta.title')} />
           <Field label="Sub-judul" textarea {...field('cta.subtitle')} />
           <Field label="Teks tombol" {...field('cta.buttonLabel')} />
@@ -425,7 +425,7 @@ const LandingPageManager = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Footer</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Footer</p>
           <Field label="Tagline singkat" {...field('footer.tagline')} />
         </div>
 

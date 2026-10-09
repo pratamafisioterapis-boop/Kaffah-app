@@ -82,7 +82,7 @@ const saveToStorage = (range) => {
           </PopoverContent>
         </Popover>
 
-        <span className="text-slate-400 font-medium hidden sm:inline">-</span>
+        <span className="text-slate-500 font-medium hidden sm:inline">-</span>
 
         {/* End Date Picker */}
         <Popover>

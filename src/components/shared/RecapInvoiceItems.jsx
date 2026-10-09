@@ -69,15 +69,15 @@ const RecapInvoiceItems = ({ clinicId, items, onChange }) => {
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label className="text-[10px] text-slate-500">Qty</Label>
+              <Label className="text-xs text-slate-500">Qty</Label>
               <Input className="h-8 text-sm" type="number" min="1" value={it.qty} onChange={(e) => patch(i, { qty: Number(e.target.value) || 1 })} />
             </div>
             <div>
-              <Label className="text-[10px] text-slate-500">Harga satuan</Label>
+              <Label className="text-xs text-slate-500">Harga satuan</Label>
               <Input className="h-8 text-sm" type="number" min="0" value={it.price} onChange={(e) => patch(i, { price: Number(e.target.value) || 0 })} />
             </div>
             <div>
-              <Label className="text-[10px] text-slate-500">Diskon</Label>
+              <Label className="text-xs text-slate-500">Diskon</Label>
               <Input className="h-8 text-sm" type="number" min="0" value={it.discount} onChange={(e) => patch(i, { discount: Number(e.target.value) || 0 })} />
             </div>
           </div>

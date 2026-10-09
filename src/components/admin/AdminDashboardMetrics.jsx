@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { getCachedClinicId } from '@/lib/api';
 
 const MetricCard = ({ title, value, icon: Icon, colorClass, loading }) => (
-  <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-slate-200">
+  <Card className="shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 border-slate-200">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium text-slate-600">
         {title}
@@ -20,7 +20,7 @@ const MetricCard = ({ title, value, icon: Icon, colorClass, loading }) => (
       {loading ? (
         <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" />
       ) : (
-        <div className="text-2xl font-bold text-slate-900 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="text-2xl font-bold text-slate-900 animate-in fade-in duration-200 ease-out">
           {value.toLocaleString('id-ID')}
         </div>
       )}

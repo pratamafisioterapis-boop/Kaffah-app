@@ -13,7 +13,7 @@ import {
 
 const DetailItem = ({ icon: Icon, label, value, className = "", valueClassName = "" }) => (
     <div className={cn("flex flex-col space-y-1", className)}>
-    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+    <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
             {Icon && <Icon className="w-3.5 h-3.5" />} {label}
         </span>
     <span className={cn("text-[15px] font-semibold text-slate-900 break-words tracking-tight", valueClassName)}>
@@ -123,7 +123,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     <div className="flex justify-between items-start">
                         <div>
                 <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">Detail Recap Harian</DialogTitle>
-                <DialogDescription className="text-xs text-slate-400 mt-1 tracking-wide">
+                <DialogDescription className="text-xs text-slate-500 mt-1 tracking-wide">
                                 ID: {recap.id?.slice(0,8)}...
                             </DialogDescription>
                         </div>
@@ -137,7 +137,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-6">
                     {/* Section 1: Pasien */}
-                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
                             <UserCircle className="w-4 h-4 text-app-accent" />
                 <h4 className="text-sm font-semibold text-slate-700 tracking-tight">Identitas Pasien</h4>
@@ -152,7 +152,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         <DetailItem 
                             label="Pasien Aktual" 
                             value={displayActualPatient} 
-                            valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-app-accent-hover" : "text-slate-400")}
+                            valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-app-accent-hover" : "text-slate-500")}
                         />
 
                         <div className="grid grid-cols-2 gap-4">
@@ -162,7 +162,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 2: Waktu */}
-                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
                             <Clock className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Waktu & Status</h4>
@@ -175,7 +175,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                 value={recap.date ? formatDateIndonesian(recap.date) : '-'} 
                             />
                             <div className="flex flex-col space-y-1">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     <Activity className="w-3.5 h-3.5" /> Status
                                 </span>
                                 <div>
@@ -197,7 +197,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 3: Detail Klinis */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
                             <Activity className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Detail Layanan & Klinis</h4>
@@ -229,7 +229,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 4: Keuangan */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-200/50">
                             <CreditCard className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-app-ink">Informasi Pembayaran</h4>

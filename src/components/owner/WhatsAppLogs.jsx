@@ -66,7 +66,7 @@ const WhatsAppLogs = () => {
         {/* Mobile cards */}
         <div className="sm:hidden divide-y divide-slate-100">
             {loading ? (
-                <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/></div>
+                <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500"/></div>
             ) : logs.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">Belum ada riwayat pesan.</div>
             ) : (
@@ -105,7 +105,7 @@ const WhatsAppLogs = () => {
                 </TableHeader>
                 <TableBody>
                     {loading ? (
-                        <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/></TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500"/></TableCell></TableRow>
                     ) : logs.length === 0 ? (
                         <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Belum ada riwayat pesan.</TableCell></TableRow>
                     ) : (
@@ -125,7 +125,7 @@ const WhatsAppLogs = () => {
                                         </div>
                                     )}
                                     {log.status === 'sent' && log.sent_at && (
-                                        <span className="text-[10px] text-slate-400">
+                                        <span className="text-xs text-slate-500">
                                             {format(new Date(log.sent_at), 'HH:mm')}
                                         </span>
                                     )}

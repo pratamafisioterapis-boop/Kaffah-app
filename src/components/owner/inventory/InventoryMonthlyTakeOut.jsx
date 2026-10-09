@@ -57,10 +57,10 @@ const InventoryMonthlyTakeOut = () => {
 
       <div className="w-full overflow-hidden rounded-app-lg border border-slate-200 shadow-sm bg-white">
         {loading ? (
-          <div className="text-center py-12 text-slate-400">Memuat data...</div>
+          <div className="text-center py-12 text-slate-500">Memuat data...</div>
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
-            <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-400" /></div>
+            <div className="bg-slate-100 p-4 rounded-full mb-3"><Boxes className="w-8 h-8 text-slate-500" /></div>
             <h3 className="text-lg font-medium text-slate-900">Belum ada pengambilan barang di bulan ini</h3>
           </div>
         ) : (
@@ -75,11 +75,11 @@ const InventoryMonthlyTakeOut = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jumlah</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Jumlah</p>
                       <p className="font-mono text-slate-700">{Number(row.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {row.unit}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Nilai (Rp)</p>
+                      <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nilai (Rp)</p>
                       <p className="font-mono font-bold text-rose-600">Rp {Number(row.total_cost).toLocaleString('id-ID')}</p>
                     </div>
                   </div>
@@ -94,7 +94,7 @@ const InventoryMonthlyTakeOut = () => {
             {/* Desktop: tabel */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
+                <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-xs tracking-wider">
                   <tr>
                     <th className="px-6 py-3.5 font-semibold">Tanggal</th>
                     <th className="px-6 py-3.5 font-semibold">Nama Barang</th>

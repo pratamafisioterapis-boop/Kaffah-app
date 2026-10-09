@@ -40,7 +40,7 @@ const PackageSessionDisplay = ({ sessionData, packageName }) => {
   const progressPercentage = totalSessions > 0 ? Math.min((sessionUsed / totalSessions) * 100, 100) : 0;
 
   return (
-    <Card className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+    <Card className="overflow-hidden border-slate-200 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
       <div className="bg-slate-50/50 p-4 border-b border-slate-100 flex justify-between items-start">
         <div>
           <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -61,11 +61,11 @@ const PackageSessionDisplay = ({ sessionData, packageName }) => {
          <div className="space-y-2">
             <div className="flex justify-between text-sm font-medium">
                <span className="text-slate-600">Sesi Terpakai</span>
-               <span className="text-slate-900 font-bold">{sessionUsed} <span className="text-slate-400 font-normal">/</span> {totalSessions}</span>
+               <span className="text-slate-900 font-bold">{sessionUsed} <span className="text-slate-500 font-normal">/</span> {totalSessions}</span>
             </div>
             <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div 
-                    className={`h-full transition-all duration-500 ${getProgressColor(sessionUsed, totalSessions)}`} 
+                    className={`h-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 ${getProgressColor(sessionUsed, totalSessions)}`} 
                     style={{ width: `${progressPercentage}%` }}
                 />
             </div>

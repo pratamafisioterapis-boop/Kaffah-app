@@ -148,7 +148,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageId }) => {
                                  </TableRow>
                              ) : data.length === 0 ? (
                                  <TableRow>
-                                     <TableCell colSpan={4} className="h-32 text-center text-slate-400 italic text-sm">
+                                     <TableCell colSpan={4} className="h-32 text-center text-slate-500 italic text-sm">
                                          Tidak ada riwayat penggunaan ditemukan.
                                      </TableCell>
                                  </TableRow>
@@ -178,7 +178,7 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageId }) => {
                                                          <ExternalLink className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                      </div>
                                                      {isDifferent && (
-                                                         <span className="text-[10px] text-slate-400">
+                                                         <span className="text-xs text-slate-500">
                                                              Owner: {ownerName}
                                                          </span>
                                                      )}

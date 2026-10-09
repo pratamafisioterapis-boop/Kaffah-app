@@ -49,7 +49,7 @@ const DetailedTable = ({ title, data, type }) => {
                 {/* Mobile / PWA: kartu, tanpa geser horizontal */}
                 <div className="sm:hidden divide-y divide-slate-100">
                     {data.length === 0 ? (
-                        <div className="px-6 py-8 text-center text-slate-400">
+                        <div className="px-6 py-8 text-center text-slate-500">
                             No data available for this period
                         </div>
                     ) : (
@@ -70,17 +70,17 @@ const DetailedTable = ({ title, data, type }) => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Category</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Category</p>
                                         <p className="text-slate-700 font-medium">{item.category || '-'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Amount</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Amount</p>
                                         <p className={cn("font-bold", isIncome ? "text-emerald-600" : "text-rose-600")}>
                                             {new Intl.NumberFormat('id-ID').format(item.amount)}
                                         </p>
                                     </div>
                                     <div className="col-span-2">
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Description</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Description</p>
                                         <p className="text-slate-500">{item.description || '-'}</p>
                                     </div>
                                 </div>
@@ -104,7 +104,7 @@ const DetailedTable = ({ title, data, type }) => {
                         <tbody className="divide-y divide-slate-100">
                             {data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                                         No data available for this period
                                     </td>
                                 </tr>
@@ -261,7 +261,7 @@ const CombinedFinanceReport = ({ dateRange }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-200 ease-out">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-indigo-100 pb-6 mb-2">
             <div>
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">

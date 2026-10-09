@@ -118,7 +118,7 @@ const PackageSessionHistoryModal = ({ isOpen, onClose, packageInfo, usedSessions
               <Button variant="outline" size="sm" onClick={fetchSessions}>Coba Lagi</Button>
             </div>
           ) : sessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
+            <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-2">
               <Calendar className="w-8 h-8 opacity-20" />
               <p className="text-sm">
                 {usedSessions === 0 
@@ -149,13 +149,13 @@ const PackageSessionHistoryModal = ({ isOpen, onClose, packageInfo, usedSessions
                       </TableCell>
                       <TableCell className="text-slate-700">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3 text-slate-400" />
+                          <Calendar className="w-3 h-3 text-slate-500" />
                           {session.recap_date ? format(new Date(session.recap_date), 'dd MMM yyyy', { locale: id }) : '-'}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 font-medium text-slate-800">
-                          <User className="w-3 h-3 text-slate-400" />
+                          <User className="w-3 h-3 text-slate-500" />
                           {getPatientDisplay(session)}
                         </div>
                       </TableCell>
@@ -163,7 +163,7 @@ const PackageSessionHistoryModal = ({ isOpen, onClose, packageInfo, usedSessions
                         <TableCell>
                           {isShared ? (
                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <UserCheck className="w-3 h-3 text-slate-400" />
+                              <UserCheck className="w-3 h-3 text-slate-500" />
                               {session.patient?.full_name || '-'}
                             </div>
                           ) : (
@@ -173,7 +173,7 @@ const PackageSessionHistoryModal = ({ isOpen, onClose, packageInfo, usedSessions
                       )}
                       <TableCell>
                         <div className="flex items-center gap-2 text-slate-600">
-                          <Stethoscope className="w-3 h-3 text-slate-400" />
+                          <Stethoscope className="w-3 h-3 text-slate-500" />
                           {session.therapist_name || session.therapist?.name || '-'}
                         </div>
                       </TableCell>

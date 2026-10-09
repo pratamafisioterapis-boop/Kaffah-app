@@ -48,7 +48,7 @@ const InventoryStockPage = () => {
 
   return (
     <DashboardLayout navItems={ownerNavItems} role="owner" userName="Owner">
-      <div className="space-y-6 animate-in fade-in duration-500 pb-12">
+      <div className="space-y-6 animate-in fade-in duration-200 ease-out pb-12">
 
         {/* Hero Banner */}
         <PageHero image="/hero/clinara-stock-hero.webp" title="Stok" highlight="Barang" description="Kelola barang operasional klinik, kuantitas, satuan, dan harga." />
@@ -79,13 +79,13 @@ const InventoryStockPage = () => {
           <TabsList className="grid w-full sm:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-app">
             <TabsTrigger
               value="stok"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
             >
               <Boxes className="w-4 h-4" /> Stok Barang
             </TabsTrigger>
             <TabsTrigger
               value="pengambilan"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
             >
               <ClipboardList className="w-4 h-4" /> Pengambilan Bulanan
             </TabsTrigger>
@@ -108,7 +108,7 @@ const InventoryStockPage = () => {
                   </Button>
                 </div>
                 {loading ? (
-                  <div className="text-center py-12 text-slate-400">Memuat data...</div>
+                  <div className="text-center py-12 text-slate-500">Memuat data...</div>
                 ) : (
                   <InventoryItemList items={items} onRefresh={fetchItems} onRestock={(item) => setRestockTarget(item)} onViewHistory={(item) => setHistoryTarget(item)} onEdit={(item) => setEditTarget(item)} />
                 )}

@@ -157,14 +157,14 @@ const AdminDatabasePatients = () => {
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
-                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]"
+                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]"
               >
                 <Upload className="w-4 h-4 shrink-0" strokeWidth={2.1} />
                 <span className="whitespace-nowrap"><span className="sm:hidden">Import</span><span className="hidden sm:inline">Import Excel</span></span>
               </Button>
               <Button
                 onClick={handleAddClick}
-                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25"
+                className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25"
               >
                 <Plus className="w-4 h-4 shrink-0" strokeWidth={2.2} />
                 <span className="whitespace-nowrap"><span className="sm:hidden">Tambah</span><span className="hidden sm:inline">Tambah Pasien</span></span>

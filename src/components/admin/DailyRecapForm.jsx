@@ -861,7 +861,7 @@ disabled={isPackageSessionLocked}
 </div>
 
 <div className="space-y-2">
-<Label>Akun Tujuan (Bank/Kas) <span className="text-slate-400 font-normal">(opsional)</span></Label>
+<Label>Akun Tujuan (Bank/Kas) <span className="text-slate-500 font-normal">(opsional)</span></Label>
 <SearchableSelect
 options={bankAccounts}
 value={formData.bank_account_id}

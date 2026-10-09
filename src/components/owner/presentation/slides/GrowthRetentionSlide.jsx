@@ -16,7 +16,7 @@ const GrowthCard = ({ label, growthData }) => {
         </p>
         <Icon className={`h-6 w-6 mb-1 ${growth >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} />
       </div>
-      <p className="text-slate-400 text-xs md:text-sm">
+      <p className="text-slate-500 text-xs md:text-sm">
         {growthData?.now ?? 0} vs {growthData?.previous ?? 0} periode sebelumnya
       </p>
     </div>
@@ -85,7 +85,7 @@ const GrowthRetentionSlide = ({ data, dateRange }) => {
         </div>
 
         {growth?.previousPeriod && (
-          <p className="text-slate-400 text-xs md:text-sm">
+          <p className="text-slate-500 text-xs md:text-sm">
             Dibandingkan dengan periode sebelumnya (panjang sama): {growth.previousPeriod.startDate} – {growth.previousPeriod.endDate}
           </p>
         )}

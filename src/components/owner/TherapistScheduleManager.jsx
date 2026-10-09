@@ -78,7 +78,6 @@ const TherapistScheduleManager = () => {
     setLoading(true);
     const { data } = await getTherapistSchedules(therapistId);
     if (data) {
-        console.log("[TherapistScheduleManager] Loaded schedules:", data);
         setSchedules(data);
     }
     setLoading(false);
@@ -202,7 +201,6 @@ const TherapistScheduleManager = () => {
                     capacity: slot.capacity || 1,
                     is_active: true
                 };
-                console.log("[TherapistScheduleManager] Pasting schedule:", payload);
                 createPromises.push(createTherapistSchedule(payload));
             });
         });
@@ -255,7 +253,6 @@ const TherapistScheduleManager = () => {
   };
 
   const handleFormSuccess = (newData) => {
-    console.log("[TherapistScheduleManager] Form success, new data:", newData);
     setIsFormOpen(false);
     loadSchedules(selectedTherapist.id);
   };
@@ -295,7 +292,7 @@ const TherapistScheduleManager = () => {
       />
 
       {!selectedTherapist ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
+        <div className="flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-app">
           <User className="w-16 h-16 mb-4 opacity-30" />
           <p className="font-medium">Silakan pilih terapis terlebih dahulu</p>
         </div>
@@ -399,12 +396,12 @@ const TherapistScheduleManager = () => {
                             <Card 
                                 key={day.value} 
                                 className={cn(
-                                    "relative transition-all duration-300 overflow-hidden bg-white hover:shadow-2xl hover:-translate-y-1 group",
+                                    "relative transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 overflow-hidden bg-white [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-2xl [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-1 group",
                                     isCopiedSource ? "border-2 border-app-accent-bright ring-4 ring-blue-100/50" : "border-slate-200"
                                 )}
                             >
                                 <div className={cn(
-                                    "absolute top-0 left-0 w-full h-1.5 transition-all duration-300",
+                                    "absolute top-0 left-0 w-full h-1.5 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200",
                                     hasSlots ? `bg-gradient-to-r ${day.color}` : 'bg-slate-200'
                                 )} />
                                 
@@ -413,14 +410,14 @@ const TherapistScheduleManager = () => {
                                         <Badge className={cn("px-3 py-1 text-sm shadow-sm", day.badgeColor, !hasSlots && "opacity-60 grayscale")}>
                                             {day.label}
                                         </Badge>
-                                        {hasSlots && <span className="text-xs text-slate-400 font-medium">{daySlots.length} slot</span>}
+                                        {hasSlots && <span className="text-xs text-slate-500 font-medium">{daySlots.length} slot</span>}
                                     </div>
                                     
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-full"
+                                            className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-full"
                                             onClick={() => handleCopySchedule(day.value)}
                                             disabled={!hasSlots}
                                             title="Copy Jadwal"
@@ -430,7 +427,7 @@ const TherapistScheduleManager = () => {
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8 text-slate-400 hover:text-green-600 hover:bg-green-50 transition-colors rounded-full"
+                                            className="h-8 w-8 text-slate-500 hover:text-green-600 hover:bg-green-50 transition-colors rounded-full"
                                             onClick={() => handlePasteToDay(day.value)}
                                             disabled={!copiedSchedule || pasteLoading}
                                             title="Paste Jadwal"
@@ -442,7 +439,7 @@ const TherapistScheduleManager = () => {
                                 
                                 <CardContent className="p-6 pt-0">
                                     {isCopiedSource && (
-                                        <div className="mb-4 inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                        <div className="mb-4 inline-flex items-center text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
                                             Jadwal Disalin
                                         </div>
                                     )}
@@ -452,12 +449,12 @@ const TherapistScheduleManager = () => {
                                             {daySlots.map((slot) => (
                                                 <div 
                                                     key={slot.id} 
-                                                    className="group/slot flex items-center justify-between bg-slate-50 border border-slate-200 rounded-full px-4 py-2 shadow-sm text-sm hover:scale-105 hover:bg-white hover:border-slate-300 transition-all duration-300 cursor-default"
+                                                    className="group/slot flex items-center justify-between bg-slate-50 border border-slate-200 rounded-full px-4 py-2 shadow-sm text-sm [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105 hover:bg-white hover:border-slate-300 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 cursor-default"
                                                 >
                                                     <span className="font-semibold text-slate-700 tracking-tight">
                                                         {slot.start_time.slice(0,5)} - {slot.end_time.slice(0,5)}
                                                         {slot.capacity > 1 && (
-                                                            <span className="ml-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full align-middle">
+                                                            <span className="ml-1 text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full align-middle">
                                                                 ×{slot.capacity}
                                                             </span>
                                                         )}
@@ -474,7 +471,7 @@ const TherapistScheduleManager = () => {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="py-8 flex flex-col items-center justify-center text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-app bg-slate-50/50">
+                                        <div className="py-8 flex flex-col items-center justify-center text-center text-slate-500 border-2 border-dashed border-slate-100 rounded-app bg-slate-50/50">
                                             <CalendarClock className="w-8 h-8 mb-2 opacity-20" />
                                             <span className="text-xs font-medium">Kosong</span>
                                         </div>

@@ -5,6 +5,7 @@ import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, isValid } from 'date-fns';
+import { toast } from '@/components/ui/use-toast';
 
 const AdminAccountingReport = ({ data, dateRange }) => {
   // Safety check for data
@@ -83,7 +84,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
       doc.save('admin-accounting-report.pdf');
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF report. Please check console for details.");
+      toast({ title: "Gagal membuat laporan PDF", description: "Periksa konsol untuk detailnya.", variant: "destructive" });
     }
   };
 

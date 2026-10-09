@@ -182,7 +182,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
       {/* Filter compact khusus PWA */}
       {isPWA && (
         <div className="flex items-center gap-2 bg-white p-3 rounded-app border border-slate-200 shadow-sm">
-          <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+          <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
           <input
             type="date"
             className="flex-1 text-xs px-2 py-1.5 rounded-app-sm border border-slate-200 text-slate-700"
@@ -196,7 +196,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
             value={dateRange.endDate}
             onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
           />
-          <Button onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-app-sm h-8 shrink-0">
+          <Button aria-label="Filter" onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-app-sm h-8 shrink-0">
             <Filter className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -206,7 +206,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setActiveTab("expenses")}
-          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center gap-2.5 text-sm ${
             activeTab === "expenses" 
               ? "bg-rose-600 text-white shadow-lg shadow-rose-200 ring-1 ring-rose-500 ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
@@ -217,7 +217,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         </button>
         <button
           onClick={() => setActiveTab("income")}
-          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center gap-2.5 text-sm ${
             activeTab === "income" 
               ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200 ring-1 ring-emerald-500 ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
@@ -228,7 +228,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
         </button>
         <button
           onClick={() => setActiveTab("reports")}
-          className={`px-5 py-2.5 rounded-app font-medium transition-all flex items-center gap-2.5 text-sm ${
+          className={`px-5 py-2.5 rounded-app font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center gap-2.5 text-sm ${
             activeTab === "reports" 
               ? "bg-app-accent text-white shadow-lg shadow-app-accent/25 ring-1 ring-app-accent-bright ring-offset-1" 
               : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 shadow-sm"
