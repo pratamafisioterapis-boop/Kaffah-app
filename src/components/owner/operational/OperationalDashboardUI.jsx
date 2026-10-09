@@ -1,9 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Users, Activity, Calendar, Clock,
   CheckCircle, XCircle, PlayCircle, UserCheck,
-  UserPlus, UserCog
+  UserPlus, UserCog, Package
 } from 'lucide-react';
 import SlotUtilizationChart from './SlotUtilizationChart';
 
@@ -13,6 +13,21 @@ const isPWA = (() => {
       window.navigator.standalone === true;
   } catch { return false; }
 })();
+
+// Kurva ease-out kuat: gerak langsung terasa responsif (bawaan 'easeOut' terlalu lemah)
+const EASE_OUT = [0.23, 1, 0.32, 1];
+
+// Stagger pendek (40ms) dan dibatasi, supaya kartu terakhir tidak menunggu lama.
+// Pakai string `transform` (bukan shorthand `y`) agar tetap mulus saat main thread sibuk.
+const cardEntrance = (index, offset, reduceMotion) => ({
+  initial: { opacity: 0, transform: `translateY(${reduceMotion ? 0 : offset}px)` },
+  animate: { opacity: 1, transform: 'translateY(0px)' },
+  transition: { duration: 0.25, delay: Math.min(index, 8) * 0.04, ease: EASE_OUT },
+});
+
+// Hover hanya di perangkat dengan mouse; di layar sentuh hover "menempel" setelah tap
+const HOVER_LIFT = '[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg';
+const HOVER_LIFT_SM = '[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md';
 
 // Skeleton
 const KPISkeleton = ({ large }) => (
@@ -40,11 +55,12 @@ const OperationalDashboardUI = ({
   returningPatientsToday = 0,
   isLoading = false
 }) => {
+  const reduceMotion = useReducedMotion();
 
   const periodKPIs = [
     { label: 'Total Sesi', value: totalSessions, change: 'Periode', icon: Activity, iconColor: 'text-blue-600', iconBg: 'bg-blue-50', accent: 'border-l-blue-500' },
     { label: 'Total Pasien', value: totalPatients, change: 'Unik', icon: Users, iconColor: 'text-indigo-600', iconBg: 'bg-indigo-50', accent: 'border-l-indigo-500' },
-    { label: 'Total Paket', value: totalPackages, change: 'Aktif', icon: Users, iconColor: 'text-violet-600', iconBg: 'bg-violet-50', accent: 'border-l-violet-500' },
+    { label: 'Total Paket', value: totalPackages, change: 'Aktif', icon: Package, iconColor: 'text-violet-600', iconBg: 'bg-violet-50', accent: 'border-l-violet-500' },
   ];
 
   const todayKPIs = [
@@ -79,10 +95,8 @@ const OperationalDashboardUI = ({
         {periodKPIs.map((kpi, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07, ease: 'easeOut' }}
-            className={`bg-white rounded-2xl border border-slate-100 border-l-4 ${kpi.accent} shadow-sm hover:shadow-lg transition-all duration-300 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
+            {...cardEntrance(i, 12, reduceMotion)}
+            className={`bg-white rounded-2xl border border-slate-100 border-l-4 ${kpi.accent} shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
           >
             <div className="flex items-start justify-between gap-1">
               <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
@@ -94,23 +108,22 @@ const OperationalDashboardUI = ({
               </span>
             </div>
             <div>
-              <p className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-none">
+              <p className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                 {kpi.value.toLocaleString('id-ID')}
               </p>
               <p className="text-[10px] md:text-sm font-medium text-slate-400 mt-1 leading-tight truncate">{kpi.label}</p>
             </div>
           </motion.div>
-        ))}      </div>
+        ))}
+      </div>
 
       {/* ── Row 2: 6 Today KPIs ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {todayKPIs.map((kpi, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: (i + 3) * 0.07, ease: 'easeOut' }}
-            className={`rounded-2xl border shadow-sm hover:shadow-md transition-all duration-300 p-4 md:p-5 flex items-center gap-3 md:gap-4 ${
+            {...cardEntrance(i + 3, 10, reduceMotion)}
+            className={`rounded-2xl border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-4 md:p-5 flex items-center gap-3 md:gap-4 ${
               kpi.variant === 'danger'  ? 'bg-rose-50 border-rose-100' :
               kpi.variant === 'warning' ? 'bg-orange-50 border-orange-100' :
               'bg-white border-slate-100'
@@ -120,7 +133,7 @@ const OperationalDashboardUI = ({
               <kpi.icon className={`w-5 h-5 md:w-6 md:h-6 ${kpi.iconColor}`} />
             </div>
             <div className="min-w-0">
-              <p className={`text-xl md:text-3xl font-black leading-none tracking-tight ${
+              <p className={`text-xl md:text-3xl font-black leading-none tracking-tight tabular-nums ${
                 kpi.variant === 'danger'  ? 'text-rose-700' :
                 kpi.variant === 'warning' ? 'text-orange-700' :
                 'text-slate-900'
