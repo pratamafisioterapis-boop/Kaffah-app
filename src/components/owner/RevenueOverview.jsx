@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 import ProfitMarginTrendWidget from '@/components/owner/ProfitMarginTrendWidget';
 import ExpenseCategoryWidget from '@/components/owner/ExpenseCategoryWidget';
+import { formatShortCurrency } from '@/components/owner/presentation/presentationFormat';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
@@ -44,14 +45,6 @@ const getPaymentMethodStyle = (method = '') => {
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
-
-const formatShortCurrency = (amount) => {
-  const num = Number(amount) || 0;
-  if (num >= 1_000_000_000) return `Rp ${(num / 1_000_000_000).toFixed(1).replace(/\.0$/, '')} M`;
-  if (num >= 1_000_000) return `Rp ${(num / 1_000_000).toFixed(1).replace(/\.0$/, '')} Jt`;
-  if (num >= 1_000) return `Rp ${(num / 1_000).toFixed(0)} Rb`;
-  return `Rp ${Math.round(num).toLocaleString('id-ID')}`;
-};
 
 const formatFull = (amount) => {
   const num = Math.round(Number(amount) || 0);
