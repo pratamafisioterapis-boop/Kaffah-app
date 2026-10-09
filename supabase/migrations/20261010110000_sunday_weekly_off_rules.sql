@@ -5,7 +5,8 @@
 --      terapis tetap masuk.
 --   2) Tukar jadwal Minggu disetujui -> terapis yang izin kehilangan jatah libur
 --      (aturan 1, karena Minggu itu tercatat sebagai izin), jatahnya pindah ke terapis
---      pengganti: pengganti libur di hari yang sama dengan jatah yang hilang itu.
+--      pengganti: pengganti libur di hari yang sama dengan jatah yang hilang itu
+--      (libur mingguan lain milik pengganti di minggu itu dipindahkan; satu libur per minggu).
 --   3) Hari libur nasional yang jatuh di hari Minggu -> semua terapis klinik itu
 --      tidak mendapat jatah libur mingguan (Senin / Selasa) setelahnya.
 --
@@ -335,6 +336,7 @@ DECLARE
   v_capacity integer;
   v_time_off_id uuid;
   v_gift_date date;
+  v_moved_from date;
 BEGIN
   SELECT * INTO v_req FROM public.therapist_sunday_swap_requests WHERE id = p_request_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pengajuan tidak ditemukan'; END IF;
@@ -374,11 +376,22 @@ BEGIN
 
     -- Jatah libur mingguan terapis yang izin berpindah ke terapis pengganti: pengganti libur di
     -- hari yang sama dengan jatah yang hilang (dicatat trigger time_off di atas); bila belum ada
-    -- jatah yang tercatat, hari Senin setelah Minggu itu. Dilewati bila pengganti sudah libur di hari itu.
+    -- jatah yang tercatat, hari Senin setelah Minggu itu. Pengganti hanya boleh punya satu libur
+    -- mingguan per minggu: libur mingguan lain miliknya di minggu itu dipindahkan ke hari tersebut.
     SELECT w.off_date INTO v_gift_date
       FROM public.therapist_weekly_off_waivers w
       WHERE w.therapist_id = v_req.therapist_id AND w.sunday_date = v_req.swap_date;
     v_gift_date := COALESCE(v_gift_date, v_req.swap_date + 1);
+
+    DELETE FROM public.therapist_time_off tto
+      WHERE tto.therapist_id = v_req.substitute_id
+        AND tto.leave_type = 'weekly_off' AND tto.start_time IS NULL
+        AND tto.start_date = tto.end_date
+        AND tto.start_date BETWEEN v_req.swap_date + 1 AND v_req.swap_date + 6
+        AND tto.start_date >= current_date
+        AND tto.start_date <> v_gift_date
+    RETURNING tto.start_date INTO v_moved_from;
+
     IF NOT EXISTS (
       SELECT 1 FROM public.therapist_time_off tto
       WHERE tto.therapist_id = v_req.substitute_id
@@ -390,7 +403,10 @@ BEGIN
       VALUES
         (v_req.substitute_id, v_gift_date, v_gift_date, NULL, NULL,
          'Libur - Pengganti jatah libur ' || COALESCE(v_req.therapist_name, 'rekan')
-           || ' (menggantikan Minggu ' || to_char(v_req.swap_date, 'DD-MM-YYYY') || ')',
+           || ' (menggantikan Minggu ' || to_char(v_req.swap_date, 'DD-MM-YYYY') || ')'
+           || CASE WHEN v_moved_from IS NOT NULL
+                THEN '; libur mingguan semula ' || to_char(v_moved_from, 'DD-MM-YYYY') || ' dipindahkan'
+                ELSE '' END,
          'weekly_off', auth.uid());
     END IF;
   END IF;

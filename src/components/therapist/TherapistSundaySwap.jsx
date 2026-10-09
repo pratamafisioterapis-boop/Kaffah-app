@@ -245,7 +245,7 @@ const TherapistSundaySwap = ({ therapist, onChanged }) => {
                   <p className="text-xs rounded-lg bg-blue-50 text-blue-800 px-3 py-2">
                     Pada {format(parseISO(date), 'dd-MM-yyyy')} <b>{substitute.name}</b> masuk menggantikan Anda
                     ({String(therapist.work_start_time).slice(0, 5)}–{String(therapist.work_end_time).slice(0, 5)}), dan Anda libur.
-                    {' '}Karena Anda libur di hari Minggu ini, <b>jatah libur mingguan Anda setelahnya (Senin / Selasa) dibatalkan</b> (Anda tetap masuk); jatah libur itu diberikan kepada <b>{substitute.name}</b>.
+                    {' '}Karena Anda libur di hari Minggu ini, <b>jatah libur mingguan Anda setelahnya (Senin / Selasa) dibatalkan</b> (Anda tetap masuk); jatah libur itu diberikan kepada <b>{substitute.name}</b> di hari yang sama.
                   </p>
                 )}
               </div>
