@@ -1,4 +1,4 @@
-import { addDays, format, getDay, parseISO } from 'date-fns';
+import { format, getDay, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
 export const LEAVE_TYPES = [
@@ -23,12 +23,10 @@ export const STATUS_META = {
 export const isReplacementOptionalType = (value) => value === 'organization' || value === 'event';
 
 // Aturan hari Minggu: izin seharian di hari Minggu (apa pun alasannya) atau Minggu yang
-// bertepatan dengan libur nasional membatalkan jatah libur mingguan di hari Senin setelahnya.
+// bertepatan dengan libur nasional membatalkan jatah libur mingguan (Senin / Selasa) setelahnya.
 export const isSundayDate = (dateStr) => !!dateStr && getDay(parseISO(dateStr)) === 0;
 
-export const mondayAfter = (dateStr) => format(addDays(parseISO(dateStr), 1), 'yyyy-MM-dd');
-
-export const SUNDAY_RULE_NOTE = 'Izin di hari Minggu: jatah libur mingguan di hari Senin setelahnya otomatis dibatalkan, jadi Anda tetap masuk di hari Senin itu.';
+export const SUNDAY_RULE_NOTE = 'Izin di hari Minggu: jatah libur mingguan Anda setelahnya (hari Senin atau Selasa) otomatis dibatalkan, jadi Anda tetap masuk di hari itu.';
 
 export const WAIVER_REASON_LABEL = {
   sunday_leave: 'Izin di hari Minggu',

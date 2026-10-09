@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getNationalHolidays, addNationalHoliday, deleteNationalHoliday } from '@/lib/api';
 
 // Hari libur nasional klinik. Yang jatuh di hari Minggu membuat terapis tidak mendapat
-// jatah libur mingguan di hari Senin setelahnya (diterapkan otomatis oleh database).
+// jatah libur mingguan (Senin / Selasa) setelahnya (diterapkan otomatis oleh database).
 const NationalHolidayManager = () => {
   const { toast } = useToast();
   const [holidays, setHolidays] = useState([]);
@@ -67,7 +67,7 @@ const NationalHolidayManager = () => {
         <div>
           <h3 className="text-base font-bold text-slate-800">Hari Libur Nasional</h3>
           <p className="text-xs text-slate-500">
-            Hari libur nasional yang jatuh di hari <b>Minggu</b> membuat terapis tidak mendapat jatah libur mingguan di hari <b>Senin</b> setelahnya (otomatis tetap masuk).
+            Hari libur nasional yang jatuh di hari <b>Minggu</b> membuat terapis tidak mendapat jatah libur mingguan (<b>Senin / Selasa</b>) setelahnya (otomatis tetap masuk).
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ const NationalHolidayManager = () => {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {isSunday(h.holiday_date) && (
-                  <Badge variant="outline" className="text-[11px] border-rose-200 text-rose-700 bg-rose-50">Minggu · Senin tanpa jatah libur</Badge>
+                  <Badge variant="outline" className="text-[11px] border-rose-200 text-rose-700 bg-rose-50">Minggu · tanpa jatah libur Senin/Selasa</Badge>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(h)} aria-label={`Hapus ${h.name}`}>
                   <Trash2 className="w-4 h-4 text-red-500" />

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   STATUS_META, leaveTypeLabel, formatLongDate, formatShortDate, leaveScopeLabel,
   hhmm, formatDuration, totalShiftMinutes, attendanceImpactNote,
-  isSundayDate, mondayAfter,
+  isSundayDate,
 } from '@/lib/leaveRequestUtils';
 
 // Ringkasan satu pengajuan izin + jadwal penggantinya. `footer` untuk tombol aksi.
@@ -61,7 +61,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
 
         {isSundayDate(request.leave_date) && !request.is_partial && request.status !== 'rejected' && (
           <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-            <b>Izin hari Minggu:</b> jatah libur mingguan hari Senin ({formatLongDate(mondayAfter(request.leave_date))}) {request.status === 'approved' ? 'dibatalkan' : 'akan dibatalkan bila disetujui'}, terapis tetap masuk.
+            <b>Izin hari Minggu:</b> jatah libur mingguan setelahnya (Senin / Selasa) {request.status === 'approved' ? 'dibatalkan' : 'akan dibatalkan bila disetujui'}, terapis tetap masuk.
           </p>
         )}
 

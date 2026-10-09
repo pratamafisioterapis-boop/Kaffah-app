@@ -40,7 +40,7 @@ const SundaySwapCard = ({ request, footer = null }) => {
         </div>
 
         <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-          Jatah libur mingguan hari Senin setelahnya: <b>{request.therapist_name || 'terapis yang libur'}</b> tidak mendapat jatah libur (tetap masuk), jatahnya diberikan kepada <b>{request.substitute_name || 'terapis pengganti'}</b>.
+          Jatah libur mingguan setelahnya (Senin / Selasa): <b>{request.therapist_name || 'terapis yang libur'}</b> tidak mendapat jatah libur (tetap masuk), jatahnya diberikan kepada <b>{request.substitute_name || 'terapis pengganti'}</b>.
         </p>
 
         {request.notes && (

@@ -1,18 +1,19 @@
 -- Aturan libur mingguan di sekitar hari Minggu (klinik dengan therapist_leave_request_enabled, mis. Kaffah).
 --
 --   1) Terapis izin di hari Minggu (apa pun alasannya, seharian) -> jatah libur mingguan
---      di hari setelah Minggu (Senin) otomatis diabaikan: terapis tetap masuk.
+--      setelah Minggu (hari Senin atau Selasa, sesuai libur mingguan terapis) otomatis diabaikan:
+--      terapis tetap masuk.
 --   2) Tukar jadwal Minggu disetujui -> terapis yang izin kehilangan jatah libur
 --      (aturan 1, karena Minggu itu tercatat sebagai izin), jatahnya pindah ke terapis
---      pengganti: pengganti libur di hari Senin setelahnya.
+--      pengganti: pengganti libur di hari yang sama dengan jatah yang hilang itu.
 --   3) Hari libur nasional yang jatuh di hari Minggu -> semua terapis klinik itu
---      tidak mendapat jatah libur mingguan di hari Senin setelahnya.
+--      tidak mendapat jatah libur mingguan (Senin / Selasa) setelahnya.
 --
--- "Diabaikan" = baris therapist_time_off bertipe 'weekly_off' di hari Senin itu dihapus
+-- "Diabaikan" = baris therapist_time_off bertipe 'weekly_off' di hari Senin / Selasa itu dihapus
 -- (slot booking dibuat ulang otomatis oleh trigger yang sudah ada) dan dicatat di
 -- therapist_weekly_off_waivers sebagai tanda. Bila pemicunya hilang (izin Minggu
 -- dibatalkan / libur nasional dihapus), baris libur dikembalikan dari catatan itu.
--- Hanya berlaku untuk Senin hari ini atau ke depan; hari yang sudah lewat tidak diubah.
+-- Hanya berlaku untuk hari libur hari ini atau ke depan; hari yang sudah lewat tidak diubah.
 
 -- 1) Hari libur nasional per klinik (dikelola owner).
 CREATE TABLE IF NOT EXISTS public.national_holidays (
@@ -62,7 +63,9 @@ CREATE POLICY "weekly_off_waivers_select" ON public.therapist_weekly_off_waivers
   );
 -- Tanpa policy tulis: hanya diisi fungsi di bawah (SECURITY DEFINER).
 
--- 3) Inti aturan: sesuaikan jatah libur Senin setelah satu hari Minggu untuk satu terapis.
+-- 3) Inti aturan: sesuaikan jatah libur mingguan setelah satu hari Minggu untuk satu terapis.
+--    Jatah yang dibatalkan = libur mingguan seharian pertama di hari Senin atau Selasa setelah
+--    Minggu itu (hari libur mingguan terapis berbeda-beda: ada yang Senin, ada yang Selasa).
 CREATE OR REPLACE FUNCTION public.sync_weekly_off_waiver(p_therapist_id uuid, p_sunday date)
 RETURNS void
 LANGUAGE plpgsql
@@ -70,13 +73,12 @@ SECURITY DEFINER
 SET search_path = public
 AS $fn$
 DECLARE
-  v_monday date := p_sunday + 1;
   v_clinic uuid;
   v_reason text;
   v_row record;
   v_w record;
 BEGIN
-  IF EXTRACT(DOW FROM p_sunday) <> 0 OR v_monday < current_date THEN
+  IF EXTRACT(DOW FROM p_sunday) <> 0 OR p_sunday + 2 < current_date THEN
     RETURN;
   END IF;
 
@@ -101,35 +103,44 @@ BEGIN
   END IF;
 
   IF v_reason IS NOT NULL THEN
-    FOR v_row IN
-      SELECT * FROM public.therapist_time_off
+    -- Satu Minggu hanya membatalkan satu jatah libur; bila sudah ada catatannya, jangan ambil libur berikutnya.
+    IF NOT EXISTS (
+      SELECT 1 FROM public.therapist_weekly_off_waivers
+      WHERE therapist_id = p_therapist_id AND sunday_date = p_sunday
+    ) THEN
+      SELECT * INTO v_row FROM public.therapist_time_off
       WHERE therapist_id = p_therapist_id AND leave_type = 'weekly_off' AND start_time IS NULL
-        AND start_date = v_monday AND end_date = v_monday
-    LOOP
-      INSERT INTO public.therapist_weekly_off_waivers
-        (clinic_id, therapist_id, sunday_date, off_date, reason, original_reason, created_by)
-      VALUES
-        (v_clinic, p_therapist_id, p_sunday, v_monday, v_reason, v_row.reason, v_row.created_by)
-      ON CONFLICT (therapist_id, off_date) DO UPDATE
-        SET sunday_date = EXCLUDED.sunday_date, reason = EXCLUDED.reason;
-      DELETE FROM public.therapist_time_off WHERE id = v_row.id;
-    END LOOP;
+        AND start_date = end_date
+        AND start_date BETWEEN p_sunday + 1 AND p_sunday + 2
+        AND start_date >= current_date
+      ORDER BY start_date
+      LIMIT 1;
+      IF FOUND THEN
+        INSERT INTO public.therapist_weekly_off_waivers
+          (clinic_id, therapist_id, sunday_date, off_date, reason, original_reason, created_by)
+        VALUES
+          (v_clinic, p_therapist_id, p_sunday, v_row.start_date, v_reason, v_row.reason, v_row.created_by)
+        ON CONFLICT (therapist_id, off_date) DO UPDATE
+          SET sunday_date = EXCLUDED.sunday_date, reason = EXCLUDED.reason;
+        DELETE FROM public.therapist_time_off WHERE id = v_row.id;
+      END IF;
+    END IF;
   ELSE
     FOR v_w IN
       SELECT * FROM public.therapist_weekly_off_waivers
-      WHERE therapist_id = p_therapist_id AND off_date = v_monday AND sunday_date = p_sunday
+      WHERE therapist_id = p_therapist_id AND sunday_date = p_sunday AND off_date >= current_date
     LOOP
       INSERT INTO public.therapist_time_off
         (therapist_id, start_date, end_date, start_time, end_time, reason, leave_type, created_by)
       VALUES
-        (p_therapist_id, v_monday, v_monday, NULL, NULL, COALESCE(v_w.original_reason, 'Libur'), 'weekly_off', v_w.created_by);
+        (p_therapist_id, v_w.off_date, v_w.off_date, NULL, NULL, COALESCE(v_w.original_reason, 'Libur'), 'weekly_off', v_w.created_by);
       DELETE FROM public.therapist_weekly_off_waivers WHERE id = v_w.id;
     END LOOP;
   END IF;
 END;
 $fn$;
 
--- 4) Pemicu dari therapist_time_off (izin Minggu dibuat / diubah / dihapus; libur Senin ditambah).
+-- 4) Pemicu dari therapist_time_off (izin Minggu dibuat / diubah / dihapus; libur Senin / Selasa ditambah).
 CREATE OR REPLACE FUNCTION public.sync_sunday_rule_for_time_off(p_therapist_id uuid, p_leave_type text, p_start date, p_end date)
 RETURNS void
 LANGUAGE plpgsql
@@ -143,14 +154,14 @@ BEGIN
     RETURN;
   END IF;
   IF p_leave_type = 'weekly_off' THEN
-    -- Libur mingguan baru di hari Senin: langsung diabaikan bila Minggu sebelumnya sudah izin / libur nasional.
-    IF p_start = p_end AND EXTRACT(DOW FROM p_start) = 1 THEN
-      PERFORM public.sync_weekly_off_waiver(p_therapist_id, p_start - 1);
+    -- Libur mingguan baru di hari Senin / Selasa: langsung diabaikan bila Minggu sebelumnya sudah izin / libur nasional.
+    IF p_start = p_end AND EXTRACT(DOW FROM p_start) IN (1, 2) THEN
+      PERFORM public.sync_weekly_off_waiver(p_therapist_id, p_start - EXTRACT(DOW FROM p_start)::int);
     END IF;
     RETURN;
   END IF;
   FOR v_d IN
-    SELECT d::date FROM generate_series(greatest(p_start, current_date - 1), least(p_end, current_date + 120), interval '1 day') d
+    SELECT d::date FROM generate_series(greatest(p_start, current_date - 2), least(p_end, current_date + 120), interval '1 day') d
     WHERE EXTRACT(DOW FROM d) = 0
   LOOP
     PERFORM public.sync_weekly_off_waiver(p_therapist_id, v_d);
@@ -323,6 +334,7 @@ DECLARE
   v_reviewer_name text;
   v_capacity integer;
   v_time_off_id uuid;
+  v_gift_date date;
 BEGIN
   SELECT * INTO v_req FROM public.therapist_sunday_swap_requests WHERE id = p_request_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Pengajuan tidak ditemukan'; END IF;
@@ -360,19 +372,23 @@ BEGIN
        'Tukar jadwal Minggu dengan ' || COALESCE(v_req.substitute_name, 'rekan'), 'other', auth.uid())
     RETURNING id INTO v_time_off_id;
 
-    -- Jatah libur mingguan terapis yang izin berpindah ke terapis pengganti:
-    -- pengganti libur di hari setelah Minggu (kecuali sudah libur di hari itu).
-    -- Jatah libur terapis yang izin dibatalkan otomatis oleh trigger time_off.
+    -- Jatah libur mingguan terapis yang izin berpindah ke terapis pengganti: pengganti libur di
+    -- hari yang sama dengan jatah yang hilang (dicatat trigger time_off di atas); bila belum ada
+    -- jatah yang tercatat, hari Senin setelah Minggu itu. Dilewati bila pengganti sudah libur di hari itu.
+    SELECT w.off_date INTO v_gift_date
+      FROM public.therapist_weekly_off_waivers w
+      WHERE w.therapist_id = v_req.therapist_id AND w.sunday_date = v_req.swap_date;
+    v_gift_date := COALESCE(v_gift_date, v_req.swap_date + 1);
     IF NOT EXISTS (
       SELECT 1 FROM public.therapist_time_off tto
       WHERE tto.therapist_id = v_req.substitute_id
-        AND (v_req.swap_date + 1) BETWEEN tto.start_date AND tto.end_date
+        AND v_gift_date BETWEEN tto.start_date AND tto.end_date
         AND tto.start_time IS NULL
     ) THEN
       INSERT INTO public.therapist_time_off
         (therapist_id, start_date, end_date, start_time, end_time, reason, leave_type, created_by)
       VALUES
-        (v_req.substitute_id, v_req.swap_date + 1, v_req.swap_date + 1, NULL, NULL,
+        (v_req.substitute_id, v_gift_date, v_gift_date, NULL, NULL,
          'Libur - Pengganti jatah libur ' || COALESCE(v_req.therapist_name, 'rekan')
            || ' (menggantikan Minggu ' || to_char(v_req.swap_date, 'DD-MM-YYYY') || ')',
          'weekly_off', auth.uid());
@@ -400,7 +416,7 @@ REVOKE ALL ON FUNCTION public.sync_sunday_rule_for_time_off(uuid, text, date, da
 REVOKE ALL ON FUNCTION public.handle_time_off_sunday_rule() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.handle_national_holiday_change() FROM PUBLIC, anon, authenticated;
 
--- 9) Terapkan ke izin Minggu yang sudah ada (hanya Senin hari ini ke depan).
+-- 9) Terapkan ke izin Minggu yang sudah ada (hanya hari libur hari ini ke depan).
 DO $fn$
 DECLARE
   v_t record;
@@ -412,7 +428,7 @@ BEGIN
     WHERE c.therapist_leave_request_enabled
   LOOP
     FOR v_d IN
-      SELECT d::date FROM generate_series(current_date - 1, current_date + 120, interval '1 day') d
+      SELECT d::date FROM generate_series(current_date - 2, current_date + 120, interval '1 day') d
       WHERE EXTRACT(DOW FROM d) = 0
     LOOP
       PERFORM public.sync_weekly_off_waiver(v_t.id, v_d);

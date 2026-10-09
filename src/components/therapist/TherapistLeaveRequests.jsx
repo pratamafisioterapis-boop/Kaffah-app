@@ -20,7 +20,7 @@ import {
 } from '@/lib/api';
 import {
   LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
-  isReplacementOptionalType, isSundayDate, mondayAfter, SUNDAY_RULE_NOTE,
+  isReplacementOptionalType, isSundayDate, SUNDAY_RULE_NOTE,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -380,7 +380,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <p>
-              <b>Izin hari Minggu.</b> {SUNDAY_RULE_NOTE} Hari Senin yang dimaksud: <b>{formatLongDate(mondayAfter(form.leaveDate))}</b>. Berlaku untuk semua alasan izin.
+              <b>Izin hari Minggu.</b> {SUNDAY_RULE_NOTE} Berlaku untuk semua alasan izin.
             </p>
           </div>
         )}
