@@ -158,14 +158,14 @@ const TherapistCard = ({
       </AvatarFallback>
     </Avatar>
 
-    <div className="flex flex-col">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col min-w-0 pr-10 md:pr-12">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <CardTitle className="text-sm md:text-lg font-semibold text-white leading-tight break-words">
           {therapist.name || 'Unnamed Therapist'}
         </CardTitle>
 
                 {replacement && !isLeave && (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border bg-blue-100 text-blue-700 border-blue-200">
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide border whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200">
             Pengganti izin
           </span>
         )}
