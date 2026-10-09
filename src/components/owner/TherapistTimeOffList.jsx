@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  getTherapistTimeOff, 
+  getTherapistTimeOff, getTherapistExtraShifts, 
   deleteTherapistTimeOff,
   updateTherapistTimeOff
 } from '@/lib/api';
@@ -40,6 +40,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState([]);
+  const [extraShifts, setExtraShifts] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({ reason: 'Libur', notes: '' });
@@ -53,8 +54,9 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const { data } = await getTherapistTimeOff(therapist.id);
+    const [{ data }, extraRes] = await Promise.all([getTherapistTimeOff(therapist.id), getTherapistExtraShifts(therapist.id)]);
     if (data) setTimeOffs(data);
+    setExtraShifts(extraRes.data || []);
     setLoading(false);
   };
 
@@ -116,6 +118,10 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                const startDate = new Date(item.start_date);
                const endDate = new Date(item.end_date);
                const isPartial = !!item.start_time;
+               // Libur mingguan yang diganti kerja lewat jadwal pengganti izin.
+               const replacedBy = item.leave_type === 'weekly_off' && !isPartial
+                  ? extraShifts.filter(e => e.shift_date >= item.start_date && e.shift_date <= item.end_date)
+                  : [];
 
                return (
                   <Card key={item.id} className="group hover:border-orange-200 transition-colors">
@@ -133,6 +139,11 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal">
                                     {parseReason(item.reason).label}
                                  </Badge>
+                                 {replacedBy.length > 0 && (
+                                    <Badge variant="outline" className="text-xs border-blue-200 text-blue-700 bg-blue-50">
+                                       Diganti kerja {replacedBy.map(e => `${e.start_time.slice(0,5)}-${e.end_time.slice(0,5)}`).join(', ')} (jadwal pengganti izin)
+                                    </Badge>
+                                 )}
                                  {isPartial && (
                                     <Badge variant="outline" className="text-xs flex items-center gap-1 border-orange-200 text-orange-700 bg-orange-50">
                                        <Clock className="w-3 h-3" /> 
