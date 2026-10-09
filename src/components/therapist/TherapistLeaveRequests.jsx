@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { addDays, format, parseISO } from 'date-fns';
+import { addDays, addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import {
-  CalendarOff, Send, Loader2, Paperclip, Repeat, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown, CalendarClock,
+  CalendarOff, Send, Loader2, Paperclip, Repeat, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown, CalendarClock, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,9 @@ import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 
 const DAY_KEY = 'yyyy-MM-dd';
-const CANDIDATE_DAYS = 28;
+// Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
+const MAX_BACKDATE_DAYS = 60;
+const MAX_MONTHS_AHEAD = 12;
 
 const minutesToTime = (min) => {
   const m = Math.min(Math.max(0, min), 23 * 60 + 59);
@@ -115,13 +118,17 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     : normalMinutes;
   const replacedMinutes = totalShiftMinutes(form.shifts);
 
+  // Kalender jadwal pengganti per bulan: mulai bulan ini, bisa maju ke bulan berikutnya bila
+  // jam di bulan ini belum cukup. Hari yang sudah lewat tidak bisa dipilih.
+  const [monthOffset, setMonthOffset] = useState(0);
+  const viewMonth = useMemo(() => startOfMonth(addMonths(new Date(), monthOffset)), [monthOffset]);
   const candidates = useMemo(() => {
-    const today = new Date();
-    return Array.from({ length: CANDIDATE_DAYS }, (_, i) => addDays(today, i)).map((d) => {
+    const last = endOfMonth(viewMonth).getDate();
+    return Array.from({ length: last }, (_, i) => addDays(viewMonth, i)).map((d) => {
       const key = format(d, DAY_KEY);
-      return { date: d, key, sched: hoursOn(key) };
+      return { date: d, key, sched: hoursOn(key), past: key < todayStr };
     });
-  }, [hoursOn]);
+  }, [hoursOn, viewMonth, todayStr]);
 
   // Pilih tanggal izin: jam izin sebagian diisi otomatis dari jam kerja shift hari itu
   // (3 jam pertama), supaya terapis tinggal menyesuaikan.
@@ -177,7 +184,6 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
   // Alasan tombol kirim belum aktif — ditampilkan agar terapis tahu apa yang kurang.
   const blocker = (() => {
     if (!form.leaveDate) return 'Pilih tanggal izin dulu.';
-    if (form.leaveDate < todayStr) return 'Tanggal izin tidak boleh sudah lewat.';
     if (offDates.has(form.leaveDate)) return 'Tanggal itu hari libur mingguan Anda, jadi tidak perlu mengajukan izin.';
     if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
@@ -257,7 +263,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           <Input
             id="leave-date"
             type="date"
-            min={todayStr}
+            min={format(addDays(new Date(), -MAX_BACKDATE_DAYS), DAY_KEY)}
             value={form.leaveDate}
             onChange={(e) => handleLeaveDateChange(e.target.value)}
           />
@@ -265,6 +271,12 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             <p className="text-xs text-slate-500">
               {formatLongDate(form.leaveDate)}
               {normalLabel ? ` · jadwal normal ${normalLabel}` : ' · bukan hari kerja Anda'}
+            </p>
+          )}
+          {form.leaveDate && form.leaveDate < todayStr && (
+            <p className="text-xs rounded-lg bg-amber-50 text-amber-800 px-3 py-2 flex items-start gap-1.5">
+              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>Izin ini sudah lewat. Tetap bisa dicatat, dan Anda wajib memilih tanggal pengganti (mulai hari ini) sebanyak jam izinnya.</span>
             </p>
           )}
         </div>
@@ -406,8 +418,18 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
             {isOrg ? 'Jadwal pengganti (opsional)' : 'Ganti jam kerjanya kapan?'}
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
+            {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah; bila jam bulan ini belum cukup, lanjut ke bulan berikutnya dengan tombol panah. Hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan sebelumnya" disabled={monthOffset <= 0} onClick={() => setMonthOffset((m) => m - 1)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <p className="text-sm font-semibold text-slate-800 capitalize">{format(viewMonth, 'MMMM yyyy', { locale: idLocale })}</p>
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan berikutnya" disabled={monthOffset >= MAX_MONTHS_AHEAD} onClick={() => setMonthOffset((m) => m + 1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5">
@@ -418,7 +440,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           {candidates.map((day) => {
             const selected = form.shifts.some((s) => s.date === day.key);
             const isLeaveDay = day.key === form.leaveDate;
-            const disabled = isLeaveDay || blockedDates.has(day.key);
+            const disabled = day.past || isLeaveDay || blockedDates.has(day.key);
             const off = day.sched.length === 0;
             return (
               <button
