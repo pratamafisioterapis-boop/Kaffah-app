@@ -786,7 +786,7 @@ if (isCreate) {
         const tpls = key === 'subjective' ? subjectiveTemplates : objectiveTemplates;
         return (
           <Dialog key={key} open={templateDialog === key} onOpenChange={(o) => !o && setTemplateDialog(null)}>
-            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+            <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-5xl overflow-y-auto max-sm:inset-0 max-sm:left-0 max-sm:top-0 max-sm:h-full max-sm:max-h-full max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:p-4">
               <DialogHeader>
                 <DialogTitle>Isi {key === 'objective' ? 'Objective' : 'Subjective'} Cepat</DialogTitle>
                 <DialogDescription>Klik pilihan & isi titik-titik, bagian kosong tidak ikut tampil</DialogDescription>
