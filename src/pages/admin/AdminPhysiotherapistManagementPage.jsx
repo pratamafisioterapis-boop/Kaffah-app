@@ -5,10 +5,13 @@ import TherapistTimeOffManager from '@/components/owner/TherapistTimeOffManager'
 import TherapistScheduleOverrideManager from '@/components/owner/TherapistScheduleOverrideManager';
 import { CalendarClock, CalendarOff, CalendarRange } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { isLightLoadClinic } from '@/lib/lightLoadMode';
 import WaveBackground from '@/components/ui/wave-background';
 
 const AdminPhysiotherapistManagementPage = () => {
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  // Klinik Kaffah: admin tidak boleh menambah izin/cuti/libur terapis.
+  const isKaffah = isLightLoadClinic(userDetails?.clinic_id);
 
   return (
     <div className="space-y-6">
@@ -105,7 +108,7 @@ const AdminPhysiotherapistManagementPage = () => {
           <div className="relative overflow-hidden rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
             <WaveBackground />
             <div className="relative z-10">
-              <TherapistTimeOffManager />
+              <TherapistTimeOffManager readOnly={isKaffah} />
             </div>
           </div>
         </TabsContent>
