@@ -6,7 +6,7 @@ import TherapistTimeOffList from './TherapistTimeOffList';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import TherapistPickerGrid from './TherapistPickerGrid';
 
-const TherapistTimeOffManager = () => {
+const TherapistTimeOffManager = ({ readOnly = false }) => {
   const [therapists, setTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -71,17 +71,19 @@ const TherapistTimeOffManager = () => {
       {!selectedTherapist ? (
          <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-xl">
             <User className="w-16 h-16 mb-4 opacity-30" />
-            <p className="font-medium">Silakan pilih salah satu card terapis di atas untuk melihat dan menambah cuti</p>
+            <p className="font-medium">Silakan pilih salah satu card terapis di atas untuk melihat{readOnly ? '' : ' dan menambah'} cuti</p>
          </div>
       ) : (
          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-               <TherapistTimeOffForm 
-                  therapist={selectedTherapist} 
-                  onSuccess={handleSuccess}
-               />
-            </div>
-            <div className="lg:col-span-2">
+            {!readOnly && (
+              <div className="lg:col-span-1">
+                 <TherapistTimeOffForm 
+                    therapist={selectedTherapist} 
+                    onSuccess={handleSuccess}
+                 />
+              </div>
+            )}
+            <div className={readOnly ? 'lg:col-span-3' : 'lg:col-span-2'}>
                <TherapistTimeOffList 
                   therapist={selectedTherapist} 
                   refreshTrigger={refreshTrigger} 
