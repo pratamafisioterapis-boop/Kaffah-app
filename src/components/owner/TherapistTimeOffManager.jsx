@@ -5,12 +5,15 @@ import TherapistTimeOffForm from './TherapistTimeOffForm';
 import TherapistTimeOffList from './TherapistTimeOffList';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import TherapistPickerGrid from './TherapistPickerGrid';
+import NationalHolidayManager from './NationalHolidayManager';
+import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
 
 const TherapistTimeOffManager = ({ readOnly = false }) => {
   const [therapists, setTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [error, setError] = useState(null);
+  const { enabled: leaveFeatureEnabled } = useTherapistLeaveRequestEnabled();
 
   useEffect(() => {
     loadTherapists();
@@ -61,6 +64,8 @@ const TherapistTimeOffManager = ({ readOnly = false }) => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {!readOnly && leaveFeatureEnabled && <NationalHolidayManager />}
 
       <TherapistPickerGrid
         therapists={therapists}

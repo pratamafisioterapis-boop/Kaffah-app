@@ -26,6 +26,7 @@ const LEAVE_LABELS = {
   training: 'Training',
   izin: 'Izin Pribadi',
   organisasi: 'Kegiatan Organisasi',
+  event: 'Event',
   lainnya: 'Lainnya'
 };
 
