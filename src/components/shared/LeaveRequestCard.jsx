@@ -58,6 +58,15 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
           <p className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">“{request.notes}”</p>
         )}
 
+        {request.leave_type === 'organization' && request.status === 'pending' && showTherapist && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Kegiatan organisasi: tentukan apakah kegiatan ini memerlukan jadwal pengganti. Bila diperlukan, tolak pengajuan dengan catatan agar terapis mengajukan kembali beserta jadwal pengganti.
+          </p>
+        )}
+
+        {shifts.length === 0 ? (
+          <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">Tanpa jadwal pengganti.</p>
+        ) : (
         <div className="rounded-lg bg-blue-50/60 border border-blue-100 p-3">
           <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5 mb-2">
             <Repeat className="w-3.5 h-3.5" />
@@ -71,6 +80,7 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
             ))}
           </div>
         </div>
+        )}
 
         {request.status !== 'pending' && (request.review_note || request.reviewed_by_name) && (
           <p className="text-xs text-slate-500 flex items-start gap-1.5">

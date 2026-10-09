@@ -6,6 +6,7 @@ export const LEAVE_TYPES = [
   { value: 'personal', label: 'Izin Pribadi' },
   { value: 'annual', label: 'Cuti' },
   { value: 'training', label: 'Training' },
+  { value: 'organization', label: 'Kegiatan Organisasi' },
   { value: 'other', label: 'Lainnya' },
 ];
 

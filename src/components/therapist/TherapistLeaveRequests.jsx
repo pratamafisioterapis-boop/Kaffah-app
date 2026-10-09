@@ -168,6 +168,8 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
 
   const sortedShifts = [...form.shifts].sort((a, b) => a.date.localeCompare(b.date));
   const hasShiftError = sortedShifts.some((s) => shiftError(s));
+  // Kegiatan organisasi: jadwal pengganti tidak wajib (ditentukan peninjau); boleh diisi sukarela.
+  const isOrg = form.leaveType === 'organization';
 
   // Alasan tombol kirim belum aktif — ditampilkan agar terapis tahu apa yang kurang.
   const blocker = (() => {
@@ -177,6 +179,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
     if (blockedDates.has(form.leaveDate)) return 'Anda sudah punya cuti / izin / pengajuan di tanggal ini.';
     if (form.partial && timeToMinutes(form.endTime) <= timeToMinutes(form.startTime)) return 'Jam selesai izin harus setelah jam mulai.';
     if (form.leaveType === 'sick' && !form.proofFile) return 'Izin sakit wajib melampirkan foto / PDF surat dokter.';
+    if (isOrg && !form.notes.trim()) return 'Cantumkan nama kegiatan, penyelenggara, dan statusnya (penugasan klinik atau pribadi) pada kolom catatan.';
     if (form.partial && leaveDayHours.length) {
       const dayStart = Math.min(...leaveDayHours.map((s) => timeToMinutes(s.start_time)));
       const dayEnd = Math.max(...leaveDayHours.map((s) => timeToMinutes(s.end_time)));
@@ -184,10 +187,10 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
         return `Jam izin harus di dalam jam kerja ${scheduleLabel(leaveDayHours)}.`;
       }
     }
-    if (form.shifts.length === 0) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
+    if (form.shifts.length === 0 && !isOrg) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (hasShiftError) return 'Perbaiki jam kerja pengganti yang bermasalah.';
     if (sortedShifts.some((s) => shiftMinutes(s) < slotMinutes)) return `Jam pengganti minimal ${slotMinutes} menit (1 slot booking).`;
-    if (missedMinutes > 0 && replacedMinutes < missedMinutes) {
+    if (!isOrg && missedMinutes > 0 && replacedMinutes < missedMinutes) {
       return `Jam pengganti kurang ${formatDuration(missedMinutes - replacedMinutes)} dari jam izin (${formatDuration(missedMinutes)}). Tambah jam pengganti sampai cukup.`;
     }
     return null;
@@ -330,6 +333,23 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           )}
         </div>
 
+        {isOrg && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
+            <p className="font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Ketentuan izin kegiatan organisasi</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>
+                <b>Tanpa jadwal pengganti:</b> berlaku untuk kegiatan organisasi yang ditugaskan atau disetujui secara resmi oleh klinik.
+              </li>
+              <li>
+                <b>Wajib jadwal pengganti:</b> berlaku untuk kegiatan organisasi yang bersifat pribadi atau di luar penugasan klinik. Jam kerja yang ditinggalkan harus diganti pada hari lain.
+              </li>
+            </ul>
+            <p>
+              Mohon cantumkan nama kegiatan, penyelenggara, dan statusnya (penugasan klinik atau pribadi) pada kolom catatan. Keputusan akhir ditetapkan oleh owner / terapis kepala saat peninjauan. Apabila jadwal pengganti diperlukan, pengajuan akan dikembalikan beserta catatan dan Anda dapat mengajukannya kembali dengan jadwal pengganti.
+            </p>
+          </div>
+        )}
+
         {form.leaveType === 'sick' && (
           <div className="space-y-1.5 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
             <Label htmlFor="leave-proof" className="flex items-center gap-1.5">
@@ -380,10 +400,10 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
         <div>
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">2</span>
-            Ganti jam kerjanya kapan?
+            {isOrg ? 'Jadwal pengganti (opsional)' : 'Ganti jam kerjanya kapan?'}
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Wajib diisi. Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
+            {isOrg ? 'Dapat dikosongkan bila kegiatan merupakan penugasan klinik. Isi bila kegiatan bersifat pribadi. ' : 'Wajib diisi. '}Setelah disetujui, jam ini otomatis terbuka untuk booking pasien. Ketuk tanggal di bawah — hari <b className="text-emerald-700">Libur</b> adalah libur mingguan Anda. Tanggal abu-abu sudah terisi cuti, sakit, atau izin lain.
           </p>
         </div>
 
@@ -441,7 +461,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
                     <Input type="time" aria-label="Jam selesai pengganti" value={shift.end_time} onChange={(e) => updateShift(shift.date, { end_time: e.target.value })} />
                   </div>
                   {err && <p className="text-xs text-red-600 mt-2 flex items-start gap-1"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{err}</p>}
-                  {!err && missedMinutes > 0 && replacedMinutes < missedMinutes && (() => {
+                  {!err && !isOrg && missedMinutes > 0 && replacedMinutes < missedMinutes && (() => {
                     // Jam selesai yang pas agar total jam pengganti = jam yang ditinggalkan
                     // (hari pengganti lain dianggap tetap).
                     const needed = missedMinutes - (replacedMinutes - shiftMinutes(shift));
@@ -476,7 +496,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, onSubmitted }
           </div>
         )}
 
-        {form.leaveDate && (
+        {form.leaveDate && !isOrg && (
           <div className={cn(
             'rounded-lg px-3 py-2 text-xs flex items-start gap-2',
             replacedMinutes >= missedMinutes && replacedMinutes > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800',
