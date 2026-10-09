@@ -142,16 +142,16 @@ const PromoDiscountWidget = ({ dateRange }) => {
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <Wallet className="w-4 h-4 text-teal-600" />
               Potongan per Kategori Reward
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Total nilai diskon/reward yang diberikan pada periode ini</p>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Total nilai diskon/reward yang diberikan pada periode ini</p>
           </div>
           {!loading && (
             <div className="text-right shrink-0">
               <p className="text-lg font-black text-slate-900 leading-none">{formatCurrency(totalAmount)}</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">{totalSessions.toLocaleString('id-ID')} sesi berpromo</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{totalSessions.toLocaleString('id-ID')} sesi berpromo</p>
             </div>
           )}
         </div>
@@ -165,7 +165,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
             <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
           </div>
         ) : data.length === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-sm text-center px-4">
+          <div className="h-48 flex items-center justify-center text-slate-500 text-sm text-center px-4">
             Belum ada sesi dengan diskon/reward pada periode ini.
           </div>
         ) : (
@@ -186,16 +186,16 @@ const PromoDiscountWidget = ({ dateRange }) => {
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
                       <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
-                      <span className="text-[10px] text-slate-400 shrink-0">({s.count} sesi)</span>
+                      <span className="text-xs text-slate-500 shrink-0">({s.count} sesi)</span>
                       {isClickable && (
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
                         {formatCurrency(s.amount)}
                       </span>
-                      <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                      <span className="text-xs text-slate-500 w-8 text-right">{s.pct}%</span>
                     </div>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -207,7 +207,7 @@ const PromoDiscountWidget = ({ dateRange }) => {
                 </div>
               );
             })}
-            <p className="text-[10px] text-slate-400 pt-1">
+            <p className="text-xs text-slate-500 pt-1">
               *Diskon persentase dihitung otomatis dari nominal transaksi (estimasi).
             </p>
           </div>
@@ -222,13 +222,13 @@ const PromoDiscountWidget = ({ dateRange }) => {
           <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-xl bg-white shadow-lg">
             <DialogHeader className="sticky top-0 z-10 px-5 py-4 pr-12 border-b border-slate-100 bg-slate-50/95 backdrop-blur relative">
               <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
+                <HelpCircle className="w-4.5 h-4.5 text-slate-500 shrink-0" />
                 Sesi Tanpa Kategori Diskon
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 {uncategorizedRecaps.length} sesi punya diskon tapi belum diisi "Jenis Diskon"-nya. Buka rekap harian pasien ini untuk melengkapi kategorinya.
               </DialogDescription>
-              <DialogClose className="absolute right-4 top-4 rounded-full p-1 text-slate-400 hover:bg-slate-200/70 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
+              <DialogClose className="absolute right-4 top-4 before:absolute before:-inset-2 before:content-[''] rounded-full p-1 text-slate-500 hover:bg-slate-200/70 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
                 <X className="w-4 h-4" />
                 <span className="sr-only">Tutup</span>
               </DialogClose>
@@ -238,18 +238,18 @@ const PromoDiscountWidget = ({ dateRange }) => {
                 <div key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">{r.patientName}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">
                       {r.medicalRecordNumber ? `RM ${r.medicalRecordNumber} • ` : ''}{r.therapistName}
                       {' • '}{r.discountType === 'percentage' ? `${r.discountValue}%` : formatCurrency(r.discountValue)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     {r.recapDate && (
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-xs text-slate-500">
                         {format(new Date(r.recapDate), 'd MMM yyyy', { locale: idLocale })}
                       </p>
                     )}
-                    <p className="text-[10px] font-semibold text-slate-600 mt-0.5">{formatCurrency(r.amount)}</p>
+                    <p className="text-xs font-semibold text-slate-600 mt-0.5">{formatCurrency(r.amount)}</p>
                   </div>
                 </div>
               ))}

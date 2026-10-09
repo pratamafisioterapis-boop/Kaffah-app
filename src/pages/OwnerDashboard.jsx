@@ -9,23 +9,24 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/lib/customSupabaseClient';
 import { Activity } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { lazyRetry } from '@/lib/lazyRetry';
 
 // Pages
-import OwnerAppointmentsPage from '@/pages/OwnerAppointmentsPage';
-import OwnerPresentationPage from '@/pages/owner/OwnerPresentationPage';
-import DatabasePatients from '@/pages/owner/DatabasePatients'; // Updated Import
-import PhysiotherapistManagementPage from '@/pages/PhysiotherapistManagementPage';
-import MedicalRecordsPage from '@/pages/MedicalRecordsPage';
-import OwnerFollowUpManagementPage from '@/components/admin/FollowUpManagementPage';
+const OwnerAppointmentsPage = React.lazy(lazyRetry(() => import('@/pages/OwnerAppointmentsPage'), 'OwnerAppointmentsPage'));
+const OwnerPresentationPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerPresentationPage'), 'OwnerPresentationPage'));
+const DatabasePatients = React.lazy(lazyRetry(() => import('@/pages/owner/DatabasePatients'), 'DatabasePatients'));
+const PhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/PhysiotherapistManagementPage'), 'PhysiotherapistManagementPage'));
+const MedicalRecordsPage = React.lazy(lazyRetry(() => import('@/pages/MedicalRecordsPage'), 'MedicalRecordsPage'));
+const OwnerFollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/admin/FollowUpManagementPage'), 'OwnerFollowUpManagementPage'));
 
 // Components
-import SettingsPage from '@/components/owner/SettingsPage';
-import OwnerDailyRecap from '@/components/owner/OwnerDailyRecap';
-import OwnerFinanceDashboardComponent from '@/components/owner/OwnerFinanceDashboard';
+const SettingsPage = React.lazy(lazyRetry(() => import('@/components/owner/SettingsPage'), 'SettingsPage'));
+const OwnerDailyRecap = React.lazy(lazyRetry(() => import('@/components/owner/OwnerDailyRecap'), 'OwnerDailyRecap'));
+const OwnerFinanceDashboardComponent = React.lazy(lazyRetry(() => import('@/components/owner/OwnerFinanceDashboard'), 'OwnerFinanceDashboardComponent'));
 import RevenueOverview from '@/components/owner/RevenueOverview';
-import ModalAwalManagement from '@/components/owner/ModalAwalManagement';
-import AdminManagementPage from '@/components/owner/AdminManagementPage';
-import OwnerManagementPage from '@/components/owner/OwnerManagementPage';
+const ModalAwalManagement = React.lazy(lazyRetry(() => import('@/components/owner/ModalAwalManagement'), 'ModalAwalManagement'));
+const AdminManagementPage = React.lazy(lazyRetry(() => import('@/components/owner/AdminManagementPage'), 'AdminManagementPage'));
+const OwnerManagementPage = React.lazy(lazyRetry(() => import('@/components/owner/OwnerManagementPage'), 'OwnerManagementPage'));
 import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
 import TargetFillReminder from '@/components/owner/TargetFillReminder';
 
@@ -43,15 +44,15 @@ import PatientSourceChart from '@/components/owner/operational/PatientSourceChar
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
-import AttendanceManagement from '@/pages/admin/AttendanceManagement';
-import ClinicalDocuments from '@/pages/admin/ClinicalDocuments';
+const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
+const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/ClinicalDocuments'), 'ClinicalDocuments'));
 
 // Reused for clinics where the owner is also the therapist (see
 // linkOwnerAsTherapist in Super Admin > Manajemen Klinik): no extra
 // sidebar menu is added, the SOAP form itself is only reachable from the
 // "Evaluasi Harian" tab inside Medical Records (see MedicalRecordsPage /
 // DailyEvaluationReadOnly), which routes here for a given patient.
-import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
+const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therapist/MedicalRecordForm'), 'MedicalRecordForm'));
 
 // API
 import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId } from '@/lib/api';
@@ -120,6 +121,19 @@ const OwnerDashboardHome = () => {
     };
   });
 
+  // Nilai yang sedang diketik/dipilih di input tanggal. `dateRange` (yang dipakai
+  // semua query) hanya ikut berubah setelah jeda singkat dan bila rentangnya valid,
+  // supaya mengubah tanggal tidak memicu belasan query di setiap perubahan.
+  const [rangeInput, setRangeInput] = useState(dateRange);
+  useEffect(() => {
+    const { startDate, endDate } = rangeInput;
+    if (!startDate || !endDate || startDate > endDate) return undefined;
+    const timer = setTimeout(() => {
+      setDateRange((prev) => (prev.startDate === startDate && prev.endDate === endDate ? prev : { startDate, endDate }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [rangeInput]);
+
   // KPI States
   const [totalSessions, setTotalSessions] = useState(0);
   const [totalPatients, setTotalPatients] = useState(0);
@@ -160,7 +174,6 @@ const OwnerDashboardHome = () => {
     }
     setKpiError(null);
     try {
-      console.log("Fetching Dashboard KPI Data...");
       const [
         sessionsRes, 
         patientsRes, 
@@ -349,7 +362,7 @@ setTherapists(enrichedTherapists);
   useEffect(() => {
     loadKPIData();
     loadTherapistData();
-  }, [loadKPIData, loadTherapistData, location]);
+  }, [loadKPIData, loadTherapistData, location.key]);
 
   useEffect(() => {
     loadUnfilledSoapCounts();
@@ -360,25 +373,27 @@ setTherapists(enrichedTherapists);
   }, [loadPatientMetrics]);
 
 
-  // Real-time Subscription
+  // Real-time Subscription. Perubahan appointment sering datang beruntun
+  // (mis. jadwal digeser massal), jadi refresh digabung dalam satu jeda 1,5 detik.
   useEffect(() => {
-    console.log("Setting up Realtime Subscription for Dashboard...");
+    let refreshTimer;
     const channel = supabase
       .channel('dashboard-appointments')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
-          console.log('Realtime change detected in appointments:', payload);
-          // Refresh data on any appointment change
-          loadKPIData(false); // Silent refresh
-          loadTherapistData(); // Update therapist stats too
+        () => {
+          clearTimeout(refreshTimer);
+          refreshTimer = setTimeout(() => {
+            loadKPIData(false); // Silent refresh
+            loadTherapistData(); // Update therapist stats too
+          }, 1500);
         }
       )
       .subscribe();
 
     return () => {
-      console.log("Cleaning up Dashboard Subscription...");
+      clearTimeout(refreshTimer);
       supabase.removeChannel(channel);
     };
   }, [loadKPIData, loadTherapistData]);
@@ -419,7 +434,7 @@ setTherapists(enrichedTherapists);
                   Owner {clinicName || ''}!
                 </span>
               </h1>
-              <p className="text-[#5B6B7D] text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+              <p className="text-[#5B6B7D] text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
                 Mari terus memberikan pelayanan terbaik untuk kesehatan yang lebih baik.
               </p>
             </div>
@@ -428,20 +443,24 @@ setTherapists(enrichedTherapists);
 
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <div className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm">
-            <span className="text-[#1677D2] text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <div role="group" aria-labelledby="owner-period-label" className="flex items-center gap-2 bg-white border border-[#DCE8F2] rounded-lg px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-[#2F8CFF]/40">
+            <span id="owner-period-label" className="text-[#1677D2] text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
             <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <input
                 type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                aria-label="Tanggal mulai periode"
+                value={rangeInput.startDate}
+                max={rangeInput.endDate || undefined}
+                onChange={(e) => setRangeInput((prev) => ({ ...prev, startDate: e.target.value }))}
                 className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
               />
-              <span className="text-[#DCE8F2] shrink-0">–</span>
+              <span className="text-[#5B6B7D] shrink-0" aria-hidden="true">–</span>
               <input
                 type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                aria-label="Tanggal akhir periode"
+                value={rangeInput.endDate}
+                min={rangeInput.startDate || undefined}
+                onChange={(e) => setRangeInput((prev) => ({ ...prev, endDate: e.target.value }))}
                 className="text-xs border-0 outline-none text-[#102F52] font-medium bg-transparent w-full sm:w-auto"
               />
             </div>
@@ -559,6 +578,7 @@ const OwnerDashboard = () => {
     <DashboardLayout navItems={navItems} role="owner" userName="Owner">
       <OnboardingChecklist />
       {location.pathname === '/owner/dashboard' && <TargetFillReminder />}
+      <React.Suspense fallback={<div role="status" className="p-6 text-sm text-slate-500">Memuat halaman…</div>}>
       <Routes>
         {/* Redirect root /owner to dashboard */}
         <Route path="/" element={<Navigate to="/owner/dashboard" replace />} />
@@ -613,6 +633,7 @@ const OwnerDashboard = () => {
         {/* Catch-all */}
         <Route path="/dashboard/*" element={<Navigate to="/owner/dashboard" replace />} />
       </Routes>
+      </React.Suspense>
     </DashboardLayout>
   );
 };

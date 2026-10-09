@@ -33,13 +33,11 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
     setLoading(true);
     setError(null);
     try {
-      console.log("=== Starting BulletChart Data Fetch ===");
       
       // 1. Fetch All Targets
       const { data: targets, error: targetError } = await getAllTherapistTargets();
       if (targetError) throw new Error("Gagal memuat data target: " + targetError.message);
 
-      console.log("Raw Targets Data from DB:", targets);
 
       // Filter: Must have therapist info
       const validTargets = targets.filter(t => t.therapist?.name || t.therapist?.full_name);
@@ -131,7 +129,6 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       const fetchStart = format(minDate, 'yyyy-MM-dd');
       const fetchEnd = format(maxDate, 'yyyy-MM-dd');
 
-      console.log(`Fetching recaps for range: ${fetchStart} to ${fetchEnd}`);
 
       // Fetch langsung dari supabase agar bisa select field spesifik
       const { data: sessionData } = await supabase.auth.getSession();
@@ -158,7 +155,6 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
         if (!pageData || pageData.length < PAGE_SIZE) break;
       }
 
-      console.log(`Fetched ${recaps.length} recaps.`);
 
       const chartData = filteredTargets.map(target => {
          const targetStart = startOfDay(target.parsedStart);
@@ -184,7 +180,6 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
              Number(target.target_patients || 0)
          );
 
-         console.log(`Therapist: ${target.therapistName} | Target Val: ${targetValue} (Sess: ${target.target_sessions}, Visits: ${target.target_visits}) | Actual: ${actualCount}`);
 
          return {
             name: target.therapistName,
@@ -199,7 +194,6 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       // Sort: Highest realization first
       chartData.sort((a, b) => b.realization - a.realization);
 
-      console.log("Final Processed Chart Data:", chartData);
       setData(chartData);
       setLastUpdated(new Date());
 
@@ -221,7 +215,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       return (
         <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-lg text-xs z-50">
           <p className="font-bold text-slate-800 mb-1">{label}</p>
-          <p className="text-slate-400 mb-2 text-[10px]">{dataPoint.periodLabel}</p>
+          <p className="text-slate-500 mb-2 text-xs">{dataPoint.periodLabel}</p>
           {payload.map((entry, index) => (
             <div key={index} className="flex items-center gap-2 mb-1 last:mb-0">
               <div 
@@ -258,21 +252,22 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
     <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-slate-800">Target vs Realisasi</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Perbandingan target kunjungan dengan realisasi aktual</p>
+          <h2 className="text-base font-bold text-slate-800">Target vs Realisasi</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Perbandingan target kunjungan dengan realisasi aktual</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {lastUpdated && (
-            <span className="text-[10px] text-slate-300 hidden sm:inline">
+            <span className="text-xs text-slate-300 hidden sm:inline">
               {format(lastUpdated, 'HH:mm')}
             </span>
           )}
           <button
             onClick={fetchData}
             disabled={loading}
-            className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
+            aria-label="Muat ulang target dan realisasi"
+            className="relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -281,15 +276,15 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
       <div className="flex items-center gap-4 px-5 md:px-6 pt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-1.5 rounded-full bg-blue-100" />
-          <span className="text-[11px] text-slate-400 font-medium">Target</span>
+          <span className="text-xs text-slate-500 font-medium">Target</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-1.5 rounded-full bg-indigo-500" />
-          <span className="text-[11px] text-slate-400 font-medium">Realisasi</span>
+          <span className="text-xs text-slate-500 font-medium">Realisasi</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-[11px] text-slate-400 font-medium">Tercapai</span>
+          <span className="text-xs text-slate-500 font-medium">Tercapai</span>
         </div>
       </div>
 
@@ -299,7 +294,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
             <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
           </div>
         ) : data.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+          <div className="h-48 flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
             <p>Belum ada target yang diset.</p>
             <button
               onClick={() => window.location.href='/owner/physiotherapist-management'}
@@ -319,11 +314,11 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{item.periodLabel}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.periodLabel}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-lg font-black leading-none" style={{ color: barColor }}>{pct}%</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{item.realization} / {item.target} kunjungan</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.realization} / {item.target} kunjungan</p>
                     </div>
                   </div>
                   {/* Track */}

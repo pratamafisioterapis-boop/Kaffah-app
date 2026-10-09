@@ -106,14 +106,14 @@ const TrendSessionChart = () => {
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Tren Sesi Minggu Ini</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Total kunjungan per hari</p>
+            <h2 className="text-base font-bold text-slate-800">Tren Sesi Minggu Ini</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Total kunjungan per hari</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Mini stats */}
             <div className="text-right">
               <p className="text-xl font-black text-slate-900 leading-none">{totalSessions}</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Minggu</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Minggu</p>
             </div>
             {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0" />}
           </div>
@@ -121,7 +121,7 @@ const TrendSessionChart = () => {
 
         {/* Peak day badge */}
         {!loading && peakDay.sessions > 0 && (
-          <div className="mt-3 inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-blue-100">
+          <div className="mt-3 inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-100">
             <span>📈</span> Peak: {peakDay.date} — {peakDay.sessions} sesi
           </div>
         )}

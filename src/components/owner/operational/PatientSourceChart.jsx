@@ -153,13 +153,13 @@ const PatientSourceChart = ({ dateRange }) => {
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Sumber Pasien</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Dari mana pasien tahu klinik, per sesi pada periode ini</p>
+            <h2 className="text-base font-bold text-slate-800">Sumber Pasien</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Dari mana pasien tahu klinik, per sesi pada periode ini</p>
           </div>
           {!loading && (
             <div className="text-right">
               <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Sesi</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Sesi</p>
             </div>
           )}
         </div>
@@ -173,7 +173,7 @@ const PatientSourceChart = ({ dateRange }) => {
             <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
           </div>
         ) : data.length === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
             Belum ada data sesi pada periode ini.
           </div>
         ) : (
@@ -198,10 +198,10 @@ const PatientSourceChart = ({ dateRange }) => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
                         {s.count.toLocaleString('id-ID')}
                       </span>
-                      <span className="text-[10px] text-slate-400 w-8 text-right">{s.pct}%</span>
+                      <span className="text-xs text-slate-500 w-8 text-right">{s.pct}%</span>
                     </div>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -221,7 +221,7 @@ const PatientSourceChart = ({ dateRange }) => {
         <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-xl">
           <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <UserX className="w-4.5 h-4.5 text-slate-400" />
+              <UserX className="w-4.5 h-4.5 text-slate-500" />
               {selectedLabel}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
@@ -240,23 +240,23 @@ const PatientSourceChart = ({ dateRange }) => {
                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
                       {p.full_name}
                       {p.isGuest && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
                           Tamu
                         </span>
                       )}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       {p.isGuest
                         ? (p.phone !== '-' ? `No HP ${p.phone}` : 'Booking tamu, belum jadi pasien terdaftar')
                         : `RM ${p.medical_record_number} • No HP ${p.phone}`}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
                       {p.sessionCount} sesi
                     </span>
                     {p.lastRecapDate && (
-                      <p className="text-[10px] text-slate-400 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         {format(new Date(p.lastRecapDate), 'd MMM yyyy', { locale: idLocale })}
                       </p>
                     )}

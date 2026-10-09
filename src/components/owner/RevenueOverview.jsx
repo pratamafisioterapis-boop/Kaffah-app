@@ -407,7 +407,7 @@ const RevenueOverview = ({ dateRange }) => {
           <TrendingUp className="w-3.5 h-3.5" />
           + Pemasukan
         </button>
-        <span className="text-[11px] text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah halaman</span>
+        <span className="text-xs text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah halaman</span>
       </div>
 
       {/* Refresh Button */}
@@ -426,7 +426,7 @@ const RevenueOverview = ({ dateRange }) => {
 
         <CardContent className="p-4 md:p-8 pb-0 relative z-10">
           <div className="relative mb-2.5 md:mb-5">
-            <button type="button" className="absolute top-0 right-0 text-slate-300 hover:text-slate-400 transition-colors" aria-label="More options">
+            <button type="button" className="absolute top-0 right-0 text-slate-300 hover:text-slate-500 transition-colors" aria-label="More options">
               <MoreHorizontal className="w-5 h-5" />
             </button>
 
@@ -436,20 +436,20 @@ const RevenueOverview = ({ dateRange }) => {
                   <BarChart3 className="w-4.5 h-4.5 md:w-7 md:h-7 text-blue-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-slate-400 text-[9px] md:text-[11px] font-bold uppercase tracking-widest mb-0.5 leading-none">Financial Health Overview</p>
-                  <h2 className="text-xl sm:text-3xl md:text-5xl font-black text-[#0b1f4b] leading-none mt-1">
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-0.5 leading-none">Financial Health Overview</p>
+                  <p className="text-xl sm:text-3xl md:text-5xl font-black text-[#0b1f4b] leading-none mt-1">
                     {metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}
-                  </h2>
-                  <p className="text-slate-400 text-[10px] md:text-xs mt-1 leading-tight">
+                  </p>
+                  <p className="text-slate-500 text-xs mt-1 leading-tight">
                     {format(startOfMonth(new Date()), 'dd MMM yyyy')} — {format(endOfMonth(new Date()), 'dd MMM yyyy')}
                     <span className="hidden sm:inline"> (sama seperti Break Even Point)</span>
                   </p>
-                  <p className="sm:hidden text-slate-400 text-[10px] leading-tight">(sama seperti Break Even Point)</p>
+                  <p className="sm:hidden text-slate-500 text-xs leading-tight">(sama seperti Break Even Point)</p>
                 </div>
               </div>
 
               <div className="flex flex-col items-start sm:items-end gap-1 shrink-0 sm:pt-1">
-                <div className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-full text-[11px] md:text-xs font-bold flex items-center gap-1.5 whitespace-nowrap ${
+                <div className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 whitespace-nowrap ${
                   metrics.netProfit >= 0
                     ? 'bg-emerald-50 border border-emerald-100 text-emerald-600'
                     : 'bg-rose-50 border border-rose-100 text-rose-600'
@@ -457,7 +457,7 @@ const RevenueOverview = ({ dateRange }) => {
                   {metrics.netProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                   {metrics.netProfit >= 0 ? 'Net Profit Positive' : 'Net Profit Negative'}
                 </div>
-                <span className="text-[10px] md:text-[11px] text-slate-400">
+                <span className="text-xs text-slate-500">
                   {metrics.netProfit >= 0 ? 'Keep up the good work!' : 'Perlu perhatian segera'}
                 </span>
               </div>
@@ -506,14 +506,14 @@ const RevenueOverview = ({ dateRange }) => {
             <path fill="#bfdbfe" opacity="0.55" d="M0,82L120,78C240,73,480,64,720,66C960,68,1200,82,1320,88L1440,94L1440,110L0,110Z" />
           </svg>
           <div className="absolute inset-0 flex items-end justify-between px-4 md:px-8 pb-2.5 md:pb-4">
-            <p className="hidden sm:flex items-start gap-2 text-[10px] md:text-[11px] text-[#0b1f4b]/70 font-semibold leading-tight">
+            <p className="hidden sm:flex items-start gap-2 text-xs text-[#0b1f4b]/70 font-semibold leading-tight">
               <BarChart3 className="w-3.5 h-3.5 text-[#0b1f4b]/40 mt-0.5 shrink-0" />
               <span>Better Financial Health<br />for a Stronger Tomorrow</span>
             </p>
-            <p className="sm:hidden text-[8px] text-[#0b1f4b]/60 font-semibold leading-tight">
+            <p className="sm:hidden text-xs text-[#0b1f4b]/60 font-semibold leading-tight">
               Better Financial Health<br />for a Stronger Tomorrow
             </p>
-            <p className="hidden sm:block text-[10px] tracking-widest text-blue-800/50 font-bold uppercase">
+            <p className="hidden sm:block text-xs tracking-widest text-blue-800/50 font-bold uppercase">
               Care &bull; Manage &bull; Grow Together
             </p>
           </div>
@@ -528,7 +528,7 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-2xl border border-emerald-100 border-l-4 border-l-emerald-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-emerald-600" />
@@ -536,11 +536,11 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
           <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-emerald-600 break-words">{formatShortCurrency(metrics.totalRevenue)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Total Revenue</p>
-          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
+          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
         </div>
 
         <div className={`bg-white rounded-2xl border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
-          metrics.netProfit >= 0 ? 'border-indigo-100 border-l-4 border-l-indigo-500' : 'border-rose-100 border-l-4 border-l-rose-500'
+          metrics.netProfit >= 0 ? 'border-indigo-100' : 'border-rose-100'
         }`}>
           <div className="flex items-start justify-between mb-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${metrics.netProfit >= 0 ? 'bg-indigo-50' : 'bg-rose-50'}`}>
@@ -550,12 +550,12 @@ const RevenueOverview = ({ dateRange }) => {
               Margin {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
             </span>
           </div>
-          <p className={`text-3xl sm:text-4xl md:text-5xl font-black leading-none break-words ${metrics.netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
+          <p className={`text-3xl sm:text-4xl md:text-5xl font-black leading-none break-words ${metrics.netProfit >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Net Profit</p>
-          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
+          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-rose-100 border-l-4 border-l-rose-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-2xl border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
               <TrendingDown className="w-6 h-6 text-rose-600" />
@@ -566,19 +566,19 @@ const RevenueOverview = ({ dateRange }) => {
           </div>
           <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-rose-600 break-words">{formatShortCurrency(metrics.totalExpenses)}</p>
           <p className="text-sm text-slate-500 font-semibold mt-2">Total Pengeluaran</p>
-          <p className="text-xs text-slate-400 mt-0.5 break-words">{formatCurrency(metrics.totalExpenses)}</p>
+          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalExpenses)}</p>
         </div>
       </div>
       {/* ── Dana Paket ── */}
-      <div className="bg-white rounded-2xl border border-amber-100 border-l-4 border-l-amber-500 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+      <div className="bg-white rounded-2xl border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
               <DollarSign className="w-6 h-6 text-amber-600" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-base font-bold text-slate-800 leading-snug">Dana Paket Belum Terealisasi</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Sisa sesi paket aktif yang belum dilakukan</p>
+              <h2 className="text-base font-bold text-slate-800 leading-snug">Dana Paket Belum Terealisasi</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Sisa sesi paket aktif yang belum dilakukan</p>
             </div>
           </div>
           <span className="self-start sm:self-auto shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 whitespace-nowrap">
@@ -589,7 +589,7 @@ const RevenueOverview = ({ dateRange }) => {
           <div className="bg-amber-50 rounded-xl p-4 min-w-0">
             <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none whitespace-nowrap">{formatShortCurrency(danaPacket.total)}</p>
             <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
-            <p className="text-[11px] text-slate-400 mt-0.5 break-words">{formatFull(danaPacket.total)}</p>
+            <p className="text-xs text-slate-500 mt-0.5 break-words">{formatFull(danaPacket.total)}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-4">
             <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.sisaSesi}</p>
@@ -609,13 +609,13 @@ const RevenueOverview = ({ dateRange }) => {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Revenue per Terapis</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Kontribusi revenue per terapis periode ini</p>
+            <h2 className="text-base font-bold text-slate-800">Revenue per Terapis</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Kontribusi revenue per terapis periode ini</p>
           </div>
-          <span className="text-xs text-slate-400">{therapistRevenue.length} terapis</span>
+          <span className="text-xs text-slate-500">{therapistRevenue.length} terapis</span>
         </div>
         {therapistRevenue.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-8">Belum ada data</p>
+          <p className="text-slate-500 text-sm text-center py-8">Belum ada data</p>
         ) : (
           <div className="space-y-4">
             {therapistRevenue.map((t, i) => {
@@ -647,19 +647,19 @@ const RevenueOverview = ({ dateRange }) => {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Pemasukan Paket vs Non-Paket</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-sm font-bold text-slate-800">Pemasukan Paket vs Non-Paket</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
               {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
             </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(packageVsNonPackage.total)}</p>
-            <p className="text-xs text-slate-400 font-medium mt-1">Total Pemasukan</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Total Pemasukan</p>
           </div>
         </div>
 
         {packageVsNonPackage.total === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
+          <p className="text-sm text-slate-500 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
         ) : (
           <>
             <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex mb-5">
@@ -667,29 +667,29 @@ const RevenueOverview = ({ dateRange }) => {
               <div className="h-full bg-sky-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="rounded-2xl border border-violet-100 border-l-4 border-l-violet-500 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
                     <Package className="w-4 h-4 text-violet-600" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
                     {packageVsNonPackage.paketPct}%
                   </span>
                 </div>
                 <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
-                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
+                <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
               </div>
-              <div className="rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-2xl border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
                     <Wallet className="w-4 h-4 text-sky-600" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">
                     {packageVsNonPackage.nonPaketPct}%
                   </span>
                 </div>
                 <p className="text-lg font-black leading-none text-sky-600">{formatFull(packageVsNonPackage.nonPaket)}</p>
-                <p className="text-xs text-slate-400 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} transaksi</p>
+                <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} transaksi</p>
               </div>
             </div>
           </>
@@ -700,19 +700,19 @@ const RevenueOverview = ({ dateRange }) => {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 md:p-6">
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
               {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
             </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(totalPemasukanMetode)}</p>
-            <p className="text-xs text-slate-400 font-medium mt-1">Total Pemasukan</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Total Pemasukan</p>
           </div>
         </div>
 
         {paymentMethodBreakdown.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
+          <p className="text-sm text-slate-500 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
         ) : (
           <div className="flex flex-wrap gap-3 md:gap-4">
             {paymentMethodBreakdown.map((pm, i) => {
@@ -720,18 +720,18 @@ const RevenueOverview = ({ dateRange }) => {
               return (
                 <div
                   key={i}
-                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} border-l-4 ${style.accent} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
+                  className={`flex-1 basis-[160px] rounded-2xl border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className={`w-9 h-9 rounded-xl ${style.bg} flex items-center justify-center`}>
                       <style.icon className={`w-4 h-4 ${style.color}`} />
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.color}`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.color}`}>
                       {pm.pct}%
                     </span>
                   </div>
                   <p className={`text-lg font-black leading-none ${style.color}`}>{formatFull(pm.amount)}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1.5 truncate">{pm.method}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-1.5 truncate">{pm.method}</p>
                 </div>
               );
             })}

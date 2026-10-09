@@ -129,12 +129,12 @@ const SlotUtilizationChart = () => {
       {/* Header */}
       <div className="px-4 md:px-5 pt-4 md:pt-5 pb-2 flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Utilisasi Slot Hari Ini</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">Real-time slot capacity</p>
+          <h2 className="text-sm font-bold text-slate-800">Utilisasi Slot Hari Ini</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Real-time slot capacity</p>
         </div>
         {!loading && !error && (
-          <button onClick={fetchUtilizationData} className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 shrink-0">
-            <RefreshCw className="h-3 w-3 text-slate-400" />
+          <button onClick={fetchUtilizationData} aria-label="Muat ulang utilisasi slot" className="relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 shrink-0">
+            <RefreshCw className="h-3 w-3 text-slate-500" />
           </button>
         )}
       </div>
@@ -149,7 +149,7 @@ const SlotUtilizationChart = () => {
             <AlertCircle className="h-4 w-4" /><p>{error}</p>
           </div>
         ) : total === 0 ? (
-          <div className="h-20 flex items-center justify-center text-slate-400 text-xs">
+          <div className="h-20 flex items-center justify-center text-slate-500 text-xs">
             Tidak ada data jadwal hari ini.
           </div>
         ) : (
@@ -195,8 +195,8 @@ const SlotUtilizationChart = () => {
             {/* Info terisi — Slot Kosong sudah tampil di kartu KPI hari ini,
                 jadi di sini cukup tampilkan jumlah yang terisi & progress bar. */}
             <div className="flex-1 min-w-0">
-              <p className="text-2xl md:text-3xl font-black leading-none text-indigo-600">{metrics.filled}</p>
-              <p className="text-[11px] text-slate-400 font-medium mt-1">slot terisi dari {total} total</p>
+              <p className="text-2xl md:text-3xl font-black leading-none text-slate-900">{metrics.filled}</p>
+              <p className="text-xs text-slate-500 font-medium mt-1">slot terisi dari {total} total</p>
               <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5">
                 <div
                   className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
