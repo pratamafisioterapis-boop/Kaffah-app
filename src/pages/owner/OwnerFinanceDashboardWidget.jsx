@@ -265,7 +265,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
         {kpis.map((k, i) => (
-          <div key={i} className={`bg-white rounded-app-lg border ${k.border} border-l-4 ${k.accent} shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] p-4 md:p-5`}>
+          <div key={i} className={`bg-white rounded-app-lg border ${k.border} border-l ${k.accent} shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] p-4 md:p-5`}>
             <div className="flex items-start justify-between mb-3">
               <div className={`w-10 h-10 rounded-app ${k.bg} flex items-center justify-center`}>
                 <k.icon className={`w-5 h-5 ${k.color}`} />

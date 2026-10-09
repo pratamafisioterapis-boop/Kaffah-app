@@ -633,7 +633,7 @@ if (isCreate) {
               {soapFields.map((field) => (
                 <div
                   key={field.key}
-                  className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
+                  className={`bg-white border-l ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
                     <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
@@ -733,7 +733,7 @@ if (isCreate) {
             </div>
 
             {/* Edukasi Pasien */}
-            <div className={`bg-white border-t border-l-4 border-l-emerald-400 ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
+            <div className={`bg-white border-t border-l border-l-emerald-400 ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="w-6 h-6 rounded-app-sm bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">E</span>
                 <label className="text-sm font-semibold text-emerald-700">Edukasi Pasien</label>
