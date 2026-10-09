@@ -142,7 +142,7 @@ const OperationalDashboardUI = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TODAY_TASKS.map((task, index) => (
-            <Card key={index} className={`rounded-app border-l-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] ${task.borderColor}`}>
+            <Card key={index} className={`rounded-app border-l shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] ${task.borderColor}`}>
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">{task.label}</p>

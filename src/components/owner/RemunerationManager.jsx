@@ -362,7 +362,7 @@ const RemunerationManager = () => {
                   </p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => handleOpenDialog()} className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 shadow-lg shadow-indigo-500/20 border-0">
+              <Button size="sm" onClick={() => handleOpenDialog()} className="bg-app-accent hover:bg-app-accent-hover shadow-sm border-0">
                 <Plus className="w-4 h-4 mr-1.5" /> Tambah Program Kerja
               </Button>
             </div>
@@ -398,7 +398,7 @@ const RemunerationManager = () => {
               return (
                 <div key={item.id} className="group relative bg-white rounded-app-lg border border-slate-200/80 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-300 p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-app bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
+                    <div className="w-10 h-10 rounded-app bg-app-accent flex items-center justify-center shrink-0 shadow-sm">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">

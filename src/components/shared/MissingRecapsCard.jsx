@@ -62,7 +62,7 @@ const MissingRecapsCard = ({
   if (!loading && missing.length === 0) return null;
 
   return (
-    <Card className={cn("border-l-4 border-l-orange-500 shadow-sm", className)}>
+    <Card className={cn("border-l border-l-orange-500 shadow-sm", className)}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2 text-orange-700">

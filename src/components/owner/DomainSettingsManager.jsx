@@ -202,7 +202,7 @@ const DomainSettingsManager = () => {
               </div>
 
               {clinic.custom_domain_status !== 'verified' && (
-                <div className="text-sm text-slate-600 bg-amber-50 border border-amber-100 rounded-app-sm p-4 space-y-2">
+                <div className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-app-sm p-4 space-y-2">
                   <p className="font-medium text-amber-800">Selesaikan setup DNS di penyedia domain Anda:</p>
                   <p>Tambahkan record berikut, lalu klik "Cek Status" (proses propagasi DNS bisa memakan waktu beberapa menit hingga beberapa jam):</p>
                   {verification && verification.length > 0 ? (

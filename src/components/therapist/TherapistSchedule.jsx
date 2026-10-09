@@ -125,7 +125,7 @@ const TherapistSchedule = ({ therapist }) => {
           {items.map((item, idx) => {
             const isCancelled = item.type === 'appointment' && item.status === 'cancelled';
             return (
-            <Card key={`${item.type}-${item.id}-${idx}`} className={`[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-app-accent-bright'}`}>
+            <Card key={`${item.type}-${item.id}-${idx}`} className={`[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow border-l ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-app-accent-bright'}`}>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                    <div className={`px-3 py-2 rounded-app-sm font-mono font-bold text-lg min-w-[80px] text-center ${isCancelled ? 'bg-red-100 text-red-700' : item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>

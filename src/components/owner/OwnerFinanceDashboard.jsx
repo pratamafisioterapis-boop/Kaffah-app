@@ -564,7 +564,7 @@ const OwnerFinanceDashboard = () => {
         opacity: 0,
         y: -10
       }}>
-             <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-app-lg p-1 border border-violet-100 shadow-lg">
+             <div className="bg-app-soft rounded-app-lg p-1 border border-app-border shadow-sm">
                 <div className="bg-white/95 backdrop-blur rounded-app p-6">
                     <SalaryCalculator
   dateRange={dateRange}

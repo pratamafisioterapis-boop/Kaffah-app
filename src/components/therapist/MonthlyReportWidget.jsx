@@ -564,7 +564,7 @@ const handleOpenSoapModal = () => {
                     { key: 'assessment',  label: 'Assessment',  short: 'A', placeholder: 'Analisis, diagnosis fisioterapi...',   accent: 'border-l-violet-400', badge: 'bg-violet-500', labelColor: 'text-violet-700' },
                     { key: 'plan',        label: 'Plan',        short: 'P', placeholder: 'Rencana terapi, edukasi...',           accent: 'border-l-rose-400',   badge: 'bg-rose-500',   labelColor: 'text-rose-700'   },
                   ].map(field => (
-                    <div key={field.key} className={`bg-white rounded-app border-l-4 ${field.accent} border border-slate-100 px-3 py-2.5`}>
+                    <div key={field.key} className={`bg-white rounded-app border-l ${field.accent} border border-slate-100 px-3 py-2.5`}>
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <span className={`w-5 h-5 rounded-md ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0`}>
                           {field.short}

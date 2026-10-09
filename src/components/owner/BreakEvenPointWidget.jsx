@@ -163,7 +163,7 @@ const BreakEvenPointWidget = () => {
       <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-5">
         <div className={cn("flex gap-3", isPWA ? "flex-col" : "items-start justify-between")}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-app-lg flex items-center justify-center bg-gradient-to-br from-violet-100 to-indigo-50 shrink-0">
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-app-lg flex items-center justify-center bg-app-soft shrink-0">
               <Target className="w-5 h-5 text-violet-600" />
             </div>
             <div className="min-w-0">
