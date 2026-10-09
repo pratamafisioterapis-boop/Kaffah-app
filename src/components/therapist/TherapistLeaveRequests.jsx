@@ -29,6 +29,7 @@ import TherapistShiftSwap from '@/components/therapist/TherapistShiftSwap';
 import TherapistSundaySwap from '@/components/therapist/TherapistSundaySwap';
 import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
+import { useClinicOperatingHours } from '@/hooks/useClinicOperatingHours';
 
 const DAY_KEY = 'yyyy-MM-dd';
 // Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
@@ -137,8 +138,15 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 
   // Rentang jam yang masih kosong di satu tanggal: jam buka klinik dikurangi jam kerja normal dan
   // jam pengganti yang sudah terisi. Bentuk: [{ start, end }] dalam menit.
-  const openHoursOn = useCallback((dateStr) => clinicHoursOn(therapist.clinic_id, parseISO(dateStr).getDay()), [therapist.clinic_id]);
-  const openLabelOn = (dateStr) => { const h = openHoursOn(dateStr); return `${minutesToTime(h.open)}–${minutesToTime(h.close)}`; };
+  const { hours: operatingHours } = useClinicOperatingHours(therapist.clinic_id);
+  const openHoursOn = useCallback(
+    (dateStr) => clinicHoursOn(therapist.clinic_id, parseISO(dateStr).getDay(), operatingHours),
+    [therapist.clinic_id, operatingHours],
+  );
+  const openLabelOn = (dateStr) => {
+    const h = openHoursOn(dateStr);
+    return h.closed ? 'klinik tutup' : `${minutesToTime(h.open)}–${minutesToTime(h.close)}`;
+  };
 
   const freeWindowsOn = useCallback((dateStr) => {
     const { open, close } = openHoursOn(dateStr);
@@ -567,7 +575,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
               >
                 <span className="text-sm font-bold">{format(day.date, 'd')}</span>
                 <span className={cn('text-[9px]', selected ? 'text-blue-100' : off ? 'text-emerald-600' : 'text-slate-400')}>
-                  {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : full ? 'Penuh' : day.taken.length ? 'Terisi' : off ? 'Libur' : 'Kerja'}
+                  {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : full ? (openHoursOn(day.key).closed ? 'Tutup' : 'Penuh') : day.taken.length ? 'Terisi' : off ? 'Libur' : 'Kerja'}
                 </span>
               </button>
             );

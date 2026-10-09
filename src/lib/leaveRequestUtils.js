@@ -107,15 +107,31 @@ export const buildShiftOptions = (therapists = []) => {
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
 };
 
-// Jam buka klinik per hari (0 = Minggu ... 6 = Sabtu), dalam menit. Jadwal khusus Kaffah:
-// Senin–Jumat 09:00–21:00, Sabtu–Minggu 09:00–17:00. Klinik lain memakai 09:00–21:00 setiap hari.
+// Jam buka klinik per hari (0 = Minggu ... 6 = Sabtu), dalam menit. Bila owner sudah menyimpan jam di
+// Settings (clinics.operating_hours), itu yang dipakai. Bila belum: Kaffah Senin–Jumat 09:00–21:00 dan
+// Sabtu–Minggu 09:00–17:00, klinik lain 09:00–21:00 setiap hari.
 export const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
-const KAFFAH_OPEN_HOURS = { weekday: [9 * 60, 21 * 60], weekend: [9 * 60, 17 * 60] };
+const KAFFAH_WEEKEND_HOURS = [9 * 60, 17 * 60];
 const DEFAULT_OPEN_HOURS = [9 * 60, 21 * 60];
 
-export const clinicHoursOn = (clinicId, dayOfWeek) => {
-  const [open, close] = clinicId === KAFFAH_CLINIC_ID
-    ? (dayOfWeek === 0 || dayOfWeek === 6 ? KAFFAH_OPEN_HOURS.weekend : KAFFAH_OPEN_HOURS.weekday)
-    : DEFAULT_OPEN_HOURS;
-  return { open, close };
+export const OPERATING_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+export const OPERATING_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+// Jam bawaan per hari dalam format "HH:MM", dipakai sebagai isi awal layar pengaturan.
+export const defaultOperatingHours = (clinicId) => {
+  const out = {};
+  for (let d = 0; d <= 6; d += 1) {
+    const [open, close] = clinicId === KAFFAH_CLINIC_ID && (d === 0 || d === 6) ? KAFFAH_WEEKEND_HOURS : DEFAULT_OPEN_HOURS;
+    const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    out[d] = { enabled: true, start: fmt(open), end: fmt(close) };
+  }
+  return out;
+};
+
+export const clinicHoursOn = (clinicId, dayOfWeek, operatingHours) => {
+  const day = operatingHours?.[dayOfWeek] || defaultOperatingHours(clinicId)[dayOfWeek];
+  const open = timeToMinutes(day.start);
+  const close = timeToMinutes(day.end);
+  if (day.enabled === false || close <= open) return { open: 0, close: 0, closed: true };
+  return { open, close, closed: false };
 };
