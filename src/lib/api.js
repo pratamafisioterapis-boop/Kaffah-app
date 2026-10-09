@@ -8697,9 +8697,10 @@ export const getBepFinancials = async () => {
       const effectiveEnd = accrualStart > today ? accrualStart : today;
       const effectiveEndStr = format(effectiveEnd, 'yyyy-MM-dd');
 
-      const [schedRes, timeOffRes, recapsRes] = await Promise.all([
+      const [schedRes, timeOffRes, extraShiftRes, recapsRes] = await Promise.all([
         getTherapistSchedules(t.id),
         getTherapistTimeOff(t.id),
+        getTherapistExtraShifts(t.id),
         supabase.from('daily_recaps')
           .select('amount, amount_package, package_tracking_id, patient_type, patient_type_ids')
           .eq('therapist_id', t.id)
@@ -8707,7 +8708,7 @@ export const getBepFinancials = async () => {
           .lte('recap_date', effectiveEndStr)
       ]);
 
-      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], accrualStart, effectiveEnd);
+      const attendanceDays = calculateAttendanceDays(schedRes.data || [], timeOffRes.data || [], accrualStart, effectiveEnd, extraShiftRes.data || []);
       const therapistTransport = (parseFloat(t.transport_per_day) || 0) * attendanceDays;
       transportLive += therapistTransport;
 

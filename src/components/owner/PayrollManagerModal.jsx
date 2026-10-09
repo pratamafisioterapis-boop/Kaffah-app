@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   getPayrollRecordsForTherapist, upsertPayrollRecord, deletePayrollRecord, getCurrentClinic,
-  getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getServiceRates, getRemunerationReport,
+  getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getTherapistExtraShifts, getServiceRates, getRemunerationReport,
 } from '@/lib/api';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
@@ -126,14 +126,15 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       const salaryType = therapist.salary_scheme || 'full_salary';
       const isProbation = salaryType === 'probation';
 
-      const [scheduleRes, timeOffRes, recapsRes, ratesRes] = await Promise.all([
+      const [scheduleRes, timeOffRes, extraShiftRes, recapsRes, ratesRes] = await Promise.all([
         getTherapistSchedules(therapist.id),
         getTherapistTimeOff(therapist.id),
+        getTherapistExtraShifts(therapist.id),
         getDailyRecaps({ startDate: startDateStr, endDate: endDateStr, therapistId: therapist.id, limit: 'all' }),
         salaryType === 'custom_salary' ? getServiceRates() : Promise.resolve({ data: [] }),
       ]);
 
-      const days = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr);
+      const days = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
       setAttendanceDays(days);
 
       const therapistRecaps = recapsRes.data || [];

@@ -417,11 +417,19 @@ export function formatTherapistPeriodLabel(therapist) {
 
 /**
  * Calculates the total attendance days based on an array of payroll/attendance records.
- * @param {Array} records - Array of attendance records
+ * @param {Array} schedules - Jadwal mingguan terapis
+ * @param {Array} timeOffs - Cuti / izin / libur terapis
+ * @param {string|Date} startDate
+ * @param {string|Date} endDate
+ * @param {Array} extraShifts - Jadwal pengganti izin (therapist_extra_shifts); hari yang punya
+ *   jadwal pengganti dihitung masuk, termasuk bila tanggalnya libur mingguan.
  * @returns {number} Count of attendance days
  */
-export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate) {
+export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate, extraShifts = []) {
   if (!startDate || !endDate) return 0;
+
+  const extraDates = new Set((extraShifts || []).map(e => (typeof e === 'string' ? e : e.shift_date)));
+  const dateKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -430,6 +438,16 @@ export function calculateAttendanceDays(schedules, timeOffs, startDate, endDate)
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const day = d.getDay(); // 0=minggu, 1=senin ...
+
+    // 0. hari pengganti izin: dihitung masuk selama tidak tertutup cuti/izin selain libur mingguan
+    if (extraDates.has(dateKey(d))) {
+      const blockedByLeave = (timeOffs || []).some(t => {
+        if (t.leave_type === 'weekly_off') return false;
+        return d >= new Date(t.start_date) && d <= new Date(t.end_date);
+      });
+      if (!blockedByLeave) totalDays++;
+      continue;
+    }
 
     // 1. cek ada jadwal aktif di hari ini
     const hasSchedule = (schedules || []).some(s => {
