@@ -115,8 +115,8 @@ const isPWA =
   }, []);
 
   useEffect(() => {
-    preloadHeroImages();
-  }, []);
+    preloadHeroImages(role);
+  }, [role]);
 
   useEffect(() => {
     setIsSidebarOpen(false);

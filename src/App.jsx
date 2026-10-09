@@ -19,7 +19,7 @@ import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
 import { isStaleChunkError, reloadForStaleChunk, hardRefresh } from '@/lib/staleChunk';
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
-import ClinicTenantSitePage from '@/pages/clinic/ClinicTenantSitePage';
+const ClinicTenantSitePage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicTenantSitePage'), 'ClinicTenantSitePage'));
 const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
 
 // Lazy Pages

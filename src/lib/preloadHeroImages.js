@@ -23,8 +23,13 @@ const HERO_IMAGES = [
 
 let preloaded = false;
 
-export function preloadHeroImages() {
+export function preloadHeroImages(role) {
   if (preloaded || typeof window === 'undefined') return;
+  // Therapist pages use a compact header without an illustration, and warming ~14
+  // images is wasted data on a data-saver / slow mobile connection.
+  if (role === 'therapist') return;
+  const connection = navigator.connection;
+  if (connection && (connection.saveData || /(^|-)2g$|3g/.test(connection.effectiveType || ''))) return;
   preloaded = true;
 
   const warm = () => {
