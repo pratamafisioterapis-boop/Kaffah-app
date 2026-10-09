@@ -32,6 +32,7 @@ import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import PageHero from '@/components/shared/PageHero';
 
 // Tanggal WITA (UTC+8) untuk offset hari tertentu dari hari ini, dipakai
 // oleh navigasi panah kiri/kanan pada tombol "Hari Ini".
@@ -533,31 +534,7 @@ const getPremiumPastelBadge = (text) => {
       {!hideControls && (
         <>
         {/* Hero Banner */}
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
-          <img
-            src="/hero/clinara-recap-hero.webp"
-            alt="Kaffah Physiotherapy"
-            className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
-          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-              <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
-              <h1
-                style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
-              >
-                Rekap<br />
-                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
-                  Harian
-                </span>
-              </h1>
-              <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
-                Kelola data kunjungan dan pendapatan harian klinik.
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHero image="/hero/clinara-recap-hero.webp" title="Rekap" highlight="Harian" description="Kelola data kunjungan dan pendapatan harian klinik." />
         <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
 

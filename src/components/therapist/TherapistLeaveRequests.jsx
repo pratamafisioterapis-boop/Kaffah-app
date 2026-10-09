@@ -30,6 +30,7 @@ import TherapistSundaySwap from '@/components/therapist/TherapistSundaySwap';
 import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 import { useClinicOperatingHours } from '@/hooks/useClinicOperatingHours';
+import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const DAY_KEY = 'yyyy-MM-dd';
 // Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
@@ -819,15 +820,10 @@ const TherapistLeaveRequests = ({ therapist }) => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-app bg-orange-50 flex items-center justify-center shrink-0">
-          <CalendarOff className="w-5 h-5 text-orange-600" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">Izin</h2>
-          <p className="text-sm text-slate-500">Ajukan izin, lalu tentukan kapan Anda mengganti jam kerjanya.</p>
-        </div>
-      </div>
+      <TherapistPageHeader
+        title="Izin"
+        description="Ajukan izin, lalu tentukan kapan Anda mengganti jam kerjanya."
+      />
 
       {therapist?.work_start_time && therapist?.work_end_time && (
         <div className="rounded-app border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">

@@ -13,6 +13,7 @@ import { format, addDays } from 'date-fns';
 import { getTherapistPeriodRange } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import CircularScore from '@/components/shared/CircularScore';
+import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const MANUAL_METRICS = ['feedback_positif', 'google_review', 'custom'];
 
@@ -230,6 +231,10 @@ const TherapistRemuneration = ({ therapist }) => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
+      <TherapistPageHeader
+        title="Remunerasi"
+        description="Rincian remunerasi dan realisasi periode Anda."
+      />
       {canFillPrevious && (
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-app-lg p-3">
           <div className="flex-1 min-w-0">
