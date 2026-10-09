@@ -8,6 +8,7 @@ import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
 import { getCachedClinicId } from '@/lib/api';
+import { CHART_MOTION } from '@/lib/chartMotion';
 
 const TrendSessionChart = () => {
   const [data, setData] = useState([]);
@@ -100,7 +101,7 @@ const TrendSessionChart = () => {
   const peakDay = data.reduce((max, d) => d.sessions > max.sessions ? d : max, data[0] || { sessions: 0, date: '-' });
 
   return (
-    <Card className="rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       {/* Header */}
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">
@@ -178,7 +179,7 @@ const TrendSessionChart = () => {
                   fill="url(#trendGrad)"
                   dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
                   activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
-                  animationDuration={1200}
+                  {...CHART_MOTION}
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -255,7 +255,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
   }
 
   return (
-    <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-slate-800">Target vs Realisasi</h3>
@@ -270,7 +270,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors"
+            className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
           >
             <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -329,7 +329,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
                   {/* Track */}
                   <div className="relative h-5 w-full rounded-full overflow-hidden" style={{ backgroundColor: barBg }}>
                     <div
-                      className="h-full rounded-full transition-all duration-700"
+                      className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                       style={{ width: `${pct}%`, backgroundColor: barColor }}
                     />
                   </div>
