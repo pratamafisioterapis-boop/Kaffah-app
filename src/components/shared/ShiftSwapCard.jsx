@@ -1,14 +1,14 @@
 import React from 'react';
 import { Repeat, ArrowRight, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { STATUS_META, formatLongDate, hhmm, formatDuration, timeToMinutes } from '@/lib/leaveRequestUtils';
+import { requestStatusMeta, formatLongDate, hhmm, formatDuration, timeToMinutes } from '@/lib/leaveRequestUtils';
 
 const shiftText = (name, start, end) =>
   start && end ? `${name ? `${name} ` : ''}${hhmm(start)}–${hhmm(end)}` : '—';
 
 // Ringkasan satu pengajuan tukar shift. `footer` untuk tombol aksi.
 const ShiftSwapCard = ({ request, showTherapist = false, footer = null }) => {
-  const status = STATUS_META[request.status] || STATUS_META.pending;
+  const status = requestStatusMeta(request);
   const minutes = timeToMinutes(request.to_end_time) - timeToMinutes(request.to_start_time);
 
   return (
@@ -44,7 +44,14 @@ const ShiftSwapCard = ({ request, showTherapist = false, footer = null }) => {
           <p className="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">“{request.notes}”</p>
         )}
 
-        {request.status !== 'pending' && (request.review_note || request.reviewed_by_name) && (
+        {request.revoked_at && (
+          <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            Persetujuan dibatalkan{request.revoked_by_name ? ` oleh ${request.revoked_by_name}` : ''}
+            {request.revoke_note ? `: ${request.revoke_note}` : ''}. Jam kerja sudah dikembalikan.
+          </p>
+        )}
+
+        {request.status !== 'pending' && !request.revoked_at && (request.review_note || request.reviewed_by_name) && (
           <p className="text-xs text-slate-500 flex items-start gap-1.5">
             <MessageSquare className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>

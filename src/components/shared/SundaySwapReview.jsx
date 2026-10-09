@@ -1,23 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { getSundaySwapRequests, reviewSundaySwapRequest } from '@/lib/api';
+import { getSundaySwapRequests, reviewSundaySwapRequest, revokeSundaySwapRequest } from '@/lib/api';
 import SundaySwapCard from '@/components/shared/SundaySwapCard';
+import RevokeApprovalDialog from '@/components/shared/RevokeApprovalDialog';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Owner: setujui / tolak tukar jadwal Minggu yang sudah di-acc terapis pengganti.
 const SundaySwapReview = ({ onChanged, className = '' }) => {
   const { toast } = useToast();
+  const { role } = useAuth();
+  const canRevoke = role === 'owner' || role === 'super_admin';
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [rejectNote, setRejectNote] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [revoking, setRevoking] = useState(null);
+  const [revokeNote, setRevokeNote] = useState('');
 
   const load = useCallback(async () => {
     const { data, error } = await getSundaySwapRequests();
@@ -49,6 +55,26 @@ const SundaySwapReview = ({ onChanged, className = '' }) => {
     await load();
     if (onChanged) onChanged();
     return true;
+  };
+
+  const confirmRevoke = async () => {
+    if (!revoking) return;
+    setBusyId(revoking.id);
+    const { data: stillBooked, error } = await revokeSundaySwapRequest(revoking.id, revokeNote);
+    setBusyId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal membatalkan tukar jadwal', description: error.message });
+      return;
+    }
+    toast({
+      title: 'Persetujuan tukar jadwal dibatalkan',
+      description: `Jadwal ${revoking.therapist_name || 'terapis'} dan ${revoking.substitute_name || 'pengganti'} sudah dikembalikan.`
+        + (stillBooked > 0 ? ` Perhatian: ${stillBooked} booking di jam pengganti masih aktif, mohon dijadwalkan ulang.` : ''),
+    });
+    setRevoking(null);
+    setRevokeNote('');
+    await load();
+    if (onChanged) onChanged();
   };
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>;
@@ -94,9 +120,35 @@ const SundaySwapReview = ({ onChanged, className = '' }) => {
             <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
             Riwayat tukar jadwal ({history.length})
           </button>
-          {showHistory && <div className="grid gap-3 lg:grid-cols-2 mt-3">{history.map((r) => <SundaySwapCard key={r.id} request={r} />)}</div>}
+          {showHistory && <div className="grid gap-3 lg:grid-cols-2 mt-3">{history.map((r) => (
+            <SundaySwapCard
+              key={r.id}
+              request={r}
+              footer={canRevoke && r.status === 'approved' && !r.revoked_at ? (
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={busyId === r.id}
+                      onClick={() => { setRevoking(r); setRevokeNote(''); }}
+                    >
+                      <Undo2 className="w-4 h-4 mr-1.5" /> Batalkan Persetujuan
+                    </Button>
+                  ) : null}
+            />
+          ))}</div>}
         </div>
       )}
+
+      <RevokeApprovalDialog
+        open={!!revoking}
+        title="Batalkan tukar jadwal Minggu yang sudah disetujui?"
+        description={`Libur ${revoking?.therapist_name || 'terapis'} dihapus dan jam masuk ${revoking?.substitute_name || 'pengganti'} ditutup, sehingga jadwal kembali seperti semula. Kedua terapis akan diberi tahu.`}
+        note={revokeNote}
+        onNoteChange={setRevokeNote}
+        busy={busyId === revoking?.id}
+        onConfirm={confirmRevoke}
+        onClose={() => setRevoking(null)}
+      />
 
       <Dialog open={!!rejecting} onOpenChange={(open) => { if (!open) setRejecting(null); }}>
         <DialogContent>

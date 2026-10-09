@@ -12,7 +12,9 @@ export const SUNDAY_STATUS_META = {
 
 // Ringkasan satu pengajuan tukar jadwal Minggu. `footer` untuk tombol aksi.
 const SundaySwapCard = ({ request, footer = null }) => {
-  const status = SUNDAY_STATUS_META[request.status] || SUNDAY_STATUS_META.pending_substitute;
+  const status = request.revoked_at
+    ? { label: 'Dibatalkan', className: 'bg-slate-100 text-slate-600 border-slate-300' }
+    : (SUNDAY_STATUS_META[request.status] || SUNDAY_STATUS_META.pending_substitute);
   const rejectedBySub = request.status === 'rejected' && request.rejected_by === 'substitute';
 
   return (
@@ -48,7 +50,13 @@ const SundaySwapCard = ({ request, footer = null }) => {
             <span><b>{request.substitute_name}</b>: {request.substitute_note}</span>
           </p>
         )}
-        {request.reviewed_by_name && (
+        {request.revoked_at && (
+          <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            Persetujuan dibatalkan{request.revoked_by_name ? ` oleh ${request.revoked_by_name}` : ''}
+            {request.revoke_note ? `: ${request.revoke_note}` : ''}. Jadwal sudah dikembalikan.
+          </p>
+        )}
+        {request.reviewed_by_name && !request.revoked_at && (
           <p className="text-xs text-slate-500 flex items-start gap-1.5">
             <MessageSquare className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span><b>{request.reviewed_by_name}</b>{request.review_note ? `: ${request.review_note}` : ''}</span>

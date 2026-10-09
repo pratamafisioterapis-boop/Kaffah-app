@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Inbox, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -7,19 +7,23 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { getShiftSwapRequests, reviewShiftSwapRequest } from '@/lib/api';
+import { getShiftSwapRequests, reviewShiftSwapRequest, revokeShiftSwapRequest } from '@/lib/api';
 import ShiftSwapCard from '@/components/shared/ShiftSwapCard';
+import RevokeApprovalDialog from '@/components/shared/RevokeApprovalDialog';
 
 // Daftar pengajuan tukar shift untuk owner / terapis kepala: setujui atau tolak.
 const ShiftSwapReview = ({ onChanged, className = '' }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canRevoke = role === 'owner' || role === 'super_admin';
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [rejectNote, setRejectNote] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [revoking, setRevoking] = useState(null);
+  const [revokeNote, setRevokeNote] = useState('');
 
   const load = useCallback(async () => {
     const { data, error } = await getShiftSwapRequests();
@@ -58,6 +62,25 @@ const ShiftSwapReview = ({ onChanged, className = '' }) => {
     if (!rejecting) return;
     const ok = await review(rejecting, false, rejectNote);
     if (ok) { setRejecting(null); setRejectNote(''); }
+  };
+
+  const confirmRevoke = async () => {
+    if (!revoking) return;
+    setBusyId(revoking.id);
+    const { error } = await revokeShiftSwapRequest(revoking.id, revokeNote);
+    setBusyId(null);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal membatalkan tukar shift', description: error.message });
+      return;
+    }
+    toast({
+      title: 'Persetujuan tukar shift dibatalkan',
+      description: `Jam kerja ${revoking.therapist_name || 'terapis'} di tanggal itu sudah dikembalikan.`,
+    });
+    setRevoking(null);
+    setRevokeNote('');
+    await load();
+    if (onChanged) onChanged();
   };
 
   if (loading) {
@@ -127,11 +150,38 @@ const ShiftSwapReview = ({ onChanged, className = '' }) => {
           </button>
           {showHistory && (
             <div className="grid gap-3 lg:grid-cols-2 mt-3">
-              {history.map((r) => <ShiftSwapCard key={r.id} request={r} showTherapist />)}
+              {history.map((r) => (
+                <ShiftSwapCard
+                  key={r.id}
+                  request={r}
+                  showTherapist
+                  footer={canRevoke && r.status === 'approved' && !r.revoked_at ? (
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={busyId === r.id}
+                      onClick={() => { setRevoking(r); setRevokeNote(''); }}
+                    >
+                      <Undo2 className="w-4 h-4 mr-1.5" /> Batalkan Persetujuan
+                    </Button>
+                  ) : null}
+                />
+              ))}
             </div>
           )}
         </div>
       )}
+
+      <RevokeApprovalDialog
+        open={!!revoking}
+        title="Batalkan tukar shift yang sudah disetujui?"
+        description={`Jam kerja ${revoking?.therapist_name || 'terapis'} di tanggal itu akan dikembalikan ke jadwal mingguan dan slot booking diperbarui. Terapis akan diberi tahu.`}
+        note={revokeNote}
+        onNoteChange={setRevokeNote}
+        busy={busyId === revoking?.id}
+        onConfirm={confirmRevoke}
+        onClose={() => setRevoking(null)}
+      />
 
       <Dialog open={!!rejecting} onOpenChange={(open) => { if (!open) setRejecting(null); }}>
         <DialogContent>
