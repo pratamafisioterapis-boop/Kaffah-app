@@ -258,6 +258,7 @@ const leaveMap = {};
   else if (category.includes('cuti')) leaveMap[t.therapist_id] = 'cuti';
   else if (category.includes('izin')) leaveMap[t.therapist_id] = 'izin';
   else if (category.includes('libur')) leaveMap[t.therapist_id] = 'libur';
+  else if (category.includes('organisasi')) leaveMap[t.therapist_id] = 'organisasi';
   else leaveMap[t.therapist_id] = 'lainnya';
 });
 
