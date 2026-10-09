@@ -96,14 +96,14 @@ const OperationalDashboardUI = ({
           <motion.div
             key={i}
             {...cardEntrance(i, 12, reduceMotion)}
-            className={`bg-white rounded-2xl border border-slate-100 border-l-4 ${kpi.accent} shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
+            className={`bg-white rounded-2xl border border-slate-100 shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
           >
             <div className="flex items-start justify-between gap-1">
               <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
                 <kpi.icon className={`w-4 h-4 md:w-6 md:h-6 ${kpi.iconColor}`} />
               </div>
               {/* Badge — hidden di PWA mobile, tampil di desktop */}
-              <span className={`hidden md:inline-flex text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${kpi.iconBg} ${kpi.iconColor}`}>
+              <span className={`hidden md:inline-flex text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full ${kpi.iconBg} ${kpi.iconColor}`}>
                 {kpi.change}
               </span>
             </div>
@@ -111,7 +111,7 @@ const OperationalDashboardUI = ({
               <p className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                 {kpi.value.toLocaleString('id-ID')}
               </p>
-              <p className="text-[10px] md:text-sm font-medium text-slate-400 mt-1 leading-tight truncate">{kpi.label}</p>
+              <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-tight truncate">{kpi.label}</p>
             </div>
           </motion.div>
         ))}
@@ -140,10 +140,10 @@ const OperationalDashboardUI = ({
               }`}>
                 {kpi.value.toLocaleString('id-ID')}
               </p>
-              <p className={`text-[10px] md:text-sm font-medium mt-1 truncate ${
+              <p className={`text-xs md:text-sm font-medium mt-1 truncate ${
                 kpi.variant === 'danger'  ? 'text-rose-400' :
                 kpi.variant === 'warning' ? 'text-orange-400' :
-                'text-slate-400'
+                'text-slate-500'
               }`}>
                 {kpi.label}
               </p>

@@ -126,13 +126,13 @@ const SessionTimelinessChart = ({ dateRange }) => {
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Ketepatan Waktu Sesi</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Analisis kepatuhan waktu terapis</p>
+            <h2 className="text-base font-bold text-slate-800">Ketepatan Waktu Sesi</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Analisis kepatuhan waktu terapis</p>
           </div>
           {!loading && stats.total > 0 && (
             <div className="text-right">
               <p className="text-xl font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Compliance</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Compliance</p>
             </div>
           )}
         </div>
@@ -150,7 +150,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
             <Button variant="outline" size="sm" onClick={fetchTimelinessData}>Coba Lagi</Button>
           </div>
         ) : stats.total === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
             Tidak ada data sesi pada periode ini.
           </div>
         ) : (
@@ -174,7 +174,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-base font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</span>
-                  <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Compliance</span>
+                  <span className="text-xs text-slate-500 font-bold uppercase mt-0.5">Compliance</span>
                 </div>
               </div>
 
@@ -187,7 +187,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
                 ].map(s => (
                   <div key={s.label} className={`${s.bg} rounded-xl py-3 text-center`}>
                     <p className={`text-xl md:text-2xl font-black leading-none ${s.color}`}>{s.value}</p>
-                    <p className="text-[9px] text-slate-400 font-semibold mt-1 leading-tight">{s.label}</p>
+                    <p className="text-xs text-slate-500 font-semibold mt-1 leading-tight">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -214,7 +214,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
 
             {/* Progress bar */}
             <div>
-              <div className="flex justify-between text-[10px] font-medium text-slate-400 mb-1.5">
+              <div className="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
                 <span>Compliance Rate</span>
                 <span className="font-bold" style={{ color: complianceColor }}>{complianceRate}%</span>
               </div>

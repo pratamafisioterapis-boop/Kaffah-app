@@ -168,8 +168,8 @@ const CapacityVsDemandChart = () => {
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
               {view === 'monthly'
                 ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
                 : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
@@ -180,12 +180,12 @@ const CapacityVsDemandChart = () => {
               <p className={`text-xl font-black leading-none ${avgUtilization >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
                 {avgUtilization}%
               </p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Avg Utilisasi</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Avg Utilisasi</p>
             </div>
             {loading
               ? <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0" />
-              : <button onClick={fetchData} className="w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95">
-                  <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
+              : <button onClick={fetchData} aria-label="Muat ulang kapasitas dan permintaan" className="relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95">
+                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
                 </button>
             }
           </div>
@@ -196,16 +196,16 @@ const CapacityVsDemandChart = () => {
           <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
             <button
               onClick={() => { setView('weekly'); setAnchorDate(new Date()); }}
-              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
-                view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'
               }`}
             >
               Mingguan
             </button>
             <button
               onClick={() => { setView('monthly'); setAnchorDate(new Date()); }}
-              className={`text-[11px] font-semibold px-3 py-1 rounded-full transition-colors ${
-                view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
+                view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'
               }`}
             >
               Bulanan
@@ -215,7 +215,7 @@ const CapacityVsDemandChart = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={goToPrevious}
-              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
+              className="relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95"
               aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'}
             >
               <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
@@ -223,7 +223,7 @@ const CapacityVsDemandChart = () => {
             {!isCurrentPeriod && (
               <button
                 onClick={goToToday}
-                className="text-[11px] font-semibold text-indigo-600 px-2 hover:underline"
+                className="text-xs font-semibold text-indigo-600 px-2 hover:underline"
               >
                 {view === 'monthly' ? 'Bulan ini' : 'Minggu ini'}
               </button>
@@ -231,7 +231,7 @@ const CapacityVsDemandChart = () => {
             <button
               onClick={goToNext}
               disabled={isCurrentPeriod}
-              className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
+              className="relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
               aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
             >
               <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
@@ -243,15 +243,15 @@ const CapacityVsDemandChart = () => {
         <div className="flex items-center gap-4 mt-3">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm bg-slate-300" />
-            <span className="text-[11px] text-slate-400 font-medium">Kapasitas</span>
+            <span className="text-xs text-slate-500 font-medium">Kapasitas</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm bg-indigo-400" />
-            <span className="text-[11px] text-slate-400 font-medium">Terisi</span>
+            <span className="text-xs text-slate-500 font-medium">Terisi</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[11px] text-slate-400 font-medium">Utilisasi %</span>
+            <span className="text-xs text-slate-500 font-medium">Utilisasi %</span>
           </div>
         </div>
       </div>
