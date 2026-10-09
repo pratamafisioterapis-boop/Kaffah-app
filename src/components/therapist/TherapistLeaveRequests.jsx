@@ -20,7 +20,7 @@ import {
 } from '@/lib/api';
 import {
   LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
-  isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE, isReplacementOptionalType, SUNDAY_RULE_NOTE,
+  isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE, isReplacementOptionalType, SUNDAY_RULE_NOTE, WORK_SHIFT_PRESETS,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -108,7 +108,14 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
     (dateStr) => {
       const sched = scheduleOn(dateStr);
       if (sched.length === 0 || !workShift) return sched;
-      return [{ start_time: workShift.start_time, end_time: workShift.end_time }];
+      // Terapis bisa punya dua shift (mis. Senin–Jumat Siang, Sabtu/Minggu Pagi). Shift hari itu dibaca dari
+      // baris jadwal mingguannya: pakai shift terapis bila baris jadwal masuk di dalamnya, kalau tidak pakai
+      // preset shift yang memuatnya, dan terakhir rentang baris jadwal itu sendiri.
+      const rowStart = Math.min(...sched.map((s) => timeToMinutes(s.start_time)));
+      const rowEnd = Math.max(...sched.map((s) => timeToMinutes(s.end_time)));
+      const fits = (sh) => rowStart >= timeToMinutes(sh.start_time) && rowEnd <= timeToMinutes(sh.end_time);
+      const match = [workShift, ...WORK_SHIFT_PRESETS.map((p) => ({ start_time: p.start, end_time: p.end }))].find(fits);
+      return match ? [{ start_time: match.start_time, end_time: match.end_time }] : [{ start_time: minutesToTime(rowStart), end_time: minutesToTime(rowEnd) }];
     },
     [scheduleOn, workShift?.start_time, workShift?.end_time], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -260,12 +267,8 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
     if (form.leaveType === 'sick' && !form.proofFile) return 'Izin sakit wajib melampirkan foto / PDF surat dokter.';
     if (isOrg && !form.notes.trim()) return 'Cantumkan nama kegiatan, penyelenggara, dan statusnya (penugasan klinik atau pribadi) pada kolom catatan.';
     if (isEvent && !form.notes.trim()) return 'Cantumkan nama event dan penyelenggaranya pada kolom catatan.';
-    if (form.partial && leaveDayHours.length) {
-      const dayStart = Math.min(...leaveDayHours.map((s) => timeToMinutes(s.start_time)));
-      const dayEnd = Math.max(...leaveDayHours.map((s) => timeToMinutes(s.end_time)));
-      if (timeToMinutes(form.startTime) < dayStart || timeToMinutes(form.endTime) > dayEnd) {
-        return `Jam izin harus di dalam jam kerja ${scheduleLabel(leaveDayHours)}.`;
-      }
+    if (form.partial && (timeToMinutes(form.startTime) < CLINIC_OPEN_MINUTES || timeToMinutes(form.endTime) > CLINIC_CLOSE_MINUTES)) {
+      return `Jam izin harus di dalam jam buka klinik (${minutesToTime(CLINIC_OPEN_MINUTES)}–${minutesToTime(CLINIC_CLOSE_MINUTES)}).`;
     }
     if (form.shifts.length === 0 && !replacementOptional) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (sundayOnly && sortedShifts.some((s) => !isSundayDate(s.date))) return WEEKEND_REPLACEMENT_NOTE;
