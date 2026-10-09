@@ -80,7 +80,7 @@ const PhysiotherapistManagementPage = () => {
               key={value}
               value={value}
               className={cn(
-                'group relative flex items-center rounded-[12px] border border-[#E1EAF2] bg-white text-center whitespace-normal transition-all min-h-[76px]',
+                'group relative flex items-center rounded-[12px] border border-[#E1EAF2] bg-white text-center whitespace-normal transition-[color,background-color,border-color,box-shadow,transform,opacity] min-h-[76px]',
                 span === 2
                   ? 'col-span-2 flex-row justify-center gap-2.5 px-3 py-2.5'
                   : 'flex-col justify-center gap-1 px-1 py-2.5',
@@ -89,7 +89,7 @@ const PhysiotherapistManagementPage = () => {
               )}
             >
               {value === 'timeoff' && pendingLeaveCount > 0 && (
-                <span className="absolute top-1 left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute top-1 left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
                   {pendingLeaveCount}
                 </span>
               )}
@@ -97,7 +97,7 @@ const PhysiotherapistManagementPage = () => {
               <span className={cn('flex items-center justify-center w-7 h-7 shrink-0 rounded-[9px]', iconBg)}>
                 <Icon className={cn('w-3.5 h-3.5', iconColor)} strokeWidth={2} />
               </span>
-              <span className={cn('text-[10px] sm:text-[11px] font-semibold text-[#17324D] leading-tight break-words', span === 2 ? 'text-left' : 'w-full px-0.5')}>
+              <span className={cn('text-xs font-semibold text-[#17324D] leading-tight break-words', span === 2 ? 'text-left' : 'w-full px-0.5')}>
                 {label}
               </span>
             </TabsTrigger>
@@ -117,14 +117,14 @@ const PhysiotherapistManagementPage = () => {
             <TabsList className="grid w-full sm:w-[420px] grid-cols-2 bg-slate-100 p-1 rounded-app-sm">
               <TabsTrigger
                 value="weekly"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
               >
                 <CalendarClock className="w-4 h-4" />
                 Jadwal Mingguan
               </TabsTrigger>
               <TabsTrigger
                 value="override"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]"
               >
                 <CalendarRange className="w-4 h-4" />
                 Jadwal Pengganti

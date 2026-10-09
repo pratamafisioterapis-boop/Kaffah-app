@@ -26,6 +26,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { format, subMonths } from 'date-fns';
 import { getTherapistPeriodRange, cn } from '@/lib/utils';
 import CircularScore from '@/components/shared/CircularScore';
+import { confirmAction } from '@/lib/confirmAction';
 
 const METRIC_LABELS = {
   target_pasien: 'Target Pasien (otomatis)',
@@ -172,7 +173,7 @@ const RemunerationManager = () => {
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Hapus program kerja "${item.name}"?`)) return;
+    if (!await confirmAction(`Hapus program kerja "${item.name}"?`)) return;
     const { error } = await deleteRemunerationCriteria(item.id);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
@@ -206,7 +207,7 @@ const RemunerationManager = () => {
   const totalWeight = criteria.reduce((sum, c) => sum + Number(c.weight_percent || 0), 0);
 
   if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-slate-400" /></div>;
+    return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-slate-500" /></div>;
   }
 
   return (
@@ -225,7 +226,7 @@ const RemunerationManager = () => {
         <TabsContent value="performance" className="space-y-4 mt-4">
           <div className="flex items-center gap-2 bg-white p-3 rounded-app border border-slate-200 shadow-sm text-xs text-slate-500">
             <span>Setiap terapis dinilai berdasarkan periode gajinya masing-masing (lihat label periode di tiap kartu).</span>
-            {loadingReports && <Loader2 className="w-4 h-4 animate-spin text-slate-400 ml-auto" />}
+            {loadingReports && <Loader2 className="w-4 h-4 animate-spin text-slate-500 ml-auto" />}
             <div className={cn("flex items-center gap-1 shrink-0", !loadingReports && "ml-auto")}>
               <Button
                 variant="outline"
@@ -254,7 +255,7 @@ const RemunerationManager = () => {
           </div>
 
           {criteria.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
+            <div className="text-center py-12 text-slate-500 text-sm">
               Belum ada program kerja. Tambahkan di tab "Program Kerja & Bobot".
             </div>
           ) : (
@@ -273,19 +274,19 @@ const RemunerationManager = () => {
                         <CircularScore value={score} active={active} size={84} />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-white text-sm truncate">{t.name}</p>
-                          <p className="text-[11px] text-slate-400">{t.specialization || 'Fisioterapis'}</p>
+                          <p className="text-xs text-slate-500">{t.specialization || 'Fisioterapis'}</p>
                           {report && (
-                            <p className="text-[10px] text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1">
                               Periode {format(new Date(report.periodStart), 'dd MMM')} - {format(new Date(report.periodEnd), 'dd MMM yyyy')}
                             </p>
                           )}
                           <div className="mt-2">
                             {active ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-400/30 gap-1 text-[10px]">
+                              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-400/30 gap-1 text-xs">
                                 <CheckCircle2 className="w-3 h-3" /> Remunerasi Aktif
                               </Badge>
                             ) : (
-                              <Badge className="bg-red-500/15 text-red-300 border-red-400/30 gap-1 text-[10px]">
+                              <Badge className="bg-red-500/15 text-red-300 border-red-400/30 gap-1 text-xs">
                                 <XCircle className="w-3 h-3" /> Belum Aktif
                               </Badge>
                             )}
@@ -313,11 +314,11 @@ const RemunerationManager = () => {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-semibold text-slate-800 truncate">{row.name}</p>
-                              <p className="text-[10px] text-slate-400">Bobot {row.weight_percent}%</p>
+                              <p className="text-xs text-slate-500">Bobot {row.weight_percent}%</p>
                               {(row.proofUrls || (row.proofUrl ? [row.proofUrl] : [])).length > 0 && (
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                   {(row.proofUrls || [row.proofUrl]).map((url, i) => (
-                                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:underline">
+                                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline">
                                       <ImageIcon className="w-3 h-3" /> Lihat bukti {(row.proofUrls || []).length > 1 ? `#${i + 1}` : ''}
                                     </a>
                                   ))}
@@ -325,7 +326,7 @@ const RemunerationManager = () => {
                               )}
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-[11px] font-mono text-slate-700">
+                              <p className="text-xs font-mono text-slate-700">
                                 {row.metric_key === 'target_pasien'
                                   ? `${row.realizationValue} / ${row.targetValue}`
                                   : <>{row.realizationValue}{row.unit === '%' ? '%' : ''} / {row.targetValue}{row.unit === '%' ? '%' : ` ${row.unit}`}</>}
@@ -356,7 +357,7 @@ const RemunerationManager = () => {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-sm">Program Kerja & Bobot Penilaian</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Total bobot saat ini: <span className={cn("font-semibold", totalWeight === 100 ? "text-emerald-400" : "text-amber-400")}>{totalWeight}%</span> (idealnya 100%)
                   </p>
                 </div>
@@ -371,7 +372,7 @@ const RemunerationManager = () => {
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-0 flex-1">
                 <Label className="text-xs font-semibold text-slate-700">Tarif Komisi Remunerasi (%)</Label>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Nilai komisi terapis = tarif ini × profit periode (omzet − take home pay) × skor performa. Dipakai otomatis saat membuat slip gaji.
                 </p>
               </div>
@@ -395,14 +396,14 @@ const RemunerationManager = () => {
             {criteria.map((item) => {
               const Icon = METRIC_ICONS[item.metric_key] || Sparkles;
               return (
-                <div key={item.id} className="group relative bg-white rounded-app-lg border border-slate-200/80 shadow-sm hover:shadow-lg transition-shadow duration-300 p-4">
+                <div key={item.id} className="group relative bg-white rounded-app-lg border border-slate-200/80 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-300 p-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-app bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 text-sm truncate">{item.name}</p>
-                      <p className="text-[11px] text-slate-400">{METRIC_LABELS[item.metric_key] || item.metric_key}</p>
+                      <p className="text-xs text-slate-500">{METRIC_LABELS[item.metric_key] || item.metric_key}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenDialog(item)}><Edit2 className="w-3.5 h-3.5" /></Button>
@@ -412,24 +413,24 @@ const RemunerationManager = () => {
 
                   <div className="grid grid-cols-3 gap-2 mt-4">
                     <div className="bg-slate-50 rounded-app px-3 py-2 text-center">
-                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Target</p>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Target</p>
                       <p className="text-sm font-bold text-slate-800 mt-0.5">{item.target_value}{item.target_mode !== 'fixed_value' ? '%' : ''}</p>
                     </div>
                     <div className="bg-indigo-50 rounded-app px-3 py-2 text-center">
-                      <p className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wider">Bobot</p>
+                      <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Bobot</p>
                       <p className="text-sm font-bold text-indigo-700 mt-0.5">{item.weight_percent}%</p>
                     </div>
                     <div className="bg-slate-50 rounded-app px-3 py-2 text-center">
-                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Satuan</p>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Satuan</p>
                       <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">{item.unit}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-2 text-center">{TARGET_MODE_LABELS[item.target_mode]}</p>
+                  <p className="text-xs text-slate-500 mt-2 text-center">{TARGET_MODE_LABELS[item.target_mode]}</p>
                 </div>
               );
             })}
             {criteria.length === 0 && (
-              <div className="md:col-span-2 text-center py-12 text-slate-400 text-sm bg-white rounded-app-lg border border-dashed border-slate-200">
+              <div className="md:col-span-2 text-center py-12 text-slate-500 text-sm bg-white rounded-app-lg border border-dashed border-slate-200">
                 Belum ada program kerja.
               </div>
             )}

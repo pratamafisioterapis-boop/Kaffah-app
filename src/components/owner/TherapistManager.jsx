@@ -33,6 +33,7 @@ import {
 import { format } from 'date-fns';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
 import { WORK_SHIFT_PRESETS } from '@/lib/leaveRequestUtils';
+import { confirmAction } from '@/lib/confirmAction';
 
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
@@ -407,7 +408,7 @@ const TherapistManager = () => {
       const normalizedName = formData.name.trim().toLowerCase();
       const possibleDuplicate = therapists.find(t => t.name.trim().toLowerCase() === normalizedName);
       if (possibleDuplicate) {
-        const confirmed = window.confirm(
+        const confirmed = await confirmAction(
           `Sudah ada terapis dengan nama "${possibleDuplicate.name}" di daftar.\n\n` +
           `Kalau maksudnya mengubah data/foto terapis yang sudah ada, tekan Batal lalu pakai tombol Edit (ikon pensil) di kartu terapis tersebut — bukan "Buat Akun Terapis".\n\n` +
           `Lanjutkan buat akun BARU yang terpisah?`
@@ -465,7 +466,6 @@ const TherapistManager = () => {
         setSaving(false);
         return;
       } else {
-        console.log('Akun login berhasil diupdate untuk user:', editingTherapist.user_id);
       }
     }
   } else {
@@ -494,7 +494,6 @@ const TherapistManager = () => {
       setSaving(false);
       return;
     } else {
-      console.log('Akun login berhasil dibuat untuk terapis:', editingTherapist.id);
     }
   }
 
@@ -565,7 +564,7 @@ const TherapistManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Yakin ingin menghapus terapis ini? Akun login mereka juga akan dinonaktifkan.")) return;
+    if (!await confirmAction("Yakin ingin menghapus terapis ini? Akun login mereka juga akan dinonaktifkan.")) return;
     const { error } = await deletePhysiotherapist(id);
     if (!error) {
       toast({ title: "Terhapus", description: "Data terapis telah dihapus" });
@@ -664,7 +663,7 @@ const headerColorMap = {
               initial={{ opacity: 0, scale: 0.97, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className={cn(
-                "group bg-white rounded-app-lg border overflow-hidden flex flex-col transition-all duration-200 shadow-sm hover:shadow-lg",
+                "group bg-white rounded-app-lg border overflow-hidden flex flex-col transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg",
                 !therapist.is_active ? "opacity-70 border-slate-200 bg-slate-50" : "border-slate-200/80"
               )}
             >
@@ -685,7 +684,7 @@ const headerColorMap = {
                    <div className="flex items-center gap-1.5">
                      <DropdownMenu>
                        <DropdownMenuTrigger asChild>
-                         <Button size="icon" variant="secondary" className="h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" title="Dokumen Terapis">
+                         <Button size="icon" variant="secondary" className="tap-target h-7 w-7 bg-white/20 hover:bg-white/40 text-white border-0" title="Dokumen Terapis">
                            <FolderClock className="w-3.5 h-3.5" />
                          </Button>
                        </DropdownMenuTrigger>
@@ -714,9 +713,9 @@ const headerColorMap = {
               <div className="relative px-5 pb-5 flex-1 flex flex-col">
                 <div className="absolute -top-8 left-5 w-16 h-16 rounded-full ring-4 ring-white bg-slate-100 overflow-hidden shadow-md">
                   {therapist.avatar_url ? (
-                    <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" />
+                    <img src={therapist.avatar_url} alt={therapist.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
-                    <User className="w-full h-full p-3.5 text-slate-400" />
+                    <User className="w-full h-full p-3.5 text-slate-500" />
                   )}
                 </div>
                 <div className="pl-[76px] min-h-[64px] flex flex-col justify-center">
@@ -729,13 +728,13 @@ const headerColorMap = {
 
                 <div className="flex flex-wrap items-center gap-1.5 mt-3">
                   <span className={cn(
-                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase",
                     therapist.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600"
                   )}>
                     <span className={cn("w-1.5 h-1.5 rounded-full", therapist.is_active ? "bg-emerald-500" : "bg-slate-400")} />
                     {therapist.is_active ? 'Active' : 'Inactive'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
                     {therapist.salary_scheme === 'full_salary'
                       ? 'Full Salary'
                       : therapist.salary_scheme === 'probation'
@@ -743,7 +742,7 @@ const headerColorMap = {
                         : 'Custom Salary'}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
                     title="Periode dipakai untuk penggajian, hari kerja, target, dan kunci SOAP"
                   >
                     <CalendarRange className="w-2.5 h-2.5" /> {formatTherapistPeriodLabel(therapist)}
@@ -753,10 +752,10 @@ const headerColorMap = {
                     onClick={() => toggleRemunerationEnabled(therapist)}
                     title="Klik untuk mengaktifkan/nonaktifkan program remunerasi terapis ini"
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors",
                       therapist.remuneration_enabled
                         ? "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100"
-                        : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                        : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
                     )}
                   >
                     <Award className="w-2.5 h-2.5" /> {therapist.remuneration_enabled ? 'Remunerasi Aktif' : 'Remunerasi Nonaktif'}
@@ -766,10 +765,10 @@ const headerColorMap = {
                     onClick={() => toggleHeadTherapist(therapist)}
                     title="Klik untuk menjadikan/mencabut status terapis kepala"
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors",
                       therapist.is_head_therapist
                         ? "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
-                        : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                        : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
                     )}
                   >
                     <Crown className="w-2.5 h-2.5" /> {therapist.is_head_therapist ? 'Terapis Kepala' : 'Jadikan Terapis Kepala'}
@@ -780,10 +779,10 @@ const headerColorMap = {
                       onClick={() => openWorkShift(therapist)}
                       title="Atur jam kerja (shift) terapis; dipakai untuk pengajuan izin"
                       className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors",
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors",
                         therapist.work_start_time
                           ? "bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100"
-                          : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                          : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
                       )}
                     >
                       <Clock3 className="w-2.5 h-2.5" />
@@ -795,15 +794,15 @@ const headerColorMap = {
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-3 min-w-0">
-                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="truncate">{therapist.email || '-'}</span>
                   <span className="text-slate-300 shrink-0">•</span>
-                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="shrink-0">{therapist.phone || '-'}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5 min-w-0">
-                  <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <CalendarDays className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="truncate">
                     Bergabung {(() => {
                       const joinDate = therapist.join_date || therapist.created_at;
@@ -821,7 +820,7 @@ const headerColorMap = {
                         return (
                           <span
                             key={badge.id}
-                            className="text-[10px] px-2 py-0.5 rounded-full font-semibold border border-black/5 truncate max-w-[110px]"
+                            className="text-xs px-2 py-0.5 rounded-full font-semibold border border-black/5 truncate max-w-[110px]"
                             style={{ backgroundColor: badge.color }}
                           >
                             {badge.label}
@@ -829,7 +828,7 @@ const headerColorMap = {
                         );
                       })}
                       {visibleBadges.length > 2 && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                           +{visibleBadges.length - 2}
                         </span>
                       )}
@@ -899,9 +898,9 @@ const headerColorMap = {
                 <div className="flex flex-col items-center gap-2.5 min-w-[104px]">
                   <div className="w-20 h-20 rounded-full bg-slate-100 border flex items-center justify-center overflow-hidden shrink-0 relative group">
                     {formData.avatar_url ? (
-                      <img src={formData.avatar_url} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={formData.avatar_url} alt="Preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
-                      <User className="w-8 h-8 text-slate-400" />
+                      <User className="w-8 h-8 text-slate-500" />
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Upload className="w-5 h-5 text-white" />
@@ -913,7 +912,7 @@ const headerColorMap = {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-[11px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
                       disabled={uploading}
                     >
@@ -921,8 +920,8 @@ const headerColorMap = {
                     </Button>
                   )}
                   <div className="space-y-1 w-full">
-                    <label className="text-[10px] font-medium text-slate-500">Tanda Tangan</label>
-                    {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-9 mx-auto object-contain border rounded bg-slate-50 mb-1" />}
+                    <label className="text-xs font-medium text-slate-500">Tanda Tangan</label>
+                    {formData.signature_url && <img src={formData.signature_url} alt="TTD" className="h-9 mx-auto object-contain border rounded bg-slate-50 mb-1" loading="lazy" decoding="async" />}
                     <input type="file" accept="image/*" onChange={async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
@@ -931,7 +930,7 @@ const headerColorMap = {
                       if (url) setFormData(prev => ({ ...prev, signature_url: url }));
                       else toast({ variant: "destructive", title: "Upload Gagal", description: error.message });
                       setUploading(false);
-                    }} className="text-[10px] w-full" disabled={uploading} />
+                    }} className="text-xs w-full" disabled={uploading} />
                   </div>
                 </div>
 
@@ -1036,7 +1035,7 @@ const headerColorMap = {
                       </SelectContent>
                     </Select>
                     {formData.salary_scheme === 'probation' && (
-                      <p className="text-[11px] text-amber-600">Skema probation: hanya take home pay tetap, tanpa jasa/insentif dan tanpa uang transport.</p>
+                      <p className="text-xs text-amber-600">Skema probation: hanya take home pay tetap, tanpa jasa/insentif dan tanpa uang transport.</p>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -1059,7 +1058,7 @@ const headerColorMap = {
                         onChange={(e) => setFormData({...formData, transport_per_day: e.target.value})}
                         placeholder="0"
                         disabled={formData.salary_scheme === 'probation'}
-                        className={formData.salary_scheme === 'probation' ? 'bg-slate-50 text-slate-400' : ''}
+                        className={formData.salary_scheme === 'probation' ? 'bg-slate-50 text-slate-500' : ''}
                       />
                     </div>
                   </div>
@@ -1157,7 +1156,7 @@ const headerColorMap = {
                         type="button"
                         onClick={() => handleServiceChange(svc.id, !selected)}
                         className={cn(
-                          "text-xs px-3 py-1 rounded-full font-semibold border transition-all",
+                          "text-xs px-3 py-1 rounded-full font-semibold border transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                           selected ? "bg-app-accent text-white border-app-accent" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                         )}
                       >
@@ -1173,7 +1172,7 @@ const headerColorMap = {
                   <Shield className="w-3.5 h-3.5 text-app-accent-bright" /> Badge Profesional
                 </label>
                 {availableBadges.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">Belum ada badge. Tambahkan di tab "Badges".</p>
+                  <p className="text-xs text-slate-500 italic">Belum ada badge. Tambahkan di tab "Badges".</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {availableBadges.map((badge) => {
@@ -1184,7 +1183,7 @@ const headerColorMap = {
                           type="button"
                           onClick={() => handleBadgeChange(badge.id, !selected)}
                           className={cn(
-                            "text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition-all",
+                            "text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                             selected ? "border-black/10" : "opacity-45 hover:opacity-80 border-transparent"
                           )}
                           style={{ backgroundColor: badge.color }}
@@ -1215,7 +1214,7 @@ const headerColorMap = {
                       type="button"
                       onClick={() => handleComplaintTagChange(tag.slug, !selected)}
                       className={cn(
-                        "text-xs px-3 py-1 rounded-full font-semibold border flex items-center gap-1 transition-all",
+                        "text-xs px-3 py-1 rounded-full font-semibold border flex items-center gap-1 transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                         selected ? "bg-rose-600 text-white border-rose-600" : "bg-white text-slate-600 border-slate-200 hover:border-rose-200"
                       )}
                     >
@@ -1294,7 +1293,7 @@ const headerColorMap = {
              <h4 className="text-sm font-semibold mb-2">Jadwal Cuti Mendatang</h4>
              <div className="space-y-2 max-h-[200px] overflow-y-auto">
                {timeOffs.length === 0 ? (
-                 <p className="text-sm text-slate-400 italic text-center py-2">Tidak ada jadwal cuti aktif.</p>
+                 <p className="text-sm text-slate-500 italic text-center py-2">Tidak ada jadwal cuti aktif.</p>
                ) : (
                  timeOffs.map((off) => (
                    <div key={off.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-sm">

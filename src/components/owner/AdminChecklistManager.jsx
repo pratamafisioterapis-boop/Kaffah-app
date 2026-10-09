@@ -164,7 +164,7 @@ const AdminChecklistManager = () => {
           </button>
         ))}
       </div>
-      <p className="text-xs text-slate-400 -mt-3">
+      <p className="text-xs text-slate-500 -mt-3">
         {scope === null
           ? 'Task di sini muncul untuk semua admin di klinik ini.'
           : `Task di sini hanya muncul untuk ${admins.find(a => a.id === scope)?.full_name || 'admin ini'}.`}
@@ -174,7 +174,7 @@ const AdminChecklistManager = () => {
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-slate-300" /></div>
         ) : items.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-slate-500">
             <p>Belum ada task checklist.</p>
             <Button variant="link" onClick={openAddDialog} className="text-app-ink mt-1">Tambahkan task pertama</Button>
           </div>
@@ -186,14 +186,14 @@ const AdminChecklistManager = () => {
                   <button
                     onClick={() => handleReorder(item, 'up')}
                     disabled={idx === 0}
-                    className="p-1 rounded-md text-slate-400 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
+                    className="p-1 rounded-md text-slate-500 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
                   >
                     <ArrowUp className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleReorder(item, 'down')}
                     disabled={idx === items.length - 1}
-                    className="p-1 rounded-md text-slate-400 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
+                    className="p-1 rounded-md text-slate-500 hover:text-app-ink hover:bg-slate-100 disabled:opacity-20 disabled:pointer-events-none"
                   >
                     <ArrowDown className="w-3.5 h-3.5" />
                   </button>
@@ -210,7 +210,7 @@ const AdminChecklistManager = () => {
                   <button
                     onClick={() => handleToggleActive(item)}
                     title={item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    className={`p-2 rounded-app-sm transition-colors ${item.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
+                    className={`p-2 rounded-app-sm transition-colors ${item.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-500 hover:bg-slate-100'}`}
                   >
                     <Power className="w-4 h-4" />
                   </button>

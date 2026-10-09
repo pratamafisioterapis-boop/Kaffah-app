@@ -94,7 +94,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                     <p className="font-bold text-slate-900 text-base leading-tight truncate">{packageData?.package_name || '-'}</p>
                                     <p className="text-sm text-slate-500 truncate mt-0.5">{packageData?.patients?.full_name || packageData?.patient_name || '-'}</p>
                                 </div>
-                                <Badge variant="outline" className={cn("px-2 py-0.5 rounded-full font-medium border text-[11px] shrink-0", getStatusStyle(packageData?.status))}>
+                                <Badge variant="outline" className={cn("px-2 py-0.5 rounded-full font-medium border text-xs shrink-0", getStatusStyle(packageData?.status))}>
                                     {packageData?.status || '-'}
                                 </Badge>
                             </div>
@@ -102,7 +102,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                             <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-xl font-bold text-app-accent">{packageData?.sessions_remaining ?? '-'}</span>
-                                    <span className="text-slate-400 text-xs font-medium">/ {packageData?.total_sessions ?? '-'} sesi tersisa</span>
+                                    <span className="text-slate-500 text-xs font-medium">/ {packageData?.total_sessions ?? '-'} sesi tersisa</span>
                                 </div>
                                 {packageData?.end_date && (
                                     <span className="text-xs text-slate-500 font-medium shrink-0">s.d. {formatDateIndonesian(packageData.end_date)}</span>
@@ -135,12 +135,12 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                 <span className="text-sm text-slate-500">Sisa Sesi:</span>
                                 <div className="flex items-center gap-1">
                                     <span className="text-2xl font-bold text-app-accent">{packageData?.sessions_remaining ?? '-'}</span>
-                                    <span className="text-slate-400 text-sm font-medium">/ {packageData?.total_sessions ?? '-'} Sesi</span>
+                                    <span className="text-slate-500 text-sm font-medium">/ {packageData?.total_sessions ?? '-'} Sesi</span>
                                 </div>
                             </div>
                             {packageData?.end_date && (
                                 <div className="text-right">
-                                    <span className="text-xs text-slate-400 block">Berakhir pada</span>
+                                    <span className="text-xs text-slate-500 block">Berakhir pada</span>
                                     <span className="text-sm font-medium text-slate-700">{formatDateIndonesian(packageData.end_date)}</span>
                                 </div>
                             )}
@@ -245,7 +245,7 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                                     <td className="px-5 py-4 align-middle">
                                                         <div className="font-semibold text-slate-900">{displayPatientName}</div>
                                                         {isDifferent && (
-                                                            <div className="text-[10px] text-amber-600 mt-1 flex items-center gap-1.5 font-medium bg-amber-50 px-2 py-0.5 rounded-full w-fit border border-amber-100">
+                                                            <div className="text-xs text-amber-600 mt-1 flex items-center gap-1.5 font-medium bg-amber-50 px-2 py-0.5 rounded-full w-fit border border-amber-100">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
                                                                 Pasien Kerabat
                                                             </div>

@@ -155,7 +155,7 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
           </div>
           <h3 className="text-sm font-bold text-slate-700 truncate">Performa Bulan Ini</h3>
         </div>
-        <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
+        <span className="text-xs text-slate-500 shrink-0 whitespace-nowrap">
           {format(startPeriod, 'dd MMM', { locale: idLocale })} – {format(endPeriod, 'dd MMM yyyy', { locale: idLocale })}
         </span>
       </div>
@@ -188,31 +188,31 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-lg font-bold text-slate-800 leading-none">{achievement}%</span>
-              <span className="text-[9px] text-slate-400 font-medium mt-0.5">TARGET</span>
+              <span className="text-xs text-slate-500 font-medium mt-0.5">TARGET</span>
             </div>
           </div>
 
           {/* Stats kanan ring */}
           <div className="flex-1 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400">Kunjungan</span>
-              <span className="text-sm font-bold text-slate-800">{actualVisits} <span className="text-slate-400 font-normal">/ {targetVisits}</span></span>
+              <span className="text-xs text-slate-500">Kunjungan</span>
+              <span className="text-sm font-bold text-slate-800">{actualVisits} <span className="text-slate-500 font-normal">/ {targetVisits}</span></span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400">Rata-rata/hari</span>
+              <span className="text-xs text-slate-500">Rata-rata/hari</span>
               <span className="text-sm font-bold text-slate-800">{avgPerDay}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400">vs Bulan Lalu</span>
+              <span className="text-xs text-slate-500">vs Bulan Lalu</span>
               <span className={cn("text-xs font-bold flex items-center gap-0.5",
-                diffPct > 0 ? 'text-emerald-600' : diffPct < 0 ? 'text-rose-500' : 'text-slate-400'
+                diffPct > 0 ? 'text-emerald-600' : diffPct < 0 ? 'text-rose-500' : 'text-slate-500'
               )}>
                 {diffPct > 0 ? <ChevronUp className="w-3 h-3" /> : diffPct < 0 ? <ChevronDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                 {Math.abs(diffPct)}%
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 flex items-center gap-1">
+              <span className="text-xs text-slate-500 flex items-center gap-1">
                 <Flame className="w-3 h-3 text-orange-400" /> Streak aktif
               </span>
               <span className={cn("text-sm font-bold", streak >= 5 ? 'text-orange-500' : streak >= 3 ? 'text-amber-500' : 'text-slate-800')}>
@@ -224,7 +224,7 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
 
         {/* ── Baris 2: Tren 7 Hari ── */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Tren 7 Hari Terakhir</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Tren 7 Hari Terakhir</p>
           <div className="flex items-end gap-1.5 h-16">
             {daily7.map(({ date, count }) => {
               const isToday = date === format(new Date(), 'yyyy-MM-dd');
@@ -234,14 +234,14 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
                   <div className="w-full flex items-end justify-center" style={{ height: '48px' }}>
                     <div
                       className={cn(
-                        "w-full rounded-t-md transition-all duration-500",
+                        "w-full rounded-t-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200",
                         count === 0 ? 'bg-slate-100' :
                         isToday ? 'bg-app-accent-bright' : 'bg-app-accent/25'
                       )}
                       style={{ height: count === 0 ? '4px' : `${Math.max(heightPct, 10)}%` }}
                     />
                   </div>
-                  <span className={cn("text-[9px] font-medium", isToday ? 'text-app-accent' : 'text-slate-400')}>
+                  <span className={cn("text-xs font-medium", isToday ? 'text-app-accent' : 'text-slate-500')}>
                     {format(new Date(date), 'EEE', { locale: idLocale })}
                   </span>
                 </div>

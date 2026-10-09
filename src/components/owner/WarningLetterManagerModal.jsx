@@ -19,6 +19,7 @@ import { generateWarningLetterPDF, warningLetterFileName, WARNING_LEVEL_LABEL } 
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { confirmAction } from '@/lib/confirmAction';
 
 const STATUS_LABEL = { draft: 'Draft', issued: 'Diterbitkan', acknowledged: 'Sudah Ditandatangani' };
 const STATUS_BADGE_CLASS = {
@@ -213,7 +214,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus Surat Peringatan ini?')) return;
+    if (!await confirmAction('Yakin ingin menghapus Surat Peringatan ini?')) return;
     const { success, error } = await deleteWarningLetter(id);
     if (success) {
       const remaining = records.filter((r) => r.id !== id);
@@ -324,7 +325,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                 <h4 className="font-semibold text-sm text-slate-800">
                   {form.id ? `Edit — ${letterLabel}` : `Surat Baru — ${letterLabel}`}
                 </h4>
-                <p className="text-[11px] text-slate-500">{form.letter_number}</p>
+                <p className="text-xs text-slate-500">{form.letter_number}</p>
               </div>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={handleNewLetter} className="text-red-700 border-red-200 hover:bg-red-50">
@@ -366,7 +367,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                   <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Tanggal
                 </Button>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-500">
                 Tambahkan lebih dari satu tanggal bila pelanggaran terjadi berulang, baik dengan jenis pelanggaran yang sama maupun berbeda. Tanggal boleh dikosongkan kalau hanya ingin menjelaskan pelanggarannya saja.
               </p>
               <div className="space-y-3">
@@ -374,7 +375,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                   <div key={v.key} className="rounded-app-sm border border-slate-200 p-3 space-y-2 bg-white">
                     <div className="flex items-center justify-between gap-2">
                       <div className="space-y-1.5 w-44 shrink-0">
-                        <label className="text-[11px] font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''} (opsional)</label>
+                        <label className="text-xs font-medium text-slate-500">Tanggal Kejadian {form.violations.length > 1 ? `#${idx + 1}` : ''} (opsional)</label>
                         <Input type="date" value={v.date} onChange={(e) => updateViolationRow(v.key, { date: e.target.value })} />
                       </div>
                       {form.violations.length > 1 && (
@@ -382,7 +383,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-red-600 mt-4"
+                          className="h-8 w-8 text-slate-500 hover:text-red-600 mt-4"
                           onClick={() => removeViolationRow(v.key)}
                           title="Hapus tanggal ini"
                         >
@@ -420,7 +421,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
               Simpan &amp; Terbitkan PDF
             </Button>
           </div>
-          <p className="text-[11px] text-slate-400 -mt-1">
+          <p className="text-xs text-slate-500 -mt-1">
             Cetak surat yang sudah diterbitkan, minta terapis membubuhkan tanda tangan, lalu unggah foto/scan halaman bertanda tangan pada baris riwayat di bawah supaya tersimpan sebagai bukti dan tampil di menu Dokumen milik terapis.
           </p>
         </div>
@@ -430,7 +431,7 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
           ) : records.length === 0 ? (
-            <p className="text-sm text-slate-400 italic text-center py-6">Belum ada Surat Peringatan untuk terapis ini.</p>
+            <p className="text-sm text-slate-500 italic text-center py-6">Belum ada Surat Peringatan untuk terapis ini.</p>
           ) : (
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {records.map((r) => (
@@ -446,10 +447,10 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                     </p>
                     <p className="text-xs text-slate-500 truncate max-w-[320px]">{r.violation_description}</p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>
                         {r.level}
                       </span>
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status]}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE_CLASS[r.status]}`}>
                         {STATUS_LABEL[r.status]}
                       </span>
                     </div>

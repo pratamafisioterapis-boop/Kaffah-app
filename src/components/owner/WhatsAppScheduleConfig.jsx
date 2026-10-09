@@ -89,7 +89,7 @@ const WhatsAppScheduleConfig = ({ category, onSave }) => {
     );
   };
 
-  if (loading) return <div className="py-4"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>;
+  if (loading) return <div className="py-4"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>;
 
   return (
     <div className="bg-slate-50 p-4 rounded-app-sm border border-slate-200 space-y-4">

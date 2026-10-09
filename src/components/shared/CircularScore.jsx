@@ -28,7 +28,7 @@ const CircularScore = ({ value, active, size = 112 }) => {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-white">{value}%</span>
-        <span className="text-[10px] text-slate-400 uppercase tracking-wider">Skor</span>
+        <span className="text-xs text-slate-500 uppercase tracking-wider">Skor</span>
       </div>
     </div>
   );

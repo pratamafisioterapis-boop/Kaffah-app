@@ -4,6 +4,7 @@ import { Eye, Trash2, Loader2, FileX2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getClinicalDocuments, deleteClinicalDocument } from '@/lib/api';
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
+import { confirmAction } from '@/lib/confirmAction';
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -30,7 +31,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
   useEffect(() => { load(); }, [load, refreshKey]);
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Hapus dokumen ini untuk ${row.data?.patient_name || 'pasien'}?`)) return;
+    if (!await confirmAction(`Hapus dokumen ini untuk ${row.data?.patient_name || 'pasien'}?`)) return;
     setDeletingId(row.id);
     const { error } = await deleteClinicalDocument(row.id);
     setDeletingId(null);
@@ -43,13 +44,13 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-12 text-slate-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Memuat riwayat...</div>;
+    return <div className="flex items-center justify-center py-12 text-slate-500"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Memuat riwayat...</div>;
   }
 
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center rounded-app-lg border-2 border-dashed border-slate-200 bg-slate-50/30">
-        <div className="p-3 rounded-full bg-slate-100 mb-3"><FileX2 className="w-6 h-6 text-slate-400" /></div>
+        <div className="p-3 rounded-full bg-slate-100 mb-3"><FileX2 className="w-6 h-6 text-slate-500" /></div>
         <p className="text-sm text-slate-500">Belum ada dokumen yang dibuat.</p>
       </div>
     );
@@ -64,7 +65,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium text-slate-900 break-words">{row.data?.patient_name || row.patients?.full_name || '-'}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{row.patients?.medical_record_number || '-'} · {formatDate(row.document_date)}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{row.patients?.medical_record_number || '-'} · {formatDate(row.document_date)}</p>
               </div>
             </div>
             <p className="text-xs text-slate-500">Fisioterapis: {row.data?.therapist_name || row.physiotherapists?.name || '-'}</p>
@@ -83,7 +84,7 @@ const ClinicalDocumentHistory = ({ documentType, TemplateComponent, previewTitle
       {/* Desktop: table */}
       <div className="hidden sm:block overflow-x-auto rounded-app-lg border border-slate-200 shadow-sm bg-white">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-[11px] tracking-wider">
+          <thead className="bg-gradient-to-r from-slate-50 to-slate-100/60 text-slate-500 uppercase text-xs tracking-wider">
             <tr>
               <th className="px-6 py-3.5 font-semibold">Tanggal</th>
               <th className="px-6 py-3.5 font-semibold">Pasien</th>

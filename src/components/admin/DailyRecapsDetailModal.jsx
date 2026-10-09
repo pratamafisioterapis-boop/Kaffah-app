@@ -176,7 +176,7 @@ const { error } = await setDailyRecapStartTime(recap.id, timeString);
                 {loading ? (
                   <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-app-accent-bright" /></TableCell></TableRow>
                 ) : recaps.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="h-24 text-center text-slate-400 italic">Tidak ada data kunjungan ditemukan.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="h-24 text-center text-slate-500 italic">Tidak ada data kunjungan ditemukan.</TableCell></TableRow>
                 ) : (
                   recaps.map((recap) => {
                     const startTime = recap.start_time ? formatTimeIndonesia(recap.start_time) : '-';
@@ -196,12 +196,12 @@ const { error } = await setDailyRecapStartTime(recap.id, timeString);
                         <TableCell>
                             <div className="flex flex-col items-center gap-1 justify-center h-full">
                                 {startTime !== '-' && endTime !== '-' ? (
-                                    <div className="text-[10px] font-mono text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">{startTime} - {endTime}</div>
+                                    <div className="text-xs font-mono text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">{startTime} - {endTime}</div>
                                 ) : (
                                     <Button 
                                         size="sm" 
                                         variant={startTime === '-' ? "outline" : "default"} 
-                                        className={startTime === '-' ? "h-6 text-[10px] gap-1 px-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" : "h-6 text-[10px] gap-1 px-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200"} 
+                                        className={startTime === '-' ? "h-6 text-xs gap-1 px-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" : "h-6 text-xs gap-1 px-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200"} 
                                         onClick={() => handleTimeClick(recap)}
                                         disabled={isLoading}
                                     >

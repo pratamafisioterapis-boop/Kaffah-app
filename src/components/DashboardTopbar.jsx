@@ -700,7 +700,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                 <div className="py-2">
                   {results.summary && (
                     <div className="mx-2 mb-2 p-3 rounded-app-sm bg-app-soft border border-app-border">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-app-accent mb-1.5">Ringkasan Pasien</div>
+                      <div className="text-xs font-bold uppercase tracking-wider text-app-accent mb-1.5">Ringkasan Pasien</div>
                       <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs text-app-ink">
                         <div className="flex flex-col">
                           <span className="text-app-muted">Total sesi selesai</span>
@@ -735,7 +735,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.patients.length > 0 && (
                     <div className="px-2">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Pasien</div>
+                      <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-app-muted">Pasien</div>
                       {results.patients.map((p) => (
                         <button
                           key={p.id}
@@ -756,7 +756,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.appointments.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Appointment</div>
+                      <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-app-muted">Appointment</div>
                       {results.appointments.map((a) => (
                         <button
                           key={a.id}
@@ -777,7 +777,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.packages.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Rekap Paket</div>
+                      <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-app-muted">Rekap Paket</div>
                       {results.packages.map((pkg) => (
                         <button
                           key={pkg.id}
@@ -800,7 +800,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.medicalRecords.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Medical Record</div>
+                      <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-app-muted">Medical Record</div>
                       {results.medicalRecords.map((mr) => (
                         <button
                           key={mr.id}
@@ -824,7 +824,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
                   {results.menu.length > 0 && (
                     <div className="px-2 mt-1">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">Menu</div>
+                      <div className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-app-muted">Menu</div>
                       {results.menu.map((m, i) => (
                         <button
                           key={`${m.path}-${i}`}

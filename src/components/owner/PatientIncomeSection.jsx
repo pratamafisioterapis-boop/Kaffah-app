@@ -145,7 +145,7 @@ const PatientIncomeSection = () => {
           {loading ? (
              <div className="flex flex-col items-center justify-center p-12 gap-2">
                 <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" />
-                <span className="text-sm text-slate-400">Memuat data paket...</span>
+                <span className="text-sm text-slate-500">Memuat data paket...</span>
              </div>
           ) : (
             <motion.div 
@@ -155,7 +155,7 @@ const PatientIncomeSection = () => {
                 {/* Mobile / PWA: kartu, tanpa geser horizontal */}
                 <div className="sm:hidden divide-y divide-slate-100">
                     {processedPackages.length === 0 ? (
-                        <p className="p-12 text-center text-slate-400 italic bg-slate-50/30">
+                        <p className="p-12 text-center text-slate-500 italic bg-slate-50/30">
                             Belum ada data paket yang terekam (Total Sesi &gt; 1).
                         </p>
                     ) : (
@@ -170,26 +170,26 @@ const PatientIncomeSection = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jenis Paket</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Jenis Paket</p>
                                         <p className="text-app-accent-hover font-medium">{pkg.package_name}</p>
                                     </div>
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Tanggal Beli</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Tanggal Beli</p>
                                         <p className="flex items-center gap-1 text-slate-600">
-                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
                                             {pkg.start_date ? format(new Date(pkg.start_date), 'dd MMM yyyy', { locale: localeId }) : '-'}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sesi Terpakai</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Sesi Terpakai</p>
                                         <p>
                                             <span className="font-bold text-slate-700">{pkg.sessions_used}</span>
-                                            <span className="text-slate-400 mx-1">/</span>
+                                            <span className="text-slate-500 mx-1">/</span>
                                             <span className="text-slate-500">{pkg.total_sessions}</span>
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sisa Sesi</p>
+                                        <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Sisa Sesi</p>
                                         <p className={`font-bold ${pkg.sessions_remaining === 0 ? 'text-orange-500' : 'text-emerald-600'}`}>
                                             {pkg.sessions_remaining}
                                         </p>
@@ -228,7 +228,7 @@ const PatientIncomeSection = () => {
                         <tbody className="divide-y divide-slate-100">
                             {processedPackages.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-12 text-center text-slate-400 italic bg-slate-50/30">
+                                    <td colSpan={6} className="p-12 text-center text-slate-500 italic bg-slate-50/30">
                                        Belum ada data paket yang terekam (Total Sesi &gt; 1).
                                     </td>
                                 </tr>
@@ -244,13 +244,13 @@ const PatientIncomeSection = () => {
                                         </td>
                                         <td className="px-6 py-4 text-slate-600">
                                             <div className="flex items-center gap-2">
-                                               <Calendar className="w-3.5 h-3.5 text-slate-400"/>
+                                               <Calendar className="w-3.5 h-3.5 text-slate-500"/>
                                                {pkg.start_date ? format(new Date(pkg.start_date), 'dd MMM yyyy', { locale: localeId }) : '-'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className="font-bold text-slate-700">{pkg.sessions_used}</span>
-                                            <span className="text-slate-400 mx-1">/</span>
+                                            <span className="text-slate-500 mx-1">/</span>
                                             <span className="text-slate-500">{pkg.total_sessions}</span>
                                         </td>
                                         <td className="px-6 py-4 text-center">

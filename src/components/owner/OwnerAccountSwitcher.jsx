@@ -163,7 +163,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
           <div className="max-h-[min(360px,60vh)] overflow-y-auto p-2">
             {isImpersonating && (
               <div className="mb-1">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">Owner</p>
+                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-app-muted">Owner</p>
                 <button
                   onClick={handleBackToOwner}
                   disabled={switchingId !== null}
@@ -185,7 +185,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
               <p className="text-xs text-app-muted text-center py-6">Tidak ada akun lain.</p>
             ) : groups.map(([label, Icon, list]) => list.length > 0 && (
               <div key={label} className="mb-1">
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">{label}</p>
+                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-app-muted">{label}</p>
                 {list.map((a) => (
                   <button
                     key={a.id}

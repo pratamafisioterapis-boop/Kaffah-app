@@ -22,6 +22,7 @@ import AdminExpenseEditModal from '@/components/admin/accounting/AdminExpenseEdi
 import AdminIncomeEditModal from '@/components/admin/accounting/AdminIncomeEditModal';
 import { formatTime } from '@/lib/dateFormatHelpers';
 import PageHero from '@/components/shared/PageHero';
+import { confirmAction } from '@/lib/confirmAction';
 
 // --- Animated Tab Components ---
 const TabButton = ({
@@ -32,8 +33,8 @@ const TabButton = ({
   themeColor,
   activeClass,
   inactiveClass
-}) => <button onClick={onClick} className={cn("relative flex items-center gap-2 px-6 py-3 rounded-app font-medium transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200", isActive ? activeClass : inactiveClass)}>
-    <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-current" : "text-slate-400")} />
+}) => <button onClick={onClick} className={cn("relative flex items-center gap-2 px-6 py-3 rounded-app font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200", isActive ? activeClass : inactiveClass)}>
+    <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-current" : "text-slate-500")} />
     <span>{label}</span>
     {isActive && <motion.div layoutId="activeTabIndicator" className={cn("absolute bottom-0 left-2 right-2 h-1 rounded-t-full", themeColor)} transition={{
     type: "spring",
@@ -51,7 +52,7 @@ const SubTabButton = ({ isActive, onClick, label, icon: Icon, color }) => {
   const c = colors[color] || colors.blue;
   return (
     <button onClick={onClick}
-      className="flex items-center gap-2 px-4 py-2 rounded-app text-xs font-bold transition-all whitespace-nowrap"
+      className="flex items-center gap-2 px-4 py-2 rounded-app text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity] whitespace-nowrap"
       style={{
         background: isActive ? c.bg : 'white',
         color: isActive ? c.color : '#94a3b8',
@@ -70,7 +71,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-app-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
         <Loader2 className="w-6 h-6 animate-spin mb-2" style={{ color: accentColor }} />
-        <p className="text-xs text-slate-400 font-medium">Memuat data...</p>
+        <p className="text-xs text-slate-500 font-medium">Memuat data...</p>
       </div>
     );
   }
@@ -80,7 +81,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
         <div className="w-11 h-11 rounded-app-lg flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
           <AlertCircle className="w-5 h-5 text-slate-300" />
         </div>
-        <p className="text-sm font-semibold text-slate-400">{emptyMessage}</p>
+        <p className="text-sm font-semibold text-slate-500">{emptyMessage}</p>
       </div>
     );
   }
@@ -121,7 +122,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                 const val = col.render ? col.render(row) : row[col.accessor];
                 if (!val || val === '-') return null;
                 return (
-                  <span key={cIdx} className="text-[10px] px-2 py-0.5 rounded-md"
+                  <span key={cIdx} className="text-xs px-2 py-0.5 rounded-md"
                     style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                     {col.header !== 'Jumlah' ? `${col.header}: ` : ''}{val}
                   </span>
@@ -161,7 +162,7 @@ const DataTable = ({ columns, data, loading, emptyMessage, onDelete, showDelete 
                 ))}
                 {(showEdit || showDelete) && (
                   <td className="px-5 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,box-shadow,transform,opacity]">
                       {showEdit && (
                         <button onClick={() => onEdit && onEdit(row)}
                           className="w-7 h-7 rounded-app-sm flex items-center justify-center"
@@ -387,7 +388,7 @@ const OwnerFinanceDashboard = () => {
 
   // Handlers
   const handleDelete = async (deleteFn, id, type, refreshFn) => {
-    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+    if (!await confirmAction(`Are you sure you want to delete this ${type}?`)) return;
     try {
       const {
         error
@@ -438,7 +439,7 @@ const OwnerFinanceDashboard = () => {
       {!isPWA && (
       <div className="flex justify-end">
         <div className="flex items-center gap-2 bg-white border border-app-border shadow-sm rounded-app px-3 py-2">
-          <span className="text-app-accent text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+          <span className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
           <input
             type="date"
             value={dateRange.startDate}
@@ -517,7 +518,7 @@ const OwnerFinanceDashboard = () => {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-app text-xs font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-app text-xs font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 shadow-sm ${activeTab === key ? active + ' shadow-md' : inactive}`}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" />
               {label}
@@ -594,7 +595,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-slate-800">Pengeluaran Owner</h3>
-                        <p className="text-xs text-slate-400">{ownerData.expenditures.length} transaksi dalam periode ini</p>
+                        <p className="text-xs text-slate-500">{ownerData.expenditures.length} transaksi dalam periode ini</p>
                       </div>
                     </div>
                     <button onClick={() => openForm('expenditure')}
@@ -610,15 +611,15 @@ const OwnerFinanceDashboard = () => {
                     columns={[
                       { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
+                        <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
                       )},
                       { header: 'Sub Kategori', accessor: 'sub_category', render: row => row.subcategory?.subcategory_name
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.subcategory.subcategory_name}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.subcategory.subcategory_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
@@ -637,7 +638,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-slate-800">Pemasukan Owner</h3>
-                        <p className="text-xs text-slate-400">{ownerData.income.length} transaksi dalam periode ini</p>
+                        <p className="text-xs text-slate-500">{ownerData.income.length} transaksi dalam periode ini</p>
                       </div>
                     </div>
                     <button onClick={() => openForm('income')}
@@ -653,15 +654,15 @@ const OwnerFinanceDashboard = () => {
                     columns={[
                       { header: 'Tanggal', accessor: 'date', render: row => formatDate(row.date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{row.category}</span>
+                        <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{row.category}</span>
                       )},
                       { header: 'Sub Kategori', accessor: 'sub_category', render: row => row.sub_category
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.sub_category}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.sub_category}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
@@ -680,7 +681,7 @@ const OwnerFinanceDashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-slate-800">Piutang</h3>
-                        <p className="text-xs text-slate-400">{ownerData.receivables.length} data piutang</p>
+                        <p className="text-xs text-slate-500">{ownerData.receivables.length} data piutang</p>
                       </div>
                     </div>
                     <button onClick={() => openForm('receivable')}
@@ -707,7 +708,7 @@ const OwnerFinanceDashboard = () => {
                         };
                         const c = colors[row.status] || colors.pending;
                         return (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
                             {labels[row.status] || row.status}
                           </span>
                         );
@@ -719,13 +720,13 @@ const OwnerFinanceDashboard = () => {
                         row.status === 'pending' ? (
                           <button
                             onClick={() => { setMarkPaidReceivable(row); setIsMarkPaidOpen(true); }}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-white"
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold text-white"
                             style={{ background: '#059669' }}
                           >
                             <CheckCircle2 className="w-3 h-3" /> Tandai Lunas
                           </button>
                         ) : row.bank_account_id ? (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-xs text-slate-500">
                             {ownerData.bankAccounts.find(b => b.id === row.bank_account_id)?.bank_name || '-'}
                           </span>
                         ) : null
@@ -758,7 +759,7 @@ const OwnerFinanceDashboard = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-slate-800">Pengeluaran Admin</h3>
-                      <p className="text-xs text-slate-400">{adminData.expenses.length} transaksi dalam periode ini</p>
+                      <p className="text-xs text-slate-500">{adminData.expenses.length} transaksi dalam periode ini</p>
                     </div>
                   </div>
                   <DataTable accentColor="#e11d48" loading={adminLoading} emptyMessage="Belum ada pengeluaran admin."
@@ -768,13 +769,13 @@ const OwnerFinanceDashboard = () => {
                     columns={[
                       { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date) },
                       { header: 'Kategori', accessor: 'category', render: row => (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
+                        <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3' }}>{row.category}</span>
                       )},
                       { header: 'Sub Kategori', accessor: 'sub_category', render: row => (
                         <span className="inline-flex items-center gap-1 text-slate-500">
                           {row.sub_category}
                           {row.description?.startsWith('Ambil barang gudang:') && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }} title="Diambil dari Stok Gudang">
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }} title="Diambil dari Stok Gudang">
                               Stok Gudang
                             </span>
                           )}
@@ -782,7 +783,7 @@ const OwnerFinanceDashboard = () => {
                       )},
                       { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (
@@ -800,7 +801,7 @@ const OwnerFinanceDashboard = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-slate-800">Pemasukan Admin</h3>
-                      <p className="text-xs text-slate-400">{adminData.income.length} transaksi dalam periode ini</p>
+                      <p className="text-xs text-slate-500">{adminData.income.length} transaksi dalam periode ini</p>
                     </div>
                   </div>
                   <DataTable accentColor="#059669" loading={adminLoading} emptyMessage="Belum ada pemasukan admin."
@@ -814,11 +815,11 @@ const OwnerFinanceDashboard = () => {
                       { header: 'Metode Pembayaran', accessor: 'source', render: row => {
                         const val = row.source || row.category;
                         return val
-                          ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{val}</span>
+                          ? <span className="px-2 py-0.5 rounded-md text-xs font-bold" style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0' }}>{val}</span>
                           : <span style={{ color: '#cbd5e1' }}>—</span>;
                       }},
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
-                        ? <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
+                        ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
                       { header: 'Jumlah', accessor: 'amount', className: 'text-right', render: row => (

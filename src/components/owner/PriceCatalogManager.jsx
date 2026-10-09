@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { confirmAction } from '@/lib/confirmAction';
 
 const CATEGORIES = [
   { value: 'procedure', label: 'Procedure' },
@@ -121,7 +122,7 @@ const PriceCatalogManager = () => {
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Hapus "${item.name}"?`)) return;
+    if (!await confirmAction(`Hapus "${item.name}"?`)) return;
     const { error } = await supabase.from('price_catalog_items').delete().eq('id', item.id);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
@@ -193,7 +194,7 @@ const PriceCatalogManager = () => {
       </form>
 
       <div className="relative max-w-xs">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
         <Input className="pl-8" placeholder="Cari..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
@@ -215,7 +216,7 @@ const PriceCatalogManager = () => {
             {loading ? (
               <tr><td colSpan={8} className="p-6 text-center"><Loader2 className="h-5 w-5 animate-spin inline" /></td></tr>
             ) : visible.length === 0 ? (
-              <tr><td colSpan={8} className="p-6 text-center text-slate-400">Belum ada data.</td></tr>
+              <tr><td colSpan={8} className="p-6 text-center text-slate-500">Belum ada data.</td></tr>
             ) : visible.map((item, idx) => (
               <tr key={item.id} className={idx % 2 ? 'bg-white' : 'bg-slate-50/50'}>
                 <td className="p-2">

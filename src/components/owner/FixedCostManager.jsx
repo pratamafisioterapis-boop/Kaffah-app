@@ -187,7 +187,7 @@ const FixedCostManager = () => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
               <p>Belum ada item.</p>
               <Button variant="link" onClick={() => setIsAddOpen(true)} className="text-app-accent mt-2">Tambahkan item pertama</Button>
             </div>
@@ -197,7 +197,7 @@ const FixedCostManager = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex flex-col gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                className="group flex flex-col gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-3">
                   <div className="flex items-center gap-3 min-w-0 md:flex-1">
@@ -214,7 +214,7 @@ const FixedCostManager = () => {
                   </div>
                   <div className="flex items-end gap-2 pl-12 md:pl-0">
                     <div className="flex-1 md:w-40">
-                      <label className="block text-[11px] font-medium text-slate-400 mb-1 md:hidden">Jumlah/bulan</label>
+                      <label className="block text-xs font-medium text-slate-500 mb-1 md:hidden">Jumlah/bulan</label>
                       <Input
                         type="number"
                         value={item.amount}
@@ -224,7 +224,7 @@ const FixedCostManager = () => {
                       />
                     </div>
                     <div className="w-16 shrink-0">
-                      <label className="block text-[11px] font-medium text-slate-400 mb-1 md:hidden">Tgl posting</label>
+                      <label className="block text-xs font-medium text-slate-500 mb-1 md:hidden">Tgl posting</label>
                       <Input
                         type="number"
                         min="1"
@@ -244,7 +244,7 @@ const FixedCostManager = () => {
 
                 <div className="flex flex-col md:flex-row md:items-center gap-3 pl-0 md:pl-12">
                   <div className="flex-1 min-w-0">
-                    <label className="block text-[11px] font-medium text-slate-400 mb-1">Sub Kategori</label>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Sub Kategori</label>
                     <SearchableSelect
                       options={subcategories}
                       value={item.subcategory_id}

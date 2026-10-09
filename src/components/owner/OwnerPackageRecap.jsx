@@ -607,13 +607,13 @@ const OwnerPackageRecap = () => {
       <div className="bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 space-y-4 xl:space-y-0">
         
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-          <Button className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25" onClick={() => setManualDialogOpen(true)}>
+          <Button className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 bg-[#1683F4] hover:bg-app-accent-hover text-white shadow-sm shadow-app-accent/25" onClick={() => setManualDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> Tambah Manual
           </Button>
-          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={() => setImportModalOpen(true)}>
+          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={() => setImportModalOpen(true)}>
             <Upload className="w-4 h-4 mr-2" /> Import CSV
           </Button>
-          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={handleExport}>
+          <Button variant="outline" className="h-9 px-3 rounded-app gap-1.5 text-xs sm:text-sm font-semibold shadow-none active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity] [&_svg]:w-4 [&_svg]:h-4 [&_svg]:mr-0 [&_svg]:shrink-0 border border-[#DCE6EF] bg-white text-app-ink hover:bg-[#F5F9FC]" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" /> Export CSV
           </Button>
         </div>
@@ -670,7 +670,7 @@ const OwnerPackageRecap = () => {
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input 
                     placeholder="Cari..." 
                     className="pl-9 h-10 border-slate-300 focus:ring-app-accent-bright" 
@@ -753,7 +753,7 @@ const OwnerPackageRecap = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="inline-flex items-center bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
                         <span className="font-bold text-slate-700 text-xs">{pkg.computed_sessions_used}</span>
-                        <span className="text-slate-400 mx-1 text-xs">/</span>
+                        <span className="text-slate-500 mx-1 text-xs">/</span>
                         <span className="text-slate-500 text-xs">{pkg.computed_total_sessions}</span>
                       </div>
                       {sisaHari !== null && (
@@ -834,7 +834,7 @@ const OwnerPackageRecap = () => {
                               <TableCell className="text-center py-4">
                                  <div className="inline-flex items-center justify-center bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
                                     <span className="font-bold text-slate-700 text-xs">{pkg.computed_sessions_used}</span>
-                                    <span className="text-slate-400 mx-1 text-xs">/</span>
+                                    <span className="text-slate-500 mx-1 text-xs">/</span>
                                     <span className="text-slate-500 text-xs">{pkg.computed_total_sessions}</span>
                                  </div>
                               </TableCell>
@@ -845,7 +845,7 @@ const OwnerPackageRecap = () => {
                                         {sisaHari} Hari
                                     </Badge>
                                 ) : (
-                                    <span className="text-slate-400">-</span>
+                                    <span className="text-slate-500">-</span>
                                 )}
                               </TableCell>
 

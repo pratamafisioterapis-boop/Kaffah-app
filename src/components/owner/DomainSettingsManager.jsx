@@ -150,7 +150,7 @@ const DomainSettingsManager = () => {
               placeholder="nama-klinik-anda"
               className="border-0 focus-visible:ring-0 flex-1"
             />
-            <span className="px-3 text-sm text-slate-400 bg-slate-50 h-full flex items-center whitespace-nowrap">.{APP_DOMAIN}</span>
+            <span className="px-3 text-sm text-slate-500 bg-slate-50 h-full flex items-center whitespace-nowrap">.{APP_DOMAIN}</span>
           </div>
           <Button onClick={handleSaveSubdomain} disabled={savingSubdomain} className="bg-app-accent hover:bg-app-accent-hover w-full sm:w-auto">
             {savingSubdomain && <Loader2 className="w-4 h-4 animate-spin mr-2" />}

@@ -315,7 +315,7 @@ action_by_role: 'TEST_ROLE'
             </CardHeader>
             <CardContent>
                 {!formData.therapist_id ? (
-                    <div className="text-center py-8 text-slate-400 text-sm">Select a therapist first</div>
+                    <div className="text-center py-8 text-slate-500 text-sm">Select a therapist first</div>
                 ) : availableSlots.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
                         {availableSlots.map((slot, idx) => (
@@ -323,17 +323,17 @@ action_by_role: 'TEST_ROLE'
                                 key={idx}
                                 type="button"
                                 onClick={() => handleSlotClick(slot)}
-                                className={`py-2 px-1 rounded text-sm border transition-all hover:bg-slate-50 flex flex-col items-center justify-center gap-1 ${
+                                className={`py-2 px-1 rounded text-sm border transition-[color,background-color,border-color,box-shadow,transform,opacity] hover:bg-slate-50 flex flex-col items-center justify-center gap-1 ${
                                     formData.time === slot.slot_start_time.slice(0,5) ? 'bg-app-soft border-app-accent-bright ring-1 ring-app-accent-bright' : 'bg-white border-slate-200'
                                 }`}
                             >
                                 <span className="font-semibold">{slot.slot_start_time.slice(0,5)}</span>
-                                <span className="text-[10px] text-slate-500">{slot.duration_minutes || 60}m</span>
+                                <span className="text-xs text-slate-500">{slot.duration_minutes || 60}m</span>
                             </button>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-slate-400 text-sm">
+                    <div className="text-center py-8 text-slate-500 text-sm">
                        {therapistStatus === 'cuti' && 'Therapist is on leave'}
                        {therapistStatus === 'full_booked' && 'All slots booked'}
                        {therapistStatus === 'tidak_ada_jadwal' && 'No schedule for this day'}

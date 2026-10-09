@@ -89,7 +89,7 @@ const NationalHolidayManager = () => {
       {loading ? (
         <div className="h-10 bg-slate-100 rounded-app-sm animate-pulse" />
       ) : holidays.length === 0 ? (
-        <p className="text-sm text-slate-400">Belum ada hari libur nasional yang dicatat.</p>
+        <p className="text-sm text-slate-500">Belum ada hari libur nasional yang dicatat.</p>
       ) : (
         <div className="divide-y divide-slate-100 rounded-app-sm border border-slate-100">
           {holidays.map((h) => (
@@ -100,7 +100,7 @@ const NationalHolidayManager = () => {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {isSunday(h.holiday_date) && (
-                  <Badge variant="outline" className="text-[11px] border-rose-200 text-rose-700 bg-rose-50">Minggu · tanpa jatah libur Senin/Selasa</Badge>
+                  <Badge variant="outline" className="text-xs border-rose-200 text-rose-700 bg-rose-50">Minggu · tanpa jatah libur Senin/Selasa</Badge>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(h)} aria-label={`Hapus ${h.name}`}>
                   <Trash2 className="w-4 h-4 text-red-500" />

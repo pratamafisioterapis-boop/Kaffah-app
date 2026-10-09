@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { format, isValid } from 'date-fns';
 import { Loader2, PackagePlus, ShoppingBag, Pencil, Trash2 } from 'lucide-react';
 import InventoryStockInEditModal from './InventoryStockInEditModal';
+import { confirmAction } from '@/lib/confirmAction';
 
 const formatDate = (d) => {
   if (!d) return '-';
@@ -34,7 +35,7 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
   }, [isOpen, item, fetchHistory]);
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Hapus riwayat pembelian tanggal ${formatDate(row.purchase_date)}? Stok dan harga rata-rata akan disesuaikan kembali.`)) return;
+    if (!await confirmAction(`Hapus riwayat pembelian tanggal ${formatDate(row.purchase_date)}? Stok dan harga rata-rata akan disesuaikan kembali.`)) return;
     setDeletingId(row.id);
     try {
       const { error } = await deleteInventoryStockIn(row.id);
@@ -61,12 +62,12 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
 
         <div className="flex-1 overflow-y-auto -mx-1 px-1">
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-slate-400">
+            <div className="flex items-center justify-center py-12 text-slate-500">
               <Loader2 className="w-6 h-6 animate-spin" />
             </div>
           ) : history.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="bg-slate-100 p-4 rounded-full mb-3"><PackagePlus className="w-8 h-8 text-slate-400" /></div>
+              <div className="bg-slate-100 p-4 rounded-full mb-3"><PackagePlus className="w-8 h-8 text-slate-500" /></div>
               <h3 className="text-sm font-medium text-slate-900">Belum ada riwayat pembelian</h3>
               <p className="text-slate-500 text-xs mt-1">Riwayat akan muncul setelah stok ditambahkan.</p>
             </div>
@@ -78,10 +79,10 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
                     <span className="text-sm font-medium text-slate-900">{formatDate(row.purchase_date)}</span>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-bold text-slate-900">Rp {Number(row.total_price).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => setEditingRow(row)} title="Edit Riwayat">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-app-sm" onClick={() => setEditingRow(row)} title="Edit Riwayat">
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-app-sm" onClick={() => handleDelete(row)} disabled={deletingId === row.id} title="Hapus Riwayat">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -89,7 +90,7 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
                   <div className="flex items-center justify-between gap-2 mt-1 text-xs text-slate-500">
                     <span>{Number(row.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {row.inventory_items?.unit || item?.unit} × Rp {Number(row.unit_price).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
                   </div>
-                  {row.notes && <p className="text-xs text-slate-400 mt-1">{row.notes}</p>}
+                  {row.notes && <p className="text-xs text-slate-500 mt-1">{row.notes}</p>}
                 </div>
               ))}
             </div>

@@ -410,7 +410,7 @@ setTrendPatients(trendArray);
         <meta name="description" content="Admin dashboard for Kaffah System Care" />
       </Helmet>
       
-      <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      <div className="space-y-6 animate-in fade-in duration-200 ease-out pb-20">
 
         {/* ── Hero Banner ── */}
         <PageHero image="/hero/clinara-owner-hero.webp" objectPosition="36% center" kicker={<>{todayLabel} <span className="text-app-border">•</span> <span className="font-mono">{heroTime}</span></>} title="Selamat datang," highlight={<>Admin {clinicName || ''}!</>} description="Pusat kendali operasional dan manajemen klinik." wide />
@@ -419,7 +419,7 @@ setTrendPatients(trendArray);
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm">
-              <span className="text-app-accent text-[10px] font-bold uppercase tracking-wider shrink-0">Periode</span>
+              <span className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
                 <input
                   type="date"
@@ -476,7 +476,7 @@ setTrendPatients(trendArray);
     }
 
     return (
-      <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 hover:shadow-md transition-all">
+      <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity]">
         
         {/* TOP */}
         <div className="flex justify-between items-center">
@@ -495,7 +495,7 @@ setTrendPatients(trendArray);
         {/* PROGRESS */}
         <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
           <div
-            className={`${color} h-3 rounded-full transition-all`}
+            className={`${color} h-3 rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity]`}
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -520,7 +520,7 @@ setTrendPatients(trendArray);
   </h3>
 
   {therapistStats.length === 0 ? (
-    <p className="text-sm text-slate-400">Belum ada data</p>
+    <p className="text-sm text-slate-500">Belum ada data</p>
   ) : (
     therapistStats.slice(0, 5).map((t, i) => (
       <div
@@ -546,7 +546,7 @@ setTrendPatients(trendArray);
             <p className="text-sm font-semibold text-slate-800">
               {t.name}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Therapist
             </p>
           </div>
@@ -556,7 +556,7 @@ setTrendPatients(trendArray);
           <p className="text-lg font-bold text-slate-900">
             {t.total}
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             pasien
           </p>
         </div>
@@ -575,7 +575,7 @@ setTrendPatients(trendArray);
 
   {topPatients.length === 0 ? (
   <div className="flex-1 flex items-center justify-center">
-    <p className="text-sm text-slate-400">Belum ada data</p>
+    <p className="text-sm text-slate-500">Belum ada data</p>
   </div>
 ) : (
   <div className="flex-1 flex flex-col justify-between">
@@ -633,7 +633,7 @@ setTrendPatients(trendArray);
 
     {topDiagnoses.length === 0 ? (
   <div className="flex-1 flex items-center justify-center">
-    <p className="text-sm text-slate-400">Belum ada data</p>
+    <p className="text-sm text-slate-500">Belum ada data</p>
   </div>
 ) : (
   <div className="flex-1 flex flex-col gap-3">
@@ -672,7 +672,7 @@ setTrendPatients(trendArray);
 
    {topServices.length === 0 ? (
   <div className="flex-1 flex items-center justify-center">
-    <p className="text-sm text-slate-400">Belum ada data</p>
+    <p className="text-sm text-slate-500">Belum ada data</p>
   </div>
 ) : (
   <div className="flex-1 flex flex-col gap-3">
@@ -761,7 +761,7 @@ setTrendPatients(trendArray);
 
     </div>
   ) : (
-    <p className="text-sm text-slate-400">Belum ada data</p>
+    <p className="text-sm text-slate-500">Belum ada data</p>
   )}
 
 </div>

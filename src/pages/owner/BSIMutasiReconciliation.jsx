@@ -17,6 +17,7 @@ import {
   format, getDaysInMonth, startOfMonth, endOfMonth, parseISO, getMonth, getYear
 } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { confirmAction } from '@/lib/confirmAction';
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -152,7 +153,6 @@ const parseDebitEDCPdf = async (file) => {
     fullText += content.items.map(item => item.str).join(' ') + '\n';
   }
 
-  console.log('PDF Text:', fullText);
 
   // Extract Report Date (format DDMMYYYY)
   const dateMatch = fullText.match(/Report\s*Date\s+(\d{2})(\d{2})(\d{4})/i);
@@ -326,15 +326,15 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
   const candidates = allRecaps.filter(r => relevantDates.has(r.recap_date) && Number(r.amount) > 0);
 
   if (!allRecaps.length) {
-    return <p className="text-xs text-slate-400 py-2">Memuat data recap...</p>;
+    return <p className="text-xs text-slate-500 py-2">Memuat data recap...</p>;
   }
 
   if (!candidates.length) {
     return (
       <div className="space-y-2">
         <p className="text-xs font-semibold text-amber-700">Pilih transaksi daily recap yang cocok:</p>
-        <p className="text-xs text-slate-400">Tidak ada recap di tanggal {row.tgl_masuk} / {row.tgl_transaksi}.</p>
-        <p className="text-xs text-slate-400">Cari di panel "Semua Transaksi Daily Recap" di bawah.</p>
+        <p className="text-xs text-slate-500">Tidak ada recap di tanggal {row.tgl_masuk} / {row.tgl_transaksi}.</p>
+        <p className="text-xs text-slate-500">Cari di panel "Semua Transaksi Daily Recap" di bawah.</p>
       </div>
     );
   }
@@ -377,7 +377,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
                   <td className="px-3 py-2 font-medium text-slate-800">
                     {recap.patient_name}
                     {recap.kind === 'admin_income' && (
-                      <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 align-middle">Pemasukan Lain</span>
+                      <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700 align-middle">Pemasukan Lain</span>
                     )}
                   </td>
                   <td className="px-3 py-2 text-slate-500">{recap.recap_date}</td>
@@ -392,7 +392,7 @@ const UnmatchedRecapPicker = ({ row, allRecaps, mutasiChecks, onCheck, onLoad, m
                         ✓ Auto match
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">—</span>
+                      <span className="text-xs text-slate-500">—</span>
                     )}
                   </td>
                   <td className="px-3 py-2 text-right font-bold text-slate-800">{formatRp(recap.amount)}</td>
@@ -465,9 +465,9 @@ const DebitSettlementDetail = ({ settlement, mutasiNominal, selisih, clinicId })
       <div className="border-t pt-2">
         <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Pasien yang sudah ter-Auto Match (dari tab Debit EDC)</p>
         {loading ? (
-          <p className="text-xs text-slate-400">Memuat...</p>
+          <p className="text-xs text-slate-500">Memuat...</p>
         ) : !patients?.length ? (
-          <p className="text-xs text-slate-400">Belum ada pasien yang di-Auto Match untuk settlement ini. Buka tab Debit EDC untuk cocokkan.</p>
+          <p className="text-xs text-slate-500">Belum ada pasien yang di-Auto Match untuk settlement ini. Buka tab Debit EDC untuk cocokkan.</p>
         ) : (
           <table className="w-full text-xs">
             <thead>
@@ -540,7 +540,7 @@ const MonthStatusGrid = ({ uploadedMonths, onSelectMonth, selectedMonth }) => {
                 key={key}
                 onClick={() => !isFuture && info && onSelectMonth(isSelected ? null : key)}
                 className={cn(
-                  'rounded-app border-2 p-2.5 transition-all',
+                  'rounded-app border-2 p-2.5 transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                   statusClass,
                   isSelected && 'ring-2 ring-app-accent-bright ring-offset-1'
                 )}
@@ -1054,7 +1054,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
   // Delete upload
   const handleDeleteUpload = async (uploadId) => {
-    if (!confirm('Hapus data upload ini beserta semua transaksinya?')) return;
+    if (!await confirmAction('Hapus data upload ini beserta semua transaksinya?')) return;
     const { error } = await supabase.from('bsi_mutasi_uploads').delete().eq('id', uploadId).eq('clinic_id', clinicId);
     if (error) { toast({ variant: 'destructive', title: 'Gagal hapus', description: error.message }); return; }
     toast({ title: 'Berhasil dihapus' });
@@ -1410,7 +1410,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
   }, [toast, user, clinicId, loadDebitSettlements]);
 
   const handleRemoveDebitEntry = async (id) => {
-    if (!confirm('Hapus data settlement ini?')) return;
+    if (!await confirmAction('Hapus data settlement ini?')) return;
     await supabase.from('bsi_debit_settlements').delete().eq('id', id).eq('clinic_id', clinicId);
     await loadDebitSettlements();
   };
@@ -1930,7 +1930,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
               {readOnly ? 'Check Transaksi BSI' : 'Rekonsiliasi Mutasi BSI'}
             </h2>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p className="text-sm text-slate-500 mt-0.5">
               {readOnly
                 ? 'Crosscheck transaksi mutasi BSI dengan Daily Recap.'
                 : 'Upload dan simpan mutasi rekening BSI, lalu cocokkan dengan Daily Recap.'}
@@ -2022,7 +2022,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           <Card>
             <CardContent className="pt-5">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-app-sm border-2 border-dashed border-slate-300 hover:border-app-accent-bright hover:bg-app-soft transition-all text-sm font-medium text-slate-600">
+                <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-app-sm border-2 border-dashed border-slate-300 hover:border-app-accent-bright hover:bg-app-soft transition-[color,background-color,border-color,box-shadow,transform,opacity] text-sm font-medium text-slate-600">
                   <Upload className="w-4 h-4 text-app-accent-bright" />
                   {fileName
                     ? <span className="text-app-accent-hover truncate max-w-[220px]">{fileName}</span>
@@ -2068,11 +2068,11 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         <span className="text-xs font-bold text-slate-800">{formatRp(row.amount)}</span>
                       </div>
                       <div className="font-mono text-xs text-slate-600 break-words">{row.deskripsi}</div>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
                         <span>Masuk: {row.masukDateStr}</span>
                         {row.tipe === 'qris'
                           ? <span className="text-emerald-700 font-medium">Trx: {row.qrisTrxDateStr}</span>
-                          : <span className="text-slate-400">Trx = masuk</span>}
+                          : <span className="text-slate-500">Trx = masuk</span>}
                       </div>
                     </div>
                   ))}
@@ -2094,7 +2094,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         <tr key={i} className="border-b hover:bg-slate-50">
                           <td className="px-4 py-2"><TypeBadge tipe={row.tipe} /></td>
                           <td className="px-4 py-2 text-xs text-slate-600">{row.masukDateStr}</td>
-                          <td className="px-4 py-2 text-xs">{row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.qrisTrxDateStr}</span> : <span className="text-slate-400">= masuk</span>}</td>
+                          <td className="px-4 py-2 text-xs">{row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.qrisTrxDateStr}</span> : <span className="text-slate-500">= masuk</span>}</td>
                           <td className="px-4 py-2 text-xs font-mono truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-800 text-xs">{formatRp(row.amount)}</td>
                         </tr>
@@ -2116,9 +2116,9 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
               </CardHeader>
               <CardContent>
                 {loadingMonth ? (
-                  <div className="text-center py-6 text-slate-400"><RefreshCw className="w-5 h-5 animate-spin mx-auto" /></div>
+                  <div className="text-center py-6 text-slate-500"><RefreshCw className="w-5 h-5 animate-spin mx-auto" /></div>
                 ) : uploads.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-4">Belum ada upload untuk bulan ini.</p>
+                  <p className="text-sm text-slate-500 text-center py-4">Belum ada upload untuk bulan ini.</p>
                 ) : (
                   <div className="space-y-2">
                     {uploads.map(up => (
@@ -2126,7 +2126,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         <div>
                           <p className="text-sm font-medium text-slate-700">{up.notes || 'Upload'}</p>
                           <p className="text-xs text-slate-500">{up.periode_start} s/d {up.periode_end} . {up.jumlah_transaksi} transaksi</p>
-                          <p className="text-xs text-slate-400">{format(parseISO(up.uploaded_at), 'dd MMM yyyy HH:mm', { locale: localeId })}</p>
+                          <p className="text-xs text-slate-500">{format(parseISO(up.uploaded_at), 'dd MMM yyyy HH:mm', { locale: localeId })}</p>
                         </div>
                         <Button size="sm" variant="ghost" onClick={() => handleDeleteUpload(up.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
                           <Trash2 className="w-4 h-4" />
@@ -2214,7 +2214,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           {reconciled.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input placeholder="Cari nama pasien, deskripsi, nominal..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
               </div>
               <select value={filterType} onChange={e => setFilterType(e.target.value)} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none min-w-[130px]">
@@ -2259,11 +2259,11 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             <div className="font-mono text-xs text-slate-700 break-words">{row.deskripsi}</div>
                             {row.nama_pengirim && <div className="text-xs text-slate-500 mt-0.5">dari: {row.nama_pengirim}</div>}
                           </div>
-                          <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
                             <span>Masuk: {row.tgl_masuk}</span>
                             {row.tipe === 'qris'
                               ? <span className="font-medium text-emerald-700">Trx: {row.tgl_transaksi}</span>
-                              : <span className="text-slate-400">Trx = masuk</span>}
+                              : <span className="text-slate-500">Trx = masuk</span>}
                           </div>
                           <div>
                             {row.status === 'matched' ? (
@@ -2271,7 +2271,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} {isExpanded ? 'Tutup detail' : 'Lihat recap'}
                               </button>
                             ) : row.tipe === 'debit' ? (
-                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                              <span className="text-xs text-slate-500 flex items-center gap-1">
                                 <CreditCard className="w-3.5 h-3.5" /> Lihat tab Debit EDC
                               </span>
                             ) : (
@@ -2290,7 +2290,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                     );
                   })}
                   {filtered.length === 0 && (
-                    <div className="px-4 py-10 text-center text-slate-400 text-sm">Tidak ada transaksi yang sesuai filter.</div>
+                    <div className="px-4 py-10 text-center text-slate-500 text-sm">Tidak ada transaksi yang sesuai filter.</div>
                   )}
                 </div>
 
@@ -2319,7 +2319,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                               <td className="px-4 py-3 whitespace-nowrap text-xs">
                                 {row.tipe === 'qris'
                                   ? <span className="font-medium text-emerald-700">{row.tgl_transaksi}</span>
-                                  : <span className="text-slate-400">= Tgl masuk</span>}
+                                  : <span className="text-slate-500">= Tgl masuk</span>}
                               </td>
                               <td className="px-4 py-3 max-w-[220px]">
                                 <div className="truncate font-mono text-xs text-slate-700" title={row.deskripsi}>{row.deskripsi}</div>
@@ -2333,7 +2333,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                     {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />} Lihat recap
                                   </button>
                                 ) : row.tipe === 'debit' ? (
-                                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                                  <span className="text-xs text-slate-500 flex items-center gap-1">
                                     <CreditCard className="w-3.5 h-3.5" /> Lihat tab Debit EDC
                                   </span>
                                 ) : (
@@ -2354,7 +2354,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         );
                       })}
                       {filtered.length === 0 && (
-                        <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Tidak ada transaksi yang sesuai filter.</td></tr>
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">Tidak ada transaksi yang sesuai filter.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -2381,11 +2381,11 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                         <span className="text-xs font-bold text-slate-800">{formatRp(row.nominal)}</span>
                       </div>
                       <div className="font-mono text-xs text-slate-600 break-words">{row.deskripsi}</div>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
                         <span>Masuk: {row.tgl_masuk}</span>
                         {row.tipe === 'qris'
                           ? <span className="text-emerald-700 font-medium">Trx: {row.tgl_transaksi}</span>
-                          : <span className="text-slate-400">Trx = masuk</span>}
+                          : <span className="text-slate-500">Trx = masuk</span>}
                       </div>
                     </div>
                   ))}
@@ -2408,7 +2408,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                           <td className="px-4 py-2"><TypeBadge tipe={row.tipe} /></td>
                           <td className="px-4 py-2 text-xs text-slate-600">{row.tgl_masuk}</td>
                           <td className="px-4 py-2 text-xs">
-                            {row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.tgl_transaksi}</span> : <span className="text-slate-400">= masuk</span>}
+                            {row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.tgl_transaksi}</span> : <span className="text-slate-500">= masuk</span>}
                           </td>
                           <td className="px-4 py-2 text-xs font-mono truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-800 text-xs">{formatRp(row.nominal)}</td>
@@ -2422,7 +2422,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           )}
 
           {reconciled.length === 0 && savedTransactions.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-slate-500">
               <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p>Pilih bulan di grid atas untuk mulai crosscheck.</p>
             </div>
@@ -2448,7 +2448,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   })}
                 </select>
                 <label className={cn(
-                  'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-app-sm border-2 border-dashed transition-all text-sm font-medium',
+                  'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-app-sm border-2 border-dashed transition-[color,background-color,border-color,box-shadow,transform,opacity] text-sm font-medium',
                   debitParsing ? 'border-app-accent/40 bg-app-soft text-app-accent-bright cursor-not-allowed' : 'border-slate-300 hover:border-app-accent-bright hover:bg-app-soft text-slate-600'
                 )}>
                   {debitParsing ? <RefreshCw className="w-4 h-4 text-app-accent-bright animate-spin" /> : <FilePlus2 className="w-4 h-4 text-app-accent-bright" />}
@@ -2456,7 +2456,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   <input type="file" accept=".pdf,.csv" multiple className="hidden" onChange={handleDebitPdfUpload} disabled={debitParsing} />
                 </label>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 Menampilkan settlement bulan <strong>{MONTH_NAMES[parseInt(debitFilterMonth.split('-')[1]) - 1]} {debitFilterMonth.split('-')[0]}</strong>.
                 {' '}Upload PDF "Ringkasan Tagihan" atau CSV "Merchant Statement" EDC BSI. Bisa pilih banyak file sekaligus, boleh campur PDF & CSV.
               </p>
@@ -2465,7 +2465,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
           {/* Daftar settlement per bulan */}
           {debitEntries.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-slate-500">
               <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Belum ada data settlement debit untuk bulan ini.</p>
               <p className="text-xs mt-1 text-slate-300">Upload PDF untuk mulai.</p>
@@ -2493,7 +2493,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             : <CreditCard className="w-4 h-4 text-app-accent-bright shrink-0" />}
                           <div>
                             <p className="text-sm font-semibold text-slate-800">{entry.file_name}</p>
-                            <p className="text-xs text-slate-400">{entry.account_name}</p>
+                            <p className="text-xs text-slate-500">{entry.account_name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 flex-wrap">
@@ -2555,10 +2555,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                               Transaksi Debit Daily Recap (10 hari sebelum {entry.report_date})
                             </p>
-                            <p className="text-xs text-slate-400">{recapsForEntry.length} transaksi ditemukan</p>
+                            <p className="text-xs text-slate-500">{recapsForEntry.length} transaksi ditemukan</p>
                           </div>
                           {recapsForEntry.length === 0 ? (
-                            <div className="px-4 py-6 text-center text-slate-400 text-xs">
+                            <div className="px-4 py-6 text-center text-slate-500 text-xs">
                               Tidak ada transaksi debit di daily recap dalam 10 hari sebelum tanggal ini.
                             </div>
                           ) : (
@@ -2584,16 +2584,16 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                       className={cn('border-b transition-colors cursor-pointer hover:bg-slate-50',
                                         isChecked ? 'bg-green-50' : isUsedElsewhere ? 'bg-amber-50/60' : ''
                                       )}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         if (!isChecked && isUsedElsewhere) {
-                                          if (!confirm(`Pasien ini sudah dicentang di settlement tanggal ${usage.reportDate || '-'}. Pindahkan ke settlement ini?`)) return;
+                                          if (!await confirmAction(`Pasien ini sudah dicentang di settlement tanggal ${usage.reportDate || '-'}. Pindahkan ke settlement ini?`)) return;
                                         }
                                         handleDebitCheck(entry, recap, !isChecked);
                                       }}
                                     >
                                       <td className="px-4 py-2.5">
                                         <div className={cn(
-                                          'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
+                                          'w-5 h-5 rounded border-2 flex items-center justify-center transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                                           isChecked ? 'bg-green-500 border-green-500' : 'border-slate-300'
                                         )}>
                                           {isChecked && <CheckCircle2 className="w-3 h-3 text-white" />}
@@ -2611,7 +2611,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                             ⚠ Sudah dipakai settlement {usage.reportDate || '-'}
                                           </span>
                                         ) : (
-                                          <span className="text-xs text-slate-400">Belum dipakai</span>
+                                          <span className="text-xs text-slate-500">Belum dipakai</span>
                                         )}
                                       </td>
                                       <td className="px-4 py-2.5 text-right text-xs font-bold text-slate-800">{formatRp(recap.amount)}</td>
@@ -2664,7 +2664,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                   </select>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-2">Cek daily recap (QRIS/Debit/Transfer) mana yang belum ketemu pasangannya di mutasi rekening BSI ataupun settlement EDC.</p>
+              <p className="text-xs text-slate-500 mt-2">Cek daily recap (QRIS/Debit/Transfer) mana yang belum ketemu pasangannya di mutasi rekening BSI ataupun settlement EDC.</p>
             </CardContent>
           </Card>
 
@@ -2707,14 +2707,14 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             <span className="text-xs font-bold text-slate-800">{formatRp(r.amount)}</span>
                           </div>
                           <div className="text-sm font-medium text-slate-800">{r.patient_name}</div>
-                          <div className="text-[11px] text-slate-500">{r.recap_date}</div>
+                          <div className="text-xs text-slate-500">{r.recap_date}</div>
                           {!r.matched && r.reason && (
-                            <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">{r.reason}</div>
+                            <div className="text-xs text-slate-500 pt-1 border-t border-slate-100">{r.reason}</div>
                           )}
                         </div>
                       ))}
                     {recapAuditResult.filter(r => recapAuditFilter === 'all' || !r.matched).length === 0 && (
-                      <div className="px-4 py-10 text-center text-slate-400 text-sm">
+                      <div className="px-4 py-10 text-center text-slate-500 text-sm">
                         {recapAuditFilter === 'unmatched' ? '🎉 Semua recap sudah match!' : 'Tidak ada data.'}
                       </div>
                     )}
@@ -2746,7 +2746,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                             </tr>
                           ))}
                         {recapAuditResult.filter(r => recapAuditFilter === 'all' || !r.matched).length === 0 && (
-                          <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                          <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">
                             {recapAuditFilter === 'unmatched' ? '🎉 Semua recap sudah match!' : 'Tidak ada data.'}
                           </td></tr>
                         )}
@@ -2761,7 +2761,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       )}
 
       <div className="flex items-start gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2.5">
-        <Info className="w-4 h-4 shrink-0 text-slate-400 mt-0.5" />
+        <Info className="w-4 h-4 shrink-0 text-slate-500 mt-0.5" />
         <span>
           <strong>Catatan:</strong> QRIS dicocokkan berdasarkan tanggal scan QR (dari deskripsi) +/-Rp 15.000.
           Debit dicocokkan berdasarkan nominal +/-Rp 20.000 tanpa filter tanggal.

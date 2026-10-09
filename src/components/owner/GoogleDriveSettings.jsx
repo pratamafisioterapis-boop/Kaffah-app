@@ -159,7 +159,7 @@ const GoogleDriveSettings = () => {
                   onChange={(e) => setFolderInput(e.target.value)}
                   placeholder="https://drive.google.com/drive/folders/xxxxxxxx"
                 />
-                <p className="text-[11px] text-slate-400">Folder ini harus ada di akun Google yang sama dengan yang Anda hubungkan di atas.</p>
+                <p className="text-xs text-slate-500">Folder ini harus ada di akun Google yang sama dengan yang Anda hubungkan di atas.</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-slate-600">Nama Folder (opsional, untuk label)</Label>

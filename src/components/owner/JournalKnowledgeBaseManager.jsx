@@ -12,6 +12,7 @@ import { getJournalDocuments, createJournalDocument, deleteJournalDocument, upda
 import { detectJournalLanguage } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { confirmAction } from '@/lib/confirmAction';
 
 const emptyForm = { title: '', author: '', publication_year: '', source_language: 'en', topic_tags: '', content: '', document_scope: 'both' };
 
@@ -103,7 +104,7 @@ const JournalKnowledgeBaseManager = () => {
   };
 
   const handleDelete = async (doc) => {
-    if (!window.confirm(`Hapus "${doc.title}" dari basis pengetahuan? Saran AI tidak akan lagi memakai referensi ini.`)) return;
+    if (!await confirmAction(`Hapus "${doc.title}" dari basis pengetahuan? Saran AI tidak akan lagi memakai referensi ini.`)) return;
     const { success, error } = await deleteJournalDocument(doc.id);
     if (success) {
       toast({ title: 'Dokumen Dihapus' });
@@ -137,7 +138,7 @@ const JournalKnowledgeBaseManager = () => {
               <Label className="flex items-center gap-1.5">
                 Bahasa Sumber
                 {languageAutoDetected && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-normal text-app-accent">
+                  <span className="inline-flex items-center gap-1 text-xs font-normal text-app-accent">
                     <Sparkles className="w-3 h-3" /> Terdeteksi otomatis
                   </span>
                 )}
@@ -156,7 +157,7 @@ const JournalKnowledgeBaseManager = () => {
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-400">Otomatis terdeteksi dari isi jurnal yang ditempel — bisa diubah manual kalau salah.</p>
+              <p className="text-xs text-slate-500">Otomatis terdeteksi dari isi jurnal yang ditempel — bisa diubah manual kalau salah.</p>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Peruntukan</Label>
@@ -168,7 +169,7 @@ const JournalKnowledgeBaseManager = () => {
                   <SelectItem value="both">Keduanya</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-400">Menentukan fitur AI mana yang boleh memakai dokumen ini sebagai referensi.</p>
+              <p className="text-xs text-slate-500">Menentukan fitur AI mana yang boleh memakai dokumen ini sebagai referensi.</p>
             </div>
             <div className="space-y-2">
               <Label>Penulis</Label>
@@ -191,7 +192,7 @@ const JournalKnowledgeBaseManager = () => {
                 className="min-h-[240px]"
                 disabled={saving}
               />
-              <p className="text-xs text-slate-400">{form.content.length.toLocaleString('id-ID')} karakter</p>
+              <p className="text-xs text-slate-500">{form.content.length.toLocaleString('id-ID')} karakter</p>
             </div>
           </div>
           <Button onClick={handleSave} disabled={saving} className="bg-app-accent hover:bg-app-accent-hover">
@@ -214,7 +215,7 @@ const JournalKnowledgeBaseManager = () => {
               {documents.map((doc) => (
                 <div key={doc.id} className="flex items-start justify-between gap-3 p-3 rounded-app border border-slate-200 bg-slate-50/60">
                   <div className="flex items-start gap-3 min-w-0">
-                    <FileText className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                    <FileText className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 truncate">{doc.title}</p>
                       <p className="text-xs text-slate-500">
@@ -226,7 +227,7 @@ const JournalKnowledgeBaseManager = () => {
                         disabled={updatingScopeId === doc.id}
                       >
                         <SelectTrigger
-                          className={`h-6 w-fit gap-1 mt-1.5 border text-[10px] font-normal px-2 ${SCOPE_LABELS[doc.document_scope]?.className || SCOPE_LABELS.both.className}`}
+                          className={`h-6 w-fit gap-1 mt-1.5 border text-xs font-normal px-2 ${SCOPE_LABELS[doc.document_scope]?.className || SCOPE_LABELS.both.className}`}
                         >
                           {updatingScopeId === doc.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                           <SelectValue />
@@ -240,11 +241,11 @@ const JournalKnowledgeBaseManager = () => {
                       {doc.topic_tags?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {doc.topic_tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-[10px] font-normal">{tag}</Badge>
+                            <Badge key={tag} variant="outline" className="text-xs font-normal">{tag}</Badge>
                           ))}
                         </div>
                       )}
-                      <p className="text-[11px] text-slate-400 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         Ditambahkan {format(new Date(doc.created_at), 'dd MMM yyyy, HH:mm', { locale: idLocale })}
                       </p>
                     </div>

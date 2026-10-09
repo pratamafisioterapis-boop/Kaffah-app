@@ -85,7 +85,7 @@ const Section = ({ label, clinicId, value, onChange }) => {
               <button type="button" onClick={() => openFile(f.path)} className="min-w-0 flex-1 truncate text-left text-app-accent-hover hover:underline">
                 {f.name}
               </button>
-              <button type="button" onClick={() => remove(f)} aria-label={`Hapus ${f.name}`} className="text-slate-400 hover:text-red-600">
+              <button type="button" onClick={() => remove(f)} aria-label={`Hapus ${f.name}`} className="text-slate-500 hover:text-red-600">
                 <X className="h-3.5 w-3.5" />
               </button>
             </li>

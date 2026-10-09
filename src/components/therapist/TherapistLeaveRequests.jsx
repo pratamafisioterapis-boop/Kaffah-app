@@ -31,6 +31,7 @@ import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 import { useClinicOperatingHours } from '@/hooks/useClinicOperatingHours';
 import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
+import { confirmAction } from '@/lib/confirmAction';
 
 const DAY_KEY = 'yyyy-MM-dd';
 // Izin yang sudah lewat masih boleh dicatat (mundur), jadwal pengganti dipilih per bulan ke depan.
@@ -379,13 +380,13 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
               type="button"
               onClick={() => setForm((f) => ({ ...f, partial }))}
               className={cn(
-                'text-left rounded-app border-2 p-3 transition-all',
+                'text-left rounded-app border-2 p-3 transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                 form.partial === partial ? 'border-orange-500 bg-orange-50' : 'border-slate-200 bg-white hover:border-orange-200',
               )}
             >
-              <Icon className={cn('w-5 h-5 mb-1', form.partial === partial ? 'text-orange-600' : 'text-slate-400')} />
+              <Icon className={cn('w-5 h-5 mb-1', form.partial === partial ? 'text-orange-600' : 'text-slate-500')} />
               <p className="text-sm font-bold text-slate-800">{title}</p>
-              <p className="text-[11px] text-slate-500 leading-tight">{desc}</p>
+              <p className="text-xs text-slate-500 leading-tight">{desc}</p>
             </button>
           ))}
         </div>
@@ -432,7 +433,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
             })}
           </div>
           {firstYear && (
-            <p className="text-[11px] text-amber-700">Cuti tahunan belum tersedia di tahun pertama bergabung.</p>
+            <p className="text-xs text-amber-700">Cuti tahunan belum tersedia di tahun pertama bergabung.</p>
           )}
         </div>
 
@@ -498,7 +499,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                 setForm((f) => ({ ...f, proofFile: file }));
               }}
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               {form.proofFile ? `Terpilih: ${form.proofFile.name}` : 'Wajib untuk izin sakit. Foto (JPG/PNG/WebP) atau PDF, maksimal 5 MB.'}
             </p>
           </div>
@@ -551,7 +552,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 
         <div className="grid grid-cols-7 gap-1.5">
           {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
-            <div key={d} className="text-center text-[10px] font-semibold uppercase text-slate-400">{d}</div>
+            <div key={d} className="text-center text-xs font-semibold uppercase text-slate-500">{d}</div>
           ))}
           {Array.from({ length: candidates[0].date.getDay() }).map((_, i) => <div key={`pad-${i}`} />)}
           {candidates.map((day) => {
@@ -567,7 +568,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                 disabled={disabled}
                 onClick={() => toggleShift(day)}
                 className={cn(
-                  'rounded-app-sm border py-1.5 flex flex-col items-center leading-tight transition-all',
+                  'rounded-app-sm border py-1.5 flex flex-col items-center leading-tight transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                   disabled && 'opacity-40 cursor-not-allowed bg-slate-100 border-slate-100',
                   !disabled && selected && 'bg-app-accent border-app-accent text-white shadow',
                   !disabled && !selected && off && 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:border-emerald-400',
@@ -575,7 +576,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                 )}
               >
                 <span className="text-sm font-bold">{format(day.date, 'd')}</span>
-                <span className={cn('text-[9px]', selected ? 'text-app-soft' : off ? 'text-emerald-600' : 'text-slate-400')}>
+                <span className={cn('text-xs', selected ? 'text-app-soft' : off ? 'text-emerald-600' : 'text-slate-500')}>
                   {isLeaveDay ? 'Izin' : blockedDates.has(day.key) ? blockedDates.get(day.key) : full ? (openHoursOn(day.key).closed ? 'Tutup' : 'Penuh') : day.taken.length ? 'Terisi' : off ? 'Libur' : 'Kerja'}
                 </span>
               </button>
@@ -593,13 +594,13 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">{formatLongDate(shift.date)}</p>
-                      <p className="text-[11px] text-slate-500">{normal ? `Jadwal normal ${normal}` : 'Hari libur Anda'}
+                      <p className="text-xs text-slate-500">{normal ? `Jadwal normal ${normal}` : 'Hari libur Anda'}
                         {(() => {
                           const n = hoursOn(shift.date).reduce((sum, s) => sum + timeToMinutes(s.end_time) - timeToMinutes(s.start_time), 0);
                           return n > 0 && n < DAY_TARGET_MINUTES ? ` · baru ${formatDuration(n)}, masih bisa tambah ${formatDuration(DAY_TARGET_MINUTES - n)}` : '';
                         })()}</p>
                     </div>
-                    <button type="button" aria-label="Hapus hari pengganti" onClick={() => toggleShift({ key: shift.date, sched: [] })} className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-white">
+                    <button type="button" aria-label="Hapus hari pengganti" onClick={() => toggleShift({ key: shift.date, sched: [] })} className="p-1.5 rounded-md text-slate-500 hover:text-red-600 hover:bg-white">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -647,7 +648,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                     const count = Math.floor(total / slotMinutes);
                     const leftover = total - count * slotMinutes;
                     return (
-                      <p className={cn('text-[11px] mt-1.5', count === 0 || leftover ? 'text-amber-700' : 'text-app-accent-hover')}>
+                      <p className={cn('text-xs mt-1.5', count === 0 || leftover ? 'text-amber-700' : 'text-app-accent-hover')}>
                         Durasi {formatDuration(total)} → {count} slot booking @ {slotMinutes} menit
                         {count === 0 && ' — terlalu pendek untuk satu slot'}
                         {count > 0 && leftover > 0 && ` (sisa ${formatDuration(leftover)} tidak jadi slot)`}
@@ -694,7 +695,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 const MyRequests = ({ requests, onCancel, cancellingId }) => {
   if (requests.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
+      <div className="text-center py-8 text-slate-500 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
         <CalendarOff className="w-8 h-8 mx-auto mb-2 opacity-40" />
         <p className="text-sm font-medium">Belum ada pengajuan izin</p>
       </div>
@@ -790,7 +791,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
   }, [timeOff, requests]);
 
   const handleCancel = async (request) => {
-    if (!window.confirm('Batalkan pengajuan izin ini?')) return;
+    if (!await confirmAction('Batalkan pengajuan izin ini?')) return;
     setCancellingId(request.id);
     const { error } = await cancelLeaveRequest(request.id);
     setCancellingId(null);
@@ -848,14 +849,14 @@ const TherapistLeaveRequests = ({ therapist }) => {
           <TabsTrigger value="sunday" className="gap-1.5">
             <CalendarClock className="w-3.5 h-3.5" /> Tukar Jadwal
             {incomingSunday > 0 && (
-              <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5">{incomingSunday}</span>
+              <span className="text-xs font-bold bg-red-500 text-white rounded-full px-1.5">{incomingSunday}</span>
             )}
           </TabsTrigger>
           {isHead && (
             <TabsTrigger value="review" className="gap-1.5">
               <Crown className="w-3.5 h-3.5" /> Izin Tim
               {pendingForReview > 0 && (
-                <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5">{pendingForReview}</span>
+                <span className="text-xs font-bold bg-red-500 text-white rounded-full px-1.5">{pendingForReview}</span>
               )}
             </TabsTrigger>
           )}

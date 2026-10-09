@@ -75,7 +75,7 @@ const MissingRecapsCard = ({
           </CardDescription>
         </div>
 
-        <Button
+        <Button aria-label="Muat ulang"
           variant="ghost"
           size="sm"
           onClick={fetchData}

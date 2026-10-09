@@ -103,14 +103,14 @@ const FinanceReportSection = ({ dateRange }) => {
            {/* Mobile / PWA: kartu, tanpa geser horizontal */}
            <div className="sm:hidden divide-y divide-slate-100">
              {items.length === 0 ? (
-               <div className="p-12 text-center text-slate-400 font-medium">No transactions found for this period</div>
+               <div className="p-12 text-center text-slate-500 font-medium">No transactions found for this period</div>
              ) : (
                items.map((item, idx) => (
                  <div key={idx} className="p-4 space-y-2">
                    <div className="flex items-start justify-between gap-2">
                      <div className="min-w-0">
                        <p className="font-medium text-slate-700 text-sm">{format(new Date(item.date), 'dd/MM/yyyy')}</p>
-                       <p className="text-slate-400 font-mono text-xs">{formatTime(item.input_time)}</p>
+                       <p className="text-slate-500 font-mono text-xs">{formatTime(item.input_time)}</p>
                      </div>
                      <span className={cn(
                        "px-2.5 py-1 rounded-md text-xs font-bold border shrink-0",
@@ -123,11 +123,11 @@ const FinanceReportSection = ({ dateRange }) => {
                    </div>
                    <div className="grid grid-cols-2 gap-2 text-xs">
                      <div>
-                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Category</p>
+                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Category</p>
                        <p className="text-slate-700">{item.category}</p>
                      </div>
                      <div>
-                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Amount</p>
+                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Amount</p>
                        <p className={cn(
                          "font-bold tabular-nums",
                          item.type === 'income' ? "text-emerald-600" : "text-rose-600"
@@ -136,7 +136,7 @@ const FinanceReportSection = ({ dateRange }) => {
                        </p>
                      </div>
                      <div className="col-span-2">
-                       <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Description</p>
+                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Description</p>
                        <p className="text-slate-500">{item.description || '-'}</p>
                      </div>
                    </div>
@@ -160,7 +160,7 @@ const FinanceReportSection = ({ dateRange }) => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {items.length === 0 ? (
-                  <tr><td colSpan={6} className="p-12 text-center text-slate-400 font-medium">No transactions found for this period</td></tr>
+                  <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-medium">No transactions found for this period</td></tr>
                 ) : (
                   items.map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -202,9 +202,9 @@ const FinanceReportSection = ({ dateRange }) => {
       <CardContent className="p-4 md:p-8">
         <Tabs defaultValue="income" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/50 border border-white/40 p-1 h-12 rounded-app backdrop-blur-sm shadow-sm">
-            <TabsTrigger value="income" className="rounded-app-sm data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 font-medium transition-all">Pemasukan (Income)</TabsTrigger>
-            <TabsTrigger value="expenses" className="rounded-app-sm data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800 font-medium transition-all">Pengeluaran (Expenses)</TabsTrigger>
-            <TabsTrigger value="all" className="rounded-app-sm data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 font-medium transition-all">All Transactions</TabsTrigger>
+            <TabsTrigger value="income" className="rounded-app-sm data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity]">Pemasukan (Income)</TabsTrigger>
+            <TabsTrigger value="expenses" className="rounded-app-sm data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800 font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity]">Pengeluaran (Expenses)</TabsTrigger>
+            <TabsTrigger value="all" className="rounded-app-sm data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 font-medium transition-[color,background-color,border-color,box-shadow,transform,opacity]">All Transactions</TabsTrigger>
           </TabsList>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>

@@ -102,7 +102,7 @@ const NotificationPreferencesCard = ({ userId, items }) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>;
+    return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>;
   }
 
   return (

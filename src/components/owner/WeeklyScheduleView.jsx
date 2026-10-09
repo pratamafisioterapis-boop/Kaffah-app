@@ -38,7 +38,7 @@ const PALETTE = [
 const Avatar = ({ t, size = 'h-7 w-7', className }) => {
   const src = t?.photo_url || t?.avatar_url;
   return src ? (
-    <img src={src} alt="" className={cn(size, 'rounded-full object-cover shrink-0', className)} />
+    <img src={src} alt="" className={cn(size, 'rounded-full object-cover shrink-0', className)} loading="lazy" decoding="async" />
   ) : (
     <span className={cn(size, 'rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center shrink-0', className)}>
       {initials(t?.name)}
@@ -265,7 +265,7 @@ const WeeklyScheduleView = ({
           type="button"
           onClick={() => onAppointmentClick(a)}
           className={cn(
-            'w-full text-left rounded-app border border-l-4 px-2.5 py-1.5 shadow-sm hover:shadow-md transition-all bg-gradient-to-br to-white',
+            'w-full text-left rounded-app border border-l-4 px-2.5 py-1.5 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] bg-gradient-to-br to-white',
             fill && 'h-full overflow-hidden',
             color.card, color.border
           )}
@@ -299,8 +299,8 @@ const WeeklyScheduleView = ({
           'group w-full rounded-app px-2.5 py-1.5 text-left',
           fill && 'h-full overflow-hidden',
           'border border-dashed border-emerald-300 bg-emerald-50/60 text-emerald-700',
-          'hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25',
-          'active:scale-[0.98] transition-all duration-200'
+          'hover:bg-emerald-500 hover:text-white hover:border-emerald-500 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg hover:shadow-emerald-500/25',
+          'active:scale-[0.98] transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200'
         )}
         title="Klik untuk tambah pasien di slot ini"
       >
@@ -326,7 +326,7 @@ const WeeklyScheduleView = ({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="group flex items-center gap-3 w-full md:w-auto md:min-w-[280px] pl-2 pr-3 py-1.5 rounded-app-lg border border-slate-200 bg-gradient-to-b from-white to-slate-50 shadow-sm hover:shadow-md hover:border-clinara-sky transition-all"
+          className="group flex items-center gap-3 w-full md:w-auto md:min-w-[280px] pl-2 pr-3 py-1.5 rounded-app-lg border border-slate-200 bg-gradient-to-b from-white to-slate-50 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md hover:border-clinara-sky transition-[color,background-color,border-color,box-shadow,transform,opacity]"
         >
           <div className="flex -space-x-2">
             {selectedTherapists.slice(0, 3).map(({ t, color }) => (
@@ -339,7 +339,7 @@ const WeeklyScheduleView = ({
             )}
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[10px] uppercase tracking-widest text-slate-400 leading-none">Terapis</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 leading-none">Terapis</p>
             <p className="text-sm font-bold text-slate-800 truncate leading-tight mt-0.5">
               {selectedTherapists.length === therapists.length && therapists.length > 1
                 ? 'Semua terapis'
@@ -348,7 +348,7 @@ const WeeklyScheduleView = ({
                   : shortName(selectedTherapists[0]?.t.name)}
             </p>
           </div>
-          <ChevronDown className={cn('h-4 w-4 text-slate-400 transition-transform', pickerOpen && 'rotate-180')} />
+          <ChevronDown className={cn('h-4 w-4 text-slate-500 transition-transform', pickerOpen && 'rotate-180')} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(92vw,340px)] p-0 rounded-app-lg border-slate-200 shadow-2xl overflow-hidden">
@@ -372,18 +372,18 @@ const WeeklyScheduleView = ({
                 type="button"
                 onClick={() => toggleTherapist(t.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-2.5 py-2 rounded-app border text-left transition-all',
+                  'w-full flex items-center gap-3 px-2.5 py-2 rounded-app border text-left transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                   on ? 'bg-slate-50 border-slate-200' : 'border-transparent hover:bg-slate-50'
                 )}
               >
                 <Avatar t={t} size="h-9 w-9" className={cn(on && 'ring-2 ring-offset-1', on && color.ring)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">{t.name}</p>
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
                     <span className={cn('h-2 w-2 rounded-full', color.dot)} /> Warna penanda
                   </p>
                 </div>
-                <span className={cn('h-5 w-5 rounded-full flex items-center justify-center border transition-all', on ? 'bg-app-accent border-app-accent text-white' : 'border-slate-300')}>
+                <span className={cn('h-5 w-5 rounded-full flex items-center justify-center border transition-[color,background-color,border-color,box-shadow,transform,opacity]', on ? 'bg-app-accent border-app-accent text-white' : 'border-slate-300')}>
                   {on && <Check className="h-3 w-3" />}
                 </span>
               </button>
@@ -408,7 +408,7 @@ const WeeklyScheduleView = ({
             </Button>
             <div className="flex-1 md:flex-none min-w-[170px] text-center px-3 py-1.5 rounded-app-sm bg-slate-50 border border-slate-200">
               <p className="text-sm font-bold text-slate-800 leading-tight">{rangeLabel}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Jadwal mingguan</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Jadwal mingguan</p>
             </div>
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onDateChange(addDays(date, 7))}>
               <ChevronRight className="h-4 w-4" />
@@ -444,10 +444,10 @@ const WeeklyScheduleView = ({
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 gap-3">
           <Loader2 className="w-9 h-9 animate-spin text-app-accent" />
-          <p className="text-slate-400 text-sm">Memuat jadwal mingguan...</p>
+          <p className="text-slate-500 text-sm">Memuat jadwal mingguan...</p>
         </div>
       ) : selectedIds.length === 0 ? (
-        <div className="text-center text-slate-400 py-16">Belum ada terapis aktif</div>
+        <div className="text-center text-slate-500 py-16">Belum ada terapis aktif</div>
       ) : (
         <>
           {/* Desktop / tablet landscape */}
@@ -477,7 +477,7 @@ const WeeklyScheduleView = ({
             </div>
 
             {totalFree + totalBooked === 0 ? (
-              <div className="py-16 text-center text-slate-400 text-sm">Tidak ada jadwal minggu ini</div>
+              <div className="py-16 text-center text-slate-500 text-sm">Tidak ada jadwal minggu ini</div>
             ) : (
               <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] max-h-[70vh] overflow-y-auto">
                 <div className="bg-slate-50/60">
@@ -538,7 +538,7 @@ const WeeklyScheduleView = ({
                     type="button"
                     onClick={() => setSelectedDay(k)}
                     className={cn(
-                      'flex flex-col items-center py-2 rounded-app-lg border transition-all',
+                      'flex flex-col items-center py-2 rounded-app-lg border transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                       active ? 'bg-clinara-navy text-white border-clinara-navy shadow-lg scale-[1.03]' : 'bg-white border-slate-200 text-slate-600'
                     )}
                   >
@@ -571,12 +571,12 @@ const WeeklyScheduleView = ({
                     <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => onOpenDay(dayDate)}>Harian</Button>
                   </div>
                   {offDays[k] ? (
-                    <div className="py-12 flex flex-col items-center gap-2 text-slate-400">
+                    <div className="py-12 flex flex-col items-center gap-2 text-slate-500">
                       <CalendarOff className="h-8 w-8" />
                       <p className="text-sm font-medium">{shortName(selectedTherapists[0]?.t.name)} — {offDays[k]}</p>
                     </div>
                   ) : times.length === 0 ? (
-                    <div className="py-12 flex flex-col items-center gap-2 text-slate-400">
+                    <div className="py-12 flex flex-col items-center gap-2 text-slate-500">
                       <Sparkles className="h-8 w-8" />
                       <p className="text-sm">Tidak ada jadwal di hari ini</p>
                     </div>

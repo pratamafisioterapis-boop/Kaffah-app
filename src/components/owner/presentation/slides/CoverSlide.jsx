@@ -27,17 +27,17 @@ const CoverSlide = ({ clinicName, data, dateRange }) => {
         <div className="rounded-app-lg border border-white/10 bg-white/5 p-5 md:p-7">
           <Activity className="h-5 w-5 md:h-6 md:w-6 text-sky-300 mx-auto mb-2" />
           <p className="text-2xl md:text-4xl font-black text-white">{data?.operational?.totalSessions ?? 0}</p>
-          <p className="text-slate-400 text-xs md:text-sm mt-1">Total Sesi</p>
+          <p className="text-slate-500 text-xs md:text-sm mt-1">Total Sesi</p>
         </div>
         <div className="rounded-app-lg border border-white/10 bg-white/5 p-5 md:p-7">
           <Wallet className="h-5 w-5 md:h-6 md:w-6 text-emerald-300 mx-auto mb-2" />
           <p className="text-2xl md:text-4xl font-black text-white">{formatShortCurrency(data?.finance?.totalRevenue)}</p>
-          <p className="text-slate-400 text-xs md:text-sm mt-1">Total Pendapatan</p>
+          <p className="text-slate-500 text-xs md:text-sm mt-1">Total Pendapatan</p>
         </div>
         <div className="rounded-app-lg border border-white/10 bg-white/5 p-5 md:p-7">
           <GrowthIcon className={`h-5 w-5 md:h-6 md:w-6 mx-auto mb-2 ${revenueGrowth >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} />
           <p className={`text-2xl md:text-4xl font-black ${revenueGrowth >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{formatPercent(revenueGrowth)}</p>
-          <p className="text-slate-400 text-xs md:text-sm mt-1">Pertumbuhan Revenue vs Periode Sebelumnya</p>
+          <p className="text-slate-500 text-xs md:text-sm mt-1">Pertumbuhan Revenue vs Periode Sebelumnya</p>
         </div>
       </div>
     </div>

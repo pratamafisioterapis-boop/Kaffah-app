@@ -32,7 +32,7 @@ const ClinicalDocuments = () => {
         <meta name="description" content="Generate and manage clinical documents like medical resumes and certificates." />
       </Helmet>
 
-      <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-6 animate-in fade-in duration-200 ease-out">
         {/* Hero Banner */}
         <PageHero image="/hero/clinara-clinicaldoc-hero.webp" title="Dokumen" highlight="Klinis" description="Generate resume medis dan surat keterangan fisioterapi." />
 
@@ -40,14 +40,14 @@ const ClinicalDocuments = () => {
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1">
             <TabsTrigger 
               value="resume-medis"
-              className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm transition-all flex items-center gap-2"
+              className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center gap-2"
             >
               <ClipboardList className="w-4 h-4 shrink-0" />
               Resume Medis
             </TabsTrigger>
             <TabsTrigger 
               value="surat-keterangan"
-              className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all flex items-center gap-2"
+              className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5 shrink-0" />
               Surat Keterangan

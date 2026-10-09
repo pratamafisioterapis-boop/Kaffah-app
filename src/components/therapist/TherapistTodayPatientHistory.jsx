@@ -174,7 +174,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
           </div>
           <h3 className="text-sm font-bold text-slate-700 truncate">Pasien Hari Ini</h3>
         </div>
-        <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
+        <span className="text-xs text-slate-500 shrink-0 whitespace-nowrap">
           {todaysPatients.length} pasien hari ini
         </span>
       </div>
@@ -189,7 +189,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
           <div className="w-10 h-10 rounded-app bg-slate-50 flex items-center justify-center mb-3">
             <CalendarCheck className="w-5 h-5 text-slate-300" />
           </div>
-          <p className="text-xs font-medium text-slate-400">Belum ada pasien yang ditangani hari ini</p>
+          <p className="text-xs font-medium text-slate-500">Belum ada pasien yang ditangani hari ini</p>
         </div>
       ) : (
         <div className="px-3 py-2 max-h-80 overflow-y-auto divide-y divide-slate-50">
@@ -223,35 +223,35 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
                     {p.visits.length > 1 && (
-                      <span className="shrink-0 text-[9px] font-bold bg-app-accent/15 text-app-accent-hover px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 text-xs font-bold bg-app-accent/15 text-app-accent-hover px-1.5 py-0.5 rounded-full">
                         {p.visits.length}x
                       </span>
                     )}
                     {gapLabel && (
-                      <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-0.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
                         <Clock className="w-2.5 h-2.5" /> {gapLabel}
                       </span>
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1 mt-1">
-                    <span className="text-[10px] text-slate-400">{p.rm}</span>
+                    <span className="text-xs text-slate-500">{p.rm}</span>
                     {usingFallback && (
-                      <span className="text-[10px] text-slate-400 italic">riwayat:</span>
+                      <span className="text-xs text-slate-500 italic">riwayat:</span>
                     )}
                     {diagnosisList.slice(0, 2).map((d, idx) => (
-                      <span key={idx} className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border', colorForLabel(d))}>
+                      <span key={idx} className={cn('text-xs font-medium px-1.5 py-0.5 rounded-full border', colorForLabel(d))}>
                         {d}
                       </span>
                     ))}
                     {diagnosisList.length === 0 && (
-                      <span className="text-[10px] text-slate-400 italic">Belum ada diagnosa</span>
+                      <span className="text-xs text-slate-500 italic">Belum ada diagnosa</span>
                     )}
                   </div>
                 </div>
                 {p.patientId ? (
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
                 ) : (
-                  <span className="text-[9px] text-slate-400 shrink-0">Pasien Baru</span>
+                  <span className="text-xs text-slate-500 shrink-0">Pasien Baru</span>
                 )}
               </div>
               {sessionRecap && (
@@ -294,7 +294,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
       )}
 
       {!loading && todaysPatients.length > 0 && (
-        <div className="px-5 py-3 border-t border-slate-50 flex items-center gap-1.5 text-[11px] text-slate-400">
+        <div className="px-5 py-3 border-t border-slate-50 flex items-center gap-1.5 text-xs text-slate-500">
           <History className="w-3 h-3" /> Ketuk pasien untuk lihat riwayat diagnosa &amp; SOAP lengkap
         </div>
       )}

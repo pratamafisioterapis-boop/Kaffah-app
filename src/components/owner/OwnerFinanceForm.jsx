@@ -230,7 +230,7 @@ if (
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Kategori Utama</label>
-            <div className="h-9 px-3 flex items-center rounded-app text-sm text-slate-400"
+            <div className="h-9 px-3 flex items-center rounded-app text-sm text-slate-500"
               style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               {formData.category || 'Otomatis terisi setelah pilih sub kategori'}
             </div>
@@ -252,7 +252,7 @@ if (
       {type !== 'receivable' && (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600">
-            Akun Bank <span className="text-slate-400 font-normal">(opsional)</span>
+            Akun Bank <span className="text-slate-500 font-normal">(opsional)</span>
           </label>
           <SearchableSelect
             options={bankAccounts}
@@ -267,7 +267,7 @@ if (
       {type === 'income' && (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600">
-            Metode Pembayaran <span className="text-slate-400 font-normal">(opsional)</span>
+            Metode Pembayaran <span className="text-slate-500 font-normal">(opsional)</span>
           </label>
           <SearchableSelect
             options={paymentMethods}
@@ -280,7 +280,7 @@ if (
             allowCreate={true}
           />
           {feePreview && (
-            <p className="text-[11px] text-amber-600">
+            <p className="text-xs text-amber-600">
               Potongan bank ({feePreview.rule.fee_type === 'percentage' ? `${feePreview.rule.fee_value}%` : `Rp${feePreview.rule.fee_value}`}): {new Intl.NumberFormat('id-ID').format(feePreview.fee)} &bull; Bersih: Rp{new Intl.NumberFormat('id-ID').format(feePreview.net)}
             </p>
           )}
@@ -288,7 +288,7 @@ if (
       )}
 
       {type === 'receivable' && (
-        <p className="text-[11px] text-slate-400 -mt-1">Piutang baru otomatis berstatus "Belum Lunas". Tandai lunas dari daftar piutang setelah dibayar.</p>
+        <p className="text-xs text-slate-500 -mt-1">Piutang baru otomatis berstatus "Belum Lunas". Tandai lunas dari daftar piutang setelah dibayar.</p>
       )}
 
       <div className="space-y-1.5">
@@ -300,12 +300,12 @@ if (
 
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={onCancel} disabled={loading}
-          className="flex-1 h-9 rounded-app text-xs font-semibold transition-all"
+          className="flex-1 h-9 rounded-app text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
           style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
           Batal
         </button>
         <button type="submit" disabled={loading}
-          className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
+          className="flex-1 h-9 rounded-app text-xs font-bold text-white transition-[color,background-color,border-color,box-shadow,transform,opacity] flex items-center justify-center gap-2"
           style={{ background: type === 'expenditure' ? '#e11d48' : type === 'income' ? '#059669' : '#0891b2' }}>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {loading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan')}

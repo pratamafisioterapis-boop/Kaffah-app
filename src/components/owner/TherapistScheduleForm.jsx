@@ -196,8 +196,6 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
     setErrorState(prev => ({ ...prev, isOpen: false }));
 
     // Debug: Log Auth State
-    console.log("Submit initiated by User:", user?.id);
-    console.log("Session valid:", !!session);
 
     try {
       if (!user) {
@@ -268,8 +266,6 @@ const TherapistScheduleForm = ({ therapist, onSuccess, onCancel, existingSchedul
             validationResults: validation
         }));
 
-        console.log(`Payload for Shift #${i+1}:`, payload);
-        console.log(`Validation Result #${i+1}:`, validation);
 
         if (!validation.valid) {
            throw new Error(`Validasi Gagal (Shift #${i+1}): ${validation.errorString}`);
@@ -285,13 +281,11 @@ const { data: existing } = await supabase
   .maybeSingle();
 
 if (existing) {
-  console.log('⏭️ Skip duplicate shift:', payload);
   continue;
 }
 
 // BARU INSERT
         const result = await createTherapistSchedule(payload);
-        console.log(`API Result for Shift #${i+1}:`, result);
 
         results.push({ ...result, index: i });
       }
@@ -385,7 +379,7 @@ if (results.length === 0) {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                        className="absolute top-4 right-4 text-slate-500 hover:text-slate-600"
                         onClick={() => setShowDebug(!showDebug)}
                     >
                         <Bug className="h-4 w-4" />
@@ -518,7 +512,7 @@ if (results.length === 0) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-slate-400 italic">
+                                <p className="text-xs text-slate-500 italic">
                                     Atur jam buka, jam tutup, dan durasi yang valid untuk melihat pratinjau slot.
                                 </p>
                             )}
@@ -567,7 +561,7 @@ if (results.length === 0) {
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 sm:mb-0.5"
+                                        className="text-slate-500 hover:text-red-500 hover:bg-red-50 sm:mb-0.5"
                                         onClick={() => handleRemoveShift(idx)}
                                     >
                                         <Trash2 className="w-4 h-4" />

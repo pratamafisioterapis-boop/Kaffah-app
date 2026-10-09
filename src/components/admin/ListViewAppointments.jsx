@@ -93,7 +93,7 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
       {/* Filters Bar */}
       <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-app-sm border border-slate-200 shadow-sm">
          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
             <Input 
                placeholder="Search patient name or RM..." 
                value={searchTerm}
@@ -189,10 +189,10 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
                            <TableCell>
                               <div className="flex items-center gap-2">
                                  {app.therapist?.avatar_url ? (
-                                    <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" />
+                                    <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
                                  ) : (
                                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                       <User className="w-3 h-3 text-slate-400" />
+                                       <User className="w-3 h-3 text-slate-500" />
                                     </div>
                                  )}
                                  <span className="text-sm">{app.therapist?.name || 'Unassigned'}</span>
@@ -250,10 +250,10 @@ const ListViewAppointments = ({ appointments, onEditClick, therapists = [], load
                   <div className="flex items-center justify-between pt-1">
                      <div className="flex items-center gap-2">
                         {app.therapist?.avatar_url ? (
-                           <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" />
+                           <img src={app.therapist.avatar_url} className="w-6 h-6 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
                         ) : (
                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
-                              <User className="w-3 h-3 text-slate-400" />
+                              <User className="w-3 h-3 text-slate-500" />
                            </div>
                         )}
                         <span className="text-xs text-slate-600">{app.therapist?.name || 'Unassigned'}</span>

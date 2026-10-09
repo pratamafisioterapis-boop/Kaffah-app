@@ -533,7 +533,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                     <div className="space-y-1 relative">
                       <Label htmlFor="nickname" className="flex items-center gap-1">
                         Nama Panggilan
-                        <span className="text-xs text-slate-400 font-normal ml-auto">
+                        <span className="text-xs text-slate-500 font-normal ml-auto">
                             {formData.nickname_custom ? "(Manual)" : "(Auto)"}
                         </span>
                       </Label>
@@ -679,7 +679,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                               {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
                             </span>
                           ) : (
-                            <span className="text-slate-400">Cari nama / no. HP pasien lama...</span>
+                            <span className="text-slate-500">Cari nama / no. HP pasien lama...</span>
                           )}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -694,11 +694,11 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                           <CommandList>
                             {referrerSearching && (
                               <div className="py-4 flex justify-center">
-                                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
                               </div>
                             )}
                             {!referrerSearching && referrerQuery.trim().length < 2 && (
-                              <div className="py-4 px-3 text-xs text-slate-400 text-center">
+                              <div className="py-4 px-3 text-xs text-slate-500 text-center">
                                 Ketik minimal 2 huruf untuk mencari
                               </div>
                             )}
@@ -710,7 +710,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                                 <CommandItem key={p.id} value={p.id} onSelect={() => handleSelectReferrer(p)}>
                                   <div className="flex flex-col">
                                     <span className="text-sm">{p.full_name}</span>
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-slate-500">
                                       {p.phone || '-'}{p.medical_record_number ? ` · ${p.medical_record_number}` : ''}
                                     </span>
                                   </div>
@@ -725,12 +725,12 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                       <button
                         type="button"
                         onClick={handleClearReferrer}
-                        className="text-[11px] text-red-500 hover:underline mt-1 flex items-center gap-0.5"
+                        className="text-xs text-red-500 hover:underline mt-1 flex items-center gap-0.5"
                       >
                         <X className="w-3 h-3" /> Hapus pilihan referral
                       </button>
                     )}
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Jika pasien ini direferensikan oleh pasien lama, cari & pilih nama pasien tersebut agar reward WhatsApp otomatis terkirim ke pasien lama saat terapi pertama pasien ini selesai.
                     </p>
                   </div>
@@ -787,9 +787,9 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                       <div className="flex items-start gap-3">
                         <div className="relative w-full max-w-xs">
                           {ktpPreview ? (
-                            <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" />
+                            <img src={ktpPreview} alt="Foto KTP" className="rounded-md border max-h-48 object-contain" loading="lazy" decoding="async" />
                           ) : (
-                            <div className="flex items-center justify-center h-24 rounded-md border text-slate-400">
+                            <div className="flex items-center justify-center h-24 rounded-md border text-slate-500">
                               <Loader2 className="h-4 w-4 animate-spin" />
                             </div>
                           )}
@@ -881,19 +881,19 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                                             
                                             <div>
                                                 {sessionData.status === 'expired' ? (
-                                                    <Badge variant="destructive" className="text-[10px] h-5">
+                                                    <Badge variant="destructive" className="text-xs h-5">
                                                         <AlertCircle className="w-3 h-3 mr-1" /> Expired
                                                     </Badge>
                                                 ) : sessionData.status === 'selesai' ? (
-                                                    <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/25 border-none shadow-none text-[10px] h-5">
+                                                    <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/25 border-none shadow-none text-xs h-5">
                                                         Selesai
                                                     </Badge>
                                                 ) : sessionData.status === 'diperpanjang' ? (
-                                                    <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none shadow-none text-[10px] h-5">
+                                                    <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none shadow-none text-xs h-5">
                                                         Diperpanjang
                                                     </Badge>
                                                 ) : (
-                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none text-[10px] h-5">
+                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none text-xs h-5">
                                                         Aktif
                                                     </Badge>
                                                 )}

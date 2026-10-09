@@ -46,7 +46,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
         {dataToRender.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
             <div className="bg-slate-100 p-4 rounded-full mb-3">
-              <Wallet className="w-8 h-8 text-slate-400" />
+              <Wallet className="w-8 h-8 text-slate-500" />
             </div>
             <h3 className="text-lg font-medium text-slate-900">Belum ada data pengeluaran</h3>
             <p className="text-slate-500 max-w-sm mt-1">
@@ -72,7 +72,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-all hover:scale-105"
+                          className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
                           onClick={() => onEdit && onEdit(ex)}
                           title="Edit Pengeluaran"
                         >
@@ -83,7 +83,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all hover:scale-105"
+                          className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
                           onClick={() => onDelete && onDelete(ex)}
                           title="Hapus Pengeluaran"
                         >
@@ -95,25 +95,25 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Sub Kategori</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Sub Kategori</p>
                     <p className="text-slate-600 uppercase font-medium tracking-wide">{ex.sub_category || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Akun Bank</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Akun Bank</p>
                     <p className="text-slate-600">
                       {ex.bank_account ? (
                         <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
                       ) : (
-                        <span className="text-slate-400 italic">Tunai/Lain</span>
+                        <span className="text-slate-500 italic">Tunai/Lain</span>
                       )}
                     </p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Deskripsi</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Deskripsi</p>
                     <p className="text-slate-600">{ex.description || '-'}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-0.5">Jumlah</p>
+                    <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Jumlah</p>
                     <p className="font-bold text-rose-600 font-mono">Rp {parseFloat(ex.amount || 0).toLocaleString('id-ID')}</p>
                   </div>
                 </div>
@@ -155,7 +155,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                     {formatDate(ex.transaction_date)}
                   </td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide break-words">
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100 uppercase tracking-wide break-words">
                         {ex.category || 'Uncategorized'}
                     </span>
                   </td>
@@ -166,7 +166,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                     {ex.bank_account ? (
                         <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
                     ) : (
-                        <span className="text-slate-400 italic text-xs">Tunai/Lain</span>
+                        <span className="text-slate-500 italic text-xs">Tunai/Lain</span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-slate-600 break-words" title={ex.description}>
@@ -182,7 +182,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-app-accent hover:bg-app-soft rounded-md transition-all hover:scale-105"
+                            className="h-8 w-8 text-slate-500 hover:text-app-accent hover:bg-app-soft rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
                             onClick={() => onEdit && onEdit(ex)}
                             title="Edit Pengeluaran"
                           >
@@ -193,7 +193,7 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all hover:scale-105"
+                            className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] [@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
                             onClick={() => onDelete && onDelete(ex)}
                             title="Hapus Pengeluaran"
                           >

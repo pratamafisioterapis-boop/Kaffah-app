@@ -351,20 +351,20 @@ action_by: user?.id,
          <div className="flex items-center gap-2">
             <Clock className={cn("w-4 h-4", isLeave ? "text-red-500" : "text-app-ink")} />
             <span className="text-3xl font-bold text-app-ink tracking-tight">{startTimeStr}</span>
-            <span className="text-slate-400 text-sm">- {formattedEndTime}</span>
+            <span className="text-slate-500 text-sm">- {formattedEndTime}</span>
          </div>
       </div>
 
       <div className="flex bg-slate-100 p-1.5 rounded-app-lg gap-1">
-        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-all", formData.patient_type === 'registered' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Terdaftar</button>
-        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-all", formData.patient_type === 'guest' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Baru</button>
+        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity]", formData.patient_type === 'registered' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Terdaftar</button>
+        <button onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))} disabled={isLeave || loading} className={cn("flex-1 text-sm font-semibold py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity]", formData.patient_type === 'guest' ? "bg-white text-app-ink shadow-sm" : "text-slate-500")}>Pasien Baru</button>
       </div>
 
       {formData.patient_type === 'registered' ? (
         <div className="space-y-2 relative" ref={searchContainerRef}>
           <Label>Cari Pasien</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
             <Input
               placeholder="Ketik nama atau No. RM..."
               value={patientSearchTerm}
@@ -420,7 +420,7 @@ action_by: user?.id,
   lastDate &&
   isBefore(new Date(lastDate), startOfDay(new Date()));
         return (
-          <div className={cn("p-4 rounded-app border text-sm transition-all duration-300", isExpired ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200", isJustActivated && "ring-2 ring-emerald-400 scale-[1.01]")}>
+          <div className={cn("p-4 rounded-app border text-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200", isExpired ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200", isJustActivated && "ring-2 ring-emerald-400 scale-[1.01]")}>
             <div className="flex justify-between items-center mb-2">
               <span className="font-semibold text-slate-800">{packageInfo.package_name}</span>
               <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase", isExpired ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700")}>{isExpired ? 'Expired' : 'Aktif'}</span>

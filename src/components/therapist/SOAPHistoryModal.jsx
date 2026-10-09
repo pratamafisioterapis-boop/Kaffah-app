@@ -92,7 +92,7 @@ const formatDateOnly = (dateString) => {
               <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright" />
             </div>
           ) : records.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-slate-500">
               <p>Belum ada riwayat pemeriksaan SOAP untuk pasien ini.</p>
             </div>
           ) : (
@@ -102,7 +102,7 @@ const formatDateOnly = (dateString) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                  "border rounded-app bg-white shadow-sm overflow-hidden transition-all",
+                  "border rounded-app bg-white shadow-sm overflow-hidden transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                   expandedId === record.id ? "border-app-accent/40 ring-1 ring-app-accent/15" : "border-slate-200 hover:border-app-accent/25"
                 )}
               >
@@ -149,7 +149,7 @@ const formatDateOnly = (dateString) => {
         {formatDate(record.created_at)}
       </span>
       {record.filled_by_admin_id && (
-        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-semibold">
+        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-xs font-semibold">
           Diisi via Admin
         </span>
       )}
@@ -185,7 +185,7 @@ const formatDateOnly = (dateString) => {
                       <Copy className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Salin ke Form</span>
                     </Button>
-                    <div className="p-1 rounded-full hover:bg-slate-200 text-slate-400 transition-colors">
+                    <div className="p-1 rounded-full hover:bg-slate-200 text-slate-500 transition-colors">
                       {expandedId === record.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
                   </div>

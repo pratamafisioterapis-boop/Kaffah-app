@@ -52,7 +52,7 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
       {/* LETTERHEAD — logo pinned left, text truly centered on the page via a mirrored spacer column */}
       <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr 96px', alignItems: 'center', gap: '16px', paddingBottom: '18px' }}>
         <div>
-          <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />
+          <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} loading="lazy" decoding="async" />
         </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>
@@ -124,13 +124,12 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
           <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
           <div style={{ position: 'relative', height: '95px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
             {signatureUrl && (
-              <img src={signatureUrl} style={{ maxHeight: '90px', maxWidth: '190px' }} />
+              <img src={signatureUrl} style={{ maxHeight: '90px', maxWidth: '190px' }} loading="lazy" decoding="async" />
             )}
             {clinic?.stamp_url && (
               <img
                 src={clinic.stamp_url}
-                style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.92 }}
-              />
+                style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.92 }} loading="lazy" decoding="async" />
             )}
           </div>
           <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />

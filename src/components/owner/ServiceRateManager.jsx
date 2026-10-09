@@ -289,7 +289,7 @@ const ServiceRateManager = () => {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           {isGeneralScope
             ? 'Tarif umum berlaku untuk semua terapis, kecuali terapis tsb punya tarif custom sendiri.'
             : 'Tarif di bawah ini hanya berlaku untuk terapis yang dipilih dan akan menimpa tarif umum untuk Tipe Pasien yang sama.'}
@@ -303,7 +303,7 @@ const ServiceRateManager = () => {
           {loadingTypes ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
           ) : patientTypes.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200 text-sm">
+            <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200 text-sm">
               Belum ada Tipe Pasien di Setup. Tambahkan dulu di tab "Tipe Pasien".
             </div>
           ) : (
@@ -318,7 +318,7 @@ const ServiceRateManager = () => {
                     key={key}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
                   >
                     <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                       <div className="w-9 h-9 rounded-app-sm bg-emerald-50 flex items-center justify-center shrink-0">
@@ -326,7 +326,7 @@ const ServiceRateManager = () => {
                       </div>
                       <div className="min-w-0 flex-1 sm:flex-initial">
                         <span className="font-medium text-slate-700 truncate block">{label || '(Tanpa nama)'}</span>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {rateRow
                             ? `${formatCurrency(rateRow.rate)} / sesi`
                             : (!isGeneralScope && generalRateByTypeId[id] != null)
@@ -369,7 +369,7 @@ const ServiceRateManager = () => {
                   key={item.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                  className="group flex items-center justify-between p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-app-sm bg-emerald-50 flex items-center justify-center shrink-0">
@@ -408,7 +408,7 @@ const ServiceRateManager = () => {
                 onChange={(selectedTypes) => setForm({ ...form, selectedTypes })}
                 placeholder="Pilih satu atau lebih tipe pasien..."
               />
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Pilih lebih dari satu untuk tarif gabungan, mis. XTRATIME + DUA KELUHAN.
               </p>
             </div>

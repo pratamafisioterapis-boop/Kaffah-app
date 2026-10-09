@@ -67,7 +67,7 @@ const AdminChecklistHistory = () => {
               </div>
               <div>
                 <h3 className="text-white font-bold text-base sm:text-lg tracking-tight">Riwayat & Catatan Checklist Admin</h3>
-                <p className="text-slate-400 text-xs sm:text-sm">Hasil pengerjaan dan catatan yang diisi admin setiap hari</p>
+                <p className="text-slate-500 text-xs sm:text-sm">Hasil pengerjaan dan catatan yang diisi admin setiap hari</p>
               </div>
             </div>
 
@@ -75,7 +75,7 @@ const AdminChecklistHistory = () => {
               <div className="flex items-center gap-4 shrink-0">
                 <div className="flex flex-col items-end">
                   <span className="text-2xl font-black text-white leading-none">{overallPercent}%</span>
-                  <span className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                  <span className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" /> {totalDone}/{totalTasks} selesai
                   </span>
                 </div>
@@ -173,21 +173,21 @@ const AdminChecklistHistory = () => {
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                            <p className={`font-medium text-sm ${entry.is_done ? 'text-slate-800' : 'text-slate-400'}`}>
+                            <p className={`font-medium text-sm ${entry.is_done ? 'text-slate-800' : 'text-slate-500'}`}>
                               {entry.item_title}
                             </p>
                             {scope === null && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-app-ink/5 text-app-ink border border-app-ink/10">
+                              <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-app-ink/5 text-app-ink border border-app-ink/10">
                                 {entry.assigned_admin_name ? initials(entry.assigned_admin_name) : 'UMUM'}
                               </span>
                             )}
                           </div>
                           {entry.item_description && (
-                            <p className="text-xs text-slate-400 mt-0.5">{entry.item_description}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{entry.item_description}</p>
                           )}
                           {entry.is_done && (
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
-                              <div className="w-4 h-4 rounded-full bg-app-ink text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                              <div className="w-4 h-4 rounded-full bg-app-ink text-white flex items-center justify-center text-xs font-bold shrink-0">
                                 {initials(entry.completed_by_name)}
                               </div>
                               <span>{entry.completed_by_name || 'Admin'}</span>

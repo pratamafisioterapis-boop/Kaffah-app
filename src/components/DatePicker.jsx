@@ -85,9 +85,9 @@ const DatePicker = ({ value, onChange, onClose }) => {
       className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-app-sm shadow-xl z-50 w-80 p-4 animate-in fade-in zoom-in-95 duration-100"
     >
       <div className="flex items-center justify-between mb-4">
-        <button 
+        <button aria-label="Sebelumnya" 
           onClick={handlePreviousMonth}
-          className="p-1 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+          className="tap-target p-1 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
           type="button"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -112,9 +112,9 @@ const DatePicker = ({ value, onChange, onClose }) => {
           />
               </div>
 
-        <button 
+        <button aria-label="Berikutnya" 
           onClick={handleNextMonth}
-          className="p-1 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+          className="tap-target p-1 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
           type="button"
         >
           <ChevronRight className="w-5 h-5" />
@@ -123,7 +123,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
 
       <div className="grid grid-cols-7 mb-2">
         {weekDaysHeader.map((day) => (
-          <div key={day} className="text-center text-xs font-medium text-slate-400 py-1">
+          <div key={day} className="text-center text-xs font-medium text-slate-500 py-1">
             {day}
           </div>
         ))}
@@ -141,7 +141,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
               onClick={() => handleDateClick(day)}
               type="button"
               className={cn(
-                "h-9 w-9 text-xs rounded-full flex items-center justify-center transition-all",
+                "h-9 w-9 text-xs rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                 !isCurrentMonth && "text-slate-300",
                 isCurrentMonth && "text-slate-700 hover:bg-slate-100",
                 isSelected && "bg-app-accent text-white hover:bg-app-accent-hover shadow-md font-medium",

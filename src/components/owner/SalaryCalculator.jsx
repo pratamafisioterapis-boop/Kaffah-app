@@ -30,7 +30,6 @@ import { motion } from 'framer-motion';
 
 const SalaryCalculator = ({ dateRange, setDateRange }) => {
   useEffect(() => {
-  console.log('DATE RANGE UPDATED:', dateRange);
 }, [dateRange]);
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -119,7 +118,6 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       // Note: getDailyRecaps might return all, so we filter client side if API doesn't support specific therapist filter in one go
       // API update in Task 5 requested ensure getDailyRecaps supports filters. We'll filter here to be safe.
       const therapistRecaps = recapsRes.data || [];
-      console.log("RECAPS DATA:", therapistRecaps);
       
       // 1. Calculate Attendance
       const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
@@ -233,7 +231,6 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     const optionsMap = (optionsRes.data || []).reduce((acc, o) => { acc[o.id] = o.label; return acc; }, {});
     const therapistRecaps = rawRecaps || [];
     const therapistRates = buildPatientTypeRateIndex(serviceRateRows, therapist.id);
-    console.log('SAMPLE RECAP patient_type:', therapistRecaps[0]?.patient_type, therapistRecaps[0]?.patient_type_ids, 'customRates byName keys:', Object.keys(therapistRates?.byName || {}));
 
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
     const baseSalary = parseFloat(therapist.base_salary) || 0;
@@ -352,13 +349,13 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         {/* Back header */}
         <div className="flex items-center gap-3">
           <button onClick={() => { setSelectedTherapistDetail(null); setSelectedPatientType(null); }}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
             style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
             ← Kembali
           </button>
           <div>
             <h3 className="text-sm font-bold text-slate-800">{d.name}</h3>
-            <p className="text-xs text-slate-400">{d.period} · {d.salaryType}</p>
+            <p className="text-xs text-slate-500">{d.period} · {d.salaryType}</p>
           </div>
         </div>
 
@@ -370,7 +367,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : d.salaryType === 'Probation' ? 'Jasa (Tidak Berlaku)' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
           ].map(({ label, value, color, bg }) => (
             <div key={label} className="rounded-app p-4 min-w-0" style={{ background: bg }}>
-              <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
+              <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
               <div className="text-base font-bold break-words" style={{ color }}>{value}</div>
             </div>
           ))}
@@ -386,7 +383,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         <div className="rounded-app-lg overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
           <div className="px-4 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Insentif / Omzet per Tipe Pasien</span>
-            <span className="ml-2 text-xs text-slate-400">— klik untuk lihat detail</span>
+            <span className="ml-2 text-xs text-slate-500">— klik untuk lihat detail</span>
           </div>
           {Object.entries(d.breakdownByType).map(([type, info], idx) => (
             <div key={type}>
@@ -395,18 +392,18 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                 className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
                 style={{ background: selectedPatientType === type ? '#eef2ff' : idx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-app-sm flex items-center justify-center text-[10px] font-bold shrink-0"
+                  <div className="w-7 h-7 rounded-app-sm flex items-center justify-center text-xs font-bold shrink-0"
                     style={{ background: '#ede9fe', color: '#7c3aed' }}>
                     {info.count}
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-slate-700">{type}</div>
-                    <div className="text-[10px] text-slate-400">{info.count} sesi</div>
+                    <div className="text-xs text-slate-500">{info.count} sesi</div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-bold" style={{ color: '#7c3aed' }}>{fmt(info.totalAmount)}</div>
-                  <div className="text-[10px] text-slate-400">{selectedPatientType === type ? '▲ tutup' : '▼ detail'}</div>
+                  <div className="text-xs text-slate-500">{selectedPatientType === type ? '▲ tutup' : '▼ detail'}</div>
                 </div>
               </button>
 
@@ -421,29 +418,29 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                           <span className="text-sm font-bold shrink-0" style={{ color: '#059669' }}>{fmt(s.amount)}</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mb-1">
-                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
                             {fmtDate(s.date)}
                           </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
                             {s.packageName}
                           </span>
                           {s.isPackage && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                            <span className="text-xs px-2 py-0.5 rounded-md font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
                               {s.totalSessions} sesi
                             </span>
                           )}
-                          <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                             Nominal paket: {fmt(s.pkgNominal)}
                           </span>
                         </div>
                         {s.discountType && s.discountType !== 'none' && s.discountValue > 0 && (
                           <div className="flex items-center gap-1.5">
-                            <span className="line-through text-slate-400 text-[10px]">
+                            <span className="line-through text-slate-500 text-xs">
                               {s.discountType === 'percentage'
                                 ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
                                 : fmt(s.rawAmount + s.discountValue)}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
                               {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
                             </span>
                           </div>
@@ -475,8 +472,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                           <td className="px-4 py-2 text-slate-500">{s.packageName}</td>
                           <td className="px-4 py-2 text-center">
                             {s.isPackage
-                              ? <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>{s.totalSessions} sesi</span>
-                              : <span className="text-slate-400">Visit</span>}
+                              ? <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>{s.totalSessions} sesi</span>
+                              : <span className="text-slate-500">Visit</span>}
                           </td>
                           <td className="px-4 py-2 text-slate-500">
                             {fmt(s.pkgNominal)}
@@ -484,17 +481,17 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                           <td className="px-4 py-2">
                             {s.discountType && s.discountType !== 'none' && s.discountValue > 0 ? (
                               <div>
-                                <span className="line-through text-slate-400 text-[10px] mr-1">
+                                <span className="line-through text-slate-500 text-xs mr-1">
                                   {s.discountType === 'percentage'
                                     ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
                                     : fmt(s.rawAmount + s.discountValue)}
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
+                                <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
                                   {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-slate-300 text-[10px]">—</span>
+                              <span className="text-slate-300 text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-2 font-bold" style={{ color: '#059669' }}>{fmt(s.amount)}</td>
@@ -529,10 +526,10 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-800">Salary Calculator</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Estimasi gaji semua terapis aktif dalam periode</p>
+            <p className="text-xs text-slate-500 mt-0.5">Estimasi gaji semua terapis aktif dalam periode</p>
           </div>
         </div>
-        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full w-fit" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full w-fit" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
           Estimasi — Frontend Only
         </span>
       </div>
@@ -544,7 +541,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             <Calendar className="w-3.5 h-3.5" />
             Periode:
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer select-none" style={{ color: '#7c3aed' }}>
+          <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none" style={{ color: '#7c3aed' }}>
             <input
               type="checkbox"
               checked={useAutoPeriod}
@@ -580,7 +577,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             </div>
             <button
               onClick={handlePeriodeIni}
-              className="text-xs px-3 py-2 rounded-app-sm font-semibold transition-all w-full"
+              className="text-xs px-3 py-2 rounded-app-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] w-full"
               style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
             >
               Periode Ini (28 - 27)
@@ -591,7 +588,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         <button
           onClick={handleCalculateAll}
           disabled={calculatingAll || !therapists.length}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-xs font-bold text-white transition-all w-full"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-xs font-bold text-white transition-[color,background-color,border-color,box-shadow,transform,opacity] w-full"
           style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
         >
           {calculatingAll
@@ -614,11 +611,11 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                   style={{ background: idx % 2 === 0 ? 'white' : '#faf9ff', borderBottom: '1px solid #f1f0ff' }}
                 >
                   <div className="flex items-center gap-2.5 mb-1.5">
-                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                       style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
                       {idx + 1}
                     </span>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                       style={{ background: '#ede9fe', color: '#7c3aed' }}>
                       {r.name?.charAt(0)?.toUpperCase()}
                     </div>
@@ -626,23 +623,23 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                     <div className="font-bold text-sm shrink-0" style={{ color: '#059669' }}>{fmt(r.total)}</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                    <span className="px-2 py-0.5 rounded-md text-xs font-bold"
                       style={salaryBadgeStyle(r.salaryType)}>
                       {r.salaryType}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                       {r.sessionCount} sesi
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                       {r.attendanceDays} hari kerja
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                       Pokok: {fmtShort(r.baseSalary)}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                       Transport: {fmtShort(r.transportAllowance)}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-md font-semibold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
                       Komisi: {fmtShort(r.commission)}
                     </span>
                   </div>
@@ -675,7 +672,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                     onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : '#faf9ff'}>
                     {/* Rank */}
                     <td className="px-4 py-3">
-                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                         style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
                         {idx + 1}
                       </span>
@@ -685,7 +682,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                       <button
                         onClick={() => { setSelectedTherapistDetail(r); setSelectedPatientType(null); }}
                         className="flex items-center gap-2.5 hover:underline text-left">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                           style={{ background: '#ede9fe', color: '#7c3aed' }}>
                           {r.name?.charAt(0)?.toUpperCase()}
                         </div>
@@ -694,7 +691,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                     </td>
                     {/* Salary type badge */}
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                      <span className="px-2 py-0.5 rounded-md text-xs font-bold"
                         style={{
                           background: r.salaryType === 'Full Salary' ? '#ecfdf5' : '#eff6ff',
                           color: r.salaryType === 'Full Salary' ? '#059669' : '#2563eb',
@@ -703,7 +700,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                         {r.salaryType}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-[10px] whitespace-nowrap">{r.period}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{r.period}</td>
                     <td className="px-4 py-3 text-slate-600 font-medium">{r.sessionCount}</td>
                     <td className="px-4 py-3 text-slate-600 font-medium">{r.attendanceDays} hari</td>
                     <td className="px-4 py-3 text-slate-500">{fmtShort(r.baseSalary)}</td>
@@ -742,7 +739,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                   <Icon className="w-3.5 h-3.5" style={{ color: '#7c3aed' }} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] font-medium" style={{ color: '#a78bfa' }}>{label}</div>
+                  <div className="text-xs font-medium" style={{ color: '#a78bfa' }}>{label}</div>
                   <div className="text-sm font-bold text-slate-700 break-words">{value}</div>
                 </div>
               </div>
@@ -756,7 +753,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
             <Calculator className="w-7 h-7" style={{ color: '#7c3aed' }} />
           </div>
           <p className="text-sm font-semibold text-slate-600">Belum ada data kalkulasi</p>
-          <p className="text-xs text-slate-400 mt-1">Pilih periode lalu tekan <strong>Hitung Semua</strong></p>
+          <p className="text-xs text-slate-500 mt-1">Pilih periode lalu tekan <strong>Hitung Semua</strong></p>
         </div>
       )}
     </div>

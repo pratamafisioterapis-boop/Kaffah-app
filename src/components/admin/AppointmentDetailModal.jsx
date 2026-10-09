@@ -345,7 +345,7 @@ const handleConfirmReschedule = async () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center justify-between">
-                Patient {appointment?.id && <Lock className="w-3 h-3 text-slate-400" />}
+                Patient {appointment?.id && <Lock className="w-3 h-3 text-slate-500" />}
               </label>
               <div className={cn(appointment?.id && "opacity-80 pointer-events-none")}>
                 <SearchableSelect
@@ -360,7 +360,7 @@ const handleConfirmReschedule = async () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center justify-between">
-                  Physiotherapist {!canEditTherapist && <Lock className="w-3 h-3 text-slate-400" />}
+                  Physiotherapist {!canEditTherapist && <Lock className="w-3 h-3 text-slate-500" />}
               </label>
               <div className={cn(!canEditTherapist && "opacity-80 pointer-events-none")}>
                 <SearchableSelect 
@@ -379,7 +379,7 @@ const handleConfirmReschedule = async () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">Date {!canEditDateTime && <Lock className="w-3 h-3 text-slate-400" />}</label>
+                <label className="text-sm font-medium flex items-center gap-2">Date {!canEditDateTime && <Lock className="w-3 h-3 text-slate-500" />}</label>
                 <Input 
                     type="date" 
                     value={formData.appointment_date} 
@@ -391,7 +391,7 @@ const handleConfirmReschedule = async () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                     Time 
-                    {!canEditDateTime && <Lock className="w-3 h-3 text-slate-400" />}
+                    {!canEditDateTime && <Lock className="w-3 h-3 text-slate-500" />}
                     {loadingSlots && <Loader2 className="w-3 h-3 animate-spin text-app-accent-bright" />}
                 </label>
                 <Select 
@@ -427,7 +427,7 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
                 <Input type="number" value={formData.duration_minutes} onChange={(e) => setFormData(prev => ({ ...prev, duration_minutes: e.target.value }))} disabled={isCompleted || (!isOwnerRole && !isAdminRole)} autoFocus={false} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">Status {!canEditStatus && <Lock className="w-3 h-3 text-slate-400" />}</label>
+                <label className="text-sm font-medium flex items-center gap-2">Status {!canEditStatus && <Lock className="w-3 h-3 text-slate-500" />}</label>
                 <Select value={formData.status} onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))} disabled={!canEditStatus || formData.status === 'rescheduled'} >
                   <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
@@ -439,7 +439,7 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
                     <SelectItem value="no-show">No Show</SelectItem>
                   </SelectContent>
                 </Select>
-                {formData.status === 'rescheduled' && (<span className="text-[10px] text-orange-600 block">Auto-set to rescheduled.</span>)}
+                {formData.status === 'rescheduled' && (<span className="text-xs text-orange-600 block">Auto-set to rescheduled.</span>)}
               </div>
             </div>
 
@@ -558,7 +558,7 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
     <div className="py-4 max-h-[500px] overflow-y-auto space-y-3">
   {loadingWhatsApp ? (
     <div className="flex items-center justify-center py-10">
-      <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+      <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
     </div>
   ) : whatsappQueues.length === 0 ? (
     <div className="text-center text-sm text-slate-500 py-10">

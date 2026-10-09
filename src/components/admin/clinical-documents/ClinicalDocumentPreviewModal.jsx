@@ -10,10 +10,10 @@ import { useToast } from '@/components/ui/use-toast';
 // print/PDF fidelity, but their height varies with content length.
 const DOC_BASE_WIDTH = 794;
 
-// Waits for every <img> inside the document (signature, stamp, logo) to
+// Waits for every <img loading="lazy" decoding="async"> inside the document (signature, stamp, logo) to
 // actually finish loading before html2canvas rasterizes it — a fixed delay
 // isn't reliable for remote Supabase Storage images on a slow/first fetch,
-// and html2canvas silently captures a blank box for an unloaded <img>.
+// and html2canvas silently captures a blank box for an unloaded <img loading="lazy" decoding="async">.
 const waitForImages = (root) => {
   const imgs = Array.from(root.querySelectorAll('img'));
   return Promise.all(
@@ -238,7 +238,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
               <span className="hidden sm:inline">Download PDF</span>
             </Button>
             <DialogClose asChild>
-              <Button variant="ghost" size="icon">
+              <Button aria-label="Tutup" variant="ghost" size="icon">
                 <X className="w-4 h-4" />
               </Button>
             </DialogClose>

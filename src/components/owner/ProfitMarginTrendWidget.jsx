@@ -171,7 +171,7 @@ const ProfitMarginTrendWidget = () => {
           </div>
           <div className="min-w-0">
             <h3 className="text-base font-bold text-slate-800 tracking-tight">Tren Margin Profit Bulanan</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Analisa margin keuntungan bulan ke bulan</p>
+            <p className="text-xs text-slate-500 mt-0.5">Analisa margin keuntungan bulan ke bulan</p>
           </div>
         </div>
         <div className={cn("flex items-center gap-1.5 rounded-app bg-slate-50 p-1 shrink-0", isPWA && "w-full")}>
@@ -198,7 +198,7 @@ const ProfitMarginTrendWidget = () => {
         </div>
       ) : !hasAnyData ? (
         <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-          <Info className="w-5 h-5 text-slate-400 mx-auto mb-2" />
+          <Info className="w-5 h-5 text-slate-500 mx-auto mb-2" />
           <p className="text-sm text-slate-500">Belum ada data pemasukan/pengeluaran pada periode ini.</p>
         </div>
       ) : (
@@ -209,7 +209,7 @@ const ProfitMarginTrendWidget = () => {
               "rounded-app border p-3.5",
               (summary.current?.margin ?? 0) >= 0 ? "bg-indigo-50/60 border-indigo-100" : "bg-rose-50/60 border-rose-100"
             )}>
-              <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Margin Bulan Ini</p>
+              <p className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">Margin Bulan Ini</p>
               <div className="flex items-baseline gap-1.5 flex-wrap">
                 <p className={cn(
                   "text-xl font-black leading-none",
@@ -219,7 +219,7 @@ const ProfitMarginTrendWidget = () => {
                 </p>
                 {summary.marginDelta !== null && (
                   <span className={cn(
-                    "inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                    "inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full",
                     summary.marginDelta > 0 ? "bg-emerald-100 text-emerald-700" :
                     summary.marginDelta < 0 ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-500"
                   )}>
@@ -230,29 +230,29 @@ const ProfitMarginTrendWidget = () => {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">vs bulan lalu</p>
+              <p className="text-xs text-slate-500 mt-1">vs bulan lalu</p>
             </div>
 
             <div className="rounded-app border border-slate-100 bg-slate-50/60 p-3.5">
-              <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-1">Rata-rata Margin</p>
+              <p className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">Rata-rata Margin</p>
               <p className="text-xl font-black leading-none text-slate-700">{summary.avgMargin}%</p>
-              <p className="text-[11px] text-slate-400 mt-1">{monthsToShow} bulan terakhir</p>
+              <p className="text-xs text-slate-500 mt-1">{monthsToShow} bulan terakhir</p>
             </div>
 
             <div className="rounded-app border border-emerald-100 bg-emerald-50/60 p-3.5">
-              <p className="text-[10px] font-bold tracking-widest text-emerald-600/70 uppercase mb-1 flex items-center gap-1">
+              <p className="text-xs font-bold tracking-widest text-emerald-600/70 uppercase mb-1 flex items-center gap-1">
                 <Trophy className="w-3 h-3" /> Bulan Terbaik
               </p>
               <p className="text-xl font-black leading-none text-emerald-600">{summary.best?.margin ?? 0}%</p>
-              <p className="text-[11px] text-slate-400 mt-1 truncate">{summary.best?.monthLabel ?? '-'}</p>
+              <p className="text-xs text-slate-500 mt-1 truncate">{summary.best?.monthLabel ?? '-'}</p>
             </div>
 
             <div className="rounded-app border border-amber-100 bg-amber-50/60 p-3.5">
-              <p className="text-[10px] font-bold tracking-widest text-amber-600/70 uppercase mb-1 flex items-center gap-1">
+              <p className="text-xs font-bold tracking-widest text-amber-600/70 uppercase mb-1 flex items-center gap-1">
                 <TrendingDownIcon className="w-3 h-3" /> Bulan Terlemah
               </p>
               <p className="text-xl font-black leading-none text-amber-600">{summary.worst?.margin ?? 0}%</p>
-              <p className="text-[11px] text-slate-400 mt-1 truncate">{summary.worst?.monthLabel ?? '-'}</p>
+              <p className="text-xs text-slate-500 mt-1 truncate">{summary.worst?.monthLabel ?? '-'}</p>
             </div>
           </div>
 
@@ -311,8 +311,8 @@ const ProfitMarginTrendWidget = () => {
                     <span className="text-xs font-bold text-slate-600 w-16 shrink-0">{m.monthLabel}</span>
                     {delta !== null && (
                       <span className={cn(
-                        "inline-flex items-center gap-0.5 text-[10px] font-semibold shrink-0",
-                        delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-400"
+                        "inline-flex items-center gap-0.5 text-xs font-semibold shrink-0",
+                        delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-500"
                       )}>
                         {delta > 0 ? <TrendingUp className="w-3 h-3" /> : delta < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                         {delta > 0 ? '+' : ''}{delta}pp

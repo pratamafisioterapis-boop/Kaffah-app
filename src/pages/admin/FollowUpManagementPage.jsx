@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle, Gift } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { confirmAction } from '@/lib/confirmAction';
 
 const FollowUpManagementPage = () => {
     const [queueItems, setQueueItems] = useState([]);
@@ -116,7 +117,7 @@ const FollowUpManagementPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Yakin ingin menghapus item ini?")) return;
+        if (!await confirmAction("Yakin ingin menghapus item ini?")) return;
         
         const { success } = await deleteFollowUp(id);
         if (success) {
@@ -155,7 +156,7 @@ const FollowUpManagementPage = () => {
                   <div>
                     <p className="text-xs font-bold tracking-widest text-amber-300/80 uppercase mb-1">{useAuth().clinicName || ''}</p>
                     <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">Follow Up Management</h2>
-                    <p className="text-sm text-slate-400 mt-0.5">Kelola antrian pesan WhatsApp otomatis hari ini</p>
+                    <p className="text-sm text-slate-500 mt-0.5">Kelola antrian pesan WhatsApp otomatis hari ini</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -217,7 +218,7 @@ const FollowUpManagementPage = () => {
                 <TabsContent value={activeTab} className="mt-0">
                     {isLoading ? (
                         <div className="flex justify-center py-20">
-                            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                            <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
                         </div>
                     ) : filteredItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 bg-slate-50 rounded-app border-2 border-dashed border-slate-200">

@@ -15,7 +15,7 @@ const Progress = React.forwardRef(({ className, value, indicatorClassName, ...pr
     aria-valuenow={value}
   >
     <div
-      className={cn("h-full w-full flex-1 bg-slate-900 transition-all dark:bg-slate-50", indicatorClassName)}
+      className={cn("h-full w-full flex-1 bg-slate-900 transition-[color,background-color,border-color,box-shadow,transform,opacity] dark:bg-slate-50", indicatorClassName)}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </div>

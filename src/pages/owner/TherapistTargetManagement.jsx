@@ -239,7 +239,7 @@ const TherapistTargetManagement = () => {
                                         <TableRow key={item.id} className="hover:bg-slate-50/50">
                                             <TableCell className="font-medium text-slate-700">
                                                 <div className="flex items-center gap-2">
-                                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                                    <Calendar className="w-4 h-4 text-slate-500" />
                                                     <span className="whitespace-nowrap">{format(parseISO(item.start_date), 'dd MMM')} - {format(parseISO(item.end_date), 'dd MMM yyyy')}</span>
                                                 </div>
                                             </TableCell>
@@ -257,7 +257,7 @@ const TherapistTargetManagement = () => {
                                             <TableCell className="text-xs text-slate-500 max-w-[150px] truncate" title={Array.isArray(item.excluded_patient_types) ? item.excluded_patient_types.join(', ') : ''}>
                                                 {Array.isArray(item.excluded_patient_types) && item.excluded_patient_types.length > 0 
                                                     ? item.excluded_patient_types.join(', ') 
-                                                    : <span className="italic text-slate-400">- None -</span>}
+                                                    : <span className="italic text-slate-500">- None -</span>}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">

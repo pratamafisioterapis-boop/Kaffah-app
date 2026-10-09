@@ -88,7 +88,7 @@ const SundaySwapReview = ({ onChanged, className = '' }) => {
       {waiting > 0 && <p className="text-xs text-slate-500">{waiting} pengajuan masih menunggu konfirmasi terapis pengganti.</p>}
 
       {pending.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
+        <div className="flex flex-col items-center justify-center py-8 text-slate-500 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
           <Inbox className="w-8 h-8 mb-2 opacity-40" />
           <p className="text-sm font-medium">Tidak ada tukar jadwal yang menunggu persetujuan</p>
         </div>

@@ -175,7 +175,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                                  )}
                               </div>
                               {parseReason(item.reason).note && (
-                                 <p className="text-xs text-slate-400 mt-1 italic">
+                                 <p className="text-xs text-slate-500 mt-1 italic">
                                     "{parseReason(item.reason).note}"
                                  </p>
                               )}

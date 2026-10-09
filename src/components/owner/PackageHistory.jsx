@@ -103,7 +103,7 @@ const PackageHistory = () => {
               <SelectItem value="pending">Pending</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={fetchPackages}>
+          <Button aria-label="Muat ulang" variant="outline" size="icon" onClick={fetchPackages}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>

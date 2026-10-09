@@ -27,7 +27,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, color, loading, additi
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-app p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden"
+    className="bg-white rounded-app p-6 shadow-sm border border-slate-200 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow relative overflow-hidden"
   >
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -42,7 +42,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, color, loading, additi
         )}
         <p className="text-xs text-slate-500 mt-1 font-medium">{subtitle}</p>
         {additionalInfo && (
-          <div className="mt-2 text-xs text-slate-400">{additionalInfo}</div>
+          <div className="mt-2 text-xs text-slate-500">{additionalInfo}</div>
         )}
       </div>
       <div className={`p-3 rounded-app ${color} bg-opacity-10 backdrop-blur-sm`}>
@@ -253,17 +253,17 @@ const OwnerOperationalMetrics = () => {
              <CardHeader><CardTitle>Trend Kunjungan Harian</CardTitle></CardHeader>
              <CardContent>
                  <div className="h-48 flex items-end gap-1 overflow-x-auto pb-2 scrollbar-thin">
-                     {trendData.length === 0 ? <p className="w-full text-center text-slate-400">No data</p> : 
+                     {trendData.length === 0 ? <p className="w-full text-center text-slate-500">No data</p> : 
                         trendData.map((d, i) => (
                            <div key={i} className="flex-1 flex flex-col justify-end items-center group min-w-[20px]">
                                <div className="w-full bg-app-accent-bright rounded-t-sm hover:bg-app-accent relative" style={{ height: `${(d.count / Math.max(...trendData.map(x=>x.count))) * 100}%` }}>
-                                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 z-10 whitespace-nowrap">{d.date}: {d.count}</div>
+                                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 z-10 whitespace-nowrap">{d.date}: {d.count}</div>
                                </div>
                            </div>
                         ))
                      }
                  </div>
-                 <div className="flex justify-between text-xs text-slate-400 mt-2"><span>{dateRange.startDate}</span><span>{dateRange.endDate}</span></div>
+                 <div className="flex justify-between text-xs text-slate-500 mt-2"><span>{dateRange.startDate}</span><span>{dateRange.endDate}</span></div>
              </CardContent>
          </Card>
 

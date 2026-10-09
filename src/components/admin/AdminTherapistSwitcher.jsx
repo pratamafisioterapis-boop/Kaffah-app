@@ -116,7 +116,7 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
               <p className="text-xs text-app-muted text-center py-6">Belum ada terapis yang diaktifkan oleh Super Admin.</p>
             ) : (
               <div>
-                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">Terapis</p>
+                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-app-muted">Terapis</p>
                 {therapists.map((t) => (
                   <button
                     key={t.id}

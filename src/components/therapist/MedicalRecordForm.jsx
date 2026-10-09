@@ -625,7 +625,7 @@ if (isCreate) {
                 notFoundText="Diagnosa tidak ditemukan. Hubungi owner untuk menambahkan."
                 placeholder="Pilih diagnosa..."
               />
-              <p className="text-[11px] text-slate-400 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
+              <p className="text-xs text-slate-500 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
             </div>
 
             {/* SOAP Fields */}
@@ -636,21 +636,21 @@ if (isCreate) {
                   className={`bg-white border-l-4 ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm`}>
+                    <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
                       {field.short}
                     </span>
                     <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
                     {field.key === 'assessment' && (
                       <span className="ml-auto flex items-center gap-1.5">
                         {assessmentAuto ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
                             <Sparkles className="h-3 w-3" /> {isDiagnosisMode ? 'Otomatis Diagnosis' : 'Otomatis ICF'}
                           </span>
                         ) : canAutoAssess && (
                           <button
                             type="button"
                             onClick={regenerateAssessment}
-                            className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-violet-700 hover:bg-violet-50"
+                            className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
                           >
                             <RefreshCw className="h-3 w-3" /> {isDiagnosisMode ? 'Isi ulang dari diagnosa' : 'Susun ulang dari S & O'}
                           </button>
@@ -661,7 +661,7 @@ if (isCreate) {
                       <button
                         type="button"
                         onClick={() => setProgressDialog(true)}
-                        className="ml-auto inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700 hover:bg-teal-100"
+                        className="ml-auto inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-100"
                       >
                         <TrendingUp className="h-3.5 w-3.5" /> Update kondisi
                       </button>
@@ -735,18 +735,18 @@ if (isCreate) {
             {/* Edukasi Pasien */}
             <div className={`bg-white border-t border-l-4 border-l-emerald-400 ${isPWA ? 'px-4 py-4' : 'px-6 py-5'}`}>
               <div className="flex items-center gap-2 mb-2.5">
-                <span className="w-6 h-6 rounded-app-sm bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">E</span>
+                <span className="w-6 h-6 rounded-app-sm bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">E</span>
                 <label className="text-sm font-semibold text-emerald-700">Edukasi Pasien</label>
                 <span className="ml-auto flex items-center gap-1.5">
                   {educationAuto ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                       <Sparkles className="h-3 w-3" /> Dari template diagnosa
                     </span>
                   ) : diagnosisLabels.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setEducationAuto(true)}
-                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50"
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
                     >
                       <RefreshCw className="h-3 w-3" /> Susun ulang dari diagnosa
                     </button>

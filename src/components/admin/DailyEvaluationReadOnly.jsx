@@ -112,28 +112,28 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
             {!isPWA && (
               <Button onClick={handleExport} disabled={isExporting} size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-white"><Download className="w-4 h-4 mr-2" />{isExporting ? 'Exporting...' : 'Export CSV'}</Button>
             )}
-            <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Cari nama pasien atau No RM..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 bg-white border-slate-200 focus:border-app-accent-bright focus:ring-app-accent-bright h-9" /></div>
+            <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" /><Input placeholder="Cari nama pasien atau No RM..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 bg-white border-slate-200 focus:border-app-accent-bright focus:ring-app-accent-bright h-9" /></div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
           {filteredGroups.length === 0 ? ( <div className="col-span-full text-center py-16 bg-slate-50 rounded-app border border-dashed border-slate-200"><div className="mx-auto h-12 w-12 text-slate-300 mb-3"><ClipboardList className="h-full w-full" /></div><p className="text-slate-900 font-medium">Tidak ada data ditemukan</p><p className="text-sm text-slate-500 mt-1">{searchTerm ? 'Coba kata kunci pencarian lain.' : 'Belum ada evaluasi SOAP yang tercatat.'}</p></div> ) : (
             filteredGroups.map((group) => (
-              <Card key={group.patient.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white" onClick={() => handlePatientClick(group)}>
+              <Card key={group.patient.id} className="[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 cursor-pointer border-slate-200 group overflow-hidden bg-white" onClick={() => handlePatientClick(group)}>
                 <div className="h-1 bg-gradient-to-r from-app-accent-bright to-cyan-400 w-full" />
                 <CardContent className="p-3 sm:p-5">
                   <div className="flex justify-between items-start mb-2 sm:mb-4">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm sm:text-lg shadow-sm border border-blue-200">{group.patient.full_name.charAt(0).toUpperCase()}</div>
-                      <div className="flex-1 min-w-0"><h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate pr-2" title={group.patient.full_name}>{group.patient.full_name}</h3><p className="text-[10px] sm:text-xs text-slate-500 font-mono bg-slate-100 inline-block px-1.5 py-0.5 rounded mt-0.5">{group.patient.medical_record_number || 'No RM'}</p></div>
+                      <div className="flex-1 min-w-0"><h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate pr-2" title={group.patient.full_name}>{group.patient.full_name}</h3><p className="text-xs text-slate-500 font-mono bg-slate-100 inline-block px-1.5 py-0.5 rounded mt-0.5">{group.patient.medical_record_number || 'No RM'}</p></div>
                     </div>
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 whitespace-nowrap text-[10px] sm:text-xs shrink-0">{group.count} Catatan</Badge>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 whitespace-nowrap text-xs shrink-0">{group.count} Catatan</Badge>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2.5 text-xs sm:text-sm text-slate-600 mb-2 sm:mb-5 bg-slate-50 p-2 sm:p-3 rounded-app-sm border border-slate-100">
-                    <div className="flex items-center gap-2 sm:gap-2.5"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" /><span className="truncate">Terakhir: <span className="font-medium text-slate-900">{format(new Date(group.lastDate), 'dd MMM yyyy', { locale: id })}</span></span></div>
-                    <div className="flex items-center gap-2 sm:gap-2.5"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 flex-shrink-0" /><span className="truncate">Oleh: {group.records[0]?.therapist?.full_name || 'Terapis'}</span></div>
+                    <div className="flex items-center gap-2 sm:gap-2.5"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 flex-shrink-0" /><span className="truncate">Terakhir: <span className="font-medium text-slate-900">{format(new Date(group.lastDate), 'dd MMM yyyy', { locale: id })}</span></span></div>
+                    <div className="flex items-center gap-2 sm:gap-2.5"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 flex-shrink-0" /><span className="truncate">Oleh: {group.records[0]?.therapist?.full_name || 'Terapis'}</span></div>
                   </div>
-                  <Button className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 justify-between group-hover:shadow-sm transition-all h-8 sm:h-9 text-xs sm:text-sm" variant="outline" size="sm"><span className="font-medium">Lihat Detail SOAP</span><ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" /></Button>
+                  <Button className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 justify-between group-hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] h-8 sm:h-9 text-xs sm:text-sm" variant="outline" size="sm"><span className="font-medium">Lihat Detail SOAP</span><ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" /></Button>
                 </CardContent>
               </Card>
             ))

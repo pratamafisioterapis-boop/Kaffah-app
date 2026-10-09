@@ -58,21 +58,21 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-slate-900 text-base leading-tight truncate">{patient.full_name}</h2>
-              <p className="text-slate-400 text-xs">{patient.medical_record_number || patient.rm_number || '-'}</p>
+              <p className="text-slate-500 text-xs">{patient.medical_record_number || patient.rm_number || '-'}</p>
             </div>
           </div>
           <div className="flex gap-2">
             <div className="flex-1 bg-slate-50 border border-slate-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-slate-800">{timeline.length}</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Total Kunjungan</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Kunjungan</p>
             </div>
             <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-emerald-600">{filledCount}</p>
-              <p className="text-[10px] text-emerald-500 font-medium mt-0.5">Sudah SOAP</p>
+              <p className="text-xs text-emerald-500 font-medium mt-0.5">Sudah SOAP</p>
             </div>
             <div className="flex-1 bg-rose-50 border border-rose-100 rounded-app px-3 py-2.5 text-center">
               <p className="text-xl font-bold text-rose-600">{unfilledCount}</p>
-              <p className="text-[10px] text-rose-400 font-medium mt-0.5">Belum SOAP</p>
+              <p className="text-xs text-rose-400 font-medium mt-0.5">Belum SOAP</p>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
         {/* List kunjungan */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 bg-slate-50">
           {timeline.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm">
+            <div className="text-center py-10 text-slate-500 text-sm">
               Belum ada riwayat kunjungan untuk pasien ini.
             </div>
           ) : timeline.map((item) => (

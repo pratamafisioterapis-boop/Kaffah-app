@@ -163,11 +163,9 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
     try {
        // DEBUG: Log input time
        const slotTime = selectedSlot.slot_start_time.substring(0, 5);
-       console.log(`[Scheduler] Selected Date: ${format(selectedDate, 'yyyy-MM-dd')}, Time: ${slotTime} (Asia/Jakarta)`);
 
        // Use centralized utility to handle +07:00 construction
        const appointmentDate = constructAppointmentDateTime(selectedDate, slotTime);
-       console.log(`[Scheduler] Constructed ISO (UTC): ${appointmentDate}`);
 
        if (!appointmentDate) {
            throw new Error("Gagal mengonversi waktu booking (Invalid Date).");
@@ -201,12 +199,10 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
          patient_id: bookingType === 'registered' ? selectedPatientId : null
        };
 
-       console.log("[Scheduler] Payload to submit:", payload);
 
        const { data, error } = await createAppointment(payload);
        if (error) throw error;
        
-       console.log("[Scheduler] Success response:", data);
 
        toast({ title: "Appointment Berhasil Dibuat!", className: "bg-green-50 border-green-200" });
        navigate('/therapist/booking');
@@ -261,11 +257,11 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
                          <button
                            key={i}
                            onClick={() => { setSelectedDate(date); setSelectedSlot(null); }}
-                           className={`flex-shrink-0 w-14 h-16 rounded-app-sm flex flex-col items-center justify-center border transition-all ${
+                           className={`flex-shrink-0 w-14 h-16 rounded-app-sm flex flex-col items-center justify-center border transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                               isSelected ? 'bg-app-accent text-white border-app-accent' : 'bg-white border-slate-200 hover:border-app-accent/40'
                            }`}
                          >
-                            <span className="text-[10px] uppercase">{format(date, 'EEE', {locale: idLocale})}</span>
+                            <span className="text-xs uppercase">{format(date, 'EEE', {locale: idLocale})}</span>
                             <span className="font-bold text-lg">{format(date, 'd')}</span>
                          </button>
                        )
@@ -288,19 +284,19 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
                          </p>
                      </div>
                   ) : availableSlots.length === 0 ? (
-                    <div className="text-center py-4 text-slate-400 text-sm">Tidak ada slot tersedia.</div>
+                    <div className="text-center py-4 text-slate-500 text-sm">Tidak ada slot tersedia.</div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
                        {availableSlots.map((slot, idx) => (
                           <button
                             key={idx}
                             onClick={() => setSelectedSlot(slot)}
-                            className={`py-2 px-1 rounded text-sm border transition-all flex flex-col items-center justify-center gap-1 ${
+                            className={`py-2 px-1 rounded text-sm border transition-[color,background-color,border-color,box-shadow,transform,opacity] flex flex-col items-center justify-center gap-1 ${
                                selectedSlot?.id === slot.id ? 'bg-blue-100 border-blue-500 text-blue-700 font-medium' : 'bg-white border-slate-200 hover:bg-slate-50'
                             }`}
                           >
                              <span className="font-bold">{slot.slot_start_time.slice(0,5)}</span>
-                             <span className="text-[10px] text-slate-500">{slot.duration_minutes || 60}m</span>
+                             <span className="text-xs text-slate-500">{slot.duration_minutes || 60}m</span>
                           </button>
                        ))}
                     </div>
@@ -316,14 +312,14 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
                <CardContent className="space-y-4">
                   <div className="flex bg-slate-100 p-1 rounded-app-sm">
                      <button 
-                       className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${bookingType === 'registered' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                       className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] ${bookingType === 'registered' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                        onClick={() => setBookingType('registered')}
                        disabled={!!leaveStatus?.isOnLeave}
                      >
                        Pasien Terdaftar
                      </button>
                      <button 
-                       className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${bookingType === 'guest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                       className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-[color,background-color,border-color,box-shadow,transform,opacity] ${bookingType === 'guest' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                        onClick={() => setBookingType('guest')}
                        disabled={!!leaveStatus?.isOnLeave}
                      >

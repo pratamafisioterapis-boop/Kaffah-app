@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload }) => {
     <div className="rounded-app border border-slate-100 bg-white px-3 py-2 shadow-lg text-xs">
       <p className="font-bold text-app-ink mb-1">{item?.name}</p>
       <p className="text-slate-500">
-        {formatCurrency(item?.value)} <span className="text-slate-400">({item?.pct}%)</span>
+        {formatCurrency(item?.value)} <span className="text-slate-500">({item?.pct}%)</span>
       </p>
     </div>
   );
@@ -108,11 +108,11 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
             </div>
             <div className="min-w-0">
               <h3 className="text-app-ink font-bold text-base tracking-tight">Pengeluaran per Kategori</h3>
-              <p className="text-slate-400 text-xs mt-0.5">Rincian biaya berdasarkan kategori &amp; sub-kategori</p>
+              <p className="text-slate-500 text-xs mt-0.5">Rincian biaya berdasarkan kategori &amp; sub-kategori</p>
             </div>
           </div>
           {categories.length > 0 && (
-            <span className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-rose-600">
+            <span className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-rose-600">
               {categories.length} kategori
             </span>
           )}
@@ -150,7 +150,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Total</p>
+                  <p className="text-xs font-bold tracking-widest text-slate-500 uppercase">Total</p>
                   <p className="text-lg font-black text-app-ink tabular-nums">{formatShort(total)}</p>
                 </div>
               </div>
@@ -181,14 +181,14 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${cat.pct}%` }}
-                              transition={{ duration: 0.7, ease: 'easeOut' }}
+                              transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
                               className="h-full rounded-full"
                               style={{ backgroundColor: cat.color }}
                             />
                           </div>
                         </div>
-                        <span className="text-[11px] font-bold text-slate-400 w-9 text-right shrink-0">{cat.pct}%</span>
-                        <ChevronDown className={cn('w-4 h-4 text-slate-400 shrink-0 transition-transform', isOpen && 'rotate-180')} />
+                        <span className="text-xs font-bold text-slate-500 w-9 text-right shrink-0">{cat.pct}%</span>
+                        <ChevronDown className={cn('w-4 h-4 text-slate-500 shrink-0 transition-transform', isOpen && 'rotate-180')} />
                       </button>
 
                       <AnimatePresence initial={false}>
@@ -197,16 +197,16 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                            transition={{ duration: 0.25, ease: [0.77, 0, 0.175, 1] }}
                             className="overflow-hidden"
                           >
                             <div className="px-3 pb-3 pl-8 space-y-2 border-t border-slate-200 pt-2.5">
                               {cat.subcategories.map((sub) => (
                                 <div key={sub.name} className="flex items-center gap-2">
-                                  <Receipt className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <Receipt className="w-3 h-3 text-slate-500 shrink-0" />
                                   <span className="text-xs text-slate-500 truncate flex-1">{sub.name}</span>
                                   <span className="text-xs font-semibold text-app-ink tabular-nums shrink-0">{formatCurrency(sub.amount)}</span>
-                                  <span className="text-[10px] text-slate-400 w-8 text-right shrink-0">{sub.pct}%</span>
+                                  <span className="text-xs text-slate-500 w-8 text-right shrink-0">{sub.pct}%</span>
                                 </div>
                               ))}
                             </div>

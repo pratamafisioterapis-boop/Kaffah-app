@@ -205,7 +205,7 @@ const WhatsAppSettings = () => {
                 <TabsContent value="templates" className="space-y-4 mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {templates.map(template => (
-                            <Card key={template.id} className="hover:shadow-md transition-shadow">
+                            <Card key={template.id} className="[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <div className="flex items-center gap-2">
                                         {getCategoryIcon(template.category)}
@@ -311,15 +311,15 @@ const WhatsAppSettings = () => {
                                     <Badge 
                                         key={v.value} 
                                         variant="secondary" 
-                                        className="cursor-pointer hover:bg-slate-200 active:scale-95 transition-all"
+                                        className="cursor-pointer hover:bg-slate-200 active:scale-[0.97] transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                                         onClick={() => insertVariable(v.value)}
                                         title={v.desc}
                                     >
-                                        {v.label} <span className="text-slate-400 ml-1 text-[10px]">{v.value}</span>
+                                        {v.label} <span className="text-slate-500 ml-1 text-xs">{v.value}</span>
                                     </Badge>
                                 ))}
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-1">Click a variable to insert it into the template.</p>
+                            <p className="text-xs text-slate-500 mt-1">Click a variable to insert it into the template.</p>
                         </div>
                     </div>
 

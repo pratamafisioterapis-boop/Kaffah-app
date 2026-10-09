@@ -21,6 +21,7 @@ import {
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
+import { confirmAction } from '@/lib/confirmAction';
 
 const KIND_META = {
   choice: { label: 'Pilihan', icon: ListChecks, hint: 'Terapis tinggal klik salah satu / beberapa pilihan' },
@@ -111,7 +112,7 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
               placeholder="sifat_nyeri"
               onChange={(e) => { setKeyTouched(true); setForm((f) => ({ ...f, key: slugify(e.target.value) })); }}
             />
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               Tulis <code className="rounded bg-slate-100 px-1">{`{{${form.key || 'kode'}}}`}</code> di template. Huruf kecil, angka, garis bawah.
               {variable && ' Kode tidak bisa diubah agar template lama tidak rusak.'}
             </p>
@@ -134,7 +135,7 @@ const VariableDialog = ({ open, onClose, variable, onSaved }) => {
                 </button>
               ))}
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">{KIND_META[form.kind].hint}</p>
+            <p className="mt-1 text-xs text-slate-500">{KIND_META[form.kind].hint}</p>
           </div>
           {form.kind === 'choice' && (
             <>
@@ -201,18 +202,18 @@ const RequestsReviewPanel = ({ requests, diagnoses, onReviewed }) => {
           <div key={r.id} className="space-y-2 rounded-app border border-amber-200 bg-white p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-slate-900">{diagnosis?.label || 'Diagnosa'}</span>
-              <Badge variant="outline" className="text-[10px]">{FIELD_LABEL[r.field]}</Badge>
-              <span className="text-xs text-slate-400">
+              <Badge variant="outline" className="text-xs">{FIELD_LABEL[r.field]}</Badge>
+              <span className="text-xs text-slate-500">
                 oleh {r.requested_by_name || 'Terapis'} · {new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
               </span>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Saat ini</div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Saat ini</div>
                 <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-app-sm bg-slate-50 p-2 text-xs text-slate-600">{before || '(kosong)'}</pre>
               </div>
               <div>
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Usulan</div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-600">Usulan</div>
                 <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-app-sm bg-emerald-50 p-2 text-xs text-slate-700">{r.proposed_template || '(dihapus / kosong)'}</pre>
               </div>
             </div>
@@ -293,15 +294,15 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
   const current = selected ? initialDraft(selected, field) : '';
   const dirty = selected ? draft !== current : false;
 
-  const select = (d) => {
-    if (dirty && !window.confirm('Perubahan belum disimpan. Pindah diagnosa?')) return;
+  const select = async (d) => {
+    if (dirty && !await confirmAction('Perubahan belum disimpan. Pindah diagnosa?')) return;
     setSelectedId(d.id);
     setDraft(initialDraft(d, field));
   };
 
-  const switchField = (f) => {
+  const switchField = async (f) => {
     if (f === field) return;
-    if (dirty && !window.confirm('Perubahan belum disimpan. Pindah ke template lain?')) return;
+    if (dirty && !await confirmAction('Perubahan belum disimpan. Pindah ke template lain?')) return;
     setField(f);
     setDraft(selected ? initialDraft(selected, f) : '');
     setOnlyEmpty(false);
@@ -367,7 +368,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
   };
 
   const cancelRequest = async () => {
-    if (!pendingRequest || !window.confirm('Batalkan pengajuan ini?')) return;
+    if (!pendingRequest || !await confirmAction('Batalkan pengajuan ini?')) return;
     const { error } = await cancelSoapTemplateRequest(pendingRequest.id);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal membatalkan', description: error.message });
@@ -395,7 +396,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
   };
 
   const removeVariable = async (v) => {
-    if (!window.confirm(`Hapus variabel "${v.label}"? Template yang memakai {{${v.key}}} akan menampilkan isian teks biasa.`)) return;
+    if (!await confirmAction(`Hapus variabel "${v.label}"? Template yang memakai {{${v.key}}} akan menampilkan isian teks biasa.`)) return;
     const { error } = await deleteSubjectiveVariable(v.id);
     if (error) toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
     else load();
@@ -424,7 +425,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
             {requestMode
               ? 'Usulkan perubahan template Subjective dan Objective. Perubahan baru berlaku setelah disetujui owner.'
               : 'Atur template Subjective dan Objective tiap diagnosa. Titik-titik dan pilihan otomatis menjadi isian klik-pilih bagi terapis; bagian yang tidak diisi tidak ikut tampil.'}
-            <span className="ml-1 text-slate-400">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
+            <span className="ml-1 text-slate-500">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
           </p>
         </div>
       )}
@@ -443,8 +444,8 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
               return (
                 <div key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
                   <span className="font-medium text-slate-800">{diagnosis?.label || 'Diagnosa'}</span>
-                  <Badge variant="outline" className="text-[10px]">{FIELD_LABEL[r.field]}</Badge>
-                  <Badge variant="outline" className={cn('text-[10px]', meta.className)}>{meta.label}</Badge>
+                  <Badge variant="outline" className="text-xs">{FIELD_LABEL[r.field]}</Badge>
+                  <Badge variant="outline" className={cn('text-xs', meta.className)}>{meta.label}</Badge>
                   {r.review_note && <span className="text-xs text-slate-500">&ldquo;{r.review_note}&rdquo;</span>}
                 </div>
               );
@@ -480,7 +481,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
           )}
         </div>
         {variables.length === 0 ? (
-          <p className="rounded-app border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+          <p className="rounded-app border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500">
             {requestMode ? 'Belum ada variabel.' : <>Belum ada variabel. Contoh: &quot;Sifat nyeri&quot; dengan pilihan tajam / tumpul / terbakar.</>}
           </p>
         ) : (
@@ -492,16 +493,16 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   <Meta.icon className="h-4 w-4 shrink-0 text-app-accent" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-slate-800">{v.label}</div>
-                    <div className="truncate text-[11px] text-slate-400">
+                    <div className="truncate text-xs text-slate-500">
                       <code>{`{{${v.key}}}`}</code>{v.kind === 'choice' && ` · ${(v.options || []).join(', ')}`}
                     </div>
                   </div>
                   {!requestMode && (
                     <>
-                      <button type="button" aria-label="Edit" className="rounded-app-sm p-1.5 text-slate-400 hover:bg-slate-100 hover:text-app-accent" onClick={() => setVarDialog({ open: true, variable: v })}>
+                      <button type="button" aria-label="Edit" className="rounded-app-sm p-1.5 text-slate-500 hover:bg-slate-100 hover:text-app-accent" onClick={() => setVarDialog({ open: true, variable: v })}>
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button type="button" aria-label="Hapus" className="rounded-app-sm p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
+                      <button type="button" aria-label="Hapus" className="rounded-app-sm p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => removeVariable(v)}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
@@ -532,7 +533,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
               </div>
             )}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari diagnosa..." className="pl-9" />
             </div>
             <label className="flex items-center justify-between text-xs text-slate-500">
@@ -542,7 +543,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
           </div>
           <div className="max-h-[60vh] divide-y overflow-y-auto">
             {filtered.length === 0 && (
-              <p className="p-4 text-center text-sm text-slate-400">
+              <p className="p-4 text-center text-sm text-slate-500">
                 {showMine && !query && !onlyEmpty
                   ? 'Belum ada diagnosa yang tercatat di rekap Anda. Lihat tab "Semua diagnosa".'
                   : 'Tidak ada diagnosa.'}
@@ -561,12 +562,12 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 <span className="min-w-0 truncate">
                   {d.label}
                   {requestMode && usageById[d.id] > 0 && (
-                    <span className="ml-1.5 text-[11px] font-normal text-slate-400">{usageById[d.id]}×</span>
+                    <span className="ml-1.5 text-xs font-normal text-slate-500">{usageById[d.id]}×</span>
                   )}
                 </span>
                 {d[field]
                   ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  : <Badge variant="outline" className="shrink-0 text-[10px] text-slate-400">kosong</Badge>}
+                  : <Badge variant="outline" className="shrink-0 text-xs text-slate-500">kosong</Badge>}
               </button>
             ))}
           </div>
@@ -574,7 +575,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
 
         <div className={cn('space-y-3', !selected && 'hidden lg:block')}>
           {!selected ? (
-            <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 rounded-app-lg border border-dashed border-slate-200 p-8 text-center text-slate-400">
+            <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 rounded-app-lg border border-dashed border-slate-200 p-8 text-center text-slate-500">
               <FileText className="h-8 w-8" />
               <p className="text-sm">Pilih diagnosa di sebelah kiri untuk mengedit template-nya.</p>
             </div>
@@ -587,7 +588,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-900">{selected.label}</div>
-                    <div className="text-xs text-slate-400">Template {isObjective ? 'Objective' : 'Subjective'}</div>
+                    <div className="text-xs text-slate-500">Template {isObjective ? 'Objective' : 'Subjective'}</div>
                   </div>
                 </div>
 
@@ -610,7 +611,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 </div>
                 {isObjective && (
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Formulir</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Formulir</span>
                     {FORM_LIST.map((f) => (
                       <button
                         key={f.id}
@@ -625,7 +626,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 )}
                 {variables.length > 0 && (
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Variabel</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Variabel</span>
                     {variables.map((v) => (
                       <button
                         key={v.id}
@@ -648,7 +649,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   className="font-mono text-[13px] leading-relaxed"
                   placeholder={'**Keluhan Utama:** Nyeri leher sejak (.....) hari/minggu/bulan yang lalu.\n**Riwayat Penyakit Sekarang:** Kesemutan (ada/tidak). Sifat nyeri {{sifat_nyeri}}.'}
                 />
-                <ul className="mt-2 space-y-0.5 text-[11px] text-slate-400">
+                <ul className="mt-2 space-y-0.5 text-xs text-slate-500">
                   <li>Satu bagian per baris, diawali <code className="rounded bg-slate-100 px-1">**Judul:**</code></li>
                   {isObjective && <li><code className="rounded bg-slate-100 px-1">(+/-)</code> positif/negatif · <code className="rounded bg-slate-100 px-1">(.....)/10</code> skala klik · <code className="rounded bg-slate-100 px-1">[ ... ]</code> kelompok opsional · <code className="rounded bg-slate-100 px-1">{'{{form:barthel}}'}</code> pop-up formulir · <code className="rounded bg-slate-100 px-1">|</code> pemisah item</li>}
                   <li><code className="rounded bg-slate-100 px-1">(.....)</code> isian teks · <code className="rounded bg-slate-100 px-1">(a/b/c)</code> pilihan · <code className="rounded bg-slate-100 px-1">(ada/tidak)</code> ya/tidak · <code className="rounded bg-slate-100 px-1">hari/minggu/bulan</code> durasi · <code className="rounded bg-slate-100 px-1">{'{{kode}}'}</code> variabel</li>
@@ -692,7 +693,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                     compact
                   />
                 ) : (
-                  <p className="p-6 text-center text-sm text-slate-400">Tulis template di atas untuk melihat pratinjau.</p>
+                  <p className="p-6 text-center text-sm text-slate-500">Tulis template di atas untuk melihat pratinjau.</p>
                 )}
               </div>
             </>

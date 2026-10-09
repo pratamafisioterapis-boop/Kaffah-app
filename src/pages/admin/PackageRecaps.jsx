@@ -172,7 +172,7 @@ export const PackageRecapsContent = () => {
     };
 
     const getSisaHariColor = (days) => {
-        if (days === null) return 'text-slate-400';
+        if (days === null) return 'text-slate-500';
         if (days <= 0) return 'text-red-600 font-bold';
         if (days <= 7) return 'text-orange-600 font-bold';
         return 'text-green-600 font-bold';
@@ -280,7 +280,7 @@ export const PackageRecapsContent = () => {
                 <div className="flex items-center gap-1.5">
                     <button
                         type="button"
-                        className="flex items-center justify-center h-9 w-9 rounded-app bg-slate-100 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
+                        className="flex items-center justify-center h-9 w-9 rounded-app bg-slate-100 text-slate-500 disabled:opacity-60 disabled:cursor-not-allowed active:bg-slate-200 transition-colors"
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     >
@@ -373,7 +373,7 @@ export const PackageRecapsContent = () => {
                         <div className="space-y-1.5 sm:space-y-2">
                             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cari Pasien</Label>
                             <div className="relative">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <Input
                                     placeholder="Ketik nama pasien..."
                                     value={searchTerm}
@@ -438,7 +438,7 @@ export const PackageRecapsContent = () => {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16">
                             <Loader2 className="w-8 h-8 animate-spin text-app-accent-bright mb-3" />
-                            <p className="text-sm text-slate-400">Memuat data paket...</p>
+                            <p className="text-sm text-slate-500">Memuat data paket...</p>
                         </div>
                     ) : paginatedPackages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 bg-white rounded-app-lg border border-slate-200">
@@ -462,18 +462,18 @@ export const PackageRecapsContent = () => {
                                     {/* Baris 2: Sesi & Sisa Hari */}
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 bg-slate-50 rounded-app p-3 text-center border border-slate-100">
-                                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Sesi</p>
+                                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Sesi</p>
                                             <p className="text-base font-bold text-slate-800 font-mono mt-0.5">
-                                                {pkg.sessions_used}<span className="text-slate-400 font-normal">/{pkg.total_sessions}</span>
+                                                {pkg.sessions_used}<span className="text-slate-500 font-normal">/{pkg.total_sessions}</span>
                                             </p>
                                         </div>
                                         <div className="flex-1 bg-app-soft rounded-app p-3 text-center border border-app-accent/15">
-                                            <p className="text-[10px] text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
+                                            <p className="text-xs text-app-accent-bright font-medium uppercase tracking-wide">Sisa Sesi</p>
                                             <p className="text-base font-bold text-app-accent mt-0.5">{pkg.sessions_remaining}</p>
                                         </div>
                                         {sisaHari !== null && (
                                             <div className={cn("flex-1 rounded-app p-3 text-center border", getSisaHariColor(sisaHari))}>
-                                                <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
+                                                <p className="text-xs font-medium uppercase tracking-wide opacity-70">Sisa Hari</p>
                                                 <p className="text-base font-bold mt-0.5">{sisaHari}</p>
                                             </div>
                                         )}
@@ -482,7 +482,7 @@ export const PackageRecapsContent = () => {
                                     {/* Baris 3: Tgl Selesai + Aksi */}
                                     <div className="flex flex-col gap-2 border-t border-slate-100 pt-2">
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap overflow-hidden">
-                                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                                             <span className="truncate">{pkg.extended_until
                                                 ? <span className="text-orange-600 font-semibold">{formatDateIndonesian(pkg.extended_until)}</span>
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
@@ -497,7 +497,7 @@ export const PackageRecapsContent = () => {
                                             <Button size="sm" variant="outline" className="h-7 text-xs border-app-accent/25 text-app-accent-hover whitespace-nowrap shrink-0" onClick={(e) => handleEditStatusClick(e, pkg)}>
                                                 Ubah Status
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 shrink-0" onClick={(e) => handleDeleteClick(e, pkg)}>
+                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-red-600 shrink-0" onClick={(e) => handleDeleteClick(e, pkg)}>
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </Button>
                                         </div>
@@ -563,7 +563,7 @@ export const PackageRecapsContent = () => {
                                                     <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50" onClick={(e) => handleEditStatusClick(e, pkg)}>
                                                         Ubah Status
                                                     </Button>
-                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
+                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </div>

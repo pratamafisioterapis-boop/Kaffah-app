@@ -35,8 +35,6 @@ const MIN_DURATION = 60; // 🔥 Minimum 60 menit
 const ManualBookingForm = ({ therapist, date, onClose, onSuccess, leaveStatus = 'aktif' }) => {
   const { toast } = useToast();
   const { user, userDetails } = useAuth();
-  console.log("MANUAL FORM USER", user);
-console.log("MANUAL FORM USERDETAILS", userDetails);
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [patientSearch, setPatientSearch] = useState('');
@@ -261,8 +259,6 @@ if (pkg) {
           await deleteFollowUpQueueEntry(existingQueue.id);
         }
       }
-console.log("AUTH USER", user);
-console.log("AUTH DETAILS", userDetails);
 
 console.log({
   action_by: user?.id,
@@ -459,7 +455,7 @@ const handleConfirmRecurring = async () => {
       <div className="space-y-2">
         <Label>Jam Mulai</Label>
         <div className="relative">
-          <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
           <Input
             type="time"
             className="pl-9"
@@ -480,7 +476,7 @@ const handleConfirmRecurring = async () => {
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'registered' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-all",
+            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity]",
             formData.patient_type === 'registered' ? "bg-white text-app-ink shadow-sm" : "text-slate-500"
           )}
         >
@@ -490,7 +486,7 @@ const handleConfirmRecurring = async () => {
           onClick={() => setFormData(prev => ({ ...prev, patient_type: 'guest' }))}
           disabled={isLeave}
           className={cn(
-            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-all",
+            "flex-1 text-xs font-semibold py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity]",
             formData.patient_type === 'guest' ? "bg-white text-app-ink shadow-sm" : "text-slate-500"
           )}
         >
@@ -545,7 +541,7 @@ const handleConfirmRecurring = async () => {
           </div>
         ))
       ) : (
-        <div className="p-2 text-gray-400 text-sm">
+        <div className="p-2 text-gray-500 text-sm">
           Tidak ditemukan
         </div>
       )}

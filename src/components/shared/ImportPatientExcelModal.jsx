@@ -226,7 +226,7 @@ const ImportPatientExcelModal = ({ isOpen, onClose, onSuccess }) => {
               </Alert>
 
               <div className="border-2 border-dashed border-slate-300 rounded-app p-12 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                <FileSpreadsheet className="w-12 h-12 text-slate-400 mb-4" />
+                <FileSpreadsheet className="w-12 h-12 text-slate-500 mb-4" />
                 <h3 className="font-semibold text-lg text-slate-700">Klik untuk upload file Excel/CSV</h3>
                 <p className="text-slate-500 text-sm mt-1">atau drag &amp; drop file disini</p>
                 <input

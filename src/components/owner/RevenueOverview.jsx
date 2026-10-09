@@ -521,7 +521,7 @@ const RevenueOverview = ({ dateRange }) => {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-app-lg border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-app-lg border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-app bg-emerald-50 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-emerald-600" />
@@ -532,7 +532,7 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
         </div>
 
-        <div className={`bg-white rounded-app-lg border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
+        <div className={`bg-white rounded-app-lg border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
           metrics.netProfit >= 0 ? 'border-indigo-100' : 'border-rose-100'
         }`}>
           <div className="flex items-start justify-between mb-4">
@@ -548,7 +548,7 @@ const RevenueOverview = ({ dateRange }) => {
           <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
         </div>
 
-        <div className="bg-white rounded-app-lg border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+        <div className="bg-white rounded-app-lg border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-app bg-rose-50 flex items-center justify-center">
               <TrendingDown className="w-6 h-6 text-rose-600" />
@@ -563,7 +563,7 @@ const RevenueOverview = ({ dateRange }) => {
         </div>
       </div>
       {/* ── Dana Paket ── */}
-      <div className="bg-white rounded-app-lg border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
+      <div className="bg-white rounded-app-lg border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-app bg-amber-50 flex items-center justify-center shrink-0">
@@ -660,7 +660,7 @@ const RevenueOverview = ({ dateRange }) => {
               <div className="h-full bg-sky-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="rounded-app-lg border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-app-lg border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-app bg-violet-50 flex items-center justify-center">
                     <Package className="w-4 h-4 text-violet-600" />
@@ -672,7 +672,7 @@ const RevenueOverview = ({ dateRange }) => {
                 <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
                 <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
               </div>
-              <div className="rounded-app-lg border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-app-lg border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-app bg-sky-50 flex items-center justify-center">
                     <Wallet className="w-4 h-4 text-sky-600" />
@@ -713,7 +713,7 @@ const RevenueOverview = ({ dateRange }) => {
               return (
                 <div
                   key={i}
-                  className={`flex-1 basis-[160px] rounded-app-lg border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
+                  className={`flex-1 basis-[160px] rounded-app-lg border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className={`w-9 h-9 rounded-app ${style.bg} flex items-center justify-center`}>

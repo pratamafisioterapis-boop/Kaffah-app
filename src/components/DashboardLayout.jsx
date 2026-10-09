@@ -260,8 +260,7 @@ const isPWA =
             src="/sidebar-header-bg.jpg"
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover"
-          />
+            className="w-full h-full object-cover" loading="lazy" decoding="async" />
           <div className="absolute inset-0 bg-white/70" />
         </div>
         <div className="relative z-10 flex items-center gap-3 px-5 py-8">
@@ -286,8 +285,7 @@ const isPWA =
                    <img
                      src={clinicInfo.logo_url || "/clinara-logo.png"}
                      alt={clinicInfo.name || "Clinic Logo"}
-                     className="w-full h-full object-contain p-1"
-                   />
+                     className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
                  ) : (
                    <div className="w-full h-full animate-pulse bg-app-soft" />
                  )}
@@ -332,7 +330,7 @@ const isPWA =
                 <button
                   onClick={() => toggleSubmenu(index)}
                   className={cn(
-                    "w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden select-none",
+                    "w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 relative overflow-hidden select-none",
                     isParentActive ? "bg-app-soft text-app-accent" : "text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                   )}
                 >
@@ -343,7 +341,7 @@ const isPWA =
               ) : item.onClick ? (
                 <button
                   onClick={() => { item.onClick(); setIsSidebarOpen(false); }}
-                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
+                  className="w-full group flex items-center gap-3 px-3 py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 relative overflow-hidden text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
                 >
                   <Icon className="h-5 w-5 transition-colors text-app-muted group-hover:text-app-accent" />
                   <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
@@ -354,7 +352,7 @@ const isPWA =
                   end={item.path === `/${role}` || item.path === `/${role}/dashboard`}
                   className={({ isActive: linkActive }) =>
                     cn(
-                      "group flex items-center gap-3 px-3 py-2.5 rounded-app transition-all duration-200 relative overflow-hidden",
+                      "group flex items-center gap-3 px-3 py-2.5 rounded-app transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 relative overflow-hidden",
                       linkActive || (isActive && item.path !== `/${role}`)
                         ? ""
                         : "text-app-muted hover:text-app-accent hover:bg-[#F5F9FC]"
@@ -434,8 +432,7 @@ const isPWA =
             <img
               src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=1677D2`}
               alt="Avatar"
-              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm"
-            />
+              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm" loading="lazy" decoding="async" />
           </div>
           <div className="overflow-hidden min-w-0">
             <p className="text-sm font-semibold text-app-ink truncate">
@@ -495,14 +492,14 @@ const isPWA =
       </aside>
 
       <main className={cn(
-        "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-all duration-300 px-2 sm:px-0",
+        "flex-1 flex flex-col lg:ml-[280px] min-h-screen w-full max-w-full overflow-x-hidden transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 px-2 sm:px-0",
         isPWA && (role === 'therapist' || role === 'admin' || role === 'super_admin') ? "pt-0" : "pt-0"
       )}>
 
         {/* Header normal dihapus - digantikan hero banner di masing-masing halaman */}
 
         <div className={cn(
-          "w-full max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
+          "w-full max-w-[1400px] mx-auto animate-in fade-in duration-200 ease-out",
           isPWA && (role === 'therapist' || role === 'owner' || role === 'admin' || role === 'super_admin') ? "p-4 pt-4 pb-24" : "p-4 sm:p-8 pt-2"
         )}>
            <DashboardTopbar
@@ -610,7 +607,7 @@ const isPWA =
                                     className="flex items-center gap-2 shrink-0"
                                   >
                                     <span className={cn(
-                                      "text-[11px] font-medium px-2 py-1 rounded-app-sm shadow-sm border whitespace-nowrap",
+                                      "text-xs font-medium px-2 py-1 rounded-app-sm shadow-sm border whitespace-nowrap",
                                       isSubActive
                                         ? "text-white"
                                         : "bg-slate-50 text-slate-600 border-slate-200"

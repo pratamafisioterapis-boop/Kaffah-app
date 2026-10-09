@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import FollowUpMessagePreview from './FollowUpMessagePreview';
 import FollowUpCard from './FollowUpCard';
+import { confirmAction } from '@/lib/confirmAction';
 
 const FollowUpCategory = ({ category }) => {
   const { toast } = useToast();
@@ -104,8 +105,8 @@ const FollowUpCategory = ({ category }) => {
     setSending(false);
   };
 
-  const handleDismiss = (item) => {
-    if (confirm("Hapus item ini dari daftar?")) {
+  const handleDismiss = async (item) => {
+    if (await confirmAction("Hapus item ini dari daftar?")) {
       // In a real app, call delete API here
       const remainingData = data.filter(p => p.id !== item.id);
       setData(remainingData);
@@ -141,7 +142,7 @@ const FollowUpCategory = ({ category }) => {
     return (
       <div className="text-center py-16 bg-white rounded-app border border-dashed border-slate-200 flex flex-col items-center justify-center">
         <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-4">
-          <RefreshCcw className="w-6 h-6 text-slate-400" />
+          <RefreshCcw className="w-6 h-6 text-slate-500" />
         </div>
         <h3 className="text-lg font-medium text-slate-900">Tidak ada data</h3>
         <p className="text-slate-500 max-w-sm mx-auto mt-1 mb-6">
@@ -156,7 +157,7 @@ const FollowUpCategory = ({ category }) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-200 ease-out">
         {data.map((item, idx) => (
             <FollowUpCard 
               key={item.id || idx}

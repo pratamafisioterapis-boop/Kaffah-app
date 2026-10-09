@@ -126,7 +126,7 @@ const PackageFunds = () => {
             Memuat data...
           </div>
         ) : packages.length === 0 ? (
-          <div className="h-24 flex items-center justify-center text-slate-400">
+          <div className="h-24 flex items-center justify-center text-slate-500">
             Tidak ada paket aktif
           </div>
         ) : (

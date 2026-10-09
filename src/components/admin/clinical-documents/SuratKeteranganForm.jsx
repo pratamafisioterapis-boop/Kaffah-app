@@ -174,9 +174,9 @@ const SuratKeteranganForm = ({ onSaved }) => {
 
           {selectedPatient && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-app bg-slate-50 border border-slate-200 p-3 text-xs">
-              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">Usia</p><p className="font-semibold text-slate-800">{calcAge(selectedPatient.birth_date) ?? '-'} Th</p></div>
-              <div><p className="text-slate-400 uppercase tracking-wide text-[10px]">JK</p><p className="font-semibold text-slate-800">{normalizeGender(selectedPatient.gender)}</p></div>
-              <div className="col-span-2"><p className="text-slate-400 uppercase tracking-wide text-[10px]">No. RM</p><p className="font-semibold text-slate-800">{selectedPatient.medical_record_number || '-'}</p></div>
+              <div><p className="text-slate-500 uppercase tracking-wide text-xs">Usia</p><p className="font-semibold text-slate-800">{calcAge(selectedPatient.birth_date) ?? '-'} Th</p></div>
+              <div><p className="text-slate-500 uppercase tracking-wide text-xs">JK</p><p className="font-semibold text-slate-800">{normalizeGender(selectedPatient.gender)}</p></div>
+              <div className="col-span-2"><p className="text-slate-500 uppercase tracking-wide text-xs">No. RM</p><p className="font-semibold text-slate-800">{selectedPatient.medical_record_number || '-'}</p></div>
             </div>
           )}
 

@@ -14,6 +14,7 @@ import {
   respondSundaySwapRequest, cancelSundaySwapRequest,
 } from '@/lib/api';
 import SundaySwapCard from '@/components/shared/SundaySwapCard';
+import { confirmAction } from '@/lib/confirmAction';
 
 const DAY_KEY = 'yyyy-MM-dd';
 
@@ -121,7 +122,7 @@ const TherapistSundaySwap = ({ therapist, onChanged }) => {
   };
 
   const handleCancel = async (request) => {
-    if (!window.confirm('Batalkan pengajuan tukar jadwal ini?')) return;
+    if (!await confirmAction('Batalkan pengajuan tukar jadwal ini?')) return;
     setBusyId(request.id);
     const { error } = await cancelSundaySwapRequest(request.id);
     setBusyId(null);
@@ -230,7 +231,7 @@ const TherapistSundaySwap = ({ therapist, onChanged }) => {
                           type="button"
                           onClick={() => setSubstitute(c)}
                           className={cn(
-                            'text-left rounded-app border-2 p-3 flex items-center justify-between transition-all',
+                            'text-left rounded-app border-2 p-3 flex items-center justify-between transition-[color,background-color,border-color,box-shadow,transform,opacity]',
                             selected ? 'border-app-accent bg-app-soft' : 'border-slate-200 bg-white hover:border-app-accent/40',
                           )}
                         >
@@ -269,7 +270,7 @@ const TherapistSundaySwap = ({ therapist, onChanged }) => {
         <div className="lg:col-span-2 space-y-3">
           <h3 className="font-bold text-slate-800">Pengajuan Saya</h3>
           {mine.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
+            <div className="text-center py-8 text-slate-500 bg-slate-50/60 border-2 border-dashed border-slate-200 rounded-app">
               <CalendarClock className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm font-medium">Belum ada pengajuan tukar jadwal</p>
             </div>

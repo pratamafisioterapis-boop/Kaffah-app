@@ -23,6 +23,7 @@ import {
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { addYears, subDays, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { confirmAction } from '@/lib/confirmAction';
 
 const STATUS_LABEL = { draft: 'Draft', signed: 'Sudah Ditandatangani' };
 const STATUS_BADGE_CLASS = {
@@ -212,7 +213,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Yakin ingin menghapus dokumen MOU ini?')) return;
+    if (!await confirmAction('Yakin ingin menghapus dokumen MOU ini?')) return;
     const { success, error } = await deleteMouDocument(id);
     if (success) {
       setRecords((prev) => prev.filter((r) => r.id !== id));
@@ -361,7 +362,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 <h4 className="font-semibold text-sm text-slate-800">
                   {form.id ? `Edit MOU — Tahun ke-${form.period_number}` : `MOU Baru — Tahun ke-${form.period_number}`}
                 </h4>
-                <p className="text-[11px] text-slate-500">{periodLabel}</p>
+                <p className="text-xs text-slate-500">{periodLabel}</p>
               </div>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={handleNewPeriod} className="text-emerald-700 border-emerald-200 hover:bg-emerald-50">
@@ -428,7 +429,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
             <div>
               <p className="text-xs font-semibold text-slate-700">KOMPENSASI (Pasal 4)</p>
               {isFirstYear && (
-                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-app-sm p-2 mt-1.5">
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-app-sm p-2 mt-1.5">
                   Tahun ke-1 memakai format kontrak fisioterapis baru: belum ada Remunerasi &amp; Komisi Cuti Tahunan (Pasal 4), dan Pasal 6 memakai "Izin Tidak Hadir" — bukan hak Cuti penuh.
                 </p>
               )}
@@ -458,7 +459,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 <label className="text-xs font-medium text-slate-600">
                   Lampiran I — Insentif Jasa Keprofesian per Tipe Pasien
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-slate-500">
                   Diprefill dari Tarif Jasa klinik — sesuaikan kalau terapis ini punya tarif custom per tipe pasien. Baris dengan nilai Rp 0 tidak ditampilkan di Lampiran.
                 </p>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 rounded-app-sm border border-slate-200 p-2 bg-white">
@@ -480,7 +481,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-600">Keterangan Insentif Jasa Keprofesian</label>
                 <Textarea rows={2} value={form.compensation.professional_incentive_note} onChange={(e) => updateComp({ professional_incentive_note: e.target.value })} placeholder="mis. sesuai lampiran ketentuan insentif jasa keprofesian klinik" />
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-slate-500">
                   Belum ada Tipe Pasien/Tarif Jasa di Setup, jadi Pasal 4 ayat 3 memakai catatan bebas ini. Tambahkan Tarif Jasa per Tipe Pasien di menu Setup untuk otomatis menghasilkan Lampiran I.
                 </p>
               </div>
@@ -518,7 +519,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
               Simpan &amp; Unduh Draft PDF
             </Button>
           </div>
-          <p className="text-[11px] text-slate-400 -mt-1">
+          <p className="text-xs text-slate-500 -mt-1">
             Cetak &amp; tanda tangani draft di atas materai, lalu unggah foto/scan HALAMAN TERAKHIR saja (yang ada tanda tangan) pada baris riwayat di bawah. Akan muncul pratinjau dulu — putar dulu di sana kalau posisi fotonya belum tegak — baru sistem menggabungkannya dengan Pasal 1-11 sehingga dokumen lengkap tampil di menu Dokumen milik terapis.
           </p>
         </div>
@@ -528,7 +529,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
           ) : records.length === 0 ? (
-            <p className="text-sm text-slate-400 italic text-center py-6">Belum ada dokumen MOU untuk terapis ini.</p>
+            <p className="text-sm text-slate-500 italic text-center py-6">Belum ada dokumen MOU untuk terapis ini.</p>
           ) : (
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {records.map((r) => (
@@ -542,7 +543,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                     <p className="text-sm font-medium text-slate-700">
                       Tahun ke-{r.period_number} · {format(new Date(r.period_start), 'dd MMM yyyy', { locale: idLocale })} — {format(new Date(r.period_end), 'dd MMM yyyy', { locale: idLocale })}
                     </p>
-                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE_CLASS[r.status]}`}>
+                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE_CLASS[r.status]}`}>
                       {STATUS_LABEL[r.status]}
                     </span>
                   </div>
@@ -625,8 +626,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                   transform: `rotate(${scanPreview.rotation}deg)`,
                   maxWidth: scanPreview.rotation % 180 === 0 ? '90%' : '80%',
                   maxHeight: scanPreview.rotation % 180 === 0 ? '90%' : '55%',
-                }}
-              />
+                }} loading="lazy" decoding="async" />
             </div>
           )}
           <DialogFooter className="sm:justify-between gap-2">

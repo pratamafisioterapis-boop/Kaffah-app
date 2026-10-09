@@ -220,7 +220,7 @@ const TherapistDriveUpload = () => {
                 <span className="truncate">{file.name}</span>
                 <span className="text-app-accent-bright flex-shrink-0">({formatFileSize(file.size)})</span>
               </span>
-              <button type="button" onClick={handleClearFile} disabled={uploading} className="text-app-accent-bright hover:text-app-accent flex-shrink-0">
+              <button aria-label="Tutup" type="button" onClick={handleClearFile} disabled={uploading} className="text-app-accent-bright hover:text-app-accent flex-shrink-0">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -248,7 +248,7 @@ const TherapistDriveUpload = () => {
         {loadingHistory ? (
           <div className="p-6 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
         ) : history.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+          <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
             Belum ada file yang diunggah.
           </div>
         ) : (

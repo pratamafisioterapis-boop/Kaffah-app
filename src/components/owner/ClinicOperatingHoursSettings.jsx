@@ -70,11 +70,11 @@ const ClinicOperatingHoursSettings = () => {
               {day.enabled ? (
                 <div className="flex items-center gap-2 flex-1">
                   <Input type="time" aria-label={`Jam buka ${OPERATING_DAY_NAMES[d]}`} value={day.start} onChange={(e) => update(d, { start: e.target.value })} className="h-9" />
-                  <span className="text-slate-400">–</span>
+                  <span className="text-slate-500">–</span>
                   <Input type="time" aria-label={`Jam tutup ${OPERATING_DAY_NAMES[d]}`} value={day.end} onChange={(e) => update(d, { end: e.target.value })} className="h-9" />
                 </div>
               ) : (
-                <span className="text-sm text-slate-400">Tutup</span>
+                <span className="text-sm text-slate-500">Tutup</span>
               )}
             </div>
           );

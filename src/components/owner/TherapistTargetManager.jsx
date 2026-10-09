@@ -25,6 +25,7 @@ import {
 import { format, addDays } from 'date-fns';
 import { getTherapistPeriodRange, calculateMaxPatientCapacity, calculateNextPeriodTarget } from '@/lib/utils';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { confirmAction } from '@/lib/confirmAction';
 
 const TherapistTargetManager = () => {
   const { toast } = useToast();
@@ -213,7 +214,6 @@ const TherapistTargetManager = () => {
 
   const handleSave = async () => {
     // Add console log for debugging as requested
-    console.log('Creating target with therapist_id:', formData.therapist_id);
 
     const errorMsg = validateForm();
     if (errorMsg) {
@@ -256,7 +256,7 @@ const TherapistTargetManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Yakin ingin menghapus target ini?")) return;
+    if (!await confirmAction("Yakin ingin menghapus target ini?")) return;
     const { error } = await deleteTherapistTarget(id);
     if (!error) {
       toast({ title: "Terhapus", description: "Data target dihapus." });
@@ -421,7 +421,7 @@ const TherapistTargetManager = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-900 truncate" title={therapistName}>{therapistName}</p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 min-w-0">
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 min-w-0">
                           <CalendarDays className="w-3 h-3 shrink-0" />
                           <span className="truncate">
                             {item.start_date && item.end_date ? `${formatDate(item.start_date)} s/d ${formatDate(item.end_date)}` : '-'}
@@ -441,10 +441,10 @@ const TherapistTargetManager = () => {
 
                   <div className="flex items-end justify-between mb-2 gap-2">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Capaian</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Capaian</p>
                       <p className="text-2xl font-bold text-slate-900 truncate">
                         {item.actual_visits || 0}
-                        <span className="text-sm font-medium text-slate-400"> / {item.target_visits || 0}</span>
+                        <span className="text-sm font-medium text-slate-500"> / {item.target_visits || 0}</span>
                       </p>
                     </div>
                     <div className="shrink-0">{getStatusBadge(item.status)}</div>
@@ -457,19 +457,19 @@ const TherapistTargetManager = () => {
                   {item.excluded_patient_types && item.excluded_patient_types.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-3 border-t border-slate-100">
                       {item.excluded_patient_types.slice(0, 3).map((type, idx) => (
-                        <Badge key={idx} variant="outline" className="text-[10px] bg-slate-50 font-normal">
+                        <Badge key={idx} variant="outline" className="text-xs bg-slate-50 font-normal">
                           {type}
                         </Badge>
                       ))}
                       {item.excluded_patient_types.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] bg-slate-50 font-normal">+{item.excluded_patient_types.length - 3}</Badge>
+                        <Badge variant="outline" className="text-xs bg-slate-50 font-normal">+{item.excluded_patient_types.length - 3}</Badge>
                       )}
                     </div>
                   )}
 
                   {item.end_date && new Date(item.end_date) < new Date() && (
                     nextTargetExists(item) ? (
-                      <p className="text-[10px] text-slate-400 pt-3 mt-1 border-t border-slate-100 flex items-center gap-1">
+                      <p className="text-xs text-slate-500 pt-3 mt-1 border-t border-slate-100 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3 text-emerald-500" /> Target periode berikutnya sudah dibuat
                       </p>
                     ) : (
@@ -515,7 +515,7 @@ const TherapistTargetManager = () => {
                         key={t.id}
                         type="button"
                         onClick={() => handleSelectTherapist(t)}
-                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-app-sm border transition-all text-center ${
+                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-app-sm border transition-[color,background-color,border-color,box-shadow,transform,opacity] text-center ${
                           isActive
                             ? 'border-app-accent-bright bg-app-soft shadow-sm ring-1 ring-app-accent/25'
                             : 'border-slate-200 bg-white hover:border-slate-300'
@@ -557,7 +557,7 @@ const TherapistTargetManager = () => {
                <label className="text-sm font-medium text-slate-700">Exclude Tipe Pasien (Tidak Dihitung)</label>
                <div className="p-3 border rounded-md max-h-40 overflow-y-auto bg-slate-50">
                  {patientTypes.length === 0 ? (
-                   <p className="text-xs text-slate-400 italic">Tidak ada tipe pasien tersedia.</p>
+                   <p className="text-xs text-slate-500 italic">Tidak ada tipe pasien tersedia.</p>
                  ) : (
                    <div className="grid grid-cols-2 gap-2">
                      {patientTypes.map((type) => (
@@ -578,7 +578,7 @@ const TherapistTargetManager = () => {
                    </div>
                  )}
                </div>
-               <p className="text-[10px] text-slate-500">
+               <p className="text-xs text-slate-500">
                   Pilih tipe pasien yang <strong>tidak akan dihitung</strong> dalam pencapaian target.
                </p>
             </div>
@@ -597,7 +597,7 @@ const TherapistTargetManager = () => {
                       className="font-semibold text-center text-lg h-12"
                       placeholder="0"
                     />
-                    <p className="text-[10px] text-slate-500 text-center">Total sesi/visit</p>
+                    <p className="text-xs text-slate-500 text-center">Total sesi/visit</p>
                  </div>
                </div>
             </div>

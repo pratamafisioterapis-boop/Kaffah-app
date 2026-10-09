@@ -51,7 +51,7 @@ const RevenueBreakdownSlide = ({ data, dateRange }) => {
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {paymentMethodBreakdown.slice(0, 6).map((entry, i) => (
-                  <div key={entry.method} className="flex items-center gap-1.5 text-[11px] text-slate-300">
+                  <div key={entry.method} className="flex items-center gap-1.5 text-xs text-slate-300">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
                     {entry.method} ({formatShortCurrency(entry.amount)})
                   </div>

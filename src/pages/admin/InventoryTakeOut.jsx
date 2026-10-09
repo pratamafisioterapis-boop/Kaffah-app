@@ -46,7 +46,7 @@ const InventoryTakeOutPage = () => {
 
   return (
     <DashboardLayout navItems={adminNavItems} role="admin" userName="Admin">
-      <div className="space-y-6 animate-in fade-in duration-500 pb-12">
+      <div className="space-y-6 animate-in fade-in duration-200 ease-out pb-12">
 
         {/* Hero Banner */}
         <PageHero image="/hero/clinara-stock-hero.webp" title="Ambil" highlight="Barang Gudang" description="Setiap pengambilan otomatis mengurangi stok dan tercatat sebagai pengeluaran." />
@@ -55,13 +55,13 @@ const InventoryTakeOutPage = () => {
           <TabsList className="grid w-full sm:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-app">
             <TabsTrigger
               value="ambil"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
             >
               <ClipboardList className="w-4 h-4" /> Ambil Barang
             </TabsTrigger>
             <TabsTrigger
               value="stok"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
             >
               <Boxes className="w-4 h-4" /> Stok Barang
             </TabsTrigger>
@@ -72,7 +72,7 @@ const InventoryTakeOutPage = () => {
               <div className="xl:col-span-1"><div className="sticky top-4"><InventoryTakeOutForm items={items} onSuccess={refreshAll} /></div></div>
               <div className="xl:col-span-2">
                 <h3 className="font-bold text-slate-800 text-lg mb-3">Riwayat Pengambilan</h3>
-                {loading ? <div className="text-center py-12 text-slate-400">Memuat data...</div> : (
+                {loading ? <div className="text-center py-12 text-slate-500">Memuat data...</div> : (
                   <InventoryTakeOutHistory history={history} onEdit={setEditingRow} onRefresh={refreshAll} />
                 )}
               </div>
@@ -82,7 +82,7 @@ const InventoryTakeOutPage = () => {
           <TabsContent value="stok" className="mt-0 outline-none">
             <h3 className="font-bold text-slate-800 text-lg mb-3">Stok Barang Saat Ini</h3>
             {loadingItems ? (
-              <div className="text-center py-12 text-slate-400">Memuat data...</div>
+              <div className="text-center py-12 text-slate-500">Memuat data...</div>
             ) : (
               <div className="max-h-[70vh] overflow-y-auto rounded-app-lg">
                 <InventoryStockOverview items={items} />

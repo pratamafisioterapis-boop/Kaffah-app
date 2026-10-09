@@ -291,19 +291,19 @@ const handleOpenSoapModal = () => {
           </div>
           <div className="text-left">
             <p className="text-sm font-bold text-slate-700">Laporan Bulanan</p>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-500">
               {period.labelStart} – {period.labelEnd}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] bg-app-accent/15 text-app-accent-hover font-semibold px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-app-accent/15 text-app-accent-hover font-semibold px-2 py-0.5 rounded-full">
             Baru Tersedia
           </span>
           {collapsed ? (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-slate-500" />
           ) : (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-slate-500" />
           )}
         </div>
       </button>
@@ -317,7 +317,7 @@ const handleOpenSoapModal = () => {
               <Loader2 className="w-6 h-6 animate-spin text-app-accent-bright" />
             </div>
           ) : !report ? (
-            <p className="text-center text-sm text-slate-400 py-8">Gagal memuat laporan.</p>
+            <p className="text-center text-sm text-slate-500 py-8">Gagal memuat laporan.</p>
           ) : (
             <div className="p-5 space-y-5">
 
@@ -325,14 +325,14 @@ const handleOpenSoapModal = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-app-soft rounded-app p-3 text-center">
                   <p className="text-2xl font-bold text-app-accent-hover">{report.totalVisits}</p>
-                  <p className="text-[11px] text-app-accent-bright mt-0.5">Total Kunjungan</p>
+                  <p className="text-xs text-app-accent-bright mt-0.5">Total Kunjungan</p>
                 </div>
                 <div className="bg-slate-50 rounded-app p-3 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Users className="w-4 h-4 text-slate-500" />
                     <p className="text-2xl font-bold text-slate-700">{report.totalUniquePatients}</p>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Pasien Ditangani</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Pasien Ditangani</p>
                 </div>
               </div>
 
@@ -343,7 +343,7 @@ const handleOpenSoapModal = () => {
                 </p>
                 <div className="space-y-2">
                   {report.typeBreakdown.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">Tidak ada data tipe pasien.</p>
+                    <p className="text-xs text-slate-500 italic">Tidak ada data tipe pasien.</p>
                   ) : (
                     report.typeBreakdown.map(([type, count]) => {
                       const pct = report.totalVisits > 0 ? Math.round((count / report.totalVisits) * 100) : 0;
@@ -353,12 +353,12 @@ const handleOpenSoapModal = () => {
                             <div className="flex justify-between items-center mb-0.5">
                               <span className="text-xs text-slate-600 truncate">{type}</span>
                               <span className="text-xs font-semibold text-slate-700 ml-2 shrink-0">
-                                {count} <span className="text-slate-400 font-normal">({pct}%)</span>
+                                {count} <span className="text-slate-500 font-normal">({pct}%)</span>
                               </span>
                             </div>
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-app-accent-bright rounded-full transition-all duration-500"
+                                className="h-full bg-app-accent-bright rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
@@ -389,16 +389,16 @@ const handleOpenSoapModal = () => {
                         "text-xl font-bold",
                         report.filledSoap > 0 ? "text-emerald-700" : "text-slate-500"
                       )}>{report.filledSoap}</p>
-                      <p className="text-[11px] text-slate-400">SOAP Terisi</p>
+                      <p className="text-xs text-slate-500">SOAP Terisi</p>
                     </div>
                   </div>
                   <button
                     onClick={handleOpenSoapModal}
                     disabled={report.unfilledSoap === 0}
                     className={cn(
-                      "rounded-app p-3 flex items-center gap-3 w-full text-left transition-all",
+                      "rounded-app p-3 flex items-center gap-3 w-full text-left transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                       report.unfilledSoap > 0
-                        ? "bg-red-50 hover:bg-red-100 cursor-pointer active:scale-95"
+                        ? "bg-red-50 hover:bg-red-100 cursor-pointer active:scale-[0.97]"
                         : "bg-slate-50 cursor-default opacity-60"
                     )}
                   >
@@ -411,7 +411,7 @@ const handleOpenSoapModal = () => {
                         "text-xl font-bold",
                         report.unfilledSoap > 0 ? "text-red-700" : "text-slate-500"
                       )}>{report.unfilledSoap}</p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-500">
                         SOAP Belum Diisi
                         {report.unfilledSoap > 0 && (
                           <span className="ml-1 text-red-400 font-medium">→ Isi Sekarang</span>
@@ -437,7 +437,7 @@ const handleOpenSoapModal = () => {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <h3 className="font-bold text-slate-800 text-base">Isi SOAP yang Belum Diisi</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{period.labelStart} – {period.labelEnd}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{period.labelStart} – {period.labelEnd}</p>
             </div>
             <button
               onClick={() => { setSoapModalOpen(false); setSelectedRecap(null); }}
@@ -451,7 +451,7 @@ const handleOpenSoapModal = () => {
 
             {/* Panel Kiri: Daftar Pasien Belum Diisi */}
             <div className="w-52 shrink-0 border-r border-slate-100 overflow-y-auto bg-slate-50">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-3 pt-3 pb-2">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 pt-3 pb-2">
                 {unfilledRecaps.length} Kunjungan
               </p>
               {unfilledRecaps.map(recap => (
@@ -467,13 +467,13 @@ const handleOpenSoapModal = () => {
                 >
                   <p className="text-xs font-semibold text-slate-700 truncate">{recap.patient_name}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="text-[10px] text-slate-400">
+                    <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
+                    <span className="text-xs text-slate-500">
                       {format(new Date(recap.recap_date), 'dd MMM yyyy', { locale: idLocale })}
                     </span>
                   </div>
                   {recap.medical_record_number && recap.medical_record_number !== '-' && (
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{recap.medical_record_number}</p>
+                    <p className="text-xs text-slate-500 truncate mt-0.5">{recap.medical_record_number}</p>
                   )}
                 </button>
               ))}
@@ -484,7 +484,7 @@ const handleOpenSoapModal = () => {
               {!selectedRecap ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 py-10">
                   <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                  <p className="text-sm font-medium text-slate-400">Pilih kunjungan di sebelah kiri</p>
+                  <p className="text-sm font-medium text-slate-500">Pilih kunjungan di sebelah kiri</p>
                   <p className="text-xs text-slate-300 mt-1">untuk mengisi SOAP-nya</p>
                 </div>
               ) : (
@@ -494,7 +494,7 @@ const handleOpenSoapModal = () => {
                     <CheckCircle2 className="w-4 h-4 text-app-accent-bright shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-semibold text-app-accent-hover">{selectedRecap.patient_name}</p>
-                      <p className="text-[10px] text-app-accent-bright">
+                      <p className="text-xs text-app-accent-bright">
                         {format(new Date(selectedRecap.recap_date), 'dd MMMM yyyy', { locale: idLocale })}
                         {selectedRecap.service_type && ` • ${selectedRecap.service_type}`}
                       </p>
@@ -526,13 +526,13 @@ const handleOpenSoapModal = () => {
                           {previousRecords.map(record => (
                             <div key={record.id} className="bg-white rounded-app-sm border border-amber-100 p-2.5">
                               <div className="flex items-center justify-between gap-2 mb-1.5">
-                                <span className="text-[10px] font-semibold text-slate-500">
+                                <span className="text-xs font-semibold text-slate-500">
                                   {format(new Date(record.daily_recap?.recap_date || record.created_at), 'dd MMMM yyyy', { locale: idLocale })}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyPrevious(record)}
-                                  className="flex items-center gap-1 text-[10px] font-semibold text-app-accent hover:text-app-accent-hover bg-app-soft hover:bg-app-accent/15 rounded-md px-2 py-1 transition-colors shrink-0"
+                                  className="flex items-center gap-1 text-xs font-semibold text-app-accent hover:text-app-accent-hover bg-app-soft hover:bg-app-accent/15 rounded-md px-2 py-1 transition-colors shrink-0"
                                 >
                                   <Copy className="w-3 h-3" />
                                   Salin ke Form
@@ -545,7 +545,7 @@ const handleOpenSoapModal = () => {
                                   { short: 'A', text: record.assessment, color: 'text-violet-600' },
                                   { short: 'P', text: record.plan, color: 'text-rose-600' },
                                 ].map(item => (
-                                  <p key={item.short} className="text-[11px] text-slate-500 line-clamp-1">
+                                  <p key={item.short} className="text-xs text-slate-500 line-clamp-1">
                                     <span className={`font-bold ${item.color}`}>{item.short}:</span> {item.text || '-'}
                                   </p>
                                 ))}
@@ -566,7 +566,7 @@ const handleOpenSoapModal = () => {
                   ].map(field => (
                     <div key={field.key} className={`bg-white rounded-app border-l-4 ${field.accent} border border-slate-100 px-3 py-2.5`}>
                       <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className={`w-5 h-5 rounded-md ${field.badge} text-white flex items-center justify-center text-[10px] font-bold shrink-0`}>
+                        <span className={`w-5 h-5 rounded-md ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0`}>
                           {field.short}
                         </span>
                         <label className={`text-xs font-semibold ${field.labelColor}`}>{field.label}</label>

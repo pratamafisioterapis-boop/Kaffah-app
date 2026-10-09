@@ -394,7 +394,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
         key={key}
         type="button"
         onClick={() => setViewMode(key)}
-        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-all ${
+        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
           viewMode === key
             ? 'bg-white text-slate-900 shadow-sm'
             : 'text-slate-500 hover:text-slate-700'
@@ -587,7 +587,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       ) : loading ? (
         <div className="flex flex-col items-center justify-center h-64 gap-4 bg-white rounded-app-lg border shadow-sm">
           <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
-          <p className="text-slate-400">Memuat jadwal...</p>
+          <p className="text-slate-500">Memuat jadwal...</p>
         </div>
       ) : (
           <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">

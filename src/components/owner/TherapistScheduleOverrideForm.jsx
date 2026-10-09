@@ -143,7 +143,7 @@ const TherapistScheduleOverrideForm = ({ therapist, onSuccess }) => {
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Hanya dipakai bila jam pulang diisi — jam masuk s/d jam pulang akan dipecah jadi slot-slot booking per durasi di atas
             {formData.end_time ? ` (perkiraan ${slotPreviewCount} slot × ${formData.capacity} pasien)` : ''}, bukan jadwal mingguan.
           </p>

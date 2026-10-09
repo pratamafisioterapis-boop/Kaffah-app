@@ -85,7 +85,7 @@ const TherapistScheduleOverrideList = ({ therapist, refreshTrigger }) => {
                         </Badge>
                       )}
                     </div>
-                    {item.note && <p className="text-xs text-slate-400 mt-1 italic">"{item.note}"</p>}
+                    {item.note && <p className="text-xs text-slate-500 mt-1 italic">"{item.note}"</p>}
                   </div>
                 </div>
 

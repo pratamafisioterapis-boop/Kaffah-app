@@ -154,9 +154,6 @@ const OwnerBookingCalendar = () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
       // === STEP 5: LOGGING START ===
-      console.log(`[OwnerBookingCalendar] === FETCH START ===`);
-      console.log(`[OwnerBookingCalendar] Fetching data for date: ${dateStr}`);
-      console.log(`[OwnerBookingCalendar] Total Therapists: ${therapists.length}`);
 
       // 1️⃣ Appointments (DISPLAY ONLY)
       const appsRes = await getAppointments({
@@ -174,8 +171,6 @@ const OwnerBookingCalendar = () => {
       
       if (error) throw error;
       
-      console.log('[OwnerBookingCalendar] RAW RPC RESPONSE:', data);
-      console.log('[OwnerBookingCalendar] Response Length:', data?.length || 0);
 
       // 3️⃣ schedulesMap & Status Map
       const newSchedulesMap = {};
@@ -254,9 +249,6 @@ const OwnerBookingCalendar = () => {
       });
 
       // === LOGGING END ===
-      console.log('[OwnerBookingCalendar] === MAPPING RESULT ===');
-      console.log('[OwnerBookingCalendar] Schedules Map:', newSchedulesMap);
-      console.log('[OwnerBookingCalendar] Status Map:', statusMap);
       
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
@@ -362,7 +354,7 @@ const OwnerBookingCalendar = () => {
               key={key}
               type="button"
               onClick={() => setViewMode(key)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] ${
                 viewMode === key
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -510,7 +502,7 @@ const OwnerBookingCalendar = () => {
       ) : loading ? (
          <div className="flex flex-col justify-center items-center h-64 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-app-accent" />
-            <p className="text-slate-400">Loading schedules...</p>
+            <p className="text-slate-500">Loading schedules...</p>
          </div>
       ) : (
        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">

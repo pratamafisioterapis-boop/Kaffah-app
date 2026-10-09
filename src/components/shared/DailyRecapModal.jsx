@@ -227,8 +227,6 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // DEBUG: Log initial data
     useEffect(() => {
         if (isOpen) {
-            console.log("DailyRecapModal Opened. Mode:", mode);
-            console.log("DailyRecapModal initialData:", initialData);
         }
     }, [isOpen, initialData, mode]);
 
@@ -262,7 +260,6 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
             setActiveRewards([]);
             
             if (mode === 'edit' && initialData) {
-                console.log("DailyRecapModal initializing form with edit data");
                 const dateStr = initialData.date || initialData.recap_date;
                 const formattedDate = dateStr ? formatDateDisplay(dateStr) : formatDateDisplay(new Date().toISOString());
 
@@ -515,7 +512,6 @@ setFormData({
                 const pkgLabel = initialData.package_type;
                 const pkgId = initialData.raw_package_type_id || initialData.package_type_id;
                 
-                console.log("DailyRecapModal Checking Package Injection:", { pkgLabel, pkgId });
 
                 if (pkgLabel || pkgId) {
                     setPackageOptions(prev => {
@@ -524,7 +520,6 @@ setFormData({
                 
                         const injectId = pkgId || pkgLabel;
                         const injectLabel = pkgLabel || 'Package';
-                        console.log(`Injecting missing package option: { value: ${injectId}, label: ${injectLabel} }`);
 
                         return [
                             ...prev,
@@ -1369,7 +1364,6 @@ setFormData({
                                         value={formData.package_type_id || ''}
                                         onChange={(id) => {
                                             const selected = packageOptions.find(p => p.value === id);
-                                            console.log("Package type selected:", { id, selected });
                                             setFormData(prev => ({
                                                 ...prev,
                                                 package_type_id: id,

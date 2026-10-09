@@ -24,7 +24,7 @@ const ShiftSwapCard = ({ request, showTherapist = false, footer = null }) => {
               {formatLongDate(request.swap_date)}
             </p>
           </div>
-          <span className={cn('text-[11px] font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
+          <span className={cn('text-xs font-semibold px-2 py-1 rounded-full border whitespace-nowrap', status.className)}>
             {status.label}
           </span>
         </div>

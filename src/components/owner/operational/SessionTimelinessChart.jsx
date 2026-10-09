@@ -122,7 +122,7 @@ const SessionTimelinessChart = ({ dateRange }) => {
   const complianceColor = complianceRate >= 80 ? '#10b981' : complianceRate >= 50 ? '#f59e0b' : '#ef4444';
 
   return (
-    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between">
           <div>

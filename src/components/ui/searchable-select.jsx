@@ -249,7 +249,7 @@ const SearchableSelect = ({
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <div 
         className={cn(
-          "flex min-h-[40px] w-full flex-wrap items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white focus-within:ring-2 focus-visible:ring-app-accent-bright focus-within:ring-offset-2 transition-all hover:border-slate-400",
+          "flex min-h-[40px] w-full flex-wrap items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-white focus-within:ring-2 focus-visible:ring-app-accent-bright focus-within:ring-offset-2 transition-[color,background-color,border-color,box-shadow,transform,opacity] hover:border-slate-400",
           disabled && "cursor-not-allowed opacity-50 bg-slate-50"
         )}
         onClick={() => !disabled && (setOpen(true), inputRef.current?.focus())}
@@ -281,17 +281,17 @@ const SearchableSelect = ({
             onFocus={handleInputFocus}
             placeholder={multiple && selectedValues.length > 0 ? "" : placeholder}
             disabled={disabled}
-            className="w-full bg-transparent outline-none placeholder:text-slate-400 text-slate-900"
+            className="w-full bg-transparent outline-none placeholder:text-slate-500 text-slate-900"
             autoComplete="off"
           />
         </div>
 
-        <div className="flex items-center gap-1 text-slate-400 shrink-0">
+        <div className="flex items-center gap-1 text-slate-500 shrink-0">
            {!multiple && value && !disabled && (
              <button
                type="button"
                onClick={(e) => handleRemoveItem(e, value)}
-               className="hover:bg-slate-100 p-0.5 rounded text-slate-400 hover:text-slate-600 focus:outline-none"
+               className="hover:bg-slate-100 p-0.5 rounded text-slate-500 hover:text-slate-600 focus:outline-none"
              >
                <X className="h-4 w-4" />
              </button>

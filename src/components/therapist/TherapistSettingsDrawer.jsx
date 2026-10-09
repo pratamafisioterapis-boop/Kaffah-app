@@ -36,7 +36,7 @@ const TABS = [
 const Avatar = ({ url, name, size = 'lg' }) => {
   const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-10 h-10 text-base';
   return url ? (
-    <img src={url} alt={name} className={`${dim} rounded-full object-cover border-2 border-white shadow-md`} />
+    <img src={url} alt={name} className={`${dim} rounded-full object-cover border-2 border-white shadow-md`} loading="lazy" decoding="async" />
   ) : (
     <div className={`${dim} rounded-full bg-gradient-to-br from-app-accent-bright to-app-accent flex items-center justify-center text-white font-bold border-2 border-white shadow-md`}>
       {name?.charAt(0)?.toUpperCase() || 'T'}
@@ -206,7 +206,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-800">{form.name || 'Nama Terapis'}</p>
-          <p className="text-xs text-slate-400 mt-0.5">{form.specialization || 'Spesialisasi'}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{form.specialization || 'Spesialisasi'}</p>
           <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => fileRef.current?.click()}>
             Ganti foto profil
           </p>
@@ -217,19 +217,19 @@ const TabProfil = ({ therapist, onUpdated }) => {
       {/* Form fields */}
       <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm divide-y divide-slate-50">
         <div className="px-4 py-3 space-y-1">
-          <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nama Lengkap</Label>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Lengkap</Label>
           <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border-0 px-0 shadow-none focus-visible:ring-0 text-sm font-medium text-slate-800 h-8" />
         </div>
         <div className="px-4 py-3 space-y-1">
-          <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No. HP</Label>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">No. HP</Label>
           <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="08xx-xxxx-xxxx" className="border-0 px-0 shadow-none focus-visible:ring-0 text-sm font-medium text-slate-800 h-8" />
         </div>
         <div className="px-4 py-3 space-y-1">
-          <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Spesialisasi</Label>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Spesialisasi</Label>
           <Input value={form.specialization} onChange={e => setForm(f => ({ ...f, specialization: e.target.value }))} className="border-0 px-0 shadow-none focus-visible:ring-0 text-sm font-medium text-slate-800 h-8" />
         </div>
         <div className="px-4 py-3 space-y-1">
-          <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bio</Label>
+          <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bio</Label>
           <textarea
             value={form.bio}
             onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
@@ -249,7 +249,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
       <div className="flex items-center gap-4 p-4 bg-white rounded-app-lg border border-slate-100 shadow-sm">
         <div className="relative shrink-0 w-20 h-14 rounded-app bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
           {form.signature_url ? (
-            <img src={form.signature_url} alt="Tanda Tangan" className="w-full h-full object-contain" />
+            <img src={form.signature_url} alt="Tanda Tangan" className="w-full h-full object-contain" loading="lazy" decoding="async" />
           ) : (
             <PenTool className="w-6 h-6 text-slate-300" />
           )}
@@ -263,7 +263,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-800">Tanda Tangan Digital</p>
-          <p className="text-xs text-slate-400 mt-0.5">Dipakai otomatis di invoice &amp; dokumen klinis (resume medis, surat keterangan, dll).</p>
+          <p className="text-xs text-slate-500 mt-0.5">Dipakai otomatis di invoice &amp; dokumen klinis (resume medis, surat keterangan, dll).</p>
           <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => signatureFileRef.current?.click()}>
             {form.signature_url ? 'Ganti tanda tangan' : 'Upload tanda tangan'}
           </p>
@@ -285,7 +285,7 @@ const TabProfil = ({ therapist, onUpdated }) => {
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-800">Foto Splash Screen</p>
-          <p className="text-xs text-slate-400 mt-0.5">Tampil saat kamu membuka aplikasi. Jika kosong, memakai foto di therapist card.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Tampil saat kamu membuka aplikasi. Jika kosong, memakai foto di therapist card.</p>
           <p className="text-xs text-app-accent-bright mt-1.5 cursor-pointer" onClick={() => splashFileRef.current?.click()}>
             Ganti foto splash screen
           </p>
@@ -334,7 +334,7 @@ const TabNotifikasi = ({ userId }) => {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>;
+  if (loading) return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>;
 
   const items = [
     {
@@ -497,11 +497,11 @@ const TabCuti = ({ therapistId }) => {
             <p className="text-2xl font-bold text-emerald-800 leading-none mt-0.5">
               {balance.remaining} <span className="text-sm font-medium text-emerald-600">/ {balance.quota} hari</span>
             </p>
-            <p className="text-[11px] text-emerald-600/80 mt-1">
+            <p className="text-xs text-emerald-600/80 mt-1">
               Periode {formatTgl(balance.periodStart)} – {formatTgl(balance.periodEnd)}
             </p>
             {balance.isFirstYear && (
-              <p className="text-[11px] text-amber-700 mt-1">
+              <p className="text-xs text-amber-700 mt-1">
                 Tahun pertama bergabung belum mendapat jatah cuti tahunan (hanya izin tidak hadir).
               </p>
             )}
@@ -561,9 +561,9 @@ const TabCuti = ({ therapistId }) => {
 
       {/* Daftar cuti */}
       {loading ? (
-        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
       ) : list.length === 0 ? (
-        <div className="text-center py-10 text-slate-400">
+        <div className="text-center py-10 text-slate-500">
           <CalendarOff className="w-10 h-10 mx-auto mb-2 opacity-40" />
           <p className="text-sm">Belum ada data cuti</p>
         </div>
@@ -580,7 +580,7 @@ const TabCuti = ({ therapistId }) => {
                       {item.start_date !== item.end_date && ` — ${formatTgl(item.end_date)}`}
                     </p>
                     {upcoming && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">MENDATANG</span>
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">MENDATANG</span>
                     )}
                   </div>
                   {item.reason && <p className="text-xs text-slate-500 mt-0.5">{item.reason}</p>}
@@ -671,7 +671,7 @@ const TabAkun = ({ user }) => {
           {emailForm.saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           Kirim Konfirmasi Email
         </Button>
-        <p className="text-xs text-slate-400">Setelah disimpan, link konfirmasi akan dikirim ke email baru.</p>
+        <p className="text-xs text-slate-500">Setelah disimpan, link konfirmasi akan dikirim ke email baru.</p>
       </div>
 
       {/* Ganti Password */}
@@ -692,7 +692,7 @@ const TabAkun = ({ user }) => {
             <button
               type="button"
               onClick={() => setPwForm(f => ({ ...f, showNew: !f.showNew }))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
             >
               {pwForm.showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -711,7 +711,7 @@ const TabAkun = ({ user }) => {
             <button
               type="button"
               onClick={() => setPwForm(f => ({ ...f, showConfirm: !f.showConfirm }))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
             >
               {pwForm.showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -753,13 +753,13 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
           <div className="px-5 pt-5 pb-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-br from-app-accent-bright to-app-accent flex items-center justify-center text-white font-bold text-base border-2 border-slate-100">
               {therapist?.avatar_url
-                ? <img src={therapist.avatar_url} alt="" className="w-full h-full object-cover" />
+                ? <img src={therapist.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 : therapist?.name?.charAt(0)?.toUpperCase()
               }
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-base font-bold text-slate-900 leading-none truncate">Pengaturan</p>
-              <p className="text-xs text-slate-400 mt-0.5 truncate">{therapist?.name}</p>
+              <p className="text-xs text-slate-500 mt-0.5 truncate">{therapist?.name}</p>
             </div>
           </div>
 
@@ -772,10 +772,10 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-all border-b-2 ${
+                  className={`flex flex-col items-center gap-1 py-2.5 text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] border-b-2 ${
                     active
                       ? 'text-app-accent border-app-accent'
-                      : 'text-slate-400 border-transparent hover:text-slate-500'
+                      : 'text-slate-500 border-transparent hover:text-slate-500'
                   }`}
                 >
                   <Icon className="w-4 h-4" />

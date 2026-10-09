@@ -44,7 +44,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
             aria-pressed={active}
             onClick={() => toggle(opt)}
             className={cn(
-              'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-all active:scale-95 max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
+              'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97] max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
               active
                 ? cn(tone(opt), 'font-medium shadow-sm')
                 : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
@@ -143,7 +143,7 @@ const FreeInput = ({ tok, value, onChange }) => {
       onChange={(e) => onChange(e.target.value)}
       style={{ '--w': `${width}ch` }}
       className={cn(
-        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
+        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-500 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
         value?.trim() ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
@@ -186,7 +186,7 @@ const ToggleSentence = ({ tok, value, onChange }) => (
     aria-pressed={!!value}
     onClick={() => onChange(value ? undefined : true)}
     className={cn(
-      'my-1 flex w-full items-start gap-2 rounded-app border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-all active:scale-[0.99]',
+      'my-1 flex w-full items-start gap-2 rounded-app border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.99]',
       value
         ? 'border-app-accent bg-app-accent font-medium text-white shadow-sm'
         : 'border-dashed border-slate-300 bg-white text-slate-500 hover:border-app-accent/40 hover:bg-app-soft'
@@ -220,7 +220,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
           aria-pressed={value === n}
           onClick={() => onChange(value === n ? undefined : n)}
           className={cn(
-            'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 sm:min-w-[32px] sm:align-middle sm:text-[13px] leading-none transition-all active:scale-95',
+            'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 sm:min-w-[32px] sm:align-middle sm:text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
             value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
           )}
         >
@@ -245,7 +245,7 @@ const FormButtons = ({ tok, value, onOpen, onClear }) => (
           key={f}
           type="button"
           onClick={() => onOpen(f)}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-app border border-dashed border-blue-400 bg-blue-50/60 px-3 py-1 text-[13px] font-medium text-blue-700 hover:bg-blue-100 active:scale-95"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-app border border-dashed border-blue-400 bg-blue-50/60 px-3 py-1 text-[13px] font-medium text-blue-700 hover:bg-blue-100 active:scale-[0.97]"
         >
           <ClipboardCheck className="h-4 w-4" /> Isi {FUNCTIONAL_FORMS[f]?.name || f}
         </button>
@@ -453,7 +453,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
             </span>
           </span>
         </span>
-        <ChevronDown className={cn('h-5 w-5 shrink-0 text-slate-400 transition-transform', open && 'rotate-180')} />
+        <ChevronDown className={cn('h-5 w-5 shrink-0 text-slate-500 transition-transform', open && 'rotate-180')} />
       </button>
       )}
 
@@ -485,7 +485,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           <div className="flex items-center gap-3">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-app-accent-bright transition-all"
+                className="h-full rounded-full bg-app-accent-bright transition-[color,background-color,border-color,box-shadow,transform,opacity]"
                 style={{ width: total ? `${Math.round((filled / total) * 100)}%` : '0%' }}
               />
             </div>
@@ -507,16 +507,16 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
             ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">
+                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-app-accent-hover">
                   <span>
                     {section.title}
-                    {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">(berlaku untuk semua diagnosa)</span>}
+                    {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">(berlaku untuk semua diagnosa)</span>}
                   </span>
                   {shared === 'vital' && (
                     <button
                       type="button"
                       onClick={() => setVitalValues((prev) => ({ ...prev, ...normalVitalValues(sharedVital) }))}
-                      className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-emerald-700 hover:bg-emerald-100"
+                      className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-emerald-700 hover:bg-emerald-100"
                     >
                       Normal
                     </button>
@@ -567,7 +567,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
           </div>
 
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <Sparkles className="h-3 w-3" /> {merged ? 'Hasil gabungan semua diagnosa' : 'Hasil'}
             </div>
             <textarea
@@ -577,7 +577,7 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
               rows={Math.min(14, Math.max(4, finalText.split('\n').length + 1))}
               className={cn(
                 'block w-full resize-y rounded-app border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-app-accent/25',
-                finalText ? 'border-app-accent/15 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
+                finalText ? 'border-app-accent/15 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-500'
               )}
             />
           </div>

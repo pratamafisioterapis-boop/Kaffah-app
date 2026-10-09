@@ -45,7 +45,7 @@ const Chip = ({ active, tone, onClick, children }) => (
     aria-pressed={active}
     onClick={onClick}
     className={cn(
-      'inline-flex min-h-[34px] items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1 text-[13px] leading-none transition-all active:scale-95',
+      'inline-flex min-h-[34px] items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1 text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
       active ? cn(tone, 'font-medium shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
     )}
   >
@@ -119,8 +119,8 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
 
       <div className="space-y-3 rounded-app-lg border border-slate-200 bg-white p-3.5 shadow-sm">
         <div>
-          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-app-accent-hover">
-            Skala nyeri sekarang (0-10){prevVas !== null && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-400">sebelumnya {prevVas}/10</span>}
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-app-accent-hover">
+            Skala nyeri sekarang (0-10){prevVas !== null && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">sebelumnya {prevVas}/10</span>}
           </div>
           <div className="flex flex-wrap gap-1">
             {Array.from({ length: 11 }, (_, n) => (
@@ -130,7 +130,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
                 aria-pressed={vas === n}
                 onClick={() => { setEdited(null); setVas(vas === n ? undefined : n); }}
                 className={cn(
-                  'inline-flex h-9 min-w-[36px] items-center justify-center rounded-full border px-2 text-[13px] transition-all active:scale-95',
+                  'inline-flex h-9 min-w-[36px] items-center justify-center rounded-full border px-2 text-[13px] transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
                   vas === n ? cn(vasTone(n), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
                 )}
               >
@@ -173,7 +173,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
       </div>
 
       <div>
-        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Hasil (bisa diedit)</div>
+        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Hasil (bisa diedit)</div>
         <textarea
           value={finalLine}
           onChange={(e) => setEdited(e.target.value)}
@@ -181,7 +181,7 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
           placeholder="Klik perubahan di atas, barisnya muncul di sini."
           className="block w-full resize-y rounded-app border border-app-accent/15 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 outline-none focus:ring-2 focus:ring-app-accent/25"
         />
-        <p className="mt-1 text-[11px] text-slate-400">Ditambahkan sebagai baris "Update Kondisi" di akhir Objective (menggantikan baris lama bila sudah ada).</p>
+        <p className="mt-1 text-xs text-slate-500">Ditambahkan sebagai baris "Update Kondisi" di akhir Objective (menggantikan baris lama bila sudah ada).</p>
       </div>
 
       <Button type="button" onClick={apply} disabled={!finalLine.trim()} className="h-11 w-full gap-2 rounded-app bg-app-accent text-sm font-semibold hover:bg-app-accent-hover">

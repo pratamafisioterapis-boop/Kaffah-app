@@ -150,7 +150,7 @@ const TherapistSoapLockManager = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
       </div>
     );
   }
@@ -174,7 +174,7 @@ const TherapistSoapLockManager = () => {
             <p className="text-xs text-slate-500 mt-0.5">Berlaku untuk semua terapis aktif, kecuali yang punya aturan khusus atau dikecualikan.</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={cn("text-xs font-semibold", settings.enabled ? "text-emerald-600" : "text-slate-400")}>
+            <span className={cn("text-xs font-semibold", settings.enabled ? "text-emerald-600" : "text-slate-500")}>
               {settings.enabled ? 'Aktif' : 'Nonaktif'}
             </span>
             <Switch
@@ -244,31 +244,31 @@ const TherapistSoapLockManager = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-slate-800 truncate">{t.name}</p>
-                      <p className="text-[11px] text-slate-500">{RULE_SOURCE_LABEL[source] || '-'}</p>
+                      <p className="text-xs text-slate-500">{RULE_SOURCE_LABEL[source] || '-'}</p>
                     </div>
                   </div>
 
                   {locked ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-red-600 text-white shrink-0">
+                    <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-1 rounded-full bg-red-600 text-white shrink-0">
                       <Lock className="w-3 h-3" /> Terkunci
                     </span>
                   ) : source === 'exempt' ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-slate-200 text-slate-600 shrink-0">
+                    <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-1 rounded-full bg-slate-200 text-slate-600 shrink-0">
                       <ShieldOff className="w-3 h-3" /> Dikecualikan
                     </span>
                   ) : source === 'manual_unlock' ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                    <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0">
                       <Unlock className="w-3 h-3" /> Dibuka Manual
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                    <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
                       <ShieldCheck className="w-3 h-3" /> Aman
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-app-sm px-3 py-2 border border-slate-100">
-                  <ShieldAlert className={cn("w-3.5 h-3.5", locked ? "text-red-500" : "text-slate-400")} />
+                  <ShieldAlert className={cn("w-3.5 h-3.5", locked ? "text-red-500" : "text-slate-500")} />
                   <span>
                     <strong className={locked ? "text-red-600" : "text-slate-700"}>{status?.unfilled_count ?? 0}</strong> SOAP kosong
                     {status?.threshold_count ? ` / ambang ${status.threshold_count}` : ''}
@@ -323,7 +323,7 @@ const TherapistSoapLockManager = () => {
               <div className="flex items-center justify-between p-3 rounded-app-sm border bg-slate-50">
                 <div>
                   <p className="text-sm font-medium text-slate-800">Kecualikan dari kunci</p>
-                  <p className="text-[11px] text-slate-500">Terapis ini tidak akan pernah terkunci otomatis.</p>
+                  <p className="text-xs text-slate-500">Terapis ini tidak akan pernah terkunci otomatis.</p>
                 </div>
                 <Switch
                   checked={editForm.soap_lock_exempt}
@@ -335,7 +335,7 @@ const TherapistSoapLockManager = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">Gunakan aturan khusus</p>
-                    <p className="text-[11px] text-slate-500">Threshold &amp; periode berbeda dari aturan klinik.</p>
+                    <p className="text-xs text-slate-500">Threshold &amp; periode berbeda dari aturan klinik.</p>
                   </div>
                   <Switch
                     checked={editForm.soap_lock_custom_enabled}
@@ -345,7 +345,7 @@ const TherapistSoapLockManager = () => {
 
                 {editForm.soap_lock_custom_enabled && (
                   <div className="space-y-1 pt-1">
-                    <Label className="text-[11px] text-slate-500">SOAP kosong (dihitung dalam Periode aktif terapis ini)</Label>
+                    <Label className="text-xs text-slate-500">SOAP kosong (dihitung dalam Periode aktif terapis ini)</Label>
                     <Input
                       type="number"
                       min={1}
@@ -360,7 +360,7 @@ const TherapistSoapLockManager = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">Kunci jika SOAP menunggak lama</p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       Kunci otomatis begitu ada SOAP yang belum diisi lebih dari X hari, berapa pun total SOAP kosongnya.
                       Untuk terapis yang sengaja menahan SOAP kosong tetap di bawah ambang.
                     </p>
@@ -373,7 +373,7 @@ const TherapistSoapLockManager = () => {
 
                 {editForm.soap_lock_age_rule_enabled && (
                   <div className="space-y-1 pt-1">
-                    <Label className="text-[11px] text-slate-500">Maksimal SOAP menunggak (hari)</Label>
+                    <Label className="text-xs text-slate-500">Maksimal SOAP menunggak (hari)</Label>
                     <Input
                       type="number"
                       min={1}
@@ -389,7 +389,7 @@ const TherapistSoapLockManager = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-amber-900">Buka kunci manual (darurat)</p>
-                    <p className="text-[11px] text-amber-700">Tetap bisa booking meski masih di atas ambang. Nonaktifkan lagi kapan saja.</p>
+                    <p className="text-xs text-amber-700">Tetap bisa booking meski masih di atas ambang. Nonaktifkan lagi kapan saja.</p>
                   </div>
                   <Switch
                     checked={editForm.soap_lock_manual_unlock}
@@ -399,7 +399,7 @@ const TherapistSoapLockManager = () => {
                 </div>
                 {editForm.soap_lock_manual_unlock && (
                   <div className="space-y-1">
-                    <Label className="text-[11px] text-amber-700">Catatan (opsional)</Label>
+                    <Label className="text-xs text-amber-700">Catatan (opsional)</Label>
                     <Textarea
                       value={editForm.soap_lock_manual_unlock_note}
                       onChange={(e) => setEditForm(prev => ({ ...prev, soap_lock_manual_unlock_note: e.target.value }))}
@@ -408,7 +408,7 @@ const TherapistSoapLockManager = () => {
                       className="bg-white text-sm"
                     />
                     {editTherapist?.soap_lock_manual_unlock_by_name && (
-                      <p className="text-[10px] text-amber-600 flex items-center gap-1 pt-1">
+                      <p className="text-xs text-amber-600 flex items-center gap-1 pt-1">
                         <AlertTriangle className="w-3 h-3" /> Terakhir dibuka oleh {editTherapist.soap_lock_manual_unlock_by_name}
                       </p>
                     )}

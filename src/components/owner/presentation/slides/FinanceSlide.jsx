@@ -64,15 +64,15 @@ const FinanceSlide = ({ data, dateRange }) => {
               <Target className="h-4 w-4" />
               <p className="font-bold text-sm md:text-base">Break Even Point</p>
             </div>
-            <p className="text-slate-400 text-[11px] md:text-xs -mt-2">Posisi periode yang dipilih</p>
+            <p className="text-slate-500 text-xs -mt-2">Posisi periode yang dipilih</p>
             {breakEven ? (
               <>
                 <div>
-                  <p className="text-slate-400 text-xs">Total Biaya (Periode)</p>
+                  <p className="text-slate-500 text-xs">Total Biaya (Periode)</p>
                   <p className="text-white text-lg md:text-2xl font-black">{formatShortCurrency(breakEven.totalCost)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs">Pendapatan (Periode)</p>
+                  <p className="text-slate-500 text-xs">Pendapatan (Periode)</p>
                   <p className="text-white text-lg md:text-2xl font-black">{formatShortCurrency(breakEven.totalRevenue)}</p>
                 </div>
                 <div className={`mt-1 inline-flex w-fit items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${breakEven.isBreakEven ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'}`}>
@@ -80,7 +80,7 @@ const FinanceSlide = ({ data, dateRange }) => {
                 </div>
               </>
             ) : (
-              <p className="text-slate-400 text-sm">Data belum tersedia.</p>
+              <p className="text-slate-500 text-sm">Data belum tersedia.</p>
             )}
           </div>
         </div>

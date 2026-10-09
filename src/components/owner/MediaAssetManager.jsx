@@ -129,7 +129,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
 
         <div
           className={cn(
-            "relative border-2 border-dashed rounded-app p-8 transition-all duration-200 ease-in-out text-center cursor-pointer",
+            "relative border-2 border-dashed rounded-app p-8 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 ease-in-out text-center cursor-pointer",
             dragActive ? "border-app-accent-bright bg-app-soft" : "border-slate-200 hover:border-app-accent-bright hover:bg-slate-50",
             selectedFile ? "border-solid bg-slate-50 border-slate-300" : ""
           )}
@@ -149,9 +149,9 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
           />
 
           {selectedFile ? (
-            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+            <div className="flex flex-col items-center animate-in fade-in duration-200 ease-out">
               <div className="relative w-full max-w-md h-48 bg-slate-200 rounded-app-sm overflow-hidden mb-4 border border-slate-200 shadow-sm">
-                <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                <img src={preview} alt="Preview" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                 <button
                   onClick={(e) => { e.stopPropagation(); handleRemoveFile(); }}
                   className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-full transition-colors"
@@ -162,7 +162,7 @@ const MediaAssetManager = ({ onUploadSuccess }) => {
               <div className="flex items-center gap-3 text-sm text-slate-700 font-medium">
                 <FileType className="w-4 h-4 text-app-accent" />
                 {selectedFile.name}
-                <span className="text-slate-400 font-normal">
+                <span className="text-slate-500 font-normal">
                   ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                 </span>
               </div>

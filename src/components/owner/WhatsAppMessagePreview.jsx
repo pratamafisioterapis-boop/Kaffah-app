@@ -59,7 +59,7 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName })
         </div>
         <div className="text-white">
           <p className="font-bold text-sm leading-none">{clinicName || 'Kaffah Care'}</p>
-          <p className="text-[10px] opacity-80">Online</p>
+          <p className="text-xs opacity-80">Online</p>
         </div>
       </div>
       
@@ -67,16 +67,16 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName })
       <div className="p-4 min-h-[200px] flex flex-col justify-end">
         <div className="self-start bg-white rounded-tr-app-sm rounded-br-app-sm rounded-bl-app-sm p-2 max-w-[90%] shadow-sm relative mb-2">
             <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
-              {message || <span className="text-slate-400 italic">Preview pesan akan muncul di sini...</span>}
+              {message || <span className="text-slate-500 italic">Preview pesan akan muncul di sini...</span>}
             </p>
-            <div className="text-[10px] text-slate-400 text-right mt-1 flex justify-end gap-1">
+            <div className="text-xs text-slate-500 text-right mt-1 flex justify-end gap-1">
                {currentTime}
             </div>
         </div>
       </div>
       
       {/* Footer info */}
-      <div className="bg-[#f0f2f5] px-3 py-2 text-[10px] text-slate-500 text-center border-t border-slate-200">
+      <div className="bg-[#f0f2f5] px-3 py-2 text-xs text-slate-500 text-center border-t border-slate-200">
          Karakter: {message.length}
       </div>
     </div>

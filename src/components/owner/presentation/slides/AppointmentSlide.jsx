@@ -103,7 +103,7 @@ const AppointmentSlide = ({ data, dateRange }) => {
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {statusBreakdown.map((entry) => (
-                <div key={entry.status} className="flex items-center gap-1.5 text-[11px] md:text-xs text-slate-300">
+                <div key={entry.status} className="flex items-center gap-1.5 text-xs text-slate-300">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: STATUS_COLORS[entry.status] || '#64748b' }} />
                   {STATUS_LABELS[entry.status] || entry.status} ({entry.count})
                 </div>

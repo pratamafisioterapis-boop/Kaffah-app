@@ -301,7 +301,7 @@ const TherapistPatientHistory = ({ therapist }) => {
                   </div>
                 )}
               </div>
-              <span className="text-slate-400 shrink-0">-</span>
+              <span className="text-slate-500 shrink-0">-</span>
               <div className="relative flex-1 min-w-0">
                 <Input
                   value={displayDateID(dateRange.end)}
@@ -326,7 +326,7 @@ const TherapistPatientHistory = ({ therapist }) => {
           <div className="flex-1 space-y-1">
             <label className="text-xs font-semibold text-slate-500">Cari Pasien / Diagnosa</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
               <Input
                 placeholder="Nama pasien, No. RM, atau diagnosa..."
                 className="pl-10"
@@ -357,7 +357,7 @@ const TherapistPatientHistory = ({ therapist }) => {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="animate-spin w-6 h-6 text-app-accent" /></div>
           ) : paginatedList.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
+            <div className="text-center py-12 text-slate-500 text-sm">
               <History className="w-8 h-8 mx-auto mb-2 text-slate-300" />
               {records.length === 0 ? 'Belum ada riwayat terapi pada periode ini.' : 'Tidak ada data yang cocok.'}
             </div>
@@ -368,22 +368,22 @@ const TherapistPatientHistory = ({ therapist }) => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-800 text-sm truncate">{getPatientName(r)}</p>
-                    <p className="text-xs text-slate-400">{getPatientRM(r)}</p>
+                    <p className="text-xs text-slate-500">{getPatientRM(r)}</p>
                   </div>
-                  <Badge variant="outline" className="shrink-0 text-[10px] border-slate-200 text-slate-600">
+                  <Badge variant="outline" className="shrink-0 text-xs border-slate-200 text-slate-600">
                     {r.recap_date ? format(new Date(`${r.recap_date}T00:00:00`), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 mt-2">
                   {r.patient_type && (
-                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', colorForLabel(r.patient_type))}>
+                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full border', colorForLabel(r.patient_type))}>
                       {r.patient_type}
                     </span>
                   )}
                   {diagnosisList.length === 0 ? (
-                    <span className="text-[10px] text-slate-400 italic">Belum ada diagnosa</span>
+                    <span className="text-xs text-slate-500 italic">Belum ada diagnosa</span>
                   ) : diagnosisList.map((d, idx) => (
-                    <span key={idx} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    <span key={idx} className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                       {d}
                     </span>
                   ))}
@@ -439,16 +439,16 @@ const TherapistPatientHistory = ({ therapist }) => {
                           <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-full border', colorForLabel(r.patient_type))}>
                             {r.patient_type}
                           </span>
-                        ) : <span className="text-slate-400 text-xs">-</span>}
+                        ) : <span className="text-slate-500 text-xs">-</span>}
                       </TableCell>
                       <TableCell>
                         {diagnosisList.length === 0 ? (
-                          <span className="text-xs text-slate-400 italic">Belum ada diagnosa</span>
+                          <span className="text-xs text-slate-500 italic">Belum ada diagnosa</span>
                         ) : (
                           <div className="flex flex-wrap gap-1.5 max-w-md">
                             {diagnosisList.map((d, idx) => (
                               <span key={idx} className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                                <Stethoscope className="w-3 h-3 text-slate-400" />{d}
+                                <Stethoscope className="w-3 h-3 text-slate-500" />{d}
                               </span>
                             ))}
                           </div>
@@ -469,7 +469,7 @@ const TherapistPatientHistory = ({ therapist }) => {
             <ChevronLeft className="w-4 h-4 mr-1" /> Sebelumnya
           </Button>
           <div className="text-sm text-slate-600 px-2 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-slate-400" /> Halaman {currentPage} / {totalPages}
+            <Users className="w-3.5 h-3.5 text-slate-500" /> Halaman {currentPage} / {totalPages}
           </div>
           <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
             Berikutnya <ChevronRight className="w-4 h-4 ml-1" />

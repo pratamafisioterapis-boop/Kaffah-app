@@ -76,7 +76,7 @@ const NoteField = ({ item, onSave }) => {
           onClick={(e) => e.stopPropagation()}
           placeholder="Catatan / laporan singkat (opsional)... contoh: 12 pasien di-follow up, kunjungan kemarin 34 pasien"
           rows={2}
-          className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 focus:border-app-accent-bright focus:bg-white rounded-app px-3.5 py-2.5 text-slate-700 placeholder:text-slate-400 outline-none resize-none transition-colors"
+          className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 focus:border-app-accent-bright focus:bg-white rounded-app px-3.5 py-2.5 text-slate-700 placeholder:text-slate-500 outline-none resize-none transition-colors"
         />
         <AnimatePresence>
           {saved && (
@@ -84,7 +84,7 @@ const NoteField = ({ item, onSave }) => {
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute -top-2 right-2 flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow"
+              className="absolute -top-2 right-2 flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow"
             >
               <Check className="w-2.5 h-2.5" /> Tersimpan
             </motion.span>
@@ -154,7 +154,7 @@ const AdminDailyChecklistWidget = () => {
             </div>
             <div>
               <h3 className="text-slate-900 font-extrabold text-lg sm:text-xl tracking-tight">Checklist Admin Harian</h3>
-              <p className="text-slate-400 text-xs sm:text-sm">Tugas operasional yang wajib diselesaikan hari ini</p>
+              <p className="text-slate-500 text-xs sm:text-sm">Tugas operasional yang wajib diselesaikan hari ini</p>
             </div>
           </div>
 
@@ -162,13 +162,13 @@ const AdminDailyChecklistWidget = () => {
             <div className="min-w-[170px]">
               <div className="flex items-center justify-between gap-4 mb-1.5">
                 <span className="text-xs sm:text-sm text-slate-500 font-semibold whitespace-nowrap">Progress Hari Ini</span>
-                <span className="text-xs sm:text-sm text-slate-400 font-medium whitespace-nowrap">{doneCount} / {total} selesai</span>
+                <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">{doneCount} / {total} selesai</span>
               </div>
               <div className="h-2.5 w-full sm:w-48 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${percent}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
                   className={`h-full rounded-full ${allDone ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-app-accent-bright to-app-accent-bright'}`}
                 />
               </div>
@@ -180,7 +180,7 @@ const AdminDailyChecklistWidget = () => {
               <span className="text-xl leading-none">{allDone ? '🎉' : '☀️'}</span>
               <div className="leading-tight">
                 <p className="text-app-accent font-bold text-xs sm:text-sm">{allDone ? 'Semua beres!' : 'Sedikit lagi!'}</p>
-                <p className="text-app-accent-bright/80 text-[11px] sm:text-xs font-medium">Tetap semangat 🙌</p>
+                <p className="text-app-accent-bright/80 text-xs font-medium">Tetap semangat 🙌</p>
               </div>
             </div>
           </div>
@@ -193,7 +193,7 @@ const AdminDailyChecklistWidget = () => {
               <PartyPopper className="w-7 h-7 text-emerald-500" />
             </div>
             <p className="text-slate-900 font-bold text-sm sm:text-base">Semua tugas hari ini selesai 🎉</p>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1">Kerja bagus, pertahankan konsistensinya.</p>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">Kerja bagus, pertahankan konsistensinya.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -214,7 +214,7 @@ const AdminDailyChecklistWidget = () => {
                       <button
                         onClick={() => handleToggle(item)}
                         disabled={togglingId === item.id}
-                        className={`flex items-center justify-center w-6 h-6 rounded-app-sm border-2 shrink-0 transition-all duration-200 ${
+                        className={`flex items-center justify-center w-6 h-6 rounded-app-sm border-2 shrink-0 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 ${
                           item.is_done
                             ? 'bg-app-accent-bright border-app-accent-bright'
                             : 'border-slate-300 bg-white'
@@ -239,7 +239,7 @@ const AdminDailyChecklistWidget = () => {
                           {item.title}
                         </p>
                         {item.description && (
-                          <p className="text-xs sm:text-sm mt-0.5 leading-relaxed text-slate-400">
+                          <p className="text-xs sm:text-sm mt-0.5 leading-relaxed text-slate-500">
                             {item.description}
                           </p>
                         )}
@@ -255,12 +255,12 @@ const AdminDailyChecklistWidget = () => {
                             Selesai
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-400 font-semibold text-xs px-3 py-1.5 rounded-full">
+                          <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-500 font-semibold text-xs px-3 py-1.5 rounded-full">
                             <Clock className="w-3.5 h-3.5" />
                             Belum dikerjakan
                           </span>
                         )}
-                        <span className="text-xs text-slate-400 font-medium">{item.is_done ? formatTime(item.completed_at) : '-'}</span>
+                        <span className="text-xs text-slate-500 font-medium">{item.is_done ? formatTime(item.completed_at) : '-'}</span>
                       </div>
 
                       <button

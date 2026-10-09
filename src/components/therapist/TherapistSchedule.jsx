@@ -94,7 +94,7 @@ const TherapistSchedule = ({ therapist }) => {
                <button
                  key={offset}
                  onClick={() => setSelectedDate(date)}
-                 className={`px-3 py-2 rounded-md text-sm transition-all whitespace-nowrap ${
+                 className={`px-3 py-2 rounded-md text-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] whitespace-nowrap ${
                     isSelected ? 'bg-white shadow text-app-accent font-bold' : 'text-slate-500 hover:text-slate-800'
                  }`}
                >
@@ -118,14 +118,14 @@ const TherapistSchedule = ({ therapist }) => {
         <div className="bg-slate-50 border border-slate-200 rounded-app p-8 text-center">
            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
            <h3 className="text-lg font-medium text-slate-600">Tidak ada jadwal</h3>
-           <p className="text-slate-400">Belum ada pasien yang terdaftar untuk hari ini.</p>
+           <p className="text-slate-500">Belum ada pasien yang terdaftar untuk hari ini.</p>
         </div>
       ) : (
         <div className="grid gap-4">
           {items.map((item, idx) => {
             const isCancelled = item.type === 'appointment' && item.status === 'cancelled';
             return (
-            <Card key={`${item.type}-${item.id}-${idx}`} className={`hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-app-accent-bright'}`}>
+            <Card key={`${item.type}-${item.id}-${idx}`} className={`[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow border-l-4 ${isCancelled ? 'border-l-red-500 bg-red-50' : item.type === 'recap' ? 'border-l-emerald-500' : 'border-l-app-accent-bright'}`}>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                    <div className={`px-3 py-2 rounded-app-sm font-mono font-bold text-lg min-w-[80px] text-center ${isCancelled ? 'bg-red-100 text-red-700' : item.type === 'recap' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>

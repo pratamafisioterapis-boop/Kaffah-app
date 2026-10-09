@@ -77,7 +77,7 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
       ) : uploads.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
+        <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-app-sm border border-dashed border-slate-200">
           Belum ada konten yang diunggah terapis.
         </div>
       ) : (
@@ -95,7 +95,7 @@ const TherapistDriveUploadsManager = ({ allowDelete = true }) => {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-700 break-words">{item.file_name}</p>
-                  <p className="text-xs text-slate-400 break-words">
+                  <p className="text-xs text-slate-500 break-words">
                     {item.therapist_name} • {item.created_at ? format(new Date(item.created_at), 'dd MMM yyyy, HH:mm', { locale: idLocale }) : '-'}
                     {item.label ? ` • ${item.label}` : ''}
                   </p>
