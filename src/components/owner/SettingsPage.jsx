@@ -47,6 +47,7 @@ import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import GoogleReviewSettings from '@/components/owner/GoogleReviewSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
 
 // --- Dedicated Discount Type Manager ---
 const DiscountTypeManager = () => {
@@ -1141,18 +1142,25 @@ const SettingsPage = () => {
     return () => { active = false; };
   }, [userDetails?.clinic_id]);
 
+  // Jam Buka Klinik hanya dipakai form izin terapis, jadi disembunyikan untuk klinik tanpa fitur itu.
+  const { enabled: leaveEnabled, loaded: leaveLoaded } = useTherapistLeaveRequestEnabled();
+  const hiddenTabs = useMemo(
+    () => (leaveLoaded && !leaveEnabled ? [...disabledFeatures, 'operating_hours'] : disabledFeatures),
+    [disabledFeatures, leaveLoaded, leaveEnabled],
+  );
+
   const visibleTabGroups = useMemo(() => (
     SETTINGS_TAB_GROUPS
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => !disabledFeatures.includes(item.value)),
+        items: group.items.filter((item) => !hiddenTabs.includes(item.value)),
       }))
       .filter((group) => group.items.length > 0)
-  ), [disabledFeatures]);
+  ), [hiddenTabs]);
 
   const firstVisibleTab = visibleTabGroups[0]?.items[0]?.value || 'account_clinic';
   const requestedTab = new URLSearchParams(window.location.search).get('tab');
-  const initialTab = requestedTab && !disabledFeatures.includes(requestedTab)
+  const initialTab = requestedTab && !hiddenTabs.includes(requestedTab)
     ? requestedTab
     : firstVisibleTab;
 
