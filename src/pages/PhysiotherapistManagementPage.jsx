@@ -14,6 +14,7 @@ import TherapistMonthlyReportManager from '@/components/owner/TherapistMonthlyRe
 import { CalendarClock, Users, Target, CalendarOff, Shield, Lock, Award, FileBarChart2, ChevronRight, CalendarRange } from 'lucide-react';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
 import ShiftSwapReview from '@/components/shared/ShiftSwapReview';
+import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -168,6 +169,7 @@ const PhysiotherapistManagementPage = () => {
         <TabsContent value="timeoff" className="space-y-8">
           <LeaveRequestReview onChanged={refreshPendingLeave} />
           <ShiftSwapReview />
+          <SundaySwapReview />
           <TherapistTimeOffManager />
         </TabsContent>
 

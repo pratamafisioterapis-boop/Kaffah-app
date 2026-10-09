@@ -40,7 +40,7 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
   };
   const link = isHead ? '/therapist/leave' : null;
   const safe = (promise) => promise.then((r) => r, () => ({ data: [] }));
-  const [leaveRes, swapRes, soapRes] = await Promise.all([
+  const [leaveRes, swapRes, sundayRes, soapRes] = await Promise.all([
     safe(scope(supabase
       .from('therapist_leave_requests')
       .select('id, therapist_name, leave_date, is_partial, start_time, end_time, created_at')
@@ -53,6 +53,14 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(ACTIVITY_LIMIT))),
+    isHead
+      ? Promise.resolve({ data: [] })
+      : safe(scope(supabase
+        .from('therapist_sunday_swap_requests')
+        .select('id, therapist_name, substitute_name, swap_date, created_at')
+        .eq('status', 'pending_owner')
+        .order('created_at', { ascending: false })
+        .limit(ACTIVITY_LIMIT))),
     isHead
       ? Promise.resolve({ data: [] })
       : safe(scope(supabase
@@ -80,6 +88,14 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
       link: link || APPROVAL_LINKS.swap,
       actorName: r.therapist_name || 'Terapis',
       text: `mengajukan tukar shift pada ${formatShortDate(r.swap_date)} (${formatHm(r.to_start_time)}–${formatHm(r.to_end_time)}) — menunggu persetujuan`,
+    })),
+    ...(sundayRes.data || []).map((r) => ({
+      ...base,
+      id: `sunday-${r.id}`,
+      time: r.created_at,
+      link: APPROVAL_LINKS.swap,
+      actorName: r.therapist_name || 'Terapis',
+      text: `tukar jadwal Minggu ${formatShortDate(r.swap_date)} dengan ${r.substitute_name || 'rekan'} (sudah disetujui ${r.substitute_name || 'rekan'}) — menunggu persetujuan`,
     })),
     ...(soapRes.data || []).map((r) => ({
       ...base,
@@ -576,7 +592,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   useEffect(() => {
     if (!canReviewRequests) return undefined;
     let channel = supabase.channel('topbar-approval-requests');
-    ['therapist_leave_requests', 'therapist_shift_swap_requests', 'soap_template_change_requests'].forEach((table) => {
+    ['therapist_leave_requests', 'therapist_shift_swap_requests', 'therapist_sunday_swap_requests', 'soap_template_change_requests'].forEach((table) => {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => loadActivities());
     });
     channel.subscribe();

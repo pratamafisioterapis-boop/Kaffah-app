@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays, format, parseISO } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 import {
-  CalendarOff, Send, Loader2, Paperclip, Repeat, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown,
+  CalendarOff, Send, Loader2, Paperclip, Repeat, Plus, X, AlertTriangle, CheckCircle2, Sun, Clock3, Trash2, Info, Crown, CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,8 @@ import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
 import ShiftSwapReview from '@/components/shared/ShiftSwapReview';
 import TherapistShiftSwap from '@/components/therapist/TherapistShiftSwap';
+import TherapistSundaySwap from '@/components/therapist/TherapistSundaySwap';
+import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 
 const DAY_KEY = 'yyyy-MM-dd';
@@ -570,6 +573,22 @@ const TherapistLeaveRequests = ({ therapist }) => {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
   const { count: pendingForReview, refresh: refreshPending } = usePendingLeaveRequestCount(isHead);
+  const [searchParams] = useSearchParams();
+  const [incomingSunday, setIncomingSunday] = useState(0);
+  const refreshIncomingSunday = useCallback(async () => {
+    if (!user?.id) return;
+    const { count } = await supabase
+      .from('therapist_sunday_swap_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('substitute_user_id', user.id)
+      .eq('status', 'pending_substitute');
+    setIncomingSunday(count || 0);
+  }, [user?.id]);
+  useEffect(() => { refreshIncomingSunday(); }, [refreshIncomingSunday]);
+  const [tab, setTab] = useState(() => {
+    const fromUrl = searchParams.get('tab');
+    return ['mine', 'swap', 'sunday', 'review'].includes(fromUrl) ? fromUrl : (isHead && pendingForReview > 0 ? 'review' : 'mine');
+  });
 
   const load = useCallback(async () => {
     if (!therapist?.id) return;
@@ -666,10 +685,16 @@ const TherapistLeaveRequests = ({ therapist }) => {
         </div>
       )}
 
-      <Tabs defaultValue={isHead && pendingForReview > 0 ? 'review' : 'mine'} className="space-y-5">
-        <TabsList className={cn('grid w-full bg-slate-100 p-1 rounded-lg', isHead ? 'grid-cols-3 sm:w-[560px]' : 'grid-cols-2 sm:w-[380px]')}>
+      <Tabs value={tab} onValueChange={setTab} className="space-y-5">
+        <TabsList className={cn('grid w-full bg-slate-100 p-1 rounded-lg', isHead ? 'grid-cols-4 sm:w-[720px]' : 'grid-cols-3 sm:w-[540px]')}>
           <TabsTrigger value="mine">Ajukan Izin</TabsTrigger>
-          <TabsTrigger value="swap" className="gap-1.5"><Repeat className="w-3.5 h-3.5" /> Tukar Shift</TabsTrigger>
+          <TabsTrigger value="swap" className="gap-1.5"><Repeat className="w-3.5 h-3.5" /> Ubah Shift</TabsTrigger>
+          <TabsTrigger value="sunday" className="gap-1.5">
+            <CalendarClock className="w-3.5 h-3.5" /> Tukar Jadwal
+            {incomingSunday > 0 && (
+              <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5">{incomingSunday}</span>
+            )}
+          </TabsTrigger>
           {isHead && (
             <TabsTrigger value="review" className="gap-1.5">
               <Crown className="w-3.5 h-3.5" /> Izin Tim
@@ -681,6 +706,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
         </TabsList>
         <TabsContent value="mine">{mine}</TabsContent>
         <TabsContent value="swap"><TherapistShiftSwap therapist={therapist} /></TabsContent>
+        <TabsContent value="sunday"><TherapistSundaySwap therapist={therapist} onChanged={refreshIncomingSunday} /></TabsContent>
         {isHead && (
           <TabsContent value="review" className="space-y-8">
             <LeaveRequestReview onChanged={() => { refreshPending(); load(); }} />
