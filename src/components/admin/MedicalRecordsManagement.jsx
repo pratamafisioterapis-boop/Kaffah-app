@@ -362,24 +362,10 @@ const handleViewRecord = (record) => {
 
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden flex flex-col gap-3 p-4 rounded-app-lg sm:flex-row sm:items-center sm:justify-between"
-        style={{ background: 'linear-gradient(135deg, #ffffff 55%, #f3f6ff 100%)', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-        {/* Decorative subtle blue accents */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-app-lg">
-          <div className="absolute -top-14 -right-10 w-36 h-36 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, rgba(79,70,229,0) 70%)' }} />
-          <div className="absolute -bottom-16 -left-8 w-28 h-28 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, rgba(59,130,246,0) 70%)' }} />
-        </div>
-
-        <div className="relative flex items-center gap-3">
-          <div className="w-8 h-8 rounded-app flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
-            <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">Medical Records</h2>
-            <p className="text-xs text-slate-400">Kelola data rekam medis pasien secara terpusat</p>
-          </div>
+      <div className="flex flex-col gap-3 p-4 rounded-app-lg bg-app-soft ring-1 ring-inset ring-app-border/60 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight text-app-ink">Medical Records</h2>
+          <p className="text-xs text-app-muted">Kelola data rekam medis pasien secara terpusat</p>
         </div>
 
         <div className="relative flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -389,8 +375,7 @@ const handleViewRecord = (record) => {
               placeholder="Cari nama atau RM..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-3 h-8 text-[11px] rounded-app-sm outline-none"
-              style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}
+              className="w-full pl-7 pr-3 h-8 text-xs rounded-app-sm border border-app-border bg-white outline-none focus-visible:ring-2 focus-visible:ring-app-accent/40"
             />
           </div>
           <div className="flex items-center gap-2">

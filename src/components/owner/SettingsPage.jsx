@@ -48,6 +48,7 @@ import GoogleReviewSettings from '@/components/owner/GoogleReviewSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
+import PageHero from '@/components/shared/PageHero';
 
 // --- Dedicated Discount Type Manager ---
 const DiscountTypeManager = () => {
@@ -1172,31 +1173,7 @@ const SettingsPage = () => {
     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
-        <img
-          src="/hero/clinara-setup-hero.webp"
-          alt="Kaffah Physiotherapy"
-          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
-        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{useAuth().clinicName || ''}</p>
-            <h1
-              style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
-            >
-              Pengaturan<br />
-              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
-                Sistem
-              </span>
-            </h1>
-            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
-              Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHero image="/hero/clinara-setup-hero.webp" title="Pengaturan" highlight="Sistem" description="Kelola konfigurasi, opsi dropdown, dan preferensi aplikasi." />
 
       <Tabs key={routerLocation.search} defaultValue={initialTab} className="w-full">
         <TabsList className="flex flex-col h-auto gap-3 bg-transparent p-0 border-none items-stretch w-full">

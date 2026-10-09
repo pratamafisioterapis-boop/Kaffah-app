@@ -24,6 +24,7 @@ import SlotBookingForm from '@/components/admin/booking/SlotBookingForm';
 import ManualBookingForm from '@/components/admin/booking/ManualBookingForm';
 import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailModal';
 import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
+import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const TherapistBookingCalendar = ({ therapist }) => {
   const [date, setDate] = useState(new Date());
@@ -160,13 +161,16 @@ const [historyLoading, setHistoryLoading] = useState(false);
   return (
     <div className={cn("w-full mx-auto space-y-3 pb-12", isPWA ? "max-w-full" : "max-w-5xl space-y-6")}>
 
-      {/* ── Header Desktop (sembunyikan di PWA) ── */}
       {!isPWA && (
-        <div className="bg-white rounded-app shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-20">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Booking Calendar Saya</h1>
-            <p className="text-slate-500 text-sm">Kelola jadwal dan booking pasien</p>
-          </div>
+        <TherapistPageHeader
+          title="Booking Calendar Saya"
+          description="Kelola jadwal dan booking pasien"
+        />
+      )}
+
+      {/* ── Toolbar Desktop (sembunyikan di PWA) ── */}
+      {!isPWA && (
+        <div className="bg-white rounded-app shadow-sm border border-slate-100 p-4 flex flex-col md:flex-row md:justify-end items-center gap-4 sticky top-4 z-20">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" title="Copy Template Jadwal Tersedia" onClick={() => setTemplateModalOpen(true)}>
               <ClipboardList className="h-4 w-4" />

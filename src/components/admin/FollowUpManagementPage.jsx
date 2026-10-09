@@ -22,6 +22,7 @@ import {
   Gift
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import PageHero from '@/components/shared/PageHero';
 
 // Setiap tab bisa mewakili lebih dari satu follow_up_type — mis. "Pengingat
 // Terapi" juga harus menghitung reminder homecare (therapy_reminder_homecare),
@@ -222,31 +223,7 @@ const getCount = (types) => {
   <div className="space-y-4 sm:space-y-6">
 
     {/* Hero Banner */}
-    <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
-      <img
-        src="/hero/clinara-followup-hero.webp"
-        alt="Kaffah Physiotherapy"
-        className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-        <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-          <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
-          <h1
-            style={{ fontFamily: "'Caveat', cursive" }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
-          >
-            Follow Up<br />
-            <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
-              Management
-            </span>
-          </h1>
-          <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
-            Kelola antrian pesan WhatsApp otomatis.
-          </p>
-        </div>
-      </div>
-    </div>
+    <PageHero image="/hero/clinara-followup-hero.webp" title="Follow Up" highlight="Management" description="Kelola antrian pesan WhatsApp otomatis." />
 
     {/* ================= TABS SECTION ================= */}
     <div className="bg-white rounded-app-lg shadow-sm border border-slate-200 p-3 sm:p-6">

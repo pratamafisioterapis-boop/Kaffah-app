@@ -15,6 +15,7 @@ import { format, subMonths } from 'date-fns';
 import { downloadCSV, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
+import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const formatLocalDate = (date) => {
   const y = date.getFullYear();
@@ -289,37 +290,14 @@ const paginatedList = sortedList.slice(
   return (
     <div className={isOwnerView ? "space-y-3" : "space-y-6"}>
       {!isOwnerView && (
-        <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
-          <img
-            src="/hero/clinara-medrec-hero.webp"
-            alt="Kaffah Physiotherapy"
-            className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
-          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-            <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-              <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
-              <h1
-                style={{ fontFamily: "'Caveat', cursive" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
-              >
-                Evaluasi<br />
-                <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
-                  Harian
-                </span>
-              </h1>
-              <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
-                Monitoring kelengkapan SOAP berdasarkan kunjungan pasien.
-              </p>
-            </div>
-          </div>
-        </div>
+        <TherapistPageHeader
+          title="Evaluasi Harian"
+          description="Monitoring kelengkapan SOAP berdasarkan kunjungan pasien."
+          meta={therapist ? [{ label: 'Periode saya', value: formatTherapistPeriodLabel(therapist) }] : []}
+        />
       )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
-        {!isOwnerView && (
-          <div><h2 className="text-2xl font-bold text-slate-900">Manajemen Rekam Medis</h2><p className="text-slate-500">Monitoring kelengkapan SOAP berdasarkan kunjungan pasien. {therapist && <span className="text-slate-400">(Periode {formatTherapistPeriodLabel(therapist)})</span>}</p></div>
-        )}
         <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" size={isOwnerView ? 'sm' : 'default'} onClick={handleExportCSV} className="border-green-200 text-green-700 hover:bg-green-50"><Download className="w-4 h-4 mr-2" /> Export</Button>
             {!isOwnerView && (<Button onClick={() => navigate(`${basePath}/new/select`)} className="bg-app-accent hover:bg-app-accent-hover"><Plus className="w-4 h-4 mr-2" /> Catatan Baru</Button>)}

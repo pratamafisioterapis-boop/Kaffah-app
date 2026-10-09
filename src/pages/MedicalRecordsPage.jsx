@@ -6,6 +6,7 @@ import { FileText, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId } from '@/lib/api';
 import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
+import PageHero from '@/components/shared/PageHero';
 
 const MedicalRecordsPage = () => {
   const { user, role, clinicName } = useAuth();
@@ -36,31 +37,7 @@ const MedicalRecordsPage = () => {
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72">
-        <img
-          src="/hero/clinara-medrec-hero.webp"
-          alt="Kaffah Physiotherapy"
-          className="absolute inset-0 w-full h-full object-cover object-[38%_center]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none" aria-hidden="true" />
-        <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
-          <div className="max-w-[74%] sm:max-w-[62%] md:max-w-sm">
-            <p className="text-app-muted text-xs sm:text-sm font-medium mb-1">{clinicName || ''}</p>
-            <h1
-              style={{ fontFamily: "'Caveat', cursive" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
-            >
-              Rekam<br />
-              <span className="text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8">
-                Medis
-              </span>
-            </h1>
-            <p className="text-app-muted text-[10px] sm:text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
-              Pusat data rekam medis pasien dan evaluasi SOAP.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHero image="/hero/clinara-medrec-hero.webp" title="Rekam" highlight="Medis" description="Pusat data rekam medis pasien dan evaluasi SOAP." />
 
       {/* Tab Navigation */}
       <Tabs defaultValue="records" className="w-full space-y-5">
