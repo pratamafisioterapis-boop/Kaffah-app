@@ -20,7 +20,7 @@ import {
 } from '@/lib/api';
 import {
   LEAVE_TYPES, leaveTypeLabel, hhmm, timeToMinutes, formatDuration, formatLongDate, totalShiftMinutes, shiftMinutes, attendanceImpactNote,
-  isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE, isReplacementOptionalType, SUNDAY_RULE_NOTE, WORK_SHIFT_PRESETS,
+  isWeekendDate, isSundayDate, WEEKEND_REPLACEMENT_NOTE, isReplacementOptionalType, SUNDAY_RULE_NOTE, WORK_SHIFT_PRESETS, clinicHoursOn,
 } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 import LeaveRequestReview from '@/components/shared/LeaveRequestReview';
@@ -36,10 +36,8 @@ const MAX_BACKDATE_DAYS = 60;
 const MAX_MONTHS_AHEAD = 1;
 // Batas jam kerja per hari: hari pengganti yang jam kerjanya belum 8 jam bisa diisi sisa utang jam.
 const DAY_TARGET_MINUTES = 8 * 60;
-// Jam operasional klinik (Kaffah): jadwal pengganti bebas di jam berapa pun selama masih dalam jam buka.
-// Jam shift terapis tidak membatasi hari pengganti.
-const CLINIC_OPEN_MINUTES = 9 * 60;
-const CLINIC_CLOSE_MINUTES = 21 * 60;
+// Jadwal pengganti dan jam izin bebas di jam berapa pun selama masih dalam jam buka klinik hari itu
+// (lihat clinicHoursOn). Jam shift terapis tidak membatasinya.
 
 const minutesToTime = (min) => {
   const m = Math.min(Math.max(0, min), 23 * 60 + 59);
@@ -139,20 +137,24 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
 
   // Rentang jam yang masih kosong di satu tanggal: jam buka klinik dikurangi jam kerja normal dan
   // jam pengganti yang sudah terisi. Bentuk: [{ start, end }] dalam menit.
+  const openHoursOn = useCallback((dateStr) => clinicHoursOn(therapist.clinic_id, parseISO(dateStr).getDay()), [therapist.clinic_id]);
+  const openLabelOn = (dateStr) => { const h = openHoursOn(dateStr); return `${minutesToTime(h.open)}–${minutesToTime(h.close)}`; };
+
   const freeWindowsOn = useCallback((dateStr) => {
+    const { open, close } = openHoursOn(dateStr);
     const busy = [
       ...hoursOn(dateStr).map((s) => ({ start: timeToMinutes(s.start_time), end: timeToMinutes(s.end_time) })),
       ...(takenByDate.get(dateStr) || []),
     ].sort((a, b) => a.start - b.start);
     const windows = [];
-    let cursor = CLINIC_OPEN_MINUTES;
+    let cursor = open;
     busy.forEach((b) => {
-      if (b.start > cursor) windows.push({ start: cursor, end: Math.min(b.start, CLINIC_CLOSE_MINUTES) });
+      if (b.start > cursor) windows.push({ start: cursor, end: Math.min(b.start, close) });
       cursor = Math.max(cursor, b.end);
     });
-    if (cursor < CLINIC_CLOSE_MINUTES) windows.push({ start: cursor, end: CLINIC_CLOSE_MINUTES });
+    if (cursor < close) windows.push({ start: cursor, end: close });
     return windows.filter((w) => w.end > w.start);
-  }, [hoursOn, takenByDate]);
+  }, [hoursOn, takenByDate, openHoursOn]);
   const windowsLabel = (windows) => windows.map((w) => `${minutesToTime(w.start)}–${minutesToTime(w.end)}`).join(', ');
 
   const normalMinutes = form.leaveDate
@@ -206,7 +208,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
       // dibatasi ruang kosong dan sisa ruang 8 jam hari itu.
       const normalOnDay = day.sched.reduce((sum, s) => sum + timeToMinutes(s.end_time) - timeToMinutes(s.start_time), 0);
       const dayRoom = Math.max(0, DAY_TARGET_MINUTES - normalOnDay);
-      const win = day.free.find((w) => w.end - w.start >= slotMinutes) || day.free[0] || { start: CLINIC_OPEN_MINUTES, end: CLINIC_CLOSE_MINUTES };
+      const win = day.free.find((w) => w.end - w.start >= slotMinutes) || day.free[0] || { start: openHoursOn(day.key).open, end: openHoursOn(day.key).close };
       const shiftLength = workShift ? timeToMinutes(workShift.end_time) - timeToMinutes(workShift.start_time) : 3 * 60;
       // Utang yang tersisa (jam izin dikurangi pengganti yang sudah dipilih).
       const debtLeft = missedMinutes - totalShiftMinutes(f.shifts);
@@ -231,8 +233,9 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
     if (overlap) return `Bentrok dengan jam kerja normal (${hhmm(overlap.start_time)}–${hhmm(overlap.end_time)}). Pilih jam di luar itu.`;
     const sStart = timeToMinutes(shift.start_time);
     const sEnd = timeToMinutes(shift.end_time);
-    if (sStart < CLINIC_OPEN_MINUTES || sEnd > CLINIC_CLOSE_MINUTES) {
-      return `Jam pengganti harus di dalam jam buka klinik (${minutesToTime(CLINIC_OPEN_MINUTES)}–${minutesToTime(CLINIC_CLOSE_MINUTES)}).`;
+    const oh = openHoursOn(shift.date);
+    if (sStart < oh.open || sEnd > oh.close) {
+      return `Jam pengganti harus di dalam jam buka klinik hari itu (${openLabelOn(shift.date)}).`;
     }
     const taken = (takenByDate.get(shift.date) || []).find((t) => sStart < t.end && sEnd > t.start);
     if (taken) {
@@ -267,8 +270,9 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
     if (form.leaveType === 'sick' && !form.proofFile) return 'Izin sakit wajib melampirkan foto / PDF surat dokter.';
     if (isOrg && !form.notes.trim()) return 'Cantumkan nama kegiatan, penyelenggara, dan statusnya (penugasan klinik atau pribadi) pada kolom catatan.';
     if (isEvent && !form.notes.trim()) return 'Cantumkan nama event dan penyelenggaranya pada kolom catatan.';
-    if (form.partial && (timeToMinutes(form.startTime) < CLINIC_OPEN_MINUTES || timeToMinutes(form.endTime) > CLINIC_CLOSE_MINUTES)) {
-      return `Jam izin harus di dalam jam buka klinik (${minutesToTime(CLINIC_OPEN_MINUTES)}–${minutesToTime(CLINIC_CLOSE_MINUTES)}).`;
+    const leaveOpen = openHoursOn(form.leaveDate);
+    if (form.partial && (timeToMinutes(form.startTime) < leaveOpen.open || timeToMinutes(form.endTime) > leaveOpen.close)) {
+      return `Jam izin harus di dalam jam buka klinik hari itu (${openLabelOn(form.leaveDate)}).`;
     }
     if (form.shifts.length === 0 && !replacementOptional) return 'Pilih minimal 1 hari untuk mengganti jam kerja.';
     if (sundayOnly && sortedShifts.some((s) => !isSundayDate(s.date))) return WEEKEND_REPLACEMENT_NOTE;
@@ -601,7 +605,7 @@ const LeaveForm = ({ therapist, schedules, blockedDates, offDates, requests, onS
                         <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         <span>
                           Tanggal ini sudah punya jadwal pengganti ({taken.map((t) => `${minutesToTime(t.start)}–${minutesToTime(t.end)}`).join(', ')}).{' '}
-                          {free.length ? <>Jam yang masih bisa diisi: <b>{windowsLabel(free)}</b> (jam buka klinik {minutesToTime(CLINIC_OPEN_MINUTES)}–{minutesToTime(CLINIC_CLOSE_MINUTES)}).</> : 'Tidak ada jam kosong lagi.'}
+                          {free.length ? <>Jam yang masih bisa diisi: <b>{windowsLabel(free)}</b> (jam buka klinik {openLabelOn(shift.date)}).</> : 'Tidak ada jam kosong lagi.'}
                           {!replacementOptional && debtLeft > 0 ? <> Sisa utang jam izin ini: <b>{formatDuration(debtLeft)}</b>.</> : null}
                         </span>
                       </p>

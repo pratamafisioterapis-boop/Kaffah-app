@@ -106,3 +106,16 @@ export const buildShiftOptions = (therapists = []) => {
   });
   return [...map.values()].sort((a, b) => a.start.localeCompare(b.start));
 };
+
+// Jam buka klinik per hari (0 = Minggu ... 6 = Sabtu), dalam menit. Jadwal khusus Kaffah:
+// Senin–Jumat 09:00–21:00, Sabtu–Minggu 09:00–17:00. Klinik lain memakai 09:00–21:00 setiap hari.
+export const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
+const KAFFAH_OPEN_HOURS = { weekday: [9 * 60, 21 * 60], weekend: [9 * 60, 17 * 60] };
+const DEFAULT_OPEN_HOURS = [9 * 60, 21 * 60];
+
+export const clinicHoursOn = (clinicId, dayOfWeek) => {
+  const [open, close] = clinicId === KAFFAH_CLINIC_ID
+    ? (dayOfWeek === 0 || dayOfWeek === 6 ? KAFFAH_OPEN_HOURS.weekend : KAFFAH_OPEN_HOURS.weekday)
+    : DEFAULT_OPEN_HOURS;
+  return { open, close };
+};
