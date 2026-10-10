@@ -371,6 +371,21 @@ const parseListTemplate = (text, variables) => {
 
 const parseCache = new Map();
 
+// Satu diagnosa boleh punya beberapa varian template (mis. HNP menjalar / tidak menjalar).
+// Varian dipisah baris penanda "@@VARIAN: Nama"; teks tanpa penanda = satu varian saja.
+const VARIANT_RE = /^@@VARIAN\s*:\s*(.+)$/;
+
+export const splitVariants = (text) => {
+  if (!text || !/^@@VARIAN\s*:/m.test(text)) return [{ name: '', text: text || '' }];
+  const out = [];
+  text.split('\n').forEach((line) => {
+    const m = line.trim().match(VARIANT_RE);
+    if (m) out.push({ name: m[1].trim(), lines: [] });
+    else if (out.length) out[out.length - 1].lines.push(line);
+  });
+  return out.map((v) => ({ name: v.name, text: v.lines.join('\n').trim() })).filter((v) => v.text);
+};
+
 export const parseTemplate = (text, variables = {}) => {
   if (!text) return null;
   const cacheKey = /\{\{/.test(text) ? `${text}\u0000${JSON.stringify(variables)}` : text;
