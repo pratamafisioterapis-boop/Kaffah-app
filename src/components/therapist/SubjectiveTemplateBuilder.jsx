@@ -12,6 +12,7 @@ import {
   parseTemplate,
   renderMergedTemplates,
   renderTemplate,
+  splitVariants,
 } from '@/lib/subjectiveTemplate';
 
 // ───────────── Kontrol isian inline ─────────────
@@ -292,9 +293,22 @@ const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tok
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false }) => {
-  const [activeKey, setActiveKey] = useState(templates[0]?.key);
+const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false }) => {
+  const [activeKey, setActiveKey] = useState(rawTemplates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
+  // Diagnosa dengan beberapa varian template: terapis memilih varian, template yang dipakai = varian itu.
+  const [variantByKey, setVariantByKey] = useState({});
+  const variantsOf = useMemo(
+    () => Object.fromEntries(rawTemplates.map((t) => [t.key, splitVariants(t.template)])),
+    [rawTemplates]
+  );
+  const templates = useMemo(
+    () => rawTemplates.map((t) => {
+      const list = variantsOf[t.key];
+      return { ...t, template: (list[variantByKey[t.key]] || list[0])?.text };
+    }),
+    [rawTemplates, variantsOf, variantByKey]
+  );
   const [open, setOpenState] = useState(defaultOpen);
   const setOpen = embedded ? () => {} : setOpenState;
   const [lastApplied, setLastApplied] = useState('');
@@ -310,6 +324,14 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
   }, [templates, activeKey]);
 
   const active = templates.find((t) => t.key === activeKey) || templates[0];
+  const activeVariants = variantsOf[active?.key] || [];
+  const activeVariantIdx = variantByKey[active?.key] || 0;
+  const chooseVariant = (idx) => {
+    if (idx === activeVariantIdx) return;
+    setVariantByKey((prev) => ({ ...prev, [active.key]: idx }));
+    // Id isian berbeda tiap varian, jadi isian lama dikosongkan.
+    setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
+  };
   const fullParsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
   const values = valuesByKey[active?.key] || {};
 
@@ -482,6 +504,28 @@ const SubjectiveTemplateBuilder = ({ templates, currentText, onApply, compact = 
                   {progressAll.find((p) => p.key === t.key)?.filled > 0 && (
                     <span className="ml-1.5 opacity-80">✓</span>
                   )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeVariants.length > 1 && (
+            <div role="group" aria-label="Varian template" className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Varian:</span>
+              {activeVariants.map((v, idx) => (
+                <button
+                  key={v.name}
+                  type="button"
+                  aria-pressed={idx === activeVariantIdx}
+                  onClick={() => chooseVariant(idx)}
+                  className={cn(
+                    'rounded-full border px-4 py-2 text-sm font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs',
+                    idx === activeVariantIdx
+                      ? 'border-app-accent bg-app-accent text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40'
+                  )}
+                >
+                  {v.name}
                 </button>
               ))}
             </div>
